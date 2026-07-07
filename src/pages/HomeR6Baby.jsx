@@ -41,19 +41,60 @@ const RUNWAY_VH = HOLD + ZOOM + 1; // 2.6
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
 const poster = (id, w = 1200) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
 
+// Case video wrapper — cover-fills like img, respects prefers-reduced-motion
+function CaseVideo({ src, posterSrc, caseIndex }) {
+  const vidRef = useRef(null);
+  const fallback = typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  useEffect(() => {
+    if (!fallback) return; // respects prefers-reduced-motion
+    const caseSlide = document.querySelector(`[data-case="${caseIndex}"]`);
+    if (!caseSlide) return;
+
+    const obs = new IntersectionObserver(
+      es => {
+        if (es[0]?.isIntersecting) {
+          if (vidRef.current) vidRef.current.play().catch(() => {});
+        } else {
+          if (vidRef.current) vidRef.current.pause();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    obs.observe(caseSlide);
+    return () => obs.disconnect();
+  }, [fallback, caseIndex]);
+
+  return (
+    <video
+      ref={vidRef}
+      src={src}
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      poster={posterSrc}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+      aria-hidden="true"
+    />
+  );
+}
+
 // ─── BRIEF MODAL STATE & LOGIC ────────────────────────────────────────────
 
 function BriefModal({ open, onClose }) {
-  const [step, setStep] = useState(0); // 0=name, 1=email, 2=making, 3=goal, 4=review
+  const [step, setStep] = useState(0); // 0=name+email, 1=making, 2=goal
   const [formData, setFormData] = useState({ name: '', email: '', making: '', goal: '', budget: '' });
   const makingOptions = ['Brand film', 'Website', 'Strategy', 'Documentary', 'Not sure'];
+  const totalSteps = 3;
+  const progressWidth = ((step + 1) / totalSteps) * 100;
 
   const updateForm = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const next = () => {
-    if (step < 3) setStep(step + 1);
+    if (step < totalSteps - 1) setStep(step + 1);
   };
 
   const submit = () => {
@@ -66,12 +107,12 @@ function BriefModal({ open, onClose }) {
 
   return (
     <div className="brief-modal" onClick={onClose} role="dialog" aria-label="Creative brief">
-      <div className="brief-modal-inner" onClick={e => e.stopPropagation()}>
+      <div className="brief-modal-inner" onClick={e => e.stopPropagation()} style={{ '--progress-width': `${progressWidth}%` }}>
         <button className="brief-modal-x" onClick={onClose} aria-label="Close">✕</button>
 
         {step === 0 && (
           <div className="brief-step">
-            <h3>What's your name?</h3>
+            <h3>Let's start with the basics</h3>
             <input
               type="text"
               placeholder="Your name"
@@ -79,25 +120,17 @@ function BriefModal({ open, onClose }) {
               onChange={e => updateForm('name', e.target.value)}
               autoFocus
             />
-            <button onClick={next} className="brief-next" disabled={!formData.name.trim()}>Next</button>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="brief-step">
-            <h3>And your email?</h3>
             <input
               type="email"
               placeholder="you@company.com"
               value={formData.email}
               onChange={e => updateForm('email', e.target.value)}
-              autoFocus
             />
-            <button onClick={next} className="brief-next" disabled={!formData.email.trim()}>Next</button>
+            <button onClick={next} className="brief-next" disabled={!formData.name.trim() || !formData.email.trim()}>Next</button>
           </div>
         )}
 
-        {step === 2 && (
+        {step === 1 && (
           <div className="brief-step">
             <h3>What are you making?</h3>
             <div className="brief-chips">
@@ -117,7 +150,7 @@ function BriefModal({ open, onClose }) {
           </div>
         )}
 
-        {step === 3 && (
+        {step === 2 && (
           <div className="brief-step">
             <h3>What's the goal?</h3>
             <textarea
@@ -201,7 +234,7 @@ const CSS = `
 .r17 .hz-menu-t { font-family:var(--fd); font-weight:800; text-transform:uppercase; font-size:clamp(1.5rem,3.4vw,2.4rem); line-height:1.05; letter-spacing:-.01em; color:var(--paper); transition:color .15s; }
 .r17 .hz-menu-row:hover .hz-menu-t { color:var(--gold); }
 .r17 .hz-menu-row.big .hz-menu-t { font-size:clamp(1.9rem,4.4vw,3rem); }
-.r17 .hz-menu-sub { font-size:.82rem; color:var(--mut); margin-top:.2rem; font-family:var(--fbrut); font-weight:500; }
+.r17 .hz-menu-sub { font-size:.82rem; color:var(--mut); margin-top:.2rem; font-family:var(--fbrut); font-weight:700; }
 
 /* two-parts service links */
 .r17 .parts-link { color:inherit; transition:color .15s; }
@@ -275,7 +308,7 @@ const CSS = `
   bottom:calc(clamp(4.5rem,10vh,7rem) + env(safe-area-inset-bottom));
   width:min(34rem,84vw); text-align:center;
   font-size:clamp(.85rem,1.15vw,1rem); color:var(--mut); line-height:1.65;
-  font-family:var(--fbrut); font-weight:500; letter-spacing:-.01em;
+  font-family:var(--fbrut); font-weight:700; letter-spacing:-.01em;
 }
 .r17 .hz-cue {
   position:absolute; left:50%; bottom:calc(clamp(2rem,5vh,3.4rem) + env(safe-area-inset-bottom));
@@ -315,8 +348,8 @@ const CSS = `
 }
 .r17 .title .row { display:block; }
 .r17 .title .gold { color:var(--gold); }
-.r17 .sub { margin-top:1.3rem; font-size:clamp(.95rem,1.5vw,1.12rem); color:var(--paper); opacity:.9; max-width:52ch; text-shadow:0 1px 16px rgba(0,0,0,.7); font-family:var(--fbrut); font-weight:500; letter-spacing:-.01em; }
-.r17 .stat { margin-top:.55rem; font-size:.8rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 12px rgba(0,0,0,.7); font-family:var(--fbrut); }
+.r17 .sub { margin-top:1.3rem; font-size:clamp(.95rem,1.5vw,1.12rem); color:var(--paper); opacity:.9; max-width:52ch; text-shadow:0 1px 16px rgba(0,0,0,.7); font-family:var(--fbrut); font-weight:700; letter-spacing:-.01em; }
+.r17 .stat { margin-top:.55rem; font-size:.8rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 12px rgba(0,0,0,.7); font-family:var(--fbrut); }
 .r17 .view { margin-top:1.5rem; display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); transition:color .15s; }
 .r17 .view:hover { color:var(--paper); }
 .r17 .btn-gold {
@@ -347,9 +380,9 @@ const CSS = `
 }
 
 /* two parts lists */
-.r17 .parts-head { font-size:.72rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; font-family:var(--fbrut); }
+.r17 .parts-head { font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; font-family:var(--fbrut); }
 .r17 .parts-list { list-style:none; display:flex; flex-direction:column; gap:.85rem; }
-.r17 .parts-list li { font-size:clamp(.85rem,1.3vw,1.02rem); color:var(--mut); line-height:1.65; border-top:1px solid rgba(255,255,255,.12); padding-top:.75rem; font-family:var(--fbrut); font-weight:500; }
+.r17 .parts-list li { font-size:clamp(.85rem,1.3vw,1.02rem); color:var(--mut); line-height:1.65; border-top:1px solid rgba(255,255,255,.12); padding-top:.75rem; font-family:var(--fbrut); font-weight:700; }
 .r17 .parts-list li:first-child { border-top:none; padding-top:0; }
 .r17 .parts-col { position:absolute; z-index:3; top:0; height:100%; width:50%; display:flex; flex-direction:column; justify-content:flex-end; padding:0 var(--pad) 16svh; }
 .r17 .parts-col.l { left:0; align-items:flex-start; text-align:left; }
@@ -414,11 +447,16 @@ const CSS = `
 /* brief modal — premium guided contact form */
 .r17 .brief-modal { position:fixed; inset:0; z-index:410; background:rgba(0,0,0,.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:clamp(1rem,3vw,2rem); animation:fadeIn .3s ease; }
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-.r17 .brief-modal-inner { position:relative; width:min(420px,100%); background:var(--ink); border:1px solid rgba(196,164,106,.14); border-radius:12px; padding:clamp(2rem,4vw,3rem); max-height:90vh; overflow-y:auto; box-shadow:0 20px 80px rgba(0,0,0,.6); }
+.r17 .brief-modal-inner { position:relative; width:min(420px,100%); background:var(--ink); border:1px solid rgba(196,164,106,.14); border-radius:12px; padding:clamp(2rem,4vw,3rem); padding-top:clamp(3rem,4vw,4rem); max-height:90vh; overflow-y:auto; box-shadow:0 20px 80px rgba(0,0,0,.6); }
+.r17 .brief-modal-inner::before { content:''; position:absolute; top:0; left:0; height:3px; background:var(--gold); border-radius:12px 12px 0 0; width:var(--progress-width, 33%); transition:width .4s ease; }
 .r17 .brief-modal-x { position:absolute; top:1.2rem; right:1.2rem; font-size:.8rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--paper); background:none; border:none; cursor:pointer; transition:color .15s; padding:0; }
 .r17 .brief-modal-x:hover { color:var(--gold); }
-.r17 .brief-step h3 { font-family:var(--fd); font-size:clamp(1.4rem,3vw,1.8rem); font-weight:800; text-transform:uppercase; color:var(--paper); margin-bottom:1.6rem; line-height:1.1; letter-spacing:-.01em; }
-.r17 .brief-step input, .r17 .brief-step textarea { width:100%; padding:.85rem 1rem; background:var(--ink-2); border:1px solid rgba(196,164,106,.24); border-radius:8px; font-family:var(--fbrut); font-size:.95rem; color:var(--paper); transition:border-color .2s; }
+.r17 .brief-step h3 { font-family:var(--fd); font-size:1.8rem; font-weight:800; text-transform:uppercase; color:var(--paper); margin-bottom:1.6rem; line-height:1.1; letter-spacing:-.01em; }
+.r17 .brief-step { animation:brief-fade-in .2s ease; }
+@keyframes brief-fade-in { from { opacity:0; } to { opacity:1; } }
+.r17 .brief-step input, .r17 .brief-step textarea { width:100%; padding:.65rem 1rem; background:var(--ink-2); border:1px solid rgba(196,164,106,.24); border-radius:8px; font-family:var(--fbrut); font-size:.95rem; color:var(--paper); transition:border-color .2s; margin-bottom:.8rem; }
+.r17 .brief-step textarea { margin-bottom:.8rem; }
+.r17 .brief-optional input { margin-bottom:0; }
 .r17 .brief-step input::placeholder, .r17 .brief-step textarea::placeholder { color:rgba(246,246,244,.5); }
 .r17 .brief-step input:focus, .r17 .brief-step textarea:focus { outline:none; border-color:var(--gold); background:var(--ink); }
 .r17 .brief-optional { margin-top:1rem; }
@@ -460,7 +498,7 @@ function GhostPanel({ text, rows = 6, solidRow = 3 }) {
   );
 }
 
-function Slide({ id, className = '', first = false, children }) {
+function Slide({ id, className = '', first = false, children, ...attrs }) {
   const ref = useRef(null);
   // The first slide reveals on mount: IntersectionObserver is throttled in
   // background tabs (the R15 lesson), and the first paint must never be blank.
@@ -476,53 +514,56 @@ function Slide({ id, className = '', first = false, children }) {
     return () => obs.disconnect();
   }, [first]);
   return (
-    <section id={id} ref={ref} className={`slide ${inView ? 'in' : ''} ${className}`}>
+    <section id={id} ref={ref} className={`slide ${inView ? 'in' : ''} ${className}`} {...attrs}>
       {children}
     </section>
   );
 }
 
-// One media panel per slide per side; null = black (the side sweeps to dark).
-const LEFT_PANELS = [
-  <>
-    <div className="vid"><LazyGumlet id={HERO_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
-    <img className="pstr" src={poster(HERO_REEL)} alt="" />
-  </>,
-  <img src={poster(PALA_REEL)} alt="" loading="lazy" />,
-  <img src="/hero-sites/ambition.jpg" alt="" loading="lazy" />,
-  null,
-  null,
-  <GhostPanel text="Three films" />,
-  <img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" />,
-  <GhostPanel text="Top-5 insurer" />,
-  <img src="/hero-sites/ambition.jpg" alt="" loading="lazy" />,
-  null,
-  <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
-  null,
-  null,
-  null,
-];
+// Helper to build panels with CaseVideo components (must be inside component to get refs/effects right)
+const makePanels = () => {
+  const LEFT_PANELS = [
+    <>
+      <div className="vid"><LazyGumlet id={HERO_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
+      <img className="pstr" src={poster(HERO_REEL)} alt="" />
+    </>,
+    <img src={poster(PALA_REEL)} alt="" loading="lazy" />,
+    <img src="/hero-sites/ambition.jpg" alt="" loading="lazy" />,
+    null,
+    null,
+    <CaseVideo src="/videos/isa-brand.mp4" posterSrc="" caseIndex={0} />,
+    <CaseVideo src="/videos/spacerising-render.mp4" posterSrc="" caseIndex={1} />,
+    <CaseVideo src="/videos/ih-culture.mp4" posterSrc="" caseIndex={2} />,
+    <img src="/hero-sites/ambition.jpg" alt="" loading="lazy" />,
+    null,
+    <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
+    null,
+    null,
+    null,
+  ];
 
-const RIGHT_PANELS = [
-  <>
-    <div className="vid"><LazyGumlet id={FILM_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
-    {/* Virtu's first frame is its title card — use the Nook frame as the small-screen poster */}
-    <img className="pstr" src={poster(NOOK_REEL)} alt="" />
-  </>,
-  <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
-  <img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" />,
-  null,
-  null,
-  <GhostPanel text="Investor ready" solidRow={2} />,
-  <GhostPanel text="1,000 in a room" />,
-  <GhostPanel text="Inspire Summit" solidRow={2} />,
-  <GhostPanel text="4 leads / mo" />,
-  null,
-  <img src={poster(HERO_REEL)} alt="" loading="lazy" />,
-  null,
-  null,
-  null,
-];
+  const RIGHT_PANELS = [
+    <>
+      <div className="vid"><LazyGumlet id={FILM_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
+      <img className="pstr" src={poster(NOOK_REEL)} alt="" />
+    </>,
+    <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
+    <img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" />,
+    null,
+    null,
+    <CaseVideo src="/videos/isa-demo.mp4" posterSrc="" caseIndex={0} />,
+    <CaseVideo src="/videos/spacerising-render.mp4" posterSrc="" caseIndex={1} />,
+    <CaseVideo src="/videos/ih-life.mp4" posterSrc="" caseIndex={2} />,
+    <CaseVideo src="/videos/ambition-vertical.mp4" posterSrc="" caseIndex={3} />,
+    null,
+    <img src={poster(HERO_REEL)} alt="" loading="lazy" />,
+    null,
+    null,
+    null,
+  ];
+
+  return { LEFT_PANELS, RIGHT_PANELS };
+};
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 
@@ -547,6 +588,7 @@ const ABOUT = [
 ];
 
 export default function HomeR6Baby() {
+  const { LEFT_PANELS, RIGHT_PANELS } = makePanels();
   const [video, setVideo] = useState(null);
   const [menu, setMenu] = useState(() => {
     try { return new URLSearchParams(window.location.search).get('menu') === '1'; }
@@ -929,7 +971,7 @@ export default function HomeR6Baby() {
       </Slide>
 
       {/* 05 — CASE: ISA Energy */}
-      <Slide>
+      <Slide data-case="0">
         <div className="stack">
           <div className="tags rv"><span className="idx">01 / 04</span><span>Energy · Film</span><span>A demo, a validation study, a brand film</span></div>
           <h2 className="title">
@@ -942,7 +984,7 @@ export default function HomeR6Baby() {
       </Slide>
 
       {/* 06 — CASE: Space Rising */}
-      <Slide>
+      <Slide data-case="1">
         <div className="stack">
           <div className="tags rv"><span className="idx">02 / 04</span><span>Tech · Platform</span><span>SpaceOS — built and launched</span></div>
           <h2 className="title">
@@ -955,7 +997,7 @@ export default function HomeR6Baby() {
       </Slide>
 
       {/* 07 — CASE: Included Health */}
-      <Slide>
+      <Slide data-case="2">
         <div className="stack">
           <div className="tags rv"><span className="idx">03 / 04</span><span>Healthcare · Film</span><span>A film series, screened nationwide</span></div>
           <h2 className="title">
@@ -968,7 +1010,7 @@ export default function HomeR6Baby() {
       </Slide>
 
       {/* 08 — CASE: Ambition Mechanical */}
-      <Slide>
+      <Slide data-case="3">
         <div className="stack">
           <div className="tags rv"><span className="idx">04 / 04</span><span>Trades · Web + Ads</span><span>The new site pulls its own weight</span></div>
           <h2 className="title">
