@@ -1855,7 +1855,7 @@ const COMMAND_ALIASES = {
 function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
   // The stepped-into row (drives the desktop detail panel + mobile inline expand).
   const [selectedKey, setSelectedKey] = useState('');
-  const { state, data, toggleWatcher } = useCommand(worldId, selectedKey);
+  const { state, data, toggleWatcher, stepToggle, stepAdd } = useCommand(worldId, selectedKey);
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
@@ -1885,9 +1885,23 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
       openRoom: (id) => openRoomById(id),
       // Per-row master-loop toggle — real (room-autopilot; master-loop-tick honors it).
       toggleRoomLoop: (key) => toggleWatcher?.(key),
+      // Actionable checklist (wd40 R1): tap a step = done/undone for real (room-goal-steps
+      // store; checking a Proposed step claims it); Add appends a user-sourced step to the
+      // same store the room's agent reads. The add input is uncontrolled — read at tap time.
+      toggleStep: (act) => stepToggle?.(act),
+      addStep: (roomKey, e) => {
+        const wrap = e?.currentTarget?.closest('[data-cv6-addstep]');
+        const inp = wrap?.querySelector('input');
+        const text = inp?.value?.trim();
+        if (!text || !roomKey) return;
+        stepAdd?.(roomKey, text);
+        if (inp) inp.value = '';
+      },
+      // Absorbs taps on the add-step row so they don't bubble to the card's open action.
+      noop: () => {},
       openJob: () => {}, manageActivity: () => {},
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher]);
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
