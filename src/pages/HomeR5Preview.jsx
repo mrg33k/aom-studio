@@ -236,6 +236,21 @@ export default function HomeR5Preview() {
     return () => window.removeEventListener('keydown', onKey);
   }, [close]);
 
+  // Deep links (#story/#work/#contact): the reel mounts after the browser's
+  // native anchor pass, so jump to the hash target ourselves. Instant, not
+  // smooth — the container's scroll-behavior:smooth rides rAF, which is frozen
+  // in background tabs (and an 11-slide sweep is wrong for a deep link anyway).
+  useEffect(() => {
+    const h = window.location.hash.slice(1);
+    if (!h) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(h);
+      const box = el?.closest('.r17');
+      if (el && box) box.scrollTo({ top: el.offsetTop, behavior: 'instant' });
+    }, 80);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div className="r17">
       <style>{CSS}</style>
