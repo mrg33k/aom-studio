@@ -43,6 +43,12 @@ function parseMarkdown(text) {
       .replace(/\[staged_draft[^\]]*\](\([^)]*\))?/gi, '')
       .replace(/<goal-thread>[\s\S]*?<\/goal-thread>/gi, '')
       .replace(/<chips>[\s\S]*?<\/chips>/gi, '')
+      // Truncated blocks (reply cut off before the close tag): a JSON-looking
+      // open tag with no close strips to end-of-text — that tail is machine
+      // garbage from a cut-off turn, never user prose. A bare prose mention of
+      // the tag (no [ or { after it) is left alone on purpose.
+      .replace(/<goal-thread>\s*[\[{][\s\S]*$/gi, '')
+      .replace(/<chips>[^<]*$/gi, '')
       .replace(/[ \t]{2,}/g, ' ').trim()
     let html = marked.parse(preprocessBareUrls(cleaned))
     html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
