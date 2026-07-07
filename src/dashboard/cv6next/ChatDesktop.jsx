@@ -312,7 +312,7 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
   return (
     <div>
       <div className="room" onClick={onPickProject} style={{ cursor: 'pointer', background: selectedProject ? 'var(--accent-weak)' : undefined }}>
-        <button onClick={(e) => { e.stopPropagation(); onToggle(); }} aria-label={expanded ? 'Hide missions' : 'Show missions'}
+        <button onClick={(e) => { e.stopPropagation(); onToggle(); }} aria-label={expanded ? 'Hide missions' : 'Show missions'} aria-expanded={expanded ? 'true' : 'false'}
           style={{ border: 'none', background: 'none', padding: 0, margin: 0, display: 'flex', alignItems: 'center', flex: 'none', cursor: 'pointer', color: 'var(--muted)' }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
             style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform .15s' }}><path d="m9 18 6-6-6-6" /></svg>
@@ -464,7 +464,7 @@ function DesktopDayCard({ group, onSend }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`goalcard${open ? ' is-open' : ''}`}>
-      <div className="gc-head" onClick={() => setOpen((v) => !v)}>
+      <div className="gc-head" role="button" aria-expanded={open ? 'true' : 'false'} onClick={() => setOpen((v) => !v)}>
         <span className="gc-title">{group.label}</span>
         <span className="gc-meta">{group.items.length} message{group.items.length === 1 ? '' : 's'}</span>
         <svg className="gc-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
@@ -874,7 +874,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
                   <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={onFileChosen} />
-                  <button onClick={handoffAgent} disabled={controlBusy} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Ask the agent to hand this off to another agent">
+                  <button onClick={handoffAgent} disabled={controlBusy} aria-label="Send a hand-off request to another agent" style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Send a hand-off request to another agent">
                     <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg>
                     </span>

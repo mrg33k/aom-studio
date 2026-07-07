@@ -207,7 +207,7 @@ export default function Cv6InputBar({ onOpenFiles }) {
               placeholder={selectedImageTool ? 'Describe the image to generate…' : `Message ${roomName}…`}
               style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)' }}
             />
-            <button type="button" title="Attach a file" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+            <button type="button" title="Attach a file" aria-label="Attach and upload a file" onClick={() => fileInputRef.current?.click()} disabled={uploading}
               style={{ width: 38, height: 38, borderRadius: 10, background: 'none', border: 'none', color: uploading ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
               {uploading
                 ? <span style={{ width: 14, height: 14, border: '2px solid var(--hair)', borderTopColor: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
