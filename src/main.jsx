@@ -135,6 +135,8 @@ const VCinematicGlass = lazy(() => import('./pages/versions/VCinematicGlass.jsx'
 const HomeR6Baby = lazy(() => import('./pages/HomeR6Baby.jsx'))
 const ServiceBrandFilm = lazy(() => import('./pages/ServiceBrandFilm.jsx'))
 const ServiceWebBuild = lazy(() => import('./pages/ServiceWebBuild.jsx'))
+const ServiceStrategy = lazy(() => import('./pages/ServiceStrategy.jsx'))
+const ServiceDocumentary = lazy(() => import('./pages/ServiceDocumentary.jsx'))
 const ProjectPage = lazy(() => import('./pages/ProjectPage.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
@@ -438,6 +440,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/r6" element={<HomeR6Baby />} />
           <Route path="/services/brand-film" element={<ServiceBrandFilm />} />
           <Route path="/services/web-build" element={<ServiceWebBuild />} />
+          <Route path="/services/strategy" element={<ServiceStrategy />} />
+          <Route path="/services/documentary" element={<ServiceDocumentary />} />
           <Route path="/taste" element={<HomeR6Taste />} />
           <Route path="/versions" element={<VersionsGallery />} />
           <Route path="/versions/superside" element={<VSuperside />} />
