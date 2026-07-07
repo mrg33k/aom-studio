@@ -67,8 +67,11 @@
           <span class="sec-n" data-bind="counts.needYou">3</span>
         </div>
 
-        <!-- needs-you list — ONE template row; host renders one per item -->
-        <div class="erow is-active" data-each="needsYou" data-action="openThread" data-arg="email.id">
+        <!-- needs-you list — ONE template row; host renders one per item.
+             NOTE: no is-active here — the engine clones this row verbatim, so a sample
+             "selected" class would paint EVERY row as selected. In the list view no
+             thread is open; is-active belongs only on an actually-open row. -->
+        <div class="erow" data-each="needsYou" data-action="openThread" data-arg="email.id">
           <div class="ava is-pink" data-mod="is-:email.avatarTint" data-bind="email.initials">DW</div>
           <div class="einfo">
             <div class="etop">

@@ -67,6 +67,8 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
   const isWish = selected?.kind === 'wish';
 
   // Reply-pane intelligence: staged draft body + reply options via /api/support/suggest.
+  // The fetch is BOUNDED (20s abort): "thinking…" always resolves to real bullets or an
+  // honest failed line — a hung endpoint can never leave the card spinning forever.
   const [suggest, setSuggest] = useState(null); // { summary, recommendation, options, staged, original }
   const [suggestState, setSuggestState] = useState('idle'); // idle | loading | ready | error
   const suggestFor = useRef(null);
@@ -74,16 +76,19 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
     setSuggest(null);
     if (!selected || selected.kind !== 'wish') { setSuggestState('idle'); return; }
     let dead = false;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 20000);
     suggestFor.current = selected.id;
     setSuggestState('loading');
-    authFetch(`/api/support/suggest?wish_id=${encodeURIComponent(selected.wishId)}`, { credentials: 'include' })
+    authFetch(`/api/support/suggest?wish_id=${encodeURIComponent(selected.wishId)}`, { credentials: 'include', signal: ctl.signal })
       .then((r) => r.json())
       .then((d) => {
         if (dead || suggestFor.current !== selected.id) return;
         if (d.ok) { setSuggest(d); setSuggestState('ready'); } else setSuggestState('error');
       })
-      .catch(() => { if (!dead && suggestFor.current === selected.id) setSuggestState('error'); });
-    return () => { dead = true; };
+      .catch(() => { if (!dead && suggestFor.current === selected.id) setSuggestState('error'); })
+      .finally(() => clearTimeout(timer));
+    return () => { dead = true; ctl.abort(); clearTimeout(timer); };
   }, [selected?.id, selected?.kind, selected?.wishId]);
 
   // Composer. Draft-reply chips fill it; the send path depends on whether the
@@ -209,8 +214,10 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
 
               <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', justifyContent: 'center', padding: '22px 0' }}>
                 <div style={{ width: 700, maxWidth: '92%', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* AI summary */}
-                  {(summary.length > 0 || recommendation.length > 0) && (
+                  {/* AI summary — real bullets, or one honest status line (pending is
+                      bounded by the fetch timeout; failed says failed; a wish the agent
+                      gave no summary — e.g. spam-gated — says so). Never a stuck spinner. */}
+                  {(summary.length > 0 || recommendation.length > 0 || (isWish && suggestState !== 'idle')) && (
                     <div style={{ border: '1px solid var(--accent-weak)', background: 'linear-gradient(180deg,var(--accent-weak),transparent)', borderRadius: 16, padding: '18px 20px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                         <Star />
@@ -230,6 +237,15 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                             <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{pt}</div>
                           </div>
                         ))}
+                        {summary.length === 0 && recommendation.length === 0 && suggestState === 'loading' && (
+                          <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>Summarizing… the full email is below.</div>
+                        )}
+                        {summary.length === 0 && recommendation.length === 0 && suggestState === 'error' && (
+                          <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>The summary didn't come back this time. The full email is below.</div>
+                        )}
+                        {summary.length === 0 && recommendation.length === 0 && suggestState === 'ready' && (
+                          <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>No summary for this one. The full email is below.</div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -275,6 +291,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                     <Star />
                     <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested</span>
                     {options.length === 0 && suggestState === 'loading' && <span style={{ fontSize: 12, color: 'var(--muted)' }}>drafting…</span>}
+                    {options.length === 0 && (suggestState === 'error' || suggestState === 'ready') && <span style={{ fontSize: 12, color: 'var(--muted)' }}>No suggestions came back — write your reply below.</span>}
                     {options.map((o, i) => (
                       <button key={i} onClick={() => setComposer(o.text)} style={chipStyle(i === 0)}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>

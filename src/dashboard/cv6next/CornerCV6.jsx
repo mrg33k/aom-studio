@@ -1544,13 +1544,40 @@ function ChatList({ onNav, onOpenRoom, onOpenProject, onOpenNav, onCommandK }) {
 // ── Support inbox (the proven pilot), reachable from the nav ──
 const SUPPORT_ALIASES = { needsYou: 'email', watching: 'email', 'email.tags': 'tag' };
 
-const SUPPORT_THREAD_ALIASES = {};
+const SUPPORT_THREAD_ALIASES = { 'thread.summary': 'pt' };
+// Where the quoted "earlier in this thread" part of an email body starts. Same split
+// the desktop reading pane uses — one truth for what counts as history.
+const EARLIER_CUT = /^\s*>|^-{2,}\s*Forwarded message|^Begin forwarded message:|^On .{5,80} wrote:/m;
 function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
   const { state, data, reload } = useSupportInbox('aom');
   const html = useMemo(() => composeScreen(inboxRaw, { mobile: true }), []);
   const threadHtml = useMemo(() => composeScreen(supportThreadRaw, { mobile: true }), []);
-  // Tapping an email opens its thread view (P9). openEmailId holds the opened ask; null = inbox list.
-  const [openEmailId, setOpenEmailId] = useState(null);
+  // The "Draft reply" screen the design ships next to the inbox (pick=1). Tone and
+  // Redo have no live mechanism yet, so they're stripped at compose time — same
+  // no-dead-controls doctrine as composeScreen's dead-nav-tile removal.
+  const draftHtml = useMemo(() => {
+    const doc = new DOMParser().parseFromString(composeScreen(inboxRaw, { mobile: true, pick: 1 }), 'text/html');
+    const scr = doc.querySelector('[data-cv6]');
+    if (!scr) return '';
+    const tone = scr.querySelector('[data-action="setDraftTone"]');
+    tone?.parentElement?.parentElement?.remove();
+    scr.querySelector('[data-action="regenerateDraft"]')?.remove();
+    // An honest send-status line above the send bar (driven from the send handler
+    // without a re-bind, so the user's typed edits are never wiped mid-send).
+    const foot = scr.querySelector('[data-action="sendDraft"]')?.closest('div');
+    foot?.insertAdjacentHTML('beforebegin', '<div class="sthr-note is-none" data-draft-note style="padding:10px 16px 0;font-size:12px;line-height:1.5;color:var(--warn);background:var(--ground);"></div>');
+    return scr.outerHTML;
+  }, []);
+  // Tapping an email opens its thread view (P9). The opened ask is a SNAPSHOT taken at
+  // tap time, not a live lookup into the polling data: a lookup meant every 30s data
+  // tick rebuilt the thread DOM under the reader and threw the scroll back to the top
+  // ("can't scroll the thread"). The snapshot keeps the thread still while it's read;
+  // fresh data shows on the next open.
+  const [openedEmail, setOpenedEmail] = useState(null);
+  const [showEarlier, setShowEarlier] = useState(false);
+  const [heldNote, setHeldNote] = useState('');       // why the reply button is held (shown on tap)
+  const [draftOpen, setDraftOpen] = useState(false);  // the reply-with-Elon draft screen
+  const [sentNote, setSentNote] = useState('');       // confirmation after a real send
   // Header filter chips: All (default, both sections) / Needs you / Watching — real filter
   // of the inbox sections. (Drafts chip held: no drafts inbox source yet.)
   const [filter, setFilter] = useState('all');
@@ -1572,23 +1599,62 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
       },
     };
   }, [data, filter]);
+  const openThread = useCallback((id) => {
+    const all = [...(data.needsYou || []), ...(data.watching || [])];
+    const e = all.find((x) => String(x.id) === String(id)) || null;
+    if (!e) return;
+    setOpenedEmail(e); setShowEarlier(false); setHeldNote(''); setSentNote(''); setDraftOpen(false);
+  }, [data.needsYou, data.watching]);
   const actions = useMemo(() => ({
-    openThread: (id) => setOpenEmailId(id), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    openThread, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     nav: (t) => onNav?.(t), browseWatching: () => setFilter('watching'), emptyAction: () => {},
     setFilter: (f) => setFilter(f || 'all'),
     retry: () => reload(), viewOffline: () => {},
     assignAgent: (emailId) => onAssignEmail?.(emailId),
-  }), [onNav, onOpenNav, reload, onAssignEmail]);
+  }), [openThread, onNav, onOpenNav, reload, onAssignEmail]);
 
-  // Opened-thread view: find the tapped ask and render its real email. Back returns to the list.
-  const openedEmail = useMemo(() => {
-    if (!openEmailId) return null;
-    const all = [...(data.needsYou || []), ...(data.watching || [])];
-    return all.find((e) => String(e.id) === String(openEmailId)) || null;
-  }, [openEmailId, data.needsYou, data.watching]);
+  // Reply-pane intelligence for asks (wishes): staged draft + summary + options via
+  // /api/support/suggest, bounded by a timeout so "Summarizing…" can never run forever —
+  // it resolves to real bullets or an honest failed line. Email-scan rows don't fetch:
+  // their summary/reply mechanism IS the wish pipeline (assign first).
+  const isWish = openedEmail?.kind === 'wish';
+  const [suggest, setSuggest] = useState(null);
+  const [suggestState, setSuggestState] = useState('idle'); // idle | loading | ready | error
+  useEffect(() => {
+    setSuggest(null);
+    if (!openedEmail || openedEmail.kind !== 'wish') { setSuggestState('idle'); return undefined; }
+    let dead = false;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 20000);
+    setSuggestState('loading');
+    authFetch(`/api/support/suggest?wish_id=${encodeURIComponent(openedEmail.wishId)}`, { credentials: 'include', signal: ctl.signal })
+      .then((r) => r.json())
+      .then((d) => { if (!dead) { if (d.ok) { setSuggest(d); setSuggestState('ready'); } else setSuggestState('error'); } })
+      .catch(() => { if (!dead) setSuggestState('error'); })
+      .finally(() => clearTimeout(timer));
+    return () => { dead = true; ctl.abort(); clearTimeout(timer); };
+  }, [openedEmail]);
+
   const threadData = useMemo(() => {
     const e = openedEmail || {};
     const n = e.threadCount || 1;
+    // Earlier messages: the quoted history the email itself carries. Real mechanism,
+    // real limit — there is no mailbox thread-history endpoint yet, so what the
+    // message quotes is ALL the history we can honestly show.
+    const full = String((suggest?.original || e.body || (e.snippet || '').split(' · ').slice(1).join(' · ') || 'No message body.'));
+    const cut = full.search(EARLIER_CUT);
+    const head = cut >= 0 ? full.slice(0, cut).trim() : full;
+    const tail = cut >= 0 ? full.slice(cut).trim() : '';
+    // Summary: the agent's real bullets, else one honest status line.
+    const bullets = (suggest?.summary?.length ? suggest.summary : e.summary) || [];
+    let summaryNote = '';
+    if (!bullets.length) {
+      if (e.kind !== 'wish') summaryNote = 'Summaries come from your agent once this email is assigned as an ask. The full email is below.';
+      else if (suggestState === 'loading') summaryNote = 'Summarizing… the full email is below.';
+      else if (suggestState === 'error') summaryNote = "The summary didn't come back this time. The full email is below.";
+      else summaryNote = 'No summary for this one. The full email is below.';
+    }
+    const replyNote = sentNote || heldNote;
     return {
       thread: {
         subject: e.subject || 'Conversation',
@@ -1596,17 +1662,98 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
         senderSub: e.senderSub || 'to you',
         countLabel: `${e.sender || 'Sender'} · ${n} message${n === 1 ? '' : 's'}`,
         time: e.time || '',
-        body: e.body || (e.snippet || '').split(' · ').slice(1).join(' · ') || 'No message body.',
+        body: showEarlier && tail ? `${head}\n\n${tail}` : (head || full),
+        earlierState: tail ? 'has' : 'none',
+        earlierLabel: showEarlier ? 'Hide' : 'Show',
+        summary: bullets.map((text) => ({ text })),
+        summaryNote,
+        summaryNoteState: summaryNote ? 'has' : 'none',
+        replyNote,
+        replyNoteState: replyNote ? 'has' : 'none',
+        replyState: e.kind === 'wish' ? 'ready' : 'held',
         initials: e.initials || '·', avatarTint: e.avatarTint || 'violet',
       },
     };
-  }, [openedEmail]);
-  const threadActions = useMemo(() => ({
-    closeThread: () => setOpenEmailId(null), nav: (t) => { setOpenEmailId(null); onNav?.(t); },
-    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
-  }), [onNav, onOpenNav]);
+  }, [openedEmail, suggest, suggestState, showEarlier, heldNote, sentNote]);
 
-  if (openEmailId && openedEmail) {
+  // The draft screen's data is FROZEN at open (one snapshot): no re-binds while the
+  // user types, so nothing can wipe the edit mid-composition.
+  const [draftData, setDraftData] = useState(null);
+  const openDraft = useCallback(() => {
+    const e = openedEmail;
+    if (!e || e.kind !== 'wish') {
+      setHeldNote('This landed straight from your mailbox scan. Assign it to your agent and it becomes an ask you can reply to from here.');
+      return;
+    }
+    const options = (suggest?.options?.length ? suggest.options : e.replyOptions) || [];
+    const stagedBody = suggest?.staged?.body || '';
+    setDraftData({
+      draft: {
+        to: e.sender || e.address || 'Sender',
+        subject: e.subject || '',
+        initials: e.initials || '·',
+        avatarTint: e.avatarTint || 'violet',
+        body: (stagedBody || options[0]?.text || '').trim(),
+      },
+    });
+    setDraftOpen(true);
+  }, [openedEmail, suggest]);
+
+  const sendDraft = useCallback(async (_arg, ev) => {
+    const rootEl = ev?.target?.closest?.('[data-cv6]');
+    const ta = rootEl?.querySelector?.('textarea[data-bind="draft.body"]');
+    const note = rootEl?.querySelector?.('[data-draft-note]');
+    const btn = ev?.target?.closest?.('button');
+    const text = (ta?.value || '').trim();
+    const say = (msg) => { if (note) { note.textContent = msg; note.classList.remove('is-none'); note.classList.add('is-has'); } };
+    if (!text) { say('Write the reply first — the box above is empty.'); return; }
+    if (!openedEmail?.wishId || btn?.disabled) return;
+    if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+    try {
+      let r;
+      const stagedBody = (suggest?.staged?.body || '').trim();
+      if (stagedBody && text === stagedBody && suggest?.staged?.draft_id) {
+        // Untouched staged draft → fire the exact Gmail draft the agent staged.
+        r = await authFetch('/api/support/send-staged', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ action: 'send', wish_id: openedEmail.wishId, draft_id: suggest.staged.draft_id, connection_id: suggest.staged.connection_id }),
+        });
+      } else {
+        // Edited or written from scratch → real in-thread reply, sent as you.
+        r = await authFetch('/api/support/reply', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ wish_id: openedEmail.wishId, text }),
+        });
+      }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || d.ok === false) throw new Error(d.error || `send failed (${r.status})`);
+      setDraftOpen(false); setDraftData(null);
+      setSentNote('Sent as you, on the same thread.'); setHeldNote('');
+      setTimeout(() => { reload(); }, 800);
+    } catch (err) {
+      say(`Send failed: ${String(err.message || err).slice(0, 120)}. Nothing went out — try again.`);
+      if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+    }
+  }, [openedEmail, suggest, reload]);
+
+  const threadActions = useMemo(() => ({
+    closeThread: () => { setOpenedEmail(null); setDraftOpen(false); },
+    nav: (t) => { setOpenedEmail(null); setDraftOpen(false); onNav?.(t); },
+    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    toggleEarlier: () => setShowEarlier((v) => !v),
+    replyViaElon: () => openDraft(),
+  }), [onNav, onOpenNav, openDraft]);
+  const draftActions = useMemo(() => ({
+    nav: () => { setDraftOpen(false); },
+    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    sendDraft,
+  }), [onOpenNav, sendDraft]);
+
+  if (openedEmail && draftOpen && draftData) {
+    return <TemplateScreen html={draftHtml} data={draftData} actions={draftActions} state="ready"
+      aliases={SUPPORT_THREAD_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
+  }
+  if (openedEmail) {
     return <TemplateScreen html={threadHtml} data={threadData} actions={threadActions} state="ready"
       aliases={SUPPORT_THREAD_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
   }
