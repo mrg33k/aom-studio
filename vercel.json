@@ -53,6 +53,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/services/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/hear",
       "destination": "/hear/index.html"
     },
