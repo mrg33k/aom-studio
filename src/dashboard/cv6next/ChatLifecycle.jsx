@@ -320,7 +320,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
   const richComposer = !!(fullRoom && worldId);
   const libProjectSlug = fullRoom?.isMission ? fullRoom.projectSlug : (fullRoom?.isProject ? fullRoom.id : null);
   const roomKeyForSheet = fullRoom?.id || room?.name;
-  useEffect(() => { setFilesSheetOpen(false); }, [roomKeyForSheet]);
+  // Room switch: close the sheet AND drop any plain-bar draft, so text typed in
+  // one room never reappears when the fallback composer mounts in another
+  // (fresh-eyes review 2026-07-06, finding 4).
+  useEffect(() => { setFilesSheetOpen(false); setDraft(''); }, [roomKeyForSheet]);
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
   const [showJump, setShowJump] = useState(false);
@@ -502,12 +505,13 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
         <>
           {/* The rich composer (CV4 functionality, CV6 look: attach, command menu,
               slash commands, image gen, voice) portals into this host. */}
-          <div className="mcomposer" ref={setMComposerHost} />
+          <div className="mcomposer" ref={setMComposerHost}
+            style={{ background: 'rgba(5,8,11,.9)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }} />
           <Cv6FullComposer target={mComposerHost} room={fullRoom} worldId={worldId} agents={[]}
             quickSend={onSend} onOpenFiles={() => setFilesSheetOpen(true)} />
         </>
       ) : (
-      <div className="mcomposer">
+      <div className="mcomposer" style={{ background: 'rgba(5,8,11,.9)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
         {dictate.supported && (
           <button onClick={dictate.toggle} aria-label={dictate.listening ? 'Stop dictation' : 'Speak your message'}
             title={dictate.listening ? 'Listening… tap to stop' : 'Speak your message'}
