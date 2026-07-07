@@ -251,9 +251,27 @@ export function useOrganize(worldId = 'aom') {
   }, [worldId]);
 
   useEffect(() => {
+    // Visibility-aware polling: pause when the browser tab is hidden so the
+    // 338KB mirror download doesn't run while Patrik is in another tab.
+    // On return to visibility, reload immediately so data is always fresh
+    // when the user looks at it — never stale on tab focus.
     load();
-    const t = setInterval(load, 30000);
-    return () => clearInterval(t);
+    let t = setInterval(load, 30000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        clearInterval(t);
+      } else {
+        load();                          // immediate refresh on return
+        t = setInterval(load, 30000);   // restart the interval
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [load]);
 
   // Lazy content fetch for one file (cached). Called on open. Deduped via a ref
