@@ -80,6 +80,8 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // tick) + the design popover composer/viewer rendered outside the template DOM.
   const viewerRef = useRef(null);
   const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef: viewerRef, pins, addPin, deletePin });
+  // ── WD40-R1: keyboard nav — ref holds live state, single listener never re-registers ──
+  const kbNavRef = useRef({});
 
   // ── R-TREE-MENU: right-click / long-press on the queue tree → Rename / Move ──
   // Tree node ids: 'p:<projectSlug>' or 'm:<missionLeaf>' (missions render only
@@ -250,6 +252,43 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     assignAgent: (id) => onAssignDeliverable?.(id, assignExtra()),
   };
 
+  // Keyboard nav: update ref every render so the single listener always reads live state.
+  // j / ArrowDown = next · k / ArrowUp = prev · a = approve + auto-advance.
+  kbNavRef.current = {
+    pickedId,
+    items: desktopData.queue.items,
+    advance: (id) => { setPickedId(id); actions.openDeliverable(id); },
+    approve: (id) => actions.approve(id),
+    changesOpen,
+  };
+  useEffect(() => {
+    const handler = (e) => {
+      const { pickedId: pid, items, advance, approve: approveFn, changesOpen: co } = kbNavRef.current;
+      if (co) return;
+      const el = document.activeElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const idx = pid ? items.findIndex((i) => i.id === pid) : -1;
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = items[idx + 1];
+        if (next) advance(next.id);
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (idx > 0) advance(items[idx - 1].id);
+      } else if (e.key === 'a') {
+        // 'a' approves and optimistically advances; the queue refresh removes the item in the background.
+        e.preventDefault();
+        if (!pid) return;
+        const next = items[idx + 1];
+        approveFn(pid);
+        if (next) advance(next.id);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div ref={viewerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
@@ -262,6 +301,25 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
           onSendBack={sendBackToAgent}
           onClose={() => setChangesOpen(false)}
         />
+      )}
+      {/* WD40-R1: keyboard hint pill — pointer-events:none so it never blocks content */}
+      {pickedId && (
+        <div style={{
+          position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+          pointerEvents: 'none', display: 'flex', gap: 20,
+          background: 'rgba(5,8,11,0.72)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20,
+          padding: '5px 18px', fontSize: 11,
+          color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--font-mono,ui-monospace,monospace)',
+          zIndex: 40, letterSpacing: 0.3, whiteSpace: 'nowrap', userSelect: 'none',
+        }}>
+          {[['j', 'next'], ['k', 'prev'], ['a', 'approve']].map(([key, label]) => (
+            <span key={key}>
+              <span style={{ color: 'rgba(255,255,255,0.62)', fontWeight: 700 }}>{key}</span>
+              {' '}{label}
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );
