@@ -49,6 +49,7 @@ export function useLiveScribe(worldId = 'aom') {
   const [actionItems, setActionItems] = useState([]);
   const [decisions, setDecisions] = useState([]);
   const [notice, setNotice] = useState(''); // one-line status for save/send feedback
+  const [errorName, setErrorName] = useState(''); // the real getUserMedia error name (for the error card's code line)
 
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -102,6 +103,7 @@ export function useLiveScribe(worldId = 'aom') {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') return;
     try {
       setNotice('');
+      setErrorName('');
       setPhase('starting');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -160,9 +162,19 @@ export function useLiveScribe(worldId = 'aom') {
     } catch (err) {
       console.error('[useLiveScribe] recording error:', err);
       setPhase('error');
-      setNotice(err && err.name === 'NotAllowedError'
-        ? 'Microphone blocked — allow mic access in the browser and try again'
-        : 'Could not start the microphone');
+      // The copy names the ACTUAL cause (Finder DEF-10: "check your connection" on a
+      // NotFoundError sends the user to fix the wrong thing). getUserMedia error names:
+      const name = (err && err.name) || '';
+      setNotice(
+        name === 'NotAllowedError' || name === 'PermissionDeniedError'
+          ? 'Microphone blocked — allow mic access in the browser and try again.'
+          : name === 'NotFoundError' || name === 'DevicesNotFoundError'
+            ? 'No microphone found — plug one in or pick an input in your sound settings, then try again.'
+            : name === 'NotReadableError' || name === 'TrackStartError'
+              ? 'The microphone is busy in another app — close it and try again.'
+              : 'Could not start the microphone.'
+      );
+      setErrorName(name || 'unknown');
     }
   }, [worldId, extractNow]);
 
@@ -263,6 +275,13 @@ export function useLiveScribe(worldId = 'aom') {
       : (turns.length ? 'ready' : 'empty');
 
   const data = {
+    // The error branch binds the REAL cause (never the sample "check your connection").
+    errorNote: notice || 'Recording not available.',
+    error: {
+      title: 'Recording not available',
+      body: notice || 'Could not start the microphone.',
+      code: 'mic · ' + (errorName || 'error'),
+    },
     session: {
       elapsed: formatTime(elapsed),
       target: 'Meeting',
