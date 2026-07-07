@@ -69,7 +69,8 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
   transform-origin:32% 52%;will-change:transform;color:#fff;
 }
 .wm svg{display:block;height:clamp(13rem,44vh,29rem);width:auto}
-#goldLayer .wm svg{visibility:hidden}
+/* faint ivory floor so the glyph never sinks into a dark footage frame */
+#goldLayer .wm svg{color:#F6F6F4;opacity:.07}
 .wm .dot{
   display:inline-block;width:clamp(1.1rem,3vw,2.4rem);height:clamp(1.1rem,3vw,2.4rem);
   margin-left:clamp(.6rem,1.6vw,1.4rem);background:#fff;
