@@ -78,7 +78,7 @@
     <!-- preview: header bar (file name + actions) over a scrolling body. The body
          switches shells on preview.mode — text reads on the paper card, video/image
          render full-width on the dark ground. -->
-    <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;flex-direction:column;overflow:hidden;" data-state="ready">
+    <div style="flex:1;min-width:0;background:var(--surface);display:flex;flex-direction:column;overflow:hidden;" data-state="ready">
       <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--divider);">
         <span style="flex:1;min-width:0;font-family:var(--font-mono);font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="preview.fileName">dashboard-port-plan.md</span>
         <button class="assign is-quiet" data-action="assignAgent" data-arg="viewFile.id" style="flex:none;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Assign to agent</button>
