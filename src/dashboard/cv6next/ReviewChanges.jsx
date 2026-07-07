@@ -86,9 +86,9 @@ export function ReviewChangesOverlay({ pins = [], title = '', onSendBack = () =>
     <div style={{ marginBottom: 14, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: isMobile ? 16 : 14, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>
-          {pinCount > 0 || hasTyped
+          {pinCount > 0
             ? `Changes · ${pinCount} ${pinCount === 1 ? 'pin' : 'pins'}${hasTyped ? ' + note' : ''}`
-            : 'Request changes'}
+            : hasTyped ? 'Changes · note added' : 'Request changes'}
         </div>
         <div style={{ fontSize: isMobile ? 13 : 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
       </div>
