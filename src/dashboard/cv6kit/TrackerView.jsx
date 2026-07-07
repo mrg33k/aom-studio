@@ -334,7 +334,7 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
       {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
       <CvgMobileHeader
         title={tracker.name || 'Tracker'}
-        sub={[tracker.projectName, `${open} open`].filter(Boolean).join(' · ')}
+        sub={[tracker.projectName, open > 0 ? `${open} open` : null].filter(Boolean).join(' · ')}
         onBack={onBack}
         onSearch={onSearch}
         onMenu={onMenu}
@@ -416,13 +416,13 @@ export function NewIssueView({ onSubmit, onBack }) {
         {/* Title field */}
         <div style={{ marginBottom: 18 }}>
           <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 6 }} className="eyebrow">Title</label>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Brief description of the issue" style={{ width: '100%', height: 44, padding: '10px 12px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box' }} />
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Brief description of the issue" style={{ width: '100%', height: 44, padding: '10px 12px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box', outline: 'none' }} />
         </div>
 
         {/* Description field */}
         <div style={{ marginBottom: 18 }}>
           <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 6 }} className="eyebrow">Description</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="More details about what's broken or needed" style={{ width: '100%', minHeight: 100, padding: '10px 12px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box', resize: 'none' }} />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="More details about what's broken or needed" style={{ width: '100%', minHeight: 100, padding: '10px 12px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box', resize: 'none', outline: 'none' }} />
         </div>
 
         {/* Priority selector */}

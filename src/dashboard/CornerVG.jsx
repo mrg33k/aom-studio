@@ -237,6 +237,26 @@ export default function CornerVG() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+  // corner:corner-ui-cv6 BUG1-fix — ?view=<key> deep-link support. Reads the URL param
+  // once on mount, routes to the matching surface, then strips the param so the address
+  // bar stays clean. All state setters are stable refs — empty deps is intentional.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const v = new URLSearchParams(window.location.search).get('view')
+    if (!v) return
+    const VALID = new Set(['home', 'chat', 'organize', 'review', 'tracker', 'command', 'scribe', 'onboarding', 'support', 'search'])
+    if (!VALID.has(v)) return
+    if (v === 'home') { setActiveTool(null); setShowSupportInbox(false) }
+    else if (v === 'support') { setShowSupportInbox(true) }
+    else if (v === 'search') { setSearchOpen(true) }
+    else { setActiveTool(v); setShowSupportInbox(false) }
+    try {
+      const u = new URL(window.location.href)
+      u.searchParams.delete('view')
+      window.history.replaceState({}, '', u.toString())
+    } catch { /* noop */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [selectedMail, setSelectedMail] = useState(null)
   // corner:support N1 — Support Inbox view (Patrik workspace only)
   // ?support=1 deep-links straight to the Support dashboard (verify-at URL for

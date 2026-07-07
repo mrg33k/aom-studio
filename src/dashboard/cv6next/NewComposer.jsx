@@ -33,7 +33,7 @@ const NEW_COMPOSER_HTML = `
   <style>
     .cmp-card .cmp-field{display:flex;flex-direction:column;gap:8px;}
     .cmp-card .cmp-flab{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
-    .cmp-card .cmp-inp{border:1px solid var(--hair);background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--fg);font-family:var(--font-sans);width:100%;box-sizing:border-box;}
+    .cmp-card .cmp-inp{border:1px solid var(--hair);background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--fg);font-family:var(--font-sans);width:100%;box-sizing:border-box;outline:none;}
     .cmp-card textarea.cmp-inp{resize:none;line-height:1.5;}
     .cmp-card .cmp-inp::placeholder{color:var(--faint);}
     .cmp-card .cmp-seg{display:flex;gap:7px;flex-wrap:wrap;}

@@ -453,9 +453,14 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           const missionRecency = {}
           // Preview text rides with recency (Home resting digest, loop R5): the room's last
           // message, whitespace-collapsed. Structured payloads (raw JSON) never preview.
+          // ARTIFACT_GUARD — skip QA/screenshot paths, round-labelled filenames (r7-*),
+          // census-*, *-shot-* captures, *-critique-* slugs, and dotfiles so agent
+          // housekeeping noise never surfaces in "pick up where you left off".
+          const ARTIFACT_RE = /^(?:qa\/|screenshots?\/|r\d+[-.]|census-|\.)|([-_]shot[-_]|[-_]critique[-_])/i
           const previewOf = (m) => {
             const t = String(m.text || '').replace(/\s+/g, ' ').trim()
             if (!t || t.startsWith('{') || t.startsWith('[')) return ''
+            if (ARTIFACT_RE.test(t)) return ''
             return t.slice(0, 160)
           }
           for (const m of (data.messages || [])) {

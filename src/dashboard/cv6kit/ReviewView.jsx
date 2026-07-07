@@ -255,7 +255,7 @@ export function ReviewView({
             <div style={{ padding: '18px 20px 12px', flex: 'none' }}>
               <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Queue</div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>
-                {queueSummary.readyCount || queueItems.length} ready · {queueSummary.pipelineCount || 0} in pipeline
+                {queueSummary.readyCount || queueItems.length} ready{queueSummary.pipelineCount > 0 ? ` · ${queueSummary.pipelineCount} in pipeline` : null}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 7, padding: '0 20px 14px', flex: 'none' }}>
@@ -494,7 +494,7 @@ export function ReviewView({
             <div style={{ padding: '18px 20px 12px' }}>
               <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Queue</div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>
-                {queueSummary.readyCount || queueItems.length} ready · {queueSummary.pipelineCount || 0} in pipeline
+                {queueSummary.readyCount || queueItems.length} ready{queueSummary.pipelineCount > 0 ? ` · ${queueSummary.pipelineCount} in pipeline` : null}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 7, padding: '0 20px 14px' }}>
