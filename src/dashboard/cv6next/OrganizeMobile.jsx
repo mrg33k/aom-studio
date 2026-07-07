@@ -20,7 +20,7 @@ import statesRaw from './templates/states-extra.html?raw';
 // data-each item aliases the engine can't derive (tree→node, breadcrumb→crumb, etc.).
 const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission', sorts: 'sort' };
 
-const SCREEN_BG = '#05080b';
+const SCREEN_BG = 'var(--ground, #05080b)';
 
 function screenByLabel(doc, label) {
   return [...doc.querySelectorAll('[data-cv6][data-screen]')].find((n) => n.getAttribute('data-screen-label') === label) || null;

@@ -21,7 +21,7 @@ function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
   // pick-list], and callers pass pick=1 (read) / pick=2 (pick-list).
   const screen = nodes[pick] || [...nodes].find((n) => n.getAttribute('data-screen') === 'review-mobile');
   if (!screen) return '';
-  screen.setAttribute('style', 'position:relative;width:100%;height:100%;background:#05080b;overflow:hidden');
+  screen.setAttribute('style', 'position:relative;width:100%;height:100%;background:var(--ground, #05080b);overflow:hidden');
   const body = screen.querySelector('[data-state="ready"]');
   if (body) {
     body.setAttribute('style', `${body.getAttribute('style') || ''};overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(20px, env(safe-area-inset-bottom, 0px))`);
