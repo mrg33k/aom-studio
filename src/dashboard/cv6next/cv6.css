@@ -46,6 +46,8 @@
   --accent: var(--blue-500);
   --accent-weak: rgba(59,130,246,.16);
   --warn: var(--amber-400);
+  --error: #F87171;
+  --error-weak: rgba(248,113,113,.16);
   --success: var(--green-500);
   --success-weak: rgba(52,211,153,.16);
 
@@ -71,6 +73,8 @@
   --accent: #3B82F6;
   --accent-weak: rgba(59,130,246,.16);
   --warn: #FBBF24;
+  --error: #F87171;
+  --error-weak: rgba(248,113,113,.16);
   --success: #34D399;
   --success-weak: rgba(52,211,153,.16);
   --avatar: linear-gradient(135deg, #3B82F6, #1D4ED8); 
@@ -89,6 +93,8 @@
   --accent: #0066FF;
   --accent-weak: rgba(0,102,255,.1);
   --warn: #B45309;
+  --error: #DC2626;
+  --error-weak: rgba(220,38,38,.12);
   --success: #10B981;
   --success-weak: rgba(16,185,129,.12);
   --avatar: linear-gradient(135deg, #0066FF, #003D99); 
@@ -112,6 +118,8 @@
   --accent: #5B9BFF;
   --accent-weak: rgba(91,155,255,.22);
   --warn: #FBBF24;
+  --error: #F87171;
+  --error-weak: rgba(248,113,113,.16);
   --success: #46E0A8;
   --success-weak: rgba(70,224,168,.16);
   --avatar: linear-gradient(135deg, #5B9BFF, #2563EB); 
@@ -265,7 +273,7 @@
 
 /* shared activity-dock badge + icon tint (is-:job.kind) — used by Command */
 [data-cv6] .ad-badge { font-size:10px; font-weight:700; padding:3px 7px; border-radius:7px; flex:none; background:var(--chip); color:var(--muted); }
-[data-cv6] .ad-badge.is-rec    { color:#F87171;        background:rgba(248,113,113,.16); }
+[data-cv6] .ad-badge.is-rec    { color:var(--error);   background:var(--error-weak); }
 [data-cv6] .ad-badge.is-agent  { color:var(--accent);  background:var(--accent-weak); }
 [data-cv6] .ad-badge.is-build  { color:var(--violet-400); background:rgba(139,124,246,.16); }
 [data-cv6] .ad-badge.is-review { color:var(--success); background:var(--success-weak); }
@@ -827,6 +835,8 @@
   --accent: #0066FF;
   --accent-weak: rgba(0,102,255,.1);
   --warn: #B45309;
+  --error: #DC2626;
+  --error-weak: rgba(220,38,38,.12);
   --success: #10B981;
   --success-weak: rgba(16,185,129,.12);
   --avatar: linear-gradient(135deg, #0066FF, #003D99);
@@ -849,6 +859,8 @@
   --accent: #5B9BFF;
   --accent-weak: rgba(91,155,255,.22);
   --warn: #FBBF24;
+  --error: #F87171;
+  --error-weak: rgba(248,113,113,.16);
   --success: #46E0A8;
   --success-weak: rgba(70,224,168,.16);
   --avatar: linear-gradient(135deg, #5B9BFF, #2563EB);

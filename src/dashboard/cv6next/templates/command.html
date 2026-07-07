@@ -45,7 +45,7 @@
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span class="eyebrow">Background activity</span><span class="mono" style="font-size:11px;color:var(--faint);"><span data-bind="activity.count">4</span> running</span><span style="margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);" data-action="manageActivity">Manage</span></div>
         <div class="actrail">
           <!-- ONE dock card per running job; is-:job.kind drives the icon tile + badge -->
-          <div class="actdock" style="width:288px;flex:none;" data-each="activity.jobs" data-action="openJob" data-arg="job.id"><span class="ad-ico is-rec" data-mod="is-:job.kind"><span class="rec" style="width:10px;height:10px;border-radius:50%;background:#F87171;animation:recPulse 1.4s infinite;flex:none;"></span></span><div class="ad-body"><div class="ad-title" data-bind="job.title">Live Scribe · recording</div><div class="ad-sub" data-bind="job.sub">Corner · Dashboard · 08:42</div></div><span class="ad-badge is-rec" data-mod="is-:job.kind" data-bind="job.badge">REC</span></div>
+          <div class="actdock" style="width:288px;flex:none;" data-each="activity.jobs" data-action="openJob" data-arg="job.id"><span class="ad-ico is-rec" data-mod="is-:job.kind"><span class="rec" style="width:10px;height:10px;border-radius:50%;background:var(--error);animation:recPulse 1.4s infinite;flex:none;"></span></span><div class="ad-body"><div class="ad-title" data-bind="job.title">Live Scribe · recording</div><div class="ad-sub" data-bind="job.sub">Corner · Dashboard · 08:42</div></div><span class="ad-badge is-rec" data-mod="is-:job.kind" data-bind="job.badge">REC</span></div>
         </div>
       </div>
       <div style="padding:14px 24px 0;flex:1;min-height:0;overflow-y:auto;">
@@ -95,7 +95,7 @@
       <div style="display:flex;align-items:center;gap:8px;padding:0 16px;margin-bottom:10px;"><span class="eyebrow">Background activity</span><span class="mono" style="font-size:10.5px;color:var(--faint);"><span data-bind="activity.count">4</span> running</span></div>
       <div class="actrail" style="padding:0 16px;">
         <!-- ONE dock card per running job -->
-        <div class="actdock" style="width:248px;flex:none;" data-each="activity.jobs" data-action="openJob" data-arg="job.id"><span class="ad-ico is-rec" data-mod="is-:job.kind"><span class="rec" style="width:10px;height:10px;border-radius:50%;background:#F87171;animation:recPulse 1.4s infinite;flex:none;"></span></span><div class="ad-body"><div class="ad-title" data-bind="job.shortTitle">Recording</div><div class="ad-sub" data-bind="job.sub">Corner · Dashboard · 08:42</div></div><span class="ad-badge is-rec" data-mod="is-:job.kind" data-bind="job.badge">REC</span></div>
+        <div class="actdock" style="width:248px;flex:none;" data-each="activity.jobs" data-action="openJob" data-arg="job.id"><span class="ad-ico is-rec" data-mod="is-:job.kind"><span class="rec" style="width:10px;height:10px;border-radius:50%;background:var(--error);animation:recPulse 1.4s infinite;flex:none;"></span></span><div class="ad-body"><div class="ad-title" data-bind="job.shortTitle">Recording</div><div class="ad-sub" data-bind="job.sub">Corner · Dashboard · 08:42</div></div><span class="ad-badge is-rec" data-mod="is-:job.kind" data-bind="job.badge">REC</span></div>
       </div>
     </div>
     <div style="padding:8px 16px 16px;">
