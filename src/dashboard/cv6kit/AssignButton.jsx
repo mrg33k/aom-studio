@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { titleForAgent, AGENT_TITLES } from '../cv6next/data/agentTitles.js';
 import { authFetch } from '../lib/authFetch';
 
@@ -48,6 +48,8 @@ function AgentPickerPopover({
   agents = [],
   artifactTitle = '',
   isLoading = false,
+  isError = false,
+  onRetry = () => {},
   onSelectAgent = () => {},
   onClose = () => {},
   isQuiet = false,
@@ -108,6 +110,16 @@ function AgentPickerPopover({
           {isLoading ? (
             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
               Loading agents…
+            </div>
+          ) : isError ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
+              <div style={{ marginBottom: 12, fontSize: 13 }}>Couldn&rsquo;t load agents.</div>
+              <button
+                onClick={onRetry}
+                style={{ padding: '8px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 10, color: 'var(--fg)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+              >
+                Retry
+              </button>
             </div>
           ) : agents.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
@@ -262,6 +274,16 @@ function AgentPickerPopover({
         {isLoading ? (
           <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
             Loading agents…
+          </div>
+        ) : isError ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
+            <div style={{ marginBottom: 12, fontSize: 14 }}>Couldn&rsquo;t load agents.</div>
+            <button
+              onClick={onRetry}
+              style={{ padding: '10px 18px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 10, color: 'var(--fg)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+            >
+              Retry
+            </button>
           </div>
         ) : agents.length === 0 ? (
           <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
@@ -581,35 +603,62 @@ export function AssignButton({
   disabled = false,
 }) {
   const label = artifactTitle || title || '(untitled)';
+  const hasProvidedAgents = Array.isArray(agents) && agents.length > 0;
   const [showPicker, setShowPicker] = useState(autoOpen);
   const [selectedAgent, setSelectedAgent] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Roster load lifecycle: 'idle' | 'loading' | 'ready' | 'error'.
+  const [status, setStatus] = useState(hasProvidedAgents ? 'ready' : 'idle');
+  const [retryNonce, setRetryNonce] = useState(0);
   const [isDispatching, setIsDispatching] = useState(false);
-  const [agentList, setAgentList] = useState(agents);
+  const [agentList, setAgentList] = useState(hasProvidedAgents ? agents : []);
+  // Guards a single in-flight roster fetch — no concurrent fetches, ever.
+  const fetchGuard = useRef(false);
 
-  // Fetch agents whenever the picker is open and none were passed in. Source is
-  // /api/dashboard/supabase-status (the agent_status roster) — the SAME source that
-  // renders Home's agent rooms, so if Home shows agents, this picker shows agents.
-  // (The old source, /active-agents, read the active_processes table, which does not
-  // exist in production — the list was permanently empty.) A hard timeout means the
-  // list can never get stuck on "Loading agents…" if the endpoint hangs — it degrades
-  // to the honest "No agents available" state.
+  // Load the agent roster when the picker opens and the caller didn't hand one in.
+  // Source is /api/dashboard/supabase-status (the agent_status roster) — the SAME
+  // source Home's agent rooms use. (The old /active-agents source read active_processes,
+  // which does not exist in production, so the list was permanently empty.)
+  //
+  // Deps are STABLE PRIMITIVES ONLY (showPicker, worldId, retryNonce). The previous
+  // version listed the `agents` prop, whose default value `[]` is a fresh array on every
+  // render — so the effect re-ran every render, its cleanup aborted the in-flight fetch
+  // (AbortError), and the fetch's own setState re-rendered → an unbounded abort/retry
+  // loop that spun the CPU. A single-flight guard + bounded retries replace that.
   useEffect(() => {
-    if (agents.length > 0 || showPicker === false) return undefined;
+    if (!showPicker) return undefined;
 
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
-    setIsLoading(true);
-    authFetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(worldId || 'aom')}`, { signal: ctrl.signal })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
-      .then((data) => {
+    // Caller supplied a roster — use it, never fetch.
+    if (hasProvidedAgents) {
+      setAgentList(agents);
+      setStatus('ready');
+      return undefined;
+    }
+
+    // Single in-flight fetch: if one is already running, do nothing.
+    if (fetchGuard.current) return undefined;
+    fetchGuard.current = true;
+
+    let cancelled = false;
+    let activeCtrl = null;
+    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+    const attemptOnce = async () => {
+      const ctrl = new AbortController();
+      activeCtrl = ctrl;
+      const timer = setTimeout(() => ctrl.abort(), 6000); // 6s per-attempt ceiling
+      try {
+        const r = await authFetch(
+          `/api/dashboard/supabase-status?client=${encodeURIComponent(worldId || 'aom')}`,
+          { signal: ctrl.signal },
+        );
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
         const roster = Array.isArray(data.agents) ? data.agents : [];
-        // Curate to the titled working roster (same doctrine as Home: agents render as
-        // role titles). Unknown slugs only show when a world has NO titled agents at
-        // all (external worlds with their own roster).
+        // Curate to the titled working roster (same doctrine as Home). Unknown slugs
+        // only show when a world has NO titled agents at all.
         const order = Object.keys(AGENT_TITLES);
         const titled = roster.filter((a) => AGENT_TITLES[String(a.slug || '').toLowerCase()]);
-        const list = (titled.length ? titled : roster)
+        return (titled.length ? titled : roster)
           .map((a) => ({
             slug: a.slug,
             status: String(a.status || '').toLowerCase() === 'working' ? 'live' : 'ready',
@@ -618,15 +667,44 @@ export function AssignButton({
             const ix = order.indexOf(x.slug); const iy = order.indexOf(y.slug);
             return (ix === -1 ? 99 : ix) - (iy === -1 ? 99 : iy);
           });
-        setAgentList(list);
-      })
-      .catch((err) => {
-        console.error('[AssignButton] failed to fetch agent roster:', err);
-        setAgentList([]);
-      })
-      .finally(() => { clearTimeout(timer); setIsLoading(false); });
-    return () => { clearTimeout(timer); ctrl.abort(); };
-  }, [showPicker, agents, worldId]);
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+
+    const run = async () => {
+      setStatus('loading');
+      const MAX_ATTEMPTS = 3; // total attempts, not per-render
+      let lastErr = null;
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        if (cancelled) return;
+        try {
+          const list = await attemptOnce();
+          if (cancelled) return;
+          setAgentList(list);
+          setStatus('ready');
+          return;
+        } catch (err) {
+          lastErr = err;
+          if (cancelled) return;
+          if (attempt < MAX_ATTEMPTS) await sleep(400 * attempt); // 400ms, 800ms backoff
+        }
+      }
+      if (cancelled) return;
+      console.error('[AssignButton] agent roster failed after retries:', lastErr);
+      setAgentList([]);
+      setStatus('error'); // honest error state with a manual Retry — no spinner loop
+    };
+
+    run().finally(() => { fetchGuard.current = false; });
+
+    return () => {
+      cancelled = true;
+      fetchGuard.current = false;
+      if (activeCtrl) activeCtrl.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPicker, worldId, retryNonce]);
 
   // Closing the picker without a pick dismisses the whole overlay.
   const closePicker = () => { setShowPicker(false); onClose(); };
@@ -739,7 +817,9 @@ export function AssignButton({
         <AgentPickerPopover
           agents={agentList}
           artifactTitle={label}
-          isLoading={isLoading}
+          isLoading={status === 'loading'}
+          isError={status === 'error'}
+          onRetry={() => setRetryNonce((n) => n + 1)}
           onSelectAgent={handleSelectAgent}
           onClose={closePicker}
           isQuiet={isQuiet}
