@@ -126,6 +126,11 @@ const CSS = `
 .r17 .hero-stage::after { content:''; position:absolute; inset:0; border-radius:inherit; box-shadow:inset 0 0 0 1px rgba(255,255,255,.1); pointer-events:none; }
 .r17 .hero-note { display:flex; justify-content:space-between; width:min(1080px,100%); margin-top:.9rem; font-family:var(--mono); font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); }
 @media(max-width:640px){ .r17 .hero-note span:last-child { display:none; } }
+@media(max-width:820px){
+  /* fill the phone viewport — the film IS the centerpiece, don't let it shrink to a strip */
+  .r17 .hero { justify-content:center; gap:0; }
+  .r17 .hero-stage { aspect-ratio:3/4; max-height:54vh; }
+}
 .r17 .hero-h { text-align:center; font-size:clamp(2.1rem,4.6vw,3.9rem); margin-top:clamp(2rem,5vh,3.5rem); }
 .r17 .hero-h .row { display:block; }
 .r17 .hero-link { display:inline-flex; align-items:center; gap:.8rem; margin-top:1.9rem; font-family:var(--mono); font-size:.8rem; letter-spacing:.1em; color:var(--paper); }
@@ -152,9 +157,9 @@ const CSS = `
 .r17 .mission-grid { display:grid; grid-template-columns:1fr minmax(0,44ch); gap:3rem; max-width:1080px; margin-inline:auto; align-items:start; }
 @media(max-width:760px){ .r17 .mission-grid { grid-template-columns:1fr; } }
 .r17 .mission-col p { font-size:1.02rem; line-height:1.85; color:var(--ink-mut); }
-.r17 .mission-col p + p { margin-top:1.5rem; }
+.r17 .mission-col > div + div { margin-top:1.5rem; } /* paragraphs sit inside Fade wrapper divs */
 .r17 .mission-col b { font-weight:500; color:var(--ink); }
-.r17 .mission-pull { font-size:clamp(1.4rem,2.4vw,1.9rem); font-weight:400; letter-spacing:-.02em; line-height:1.35; color:var(--ink) !important; }
+.r17 .mission-col p.mission-pull { font-size:clamp(1.4rem,2.4vw,1.9rem); font-weight:400; letter-spacing:-.02em; line-height:1.45; color:var(--ink); }
 .r17 .mission-pull em { font-style:normal; color:var(--gold-deep); }
 
 /* ─── STACK — two dark offer cards under mono label ─── */
@@ -479,7 +484,7 @@ export default function HomeR6Taste() {
                 <p className="mission-pull">We're a <em>storytelling company</em> — we just happen to make videos and web apps often<span className="sq" style={{ background: 'var(--gold-deep)' }} /></p>
               </Fade>
               <Fade delay={0.2}>
-                <p style={{ marginTop: '1.75rem' }}><b>"A billboard does no good in your basement."</b></p>
+                <p><b>"A billboard does no good in your basement."</b></p>
               </Fade>
               <Fade delay={0.3}>
                 <p>A website or a video is the same — it doesn't help if you don't have a strategy to get it out. That's where we come in.</p>
