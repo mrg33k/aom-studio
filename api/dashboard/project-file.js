@@ -239,18 +239,46 @@ export default async function handler(req, res) {
   const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
   if (rawMode) {
+    // Parse Range header for HTTP 206 support (critical for mobile video playback).
+    // Mobile browsers use Range requests to progressively buffer video. Without this,
+    // the player downloads the entire file, causing choppy playback over slow connections.
+    const rangeHeader = req.headers.range;
+
     try {
       const ragUrl = `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(normPath)}`;
       const ragRes = await fetch(ragUrl, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
       if (ragRes.ok) {
         const buf = Buffer.from(await ragRes.arrayBuffer());
+        const totalSize = buf.length;
         const upstreamType = ragRes.headers.get('content-type') || mime;
         const upstreamLM = ragRes.headers.get('last-modified');
+
+        // Parse Range header (e.g., "bytes=0-1023" or "bytes=1024-")
+        if (rangeHeader && rangeHeader.startsWith('bytes=')) {
+          const rangeParts = rangeHeader.slice(6).split('-');
+          const start = parseInt(rangeParts[0], 10) || 0;
+          const end = rangeParts[1] ? parseInt(rangeParts[1], 10) : totalSize - 1;
+
+          if (start >= 0 && end < totalSize && start <= end) {
+            const chunkSize = end - start + 1;
+            res.setHeader('Content-Type', upstreamType);
+            res.setHeader('Content-Length', String(chunkSize));
+            res.setHeader('Content-Range', `bytes ${start}-${end}/${totalSize}`);
+            res.setHeader('Accept-Ranges', 'bytes');
+            res.setHeader('Cache-Control', 'private, max-age=30');
+            res.setHeader('Content-Disposition', `inline; filename="${leafName.replace(/[\"]/g, '')}"`);
+            if (upstreamLM) res.setHeader('Last-Modified', upstreamLM);
+            return res.status(206).send(buf.slice(start, end + 1));
+          }
+        }
+
+        // No range or invalid range: send full file with Accept-Ranges header
         res.setHeader('Content-Type', upstreamType);
-        res.setHeader('Content-Length', String(buf.length));
-        if (upstreamLM) res.setHeader('Last-Modified', upstreamLM);
+        res.setHeader('Content-Length', String(totalSize));
+        res.setHeader('Accept-Ranges', 'bytes');
         res.setHeader('Cache-Control', 'private, max-age=30');
         res.setHeader('Content-Disposition', `inline; filename="${leafName.replace(/[\"]/g, '')}"`);
+        if (upstreamLM) res.setHeader('Last-Modified', upstreamLM);
         return res.status(200).send(buf);
       }
     } catch (err) {
@@ -265,11 +293,34 @@ export default async function handler(req, res) {
     } catch {
       return res.status(404).json({ error: 'Not found' });
     }
+
+    // Support Range requests on local disk too
+    const totalSize = buf.length;
+    if (rangeHeader && rangeHeader.startsWith('bytes=')) {
+      const rangeParts = rangeHeader.slice(6).split('-');
+      const start = parseInt(rangeParts[0], 10) || 0;
+      const end = rangeParts[1] ? parseInt(rangeParts[1], 10) : totalSize - 1;
+
+      if (start >= 0 && end < totalSize && start <= end) {
+        const chunkSize = end - start + 1;
+        res.setHeader('Content-Type', mime);
+        res.setHeader('Content-Length', String(chunkSize));
+        res.setHeader('Content-Range', `bytes ${start}-${end}/${totalSize}`);
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'private, max-age=30');
+        res.setHeader('Content-Disposition', `inline; filename="${leafName.replace(/[\"]/g, '')}"`);
+        res.setHeader('Last-Modified', new Date(st.mtime).toUTCString());
+        return res.status(206).send(buf.slice(start, end + 1));
+      }
+    }
+
+    // No range or invalid range: send full file with Accept-Ranges header
     res.setHeader('Content-Type', mime);
-    res.setHeader('Content-Length', String(buf.length));
-    res.setHeader('Last-Modified', new Date(st.mtime).toUTCString());
+    res.setHeader('Content-Length', String(totalSize));
+    res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Cache-Control', 'private, max-age=30');
     res.setHeader('Content-Disposition', `inline; filename="${leafName.replace(/[\"]/g, '')}"`);
+    res.setHeader('Last-Modified', new Date(st.mtime).toUTCString());
     return res.status(200).send(buf);
   }
 
