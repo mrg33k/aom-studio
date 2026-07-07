@@ -59,8 +59,9 @@
         <button class="ochip is-on" data-each="sorts" data-action="setSort" data-arg="sort.id" data-mod="is-:sort.active" style="flex:none;padding:0 11px;"><span data-bind="sort.label">Newest</span></button>
       </div>
       <!-- mission chips: narrow within the project; ONE per mission folder that has
-           files (empty projects render no row); is-on marks the active narrowing -->
-      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px;flex:none;">
+           files (empty projects render no row); is-on marks the active narrowing;
+           single row that scrolls horizontally — many missions stay on one line -->
+      <div style="display:flex;gap:8px;padding:0 20px;overflow-x:auto;scrollbar-width:none;flex:none;">
         <button class="ochip is-on" data-each="missions" data-action="setMission" data-arg="mission.id" data-mod="is-:mission.active" style="flex:none;margin-bottom:10px;"><span data-bind="mission.label">All 12</span></button>
       </div>
       <!-- filter chips: ONE per type WITH files (zero-count chips are dropped by the
@@ -110,8 +111,8 @@
       <input data-org-search data-cv6-keep="org-search-mobile" type="text" placeholder="Find a file…" style="flex:1;min-width:0;height:40px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:0 13px;color:var(--fg);font-size:14px;font-family:var(--font-sans);outline:none;">
       <button class="ochip is-on" data-each="sorts" data-action="setSort" data-arg="sort.id" data-mod="is-:sort.active" style="flex:none;padding:0 11px;"><span data-bind="sort.label">Newest</span></button>
     </div>
-    <!-- mission chips: same narrowing as desktop; row renders empty when the project has no mission folders -->
-    <div style="display:flex;flex-wrap:wrap;gap:7px;">
+    <!-- mission chips: same narrowing as desktop; single row that scrolls horizontally -->
+    <div style="display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;">
       <button class="ochip is-on" data-each="missions" data-action="setMission" data-arg="mission.id" data-mod="is-:mission.active" style="flex:none;margin-bottom:10px;"><span data-bind="mission.label">All 12</span></button>
     </div>
     <!-- filter chips -->
