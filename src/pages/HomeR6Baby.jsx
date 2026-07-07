@@ -159,7 +159,7 @@ const CSS = `
   will-change:opacity;
 }
 .r17 .hz-gold { position:absolute; inset:0; z-index:4; pointer-events:none; display:flex; align-items:center; justify-content:center; }
-.r17 .hz .wm { display:flex; align-items:flex-end; white-space:nowrap; transform-origin:55% 30%; will-change:transform; color:#fff; }
+.r17 .hz .wm { display:flex; align-items:flex-end; white-space:nowrap; transform-origin:55% 30%; color:#fff; }
 .r17 .hz .wm svg { display:block; height:min(68vh,72vw); width:auto; }
 @media(max-width:860px){ .r17 .hz .wm svg { height:min(40vh,74vw); } }
 .r17 .hz-gold .wm { color:#F6F6F4; }
