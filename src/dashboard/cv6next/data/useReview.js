@@ -123,6 +123,15 @@ async function buildDeliverableBody(item) {
     if (!r?.ok) return errDiv(`This file's contents could not be loaded (status ${r?.status || '?'}).`);
     // The store returns the raw file; project-file wraps it as { content }.
     const content = isAbs ? await r.text() : ((await r.json())?.content || '');
+    // Never text-dump binary. If a file slips past typing (mis-stamped, no clean
+    // extension) and its bytes are actually an image/video/etc., the raw content is
+    // full of control chars / a magic-byte header — rendering it as <pre> is the
+    // "all symbols" bug. Sniff for that and offer a download instead of dumping.
+    if (looksBinary(content)) {
+      const b = await blobOf();
+      if (!b.err) return errDiv(`Preview is not available for this file. <a href="${b.url}" download="${escapeHtml(item.title)}" style="color:#0066FF;">Download ${escapeHtml(item.title)}</a>`);
+      return errDiv('Preview is not available for this file type.');
+    }
     if (/\.md$/i.test(path)) {
       try { return marked.parse(content); } catch { /* fall through to pre */ }
     }
@@ -245,6 +254,20 @@ function typeGlyph(type) {
   return glyphs[type] || glyphs.doc;
 }
 
+// True when a string of "text" is really binary bytes (an image/video/etc. that
+// slipped past typing). Checks the first slice for the U+FFFD replacement char, NUL,
+// or a dense run of C0 control chars — text files never carry these, binaries always do.
+function looksBinary(s) {
+  if (!s) return false;
+  const head = s.slice(0, 512);
+  // Bytes off a binary file, once UTF-8-decoded to text, are riddled with the U+FFFD
+  // replacement char and NUL — neither ever appears in a real text/markdown/code file.
+  if (head.includes('\uFFFD') || head.includes('\u0000')) return true;
+  // Plus a C0-control density backstop (tab/newline/CR excluded).
+  const ctrl = (head.match(/[\x01-\x08\x0E-\x1F]/g) || []).length;
+  return ctrl / head.length > 0.05;
+}
+
 // Detect the viewer type key from a filename / mime, for files handed straight in
 // from a chat message (not the queue endpoint, which already typed them).
 // `url` disambiguates a live site: an http(s) address with no recognizable file
@@ -297,7 +320,16 @@ const PAGE_SIZE = 40; // items fetched per server page (initial load + each load
 // Map one raw queue item (from the API) to the shape the templates expect.
 // Extracted so load() and loadMore() share identical mapping logic.
 function mapQueueItem(it, openId) {
-  const typeKey = (it.type && typeof it.type === 'object') ? it.type.key : (it.type || 'doc');
+  const apiKey = (it.type && typeof it.type === 'object') ? it.type.key : (it.type || 'doc');
+  // A deliverable's stored type can be mis-stamped (e.g. a .png filed as 'doc'/'copy'/a
+  // deliverable kind), which sends real media down the text branch of renderBody and
+  // dumps its raw bytes as symbols — the "loads as a Document, all symbols" bug. The
+  // filename extension is authoritative for image/video (the types that break
+  // catastrophically as text); honor it over the stored type, keep the stored type for
+  // everything else.
+  const nameForType = it.name || String(it.id || it.path || '').split('/').pop() || '';
+  const extKey = typeKeyOf(nameForType, it.mime || '', it.id || it.path || '');
+  const typeKey = (extKey === 'image' || extKey === 'video') ? extKey : apiKey;
   return {
     id: it.id || it.path,
     title: it.name || 'Untitled',
