@@ -426,7 +426,7 @@ function BubbleGroup({ group, onSend }) {
         <div className="stack">
           {group.items.map((m, i) => (
             <span key={i} style={{ display: 'contents' }}>
-              {m.text ? <div className="pb-me">{m.text}</div> : null}
+              {m.text ? <div className="pb-me"><ChatMessageRenderer content={m.text} /></div> : null}
               <MsgExtras m={m} onSend={onSend} />
             </span>
           ))}

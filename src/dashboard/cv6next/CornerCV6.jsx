@@ -311,7 +311,7 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awai
               <div className="me" key={gi}>
                 {g.items.map((m, i) => (
                   <span key={i} style={{ display: 'contents' }}>
-                    {m.text ? <div className="pb-me">{m.text}</div> : null}
+                    {m.text ? <div className="pb-me"><ChatMessageRenderer content={m.text} /></div> : null}
                     {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
                   </span>
                 ))}
@@ -373,7 +373,7 @@ function InlineBubbleThread({ messages }) {
         if (g.isUser) {
           return (
             <div className="me" key={gi}>
-              {g.items.map((m, i) => (m.text ? <div className="pb-me" key={i}>{m.text}</div> : null))}
+              {g.items.map((m, i) => (m.text ? <div className="pb-me" key={i}><ChatMessageRenderer content={m.text} /></div> : null))}
               {lastTime ? <div className="ts">{lastTime}</div> : null}
             </div>
           );
