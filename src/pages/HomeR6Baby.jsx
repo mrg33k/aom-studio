@@ -1202,8 +1202,6 @@ export default function HomeR6Baby() {
             <div className="on"><b>Brandon Clarke</b><span>Startup AZ Foundation</span></div>
             <div><b>Sumit Seth</b><span>Naamly SaaS</span></div>
             <div><b>Gio Osso</b><span>Virtu Hospitality Group</span></div>
-            <div><b>James Rodriguez</b><span>Nook Furniture</span></div>
-            <div><b>Sarah Chen</b><span>Noble Real Estate</span></div>
           </div>
         </div>
       </Slide>
