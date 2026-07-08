@@ -3,7 +3,7 @@ import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
 
 // ISA Energy case study: 3-film investor-grade video series
-// Mission: aheadofmarket.com:home (R24 — per-client case-study pages for organic SEO)
+// Mission: aheadofmarket.com:home (R24, per-client case-study pages for organic SEO)
 
 const CSS = `
 .wk-isa {
@@ -163,7 +163,7 @@ export default function WorkISAEnergy() {
           <div className="proof-block">
             <div className="proof-label">What We Made</div>
             <h2 className="proof-title">Three-Film Series</h2>
-            <p>We produced an investor-grade 2:30 brand film alongside demo and validation videos drawn from founder interviews and lab footage. The narrative moves through co-founder journey and ambient energy capture as a devotional technology story — positioning ISA for investor conversations and market positioning.</p>
+            <p>We produced an investor-grade 2:30 brand film alongside demo and validation videos drawn from founder interviews and lab footage. The narrative moves through co-founder journey and ambient energy capture as a devotional technology story, positioning ISA for investor conversations and market positioning.</p>
 
             <div className="video-grid">
               <div className="video-card">
@@ -191,7 +191,7 @@ export default function WorkISAEnergy() {
             <div className="proof-text">
               <div className="proof-label">What Happened</div>
               <h2 className="proof-title">Investor Conversations Opened</h2>
-              <p>The film series became the centerpiece of ISA's investor conversations. The narrative positioning — treating quantum energy capture as a devotional innovation story — resonated with early-stage funders. ISA moved from technical pitch to category narrative, differentiating in market conversations.</p>
+              <p>The film series became the centerpiece of ISA's investor conversations. The narrative positioning, treating quantum energy capture as a devotional innovation story, resonated with early-stage funders. ISA moved from technical pitch to category narrative, differentiating in market conversations.</p>
               <p>Production included two co-founder interviews (82 minutes of raw material), extensive lab b-roll, and a wedding-editorial visual language that positioned the founders' journey as central to the innovation story.</p>
             </div>
           </div>
@@ -202,16 +202,16 @@ export default function WorkISAEnergy() {
               <h2 className="proof-title">What We Delivered</h2>
               <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Brand film production</strong> — 2:30 investor-grade narrative positioning
+                  <strong>Brand film production</strong>: 2:30 investor-grade narrative positioning
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Interview capture & editing</strong> — Co-founder on-camera storytelling
+                  <strong>Interview capture & editing</strong>: Co-founder on-camera storytelling
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Lab & technical b-roll</strong> — Device room and quantum energy capture footage
+                  <strong>Lab & technical b-roll</strong>: Device room and quantum energy capture footage
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Motion graphics & color grade</strong> — Premium finish for investor meetings
+                  <strong>Motion graphics & color grade</strong>: Premium finish for investor meetings
                 </li>
               </ul>
             </div>

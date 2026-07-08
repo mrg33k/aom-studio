@@ -3,7 +3,7 @@ import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
 
 // Ambition Mechanical case study: HVAC marketing with web, ads, and video
-// Mission: aheadofmarket.com:home (R24 — per-client case-study pages for organic SEO)
+// Mission: aheadofmarket.com:home (R24, per-client case-study pages for organic SEO)
 
 const CSS = `
 .wk-amb {
@@ -179,7 +179,7 @@ export default function WorkAmbitionMechanical() {
             <div className="proof-text">
               <div className="proof-label">What Happened</div>
               <h2 className="proof-title">Organic Lead Generation Active</h2>
-              <p>Ambition now ranks for commercial HVAC keywords across Phoenix and captures leads directly from Google search and paid search campaigns. The website serves as their 24/7 salesforce, allowing facility managers and restaurant operators to book emergency service, request quotes, and see proof of work — all without picking up the phone.</p>
+              <p>Ambition now ranks for commercial HVAC keywords across Phoenix and captures leads directly from Google search and paid search campaigns. The website serves as their 24/7 salesforce, allowing facility managers and restaurant operators to book emergency service, request quotes, and see proof of work, all without picking up the phone.</p>
               <p>The brand refresh positioned them as a modern, professional operator (not a generic contractor), while maintaining the trust built over 30 years in the market. Testimonials from major commercial clients (Banner Health, Abrazo Health, Din Tai Fung, and others) establish credibility with new prospects.</p>
             </div>
           </div>
@@ -190,16 +190,16 @@ export default function WorkAmbitionMechanical() {
               <h2 className="proof-title">What We Delivered</h2>
               <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Brand identity & positioning</strong> — Modern refresh maintaining 30-year trust
+                  <strong>Brand identity & positioning</strong>: Modern refresh maintaining 30-year trust
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Website redesign & development</strong> — Lead capture, project portfolio, emergency booking
+                  <strong>Website redesign & development</strong>: Lead capture, project portfolio, emergency booking
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Google Ads campaigns</strong> — Search & performance marketing for commercial leads
+                  <strong>Google Ads campaigns</strong>: Search & performance marketing for commercial leads
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Video content & production</strong> — Brand storytelling and project showcases
+                  <strong>Video content & production</strong>: Brand storytelling and project showcases
                 </li>
               </ul>
             </div>

@@ -3,7 +3,7 @@ import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
 
 // Included Health case study: film series for Client Summit + SME content
-// Mission: aheadofmarket.com:home (R24 — per-client case-study pages for organic SEO)
+// Mission: aheadofmarket.com:home (R24, per-client case-study pages for organic SEO)
 
 const CSS = `
 .wk-ih {
@@ -156,14 +156,14 @@ export default function WorkIncludedHealth() {
             <div className="proof-text">
               <div className="proof-label">The Challenge</div>
               <h2 className="proof-title">Capturing Three Days, Multiple Stories</h2>
-              <p>Included Health runs an annual Client Summit bringing together stakeholders across healthcare, insurance, and technology. They needed to capture three days of keynotes, sessions, and interviews, then deliver edited content for different audiences — executive recaps, team culture highlights, and thought leadership pieces.</p>
+              <p>Included Health runs an annual Client Summit bringing together stakeholders across healthcare, insurance, and technology. They needed to capture three days of keynotes, sessions, and interviews, then deliver edited content for different audiences, executive recaps, team culture highlights, and thought leadership pieces.</p>
             </div>
           </div>
 
           <div className="proof-block">
             <div className="proof-label">What We Made</div>
             <h2 className="proof-title">Multi-Purpose Film Series</h2>
-            <p>We captured three days of on-site coverage — keynotes, breakout sessions, interviews, and b-roll — then delivered a curated film series showing company culture in action and thought leadership from event speakers. We produced two distinct videos: culture pieces featuring team members in white-background interviews, and event recap content capturing the energy and impact of the summit.</p>
+            <p>We captured three days of on-site coverage, keynotes, breakout sessions, interviews, and b-roll, then delivered a curated film series showing company culture in action and thought leadership from event speakers. We produced two distinct videos: culture pieces featuring team members in white-background interviews, and event recap content capturing the energy and impact of the summit.</p>
 
             <div className="video-grid">
               <div className="video-card">
@@ -186,7 +186,7 @@ export default function WorkIncludedHealth() {
               <div className="proof-label">What Happened</div>
               <h2 className="proof-title">Content Platform for Client Engagement</h2>
               <p>The film series became Included Health's centerpiece for post-summit engagement, shared across client communications and team channels. The culture videos showcased employee voices and commitment to healthcare innovation. Event recaps preserved the summit's momentum for stakeholders who couldn't attend in person.</p>
-              <p>The relationship grew into ongoing work — subsequent contracts for thought leadership content, SME interview videos, and quarterly team communications, delivered through Frame.io for seamless client collaboration.</p>
+              <p>The relationship grew into ongoing work, subsequent contracts for thought leadership content, SME interview videos, and quarterly team communications, delivered through Frame.io for seamless client collaboration.</p>
             </div>
           </div>
 
@@ -196,16 +196,16 @@ export default function WorkIncludedHealth() {
               <h2 className="proof-title">What We Delivered</h2>
               <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>3-day on-site coverage</strong> — Keynotes, sessions, interviews, b-roll
+                  <strong>3-day on-site coverage</strong>: Keynotes, sessions, interviews, b-roll
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Culture video production</strong> — Team member interviews & company storytelling
+                  <strong>Culture video production</strong>: Team member interviews & company storytelling
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Event recap editing</strong> — Summit highlights for stakeholder communication
+                  <strong>Event recap editing</strong>: Summit highlights for stakeholder communication
                 </li>
                 <li style={{ marginBottom: '.8rem', paddingBottom: '.8rem', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-                  <strong>Frame.io delivery system</strong> — Seamless client review & collaboration
+                  <strong>Frame.io delivery system</strong>: Seamless client review & collaboration
                 </li>
               </ul>
             </div>
