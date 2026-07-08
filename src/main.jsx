@@ -6,6 +6,7 @@ import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
 import { injectThemeVars } from './dashboard/lib/cv3Colors.js'
 import { SystemToastProvider } from './dashboard/SystemToast.jsx' // R84: mount toasts on the real app entry (/cvg, /dashboard) so create-failure warnings actually render
+import { DataProvider, CommandProvider } from './dashboard/cv6next/providers/DataContext.jsx' // Root-level data + command context for dashboard performance fix
 
 // Bind CSS-variable palettes before first paint so every `C.bg` etc.
 // resolves. The active palette is keyed off <html data-theme>, which
@@ -93,7 +94,10 @@ function DashboardSurface() {
   // Design templates wired to real data). ?cv4=1 escapes to the old CornerV4 surface,
   // which stays untouched as the fallback. CornerVG (the old drifted mess) is retired
   // from the default path.
-  return cv4 ? <CornerV4 /> : <CornerCV6 />
+  // Performance fix: wrap CV6 with DataProvider + CommandProvider for collapsed data polling
+  const content = cv4 ? <CornerV4 /> : <CornerCV6 />
+  if (cv4) return content
+  return <DataProvider><CommandProvider>{content}</CommandProvider></DataProvider>
 }
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
 // components on one page as the design surface for the CV6 redesign.

@@ -13,7 +13,7 @@ import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
-import { useDataPipe } from '../../hooks/useDataPipe';
+import { useDataContext } from '../providers/DataContext.jsx';
 import { curateTitledAgents, titleForAgent } from './agentTitles.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
@@ -250,7 +250,7 @@ export function useHome() {
   }, []);
 
   const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
-  const { agents, projectRooms, inboxItems, missionRooms } = useDataPipe(null, worldId, currentUserSlug);
+  const { agents, projectRooms, inboxItems, missionRooms } = useDataContext();
 
   // Memoize the shaped data so its identity is stable between renders (it only changes
   // when the underlying pipe arrays change). Without this, `data` was a new object every
@@ -316,7 +316,7 @@ export function useChatList() {
     return () => { alive = false; };
   }, []);
   const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
-  const { agents, projectRooms, inboxItems } = useDataPipe(null, worldId, currentUserSlug);
+  const { agents, projectRooms, inboxItems } = useDataContext();
   const shaped = useMemo(() => shapeChatList({ agents, projectRooms, inboxItems }), [agents, projectRooms, inboxItems]);
   // Same DEF-2 null-check fix applied to the chat-list hook.
   const loading = !worldId || (agents == null && projectRooms == null && inboxItems == null);

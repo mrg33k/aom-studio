@@ -34,6 +34,7 @@ import NewComposer from './NewComposer.jsx';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
+import { useCommandContext } from './providers/DataContext.jsx';
 import { titleForAgent } from './data/agentTitles.js';
 import { useDemoBlocksFeed } from './data/useDemoBlocks.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
@@ -1881,13 +1882,10 @@ const COMMAND_ALIASES = {
   'ledger.others': 'room', 'ledger.rooms': 'room', 'room.checklist': 'step',
 };
 function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
-  // The stepped-into row (drives the desktop detail panel + mobile inline expand).
-  const [selectedKey, setSelectedKey] = useState('');
-  // Status filter (wd40 R4b): '' | 'working' | 'blocked' — the header chips toggle it.
-  const [statusFilter, setStatusFilter] = useState('');
-  // Set-goal row visibility (wd40 R5) — Edit toggles it; changing rooms closes it.
-  const [goalEdit, setGoalEdit] = useState(false);
-  const { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep, setRoomGoal } = useCommand(worldId, selectedKey, statusFilter, goalEdit);
+  // Get command data from context instead of calling useCommand directly.
+  // This prevents redundant hook instantiation on screen navigation.
+  const { command, selectedKey, setSelectedKey, statusFilter, setStatusFilter, goalEdit, setGoalEdit } = useCommandContext();
+  const { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep, setRoomGoal } = command;
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
@@ -2015,7 +2013,9 @@ const TRACKER_ALIASES = {
   assignableAgents: 'agent',
 };
 function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
-  const { state, data, switchTracker, createTracker, createBug, updateBug, canCreate } = useTrackerBugs(worldId);
+  // Get tracker data from context instead of calling useTrackerBugs directly.
+  const { tracker } = useCommandContext();
+  const { state, data, switchTracker, createTracker, createBug, updateBug, canCreate } = tracker;
   // Optimistically reflect a status change in the open detail (selectedBug is a snapshot).
   const applyStatusToSelected = (id, status) => setSelectedBug((b) => (b && b.id === id) ? {
     ...b, statusLabel: status,
