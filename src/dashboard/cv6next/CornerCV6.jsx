@@ -847,11 +847,25 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // history is never yanked back down.
     if (!knavOpenedRoom) return undefined;
     const stick = { current: true };
+    // Guard our OWN scroll writes: setting scrollTop fires a scroll event, and if the
+    // listener below counted that as the user scrolling it would drop the stick intent
+    // and strand the view. The just-sent message case is the killer — the reply's goal
+    // thread grows tall UNDER the message, and a re-bind can reset the node to scrollTop 0;
+    // either one used to flip stick off, leaving the view frozen in the middle (or the top).
+    let programmatic = false;
     const getEl = () => document.querySelector('[data-screen="convo"] .convo-thread');
-    const pin = () => { if (!stick.current) return; const el = getEl(); if (el) el.scrollTop = el.scrollHeight; };
+    const pin = () => {
+      if (!stick.current) return;
+      const el = getEl();
+      if (!el) return;
+      programmatic = true;
+      el.scrollTop = el.scrollHeight;
+      requestAnimationFrame(() => { programmatic = false; });
+    };
     // Capture phase so the listener still fires on the recreated node; records the
-    // user's stick intent from where they left the scroll.
-    const onScroll = (e) => { const el = getEl(); if (!el || e.target !== el) return; stick.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < 90; };
+    // user's stick intent from where they left the scroll. Ignore programmatic pins so
+    // only a REAL user scroll (up to read history) releases the pin.
+    const onScroll = (e) => { const el = getEl(); if (!el || e.target !== el || programmatic) return; stick.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < 120; };
     document.addEventListener('scroll', onScroll, true);
     const obs = new MutationObserver(() => requestAnimationFrame(pin));
     obs.observe(document.body, { childList: true, subtree: true });
