@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Ambition Mechanical case study: HVAC marketing with web, ads, and video
 // Mission: aheadofmarket.com:home (R24, per-client case-study pages for organic SEO)
@@ -218,6 +219,29 @@ export default function WorkAmbitionMechanical() {
       </section>
 
       <ServiceFooter current="/work/ambition-mechanical" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'Ambition Mechanical',
+          description: 'Ambition Mechanical brand refresh and organic marketing strategy for commercial HVAC services in Phoenix. Website design, Google Ads, and video.',
+          url: 'https://aheadofmarket.com/work/ambition-mechanical',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+          video: [
+            {
+              '@type': 'VideoObject',
+              name: 'Ambition Mechanical Brand Video',
+              contentUrl: 'https://aheadofmarket.com/videos/ambition-vertical.mp4',
+              thumbnailUrl: 'https://aheadofmarket.com/videos/ambition-vertical.jpg',
+              description: 'Ambition Mechanical brand refresh and organic marketing strategy for commercial HVAC services in Phoenix. Website design, Google Ads, and video.',
+            },
+          ],
+        }}
+      />
     </div>
   );
 }

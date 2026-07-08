@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Kohrs case study: demolition and construction social content retainer
 // Mission: aheadofmarket.com:home (R26, sub-pages enrichment workstream)
@@ -200,6 +201,20 @@ export default function WorkKohrs() {
       </section>
 
       <ServiceFooter current="/work/kohrs" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'Kohrs',
+          description: 'Kohrs demolition and home renovation social media content retainer. Short-form video for Instagram, TikTok, and LinkedIn.',
+          url: 'https://aheadofmarket.com/work/kohrs',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+        }}
+      />
     </div>
   );
 }

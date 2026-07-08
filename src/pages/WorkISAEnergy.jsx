@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // ISA Energy case study: 3-film investor-grade video series
 // Mission: aheadofmarket.com:home (R24, per-client case-study pages for organic SEO)
@@ -230,6 +231,43 @@ export default function WorkISAEnergy() {
       </section>
 
       <ServiceFooter current="/work/isa-energy" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'ISA Energy',
+          description: 'ISA Energy 3-film investor-grade video series positioning quantum energy capture technology. Brand, demo, and validation films.',
+          url: 'https://aheadofmarket.com/work/isa-energy',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+          video: [
+            {
+              '@type': 'VideoObject',
+              name: 'ISA Energy Brand Film',
+              contentUrl: 'https://aheadofmarket.com/videos/isa-brand.mp4',
+              thumbnailUrl: 'https://aheadofmarket.com/videos/isa-brand.jpg',
+              description: 'ISA Energy 3-film investor-grade video series positioning quantum energy capture technology. Brand, demo, and validation films.',
+            },
+            {
+              '@type': 'VideoObject',
+              name: 'ISA Energy Demo Video',
+              contentUrl: 'https://aheadofmarket.com/videos/isa-demo.mp4',
+              thumbnailUrl: 'https://aheadofmarket.com/videos/isa-demo.jpg',
+              description: 'ISA Energy 3-film investor-grade video series positioning quantum energy capture technology. Brand, demo, and validation films.',
+            },
+            {
+              '@type': 'VideoObject',
+              name: 'ISA Energy Validation Film',
+              contentUrl: 'https://aheadofmarket.com/videos/isa-validation.mp4',
+              thumbnailUrl: 'https://aheadofmarket.com/videos/isa-validation.jpg',
+              description: 'ISA Energy 3-film investor-grade video series positioning quantum energy capture technology. Brand, demo, and validation films.',
+            },
+          ],
+        }}
+      />
     </div>
   );
 }

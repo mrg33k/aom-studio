@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Brandon Wiley Documentary case study: long-form founder story
 // Mission: aheadofmarket.com:home (R25, per-client case-study pages for organic SEO)
@@ -191,6 +192,20 @@ export default function WorkBrandonWiley() {
       </section>
 
       <ServiceFooter current="/work/brandon-wiley" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'Brandon Wiley',
+          description: 'Brandon Wiley long-form documentary capturing the founder story behind an amusement park launch in Phoenix. In production.',
+          url: 'https://aheadofmarket.com/work/brandon-wiley',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+        }}
+      />
     </div>
   );
 }

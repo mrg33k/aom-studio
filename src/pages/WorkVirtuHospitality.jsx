@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import LazyGumlet from '../components/home/LazyGumlet';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Virtu Hospitality case study: brand film
 // Mission: aheadofmarket.com:home (R25, per-client case-study pages for organic SEO)
@@ -197,6 +198,20 @@ export default function WorkVirtuHospitality() {
       </section>
 
       <ServiceFooter current="/work/virtu-hospitality" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'Virtu Hospitality',
+          description: 'Virtu Hospitality brand film capturing the essence of hospitality leadership. A story about understanding who they are and what they stand for.',
+          url: 'https://aheadofmarket.com/work/virtu-hospitality',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+        }}
+      />
     </div>
   );
 }

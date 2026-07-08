@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import JsonLd from '../components/JsonLd';
 
 // Work hub page: browse all case studies and industry pages
 // Mission: aheadofmarket.com:home (R27 — /work navigation hub for SEO + user discovery)
@@ -338,6 +339,32 @@ export default function WorkIndex() {
           <span className="cr">© 2026 Ahead of Market</span>
         </div>
       </footer>
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: 'The work',
+          description: 'Explore Ahead of Market work: case studies in renewable energy, healthcare, construction, tech and more. See how we position growth brands.',
+          url: 'https://aheadofmarket.com/work',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+            url: 'https://aheadofmarket.com',
+            logo: 'https://aheadofmarket.com/assets/logo.svg',
+          },
+        }}
+      />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'Ahead of Market',
+          url: 'https://aheadofmarket.com',
+          logo: 'https://aheadofmarket.com/assets/logo.svg',
+        }}
+      />
     </div>
   );
 }

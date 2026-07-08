@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Space Rising case study: SpaceOS directory platform for space industry coordination
 // Mission: aheadofmarket.com:home (R25, per-client case-study pages for organic SEO)
@@ -224,6 +225,36 @@ export default function WorkSpaceRising() {
       </section>
 
       <ServiceFooter current="/work/space-rising" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'Space Rising',
+          description: 'Space Rising SpaceOS directory platform for coordinating the space industry. Interactive discovery and partnership discovery built for space economy leaders.',
+          url: 'https://aheadofmarket.com/work/space-rising',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+          video: [
+            {
+              '@type': 'VideoObject',
+              name: 'Space Rising Render Video',
+              contentUrl: 'https://aheadofmarket.com/videos/spacerising-render.mp4',
+              thumbnailUrl: 'https://aheadofmarket.com/videos/spacerising-render.jpg',
+              description: 'Space Rising SpaceOS directory platform for coordinating the space industry. Interactive discovery and partnership discovery built for space economy leaders.',
+            },
+            {
+              '@type': 'VideoObject',
+              name: 'Space Rising Event Video',
+              contentUrl: 'https://aheadofmarket.com/videos/spacerising-event.mp4',
+              thumbnailUrl: 'https://aheadofmarket.com/videos/spacerising-event.jpg',
+              description: 'Space Rising SpaceOS directory platform for coordinating the space industry. Interactive discovery and partnership discovery built for space economy leaders.',
+            },
+          ],
+        }}
+      />
     </div>
   );
 }

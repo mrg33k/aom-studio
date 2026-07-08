@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Work filter page: Construction Industry
 // Mission: aheadofmarket.com:home (R20.8 — work filter pages, same design system as services)
@@ -398,6 +399,20 @@ export default function WorkConstruction() {
 
       {/* Footer */}
       <ServiceFooter current="" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          name: 'Construction Marketing Videos Phoenix',
+          description: 'AOM builds brand films and marketing videos for construction companies in Phoenix. See how Ambition Mechanical and Kohrs grew with video content.',
+          url: 'https://aheadofmarket.com/work/construction',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+        }}
+      />
     </div>
   );
 }

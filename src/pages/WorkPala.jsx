@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // PA'LA case study: wood-fired cooking restaurant brand
 // Mission: aheadofmarket.com:home (R26, sub-pages enrichment workstream)
@@ -224,6 +225,20 @@ export default function WorkPala() {
       </section>
 
       <ServiceFooter current="/work/pala" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'PA\'LA',
+          description: 'PA\'LA wood-fired cooking restaurant brand film. Social-ready content for hospitality, food and beverage marketing.',
+          url: 'https://aheadofmarket.com/work/pala',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+        }}
+      />
     </div>
   );
 }

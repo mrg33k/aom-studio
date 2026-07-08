@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Intelliplay case study: tech/gaming product story
 // Mission: aheadofmarket.com:home (R26, sub-pages enrichment workstream)
@@ -224,6 +225,20 @@ export default function WorkIntellieplay() {
       </section>
 
       <ServiceFooter current="/work/intelliplay" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'Intelliplay',
+          description: 'Intelliplay product demo film. Tech and gaming content that positions innovative platforms for market impact.',
+          url: 'https://aheadofmarket.com/work/intelliplay',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+        }}
+      />
     </div>
   );
 }

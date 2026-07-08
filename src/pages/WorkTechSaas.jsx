@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Work filter page: Tech & SaaS Industry
 // Mission: aheadofmarket.com:home (R20.8 — work filter pages, same design system as services)
@@ -400,6 +401,20 @@ export default function WorkTechSaas() {
 
       {/* Footer */}
       <ServiceFooter current="" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          name: 'Video Production for SaaS Startups',
+          description: 'AOM produces brand films and founder story videos for tech companies. See how ISA Energy and Space Rising built investor credibility.',
+          url: 'https://aheadofmarket.com/work/tech-saas',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+        }}
+      />
     </div>
   );
 }

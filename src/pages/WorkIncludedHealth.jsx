@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import ServiceFooter from './ServiceFooter';
+import JsonLd from '../components/JsonLd';
 
 // Included Health case study: film series for Client Summit + SME content
 // Mission: aheadofmarket.com:home (R24, per-client case-study pages for organic SEO)
@@ -224,6 +225,36 @@ export default function WorkIncludedHealth() {
       </section>
 
       <ServiceFooter current="/work/included-health" />
+
+      <JsonLd
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: 'Included Health',
+          description: 'Included Health film series for annual Client Summit covering keynotes, culture, and thought leadership content for healthcare.',
+          url: 'https://aheadofmarket.com/work/included-health',
+          author: {
+            '@type': 'Organization',
+            name: 'Ahead of Market',
+          },
+          video: [
+            {
+              '@type': 'VideoObject',
+              name: 'Included Health Culture Film',
+              contentUrl: 'https://aheadofmarket.com/videos/ih-culture.mp4',
+              thumbnailUrl: 'https://aheadofmarket.com/videos/ih-culture.jpg',
+              description: 'Included Health film series for annual Client Summit covering keynotes, culture, and thought leadership content for healthcare.',
+            },
+            {
+              '@type': 'VideoObject',
+              name: 'Included Health Life Film',
+              contentUrl: 'https://aheadofmarket.com/videos/ih-life.mp4',
+              thumbnailUrl: 'https://aheadofmarket.com/videos/ih-life.jpg',
+              description: 'Included Health film series for annual Client Summit covering keynotes, culture, and thought leadership content for healthcare.',
+            },
+          ],
+        }}
+      />
     </div>
   );
 }
