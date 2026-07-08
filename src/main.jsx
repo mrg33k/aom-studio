@@ -144,6 +144,9 @@ const ServiceDocumentary = lazy(() => import('./pages/ServiceDocumentary.jsx'))
 const WorkConstruction = lazy(() => import('./pages/WorkConstruction.jsx'))
 const WorkTechSaas = lazy(() => import('./pages/WorkTechSaas.jsx'))
 const WorkNonprofit = lazy(() => import('./pages/WorkNonprofit.jsx'))
+const WorkISAEnergy = lazy(() => import('./pages/WorkISAEnergy.jsx'))
+const WorkIncludedHealth = lazy(() => import('./pages/WorkIncludedHealth.jsx'))
+const WorkAmbitionMechanical = lazy(() => import('./pages/WorkAmbitionMechanical.jsx'))
 const AboutOurStory = lazy(() => import('./pages/AboutOurStory.jsx'))
 const AboutHowWeWork = lazy(() => import('./pages/AboutHowWeWork.jsx'))
 const AboutStandards = lazy(() => import('./pages/AboutStandards.jsx'))
@@ -455,6 +458,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/work/construction" element={<WorkConstruction />} />
           <Route path="/work/tech-saas" element={<WorkTechSaas />} />
           <Route path="/work/nonprofit" element={<WorkNonprofit />} />
+          <Route path="/work/isa-energy" element={<WorkISAEnergy />} />
+          <Route path="/work/included-health" element={<WorkIncludedHealth />} />
+          <Route path="/work/ambition-mechanical" element={<WorkAmbitionMechanical />} />
           <Route path="/about/our-story" element={<AboutOurStory />} />
           <Route path="/about/how-we-work" element={<AboutHowWeWork />} />
           <Route path="/about/standards" element={<AboutStandards />} />
