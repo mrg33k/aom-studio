@@ -23,6 +23,8 @@ const PORTFOLIO = [
   { t: 'Virtu Hospitality', id: '698a5ef5fc23d3d76fa87ef4', tag: 'Brand' },
   { t: 'United Food Bank', id: '698a5fcdfc23d3d76fa893b8', tag: 'Nonprofit' },
 ];
+// bottom mosaic row: rotated so the two rows show a different sequence
+const PORTFOLIO_B = [...PORTFOLIO.slice(4), ...PORTFOLIO.slice(0, 4)];
 
 const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee — strongest doc footage
 const FILM_REEL = '698a5ef5fc23d3d76fa87ef4'; // Virtu Hospitality
@@ -210,6 +212,11 @@ const CSS = `
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
 }
 .r17 *, .r17 *::before, .r17 *::after { box-sizing:border-box; margin:0; padding:0; }
+/* touch (phone + iPad w/o mouse): keep mandatory snap so panels stay aligned, but
+   drop the forced per-slide stop so momentum flings glide instead of hitching. */
+@media (hover:none) and (pointer:coarse) {
+  .r17 .slide { scroll-snap-stop:normal; }
+}
 .r17 a { color:inherit; text-decoration:none; }
 .r17 button { font:inherit; cursor:pointer; border:none; background:none; color:inherit; }
 .r17 img { display:block; max-width:100%; }
@@ -265,15 +272,15 @@ const CSS = `
 .r17 .bk-win.l { left:0; top:0; width:50%; height:100%; border-right:1px solid var(--line); }
 .r17 .bk-win.r { right:0; top:0; width:50%; height:100%; }
 .r17 .bk-col { position:absolute; left:0; top:0; width:100%; will-change:transform; }
-.r17 .bk-col.r { transform:translateY(calc(-13 * 100svh)); }
-.r17 .bk-panel { position:relative; width:100%; height:100svh; overflow:hidden; background:var(--ink); }
+.r17 .bk-col.r { transform:translateY(calc(-13 * var(--vph,100svh))); }
+.r17 .bk-panel { position:relative; width:100%; height:var(--vph,100svh); overflow:hidden; background:var(--ink); }
 .r17 .bk-panel::after { content:''; position:absolute; inset:0; background:rgba(4,4,4,.44); z-index:2; }
 .r17 .bk-panel > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-@media(max-width:860px){
+@media(max-width:640px){
   .r17 .bk-win.l { width:100%; height:50%; border-right:none; border-bottom:1px solid var(--line); }
   .r17 .bk-win.r { left:0; right:auto; top:50%; width:100%; height:50%; }
-  .r17 .bk-col.r { transform:translateY(calc(-13 * 50svh)); }
-  .r17 .bk-panel { height:50svh; }
+  .r17 .bk-col.r { transform:translateY(calc(-13 * var(--vph,100svh) / 2)); }
+  .r17 .bk-panel { height:calc(var(--vph,100svh) / 2); }
   .r17 .bk-panel::after { background:rgba(4,4,4,.55); }
   .r17 .tags { gap:.4rem; }
 }
@@ -282,7 +289,7 @@ const CSS = `
    small screens (Gumlet chrome shows at half-height) */
 .r17 .bk-panel .pstr { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 .r17 .bk-panel .vid { position:absolute; inset:0; z-index:1; }
-@media(max-width:860px){ .r17 .bk-panel .vid { display:none; } }
+@media(max-width:640px){ .r17 .bk-panel .vid { display:none; } }
 
 /* ghost-type texture panel (solid panel, outlined repeating line) */
 .r17 .ghostpanel { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; gap:.4em; overflow:hidden; }
@@ -303,15 +310,15 @@ const CSS = `
 }
 
 /* ─── hear hero: runway + sticky stage, monogram as the window into footage ─── */
-.r17 .hz { position:relative; height:${RUNWAY_VH * 100}svh; scroll-snap-align:start; z-index:2; }
+.r17 .hz { position:relative; height:calc(${RUNWAY_VH} * var(--vph,100svh)); scroll-snap-align:start; z-index:2; }
 /* isolation + own compositor layer: multiply must blend against THIS stage only —
    without it Chrome can drop the blend mid-scroll in a sticky ancestor and the
    mark flashes solid (Patrik's scroll-back-to-top bug) */
-.r17 .hz-stage { position:sticky; top:0; height:100svh; overflow:hidden; background:var(--ink); isolation:isolate; transform:translateZ(0); }
+.r17 .hz-stage { position:sticky; top:0; height:var(--vph,100svh); overflow:hidden; background:var(--ink); isolation:isolate; transform:translateZ(0); }
 .r17 .hz-video { position:absolute; inset:0; }
 .r17 .hz-video .pstr { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 .r17 .hz-video .vid { position:absolute; inset:0; z-index:1; }
-@media(max-width:860px){ .r17 .hz-video .vid { display:none; } }
+@media(max-width:640px){ .r17 .hz-video .vid { display:none; } }
 .r17 .hz-mask {
   position:absolute; inset:0; z-index:3; background:#000; mix-blend-mode:multiply;
   display:flex; align-items:center; justify-content:center;
@@ -320,7 +327,7 @@ const CSS = `
 .r17 .hz-gold { position:absolute; inset:0; z-index:4; pointer-events:none; display:flex; align-items:center; justify-content:center; }
 .r17 .hz .wm { display:flex; align-items:flex-end; white-space:nowrap; transform-origin:55% 30%; color:#fff; }
 .r17 .hz .wm svg { display:block; height:min(68vh,72vw); width:auto; }
-@media(max-width:860px){ .r17 .hz .wm svg { height:min(40vh,74vw); } }
+@media(max-width:640px){ .r17 .hz .wm svg { height:min(40vh,74vw); } }
 .r17 .hz-gold .wm { color:#F6F6F4; }
 .r17 .hz-gold .wm svg { opacity:.09; }
 .r17 .hz .wm .dot { display:inline-block; width:clamp(1.4rem,4vw,3.4rem); height:clamp(1.4rem,4vw,3.4rem); margin-left:clamp(.8rem,2vw,1.8rem); background:#fff; }
@@ -361,7 +368,7 @@ const CSS = `
 
 /* ─── slides: type only, transparent over the backdrop ─── */
 .r17 .slide {
-  position:relative; height:100svh; scroll-snap-align:start; scroll-snap-stop:always;
+  position:relative; height:var(--vph,100svh); scroll-snap-align:start; scroll-snap-stop:always;
   overflow:hidden; background:transparent; z-index:1;
   display:flex; align-items:center; justify-content:center;
 }
@@ -417,61 +424,70 @@ const CSS = `
   50% { transform:translate(-50%,-50%) translateY(-8px); }
 }
 
-/* two parts lists — R24: boosted to prominent, readable centerpiece */
-.r17 .parts-head { font-size:clamp(1.35rem,2.5vw,1.8rem); font-weight:800; letter-spacing:-.01em; text-transform:uppercase; color:var(--paper); margin-bottom:2rem; font-family:var(--fd); position:relative; z-index:2; }
-.r17 .parts-head::before { content:attr(data-num); position:absolute; left:-4rem; top:0; font-size:clamp(3rem,7vw,5rem); color:rgba(196,164,106,.14); font-weight:800; line-height:1; letter-spacing:-.02em; font-family:var(--fd); }
-.r17 .parts-col.r .parts-head::before { left:auto; right:-4rem; }
+/* two parts — R25: clean vertical composition. Title block on top, the two lists
+   as a real side-by-side grid below (was three absolute layers that collided on
+   tablet). Prominent, readable, no overlap at any width. */
+.r17 .slide-parts .parts-wrap { position:relative; z-index:3; width:min(1120px,92vw); margin:0 auto; display:flex; flex-direction:column; align-items:center; gap:clamp(1.6rem,4vh,3rem); padding:0 var(--pad); }
+.r17 .parts-intro { display:flex; flex-direction:column; align-items:center; text-align:center; }
+.r17 .slide-parts .title { font-size:clamp(2.8rem,7vw,6rem); }
+.r17 .parts-grid { display:grid; grid-template-columns:1fr 1fr; gap:clamp(1.5rem,5vw,4.5rem); width:100%; }
+.r17 .parts-col { text-align:left; }
+.r17 .parts-head { font-size:clamp(1.05rem,1.6vw,1.35rem); font-weight:800; letter-spacing:-.01em; text-transform:uppercase; color:var(--paper); margin-bottom:.7rem; font-family:var(--fd); position:relative; padding-top:2.6rem; line-height:1.25; }
+.r17 .parts-head::before { content:attr(data-num); position:absolute; left:0; top:0; font-size:clamp(1.8rem,3vw,2.6rem); color:rgba(196,164,106,.55); font-weight:800; line-height:1; letter-spacing:-.02em; font-family:var(--fd); }
 .r17 .parts-list { list-style:none; display:flex; flex-direction:column; gap:0; }
-.r17 .parts-list li { font-size:clamp(1.2rem,1.8vw,1.5rem); color:var(--paper); line-height:1.75; border-bottom:1px solid var(--line); padding:1.2rem 0; font-family:var(--fbrut); font-weight:700; transition:color .2s, padding-left .2s; position:relative; padding-left:.6rem; }
+.r17 .parts-list li { font-size:clamp(1rem,1.4vw,1.2rem); color:var(--paper); line-height:1.5; border-bottom:1px solid var(--line); padding:.85rem 0 .85rem .6rem; font-family:var(--fbrut); font-weight:700; transition:color .2s, padding-left .2s; position:relative; }
 .r17 .parts-list li::before { content:'✓'; position:absolute; left:0; color:var(--gold); opacity:0; font-weight:700; transition:opacity .2s; }
-.r17 .parts-list li:hover { color:var(--paper); padding-left:.8rem; }
+.r17 .parts-list li:hover { color:var(--gold); padding-left:.8rem; }
 .r17 .parts-list li:hover::before { opacity:1; }
-.r17 .parts-list li:first-child { border-top:1px solid var(--line); padding-top:1rem; }
+.r17 .parts-list li:first-child { border-top:1px solid var(--line); }
 .r17 .parts-list li:last-child { border-bottom:none; }
-.r17 .parts-col { position:absolute; z-index:3; top:0; height:100%; width:50%; display:flex; flex-direction:column; justify-content:flex-end; padding:0 var(--pad) 16svh; }
-.r17 .parts-col.l { left:0; align-items:flex-start; text-align:left; }
-.r17 .parts-col.r { right:0; align-items:flex-end; text-align:right; }
-@media(max-width:860px){
-  .r17 .parts-col { width:100%; }
-  .r17 .parts-col.l { top:0; height:50%; justify-content:flex-start; padding:calc(3.4rem + 2svh) var(--pad) 0; }
-  .r17 .parts-col.r { top:50%; height:50%; justify-content:flex-end; padding:0 var(--pad) calc(3.4rem + 2svh); }
-  .r17 .slide-parts .title { font-size:clamp(2.2rem,8vw,4.5rem); }
+@media(max-width:640px){
+  /* phone: fit the whole section (title + 8 items) inside one viewport so the
+     scroll-snap slide never clips the last row under the bottom chrome. */
+  .r17 .slide-parts .parts-wrap { gap:1rem; }
+  .r17 .parts-grid { grid-template-columns:1fr; gap:.6rem; }
+  .r17 .parts-head { padding-top:1.8rem; margin-bottom:.3rem; font-size:.92rem; }
+  .r17 .parts-head::before { font-size:1.5rem; }
+  .r17 .parts-list li { font-size:.9rem; padding:.5rem 0 .5rem .6rem; line-height:1.35; }
+  .r17 .slide-parts .title { font-size:clamp(2rem,8vw,3.1rem); }
+  .r17 .slide-parts .sub { font-size:1rem; margin-top:.7rem; max-width:34ch; }
   .r17 .ghost-mark { color:rgba(196,164,106,.16); }
-  .r17 .parts-list li { color:rgba(246,246,244,.88); font-size:.95rem; }
 }
 
 /* billboard montage — rich moving collage mixing videos, stills, and portfolio posters */
 .r17 .slide:has(> .stack:has(> .title:has(> .row:contains("A billboard")))) { position:relative; }
 .r17 .billboard-montage { position:absolute; inset:0; display:grid; grid-template-columns:repeat(6, 1fr); grid-template-rows:repeat(4, 1fr); gap:0.6rem; padding:1.6rem; opacity:0.3; z-index:0; pointer-events:none; }
-@media(max-width:860px) { .r17 .billboard-montage { grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr); gap:0.4rem; padding:0.8rem; } }
+@media(max-width:640px) { .r17 .billboard-montage { grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr); gap:0.4rem; padding:0.8rem; } }
 .r17 .billboard-item { position:relative; overflow:hidden; border-radius:1px; background:var(--ink-2); }
 .r17 .billboard-item img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .r17 .billboard-item video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 
-/* work mosaic — endless dual-row scroll */
-.r17 .mosaic { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
-.r17 .mosaic-row { display:flex; gap:0.8rem; padding:0.8rem; height:50%; overflow:hidden; }
-.r17 .mosaic-row.top { flex-direction:row; animation:mosaic-scroll-left 45s linear infinite; }
-.r17 .mosaic-row.bottom { flex-direction:row; animation:mosaic-scroll-right 45s linear infinite; }
+/* work mosaic — endless dual-row scroll. R25: rows are width:max-content so the
+   marquee translates by a full copy (was -66% of the 768px viewport, which only
+   shuffled ~500px and never looped in cohesion). Tiles fill the row height edge
+   to edge so there are no black gaps. */
+.r17 .mosaic { position:absolute; inset:0; display:flex; flex-direction:column; gap:0.55rem; padding:0.55rem 0; overflow:hidden; }
+.r17 .mosaic-row { display:flex; width:max-content; gap:0.55rem; height:calc(50% - 0.28rem); }
+.r17 .mosaic-row.top { animation:mosaic-scroll-left 55s linear infinite; }
+.r17 .mosaic-row.bottom { animation:mosaic-scroll-right 55s linear infinite; }
 .r17 .mosaic-row:hover { animation-play-state:paused; }
 @keyframes mosaic-scroll-left {
   0% { transform:translateX(0); }
-  100% { transform:translateX(calc(-66.666% - 0.27rem)); }
+  100% { transform:translateX(-33.333%); }
 }
 @keyframes mosaic-scroll-right {
-  0% { transform:translateX(calc(-66.666% - 0.27rem)); }
+  0% { transform:translateX(-33.333%); }
   100% { transform:translateX(0); }
 }
-.r17 .tile { position:relative; overflow:hidden; background:var(--ink-2); border:none; padding:0; flex-shrink:0; width:clamp(200px,25vw,400px); aspect-ratio:16/9; cursor:pointer; }
-.r17 .tile img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.55; transform:scale(1.04); transition:opacity .4s, transform .6s cubic-bezier(.16,1,.3,1); }
-.r17 .tile:hover img { opacity:.95; transform:scale(1.01); }
+.r17 .tile { position:relative; overflow:hidden; background:var(--ink-2); border:none; padding:0; flex-shrink:0; height:100%; width:clamp(215px,28vw,340px); cursor:pointer; }
+.r17 .tile img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.62; transform:scale(1.04); transition:opacity .4s, transform .6s cubic-bezier(.16,1,.3,1); }
+.r17 .tile:hover img { opacity:1; transform:scale(1.01); }
 .r17 .tile .tl { position:absolute; left:.9rem; bottom:.8rem; z-index:2; font-size:.62rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--paper); text-shadow:0 1px 10px rgba(0,0,0,.8); opacity:0; transition:opacity .3s; }
 .r17 .tile:hover .tl { opacity:1; }
 .r17 .tile .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; font-size:2.4rem; color:var(--paper); text-shadow:0 2px 12px rgba(0,0,0,.8); opacity:0; transition:opacity .3s; }
 .r17 .tile:hover .play { opacity:1; }
-@media(max-width:860px){
-  .r17 .mosaic-row { gap:0.6rem; padding:0.6rem; height:50%; }
-  .r17 .tile { width:clamp(140px,40vw,280px); }
+@media(max-width:640px){
+  .r17 .tile { width:clamp(150px,44vw,240px); }
 }
 .r17 .mosaic-stack { pointer-events:none; }
 .r17 .mosaic-stack .view { pointer-events:auto; }
@@ -717,6 +733,11 @@ export default function HomeR6Baby() {
     const apply = () => {
       const H = box.clientHeight;
       if (!H) return;
+      // Lock every full-height section to the real scroller height. On iOS Safari
+      // `100svh` under-fills a position:fixed scroller (svh < the fixed box), which
+      // left a sliver of the next slide showing and made snap points misalign
+      // ("doesn't fill the screen / scrolls weird"). Pin to px instead.
+      if (box.__vph !== H) { box.__vph = H; box.style.setProperty('--vph', H + 'px'); }
       const y = box.scrollTop / H;
       // hero zoom + sideways drift: as z progresses (0→1), logo drifts outward/off to the side
       const z = clamp01((y - HOLD) / ZOOM);
@@ -754,7 +775,7 @@ export default function HomeR6Baby() {
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
     const ok = window.matchMedia('(pointer:fine)').matches
-      && window.matchMedia('(min-width:861px)').matches
+      && window.matchMedia('(min-width:641px)').matches
       && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!ok) return;
     const h = hero.current;
@@ -778,7 +799,7 @@ export default function HomeR6Baby() {
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
     const ok = window.matchMedia('(pointer:fine)').matches
-      && window.matchMedia('(min-width:861px)').matches
+      && window.matchMedia('(min-width:641px)').matches
       && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!ok) return;
     const stage = document.querySelector('.r17 .hz-stage');
@@ -1099,7 +1120,7 @@ export default function HomeR6Baby() {
             </div>
           ))}
           <div className="hz-chrome" ref={chromeL}>
-            <p className="hz-intro">Hi. We're Ahead of Market — a storytelling company from <span style={{ whiteSpace: 'nowrap' }}>Phoenix, AZ.</span></p>
+            <p className="hz-intro">Hi. We're Ahead of Market, a storytelling company from <span style={{ whiteSpace: 'nowrap' }}>Phoenix, AZ.</span></p>
             <span className="hz-cue" />
           </div>
         </div>
@@ -1119,7 +1140,7 @@ export default function HomeR6Baby() {
             <span className="row rv d3">impossible</span>
             <span className="row rv d4">to ignore<i className="sq" /></span>
           </h1>
-          <span className="stat rv d4">Phoenix, AZ — Since 2020 · Scroll ↓</span>
+          <span className="stat rv d4">Phoenix, AZ · Since 2020 · Scroll ↓</span>
         </div>
       </Slide>
 
@@ -1146,12 +1167,12 @@ export default function HomeR6Baby() {
           aria-hidden="true"
         />
         <div className="stack">
-          <div className="tags rv"><span>So — who are we, exactly?</span><span>Many companies around Phoenix know us as</span></div>
+          <div className="tags rv"><span>So, who are we, exactly?</span><span>Many companies around Phoenix know us as</span></div>
           <h2 className="title">
             <span className="row rv d1">A video</span>
             <span className="row rv d2">company<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">Clips from our newer work — playing behind this.</p>
+          <p className="sub rv d3">Clips from our newer work, playing behind this.</p>
         </div>
       </Slide>
 
@@ -1163,7 +1184,7 @@ export default function HomeR6Baby() {
             <span className="row rv d1">A web dev</span>
             <span className="row rv d2">company<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">Sites we've built — standing behind this.</p>
+          <p className="sub rv d3">Sites we've built, standing behind this.</p>
         </div>
       </Slide>
 
@@ -1188,7 +1209,7 @@ export default function HomeR6Baby() {
             <span className="row rv d1 gold">A storytelling</span>
             <span className="row rv d2 gold">company<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">— we just happen to make videos and web apps often.</p>
+          <p className="sub rv d3">We just happen to make videos and web apps, often.</p>
         </div>
       </Slide>
 
@@ -1208,12 +1229,12 @@ export default function HomeR6Baby() {
       {/* 06 — CASE: Space Rising */}
       <Slide data-case="1">
         <div className="stack">
-          <div className="tags rv"><span className="idx">02 / 04</span><span>Tech · Platform</span><span>SpaceOS — built and launched</span></div>
+          <div className="tags rv"><span className="idx">02 / 04</span><span>Tech · Platform</span><span>SpaceOS, built and launched</span></div>
           <h2 className="title">
             <span className="row rv d1">Space</span>
             <span className="row rv d2">Rising<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">SpaceOS — and 1,000 people in one room at Space Congress.</p>
+          <p className="sub rv d3">SpaceOS, and 1,000 people in one room at Space Congress.</p>
           <span className="stat rv d4">Drove a wave of traffic to the new platform</span>
         </div>
       </Slide>
@@ -1246,31 +1267,35 @@ export default function HomeR6Baby() {
 
       {/* 09 — TWO PARTS */}
       <Slide className="slide-parts">
-        <div className="parts-col l rv">
-          <div className="parts-head" data-num="01">Marketing — the materials your message stands on</div>
-          <ul className="parts-list">
-            <li><a className="parts-link" href="/services/web-build">Websites &amp; web applications <span className="arw">↗</span></a></li>
-            <li><a className="parts-link" href="/services/brand-film">Brand films &amp; video series <span className="arw">↗</span></a></li>
-            <li>Quizzes &amp; interactive tools for prospects</li>
-            <li>Photography &amp; creative assets</li>
-          </ul>
-        </div>
-        <div className="parts-col r rv">
-          <div className="parts-head" data-num="02">Promotion — how it gets out into the world</div>
-          <ul className="parts-list">
-            <li>Google &amp; Meta ad campaigns</li>
-            <li>Influencer posts &amp; partnerships</li>
-            <li>Email &amp; text-message campaigns</li>
-            <li>SEO &amp; content distribution</li>
-          </ul>
-        </div>
-        <div className="stack">
-          <div className="tags rv"><span>What we actually do</span><span>Everything we make falls into</span></div>
-          <h2 className="title">
-            <span className="row rv d1">Two</span>
-            <span className="row rv d2">parts<i className="sq" /></span>
-          </h2>
-          <p className="sub rv d3">Marketing gets your story told. Promotion gets it seen.</p>
+        <div className="parts-wrap">
+          <div className="parts-intro">
+            <div className="tags rv"><span>What we actually do</span><span>Everything we make falls into</span></div>
+            <h2 className="title">
+              <span className="row rv d1">Two</span>
+              <span className="row rv d2">parts<i className="sq" /></span>
+            </h2>
+            <p className="sub rv d3">Marketing gets your story told. Promotion gets it seen.</p>
+          </div>
+          <div className="parts-grid rv d4">
+            <div className="parts-col l">
+              <div className="parts-head" data-num="01">Marketing: the materials your message stands on</div>
+              <ul className="parts-list">
+                <li><a className="parts-link" href="/services/web-build">Websites &amp; web applications <span className="arw">↗</span></a></li>
+                <li><a className="parts-link" href="/services/brand-film">Brand films &amp; video series <span className="arw">↗</span></a></li>
+                <li>Quizzes &amp; interactive tools for prospects</li>
+                <li>Photography &amp; creative assets</li>
+              </ul>
+            </div>
+            <div className="parts-col r">
+              <div className="parts-head" data-num="02">Promotion: how it gets out into the world</div>
+              <ul className="parts-list">
+                <li>Google &amp; Meta ad campaigns</li>
+                <li>Influencer posts &amp; partnerships</li>
+                <li>Email &amp; text-message campaigns</li>
+                <li>SEO &amp; content distribution</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </Slide>
 
@@ -1335,9 +1360,9 @@ export default function HomeR6Baby() {
               </button>
             ))}
           </div>
-          {/* Bottom row: scrolls right */}
+          {/* Bottom row: scrolls right, different sequence */}
           <div className="mosaic-row bottom">
-            {[...PORTFOLIO, ...PORTFOLIO, ...PORTFOLIO].map((v, i) => (
+            {[...PORTFOLIO_B, ...PORTFOLIO_B, ...PORTFOLIO_B].map((v, i) => (
               <button key={`bot-${i}`} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
                 <img src={poster(v.id, 400)} alt="" loading="lazy" />
                 <span className="play">▶</span>
