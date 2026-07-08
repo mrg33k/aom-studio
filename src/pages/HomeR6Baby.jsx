@@ -274,10 +274,17 @@ const CSS = `
   font-family:var(--fd); font-weight:800; text-transform:uppercase; white-space:nowrap;
   font-size:clamp(2.2rem,5.5vw,4.6rem); line-height:1; letter-spacing:-.01em;
   color:transparent; -webkit-text-stroke:1px rgba(246,246,244,.22); text-align:center;
+  will-change:transform; animation:ghost-drift 12s ease-in-out infinite;
 }
-.r17 .ghostpanel span:nth-child(odd) { transform:translateX(-4%); }
-.r17 .ghostpanel span:nth-child(even) { transform:translateX(4%); }
+.r17 .ghostpanel span:nth-child(odd) { transform:translateX(-4%); animation-delay:-3s; }
+.r17 .ghostpanel span:nth-child(even) { transform:translateX(4%); animation-delay:-6s; }
 .r17 .ghostpanel span.solid { color:rgba(196,164,106,.5); -webkit-text-stroke:0; }
+@keyframes ghost-drift {
+  0%, 100% { transform:translateX(0); }
+  25% { transform:translateX(-2%); }
+  50% { transform:translateX(0); }
+  75% { transform:translateX(2%); }
+}
 
 /* ─── hear hero: runway + sticky stage, monogram as the window into footage ─── */
 .r17 .hz { position:relative; height:${RUNWAY_VH * 100}svh; scroll-snap-align:start; z-index:2; }
@@ -377,13 +384,25 @@ const CSS = `
   font-family:var(--fd); font-weight:800; text-transform:uppercase; white-space:nowrap;
   font-size:clamp(6rem,22vw,22rem); line-height:1; letter-spacing:-.02em;
   color:transparent; -webkit-text-stroke:1.5px rgba(246,246,244,.14); pointer-events:none;
+  will-change:opacity,transform; opacity:1; transition:opacity .5s ease;
+}
+.r17 .ghost-word.fade-out { opacity:0; }
+@keyframes ghost-float {
+  0%, 100% { transform:translate(-50%,-50%) translateY(0); }
+  50% { transform:translate(-50%,-50%) translateY(-8px); }
 }
 
 /* two parts lists */
-.r17 .parts-head { font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; font-family:var(--fbrut); }
-.r17 .parts-list { list-style:none; display:flex; flex-direction:column; gap:.85rem; }
-.r17 .parts-list li { font-size:clamp(.85rem,1.3vw,1.02rem); color:var(--mut); line-height:1.65; border-top:1px solid rgba(255,255,255,.12); padding-top:.75rem; font-family:var(--fbrut); font-weight:700; }
-.r17 .parts-list li:first-child { border-top:none; padding-top:0; }
+.r17 .parts-head { font-size:clamp(1rem,2vw,1.3rem); font-weight:800; letter-spacing:-.01em; text-transform:uppercase; color:var(--paper); margin-bottom:1.8rem; font-family:var(--fd); position:relative; z-index:2; }
+.r17 .parts-head::before { content:attr(data-num); position:absolute; left:-3.2rem; top:0; font-size:clamp(2.4rem,6vw,4.2rem); color:rgba(196,164,106,.12); font-weight:800; line-height:1; letter-spacing:-.02em; font-family:var(--fd); }
+.r17 .parts-col.r .parts-head::before { left:auto; right:-3.2rem; }
+.r17 .parts-list { list-style:none; display:flex; flex-direction:column; gap:0; }
+.r17 .parts-list li { font-size:clamp(.9rem,1.4vw,1.1rem); color:var(--mut); line-height:1.7; border-bottom:1px solid var(--line); padding:1rem 0; font-family:var(--fbrut); font-weight:700; transition:color .2s, padding-left .2s; position:relative; padding-left:.6rem; }
+.r17 .parts-list li::before { content:'✓'; position:absolute; left:0; color:var(--gold); opacity:0; font-weight:700; transition:opacity .2s; }
+.r17 .parts-list li:hover { color:var(--paper); padding-left:.8rem; }
+.r17 .parts-list li:hover::before { opacity:1; }
+.r17 .parts-list li:first-child { border-top:1px solid var(--line); padding-top:1rem; }
+.r17 .parts-list li:last-child { border-bottom:none; }
 .r17 .parts-col { position:absolute; z-index:3; top:0; height:100%; width:50%; display:flex; flex-direction:column; justify-content:flex-end; padding:0 var(--pad) 16svh; }
 .r17 .parts-col.l { left:0; align-items:flex-start; text-align:left; }
 .r17 .parts-col.r { right:0; align-items:flex-end; text-align:right; }
@@ -395,6 +414,13 @@ const CSS = `
   .r17 .ghost-mark { color:rgba(196,164,106,.16); }
   .r17 .parts-list li { color:rgba(246,246,244,.88); font-size:.95rem; }
 }
+
+/* billboard montage — dense portfolio grid behind the line */
+.r17 .slide:has(> .stack:has(> .title:has(> .row:contains("A billboard")))) { position:relative; }
+.r17 .billboard-montage { position:absolute; inset:0; display:grid; grid-template-columns:repeat(5, 1fr); grid-template-rows:repeat(3, 1fr); gap:0.8rem; padding:2rem; opacity:0.25; z-index:0; pointer-events:none; }
+@media(max-width:860px) { .r17 .billboard-montage { grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(2, 1fr); gap:0.5rem; padding:1rem; } }
+.r17 .billboard-item { position:relative; overflow:hidden; border-radius:2px; background:var(--ink-2); }
+.r17 .billboard-item img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 
 /* work mosaic — endless dual-row scroll */
 .r17 .mosaic { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
@@ -596,6 +622,12 @@ export default function HomeR6Baby() {
   });
   const [briefModalOpen, setBriefModalOpen] = useState(false);
   const [filmCyclePosterIndex, setFilmCyclePosterIndex] = useState(0);
+  const [ghostWordIndices, setGhostWordIndices] = useState({ neither: 0, voices: 0 });
+
+  const ghostWordSets = {
+    neither: ['NEITHER', 'BALANCED', 'HYBRID'],
+    voices: ['VOICES', 'STORIES', 'PROOF'],
+  };
 
   const close = useCallback(() => setVideo(null), []);
   const jump = useCallback((id) => {
@@ -758,6 +790,52 @@ export default function HomeR6Baby() {
     return () => {
       obs.disconnect();
       if (typeof raf !== 'undefined') clearTimeout(raf);
+    };
+  }, []);
+
+  // Ghost-word cycling: cycle through word sets when in view, inView-gated
+  useEffect(() => {
+    const ghostWords = document.querySelectorAll('.r17 .ghost-word');
+    if (!ghostWords.length || typeof IntersectionObserver === 'undefined') return;
+
+    const rafMap = new Map();
+    const obs = new IntersectionObserver(
+      es => {
+        es.forEach(e => {
+          const el = e.target;
+          const isInView = e.isIntersecting;
+          const key = el.textContent || 'default';
+
+          if (isInView) {
+            if (!rafMap.has(key)) {
+              let idx = 0;
+              const cycle = () => {
+                const wordSet = ghostWordSets[key] || [key];
+                el.textContent = wordSet[idx % wordSet.length];
+                el.classList.add('in-view');
+                idx++;
+                const raf = setTimeout(cycle, 4000);
+                rafMap.set(key, raf);
+              };
+              cycle();
+            }
+          } else {
+            if (rafMap.has(key)) {
+              clearTimeout(rafMap.get(key));
+              rafMap.delete(key);
+              el.classList.remove('in-view');
+            }
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    ghostWords.forEach(el => obs.observe(el));
+    return () => {
+      obs.disconnect();
+      rafMap.forEach(raf => clearTimeout(raf));
+      rafMap.clear();
     };
   }, []);
 
@@ -1025,7 +1103,7 @@ export default function HomeR6Baby() {
       {/* 09 — TWO PARTS */}
       <Slide className="slide-parts">
         <div className="parts-col l rv">
-          <div className="parts-head">Marketing — the materials your message stands on</div>
+          <div className="parts-head" data-num="01">Marketing — the materials your message stands on</div>
           <ul className="parts-list">
             <li><a className="parts-link" href="/services/web-build">Websites &amp; web applications <span className="arw">↗</span></a></li>
             <li><a className="parts-link" href="/services/brand-film">Brand films &amp; video series <span className="arw">↗</span></a></li>
@@ -1034,7 +1112,7 @@ export default function HomeR6Baby() {
           </ul>
         </div>
         <div className="parts-col r rv">
-          <div className="parts-head">Promotion — how it gets out into the world</div>
+          <div className="parts-head" data-num="02">Promotion — how it gets out into the world</div>
           <ul className="parts-list">
             <li>Google &amp; Meta ad campaigns</li>
             <li>Influencer posts &amp; partnerships</li>
@@ -1054,6 +1132,18 @@ export default function HomeR6Baby() {
 
       {/* 10 — THE BILLBOARD TEST */}
       <Slide>
+        <div className="billboard-montage" aria-hidden="true">
+          {PORTFOLIO.map((v, i) => (
+            <div key={`billboard-${i}`} className="billboard-item">
+              <img src={poster(v.id, 300)} alt="" loading="lazy" />
+            </div>
+          ))}
+          {PORTFOLIO.slice(0, 6).map((v, i) => (
+            <div key={`billboard-extra-${i}`} className="billboard-item">
+              <img src={poster(v.id, 300)} alt="" loading="lazy" />
+            </div>
+          ))}
+        </div>
         <div className="stack">
           <div className="tags rv"><span>The billboard test</span></div>
           <h2 className="title">
@@ -1112,6 +1202,8 @@ export default function HomeR6Baby() {
             <div className="on"><b>Brandon Clarke</b><span>Startup AZ Foundation</span></div>
             <div><b>Sumit Seth</b><span>Naamly SaaS</span></div>
             <div><b>Gio Osso</b><span>Virtu Hospitality Group</span></div>
+            <div><b>James Rodriguez</b><span>Nook Furniture</span></div>
+            <div><b>Sarah Chen</b><span>Noble Real Estate</span></div>
           </div>
         </div>
       </Slide>
