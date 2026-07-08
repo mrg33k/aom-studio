@@ -344,7 +344,7 @@ function TestModeBanner() {
   const { pathname } = useLocation()
   if (import.meta.env.VITE_DASHBOARD_MODE !== 'test') return null
   // Hide on the public marketing preview pages so they review clean (it never shows on real prod anyway).
-  if (pathname === '/r5' || pathname === '/r6' || pathname === '/taste' || pathname === '/r4' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname.startsWith('/work/') || pathname.startsWith('/services/') || pathname.startsWith('/about/')) return null
+  if (pathname === '/r5' || pathname === '/r6' || pathname === '/taste' || pathname === '/r4' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname === '/work' || pathname.startsWith('/work/') || pathname.startsWith('/services/') || pathname.startsWith('/about/')) return null
   return (
     <>
       <style>{`
