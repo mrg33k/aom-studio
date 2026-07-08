@@ -47,10 +47,17 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Prefer the mirror's kind unless it's the 'doc' catch-all — rows written before
-// the watcher knew video/link kinds are stamped 'doc', so the extension wins there.
+// Extension is authoritative for real media/binary types: a PNG stamped
+// 'deliverable' (or any non-media dbKind) must still resolve to 'image' — never
+// fall through to fetchContent's text/markdown branch, which renders the fetched
+// bytes verbatim and dumps a binary image as raw symbols. Only trust the mirror's
+// kind when the extension is inconclusive ('doc'); that still lets pre-watcher
+// video/link rows recover via the extension and keeps real docs (.md canon/tape/
+// research-drop) on their dbKind.
 function resolveKind(dbKind, name) {
-  return (dbKind && dbKind !== 'doc') ? dbKind : fileKind(name);
+  const byExt = fileKind(name);
+  if (byExt !== 'doc') return byExt;
+  return (dbKind && dbKind !== 'doc') ? dbKind : byExt;
 }
 
 // Top-level mission a file belongs to, from its dir path within the project

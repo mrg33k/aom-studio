@@ -344,9 +344,15 @@ export function useRoomThread(worldId, room) {
             ts: m.timestamp || null,
             isFile,
             fileName,
-            attachmentUrl: m.attachment_url || '',
-            fileMime: m.file_mime_type || '',
-            fileSize: m.file_size || 0,
+            // Auto-shared files carry url/mime/size on metadata.attachment (already
+            // normalized into attachments[0] above), NOT the attachment_url /
+            // file_mime_type columns — those are empty for that shape. The thread's
+            // file card reads these top-level fields, so without the attachments[0]
+            // fallback every auto-shared image renders as a dead, unclickable,
+            // mime-less file card instead of the actual image.
+            attachmentUrl: m.attachment_url || (attachments[0] && attachments[0].url) || '',
+            fileMime: m.file_mime_type || (attachments[0] && attachments[0].mime) || '',
+            fileSize: m.file_size || (attachments[0] && attachments[0].size) || 0,
             attachments, // Array of {url, name, mime, size} for grouped rendering
             blocks: msgBlocks,
             chips: msgChips, // tappable suggestion chips from metadata.chips
