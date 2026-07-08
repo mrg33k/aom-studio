@@ -32,6 +32,22 @@ const NOOK_REEL = '698a5a8b873071aec5c99c6f'; // Nook 10 Year — clean frame fo
 
 const N_SLIDES = 14;
 
+// R23: Newer work reel (random-timed, randomized order)
+const REEL_VIDEOS = Array.from({ length: 14 }, (_, i) => `/videos/reel-${String(i + 1).padStart(2, '0')}.mp4`);
+
+// Helper to randomize reel order (Fisher-Yates shuffle)
+const shuffleReel = () => {
+  const arr = [...REEL_VIDEOS];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+// Helper to get randomized interval (900-1800ms)
+const randomInterval = () => 900 + Math.random() * 900;
+
 // hear-hero scroll program, in viewport-heights: hold, zoom through the mark,
 // then one viewport where the full-bleed stage scrolls away into the reel.
 const HOLD = 0.2;
@@ -415,12 +431,13 @@ const CSS = `
   .r17 .parts-list li { color:rgba(246,246,244,.88); font-size:.95rem; }
 }
 
-/* billboard montage — dense portfolio grid behind the line */
+/* billboard montage — rich moving collage mixing videos, stills, and portfolio posters */
 .r17 .slide:has(> .stack:has(> .title:has(> .row:contains("A billboard")))) { position:relative; }
-.r17 .billboard-montage { position:absolute; inset:0; display:grid; grid-template-columns:repeat(5, 1fr); grid-template-rows:repeat(3, 1fr); gap:0.8rem; padding:2rem; opacity:0.25; z-index:0; pointer-events:none; }
-@media(max-width:860px) { .r17 .billboard-montage { grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(2, 1fr); gap:0.5rem; padding:1rem; } }
-.r17 .billboard-item { position:relative; overflow:hidden; border-radius:2px; background:var(--ink-2); }
+.r17 .billboard-montage { position:absolute; inset:0; display:grid; grid-template-columns:repeat(6, 1fr); grid-template-rows:repeat(4, 1fr); gap:0.6rem; padding:1.6rem; opacity:0.3; z-index:0; pointer-events:none; }
+@media(max-width:860px) { .r17 .billboard-montage { grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr); gap:0.4rem; padding:0.8rem; } }
+.r17 .billboard-item { position:relative; overflow:hidden; border-radius:1px; background:var(--ink-2); }
 .r17 .billboard-item img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.r17 .billboard-item video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 
 /* work mosaic — endless dual-row scroll */
 .r17 .mosaic { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
@@ -578,7 +595,7 @@ const makePanels = () => {
     null,
     null,
     <CaseVideo src="/videos/isa-demo.mp4" posterSrc="/videos/isa-demo.jpg" caseIndex={0} />,
-    <CaseVideo src="/videos/spacerising-render.mp4" posterSrc="/videos/spacerising-render.jpg" caseIndex={1} />,
+    <CaseVideo src="/videos/spacerising-event.mp4" posterSrc="/videos/spacerising-event.jpg" caseIndex={1} />,
     <CaseVideo src="/videos/ih-life.mp4" posterSrc="/videos/ih-life.jpg" caseIndex={2} />,
     <CaseVideo src="/videos/ambition-vertical.mp4" posterSrc="/videos/ambition-vertical.jpg" caseIndex={3} />,
     null,
@@ -623,6 +640,8 @@ export default function HomeR6Baby() {
   const [briefModalOpen, setBriefModalOpen] = useState(false);
   const [filmCyclePosterIndex, setFilmCyclePosterIndex] = useState(0);
   const [ghostWordIndices, setGhostWordIndices] = useState({ neither: 0, voices: 0 });
+  const [heroReelSrc, setHeroReelSrc] = useState(REEL_VIDEOS[0]);
+  const [storyReelSrc, setStoryReelSrc] = useState(REEL_VIDEOS[0]);
 
   const ghostWordSets = {
     neither: ['NEITHER', 'BALANCED', 'HYBRID'],
@@ -762,25 +781,62 @@ export default function HomeR6Baby() {
     return () => stage.removeEventListener('mousemove', onMouseMove);
   }, []);
 
-  // Film cycle for the "a video company" section — cycle through portfolio posters when in view
+  // R23: Hero reel — random-timed cycling through reel-01..14.mp4, inView-gated
   useEffect(() => {
-    const storySlide = document.getElementById('story');
-    if (!storySlide || typeof IntersectionObserver === 'undefined') return;
+    const heroSection = document.querySelector('.r17 .hz');
+    if (!heroSection || typeof IntersectionObserver === 'undefined') return;
     let raf;
+    let reelQueue = shuffleReel();
+    let reelIdx = 0;
     const obs = new IntersectionObserver(
       es => {
         const isInView = es[0]?.isIntersecting;
         if (isInView) {
-          // Start cycling
-          let idx = 0;
           const cycle = () => {
-            setFilmCyclePosterIndex(idx % PORTFOLIO.length);
-            idx++;
-            raf = setTimeout(() => cycle(), 700);
+            if (reelIdx >= reelQueue.length) {
+              reelQueue = shuffleReel();
+              reelIdx = 0;
+            }
+            setHeroReelSrc(reelQueue[reelIdx]);
+            reelIdx++;
+            raf = setTimeout(() => cycle(), randomInterval());
           };
-          raf = setTimeout(() => cycle(), 700);
+          raf = setTimeout(() => cycle(), randomInterval());
         } else {
-          // Stop cycling
+          if (typeof raf !== 'undefined') clearTimeout(raf);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    obs.observe(heroSection);
+    return () => {
+      obs.disconnect();
+      if (typeof raf !== 'undefined') clearTimeout(raf);
+    };
+  }, []);
+
+  // R23: Story reel — random-timed cycling through reel-01..14.mp4, inView-gated
+  useEffect(() => {
+    const storySlide = document.getElementById('story');
+    if (!storySlide || typeof IntersectionObserver === 'undefined') return;
+    let raf;
+    let reelQueue = shuffleReel();
+    let reelIdx = 0;
+    const obs = new IntersectionObserver(
+      es => {
+        const isInView = es[0]?.isIntersecting;
+        if (isInView) {
+          const cycle = () => {
+            if (reelIdx >= reelQueue.length) {
+              reelQueue = shuffleReel();
+              reelIdx = 0;
+            }
+            setStoryReelSrc(reelQueue[reelIdx]);
+            reelIdx++;
+            raf = setTimeout(() => cycle(), randomInterval());
+          };
+          raf = setTimeout(() => cycle(), randomInterval());
+        } else {
           if (typeof raf !== 'undefined') clearTimeout(raf);
         }
       },
@@ -926,11 +982,22 @@ export default function HomeR6Baby() {
 
       {/* 00 — THE OPENING (from /hear): the monogram is the only window into
           the footage; scroll zooms through it until the film goes full-bleed,
-          then the stage scrolls away into the reel. */}
+          then the stage scrolls away into the reel. R23: now uses random-timed
+          reel of newer work (MALPAI, NGOTS, AISIY) instead of single Gumlet. */}
       <section className="hz" aria-label="Ahead of Market">
         <div className="hz-stage">
           <div className="hz-video">
-            <div className="vid"><LazyGumlet id={HERO_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
+            <video
+              src={heroReelSrc}
+              muted
+              playsInline
+              autoPlay
+              loop
+              preload="metadata"
+              poster={poster(HERO_REEL)}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              aria-hidden="true"
+            />
             <img className="pstr" src={poster(HERO_REEL)} alt="" />
           </div>
           <div className="hz-mask" ref={maskL}>
@@ -985,18 +1052,24 @@ export default function HomeR6Baby() {
         </div>
       </Slide>
 
-      {/* 01 — STORY BEAT: the video company — backdrop cycles through portfolio posters */}
+      {/* 01 — STORY BEAT: the video company — R23: backdrop now cycles through random reel of newer work */}
       <Slide id="story">
-        <div
+        <video
+          key={storyReelSrc}
+          src={storyReelSrc}
+          muted
+          playsInline
+          autoPlay
+          loop
+          preload="metadata"
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url('${poster(PORTFOLIO[filmCyclePosterIndex].id, 1200)}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
             opacity: 0.08,
             pointerEvents: 'none',
-            transition: 'background-image .5s ease-in-out',
             zIndex: 0
           }}
           aria-hidden="true"
@@ -1007,7 +1080,7 @@ export default function HomeR6Baby() {
             <span className="row rv d1">A video</span>
             <span className="row rv d2">company<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">Frames from our films — playing behind this.</p>
+          <p className="sub rv d3">Clips from our newer work — playing behind this.</p>
         </div>
       </Slide>
 
@@ -1131,14 +1204,37 @@ export default function HomeR6Baby() {
       </Slide>
 
       {/* 10 — THE BILLBOARD TEST */}
+      {/* R23: Upgraded to moving collage mixing collage videos (01-03), newer-work stills (04-08), and portfolio posters */}
       <Slide>
         <div className="billboard-montage" aria-hidden="true">
+          {/* Collage videos (loops) */}
+          {[1, 2, 3].map(i => (
+            <div key={`collage-vid-${i}`} className="billboard-item">
+              <video
+                src={`/videos/collage-0${i}.mp4`}
+                muted
+                playsInline
+                loop
+                preload="metadata"
+                autoPlay
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+          ))}
+          {/* Collage stills (newer work) */}
+          {[4, 5, 6, 7, 8].map(i => (
+            <div key={`collage-still-${i}`} className="billboard-item">
+              <img src={`/videos/collage-0${i}.jpg`} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          ))}
+          {/* Mix in portfolio posters */}
           {PORTFOLIO.map((v, i) => (
             <div key={`billboard-${i}`} className="billboard-item">
               <img src={poster(v.id, 300)} alt="" loading="lazy" />
             </div>
           ))}
-          {PORTFOLIO.slice(0, 6).map((v, i) => (
+          {/* Additional portfolio for visual density */}
+          {PORTFOLIO.slice(0, 3).map((v, i) => (
             <div key={`billboard-extra-${i}`} className="billboard-item">
               <img src={poster(v.id, 300)} alt="" loading="lazy" />
             </div>
