@@ -345,10 +345,19 @@ const CSS = `
 }
 @media (prefers-reduced-motion:reduce){ .r17 .hz-cue { animation:none; opacity:.6; transform:translateX(-50%); } }
 
-/* branded sparkle star reveals on mouse move (hero side areas only) */
-.r17 .sparkle { position:absolute; z-index:2; width:clamp(2rem,3vw,3.5rem); height:clamp(2rem,3vw,3.5rem); color:var(--gold); opacity:0; transition:opacity .4s ease; pointer-events:none; display:flex; align-items:center; justify-content:center; }
+/* branded sparkle star reveals on mouse move + ambient twinkle (R24: richer constellation) */
+.r17 .sparkle { position:absolute; z-index:2; color:var(--gold); opacity:0; transition:opacity .4s ease; pointer-events:none; display:flex; align-items:center; justify-content:center; }
 .r17 .sparkle svg { width:100%; height:100%; display:block; }
-@media (prefers-reduced-motion:reduce){ .r17 .sparkle { display:none; } }
+/* ambient sparkles: always faintly visible with gentle twinkle */
+.r17 .sparkle.ambient { opacity:0.08; animation:sparkle-twinkle 3s ease-in-out infinite; }
+.r17 .sparkle.ambient.s1 { animation-delay:0s; }
+.r17 .sparkle.ambient.s2 { animation-delay:0.6s; }
+.r17 .sparkle.ambient.s3 { animation-delay:1.2s; }
+.r17 .sparkle.ambient.s4 { animation-delay:1.8s; }
+@keyframes sparkle-twinkle { 0%, 100% { opacity:0.08; } 50% { opacity:0.16; } }
+/* interactive sparkles: hidden by default, reveal on mouse (fine pointer only) */
+.r17 .sparkle.interactive { opacity:0; }
+@media (prefers-reduced-motion:reduce){ .r17 .sparkle.interactive { display:none; } }
 
 /* ─── slides: type only, transparent over the backdrop ─── */
 .r17 .slide {
@@ -408,12 +417,12 @@ const CSS = `
   50% { transform:translate(-50%,-50%) translateY(-8px); }
 }
 
-/* two parts lists */
-.r17 .parts-head { font-size:clamp(1.15rem,2.2vw,1.5rem); font-weight:800; letter-spacing:-.01em; text-transform:uppercase; color:var(--paper); margin-bottom:1.8rem; font-family:var(--fd); position:relative; z-index:2; }
-.r17 .parts-head::before { content:attr(data-num); position:absolute; left:-3.2rem; top:0; font-size:clamp(2.4rem,6vw,4.2rem); color:rgba(196,164,106,.12); font-weight:800; line-height:1; letter-spacing:-.02em; font-family:var(--fd); }
-.r17 .parts-col.r .parts-head::before { left:auto; right:-3.2rem; }
+/* two parts lists — R24: boosted to prominent, readable centerpiece */
+.r17 .parts-head { font-size:clamp(1.35rem,2.5vw,1.8rem); font-weight:800; letter-spacing:-.01em; text-transform:uppercase; color:var(--paper); margin-bottom:2rem; font-family:var(--fd); position:relative; z-index:2; }
+.r17 .parts-head::before { content:attr(data-num); position:absolute; left:-4rem; top:0; font-size:clamp(3rem,7vw,5rem); color:rgba(196,164,106,.14); font-weight:800; line-height:1; letter-spacing:-.02em; font-family:var(--fd); }
+.r17 .parts-col.r .parts-head::before { left:auto; right:-4rem; }
 .r17 .parts-list { list-style:none; display:flex; flex-direction:column; gap:0; }
-.r17 .parts-list li { font-size:clamp(1rem,1.6vw,1.25rem); color:var(--paper); line-height:1.7; border-bottom:1px solid var(--line); padding:1rem 0; font-family:var(--fbrut); font-weight:700; transition:color .2s, padding-left .2s; position:relative; padding-left:.6rem; }
+.r17 .parts-list li { font-size:clamp(1.2rem,1.8vw,1.5rem); color:var(--paper); line-height:1.75; border-bottom:1px solid var(--line); padding:1.2rem 0; font-family:var(--fbrut); font-weight:700; transition:color .2s, padding-left .2s; position:relative; padding-left:.6rem; }
 .r17 .parts-list li::before { content:'✓'; position:absolute; left:0; color:var(--gold); opacity:0; font-weight:700; transition:opacity .2s; }
 .r17 .parts-list li:hover { color:var(--paper); padding-left:.8rem; }
 .r17 .parts-list li:hover::before { opacity:1; }
@@ -753,7 +762,7 @@ export default function HomeR6Baby() {
     return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); };
   }, [writeWm]);
 
-  // Sparkle stars reveal on mouse move in hero side areas (fine pointers, large screens only)
+  // R24: Sparkle stars — ambient always visible, interactive reveal on mouse in side areas (fine pointers, large screens only)
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
     const ok = window.matchMedia('(pointer:fine)').matches
@@ -771,7 +780,14 @@ export default function HomeR6Baby() {
       const nextActive = new Set();
       sparkleRefs.current.forEach((ref, i) => {
         if (!ref) return;
-        const shouldShow = (i % 2 === 0 && isLeftSide) || (i % 2 === 1 && isRightSide);
+        // Ambient sparkles (0-3): always visible, no mouse interaction
+        // Interactive sparkles (4+): reveal on mouse in side areas
+        if (i < 4) return; // ambient sparkles stay as-is
+        const isInteractive = ref.classList.contains('interactive');
+        const isAmbient = ref.classList.contains('ambient');
+        if (isAmbient) return; // skip ambient
+        // Interactive sparkle reveal based on side
+        const shouldShow = (isLeftSide && i % 2 === 0) || (isRightSide && i % 2 === 1);
         if (shouldShow) nextActive.add(i);
         ref.style.opacity = shouldShow ? '1' : '0';
       });
@@ -1006,27 +1022,59 @@ export default function HomeR6Baby() {
           <div className="hz-gold" ref={goldL} aria-hidden="true">
             <div className="wm" ref={wmB}><BrandMark kind="mono" /><span className="dot" /></div>
           </div>
-          {/* Branded sparkle stars fade in/out on mouse move in side areas */}
-          {[...Array(4)].map((_, i) => {
-            const isRight = i % 2 === 1;
-            const top = 20 + (i % 2) * 45;
-            return (
-              <div
-                key={i}
-                ref={el => { if (el) sparkleRefs.current[i] = el; }}
-                className="sparkle"
-                style={{
-                  [isRight ? 'right' : 'left']: 'clamp(1rem, 5vw, 3rem)',
-                  top: `${top}%`,
-                }}
-                aria-hidden="true"
-              >
-                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M50,3 Q54.5,45.5 97,50 Q54.5,54.5 50,97 Q45.5,54.5 3,50 Q45.5,45.5 50,3 Z" fill="currentColor" />
-                </svg>
-              </div>
-            );
-          })}
+          {/* R24: Richer sparkle constellation — ambient + interactive stars scattered in side areas */}
+          {/* Ambient sparkles (4): always faintly visible with twinkle */}
+          {[
+            { side: 'left', top: 15, size: 'clamp(1.8rem,2.8vw,3rem)', ambientClass: 's1' },
+            { side: 'right', top: 25, size: 'clamp(2rem,3.2vw,3.5rem)', ambientClass: 's2' },
+            { side: 'left', top: 60, size: 'clamp(1.5rem,2.4vw,2.6rem)', ambientClass: 's3' },
+            { side: 'right', top: 75, size: 'clamp(1.9rem,3vw,3.2rem)', ambientClass: 's4' },
+          ].map((star, i) => (
+            <div
+              key={`ambient-${i}`}
+              ref={el => { if (el) sparkleRefs.current[i] = el; }}
+              className={`sparkle ambient ${star.ambientClass}`}
+              style={{
+                [star.side]: 'clamp(0.8rem, 4vw, 2.5rem)',
+                top: `${star.top}%`,
+                width: star.size,
+                height: star.size,
+              }}
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50,3 Q54.5,45.5 97,50 Q54.5,54.5 50,97 Q45.5,54.5 3,50 Q45.5,45.5 50,3 Z" fill="currentColor" />
+              </svg>
+            </div>
+          ))}
+          {/* Interactive sparkles (8): hidden by default, reveal on mouse move in side areas */}
+          {[
+            { side: 'left', top: 10, size: 'clamp(1.2rem,2vw,2.4rem)' },
+            { side: 'left', top: 35, size: 'clamp(1.4rem,2.2vw,2.8rem)' },
+            { side: 'left', top: 70, size: 'clamp(1.1rem,1.8vw,2.2rem)' },
+            { side: 'left', top: 88, size: 'clamp(1.3rem,2.1vw,2.6rem)' },
+            { side: 'right', top: 18, size: 'clamp(1.3rem,2.1vw,2.6rem)' },
+            { side: 'right', top: 42, size: 'clamp(1.2rem,1.9vw,2.4rem)' },
+            { side: 'right', top: 62, size: 'clamp(1.4rem,2.3vw,2.8rem)' },
+            { side: 'right', top: 82, size: 'clamp(1.1rem,1.7vw,2.2rem)' },
+          ].map((star, i) => (
+            <div
+              key={`interactive-${i}`}
+              ref={el => { if (el) sparkleRefs.current[4 + i] = el; }}
+              className="sparkle interactive"
+              style={{
+                [star.side]: 'clamp(0.8rem, 4vw, 2.5rem)',
+                top: `${star.top}%`,
+                width: star.size,
+                height: star.size,
+              }}
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50,3 Q54.5,45.5 97,50 Q54.5,54.5 50,97 Q45.5,54.5 3,50 Q45.5,45.5 50,3 Z" fill="currentColor" />
+              </svg>
+            </div>
+          ))}
           <div className="hz-chrome" ref={chromeL}>
             <p className="hz-intro">Hi. We're Ahead of Market — a storytelling company from <span style={{ whiteSpace: 'nowrap' }}>Phoenix, AZ.</span></p>
             <span className="hz-cue" />
