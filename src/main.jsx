@@ -153,6 +153,7 @@ const WorkVirtuHospitality = lazy(() => import('./pages/WorkVirtuHospitality.jsx
 const WorkPala = lazy(() => import('./pages/WorkPala.jsx'))
 const WorkKohrs = lazy(() => import('./pages/WorkKohrs.jsx'))
 const WorkIntellieplay = lazy(() => import('./pages/WorkIntellieplay.jsx'))
+const WorkIndex = lazy(() => import('./pages/WorkIndex.jsx'))
 const AboutOurStory = lazy(() => import('./pages/AboutOurStory.jsx'))
 const AboutHowWeWork = lazy(() => import('./pages/AboutHowWeWork.jsx'))
 const AboutStandards = lazy(() => import('./pages/AboutStandards.jsx'))
@@ -473,6 +474,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/work/pala" element={<WorkPala />} />
           <Route path="/work/kohrs" element={<WorkKohrs />} />
           <Route path="/work/intelliplay" element={<WorkIntellieplay />} />
+          <Route path="/work" element={<WorkIndex />} />
           <Route path="/about/our-story" element={<AboutOurStory />} />
           <Route path="/about/how-we-work" element={<AboutHowWeWork />} />
           <Route path="/about/standards" element={<AboutStandards />} />

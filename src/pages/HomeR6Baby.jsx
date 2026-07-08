@@ -978,6 +978,10 @@ export default function HomeR6Baby() {
             <span className="hz-menu-t">See the work<i className="sq" /></span>
             <span className="hz-menu-sub">100+ projects shipped since 2020</span>
           </button>
+          <a className="hz-menu-row" href="/work">
+            <span className="hz-menu-t">Browse all work</span>
+            <span className="hz-menu-sub">Complete hub of case studies and industries</span>
+          </a>
           <div className="hz-menu-kick">What we make</div>
           {SERVICES.map(s => (
             <a key={s.href} className="hz-menu-row" href={s.href}>
