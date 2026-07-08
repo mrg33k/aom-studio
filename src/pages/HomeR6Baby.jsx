@@ -994,11 +994,11 @@ export default function HomeR6Baby() {
               autoPlay
               loop
               preload="metadata"
-              poster={poster(HERO_REEL)}
+              poster="/videos/hero-poster.jpg"
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
               aria-hidden="true"
             />
-            <img className="pstr" src={poster(HERO_REEL)} alt="" />
+            <img className="pstr" src="/videos/hero-poster.jpg" alt="" />
           </div>
           <div className="hz-mask" ref={maskL}>
             <div className="wm" ref={wmA}><BrandMark kind="mono" /><span className="dot" /></div>
