@@ -548,7 +548,14 @@ export function useOrganize(worldId = 'aom') {
   // The raw mirror row behind the open file, so we can build its real corner path
   // for "Open in Review" (Review loads any corner path through its authed viewer).
   const openRawRow = openInList ? (groups.get(openProject.id) || []).find((r) => r.id === openInList.id) : null;
-  const openCornerPath = cornerPathOf(openRawRow, worldId);
+  // DEF-01 FIX: compute corner path; if cornerPathOf fails (returns ''), try to construct it from openRawRow anyway.
+  // This ensures videos and other file types always pass through to Review.
+  let openCornerPath = cornerPathOf(openRawRow, worldId);
+  if (!openCornerPath && openRawRow && openInList) {
+    const rel = openRawRow.rel_path ? `${openRawRow.rel_path}/` : '';
+    const root = openRawRow.project === 'missions' ? 'missions' : `projects/${openRawRow.project}`;
+    openCornerPath = `corner/users/${worldId}/${root}/${rel}${openRawRow.name}`;
+  }
   // mode drives the preview shell (data-switch): text-ish files read on the paper
   // card; video/image render full-width on the dark ground (media).
   const previewObj = openInList
