@@ -201,6 +201,24 @@ const CSS = `
   color:var(--dim);
 }
 
+/* case studies section */
+.wkt .case-studies-list {
+  display:flex; flex-direction:column; gap:1.6rem; max-width:800px; margin:0 auto;
+}
+.wkt .case-study-link {
+  display:block; padding:1.6rem; border:1px solid rgba(196,164,106,.2); border-radius:8px;
+  transition:border-color .15s, background .15s;
+}
+.wkt .case-study-link:hover { border-color:rgba(196,164,106,.4); background:rgba(196,164,106,.04); }
+.wkt .case-study-title {
+  display:block; font-family:var(--fd); font-weight:800; text-transform:uppercase;
+  font-size:clamp(1.1rem,2vw,1.4rem); color:var(--paper); margin-bottom:.4rem;
+}
+.wkt .case-study-link:hover .case-study-title { color:var(--gold); }
+.wkt .case-study-sub {
+  display:block; font-size:.9rem; color:var(--mut); font-weight:500;
+}
+
 @media(prefers-reduced-motion:reduce){
   .wkt { scroll-behavior:auto; }
 }
@@ -353,6 +371,21 @@ export default function WorkTechSaas() {
       </section>
 
       {/* Closing CTA */}
+      {/* Related Case Studies */}
+      <section className="section">
+        <h2 className="offer-header">Tech & SaaS case studies<i className="sq" /></h2>
+        <div className="case-studies-list">
+          <a href="/work/isa-energy" className="case-study-link">
+            <span className="case-study-title">ISA Energy</span>
+            <span className="case-study-sub">Investor-grade film series for quantum energy startup</span>
+          </a>
+          <a href="/work/space-rising" className="case-study-link">
+            <span className="case-study-title">Space Rising</span>
+            <span className="case-study-sub">SpaceOS directory platform for space economy</span>
+          </a>
+        </div>
+      </section>
+
       <section className="section closing-cta">
         <h2>Map your story<i className="sq" /></h2>
         <a href="mailto:hello@aheadofmarket.com" className="btn-contact">

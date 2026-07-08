@@ -201,6 +201,24 @@ const CSS = `
   color:var(--dim);
 }
 
+/* case studies section */
+.wkn .case-studies-list {
+  display:flex; flex-direction:column; gap:1.6rem; max-width:800px; margin:0 auto;
+}
+.wkn .case-study-link {
+  display:block; padding:1.6rem; border:1px solid rgba(196,164,106,.2); border-radius:8px;
+  transition:border-color .15s, background .15s;
+}
+.wkn .case-study-link:hover { border-color:rgba(196,164,106,.4); background:rgba(196,164,106,.04); }
+.wkn .case-study-title {
+  display:block; font-family:var(--fd); font-weight:800; text-transform:uppercase;
+  font-size:clamp(1.1rem,2vw,1.4rem); color:var(--paper); margin-bottom:.4rem;
+}
+.wkn .case-study-link:hover .case-study-title { color:var(--gold); }
+.wkn .case-study-sub {
+  display:block; font-size:.9rem; color:var(--mut); font-weight:500;
+}
+
 @media(prefers-reduced-motion:reduce){
   .wkn { scroll-behavior:auto; }
 }
@@ -351,6 +369,17 @@ export default function WorkNonprofit() {
       </section>
 
       {/* Closing CTA */}
+      {/* Related Case Studies */}
+      <section className="section">
+        <h2 className="offer-header">Nonprofit case studies<i className="sq" /></h2>
+        <div className="case-studies-list">
+          <a href="/work/included-health" className="case-study-link">
+            <span className="case-study-title">Included Health</span>
+            <span className="case-study-sub">Client summit coverage and SME video content</span>
+          </a>
+        </div>
+      </section>
+
       <section className="section closing-cta">
         <h2>Move your mission forward<i className="sq" /></h2>
         <a href="mailto:hello@aheadofmarket.com" className="btn-contact">

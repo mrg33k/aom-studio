@@ -201,6 +201,24 @@ const CSS = `
   color:var(--dim);
 }
 
+/* case studies section */
+.wkc .case-studies-list {
+  display:flex; flex-direction:column; gap:1.6rem; max-width:800px; margin:0 auto;
+}
+.wkc .case-study-link {
+  display:block; padding:1.6rem; border:1px solid rgba(196,164,106,.2); border-radius:8px;
+  transition:border-color .15s, background .15s;
+}
+.wkc .case-study-link:hover { border-color:rgba(196,164,106,.4); background:rgba(196,164,106,.04); }
+.wkc .case-study-title {
+  display:block; font-family:var(--fd); font-weight:800; text-transform:uppercase;
+  font-size:clamp(1.1rem,2vw,1.4rem); color:var(--paper); margin-bottom:.4rem;
+}
+.wkc .case-study-link:hover .case-study-title { color:var(--gold); }
+.wkc .case-study-sub {
+  display:block; font-size:.9rem; color:var(--mut); font-weight:500;
+}
+
 @media(prefers-reduced-motion:reduce){
   .wkc { scroll-behavior:auto; }
 }
@@ -352,6 +370,17 @@ export default function WorkConstruction() {
             <p className="faq-a">A brand film costs what a brand film costs (crew, equipment, location, music, post-production). A website rebuild takes seven days because design, content review, and testing take seven days. We'll give real numbers in a proposal before anything is booked.</p>
           </li>
         </ul>
+      </section>
+
+      {/* Related Case Studies */}
+      <section className="section">
+        <h2 className="offer-header">Construction case studies<i className="sq" /></h2>
+        <div className="case-studies-list">
+          <a href="/work/ambition-mechanical" className="case-study-link">
+            <span className="case-study-title">Ambition Mechanical</span>
+            <span className="case-study-sub">Brand film and marketing for HVAC leader</span>
+          </a>
+        </div>
       </section>
 
       {/* Closing CTA */}

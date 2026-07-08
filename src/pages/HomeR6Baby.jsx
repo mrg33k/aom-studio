@@ -633,6 +633,15 @@ const WORK_FILTERS = [
   { t: 'Nonprofit', href: '/work/nonprofit' },
 ];
 
+const CASE_STUDIES = [
+  { t: 'ISA Energy', href: '/work/isa-energy', sub: 'Investor-grade film series for quantum energy startup' },
+  { t: 'Included Health', href: '/work/included-health', sub: 'Client summit coverage and SME video content' },
+  { t: 'Ambition Mechanical', href: '/work/ambition-mechanical', sub: 'Brand film and marketing for HVAC leader' },
+  { t: 'Space Rising', href: '/work/space-rising', sub: 'SpaceOS directory platform for space economy' },
+  { t: 'Brandon Wiley', href: '/work/brandon-wiley', sub: 'Long-form founder documentary' },
+  { t: 'Virtu Hospitality', href: '/work/virtu-hospitality', sub: 'Brand film about hospitality leadership' },
+];
+
 const ABOUT = [
   { t: 'Our story', href: '/about/our-story' },
   { t: 'How we work', href: '/about/how-we-work' },
@@ -977,6 +986,13 @@ export default function HomeR6Baby() {
           {WORK_FILTERS.map(w => (
             <a key={w.href} className="hz-menu-row" href={w.href}>
               <span className="hz-menu-t">{w.t}</span>
+            </a>
+          ))}
+          <div className="hz-menu-kick">Case studies</div>
+          {CASE_STUDIES.map(c => (
+            <a key={c.href} className="hz-menu-row" href={c.href}>
+              <span className="hz-menu-t">{c.t}</span>
+              <span className="hz-menu-sub">{c.sub}</span>
             </a>
           ))}
           <div className="hz-menu-kick">Company</div>
