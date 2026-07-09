@@ -65,6 +65,10 @@
       "destination": "/hear/index.html"
     },
     {
+      "source": "/learn-synthesis",
+      "destination": "/learn-synthesis/index.html"
+    },
+    {
       "source": "/taste",
       "destination": "/index.html"
     },

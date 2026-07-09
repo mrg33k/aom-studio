@@ -1,0 +1,299 @@
+<title>Module 12. Build an Evolving Pad. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC oscillator screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 12 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 12 · Build lab
+      <span class="pips" aria-label="Lesson 12 of 19"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Build an evolving pad</h1>
+    <p class="lede">A pad is a sound that lives with you. It swells in slowly, changes on its own while you hold it, then fades away. By the end you will build one from a wavetable, hear it morph as you play, and understand every piece that makes it lush.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>A swell that breathes</h2>
+    <p class="big">A <b>pad</b> is not a stab (hit and done). It is a swell (comes up slowly, stays alive, floats out). Imagine opening your hand to a breeze and the air just keeps moving across it. That is a pad.</p>
+    <p>The magic is in two things. First, a slow <b>amplitude envelope</b> makes the sound grow in and fade out, instead of popping on like a light. Second, a slow <b>LFO wired to the wavetable Position</b> means the tone keeps shifting as you hold it. A pad does not sit still.</p>
+    <p>You layer it thicker with a second voice (detuned so they shimmer), add a whisper of noise for breath, and run it through a filter that opens and closes gently. That is the whole recipe.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · A finished pad patch</p>
+    <h2>What you are building</h2>
+    <p>The screen shows a pad keygroup with two wavetable layers, a noise layer for texture, and an LFO wired to Position so the tone evolves. The Mod Matrix does the wiring.</p>
+    <div class="screen" aria-label="Recreation of the MPC pad keygroup screen">
+      <div class="bar"><span>Keygroup 1 · Pad Patch</span><span class="sel">LAYER 1</span></div>
+      <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:30deg"></div><div class="kn">Position</div><div class="kv">050</div><div class="role">Which wavetable page</div></div>
+        <div class="knob"><div class="dial" style="--rot:60deg"></div><div class="kn">LFO Rate</div><div class="kv">0.6 Hz</div><div class="role">How fast Position morphs</div></div>
+        <div class="knob"><div class="dial" style="--rot:-10deg"></div><div class="kn">Amp Attack</div><div class="kv">1.20 s</div><div class="role">Slow swell in</div></div>
+        <div class="knob"><div class="dial" style="--rot:40deg"></div><div class="kn">Amp Release</div><div class="kv">2.00 s</div><div class="role">Smooth fade out</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Hold down a chord and watch it evolve</h2>
+    <p>Press <b>Hold Chord</b> and the pad will slowly swell, and the wavetable will morph on its own thanks to the LFO. Drag the <b>Morph Speed</b> slider to change how fast the tone shifts. Watch the waveform trace change as you adjust.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">Hold Chord</button>
+        </div>
+        <div class="sl">
+          <label for="speed">Morph Speed <b id="speedv">0.6</b> Hz</label>
+          <input type="range" id="speed" min="0.2" max="3" step="0.1" value="0.6" aria-label="Wavetable morph speed">
+        </div>
+        <p class="hint" id="ahint">Sound is generated live, no files. Best with headphones or speakers up.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · make an evolving pad</p>
+    <h2>Six steps to your own living pad</h2>
+    <ol class="steps">
+      <li><b>Make a keygroup track</b><span>New track, set type to Keygroup. This is where you design the sound.</span></li>
+      <li><b>Layer 1: Wavetable oscillator</b><span>On the Samples/Oscs tab, set Layer 1 to Oscillator, pick Wavetable. This is the tone.</span></li>
+      <li><b>Layer 2: Detuned wavetable</b><span>Copy Layer 1 settings, then raise its Tune value by 12 cents (not semitones, just 12 cents). This shimmer thickens the pad.</span></li>
+      <li><b>Layer 3: Noise for air</b><span>Add another layer, set to Oscillator, pick Noise. Lower its Level to about 12 percent. This adds breath without taking over.</span></li>
+      <li><b>Wire the morph: LFO to Position</b><span>Open the Mod Matrix. Route LFO 1 to Wavetable Position. Set the LFO Rate slow (around 0.6 Hz). Now the sound evolves on its own.</span></li>
+      <li><b>Make it swell</b><span>Go to the Amp envelope. Raise Attack to 1.2 seconds, Release to 2 seconds. Add a subtle low-pass filter. Play a chord and hold it. That is your pad.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Build a pad with stacked layers</span>
+      <span>Use wavetable morph for tone evolution</span>
+      <span>Wire an LFO to make motion automatic</span>
+      <span>Design a slow swell with Amp envelope</span>
+      <span>Use Noise to add texture and air</span>
+      <span>Play a living, breathing pad</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="11-synths.html"><span class="d">← Previous</span>Module 11 · Synths</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="13-piano.html"><span class="d">Next →</span>Module 13 · Piano</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- shared waveform math: 3-frame table sine(0)->saw(1)->square(2) ---------- */
+function weights(pos, xf){
+  const p = (pos/100)*2;
+  const sharp = 1 + (100-xf)/22;
+  let w = [Math.max(0,1-Math.abs(p-0)), Math.max(0,1-Math.abs(p-1)), Math.max(0,1-Math.abs(p-2))];
+  w = w.map(v=>Math.pow(v, sharp));
+  const s = w[0]+w[1]+w[2] || 1;
+  return [w[0]/s, w[1]/s, w[2]/s];
+}
+function sampleAt(ph, w){
+  const sine = Math.sin(ph);
+  const saw  = 1 - ph/Math.PI;
+  const sq   = Math.sin(ph) >= 0 ? 1 : -1;
+  return sine*w[0] + saw*w[1] + sq*w[2];
+}
+function drawWave(cv, pos, xf, glow){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2, w=weights(pos,xf);
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+  ctx.beginPath();
+  for(let x=0;x<=W;x++){ const ph=(x/W)*Math.PI*2; const y=sampleAt(ph,w); const py=mid - y*(mid-14); x?ctx.lineTo(x,py):ctx.moveTo(x,py); }
+  ctx.strokeStyle = glow ? '#E4002B' : '#39D0A0'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  if(glow){ ctx.shadowColor='#E4002B'; ctx.shadowBlur=8; } ctx.stroke(); ctx.shadowBlur=0;
+}
+
+/* ---------- static screen waveform (teal, device display) ---------- */
+drawWave(document.getElementById('screenwave'), 50, 64, false);
+
+/* ---------- live synth: lush evolving pad ---------- */
+const speedEl=document.getElementById('speed');
+const speedv=document.getElementById('speedv');
+const liveCv=document.getElementById('livewave');
+const playBtn=document.getElementById('play'), ahint=document.getElementById('ahint');
+let actx=null, oscs=[], gains=[], noiseGain=null, nsrc=null, filt=null, amp=null, playing=false, rafId=null, t0=0;
+const FREQ = 130.81; // C3
+
+function paint(lfoPhase){
+  const lfoPos = 50 + 50*Math.sin(lfoPhase);
+  drawWave(liveCv, lfoPos, 70, playing);
+}
+function startAudio(){
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+  amp = actx.createGain(); amp.gain.value=0;
+  filt = actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=3200; filt.Q.value=0.5;
+  filt.connect(amp); amp.connect(actx.destination);
+
+  // Layer 1 & 2: wavetable oscillators (detuned for shimmer)
+  const types=['sine','sawtooth','square'];
+  const freqs=[FREQ, FREQ*1.006]; // slight detune
+  oscs=[]; gains=[];
+  freqs.forEach(freq=>{
+    types.forEach(tp=>{
+      const o=actx.createOscillator(); o.type=tp; o.frequency.value=freq;
+      const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(filt); o.start();
+      oscs.push(o); gains.push(g);
+    });
+  });
+
+  // Layer 3: noise for air
+  const nbuf = actx.createBuffer(1, actx.sampleRate * 0.2, actx.sampleRate);
+  const nbufData = nbuf.getChannelData(0);
+  for(let i=0;i<nbufData.length;i++) nbufData[i] = Math.random()*2-1;
+  nsrc = actx.createBufferSource(); nsrc.buffer=nbuf; nsrc.loop=true;
+  noiseGain = actx.createGain(); noiseGain.gain.value=0.06;
+  nsrc.connect(noiseGain); noiseGain.connect(filt); nsrc.start();
+
+  // amp envelope: slow swell
+  const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(0, now);
+  amp.gain.linearRampToValueAtTime(0.25, now+1.2); // slow attack
+}
+function stopAudio(){
+  if(!actx||!amp) return; const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now); amp.gain.setValueAtTime(amp.gain.value, now);
+  amp.gain.linearRampToValueAtTime(0, now+2.0); // slow release
+  const toStop=oscs.slice(); setTimeout(()=>toStop.forEach(o=>{try{o.stop()}catch(e){}}), 2200);
+  if(nsrc){try{nsrc.stop()}catch(e){}} nsrc=null;
+  oscs=[]; gains=[];
+}
+function tick(ts){
+  if(playing){
+    if(!t0) t0=ts;
+    const el=(ts-t0)/1000;
+    const lfoRate = parseFloat(speedEl.value);
+    const lfoPhase = el*lfoRate*Math.PI*2;
+    const lfoPos = 50 + 50*Math.sin(lfoPhase);
+
+    // apply lfo position to wavetable
+    const w = weights(lfoPos, 70);
+    if(gains.length){ const now=actx.currentTime;
+      gains.forEach((g,i)=> g.gain.setTargetAtTime(w[i%3]*0.12, now, 0.03));
+    }
+    paint(lfoPhase);
+  }
+  rafId=requestAnimationFrame(tick);
+}
+playBtn.addEventListener('click', ()=>{
+  playing=!playing; playBtn.setAttribute('aria-pressed', playing);
+  if(playing){ startAudio(); playBtn.textContent='Release'; ahint.textContent='Pad is swelling. Drag Morph Speed to hear the wavetable shift faster or slower.'; }
+  else{ stopAudio(); playBtn.textContent='Hold Chord'; t0=0; }
+  paint(0);
+});
+speedEl.addEventListener('input', ()=>{ speedv.textContent=speedEl.value; });
+paint(0); speedv.textContent=speedEl.value;
+requestAnimationFrame(tick);
+</script>

@@ -1,0 +1,399 @@
+<title>Module 17. Hip Hop Kit. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC oscillator screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .btn.pad{flex:1 1 80px; padding:20px 14px; text-align:center; position:relative; overflow:hidden; font-size:13px; font-weight:600; min-height:60px}
+  .btn.pad::after{content:""; position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.1); opacity:0; transition:opacity .1s}
+  .btn.pad:active::after{opacity:1}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 17 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 17 · Build lab
+      <span class="pips" aria-label="Lesson 17 of 19"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i></span>
+    </p>
+    <h1>Build a Hip Hop kit</h1>
+    <p class="lede">Hip hop is bass, drums, and attitude. You will build a sub-bass oscillator with a pitch drop, craft a wavetable stab, program mute-group hats, and combine them into a groove that hits hard.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>Heavy bass meets sharp stabs</h2>
+    <p class="big">Hip hop drums are about impact and pocket. The kick is <b>sub bass</b>. a sine wave that starts where humans feel it instead of hearing it. The stab is <b>quick and sharp</b>. a synth sound that punctures the beat. The hat is <b>clicky and controlled</b>. using mute groups so open and closed versions never play at once.</p>
+    <p>The secret: a tiny dip in pitch on the 808 at the very start (called a <b>pitch envelope</b>) makes it sound like a real drum being hit. The wavetable stab gets its attitude from a filter that opens fast. The hats sit in a mute group so tapping closed kills the open one.</p>
+    <p>That pocket feeling comes from timing, velocity, and the sounds having <b>room to breathe</b>. Enough decay so they don't cut off abruptly.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Samples/Oscs tab</p>
+    <h2>The hip hop layer stack</h2>
+    <p>Each keygroup pad holds up to 8 layers. A classic hip hop setup stacks them like this: Layer 1 is the 808 sub (Warm Sine with FM for growl). Layer 2 is the stab (Wavetable or Saw). Layer 3 is a noise layer for grit. You choose which to trigger by velocity or by tapping different pads in the same keygroup, or you can layer all of them to play at once.</p>
+    <div class="screen" aria-label="Recreation of the MPC hip hop layer stack">
+      <div class="bar"><span>Layer 1-3 · Hip Hop Foundation</span><span class="sel">OSCILLATORS</span></div>
+      <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:-40deg"></div><div class="kn">Layer 1: 808</div><div class="kv">Warm Sine</div><div class="role">Deep sub with pitch dip</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:70deg"></div><div class="kn">Layer 2: Stab</div><div class="kv">Wavetable</div><div class="role">Sharp synth punctuation</div></div>
+        <div class="knob"><div class="dial" style="--rot:0deg"></div><div class="kn">Layer 3: Grit</div><div class="kv">Noise</div><div class="role">Air and texture</div></div>
+        <div class="knob"><div class="dial" style="--rot:-20deg"></div><div class="kn">Mute Group</div><div class="kv">Group 1</div><div class="role">Open/close hats</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Tap the pads and play the pattern</h2>
+    <p>Press each pad to hear it. The 808 drops in pitch at the attack. The stab is bright and punchy. The hat is filtered noise. Hit <b>Play Pattern</b> to hear them lock together into a groove. The 808 and stab hit on the downbeat, hats trade in between. That is the pocket.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn pad" id="pad808" aria-label="Play 808 sub bass">808</button>
+          <button class="btn pad" id="padstab" aria-label="Play stab">Stab</button>
+          <button class="btn pad" id="padhat" aria-label="Play hat">Hat</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="pattern" aria-pressed="false">Play Pattern</button>
+        </div>
+        <p class="hint" id="ahint">Sound is generated live, no files. Tap pads or press the pattern button. Works best with headphones or speakers up.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · kit from scratch</p>
+    <h2>Six steps to your hip hop kit</h2>
+    <ol class="steps">
+      <li><b>Make a new keygroup track</b><span>Create a track, set it to Keygroup type. This is your sound-building zone.</span></li>
+      <li><b>Add Layer 1: Warm Sine for 808 sub</b><span>Set Layer 1 to Oscillator, pick Warm Sine. On the Pitch envelope, add a fast decay so pitch drops at the attack. That is the 808 character.</span></li>
+      <li><b>Add Layer 2: Wavetable stab</b><span>Add a second layer, set it to Oscillator, pick Wavetable. Keep it high in pitch, bright position value. On the Amp envelope, make attack very fast and release short. Stabs don't linger.</span></li>
+      <li><b>Add Layer 3: Noise for grit</b><span>Add a third layer, set it to Noise. Lower the level so it is a texture under the stab, not the star. Shape it with a low-pass filter if you want it softer.</span></li>
+      <li><b>Set mute groups for hats</b><span>Duplicate your hat pad to a second pad. On both, assign Mute Group 1. Now tap closed hat to silence the open one. That is the control.</span></li>
+      <li><b>Layer everything and adjust velocity</b><span>Play a note on your controller. Layer 1 and 2 play together. Dial the level of each on the Tune/Mix tab until the stab sits on top of the 808, not buried. You now have a working hip hop voice.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Hear the 808 pitch dip</span>
+      <span>Feel when a stab is too long</span>
+      <span>Use Mute Groups on hats</span>
+      <span>Layer oscillators for density</span>
+      <span>Build pocket in the pocket</span>
+      <span>Know the hip hop sound anatomy</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="16-rnb.html"><span class="d">← Previous</span>Module 16 · RNB</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="18-capstone.html"><span class="d">Next →</span>Module 18 · Capstone</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- static waveform visualizer ---------- */
+function drawScreenWave(cv){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+
+  // Layer 1: sine
+  ctx.strokeStyle='#E4002B'; ctx.lineWidth=2.5; ctx.beginPath();
+  for(let x=0;x<=W;x++){
+    const ph=(x/W)*Math.PI*2;
+    const y=Math.sin(ph);
+    const py=mid - y*(mid-14);
+    x?ctx.lineTo(x,py):ctx.moveTo(x,py);
+  }
+  ctx.stroke();
+
+  // Layer 2: wavetable morph (saw blend)
+  ctx.strokeStyle='#39D0A0'; ctx.lineWidth=2; ctx.globalAlpha=0.6; ctx.beginPath();
+  for(let x=0;x<=W;x++){
+    const ph=(x/W)*Math.PI*2;
+    const sine=Math.sin(ph);
+    const saw=1-(ph/Math.PI);
+    const y=sine*0.4 + saw*0.6;
+    const py=mid - y*(mid-14);
+    x?ctx.lineTo(x,py):ctx.moveTo(x,py);
+  }
+  ctx.stroke();
+  ctx.globalAlpha=1;
+}
+
+/* ---------- live canvas visualization ---------- */
+function drawLiveWave(cv, data){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+
+  if(data && data.length>0){
+    ctx.strokeStyle='#39D0A0'; ctx.lineWidth=2.5;
+    const step = Math.max(1, Math.floor(data.length/W));
+    ctx.beginPath();
+    for(let i=0;i<data.length;i+=step){
+      const x = (i/data.length)*W;
+      const y = mid - (data[i]||0)*(mid-14);
+      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    }
+    ctx.stroke();
+  }
+}
+
+drawScreenWave(document.getElementById('screenwave'));
+
+/* ---------- live synth engine ---------- */
+const pad808 = document.getElementById('pad808');
+const padStab = document.getElementById('padstab');
+const padHat = document.getElementById('padhat');
+const patternBtn = document.getElementById('pattern');
+const liveCv = document.getElementById('livewave');
+const ahint = document.getElementById('ahint');
+
+let actx = null;
+let oscNodes = {};
+let gainNodes = {};
+let playing = false;
+let patternRunning = false;
+let patternId = null;
+let analyser = null;
+let analysisData = null;
+let rafId = null;
+
+const NOTES = {
+  sub808: 55,   // A1
+  stab: 440,    // A4
+  hat: 4000     // filtered noise band
+};
+
+function initAudio(){
+  if(actx) return;
+  actx = new (window.AudioContext||window.webkitAudioContext)();
+  analyser = actx.createAnalyser();
+  analyser.fftSize = 256;
+  analysisData = new Uint8Array(analyser.frequencyBinCount);
+  analyser.connect(actx.destination);
+}
+
+function playPad(padType){
+  initAudio();
+  if(actx.state==='suspended') actx.resume();
+
+  const now = actx.currentTime;
+  let osc, gain, filter;
+
+  if(padType==='808'){
+    osc = actx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(NOTES.sub808, now);
+    osc.frequency.linearRampToValueAtTime(NOTES.sub808*0.85, now+0.08);
+
+    gain = actx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.3, now+0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, now+1.5);
+
+    osc.connect(gain);
+    gain.connect(analyser);
+    osc.start(now);
+    setTimeout(()=>osc.stop(), 1500);
+  }
+  else if(padType==='stab'){
+    osc = actx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(NOTES.stab*1.5, now);
+
+    filter = actx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(3500, now);
+    filter.frequency.linearRampToValueAtTime(800, now+0.3);
+
+    gain = actx.createGain();
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now+0.4);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(analyser);
+    osc.start(now);
+    setTimeout(()=>osc.stop(), 400);
+  }
+  else if(padType==='hat'){
+    const noise = actx.createBufferSource();
+    const len = actx.sampleRate*0.1;
+    const buf = actx.createBuffer(1, len, actx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<len;i++) data[i] = Math.random()*2-1;
+
+    noise.buffer = buf;
+
+    filter = actx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(7000, now);
+
+    gain = actx.createGain();
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now+0.08);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(analyser);
+    noise.start(now);
+    noise.stop(now+0.1);
+  }
+}
+
+function playPattern(){
+  initAudio();
+  if(actx.state==='suspended') actx.resume();
+
+  patternRunning = !patternRunning;
+  patternBtn.setAttribute('aria-pressed', patternRunning);
+
+  if(!patternRunning){
+    if(patternId) clearInterval(patternId);
+    patternBtn.textContent = 'Play Pattern';
+    ahint.textContent = 'Sound is generated live, no files. Tap pads or press the pattern button. Works best with headphones or speakers up.';
+    return;
+  }
+
+  patternBtn.textContent = 'Stop Pattern';
+  ahint.textContent = 'Pattern playing: 808 + stab on beat, hats trade between.';
+
+  let beat = 0;
+  const bpm = 95;
+  const beatMs = (60000/bpm);
+
+  function tick(){
+    const step = beat%16;
+
+    if(step===0 || step===8) playPad('808');
+    if(step===0 || step===8) playPad('stab');
+    if(step===2 || step===4 || step===6 || step===10 || step===12 || step===14) playPad('hat');
+
+    beat++;
+  }
+
+  tick();
+  patternId = setInterval(tick, beatMs);
+}
+
+function visualize(){
+  if(analyser){
+    analyser.getByteFrequencyData(analysisData);
+    drawLiveWave(liveCv, analysisData);
+  }
+  rafId = requestAnimationFrame(visualize);
+}
+
+pad808.addEventListener('click', ()=>playPad('808'));
+padStab.addEventListener('click', ()=>playPad('stab'));
+padHat.addEventListener('click', ()=>playPad('hat'));
+patternBtn.addEventListener('click', playPattern);
+
+drawLiveWave(liveCv, analysisData);
+requestAnimationFrame(visualize);
+</script>

@@ -1,0 +1,206 @@
+<title>Learn Synthesis &amp; Sound Design for Beginners. Make Your Own Sounds | Ahead of Market Music</title>
+<meta name="description" content="Learn synthesis and sound design from zero. Build your own pads, bass, 808s, keys and more, hands-on, on the Akai MPC. Interactive beginner course with real sound in every lesson.">
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0} html{scroll-behavior:smooth}
+  body{background:radial-gradient(1200px 640px at 12% -8%,#18181e,transparent 58%),radial-gradient(900px 520px at 100% 8%,#160e11,transparent 55%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .wrap{max-width:1080px; margin:0 auto; padding:clamp(16px,3vw,32px)}
+  a{color:inherit}
+
+  /* top bar — Ahead of Market Music */
+  .bar{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px; background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .amm{display:flex; align-items:baseline; gap:9px} .amm b{font-weight:800; font-size:16px; letter-spacing:.4px}
+  .amm .m{font-family:var(--font-mono); font-size:10px; letter-spacing:3px; color:#fff; background:var(--red); border-radius:5px; padding:2px 7px; text-transform:uppercase}
+  .bar .tool{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:560px){ .bar .tool{display:none} }
+
+  /* hero */
+  .hero{padding:clamp(30px,7vw,72px) 0 clamp(20px,4vw,40px)}
+  .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3.5px; text-transform:uppercase; color:var(--red); margin:0 0 18px}
+  .hero h1{font-size:clamp(34px,7vw,68px); line-height:.98; letter-spacing:-.025em; font-weight:800; margin:0; text-wrap:balance; max-width:15ch}
+  .hero .sub{font-size:clamp(16px,2.2vw,20px); color:var(--mut); margin:20px 0 0; max-width:58ch}
+  .cta{display:flex; flex-wrap:wrap; gap:12px; margin-top:30px; align-items:center}
+  .btn{cursor:pointer; text-decoration:none; font-weight:700; font-size:15px; color:#fff; background:var(--red); border:0; border-radius:11px; padding:14px 24px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .taste{font-family:var(--font-mono); font-size:11px; letter-spacing:1px; color:var(--faint)}
+
+  section{margin-top:clamp(34px,6vw,64px)}
+  .kicker{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 6px}
+  h2.sec{font-size:clamp(22px,3.4vw,32px); letter-spacing:-.02em; font-weight:800; margin:0 0 6px; text-wrap:balance}
+  .lead{color:var(--mut); font-size:16px; margin:0 0 22px; max-width:62ch}
+
+  /* the 8 sounds */
+  .sounds{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+  @media (max-width:720px){ .sounds{grid-template-columns:repeat(2,1fr)} }
+  .sound{background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:16px 14px; display:flex; flex-direction:column; gap:4px}
+  .sound b{font-size:16px} .sound span{font-family:var(--font-mono); font-size:10px; letter-spacing:.5px; color:var(--mut)}
+  .sound .dot{width:8px; height:8px; border-radius:50%; background:var(--red); box-shadow:0 0 9px -1px var(--red); margin-bottom:4px}
+
+  /* curriculum */
+  .parts{display:flex; flex-direction:column; gap:26px}
+  .part .ph{display:flex; align-items:baseline; gap:12px; margin-bottom:14px}
+  .part .ph b{font-family:var(--font-mono); font-size:11px; letter-spacing:2px; color:var(--red); text-transform:uppercase}
+  .part .ph span{color:var(--mut); font-size:14px}
+  .mods{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  @media (max-width:720px){ .mods{grid-template-columns:1fr} }
+  .mod{display:grid; grid-template-columns:38px 1fr auto; gap:12px; align-items:center; text-decoration:none;
+    background:var(--panel); border:1px solid var(--edge); border-radius:11px; padding:13px 14px; transition:border-color .15s ease, transform .12s ease}
+  .mod:hover{border-color:var(--edge-hi); transform:translateY(-2px)}
+  .mod .n{font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--faint)}
+  .mod .t b{display:block; font-size:14.5px} .mod .t span{color:var(--mut); font-size:12.5px}
+  .mod .st{font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; padding:3px 8px; border-radius:999px; white-space:nowrap}
+  .mod .st.live{color:var(--teal); border:1px solid #1c4a3a; background:#0c1c17}
+  .mod .st.soon{color:var(--faint); border:1px solid var(--edge)}
+  .mod.hot{border-color:#4a1622} .mod.hot .n{color:var(--red)}
+
+  /* how it works */
+  .how{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  @media (max-width:720px){ .how{grid-template-columns:1fr} }
+  .step{background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:18px}
+  .step .i{font-family:var(--font-mono); font-size:11px; color:var(--red); letter-spacing:1.5px}
+  .step b{display:block; font-size:16px; margin:8px 0 5px} .step p{color:var(--mut); font-size:14px; margin:0}
+
+  /* closing cta */
+  .band{background:linear-gradient(180deg,#1a0d11,#120a0d); border:1px solid #3a1620; border-radius:16px; padding:clamp(24px,4vw,40px); text-align:center}
+  .band h2{font-size:clamp(22px,3.6vw,32px); font-weight:800; letter-spacing:-.02em; margin:0 0 10px} .band p{color:var(--mut); margin:0 0 22px}
+
+  footer{margin-top:40px; padding:22px 4px; border-top:1px solid var(--edge); display:flex; flex-wrap:wrap; gap:8px 18px; justify-content:space-between;
+    font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--faint); text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .mod:hover,.btn:active{transform:none} }
+</style>
+
+<div class="wrap">
+  <div class="bar">
+    <div class="amm"><b>AHEAD OF MARKET</b><span class="m">Music</span></div>
+    <div class="tool">Taught on the Akai MPC</div>
+  </div>
+
+  <header class="hero">
+    <p class="eyebrow">Interactive course · beginners welcome</p>
+    <h1>Learn to make your own sounds</h1>
+    <p class="sub">Synthesis and sound design, explained like you're brand new to it. Build your own bass, 808s, pads, keys, and full instruments, hands-on, on the Akai MPC. Every lesson has a real screen and sound you can actually hear and play.</p>
+    <div class="cta">
+      <a class="btn" href="#curriculum">Start learning</a>
+      <a class="btn ghost" href="engine-map.html">See how a sound is built</a>
+      <button class="btn ghost" id="taste" aria-pressed="false" style="gap:8px">▶ Hear a taste</button>
+      <span class="taste" id="tastehint">live audio, no download</span>
+    </div>
+  </header>
+
+  <!-- 8 sounds -->
+  <section>
+    <p class="kicker">By the end you can make</p>
+    <h2 class="sec">Any sound you hear</h2>
+    <p class="lead">Eight full instruments, from beat staples to cinematic textures. Each one is its own guided build.</p>
+    <div class="sounds" id="sounds"></div>
+  </section>
+
+  <!-- curriculum -->
+  <section id="curriculum">
+    <p class="kicker">The full course · 19 lessons</p>
+    <h2 class="sec">What you'll learn</h2>
+    <p class="lead">First you understand the machine, one plain-English piece at a time. Then you build all eight sounds. You finish able to make your own from scratch.</p>
+    <div class="parts" id="parts"></div>
+  </section>
+
+  <!-- how it works -->
+  <section>
+    <p class="kicker">Why it sticks</p>
+    <h2 class="sec">Learn by doing, not by watching</h2>
+    <div class="how">
+      <div class="step"><span class="i">01</span><b>See the real screen</b><p>Every lesson shows the actual MPC screen, recreated crisp and clear, so you know exactly where you are on your own device.</p></div>
+      <div class="step"><span class="i">02</span><b>Hear it live</b><p>Drag a knob and the sound changes in your ears, right in the page. No guessing what a word means, you hear it.</p></div>
+      <div class="step"><span class="i">03</span><b>Build it yourself</b><p>Short build-alongs end with a finished, playable instrument you made. Muscle memory, not just notes.</p></div>
+    </div>
+  </section>
+
+  <!-- closing -->
+  <section>
+    <div class="band">
+      <h2>Ready to make your first sound?</h2>
+      <p>Start with the map of the whole engine, then build a wavetable pad in ten minutes.</p>
+      <a class="btn" href="lessons/00-welcome.html">Start the course</a>
+    </div>
+  </section>
+
+  <footer>
+    <div>Ahead of Market Music · Learn Synthesis</div>
+    <div>Course in progress · Akai MPC co-brand pending sign-off · logo lockups are stand-ins</div>
+  </footer>
+</div>
+
+<script>
+const SOUNDS = [
+  ['Bass','sub + synth low end'],['808','the beat backbone'],
+  ['Pads','lush, evolving'],['Synths','leads &amp; plucks'],
+  ['Piano','sampled &amp; real'],['Choir','stacked voices'],
+  ['Horns','brass with bite'],['RNB / Hip Hop','warm &amp; hard-hitting'],
+];
+const PART1=[
+  ['00','Welcome','What a keygroup is','lessons/00-welcome.html','live'],
+  ['01','The map','The whole engine at a glance','engine-map.html','live'],
+  ['02','Layers','Stack up to 8 sounds on one pad','lessons/02-layers.html','live'],
+  ['03','Samples','Build from recordings','lessons/03-samples.html','live'],
+  ['04','Oscillators','Tones drawn from scratch','lessons/04-oscillators.html','live'],
+  ['05','Wavetables','The headline, a flipbook of waveforms','lessons/05-wavetables.html','live'],
+  ['06','Filters','Shape the tone','lessons/06-filters.html','live'],
+  ['07','Envelopes','Shape the sound over time','lessons/07-envelopes.html','live'],
+  ['08','LFOs','Add automatic movement','lessons/08-lfos.html','live'],
+  ['09','Mod Matrix','Connect anything to anything (deep dive)','lessons/09-mod-matrix.html','live'],
+];
+const PART2=[
+  ['10','Bass','Tight, punchy low end','lessons/10-bass.html','live'],
+  ['11','Synths','Your first synth lead','lessons/11-synths.html','live'],
+  ['12','Pads','The wavetable showcase','lessons/12-pads.html','live'],
+  ['13','Piano','The sampling craft','lessons/13-piano.html','live'],
+  ['14','Choir','Stacked voices &amp; swell','lessons/14-choir.html','live'],
+  ['15','Horns','Brass bite &amp; dynamics','lessons/15-horns.html','live'],
+  ['16','RNB','Warm keys &amp; soft sub','lessons/16-rnb.html','live'],
+  ['17','Hip Hop','808s, one-shots, stabs','lessons/17-hiphop.html','live'],
+  ['18','Capstone','Build your own from scratch','lessons/18-capstone.html','live'],
+];
+function sndHtml(s){ return `<div class="sound"><span class="dot"></span><b>${s[0]}</b><span>${s[1]}</span></div>`; }
+document.getElementById('sounds').innerHTML = SOUNDS.map(sndHtml).join('');
+function modHtml(m){
+  const hot = m[1]==='Wavetables' ? ' hot':'';
+  const st = m[4]==='live' ? '<span class="st live">Live</span>' : '<span class="st soon">Soon</span>';
+  const tag = m[3]==='#' ? 'div' : 'a';
+  const href = m[3]==='#' ? '' : `href="${m[3]}"`;
+  return `<${tag} class="mod${hot}" ${href}><span class="n">${m[0]}</span><span class="t"><b>${m[1]}</b><span>${m[2]}</span></span>${st}</${tag}>`;
+}
+document.getElementById('parts').innerHTML =
+  `<div class="part"><div class="ph"><b>Part 1</b><span>Understand the machine</span></div><div class="mods">${PART1.map(modHtml).join('')}</div></div>`+
+  `<div class="part"><div class="ph"><b>Part 2</b><span>Build all eight sounds</span></div><div class="mods">${PART2.map(modHtml).join('')}</div></div>`;
+
+/* hero taste — a short evolving wavetable pad */
+const tasteBtn=document.getElementById('taste'), tasteHint=document.getElementById('tastehint');
+let actx,playing=false,stopT=null;
+function weights(pos){ const p=(pos/100)*2, sh=2.2; let w=[Math.max(0,1-Math.abs(p)),Math.max(0,1-Math.abs(p-1)),Math.max(0,1-Math.abs(p-2))].map(v=>Math.pow(v,sh)); const s=w[0]+w[1]+w[2]||1; return w.map(v=>v/s); }
+tasteBtn.addEventListener('click',()=>{
+  if(playing){ return; }
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume();
+  playing=true; tasteBtn.textContent='♪ playing'; tasteHint.textContent='a wavetable pad, evolving';
+  const amp=actx.createGain(); amp.gain.value=0; const filt=actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=2200;
+  filt.connect(amp); amp.connect(actx.destination);
+  const freqs=[130.81,196.00]; const voices=[];
+  freqs.forEach(f=>['sine','sawtooth','square'].forEach(tp=>{const o=actx.createOscillator();o.type=tp;o.frequency.value=f;const g=actx.createGain();g.gain.value=0;o.connect(g);g.connect(filt);o.start();voices.push({o,g,tp});}));
+  const now=actx.currentTime; amp.gain.setValueAtTime(0,now); amp.gain.linearRampToValueAtTime(0.22,now+0.8);
+  amp.gain.setValueAtTime(0.22,now+3.2); amp.gain.linearRampToValueAtTime(0,now+4.4);
+  const t0=performance.now();
+  (function morph(){ if(!playing) return; const el=(performance.now()-t0)/1000; const pos=50+50*Math.sin(el*0.7); const w=weights(pos);
+    voices.forEach(v=>{ const i=v.tp==='sine'?0:v.tp==='sawtooth'?1:2; v.g.gain.setTargetAtTime(w[i]*0.5,actx.currentTime,0.03); });
+    if(el<4.4) requestAnimationFrame(morph); })();
+  clearTimeout(stopT); stopT=setTimeout(()=>{ voices.forEach(v=>{try{v.o.stop()}catch(e){}}); playing=false; tasteBtn.textContent='▶ Hear a taste'; tasteHint.textContent='live audio, no download'; }, 4700);
+});
+</script>

@@ -1,0 +1,395 @@
+<title>Module 16 - Build an RNB sound - MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC oscillator screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 16 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 16 · Build lab
+      <span class="pips" aria-label="Lesson 16 of 19"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Build an RNB sound</h1>
+    <p class="lede">RNB is about warm, soulful keys layered over a soft bottom end. You'll stack an FM2 e-piano with a sine sub and a wavetable pad. The result feels luxurious without any aggression.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>Soft layers make the magic</h2>
+    <p class="big">Imagine three singers stacked on top of each other, each singing a different note at a different speed: a warm horn playing the melody, a deep hum underneath, and a wash of pads floating around them. That is RNB on the MPC.</p>
+    <p><b>FM2</b> (the top layer) is a synth oscillator that rings like a bell or an electric piano. Add a warm <b>sine sub</b> underneath for depth without harshness. Top it all with a <b>wavetable pad</b> that evolves slowly on its own. Mellow filters keep everything smooth. No bright edges, no sharp attacks. Feel over aggression.</p>
+    <p>The secret: velocity. Softer hits get softer envelopes, so playing with touch shapes the whole thing.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Samples/Oscs tab</p>
+    <h2>The finished RNB patch: three layers working as one</h2>
+    <p>Each layer has its own oscillator type. Layer 1 is FM2 (the warm keys). Layer 2 is Warm Sine (the sub). Layer 3 is Wavetable (the pad). All three pour through the same filters, controlled by the same amp and filter envelopes. When you hit a key, all three play, and the whole patch breathes as one voice.</p>
+    <div class="screen" aria-label="Recreation of the MPC RNB patch with three oscillator layers">
+      <div class="bar"><span>Layer 1 · Oscillator (FM2)</span><span class="sel">WARM KEYS</span></div>
+      <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:-40deg"></div><div class="kn">Level</div><div class="kv">85</div><div class="role">Layer 1 volume (the warm e-piano)</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:70deg"></div><div class="kn">Level</div><div class="kv">32</div><div class="role">Layer 2 volume (the soft sub)</div></div>
+        <div class="knob"><div class="dial" style="--rot:0deg"></div><div class="kn">Level</div><div class="kv">24</div><div class="role">Layer 3 volume (the pad float)</div></div>
+        <div class="knob"><div class="dial" style="--rot:-20deg"></div><div class="kn">Filter</div><div class="kv">Mellow</div><div class="role">Low-pass cutoff</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Play the RNB voicing, feel the warmth</h2>
+    <p>Press <b>Play Chord</b> to hear the full patch: FM2 keys + sine sub + wavetable pad all at once. Try <b>Softer Hit</b> to hear what a gentle velocity does (the attack softens, the whole thing feels more intimate). The patch has a long release, so each chord tail into the next. That is RNB time.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">▶ Play chord</button>
+          <button class="btn ghost" id="soft" aria-pressed="false">Softer hit</button>
+        </div>
+        <div class="sl">
+          <label for="vel">Velocity <b id="velv">80</b></label>
+          <input type="range" id="vel" min="1" max="127" value="80" aria-label="MIDI velocity (how hard you hit)">
+        </div>
+        <p class="hint" id="ahint">Sound is generated live, no files. Wear headphones. Let each chord ring a moment before hitting the next.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · your first RNB patch</p>
+    <h2>Five steps to warm RNB keys</h2>
+    <ol class="steps">
+      <li><b>Make a keygroup track</b><span>New track, set its type to Keygroup. You are now in the synth builder.</span></li>
+      <li><b>Layer 1: set FM2, tune it warm</b><span>Samples/Oscs tab. Switch Layer 1 to Oscillator, choose FM2. Set Level to 85. Turn FM Decay down a little so the tone stays warm and not metallic.</span></li>
+      <li><b>Layer 2: add Warm Sine sub</b><span>Enable Layer 2. Set it to Oscillator, choose Warm Sine. Set Level to 32, Semi down to minus 12 (one octave lower). This is your foundation.</span></li>
+      <li><b>Layer 3: add a Wavetable pad</b><span>Enable Layer 3. Set it to Oscillator, choose Wavetable. Set Level to 24. Use the Mod Matrix to wire a slow LFO to Wavetable Position so it evolves.</span></li>
+      <li><b>Filter and envelope for the swell</b><span>On the Filters tab, set a gentle low-pass. Cutoff around 3000 Hz. On the Amp envelope, raise Attack to 120ms and Release to 1.5 seconds. Now it swells like a pad.</span></li>
+      <li><b>Velocity to everything</b><span>On the Envelopes tab, set Velocity To Attack and Velocity To Level on the Amp. Now when you play soft, it sounds softer. Play a chord and let it breathe.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just built</h2>
+    <div class="recap">
+      <span>Stack three oscillator layers</span>
+      <span>Tune FM2 for warmth</span>
+      <span>Add a sine sub bass</span>
+      <span>Layer a wavetable pad</span>
+      <span>Use velocity to shape dynamics</span>
+      <span>Build a soulful RNB patch</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="15-horns.html"><span class="d">← Previous</span>Horns</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="17-hiphop.html"><span class="d">Next →</span>Hip Hop</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- shared waveform math: FM-ish warmth ---------- */
+function fmPhasor(t, carrier, modRatio, modIdx){
+  const mod = Math.sin(t * modRatio * 2 * Math.PI) * modIdx;
+  return Math.sin(t * carrier * 2 * Math.PI + mod);
+}
+function sineWave(t){
+  return Math.sin(t * 2 * Math.PI);
+}
+function wavetableWave(t, pos){
+  const sine = Math.sin(t * 2 * Math.PI);
+  const tri = Math.asin(Math.sin(t * 2 * Math.PI)) * (2/Math.PI);
+  const blended = sine * (1 - pos) + tri * pos;
+  return blended;
+}
+function drawWave(cv, vel, glow){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+
+  ctx.beginPath();
+  for(let x=0;x<=W;x++){
+    const t = x/W;
+    const fm = fmPhasor(t, 1, 1.5, 0.4) * 0.4;
+    const sine = sineWave(t * 0.5) * 0.3;
+    const pad = wavetableWave(t * 0.3, 0.5) * 0.2;
+    const y = fm + sine + pad;
+    const py = mid - y*(mid-14);
+    x ? ctx.lineTo(x,py) : ctx.moveTo(x,py);
+  }
+  ctx.strokeStyle = glow ? '#E4002B' : '#39D0A0'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  if(glow){ ctx.shadowColor='#E4002B'; ctx.shadowBlur=8; } ctx.stroke(); ctx.shadowBlur=0;
+}
+
+/* ---------- static screen waveform ---------- */
+drawWave(document.getElementById('screenwave'), 80, false);
+
+/* ---------- live synth ---------- */
+const velEl = document.getElementById('vel');
+const velv = document.getElementById('velv');
+const liveCv = document.getElementById('livewave');
+const playBtn = document.getElementById('play');
+const softBtn = document.getElementById('soft');
+const ahint = document.getElementById('ahint');
+
+let actx = null;
+let oscs = [], gains = [], filt1 = null, filt2 = null, amp = null, playing = false;
+const FREQ_KEYS = 261.63;    // C4 FM2 e-piano
+const FREQ_SUB = 130.81;     // C3 sine sub, one octave lower
+const FREQ_PAD = 261.63;     // C4 wavetable pad (unison with keys)
+
+function paint(){
+  const vel = +velEl.value / 127;
+  drawWave(liveCv, vel, playing);
+}
+
+function startAudio(softVel){
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+
+  amp = actx.createGain();
+  amp.gain.value = 0;
+
+  // Two filters in series
+  filt1 = actx.createBiquadFilter();
+  filt1.type = 'lowpass';
+  filt1.frequency.value = 3000;
+  filt1.Q.value = 0.8;
+
+  filt2 = actx.createBiquadFilter();
+  filt2.type = 'lowpass';
+  filt2.frequency.value = 4500;
+  filt2.Q.value = 0.5;
+
+  filt1.connect(filt2);
+  filt2.connect(amp);
+  amp.connect(actx.destination);
+
+  oscs = [];
+  gains = [];
+
+  // Layer 1: FM2 e-piano (simulated with sine + modulator)
+  const fm1 = actx.createOscillator();
+  fm1.type = 'sine';
+  fm1.frequency.value = FREQ_KEYS;
+
+  const fmmod1 = actx.createOscillator();
+  fmmod1.type = 'sine';
+  fmmod1.frequency.value = FREQ_KEYS * 1.5;
+
+  const fmgain1 = actx.createGain();
+  fmgain1.gain.value = 0.4;
+  fmmod1.connect(fmgain1);
+  fmgain1.connect(fm1.frequency);
+
+  const gain1 = actx.createGain();
+  gain1.gain.value = 0.85 * 0.15;
+  fm1.connect(gain1);
+  gain1.connect(filt1);
+  fm1.start();
+  fmmod1.start();
+  oscs.push(fm1, fmmod1);
+
+  // Layer 2: Warm Sine sub (clean, soft bottom)
+  const sub = actx.createOscillator();
+  sub.type = 'sine';
+  sub.frequency.value = FREQ_SUB;
+
+  const gainsub = actx.createGain();
+  gainsub.gain.value = 0.32 * 0.15;
+  sub.connect(gainsub);
+  gainsub.connect(filt1);
+  sub.start();
+  oscs.push(sub);
+
+  // Layer 3: Wavetable-like pad (sine with slow modulation)
+  const pad = actx.createOscillator();
+  pad.type = 'sine';
+  pad.frequency.value = FREQ_PAD + 0.5;
+
+  const padmod = actx.createOscillator();
+  padmod.type = 'sine';
+  padmod.frequency.value = 0.3;
+
+  const padgain = actx.createGain();
+  padgain.gain.value = 0.5;
+  padmod.connect(padgain);
+  padgain.connect(pad.frequency);
+
+  const gainpad = actx.createGain();
+  gainpad.gain.value = 0.24 * 0.15;
+  pad.connect(gainpad);
+  gainpad.connect(filt1);
+  pad.start();
+  padmod.start();
+  oscs.push(pad, padmod);
+
+  // Amp envelope: long attack, gentle release
+  const now = actx.currentTime;
+  const attackTime = softVel ? 0.2 : 0.12;
+  const releaseTime = 1.5;
+
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(0, now);
+  amp.gain.linearRampToValueAtTime(0.35, now + attackTime);
+  amp.gain.setValueAtTime(0.35, now + attackTime + 0.1);
+  amp.gain.linearRampToValueAtTime(0, now + attackTime + releaseTime + 0.1);
+}
+
+function stopAudio(){
+  if(!actx || !amp) return;
+  const now = actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(amp.gain.value, now);
+  amp.gain.linearRampToValueAtTime(0, now + 0.5);
+  const toStop = oscs.slice();
+  setTimeout(() => {
+    toStop.forEach(o => { try { o.stop(); } catch(e){} });
+  }, 2500);
+  oscs = [];
+}
+
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.setAttribute('aria-pressed', playing);
+  if(playing){
+    startAudio(false);
+    playBtn.textContent = '■ Stop';
+    ahint.textContent = 'Hear the warmth? The FM2 + sine sub + pad stack creates that luxurious feel. Let it ring before hitting again.';
+  } else {
+    stopAudio();
+    playBtn.textContent = '▶ Play chord';
+    if(softBtn.getAttribute('aria-pressed') === 'true'){
+      softBtn.click();
+    }
+  }
+  paint();
+});
+
+softBtn.addEventListener('click', () => {
+  const isSoft = softBtn.getAttribute('aria-pressed') !== 'true';
+  softBtn.setAttribute('aria-pressed', isSoft);
+  if(playing){
+    stopAudio();
+    startAudio(isSoft);
+  }
+  softBtn.textContent = isSoft ? 'Harder hit' : 'Softer hit';
+  ahint.textContent = isSoft ? 'Softer attack. Notice how the whole patch feels more intimate when you play gently.' : 'Regular attack. Comparing the feel now.';
+});
+
+velEl.addEventListener('input', () => {
+  velv.textContent = velEl.value;
+  paint();
+});
+
+paint();
+velv.textContent = velEl.value;
+
+// Start frame loop for waveform updates
+(function loop(){
+  paint();
+  requestAnimationFrame(loop);
+})();
+</script>

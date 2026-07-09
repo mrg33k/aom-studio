@@ -1,0 +1,400 @@
+<title>Module 9. Mod Matrix. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC routing screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .routerow{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:auto; position:relative; overflow:hidden}
+  .routerow .row{display:flex; align-items:center; justify-content:space-around; padding:16px 14px; font-family:var(--font-mono); font-size:11px; letter-spacing:1.2px; color:#39D0A0; gap:8px}
+  .routerow .row span{flex:1; text-align:center}
+  .routerow .row .arrow{color:#6A6A73; padding:0 8px}
+
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:12px}
+  .presets{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px}
+  .row{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn.small{padding:8px 12px; font-size:12px}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; min-width:120px; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  select{font-family:var(--font-sans); font-size:14px; padding:8px 10px; border:1px solid var(--edge); border-radius:8px; background:var(--raised); color:var(--ink); cursor:pointer}
+  select:focus-visible{outline:2px solid var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .why{background:rgba(57,208,160,0.06); border:1px solid rgba(57,208,160,0.3); border-radius:10px; padding:16px; margin-top:4px}
+  .why p{margin:0; color:var(--mut); font-size:14px}
+  .why .heart{display:inline-block; color:var(--red); font-weight:700}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 9 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 09 · The machine · deep dive
+      <span class="pips" aria-label="Lesson 9 of 19"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>The Mod Matrix: connect anything to anything</h1>
+    <p class="lede">This is the hidden control board that makes the MPC a real synth. Every knob you turn, every pedal you push, and every envelope that fires can drive any other parameter. By the end you will have wired three live working patches and heard the sound change in real time.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>It is a patch bay</h2>
+    <p class="big">Think of a telephone switchboard from the 1950s. Someone wants to call New York. A cord plugs one jack into another. Call routed. Done. The <b>Mod Matrix</b> is the same idea. A source (like an LFO, or how hard you hit a pad) gets plugged into a destination (like the filter cutoff, or the note pitch). The sound changes because something is now controlling something else.</p>
+    <p>Without a patch bay, every sound is static. With one, every parameter can move, dance, and evolve. That turns a synth into a living thing.</p>
+    <p>The MPC has four things that can send a signal: <b>LFOs (slow movers)</b>, <b>envelopes (attack/decay shapers)</b>, <b>velocity (how hard you hit)</b>, and <b>mod wheel (a knob you turn)</b>. They can drive any destination: <b>pitch (up and down)</b>, <b>filter cutoff (bright and dark)</b>, <b>amp level (louder and quieter)</b>, <b>pan (left and right)</b>, or <b>wavetable position (morph the tone)</b>. Anything to anything.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Mod Matrix tab</p>
+    <h2>Where you will find it</h2>
+    <p>Click the <b>Mod Matrix</b> tab on your keygroup. You will see rows of routings. Each row is: Source goes to Destination with an Amount dial that says how strong the connection is. An Amount of 0 means silence (no effect). An Amount of 64 is half power. An Amount of 127 is full. Negative amounts (the minus sign) reverse the direction (push becomes pull).</p>
+    <div class="screen" aria-label="Recreation of the MPC Mod Matrix routing">
+      <div class="bar"><span>Layer 1 · Keygroup</span><span class="sel">MOD MATRIX</span></div>
+      <div class="routerow">
+        <div class="row">
+          <span>LFO 1</span>
+          <span class="arrow">→</span>
+          <span>Wavetable Position</span>
+          <span class="arrow">→</span>
+          <span>Amount: 64</span>
+        </div>
+      </div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:40deg"></div><div class="kn">Source</div><div class="kv">LFO 1</div><div class="role">Pick a sender</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:0deg"></div><div class="kn">Destination</div><div class="kv">Wavetable Pos</div><div class="role">Pick a target</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:60deg"></div><div class="kn">Amount</div><div class="kv">64</div><div class="role">How strong</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · three working patches</p>
+    <h2>Press a preset button and hear the routing come alive</h2>
+    <p>Each button below wires a source to a destination and starts playing. Listen. Then adjust the <b>Amount</b> slider to feel how the connection strength changes the effect. A soft LFO to wavetable makes a pad that evolves. A hard envelope to pitch makes a blip. Velocity to filter makes the sound brighter when you hit harder.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="presets">
+          <button class="btn small ghost" id="patch1" title="LFO to wavetable position creates an evolving pad">Patch 1: LFO → Wavetable</button>
+          <button class="btn small ghost" id="patch2" title="Velocity to filter makes harder hits brighter">Patch 2: Velocity → Filter</button>
+          <button class="btn small ghost" id="patch3" title="Envelope to pitch makes an attack blip">Patch 3: Envelope → Pitch</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">▶ Play</button>
+        </div>
+        <div class="sl">
+          <label for="src">Source</label>
+          <select id="src" aria-label="Modulation source">
+            <option value="lfo">LFO 1</option>
+            <option value="env">Envelope (Aux)</option>
+            <option value="vel">Velocity</option>
+          </select>
+        </div>
+        <div class="sl">
+          <label for="dst">Destination</label>
+          <select id="dst" aria-label="Modulation destination">
+            <option value="pitch">Pitch</option>
+            <option value="filter">Filter Cutoff</option>
+            <option value="wt">Wavetable Position</option>
+          </select>
+        </div>
+        <div class="sl">
+          <label for="amt">Amount <b id="amtv">64</b></label>
+          <input type="range" id="amt" min="0" max="127" value="64" aria-label="Modulation amount">
+        </div>
+        <p class="hint" id="ahint">Press Play, then listen as the source moves the destination. Change Amount to feel the depth.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: WHY THIS MATTERS -->
+  <section class="sec">
+    <p class="tag">The heart of it all</p>
+    <h2>Why the Mod Matrix is where sound design lives</h2>
+    <div class="why">
+      <p>In a sampler, you play recordings. In a synth, you play oscillators. But a synth without modulation is just a broken piano. Notes go in, tones come out, nothing changes. A synth with a patch bay is a time machine. Plug in an LFO and the tone breathes. Plug in an envelope and the note has a voice, with attack and tail. Plug in velocity and the instrument remembers how hard you hit. <span class="heart">This is what separates good from alive.</span> The Mod Matrix is the MPC's nervous system. Everything you hear moving, morphing, and dancing comes from a source wired to a destination.</p>
+    </div>
+  </section>
+
+  <!-- E: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · make a responsive pad</p>
+    <h2>Five steps to your own synth sound</h2>
+    <ol class="steps">
+      <li><b>Start with a wavetable oscillator</b><span>Make a keygroup track, set Layer 1 to Oscillator, choose Wavetable. Pick any table, any position.</span></li>
+      <li><b>Open the Mod Matrix</b><span>Click the Mod Matrix tab. You are now in the patch bay. Empty. Waiting.</span></li>
+      <li><b>Click an empty row</b><span>Set Source to LFO 1, Destination to Wavetable Position, Amount to 80. That single patch wires the LFO to flip the pages.</span></li>
+      <li><b>Slow the LFO down</b><span>On the LFO tab, set Rate to 0.5 Hz. Now the pages flip once every two seconds. Slow. Hypnotic.</span></li>
+      <li><b>Play a pad and listen</b><span>Hold a note on your keyboard. The wavetable is morphing on its own. You just built a synth pad. Now go wire Envelope to Pitch next to it for an attack blip. Then Velocity to Filter. Chain them. Layer them. That is sound design.</span></li>
+    </ol>
+  </section>
+
+  <!-- F: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Name the four sources</span>
+      <span>Name five destinations</span>
+      <span>Route LFO to wavetable</span>
+      <span>Route velocity to filter</span>
+      <span>Route envelope to pitch</span>
+      <span>Feel how Amount changes depth</span>
+      <span>Hear a patch come alive</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="08-lfos.html"><span class="d">← Previous</span>LFOs</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="10-bass.html"><span class="d">Next →</span>Bass</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- shared waveform math ---------- */
+function sampleAt(ph, wave){
+  const sine = Math.sin(ph);
+  const saw  = 1 - ph/Math.PI;
+  const sq   = Math.sin(ph) >= 0 ? 1 : -1;
+  const weights = {sine:0.33, saw:0.33, sq:0.34};
+  return sine*weights.sine + saw*weights.saw + sq*weights.sq;
+}
+
+function drawWave(cv, norm){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+  ctx.beginPath();
+  for(let x=0;x<=W;x++){ const ph=(x/W)*Math.PI*2; const y=sampleAt(ph,null); const py=mid - y*(mid-14); x?ctx.lineTo(x,py):ctx.moveTo(x,py); }
+  ctx.strokeStyle = norm ? '#39D0A0' : '#E4002B'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  ctx.stroke();
+}
+
+drawWave(document.getElementById('livewave'), true);
+
+/* ---------- live synth with Mod Matrix routing ---------- */
+const playBtn=document.getElementById('play'), ahint=document.getElementById('ahint');
+const srcSel=document.getElementById('src'), dstSel=document.getElementById('dst');
+const amtSlider=document.getElementById('amt'), amtv=document.getElementById('amtv');
+const patch1=document.getElementById('patch1'), patch2=document.getElementById('patch2'), patch3=document.getElementById('patch3');
+const liveCv=document.getElementById('livewave');
+
+let actx=null, oscs=[], gains=[], filt=null, amp=null, playing=false, rafId=null, t0=null;
+let lfoPhase=0, envPhase=0, modAmount=64, currentPatch='none';
+const FREQ = 130.81; // C3
+const LFO_RATE = 0.5; // Hz, slow
+
+function setAmt(){
+  modAmount = +amtSlider.value;
+  amtv.textContent = Math.round(modAmount);
+}
+
+function startAudio(){
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+  amp = actx.createGain(); amp.gain.value=0;
+  filt = actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=1200; filt.Q.value=2;
+  filt.connect(amp); amp.connect(actx.destination);
+
+  const types=['sine','sawtooth','square'];
+  oscs=[]; gains=[];
+  types.forEach(tp=>{
+    const o=actx.createOscillator(); o.type=tp; o.frequency.value=FREQ;
+    const g=actx.createGain(); g.gain.value=0.33; o.connect(g); g.connect(filt); o.start();
+    oscs.push(o); gains.push(g);
+  });
+
+  t0=null;
+  const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(0, now); amp.gain.linearRampToValueAtTime(0.25, now+0.3);
+}
+
+function stopAudio(){
+  if(!actx||!amp) return;
+  const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now); amp.gain.setValueAtTime(amp.gain.value, now);
+  amp.gain.linearRampToValueAtTime(0, now+0.4);
+  const toStop=oscs.slice();
+  setTimeout(()=>toStop.forEach(o=>{try{o.stop()}catch(e){}}), 500);
+  oscs=[]; gains=[];
+}
+
+function tick(ts){
+  if(playing && actx && oscs.length){
+    if(!t0) t0=ts;
+    const elapsed = (ts-t0)/1000;
+    const src = srcSel.value;
+    const dst = dstSel.value;
+    const amt = modAmount / 127;
+
+    // LFO: sine wave at 0.5 Hz, ranges -1..1
+    const lfoVal = Math.sin(elapsed * 2 * Math.PI * LFO_RATE);
+
+    // Envelope: attack for 0.3s, then release
+    let envVal = 0;
+    if(elapsed < 0.3) envVal = elapsed / 0.3; // attack ramp 0..1
+    else envVal = Math.max(0, 1 - (elapsed - 0.3) / 0.4); // release
+
+    // Velocity simulation: random hits every ~0.8s
+    let velVal = 0;
+    const hitPhase = (elapsed % 0.8) / 0.8;
+    if(hitPhase < 0.05) velVal = 1; // brief spike
+
+    let modVal = 0;
+    if(src==='lfo') modVal = lfoVal;
+    else if(src==='env') modVal = envVal;
+    else if(src==='vel') modVal = velVal;
+
+    // Apply modulation to destination
+    if(dst==='pitch' && oscs.length){
+      const pitchMod = 1 + modVal * amt * 0.3; // shift pitch by up to 30%
+      oscs.forEach(o=>o.frequency.value = FREQ * pitchMod);
+    }else if(dst==='filter' && filt){
+      const baseFreq = 1200;
+      const freqMod = baseFreq * (1 + modVal * amt * 0.6); // shift cutoff by up to 60%
+      filt.frequency.value = Math.max(50, Math.min(8000, freqMod));
+    }else if(dst==='wt' && gains.length){
+      // Simulate wavetable position by morphing oscillator gains
+      const wtPos = 0.33 + modVal * amt * 0.3;
+      const w = Math.max(0, Math.min(1, wtPos));
+      gains[0].gain.value = 0.33 * (1-w);
+      gains[1].gain.value = 0.33;
+      gains[2].gain.value = 0.33 * w;
+    }
+  }
+  rafId=requestAnimationFrame(tick);
+}
+
+playBtn.addEventListener('click', ()=>{
+  playing=!playing; playBtn.setAttribute('aria-pressed', playing);
+  if(playing){
+    startAudio();
+    playBtn.textContent='■ Stop';
+    ahint.textContent='Listening. Adjust Amount to feel the modulation depth.';
+  }
+  else{
+    stopAudio();
+    playBtn.textContent='▶ Play';
+    ahint.textContent='Pick a source, destination, and amount. Then press Play.';
+  }
+});
+
+patch1.addEventListener('click', ()=>{
+  srcSel.value='lfo'; dstSel.value='wt'; amtSlider.value=80; setAmt();
+  currentPatch='patch1';
+  patch1.style.opacity='1'; patch2.style.opacity='0.4'; patch3.style.opacity='0.4';
+  if(!playing) playBtn.click();
+  ahint.textContent='LFO morphing wavetable position. A slow, evolving pad.';
+});
+
+patch2.addEventListener('click', ()=>{
+  srcSel.value='vel'; dstSel.value='filter'; amtSlider.value=100; setAmt();
+  currentPatch='patch2';
+  patch1.style.opacity='0.4'; patch2.style.opacity='1'; patch3.style.opacity='0.4';
+  if(!playing) playBtn.click();
+  ahint.textContent='Velocity driving filter. Harder hits open the filter, brighter tone.';
+});
+
+patch3.addEventListener('click', ()=>{
+  srcSel.value='env'; dstSel.value='pitch'; amtSlider.value=90; setAmt();
+  currentPatch='patch3';
+  patch1.style.opacity='0.4'; patch2.style.opacity='0.4'; patch3.style.opacity='1';
+  if(!playing) playBtn.click();
+  ahint.textContent='Envelope to pitch. The note starts with a blip, then settles. Classic synth voice.';
+});
+
+amtSlider.addEventListener('input', setAmt);
+srcSel.addEventListener('change', ()=>{ if(playing) t0=null; });
+dstSel.addEventListener('change', ()=>{ if(playing) t0=null; });
+
+setAmt();
+patch1.style.opacity='0.4'; patch2.style.opacity='0.4'; patch3.style.opacity='0.4';
+requestAnimationFrame(tick);
+</script>

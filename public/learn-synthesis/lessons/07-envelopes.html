@@ -1,0 +1,353 @@
+<title>Module 7. Envelopes. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC envelope screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* preset buttons row */
+  .presets{display:flex; gap:10px; margin-top:0}
+  .presets .btn.ghost{flex:1}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 7 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 07 · The machine
+      <span class="pips" aria-label="Lesson 7 of 19"><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Envelopes: the shape of a sound over time</h1>
+    <p class="lede">Every sound has a life. It starts (attack), it might peak (hold), it settles (decay), and it ends (release). You control all four with one word: envelopes. By the end you will hear how they shape a pluck into a pad, and you will build your first sound from scratch.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>How a sound turns on and off</h2>
+    <p class="big">Imagine a light switch. You flip it on. It glows instantly, or it takes a second to warm up (attack). Once it is hot, does it stay bright, or fade to a comfortable level (decay and sustain). When you flip it off, does it go dark right away, or does it fade out slowly (release). That whole journey is the <b>envelope</b>.</p>
+    <p>An <b>envelope</b> is the volume shape of a sound across time. It lives in six parts: <b>Delay</b> (wait), <b>Attack</b> (rise), <b>Hold</b> (peak), <b>Decay</b> (fall), <b>Sustain</b> (hold), <b>Release</b> (fade after you let go). Together they make the letters DAHDSR.</p>
+    <p>Every sound on the MPC has four separate envelopes running at once: <b>Amp</b> (volume, the main one), <b>Filter</b> (brightness), <b>Pitch</b> (tune), and <b>Aux</b> (a spare). You set them once and they play the same way every time you hit a pad.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Envelopes tab</p>
+    <h2>Where you will find it</h2>
+    <p>Open any keygroup, go to the Envelopes tab. You see four sub-tabs: Amp, Filter, Pitch, Aux. Choose Amp. The screen shows the envelope graph with six labeled points, and six knobs to move them.</p>
+    <div class="screen" aria-label="Recreation of the MPC envelope screen">
+      <div class="bar"><span>Layer 1 · Keygroup</span><span class="sel">AMP ENVELOPE</span></div>
+      <div class="disp"><canvas id="screenenv" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob"><div class="dial" style="--rot:-45deg"></div><div class="kn">Delay</div><div class="kv">0.00 s</div><div class="role">Wait before attack</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:10deg"></div><div class="kn">Attack</div><div class="kv">0.05 s</div><div class="role">How fast it swells in</div></div>
+        <div class="knob"><div class="dial" style="--rot:30deg"></div><div class="kn">Hold</div><div class="kv">0.00 s</div><div class="role">Hang at peak</div></div>
+        <div class="knob"><div class="dial" style="--rot:50deg"></div><div class="kn">Decay</div><div class="kv">0.20 s</div><div class="role">Drop from peak</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:70deg"></div><div class="kn">Sustain</div><div class="kv">0.70</div><div class="role">How loud it holds</div></div>
+        <div class="knob"><div class="dial" style="--rot:80deg"></div><div class="kn">Release</div><div class="kv">0.30 s</div><div class="role">Fade when you let go</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Drag Attack and Release, hear it change</h2>
+    <p>Press play. You hear a tone. The red line on the left is the envelope shape. Now drag <b>Attack</b> slow. The tone fades in instead of starting sharp. Then drag <b>Release</b> long. The tone lingers when you let go. Try the <b>Pluck</b> and <b>Pad</b> presets to hear the extreme difference the envelope makes to the same tone.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="liveenv" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">▶ Play a note</button>
+        </div>
+        <div class="presets">
+          <button class="btn ghost" id="pluck">Pluck</button>
+          <button class="btn ghost" id="pad">Pad</button>
+        </div>
+        <div class="sl">
+          <label for="atk">Attack <b id="atkv">0.05</b>s</label>
+          <input type="range" id="atk" min="0" max="2" step="0.01" value="0.05" aria-label="Attack time">
+        </div>
+        <div class="sl">
+          <label for="dec">Decay <b id="decv">0.20</b>s</label>
+          <input type="range" id="dec" min="0" max="2" step="0.01" value="0.20" aria-label="Decay time">
+        </div>
+        <div class="sl">
+          <label for="sus">Sustain <b id="susv">0.70</b></label>
+          <input type="range" id="sus" min="0" max="1" step="0.01" value="0.70" aria-label="Sustain level">
+        </div>
+        <div class="sl">
+          <label for="rel">Release <b id="relv">0.30</b>s</label>
+          <input type="range" id="rel" min="0" max="3" step="0.01" value="0.30" aria-label="Release time">
+        </div>
+        <p class="hint" id="ahint">Sound is generated live, no files. Works best with headphones or speakers up.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · make a plucked string</p>
+    <h2>Five steps to your first synth sound</h2>
+    <ol class="steps">
+      <li><b>Make a keygroup track</b><span>New track, set its type to Keygroup. This unlocks the synth engine.</span></li>
+      <li><b>Set a layer to Oscillator, choose Saw</b><span>On the Samples/Oscs tab, switch Layer 1 from Sample to Oscillator, then pick Saw from the list. Sawtooth is the workhorse.</span></li>
+      <li><b>Open the Amp envelope</b><span>Go to the Envelopes tab, choose the Amp sub-tab. You see the six knobs you learned above.</span></li>
+      <li><b>Make it pluck</b><span>Set Attack to 0.02 (instant), Decay to 0.15, Sustain to 0. Let go of the pad and the sound stops right away. That is a pluck.</span></li>
+      <li><b>Change it to a pad</b><span>Now set Attack to 1.0 (slow), Decay to 0.1, Sustain to 0.8, Release to 2.0. Hold the pad. It swells in, holds, fades out slow. That is a pad.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Say what DAHDSR means</span>
+      <span>Hear attack and release work</span>
+      <span>Turn a pluck into a pad</span>
+      <span>Read the envelope screen</span>
+      <span>Build a plucked sound from scratch</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="06-filters.html"><span class="d">← Previous</span>Module 6 · Filters</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="08-lfos.html"><span class="d">Next →</span>Module 8 · LFOs</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- envelope graph drawing ---------- */
+function drawEnv(cv, atk, dec, sus, rel, glow){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2, bottom=H-14;
+  ctx.clearRect(0,0,W,H);
+
+  // grid line (sustain level)
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  const susY = bottom - sus*(bottom-28);
+  ctx.beginPath(); ctx.moveTo(0,susY); ctx.lineTo(W,susY); ctx.stroke();
+
+  // calculate time points (normalized to canvas width)
+  const totalTime = atk + dec + 1.5; // sustain is assumed 1.5s for display
+  const atkX = (atk/totalTime)*W*0.6;
+  const decX = atkX + (dec/totalTime)*W*0.6;
+  const susX = W*0.7;
+  const relX = W - (rel/totalTime)*W*0.2;
+
+  // draw envelope path
+  ctx.beginPath();
+  ctx.moveTo(0, bottom);                    // start at bottom
+  ctx.lineTo(atkX, bottom-(bottom-28));     // attack to peak (1.0)
+  ctx.lineTo(decX, susY);                   // decay to sustain level
+  ctx.lineTo(susX, susY);                   // sustain hold
+  ctx.lineTo(relX, bottom);                 // release to bottom
+  ctx.lineTo(W, bottom);                    // end
+
+  ctx.strokeStyle = glow ? '#E4002B' : '#39D0A0';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  if(glow){ ctx.shadowColor='#E4002B'; ctx.shadowBlur=8; }
+  ctx.stroke();
+  ctx.shadowBlur=0;
+}
+
+/* static screen envelope */
+drawEnv(document.getElementById('screenenv'), 0.05, 0.20, 0.70, 0.30, false);
+
+/* ---------- live synth ---------- */
+const atkEl=document.getElementById('atk'), decEl=document.getElementById('dec');
+const susEl=document.getElementById('sus'), relEl=document.getElementById('rel');
+const atkv=document.getElementById('atkv'), decv=document.getElementById('decv');
+const susv=document.getElementById('susv'), relv=document.getElementById('relv');
+const liveCv=document.getElementById('liveenv');
+const playBtn=document.getElementById('play'), pluckBtn=document.getElementById('pluck'), padBtn=document.getElementById('pad');
+const ahint=document.getElementById('ahint');
+
+let actx=null, osc=null, gain=null, playing=false, rafId=null;
+const FREQ = 130.81; // C3
+
+function paint(){ drawEnv(liveCv, +atkEl.value, +decEl.value, +susEl.value, +relEl.value, playing); }
+
+function updateLabels(){
+  atkv.textContent=parseFloat(atkEl.value).toFixed(2);
+  decv.textContent=parseFloat(decEl.value).toFixed(2);
+  susv.textContent=parseFloat(susEl.value).toFixed(2);
+  relv.textContent=parseFloat(relEl.value).toFixed(2);
+  paint();
+}
+
+function startAudio(){
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+  gain = actx.createGain();
+  gain.connect(actx.destination);
+  osc = actx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.value = FREQ;
+  osc.connect(gain);
+  osc.start();
+
+  const now = actx.currentTime;
+  const atk = +atkEl.value;
+  const dec = +decEl.value;
+  const sus = +susEl.value;
+  const rel = +relEl.value;
+
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(1, now + atk);
+  gain.gain.linearRampToValueAtTime(sus, now + atk + dec);
+}
+
+function stopAudio(){
+  if(!actx || !gain) return;
+  const now = actx.currentTime;
+  const rel = +relEl.value;
+  const currentGain = gain.gain.value;
+  gain.gain.setValueAtTime(currentGain, now);
+  gain.gain.linearRampToValueAtTime(0, now + rel);
+
+  const oscToStop = osc;
+  if(oscToStop){
+    setTimeout(() => { try { oscToStop.stop(); } catch(e){} }, (rel*1000)+100);
+  }
+  osc = null;
+}
+
+function tick(){
+  if(playing) paint();
+  rafId = requestAnimationFrame(tick);
+}
+
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.setAttribute('aria-pressed', playing);
+  if(playing){
+    startAudio();
+    playBtn.textContent = '■ Stop';
+    ahint.textContent = 'Drag the sliders while playing. Watch the red line change, hear the sound morph.';
+  } else {
+    stopAudio();
+    playBtn.textContent = '▶ Play a note';
+    ahint.textContent = 'Sound is generated live, no files. Works best with headphones or speakers up.';
+  }
+  paint();
+});
+
+pluckBtn.addEventListener('click', () => {
+  atkEl.value = 0.02;
+  decEl.value = 0.15;
+  susEl.value = 0;
+  relEl.value = 0.1;
+  updateLabels();
+  if(!playing) playBtn.click();
+});
+
+padBtn.addEventListener('click', () => {
+  atkEl.value = 1.0;
+  decEl.value = 0.1;
+  susEl.value = 0.8;
+  relEl.value = 2.0;
+  updateLabels();
+  if(!playing) playBtn.click();
+});
+
+atkEl.addEventListener('input', updateLabels);
+decEl.addEventListener('input', updateLabels);
+susEl.addEventListener('input', updateLabels);
+relEl.addEventListener('input', updateLabels);
+
+paint();
+updateLabels();
+requestAnimationFrame(tick);
+</script>

@@ -1,0 +1,308 @@
+<title>Module 0 - Welcome - MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .padgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px}
+  .pad{height:60px; background:linear-gradient(135deg,#2a2a2f,#1e1e23); border:1px solid #3a3a43; border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:13px; color:var(--mut); font-weight:700}
+  .pad:nth-child(1){background:linear-gradient(135deg,#1e2836,#141620)}
+  .pad:nth-child(2){background:linear-gradient(135deg,#24222a,#1a1820)}
+  .pad:nth-child(3){background:linear-gradient(135deg,#2a2420,#1e1a14)}
+  .pad:nth-child(4){background:linear-gradient(135deg,#2a2428,#1e1a20)}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:1fr; gap:20px}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:14px}
+  .row{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .btn.padBtn{width:70px; height:70px; padding:0; font-size:24px; margin:0}
+  .btn.padBtn:nth-child(1){background:linear-gradient(135deg,#2a3a4a,#1a2a3a)}
+  .btn.padBtn:nth-child(2){background:linear-gradient(135deg,#3a3a3a,#2a2a2a)}
+  .btn.padBtn:nth-child(3){background:linear-gradient(135deg,#4a4a2a,#3a3a1a)}
+  .btn.padBtn:nth-child(4){background:linear-gradient(135deg,#4a2a3a,#3a1a2a)}
+  .btn.padBtn:hover{filter:brightness(1.12)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+  .padgrid-controls{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; max-width:400px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 0 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 00 · Getting started
+      <span class="pips" aria-label="Lesson 0 of 19"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Welcome: your MPC is an instrument builder</h1>
+    <p class="lede">The MPC is a sampler and drum machine. This course teaches you something bigger: how to build instruments from the ground up. By the end, you will have written 8 sounds of your own.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>Imagine a blank canvas with pads instead of keys</h2>
+    <p class="big">A normal synth comes with preset sounds. Your MPC is different. A <b>keygroup track</b> is a tool that turns each pad into a sound you design yourself. One pad is a bass. Another pad is a horn. Another is a pad chord. Another is a snare. You put the sounds you want in the holes you want, then play.</p>
+    <p>Think of it like a toy construction set. You don't get a house pre-made. You get a box of pieces and a manual. You stick the pieces together the way you want. That's what a keygroup track is. Each pad is a small instrument. The course teaches you how to build eight of them. Advanced mode is the new engine that lets you do it. Leave Legacy off.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Global tab</p>
+    <h2>What you are looking at</h2>
+    <p>Make a new track. Set its type to <b>Keygroup</b>. You now have 16 pads (or more, you can add more). Each pad is one sound you will build. The first 4 pads look like this.</p>
+    <div class="screen" aria-label="Recreation of the MPC keygroup track with 4x4 pad grid">
+      <div class="bar"><span>Track 1 · Keygroup</span><span class="sel">GLOBAL</span></div>
+      <div class="disp" style="height:auto; padding:8px; border:none; background:transparent">
+        <div style="font-family:var(--font-mono); font-size:10px; color:var(--faint); margin-bottom:8px">Pad 1 (C1)</div>
+      </div>
+      <div class="padgrid">
+        <div class="pad">1</div>
+        <div class="pad">2</div>
+        <div class="pad">3</div>
+        <div class="pad">4</div>
+        <div class="pad">5</div>
+        <div class="pad">6</div>
+        <div class="pad">7</div>
+        <div class="pad">8</div>
+        <div class="pad">9</div>
+        <div class="pad">10</div>
+        <div class="pad">11</div>
+        <div class="pad">12</div>
+        <div class="pad">13</div>
+        <div class="pad">14</div>
+        <div class="pad">15</div>
+        <div class="pad">16</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Press each pad once and listen</h2>
+    <p>Each of these four pads makes a different sound. Pad 1 is a deep bass. Pad 2 is a soft chord. Pad 3 is a plucky sound. Pad 4 is a hat click. They are all made from the same engine. You're hearing the kind of sounds you will learn to build.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="padgrid-controls">
+          <button class="btn padBtn" id="pad1" aria-label="Play pad 1 - deep bass">1</button>
+          <button class="btn padBtn" id="pad2" aria-label="Play pad 2 - soft pad">2</button>
+          <button class="btn padBtn" id="pad3" aria-label="Play pad 3 - plucky lead">3</button>
+          <button class="btn padBtn" id="pad4" aria-label="Play pad 4 - noise hat">4</button>
+        </div>
+        <p class="hint">Sound is generated live, no files. Works best with headphones or speakers up.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · make your first keygroup</p>
+    <h2>Five steps to a working track</h2>
+    <ol class="steps">
+      <li><b>Make a new track</b><span>Press the button to add a track. Any track will do.</span></li>
+      <li><b>Set its type to Keygroup</b><span>On the Global tab, find the dropdown that says "Drum Track" or "Keyboard Track." Change it to "Keygroup."</span></li>
+      <li><b>Check that Advanced is on</b><span>On the same Global tab, look for a toggle that says "Advanced" or "Legacy." Make sure Advanced is on. Legacy stays off.</span></li>
+      <li><b>Now you have 16 pads</b><span>You can see them on the hardware or in the software. Each one is empty right now. Each one is waiting for a sound.</span></li>
+      <li><b>Pick a pad and start building</b><span>Tap pad 1. It is now yours. You will add layers to it (a sample or an oscillator). Then you'll add filters, envelopes, and modulation. Then it becomes a finished sound.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Say what a keygroup is</span>
+      <span>Make a keygroup track</span>
+      <span>Tell Advanced from Legacy</span>
+      <span>Understand the 16 pads</span>
+      <span>Hear four different sounds</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="mapl" href="engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="engine-map.html"><span class="d">Next →</span>The map</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- simple sine/saw/square blend for pads ---------- */
+function blend(ph, mix){
+  const sine = Math.sin(ph);
+  const saw  = 1 - ph/Math.PI;
+  const sq   = sine >= 0 ? 1 : -1;
+  return sine*(1-mix) + saw*mix;
+}
+function drawWave(cv, data, color){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+  ctx.beginPath();
+  for(let x=0;x<=W;x++){ const idx = Math.floor((x/W)*(data.length-1)); const y=data[idx]; const py=mid - y*(mid-14); x?ctx.lineTo(x,py):ctx.moveTo(x,py); }
+  ctx.strokeStyle = color; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
+}
+
+/* ---------- audio engine ---------- */
+let actx=null, playing=[false,false,false,false];
+const freqs = [82.41, 130.81, 164.81, 164.81];  // E2, C3, E3, E3
+const labels = ['Deep bass','Soft pad','Plucky lead','Noise hat'];
+const liveCv=document.getElementById('livewave');
+let rafId=null, displayData=new Array(200).fill(0);
+
+function startAudio(){
+  if(actx) return;
+  actx = new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+}
+
+function playPad(idx){
+  if(!actx) startAudio();
+  const freq = freqs[idx];
+  const now = actx.currentTime;
+
+  if(idx===0){
+    // Deep bass: sine + saw mix through lowpass
+    const osc1 = actx.createOscillator(); osc1.type='sine'; osc1.frequency.value=freq;
+    const osc2 = actx.createOscillator(); osc2.type='sawtooth'; osc2.frequency.value=freq*1.01;
+    const mix = actx.createGain(); mix.gain.value=0.5;
+    const filt = actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=800;
+    const amp = actx.createGain(); amp.gain.value=0;
+    osc1.connect(mix); osc2.connect(mix); mix.connect(filt); filt.connect(amp); amp.connect(actx.destination);
+    amp.gain.setValueAtTime(0, now); amp.gain.linearRampToValueAtTime(0.25, now+0.1); amp.gain.linearRampToValueAtTime(0, now+1.5);
+    osc1.start(now); osc2.start(now);
+    setTimeout(()=>{osc1.stop(); osc2.stop();}, 1500);
+  } else if(idx===1){
+    // Soft pad chord: three sine waves
+    const freqs2 = [freq, freq*1.25, freq*1.5];
+    const oscs = freqs2.map(f=>{ const o = actx.createOscillator(); o.type='sine'; o.frequency.value=f; return o; });
+    const amp = actx.createGain(); amp.gain.value=0;
+    oscs.forEach(o=>{ o.connect(amp); o.start(now); });
+    amp.connect(actx.destination);
+    amp.gain.setValueAtTime(0, now); amp.gain.linearRampToValueAtTime(0.2, now+0.3); amp.gain.linearRampToValueAtTime(0, now+2);
+    setTimeout(()=>oscs.forEach(o=>o.stop()), 2000);
+  } else if(idx===2){
+    // Plucky lead: sharp attack saw with fast decay
+    const osc = actx.createOscillator(); osc.type='sawtooth'; osc.frequency.value=freq;
+    const filt = actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=3000;
+    const amp = actx.createGain(); amp.gain.value=0;
+    osc.connect(filt); filt.connect(amp); amp.connect(actx.destination);
+    amp.gain.setValueAtTime(0, now); amp.gain.linearRampToValueAtTime(0.3, now+0.05); amp.gain.linearRampToValueAtTime(0, now+0.8);
+    osc.start(now); setTimeout(()=>osc.stop(), 800);
+  } else if(idx===3){
+    // Noise/hat: white noise filtered
+    const buf = actx.createBuffer(1, actx.sampleRate*0.3, actx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i] = Math.random()*2-1;
+    const src = actx.createBufferSource(); src.buffer=buf;
+    const filt = actx.createBiquadFilter(); filt.type='highpass'; filt.frequency.value=5000;
+    const amp = actx.createGain(); amp.gain.value=0;
+    src.connect(filt); filt.connect(amp); amp.connect(actx.destination);
+    amp.gain.setValueAtTime(0.15, now); amp.gain.linearRampToValueAtTime(0, now+0.3);
+    src.start(now); src.stop(now+0.3);
+  }
+
+  playing[idx]=true;
+  setTimeout(()=>{playing[idx]=false;}, idx===3?300:2000);
+}
+
+function paint(){
+  const ctx = liveCv.getContext('2d'), W=liveCv.width, H=liveCv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+
+  // simple waveform: sine wave if playing, flat if not
+  const isPlaying = playing.some(p=>p);
+  ctx.beginPath();
+  for(let x=0;x<=W;x++){
+    const phase = (x/W)*Math.PI*2;
+    const y = isPlaying ? Math.sin(phase)*0.4 : 0;
+    const py = mid - y*(mid-14);
+    x?ctx.lineTo(x,py):ctx.moveTo(x,py);
+  }
+  ctx.strokeStyle = '#39D0A0'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
+}
+
+function tick(){
+  paint(); rafId=requestAnimationFrame(tick);
+}
+
+document.getElementById('pad1').addEventListener('click', ()=>playPad(0));
+document.getElementById('pad2').addEventListener('click', ()=>playPad(1));
+document.getElementById('pad3').addEventListener('click', ()=>playPad(2));
+document.getElementById('pad4').addEventListener('click', ()=>playPad(3));
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  paint();
+  tick();
+});
+</script>

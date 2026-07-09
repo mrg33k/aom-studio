@@ -1,0 +1,345 @@
+<title>Module 14. Choir. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC oscillator screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 14 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 14 · Build lab
+      <span class="pips" aria-label="Lesson 14 of 19"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Build a choir</h1>
+    <p class="lede">A choir is many voices singing the same note at slightly different times and pitches. By the end you will layer voices together, give them a slow swell, add gentle movement, and hear the magic that makes a pad sound alive.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>Many voices in one sound</h2>
+    <p class="big">Imagine 4 people singing the exact same note. They will never sing it identically. Their pitches drift. They breathe at different times. That tiny difference makes the sound warm and thick.</p>
+    <p>A choir patch stacks multiple voices together. Each one is almost the same, but not quite. On the MPC you can use samples (real voices) or warm sine oscillators stacked to create that same choir feeling. Give them a slow swell (slow attack and release) and the whole thing breathes. Add a gentle pitch wiggle and it sounds alive instead of static.</p>
+    <p>That warmth is the whole point. Alone, one voice is thin. Together, 4 or 6 voices become something bigger than themselves.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Samples/Oscs tab</p>
+    <h2>Stacking layers into a choir</h2>
+    <p>A choir patch uses multiple layers. Each layer is an oscillator (we use Warm Sine) or a sampled voice. Set them slightly different pitches in the Tune/Mix tab, spread them across stereo in the Pan knob, and balance their levels. The magic is the difference between them.</p>
+    <div class="screen" aria-label="Recreation of the MPC choir patch with stacked layers">
+      <div class="bar"><span>Layer 1 - 4 · Oscillator & Samples</span><span class="sel">STACKED</span></div>
+      <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:-30deg"></div><div class="kn">Layer 1 Pitch</div><div class="kv">C3</div><div class="role">Root note</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:-10deg"></div><div class="kn">Layer 2 Pitch</div><div class="kv">C3 + 5¢</div><div class="role">Slightly flat</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:10deg"></div><div class="kn">Layer 3 Pitch</div><div class="kv">C3 + 8¢</div><div class="role">Slightly sharp</div></div>
+        <div class="knob"><div class="dial" style="--rot:30deg"></div><div class="kn">Amp Attack</div><div class="kv">1.50 s</div><div class="role">Slow swell in</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Hold a chord and feel it swell</h2>
+    <p>Press the Hold Chord button to hear the patch. A chord held down lets you hear the swell and the movement. Use Voice Count to add and remove voices. One voice sounds thin. Three voices sound full. Six voices are lush and thick. That progression is the teaching.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">▶ Hold Chord</button>
+        </div>
+        <div class="sl">
+          <label for="voices">Voice Count <b id="voicesl">4</b></label>
+          <input type="range" id="voices" min="1" max="8" value="4" aria-label="Number of choir voices">
+        </div>
+        <div class="sl">
+          <label for="lfo">Pitch Movement <b id="lfol">0.4 Hz</b></label>
+          <input type="range" id="lfo" min="0" max="10" value="4" aria-label="Pitch LFO rate">
+        </div>
+        <p class="hint" id="ahint">Sound is generated live, no files. Hold the chord to hear the swell and how voices fill it in.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · make a choir patch</p>
+    <h2>Five steps to your own choir</h2>
+    <ol class="steps">
+      <li><b>Make a keygroup track</b><span>New track, set its type to Keygroup. This unlocks the sound design tools.</span></li>
+      <li><b>Create 4 layers, all Warm Sine oscillators</b><span>On Samples/Oscs, add 4 layers. Set each to Oscillator, then Warm Sine. They all play the same note, but voices matter now.</span></li>
+      <li><b>Detune them slightly in the Tune/Mix tab</b><span>Layer 1 stays at 0. Layer 2 goes to +5 cents. Layer 3 goes to +8 cents. Layer 4 goes to -3 cents. Tiny differences. Huge effect.</span></li>
+      <li><b>Spread them in stereo with Pan</b><span>Layer 1 center. Layer 2 left. Layer 3 right. Layer 4 slightly left. The voices feel wider and bigger now.</span></li>
+      <li><b>Make it swell with the Amp envelope</b><span>On the Amp tab, set Attack to 1.5 seconds. Set Release to 2 seconds. Now when you hit a note it fades in, holds, and fades out like a real breath. Press a chord and hold it. That is your finished choir.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Stack multiple voices</span>
+      <span>Detune for warmth</span>
+      <span>Use Pan to spread voices</span>
+      <span>Build a slow swell with Amp envelope</span>
+      <span>Make a patch feel alive</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="13-piano.html"><span class="d">← Previous</span>Piano</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="15-horns.html"><span class="d">Next →</span>Horns</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- screen visualization: stacked voices waveform ---------- */
+function drawChoirWave(cv, numVoices) {
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, mid = H / 2;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#1c1c22'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
+
+  // Draw blended stacked wave
+  const detuneAmts = [0, 5, 8, -3, 2, -5, 4, -2]; // cents for each layer
+  let sum = new Float32Array(W);
+  for (let v = 0; v < numVoices && v < detuneAmts.length; v++) {
+    const detune = detuneAmts[v] / 1200; // cents to ratio
+    const freq = Math.pow(2, detune);
+    for (let x = 0; x < W; x++) {
+      const ph = (x / W) * Math.PI * 2 * freq;
+      sum[x] += Math.sin(ph) / Math.max(1, numVoices);
+    }
+  }
+
+  ctx.beginPath();
+  for (let x = 0; x < W; x++) {
+    const py = mid - (sum[x] * (mid - 14));
+    x ? ctx.lineTo(x, py) : ctx.moveTo(x, py);
+  }
+  ctx.strokeStyle = '#39D0A0'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+drawChoirWave(document.getElementById('screenwave'), 4);
+
+/* ---------- live synth: stacked choir with swell and LFO ---------- */
+const voicesEl = document.getElementById('voices'), lfoEl = document.getElementById('lfo');
+const voicesl = document.getElementById('voicesl'), lfol = document.getElementById('lfol');
+const liveCv = document.getElementById('livewave');
+const playBtn = document.getElementById('play'), ahint = document.getElementById('ahint');
+
+let actx = null, oscs = [], gains = [], lfos = [], amp = null, playing = false, rafId = null, t0 = 0;
+const CHORD = [130.81, 164.81, 196.00]; // C3, E3, G3
+const detuneAmts = [0, 5, 8, -3, 2, -5, 4, -2]; // cents per layer
+
+function paint() {
+  drawChoirWave(liveCv, +voicesEl.value);
+}
+
+function startAudio() {
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+
+  amp = actx.createGain();
+  amp.gain.value = 0;
+  amp.connect(actx.destination);
+
+  const nv = +voicesEl.value;
+  oscs = [];
+  gains = [];
+  lfos = [];
+
+  // Create stacked voices
+  for (let v = 0; v < nv; v++) {
+    for (let cn = 0; cn < CHORD.length; cn++) {
+      const detune = detuneAmts[v % detuneAmts.length] / 1200;
+      const freq = CHORD[cn] * Math.pow(2, detune);
+      const o = actx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      const g = actx.createGain();
+      g.gain.value = 0;
+      o.connect(g);
+      g.connect(amp);
+      o.start();
+      oscs.push(o);
+      gains.push(g);
+    }
+  }
+
+  // Swell envelope: slow attack, hold, slow release
+  const now = actx.currentTime;
+  amp.gain.setValueAtTime(0, now);
+  amp.gain.linearRampToValueAtTime(0.25, now + 1.5); // 1.5s attack
+  amp.gain.setValueAtTime(0.25, now + 8);
+  amp.gain.linearRampToValueAtTime(0, now + 10.5); // 2.5s release
+
+  // Gentle pitch LFO
+  const lfoRate = 0.1 + (+lfoEl.value) * 0.04; // 0.1 .. 0.5 Hz
+  const lfoDepth = 5; // cents
+  for (let i = 0; i < oscs.length; i++) {
+    const osc = oscs[i];
+    const lfo = actx.createOscillator();
+    lfo.frequency.value = lfoRate;
+    const lfoGain = actx.createGain();
+    lfoGain.gain.value = lfoDepth / 1200;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start();
+    lfos.push(lfo);
+  }
+
+  // Update display gains
+  const perVoice = 1.0 / (nv * CHORD.length);
+  for (let i = 0; i < gains.length; i++) {
+    gains[i].gain.setValueAtTime(perVoice, now);
+  }
+}
+
+function stopAudio() {
+  if (!actx || !amp) return;
+  const now = actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(amp.gain.value, now);
+  amp.gain.linearRampToValueAtTime(0, now + 0.5);
+  const toStop = oscs.slice();
+  const lfoStop = lfos.slice();
+  setTimeout(() => {
+    lfoStop.forEach(lfo => { try { lfo.stop(); } catch (e) { } });
+    toStop.forEach(o => { try { o.stop(); } catch (e) { } });
+  }, 600);
+  oscs = [];
+  gains = [];
+  lfos = [];
+}
+
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.setAttribute('aria-pressed', playing);
+  if (playing) {
+    startAudio();
+    playBtn.textContent = '■ Stop';
+    ahint.textContent = 'Hold the chord. Feel the swell. Try adjusting voice count to hear it get thicker.';
+  } else {
+    stopAudio();
+    playBtn.textContent = '▶ Hold Chord';
+  }
+  paint();
+});
+
+voicesEl.addEventListener('input', () => {
+  voicesl.textContent = voicesEl.value;
+  if (playing) {
+    stopAudio();
+    startAudio();
+  }
+  paint();
+});
+
+lfoEl.addEventListener('input', () => {
+  const lfoRate = (0.1 + (+lfoEl.value) * 0.04).toFixed(2);
+  lfol.textContent = lfoRate + ' Hz';
+});
+
+paint();
+voicesl.textContent = voicesEl.value;
+lfol.textContent = '0.40 Hz';
+</script>

@@ -1,0 +1,322 @@
+<title>Module 10: Build a bass. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC oscillator screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px; min-width:150px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 10 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 10 · Build lab
+      <span class="pips" aria-label="Lesson 10 of 19"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Build a bass: tight, punchy low end</h1>
+    <p class="lede">A great bass feels like a pillow hitting you in the chest. Stack a deep sine sub with a brighter saw layer, squeeze it with a low-pass filter, and snap it with a tight envelope. This is the shape of every bass sound you love.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>The two-layer trick</h2>
+    <p class="big">Most basses are not one thing. They are two things stacked: a <b>sub bass</b> (very deep, round, like distant thunder) and a <b>bright layer</b> (higher, with snap and personality).</p>
+    <p>The sub is a warm sine wave. The bright layer is a sawtooth. When they play together and flow through a low-pass filter (which cuts all the harsh highs), your ear hears one smooth, punchy bass.</p>
+    <p>Add a tight, snappy <b>amp envelope</b> (attack fast, release fast) and the bass feels alive and present, like your fingers are hitting real strings. Slow the envelope and it becomes a pad. Tight envelope, two layers, one filter. That is bass.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Keygroup patch</p>
+    <h2>What the finished patch looks like</h2>
+    <p>Two layers on Layer 1 and Layer 2. Layer 1 is <b>Warm Sine</b> at a low pitch for sub bass. Layer 2 is <b>Saw</b> an octave or two higher for bite. Both flow into <b>Filter 1, a low-pass</b>, which rolls off the highs. The <b>Amp Envelope</b> is snappy: fast Attack, fast Release. That is the whole recipe.</p>
+    <div class="screen" aria-label="Recreation of the MPC bass patch">
+      <div class="bar"><span>Keygroup · Bass patch</span><span class="sel">SAMPLES/OSCS</span></div>
+      <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:-60deg"></div><div class="kn">Layer 1</div><div class="kv">Warm Sine</div><div class="role">Sub bass, very low</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:30deg"></div><div class="kn">Layer 2</div><div class="kv">Saw</div><div class="role">Bright layer, bite</div></div>
+        <div class="knob"><div class="dial" style="--rot:-20deg"></div><div class="kn">Filter</div><div class="kv">Low-pass</div><div class="role">Smooth and warm</div></div>
+        <div class="knob"><div class="dial" style="--rot:50deg"></div><div class="kn">Amp Env</div><div class="kv">Snappy</div><div class="role">Fast attack and release</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Raw saw vs the finished bass</h2>
+    <p>Hit play, then toggle between <b>Raw Saw</b> and <b>Finished Bass</b>. Hear how the tight envelope, the sub layer underneath, and the low-pass filter transform a brittle bright sound into something warm, punchy, and present. Listen on decent speakers or headphones to feel the sub.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">▶ Play bass</button>
+          <button class="btn ghost" id="toggle" aria-pressed="false">Finished</button>
+        </div>
+        <div class="sl">
+          <label for="freq">Pitch <b id="freqv">55 Hz</b></label>
+          <input type="range" id="freq" min="30" max="110" value="55" aria-label="Bass pitch">
+        </div>
+        <p class="hint" id="ahint">Press toggle to hear raw saw vs the finished bass. Listen for the difference in body and punch.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · six steps</p>
+    <h2>Make a bass patch from scratch</h2>
+    <ol class="steps">
+      <li><b>New keygroup track</b><span>Set the track type to Keygroup. This is where synthesis happens.</span></li>
+      <li><b>Layer 1: Warm Sine sub</b><span>On Samples/Oscs tab, set Layer 1 source to Oscillator, choose Warm Sine. This is your deep bass pillow.</span></li>
+      <li><b>Layer 2: Saw for bite</b><span>Add a second layer, set it to Saw oscillator. Tune it up two octaves from the sine for brightness without muddiness.</span></li>
+      <li><b>Add a low-pass filter</b><span>On the Filters tab, set Filter 1 to Low-pass, cutoff around 1.5 kHz. This smooths both layers into one warm tone.</span></li>
+      <li><b>Make the envelope snappy</b><span>On Amp Envelope tab, set Attack fast (40 ms), Release fast (80 ms). This is what makes it punch instead of sounding mushy.</span></li>
+      <li><b>Stack and balance</b><span>On the Tune/Mix sub-tab, pull Layer 2 level down a notch (sine should be louder). Play a note. That is your bass.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Stack two oscillator layers</span>
+      <span>Use Warm Sine for sub bass</span>
+      <span>Use Saw for brightness</span>
+      <span>Route through a low-pass filter</span>
+      <span>Shape a tight bass with envelopes</span>
+      <span>Build a punchy synth bass</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="09-mod-matrix.html"><span class="d">← Previous</span>Mod Matrix</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="11-synths.html"><span class="d">Next →</span>Synths</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- simple waveform drawing ---------- */
+function drawScreenWave(cv){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+
+  // draw a simple sine wave (sub bass representation)
+  ctx.beginPath();
+  for(let x=0;x<=W;x++){
+    const ph=(x/W)*Math.PI*4;
+    const y=Math.sin(ph);
+    const py=mid - y*(mid-14);
+    x?ctx.lineTo(x,py):ctx.moveTo(x,py);
+  }
+  ctx.strokeStyle='#39D0A0'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
+}
+
+drawScreenWave(document.getElementById('screenwave'));
+
+/* ---------- live bass synth ---------- */
+const freqEl=document.getElementById('freq');
+const freqv=document.getElementById('freqv');
+const liveCv=document.getElementById('livewave');
+const playBtn=document.getElementById('play'), toggleBtn=document.getElementById('toggle'), ahint=document.getElementById('ahint');
+let actx=null, sineOsc=null, sawOsc=null, sineGain=null, sawGain=null, filt=null, amp=null, playing=false, rawMode=false, rafId=null;
+
+function drawLiveWave(isRaw){
+  const ctx = liveCv.getContext('2d'), W=liveCv.width, H=liveCv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+
+  ctx.beginPath();
+  for(let x=0;x<=W;x++){
+    let y=0;
+    const ph=(x/W)*Math.PI*2;
+    if(isRaw){
+      y = 1 - (ph/Math.PI);
+    } else {
+      y = Math.sin(ph)*0.6 + (1 - (ph/Math.PI))*0.4;
+    }
+    const py=mid - y*(mid-14);
+    x?ctx.lineTo(x,py):ctx.moveTo(x,py);
+  }
+  ctx.strokeStyle=isRaw?'#E4002B':'#39D0A0'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
+}
+
+function updateFreqDisplay(){
+  const freq = Math.round(parseFloat(freqEl.value));
+  freqv.textContent = freq + ' Hz';
+}
+
+function startAudio(){
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+
+  amp = actx.createGain(); amp.gain.value=0;
+  filt = actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=1500; filt.Q.value=1;
+  filt.connect(amp); amp.connect(actx.destination);
+
+  const baseFreq = parseFloat(freqEl.value);
+
+  sineOsc = actx.createOscillator(); sineOsc.type='sine'; sineOsc.frequency.value=baseFreq;
+  sineGain = actx.createGain(); sineGain.gain.value=rawMode?0:0.6; sineOsc.connect(sineGain); sineGain.connect(filt); sineOsc.start();
+
+  sawOsc = actx.createOscillator(); sawOsc.type='sawtooth'; sawOsc.frequency.value=baseFreq*2;
+  sawGain = actx.createGain(); sawGain.gain.value=rawMode?1:0.4; sawOsc.connect(sawGain); sawGain.connect(filt); sawOsc.start();
+
+  const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(0, now);
+  amp.gain.linearRampToValueAtTime(0.25, now+0.04);
+}
+
+function stopAudio(){
+  if(!actx||!amp) return;
+  const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(amp.gain.value, now);
+  amp.gain.linearRampToValueAtTime(0, now+0.08);
+  const sineTrig=sineOsc, sawTrig=sawOsc;
+  setTimeout(()=>{
+    try{sineTrig.stop()}catch(e){}
+    try{sawTrig.stop()}catch(e){}
+  }, 100);
+  sineOsc=null; sawOsc=null; sineGain=null; sawGain=null;
+}
+
+playBtn.addEventListener('click', ()=>{
+  playing=!playing; playBtn.setAttribute('aria-pressed', playing);
+  if(playing){
+    startAudio();
+    playBtn.textContent='■ Stop';
+    ahint.textContent='Toggle between raw and finished. Feel the difference.';
+  } else {
+    stopAudio();
+    playBtn.textContent='▶ Play bass';
+  }
+  drawLiveWave(rawMode);
+});
+
+toggleBtn.addEventListener('click', ()=>{
+  rawMode=!rawMode; toggleBtn.setAttribute('aria-pressed', rawMode);
+  toggleBtn.textContent = rawMode ? 'Raw saw' : 'Finished';
+  if(playing && sineGain && sawGain){
+    const now=actx.currentTime;
+    if(rawMode){
+      sineGain.gain.setTargetAtTime(0, now, 0.02);
+      sawGain.gain.setTargetAtTime(1, now, 0.02);
+    } else {
+      sineGain.gain.setTargetAtTime(0.6, now, 0.02);
+      sawGain.gain.setTargetAtTime(0.4, now, 0.02);
+    }
+  }
+  drawLiveWave(rawMode);
+});
+
+freqEl.addEventListener('input', ()=>{
+  updateFreqDisplay();
+  if(playing && sineOsc){
+    const freq = parseFloat(freqEl.value);
+    sineOsc.frequency.setTargetAtTime(freq, actx.currentTime, 0.01);
+    sawOsc.frequency.setTargetAtTime(freq*2, actx.currentTime, 0.01);
+  }
+});
+
+updateFreqDisplay();
+drawLiveWave(false);
+requestAnimationFrame(()=>{});
+</script>

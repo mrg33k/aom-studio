@@ -1,0 +1,371 @@
+<title>Module 11. Synth Leads. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC oscillator screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* mini keyboard */
+  .keyboard{display:flex; gap:2px; margin-top:12px; padding:12px; background:var(--raised); border-radius:10px; border:1px solid var(--edge)}
+  .key{flex:1; min-height:60px; border:1px solid var(--edge); border-radius:6px; background:linear-gradient(180deg,#2a2a31,#1a1a21); cursor:pointer; font-family:var(--font-mono); font-size:11px; color:var(--mut); display:flex; align-items:flex-end; justify-content:center; padding-bottom:6px; transition:background .1s ease, box-shadow .1s ease; user-select:none}
+  .key:hover{background:linear-gradient(180deg,#3a3a43,#2a2a31)}
+  .key:active{background:var(--teal); color:#000; box-shadow:inset 0 2px 6px rgba(0,0,0,.5)}
+  .key.active{background:var(--teal); color:#000; box-shadow:inset 0 2px 6px rgba(0,0,0,.5)}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 11 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 11 · Build lab
+      <span class="pips" aria-label="Lesson 11 of 19"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Build a synth lead</h1>
+    <p class="lede">A lead is a synth you play like a solo voice. By the end you'll have a bright, expressive synth with a snappy filter that moves, vibrato that bends the pitch, and the ability to play fast note-to-note without overlap. Then you'll hear it in real time on mini keys.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>A lead is shaped attention</h2>
+    <p class="big">A <b>lead</b> is a synth voice you play one note at a time, like a saxophone. It has to cut through the mix, respond fast, and feel alive. The secret is three ingredients: a bright start, a moving middle, and a quick fade.</p>
+    <p><b>Bright start</b> means a sawtooth oscillator (sharp, buzzy) flowing through a filter that snaps open and closed. When you hit a key, the filter envelope slams the cutoff up, then settles down. <b>Pitch wobble</b> (vibrato) adds human warmth and expression. <b>Mono mode</b> means only one note plays at a time, so new notes cut off the old ones, which is what a saxophone does too.</p>
+    <p>You build this from a sawwave, a low-pass filter with an envelope, an LFO for vibrato, and one switch to toggle each effect on and off so you hear what it adds.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · The layers tab and filters</p>
+    <h2>A finished lead patch</h2>
+    <p>Start with a keygroup track in <b>Mono mode</b> so only one note plays at a time. Layer 1 is a <b>Saw oscillator</b>. The <b>Amp envelope</b> is fast attack, short decay. The <b>Filter</b> is low-pass with a snappy envelope, and the <b>Resonance</b> boost adds edge. An <b>LFO to pitch</b> makes the vibrato wiggle.</p>
+    <div class="screen" aria-label="Recreation of the MPC synth lead patch layout">
+      <div class="bar"><span>Keygroup · Lead</span><span class="sel">SAW</span></div>
+      <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:50deg"></div><div class="kn">Cutoff</div><div class="kv">108</div><div class="role">Filter brightness</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:60deg"></div><div class="kn">Resonance</div><div class="kv">72</div><div class="role">Adds bite at the peak</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:40deg"></div><div class="kn">Env Depth</div><div class="kv">64</div><div class="role">Filter envelope amount</div></div>
+        <div class="knob"><div class="dial" style="--rot:-20deg"></div><div class="kn">LFO Rate</div><div class="kv">4.2 Hz</div><div class="role">Vibrato speed</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live on mini keys</p>
+    <h2>Play the lead and toggle effects</h2>
+    <p>Click any key on the mini keyboard below to play a note. Use the toggles to hear what each piece does. Turn off <b>Filter Envelope</b> and the sound goes duller, less punchy. Turn off <b>Vibrato</b> and it sounds stiff. Use both and you get a professional, alive lead. You can play fast note-to-note because it's <b>Mono mode</b>. only one note at a time, just like a real horn.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="true">■ Synth ready</button>
+        </div>
+        <div class="sl">
+          <label>
+            <input type="checkbox" id="envToggle" style="width:16px; height:16px; cursor:pointer" checked> Filter Envelope
+          </label>
+        </div>
+        <div class="sl">
+          <label>
+            <input type="checkbox" id="vibratoToggle" style="width:16px; height:16px; cursor:pointer" checked> Vibrato
+          </label>
+        </div>
+        <p class="hint" id="ahint">Click the keys below or use your keyboard: Z=C3, X=D3, C=E3, V=F3, B=G3, N=A3, M=B3, ,=C4. Mono mode: new notes cut old ones.</p>
+      </div>
+    </div>
+    <div class="keyboard">
+      <div class="key" data-note="48" data-label="C3">C</div>
+      <div class="key" data-note="50" data-label="D3">D</div>
+      <div class="key" data-note="52" data-label="E3">E</div>
+      <div class="key" data-note="53" data-label="F3">F</div>
+      <div class="key" data-note="55" data-label="G3">G</div>
+      <div class="key" data-note="57" data-label="A3">A</div>
+      <div class="key" data-note="59" data-label="B3">B</div>
+      <div class="key" data-note="60" data-label="C4">C</div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · the complete lead synth</p>
+    <h2>Six steps to a responsive lead</h2>
+    <ol class="steps">
+      <li><b>Start with Mono mode</b><span>New track, set it to Keygroup, then go to the GLOBAL tab and switch Poly to Mono. This way only one note plays at a time, and new notes cut off the old ones.</span></li>
+      <li><b>Choose Saw for Layer 1</b><span>On the Samples/Oscs tab, set Layer 1 to Oscillator, then pick Saw from the list. Sawtooth is bright and cuts through.</span></li>
+      <li><b>Make it respond fast</b><span>On the Amp envelope, cut the Attack to zero (instant response) and set Decay to about 0.3 seconds. A lead has to feel snappy, not mushy.</span></li>
+      <li><b>Add a filter with punch</b><span>On the Filters tab, set Filter 1 to low-pass, Cutoff to 100-110, and Resonance to 70. Now turn up Env Depth to 80 so the filter envelope opens it on each note attack.</span></li>
+      <li><b>Wire vibrato</b><span>On the LFO 1 tab, set Rate to 4-5 Hz and turn up the Pitch amount to 5-8. In the Mod Matrix, route LFO 1 to Pitch. Now the sound wobbles like a horn player adding expression.</span></li>
+      <li><b>Play it and tweak</b><span>Hold a note and listen. If it's too bright, lower Cutoff or Resonance. If the filter envelope is too much, lower Env Depth. If vibrato is annoying, cut the LFO level. A lead is about feel, not rules.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Switch Mono vs Poly mode</span>
+      <span>Build a Saw lead from scratch</span>
+      <span>Dial in a punchy filter envelope</span>
+      <span>Add vibrato via LFO to pitch</span>
+      <span>Toggle effects to hear what they do</span>
+      <span>Play note-to-note fast without overlap</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="10-bass.html"><span class="d">← Previous</span>Module 10 · Bass</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="12-pads.html"><span class="d">Next →</span>Module 12 · Pads</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- static screen waveform (sawtooth) ---------- */
+function drawSaw(cv, glow){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+  ctx.beginPath();
+  for(let i=0; i<4; i++){
+    const x0 = (i/4)*W, x1 = ((i+1)/4)*W;
+    ctx.moveTo(x0, mid-60); ctx.lineTo(x1, mid+60);
+  }
+  ctx.strokeStyle = glow ? '#E4002B' : '#39D0A0'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  if(glow){ ctx.shadowColor='#E4002B'; ctx.shadowBlur=8; } ctx.stroke(); ctx.shadowBlur=0;
+}
+drawSaw(document.getElementById('screenwave'), false);
+
+/* ---------- live synth ---------- */
+let actx=null, oscs=[], gains=[], filt=null, amp=null, playing=true, rafId=null;
+let activeNote=null, lfoPhase=0, envStartTime=0, envDuration=0.6;
+const MASTER_VOL = 0.25;
+const keys = document.querySelectorAll('.key');
+const envToggle = document.getElementById('envToggle'), vibratoToggle = document.getElementById('vibratoToggle');
+const playBtn = document.getElementById('play'), ahint = document.getElementById('ahint');
+const liveCv = document.getElementById('livewave');
+const keyboardMap = {'z':48, 'x':50, 'c':52, 'v':53, 'b':55, 'n':57, 'm':59, ',':60};
+
+function midiToFreq(note){
+  return 440 * Math.pow(2, (note-69)/12);
+}
+
+function paint(){
+  const ctx = liveCv.getContext('2d'), W=liveCv.width, H=liveCv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+  if(!actx){ ctx.strokeStyle='#39D0A0'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke(); return; }
+  const analyser = actx.createAnalyser(); amp.connect(analyser);
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+  ctx.beginPath();
+  for(let i=0; i<data.length; i++){
+    const x = (i/data.length)*W;
+    const y = mid - (data[i]/128)*mid;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.strokeStyle = playing ? '#E4002B' : '#39D0A0'; ctx.lineWidth=2; ctx.stroke();
+}
+
+function initAudio(){
+  if(actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+  amp = actx.createGain(); amp.gain.value = MASTER_VOL;
+  amp.connect(actx.destination);
+  filt = actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=1500; filt.Q.value=3.5;
+  filt.connect(amp);
+}
+
+function noteOn(note){
+  initAudio();
+  if(activeNote !== null) noteOff(activeNote);
+  activeNote = note;
+  const now = actx.currentTime;
+  const freq = midiToFreq(note);
+  const osc = actx.createOscillator(); osc.type='sawtooth'; osc.frequency.value = freq;
+  const gain = actx.createGain(); gain.gain.value = 0.4;
+  osc.connect(gain); gain.connect(filt);
+  oscs.push({osc, gain, note});
+  osc.start();
+  envStartTime = now; envDuration = 0.6;
+  const baseFreq = 1500;
+  const envDepth = 2500;
+  if(envToggle.checked){
+    filt.frequency.cancelScheduledValues(now);
+    filt.frequency.setValueAtTime(baseFreq + envDepth, now);
+    filt.frequency.linearRampToValueAtTime(baseFreq, now + envDuration);
+  } else {
+    filt.frequency.cancelScheduledValues(now);
+    filt.frequency.setValueAtTime(baseFreq, now);
+  }
+  lfoPhase = 0;
+  keys.forEach(k=>k.classList.remove('active'));
+  document.querySelector(`[data-note="${note}"]`).classList.add('active');
+  paint();
+}
+
+function noteOff(note){
+  const idx = oscs.findIndex(x=>x.note===note);
+  if(idx<0) return;
+  const {osc,gain} = oscs[idx];
+  const now = actx.currentTime;
+  gain.gain.linearRampToValueAtTime(0, now+0.1);
+  setTimeout(()=>osc.stop(), 150);
+  oscs.splice(idx,1);
+  activeNote=null;
+  document.querySelector(`[data-note="${note}"]`).classList.remove('active');
+  paint();
+}
+
+function tick(ts){
+  if(actx && oscs.length>0){
+    const el = (ts-envStartTime)*0.001;
+    lfoPhase += 0.015;
+    oscs.forEach(({osc, note})=>{
+      const baseFreq = midiToFreq(note);
+      const vibAmt = vibratoToggle.checked ? 20 : 0;
+      const vibrato = Math.sin(lfoPhase * Math.PI * 2 * 5) * vibAmt;
+      osc.frequency.value = baseFreq + vibrato;
+    });
+  }
+  paint();
+  rafId = requestAnimationFrame(tick);
+}
+
+keys.forEach(k=>{
+  k.addEventListener('mousedown', ()=>noteOn(+k.dataset.note));
+  k.addEventListener('mouseup', ()=>noteOff(+k.dataset.note));
+  k.addEventListener('mouseleave', ()=>noteOff(+k.dataset.note));
+});
+
+document.addEventListener('keydown', e=>{
+  const note = keyboardMap[e.key.toLowerCase()];
+  if(note && activeNote !== note) noteOn(note);
+});
+
+document.addEventListener('keyup', e=>{
+  const note = keyboardMap[e.key.toLowerCase()];
+  if(note && activeNote === note) noteOff(note);
+});
+
+envToggle.addEventListener('change', ()=>{
+  if(actx && activeNote!==null){
+    const now = actx.currentTime;
+    const baseFreq = 1500;
+    const envDepth = 2500;
+    if(envToggle.checked){
+      filt.frequency.cancelScheduledValues(now);
+      filt.frequency.setValueAtTime(baseFreq + envDepth, now);
+      filt.frequency.linearRampToValueAtTime(baseFreq, now + envDuration);
+    } else {
+      filt.frequency.cancelScheduledValues(now);
+      filt.frequency.setValueAtTime(baseFreq, now);
+    }
+  }
+});
+
+vibratoToggle.addEventListener('change', ()=>{});
+
+playBtn.addEventListener('click', ()=>{
+  playing=!playing;
+  if(!playing && activeNote!==null) noteOff(activeNote);
+  playBtn.textContent = playing ? '■ Synth ready' : '▶ Synth off';
+  playBtn.setAttribute('aria-pressed', playing);
+});
+
+paint();
+requestAnimationFrame(tick);
+</script>

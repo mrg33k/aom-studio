@@ -1,0 +1,343 @@
+<title>Module 13 · Piano with Velocity Layers · MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC velocity screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .table{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; padding:10px; margin-top:6px; font-family:var(--font-mono); font-size:10px}
+  .table-row{display:flex; gap:16px; padding:8px 0; border-bottom:1px solid #23232a}
+  .table-row:last-child{border-bottom:none}
+  .table-col{flex:1; text-align:center}
+  .table-col.label{color:var(--faint); flex:0.8; text-align:left}
+  .table-col.val{color:var(--teal)}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .btngroup{display:flex; gap:10px}
+  .btngroup .btn{flex:1; text-align:center; justify-content:center}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px; min-width:140px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 13 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 13 · Build lab
+      <span class="pips" aria-label="Lesson 13 of 19"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Build a piano with velocity layers</h1>
+    <p class="lede">A real piano sounds different when you play it soft versus hard. Hit harder and the recording changes. This is the sampler's superpower. By the end you'll have layered samples that switch based on how hard you play, and you'll hear why real instruments feel alive.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>Three pianos hiding in one</h2>
+    <p class="big">Imagine recording a piano three times: once playing very softly, once at medium volume, and once banging the keys hard. The soft one sounds mellow and dark. The medium one is normal. The hard one is bright and aggressive. All three are piano, but each has its own tone.</p>
+    <p>Now hide all three inside one keygroup. Tell the MPC: play the soft recording when you hit the pad gently, play the medium one for normal hits, and play the hard one when you play aggressively. That's called <b>velocity layers</b>. Every layer sits in a velocity range. Hit softer or harder and a different layer wakes up. From the outside, it looks like one piano. Inside, it's three timbres taking turns.</p>
+    <p>That's why sampled pianos feel real. The machine does exactly what a real player does: change tone based on how hard you touch the keys.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Samples/Oscs tab</p>
+    <h2>Where you'll set it up</h2>
+    <p>Pick the Samples/Oscs tab, then the <b>Velocity</b> sub-tab. Each layer gets a velocity range (Vel Start and Vel End), a root note (the pitch sample), and a reference amplitude level. You'll also check <b>Key Track</b> to let the pitch follow your notes across the keyboard.</p>
+    <div class="screen" aria-label="Recreation of the MPC velocity layers screen">
+      <div class="bar"><span>Layer Settings · Velocity Tab</span><span class="sel">VELOCITY</span></div>
+      <div class="table">
+        <div class="table-row">
+          <div class="table-col label">Layer</div>
+          <div class="table-col">Vel Start</div>
+          <div class="table-col">Vel End</div>
+          <div class="table-col">Root Note</div>
+        </div>
+        <div class="table-row">
+          <div class="table-col label">1 (soft)</div>
+          <div class="table-col val">0</div>
+          <div class="table-col val">42</div>
+          <div class="table-col val">C3</div>
+        </div>
+        <div class="table-row">
+          <div class="table-col label">2 (medium)</div>
+          <div class="table-col val">43</div>
+          <div class="table-col val">85</div>
+          <div class="table-col val">C3</div>
+        </div>
+        <div class="table-row">
+          <div class="table-col label">3 (hard)</div>
+          <div class="table-col val">86</div>
+          <div class="table-col val">127</div>
+          <div class="table-col val">C3</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Play soft, medium, and hard</h2>
+    <p>Click a velocity button or drag the slider to change how hard the piano is being played. Each step switches the tone. Soft is mellow. Medium is balanced. Hard is bright and percussive. Listen for the timbral shift as you move between layers. That's what makes a sampled piano feel real.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">▶ Play piano</button>
+        </div>
+        <div class="row">
+          <div class="btngroup">
+            <button class="btn ghost" id="soft" aria-pressed="true" tabindex="0">Soft (ppp)</button>
+            <button class="btn ghost" id="medium" aria-pressed="false" tabindex="0">Medium (mf)</button>
+            <button class="btn ghost" id="hard" aria-pressed="false" tabindex="0">Hard (fff)</button>
+          </div>
+        </div>
+        <div class="sl">
+          <label for="vel">Velocity <b id="velv">30</b></label>
+          <input type="range" id="vel" min="0" max="127" value="30" aria-label="Piano velocity">
+        </div>
+        <p class="hint" id="ahint">Sound is generated live. Use headphones or speakers for best listening.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · set up velocity layers</p>
+    <h2>Six steps to a realistic piano</h2>
+    <ol class="steps">
+      <li><b>Make a keygroup track</b><span>New track, set type to Keygroup. This is your instrument builder.</span></li>
+      <li><b>Load or record three piano samples</b><span>Get or record a C3 piano note at three dynamics: soft, medium, and hard. Trim them to the same length so they feel aligned.</span></li>
+      <li><b>Assign each to a layer and set velocity ranges</b><span>Layer 1 gets the soft sample, Vel Start 0 to Vel End 42. Layer 2 is medium, 43 to 85. Layer 3 is hard, 86 to 127. Check the Velocity tab.</span></li>
+      <li><b>Set root notes and turn on Key Track</b><span>All three layers: root note is C3. In the Keygroup Global tab, turn Key Track ON so the pitch follows your notes.</span></li>
+      <li><b>Dial in the amp envelope</b><span>On the Amp tab, set Attack to around 0.1 seconds for piano realism. Leave Release at a natural tail (around 1 second). Piano rings out.</span></li>
+      <li><b>Play and listen to layer switches</b><span>Hold one note and tap gently, then harder. You'll hear the tone shift as layers switch. Hit all three velocity zones and feel the realism.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Layer samples by velocity range</span>
+      <span>Set Root Notes per layer</span>
+      <span>Turn on Key Track</span>
+      <span>Hear tone change with playing dynamics</span>
+      <span>Build a realistic sampled piano</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="12-pads.html"><span class="d">← Previous</span>Module 12 · Pads</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="14-choir.html"><span class="d">Next →</span>Module 14 · Choir</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- shared waveform visualization ---------- */
+function drawWave(cv, vel){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+
+  const freq = 130.81; // C3
+  const samples = 256;
+  ctx.beginPath();
+  for(let x=0; x<=W; x++){
+    const t = (x/W)*2;
+    let y = 0;
+    if(vel < 43) y = Math.sin(t*6)*0.4 + Math.sin(t*12)*0.1;
+    else if(vel < 86) y = Math.sin(t*6)*0.6 + Math.sin(t*12)*0.2 + Math.sin(t*18)*0.1;
+    else y = Math.sin(t*6)*0.8 + Math.sin(t*12)*0.3 + Math.sin(t*18)*0.15;
+    const py = mid - y*(mid-14);
+    x?ctx.lineTo(x,py):ctx.moveTo(x,py);
+  }
+  const col = vel < 43 ? '#39D0A0' : vel < 86 ? '#39D0A0' : '#E4002B';
+  ctx.strokeStyle = col; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
+}
+
+/* ---------- live synth ---------- */
+const velEl = document.getElementById('vel');
+const velv = document.getElementById('velv');
+const liveCv = document.getElementById('livewave');
+const playBtn = document.getElementById('play');
+const softBtn = document.getElementById('soft');
+const mediumBtn = document.getElementById('medium');
+const hardBtn = document.getElementById('hard');
+const ahint = document.getElementById('ahint');
+
+let actx = null, oscs = [], gains = [], amp = null, filt = null, playing = false, rafId = null;
+const FREQ = 130.81; // C3
+
+function paint(){ drawWave(liveCv, +velEl.value); }
+
+function getLayerTone(vel){
+  if(vel < 43) return {bright:0.2, attack:0.08, tone:'mellow'};
+  if(vel < 86) return {bright:0.5, attack:0.05, tone:'balanced'};
+  return {bright:0.8, attack:0.02, tone:'bright'};
+}
+
+function startAudio(){
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+  amp = actx.createGain(); amp.gain.value=0;
+  filt = actx.createBiquadFilter(); filt.type='lowpass';
+  filt.connect(amp); amp.connect(actx.destination);
+
+  oscs=[]; gains=[];
+  const vel = +velEl.value;
+  const {bright, attack, tone} = getLayerTone(vel);
+  filt.frequency.value = 400 + bright*3200;
+
+  const types = ['sine', 'sine'];
+  types.forEach((tp, i)=>{ const o=actx.createOscillator(); o.type=tp; o.frequency.value=FREQ*(1+i*0.01);
+    const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(filt); o.start(); oscs.push(o); gains.push(g); });
+
+  const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(0, now); amp.gain.linearRampToValueAtTime(0.25, now+attack);
+}
+
+function stopAudio(){
+  if(!actx||!amp) return; const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now); amp.gain.setValueAtTime(amp.gain.value, now);
+  amp.gain.linearRampToValueAtTime(0, now+0.8);
+  const toStop=oscs.slice(); setTimeout(()=>toStop.forEach(o=>{try{o.stop()}catch(e){}}), 900);
+  oscs=[]; gains=[];
+}
+
+function updateVelocity(newVel){
+  velEl.value = newVel; velv.textContent = newVel; paint();
+  if(playing && filt){
+    const {bright} = getLayerTone(newVel);
+    filt.frequency.value = 400 + bright*3200;
+  }
+}
+
+playBtn.addEventListener('click', ()=>{
+  playing=!playing; playBtn.setAttribute('aria-pressed', playing);
+  if(playing){ startAudio(); playBtn.textContent='■ Stop'; ahint.textContent='Change velocity to hear the tone shift.'; }
+  else{ stopAudio(); playBtn.textContent='▶ Play piano'; }
+  paint();
+});
+
+softBtn.addEventListener('click', ()=>{
+  softBtn.setAttribute('aria-pressed', 'true');
+  mediumBtn.setAttribute('aria-pressed', 'false');
+  hardBtn.setAttribute('aria-pressed', 'false');
+  updateVelocity(30);
+  if(!playing) playBtn.click();
+});
+
+mediumBtn.addEventListener('click', ()=>{
+  softBtn.setAttribute('aria-pressed', 'false');
+  mediumBtn.setAttribute('aria-pressed', 'true');
+  hardBtn.setAttribute('aria-pressed', 'false');
+  updateVelocity(64);
+  if(!playing) playBtn.click();
+});
+
+hardBtn.addEventListener('click', ()=>{
+  softBtn.setAttribute('aria-pressed', 'false');
+  mediumBtn.setAttribute('aria-pressed', 'false');
+  hardBtn.setAttribute('aria-pressed', 'true');
+  updateVelocity(100);
+  if(!playing) playBtn.click();
+});
+
+velEl.addEventListener('input', ()=>{
+  const v = +velEl.value;
+  if(v < 43){ softBtn.setAttribute('aria-pressed', 'true'); mediumBtn.setAttribute('aria-pressed', 'false'); hardBtn.setAttribute('aria-pressed', 'false'); }
+  else if(v < 86){ softBtn.setAttribute('aria-pressed', 'false'); mediumBtn.setAttribute('aria-pressed', 'true'); hardBtn.setAttribute('aria-pressed', 'false'); }
+  else{ softBtn.setAttribute('aria-pressed', 'false'); mediumBtn.setAttribute('aria-pressed', 'false'); hardBtn.setAttribute('aria-pressed', 'true'); }
+  updateVelocity(v);
+});
+
+paint(); velv.textContent=velEl.value;
+</script>

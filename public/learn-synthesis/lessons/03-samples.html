@@ -1,0 +1,368 @@
+<title>Module 3: Samples. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC sample screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:start}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden; position:relative}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .pviz .handle{position:absolute; top:0; width:3px; height:100%; cursor:col-resize; opacity:0.8; z-index:10}
+  .pviz .handle.start{background:var(--teal); left:0}
+  .pviz .handle.end{background:var(--red); right:0}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .keys{display:flex; gap:8px; flex-wrap:wrap}
+  .keybit{width:48px; height:48px; border-radius:6px; background:var(--raised); border:1px solid var(--edge); font-weight:700; color:var(--mut); cursor:pointer; transition:all .1s ease; font-size:13px; font-family:var(--font-mono)}
+  .keybit:hover{border-color:var(--edge-hi)}
+  .keybit:active{transform:scale(0.95)}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px; min-width:140px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 3 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 03 · The machine
+      <span class="pips" aria-label="Lesson 3 of 19"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Samples: build from recordings</h1>
+    <p class="lede">A sample is just a recording. Here's how to load one, trim it to the part you want, and teach it to transpose across your keyboard or stay stuck at one pitch.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>A recording that plays at different pitches</h2>
+    <p class="big">When you record something, it has a speed and a pitch. Play it faster, it sounds higher. Play it slower, it sounds lower. That's a <b>sample</b>.</p>
+    <p>The MPC lets you load a sample and trim it to the part you like. Then you can transpose it (play it at different pitches) or keep it at one fixed pitch. You can even layer multiple samples across your keyboard so each key plays a different recording, just like a real piano.</p>
+    <p>This is how drum kits, pianos, and choirs are made on the MPC. A sample and a few settings is all you need.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Samples/Oscs tab</p>
+    <h2>Where you'll find it</h2>
+    <p>Load a sample into a layer. You'll see the waveform with a green <b>Start</b> marker and red <b>End</b> marker. Drag them to trim the region you want to play. Below that, turn <b>Key Track</b> on or off.</p>
+    <div class="screen" aria-label="Recreation of the MPC sample screen">
+      <div class="bar"><span>Layer 1 · Sample</span><span class="sel">LOADED</span></div>
+      <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:-40deg"></div><div class="kn">Start</div><div class="kv">0</div><div class="role">Where trim begins (green)</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:70deg"></div><div class="kn">End</div><div class="kv">100%</div><div class="role">Where trim ends (red)</div></div>
+        <div class="knob"><div class="dial" style="--rot:0deg"></div><div class="kn">Loop</div><div class="kv">Off</div><div class="role">Loop region or play once</div></div>
+        <div class="knob"><div class="dial" style="--rot:-20deg"></div><div class="kn">Key Track</div><div class="kv">On</div><div class="role">Transpose or stay fixed</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Drag the trim markers and play</h2>
+    <p>Press play, then drag the green Start or red End marker to trim the sample. The shaded area is what you'll hear. Try the three keys. With Key Track on, they transpose. Turn it off and they all play the same pitch.</p>
+    <div class="player">
+      <div class="pviz">
+        <canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas>
+        <div class="handle start" id="startHandle" aria-label="Drag to adjust sample start" tabindex="0"></div>
+        <div class="handle end" id="endHandle" aria-label="Drag to adjust sample end" tabindex="0"></div>
+      </div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">▶ Play on key</button>
+          <button class="btn ghost" id="keytrack" aria-pressed="true">Key Track: On</button>
+        </div>
+        <div>
+          <p style="color:var(--mut); font-size:14px; margin:0 0 8px">Press a key or click:</p>
+          <div class="keys">
+            <button class="keybit" data-semitone="-12" title="C3 (low)">C3</button>
+            <button class="keybit" data-semitone="0" title="C4 (middle)">C4</button>
+            <button class="keybit" data-semitone="12" title="C5 (high)">C5</button>
+          </div>
+        </div>
+        <div class="sl">
+          <label for="start">Start <b id="startv">0%</b></label>
+          <input type="range" id="start" min="0" max="100" value="0" step="1" aria-label="Sample start position">
+        </div>
+        <div class="sl">
+          <label for="end">End <b id="endv">100%</b></label>
+          <input type="range" id="end" min="0" max="100" value="100" step="1" aria-label="Sample end position">
+        </div>
+        <p class="hint">Sound is generated live. Press a key or click a button, then move the trim markers. Key Track makes it transpose. Turn it off for fixed pitch.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · set up your first sample</p>
+    <h2>Five steps to a playable sample</h2>
+    <ol class="steps">
+      <li><b>Make a keygroup track</b><span>New track, set its type to Keygroup. This puts you in sample mode.</span></li>
+      <li><b>Load a sample into Layer 1</b><span>Browse your audio files and pick one. The waveform appears in the Samples/Oscs tab.</span></li>
+      <li><b>Trim it with Start and End</b><span>Drag the green Start and red End markers to the part you want. You can see the duration in the display.</span></li>
+      <li><b>Set your root note</b><span>Tell the MPC what pitch the sample was recorded at. Middle C is the default. This is how transposition knows where to start.</span></li>
+      <li><b>Turn Key Track on, play across the keyboard</b><span>Now each key you hit transposes the sample to that pitch. Turn Key Track off and every key plays the sample at its original speed.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Load a sample</span>
+      <span>Trim with Start and End markers</span>
+      <span>Set a root note</span>
+      <span>Turn Key Track on or off</span>
+      <span>Hear transposition in action</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="02-layers.html"><span class="d">← Previous</span>Layers</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="04-oscillators.html"><span class="d">Next →</span>Oscillators</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- shared waveform math: draw a decaying tone waveform ---------- */
+function generateSampleBuffer(sampleRate){
+  const duration = 1.5;
+  const bufLen = Math.floor(sampleRate * duration);
+  const buf = new Float32Array(bufLen);
+  const freq = 130.81;
+  const envelope = (t, dur) => Math.exp(-t / (dur * 0.5));
+  for(let i=0; i<bufLen; i++){
+    const t = i / sampleRate;
+    const phase = (t * freq * 2 * Math.PI) % (2 * Math.PI);
+    const wave = Math.sin(phase) + 0.3 * Math.sin(phase * 2) + 0.15 * Math.sin(phase * 3);
+    buf[i] = wave * envelope(t, duration) * 0.9;
+  }
+  return buf;
+}
+
+function drawSampleWave(cv, startPct, endPct, glow){
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, mid = H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = glow ? 'rgba(228, 0, 43, 0.15)' : 'rgba(57, 208, 160, 0.15)';
+  const sLeft = (startPct/100)*W, sRight = (endPct/100)*W;
+  ctx.fillRect(sLeft, 0, sRight-sLeft, H);
+  ctx.strokeStyle = '#1c1c22'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
+  ctx.beginPath();
+  const sampleBuf = generateSampleBuffer(44100);
+  const sampleLen = sampleBuf.length;
+  const startSamp = Math.floor((startPct/100) * sampleLen);
+  const endSamp = Math.floor((endPct/100) * sampleLen);
+  const drawLen = endSamp - startSamp;
+  for(let x=0; x<=W; x++){
+    const sampIdx = Math.floor(((x/W) * drawLen) + startSamp);
+    const amp = sampIdx < sampleLen ? sampleBuf[sampIdx] : 0;
+    const py = mid - amp * (mid - 14);
+    x ? ctx.lineTo(x, py) : ctx.moveTo(x, py);
+  }
+  ctx.strokeStyle = glow ? '#E4002B' : '#39D0A0'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  if(glow){ ctx.shadowColor = '#E4002B'; ctx.shadowBlur = 8; }
+  ctx.stroke(); ctx.shadowBlur = 0;
+}
+
+drawSampleWave(document.getElementById('screenwave'), 0, 100, false);
+
+/* ---------- live sample player ---------- */
+const startEl = document.getElementById('start'), endEl = document.getElementById('end');
+const startv = document.getElementById('startv'), endv = document.getElementById('endv');
+const startHandle = document.getElementById('startHandle'), endHandle = document.getElementById('endHandle');
+const liveCv = document.getElementById('livewave');
+const playBtn = document.getElementById('play'), trackBtn = document.getElementById('keytrack');
+const keyBits = document.querySelectorAll('.keybit');
+let actx = null, sampleBuf = null, source = null, gain = null, playing = false, keyTrackOn = true;
+let lastSemitone = 0;
+
+function paint(){ drawSampleWave(liveCv, +startEl.value, +endEl.value, playing); }
+
+function ensureAudio(){
+  if(!actx){
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+    gain = actx.createGain(); gain.gain.value = 0.25; gain.connect(actx.destination);
+    sampleBuf = generateSampleBuffer(actx.sampleRate);
+  }
+}
+
+function stopCurrent(){
+  if(source) try { source.stop(); } catch(e) {}
+  source = null;
+}
+
+function playNote(semitone){
+  ensureAudio();
+  stopCurrent();
+  const startPct = +startEl.value / 100;
+  const endPct = +endEl.value / 100;
+  const startIdx = Math.floor(startPct * sampleBuf.length);
+  const endIdx = Math.floor(endPct * sampleBuf.length);
+  let playBuf = sampleBuf.slice(startIdx, endIdx);
+  if(playBuf.length < 1000) playBuf = sampleBuf.slice(0, 22050);
+  const ab = actx.createBuffer(1, playBuf.length, actx.sampleRate);
+  ab.getChannelData(0).set(playBuf);
+  source = actx.createBufferSource();
+  source.buffer = ab;
+  if(keyTrackOn){
+    const cents = semitone * 100;
+    const pitchFactor = Math.pow(2, cents/1200);
+    source.playbackRate.value = pitchFactor;
+  } else {
+    source.playbackRate.value = 1.0;
+  }
+  source.connect(gain);
+  source.start(0);
+  lastSemitone = semitone;
+  playing = true; playBtn.setAttribute('aria-pressed', 'true'); playBtn.textContent = '■ Stop';
+  paint();
+  setTimeout(() => { playing = false; playBtn.setAttribute('aria-pressed', 'false'); playBtn.textContent = '▶ Play on key'; paint(); }, 2500);
+}
+
+playBtn.addEventListener('click', () => {
+  if(playing) { stopCurrent(); playing = false; playBtn.setAttribute('aria-pressed', 'false'); playBtn.textContent = '▶ Play on key'; paint(); }
+  else { playNote(lastSemitone); }
+});
+
+trackBtn.addEventListener('click', () => {
+  keyTrackOn = !keyTrackOn; trackBtn.setAttribute('aria-pressed', keyTrackOn);
+  trackBtn.textContent = keyTrackOn ? 'Key Track: On' : 'Key Track: Off';
+});
+
+keyBits.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const st = parseInt(btn.dataset.semitone);
+    playNote(st);
+  });
+});
+
+startEl.addEventListener('input', () => {
+  startv.textContent = startEl.value + '%';
+  if(+startEl.value >= +endEl.value) endEl.value = +startEl.value + 1;
+  paint();
+});
+
+endEl.addEventListener('input', () => {
+  endv.textContent = endEl.value + '%';
+  if(+endEl.value <= +startEl.value) startEl.value = +endEl.value - 1;
+  paint();
+});
+
+let dragHandle = null;
+function onMouseDown(e, isStart){
+  dragHandle = isStart ? 'start' : 'end';
+  e.preventDefault();
+}
+function onMouseMove(e){
+  if(!dragHandle) return;
+  const rect = liveCv.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+  if(dragHandle === 'start'){
+    startEl.value = Math.min(pct, +endEl.value - 1);
+    startv.textContent = Math.round(startEl.value) + '%';
+  } else {
+    endEl.value = Math.max(pct, +startEl.value + 1);
+    endv.textContent = Math.round(endEl.value) + '%';
+  }
+  paint();
+}
+function onMouseUp(){
+  dragHandle = null;
+}
+startHandle.addEventListener('mousedown', (e) => onMouseDown(e, true));
+endHandle.addEventListener('mousedown', (e) => onMouseDown(e, false));
+document.addEventListener('mousemove', onMouseMove);
+document.addEventListener('mouseup', onMouseUp);
+
+startv.textContent = startEl.value + '%';
+endv.textContent = endEl.value + '%';
+paint();
+</script>

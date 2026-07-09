@@ -1,0 +1,328 @@
+<title>Module 2. Layers. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC layers screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .layers-grid{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; padding:14px; margin-top:6px}
+  .layer-item{display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #2a2a31; border-radius:6px; font-family:var(--font-mono); font-size:11px; margin-bottom:8px}
+  .layer-item:last-child{margin-bottom:0}
+  .layer-num{color:var(--amber); font-weight:700; width:28px}
+  .layer-source{flex:1; color:var(--mut)}
+  .layer-level{color:var(--faint); font-size:10px}
+  .layer-item.filled{border-color:#4a2a34; background:#1a0a0f}
+  .layer-item.filled .layer-source{color:var(--teal)}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* layer toggle buttons */
+  .layer-toggles{display:flex; flex-wrap:wrap; gap:10px}
+  .layer-toggles .btn{padding:10px 16px; font-size:13px; flex:1; min-width:80px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 2 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 02 · The machine
+      <span class="pips" aria-label="Lesson 2 of 19"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>Layers: stack up to 8 sounds on one pad</h1>
+    <p class="lede">One pad can be many sounds at once. Each one is called a layer. By the end you will hear how layers blend together, and you will build a pad that gets richer and thicker as you toggle them on and off.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>Think of a layer cake</h2>
+    <p class="big">A normal pad is one sound: one tone. A <b>layer</b> is just a single sound. But one pad can hold up to 8 layers, all stacked on top of each other. Like a cake with up to 8 flavors baked in.</p>
+    <p>Each layer is a separate sound source. It could be a recording (a sample), or a generated tone (an oscillator). When you hit the pad, all the layers play at once. The blend sounds richer, warmer, and more alive than any single layer alone.</p>
+    <p>You choose what each layer does when you hit the same pad multiple times using <b>Layer Play</b> modes. Play all of them together (Crossfade mode), rotate through them (Cycle), pick a different one based on how hard you hit (Velocity), or roll the dice each time (Random).</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · Samples/Oscs tab</p>
+    <h2>Where you will see them</h2>
+    <p>On the MPC, every keygroup track shows the Layers strip on the left. You have 8 layer slots, numbered 1 through 8. Each layer slot tells you what the source is (Sample or Oscillator), how loud it is, and if it is turned on or off.</p>
+    <div class="screen" aria-label="Recreation of the MPC layers strip">
+      <div class="bar"><span>Keygroup 1 · Layers</span><span class="sel">LAYER PLAY: CYCLE</span></div>
+      <div class="layers-grid">
+        <div class="layer-item filled"><div class="layer-num">1</div><div class="layer-source">Oscillator / Warm Sine</div><div class="layer-level">Level 95%</div></div>
+        <div class="layer-item filled"><div class="layer-num">2</div><div class="layer-source">Oscillator / Noise</div><div class="layer-level">Level 28%</div></div>
+        <div class="layer-item"><div class="layer-num">3</div><div class="layer-source">Empty</div><div class="layer-level">(Off)</div></div>
+        <div class="layer-item"><div class="layer-num">4</div><div class="layer-source">Empty</div><div class="layer-level">(Off)</div></div>
+        <div class="layer-item"><div class="layer-num">5</div><div class="layer-source">Empty</div><div class="layer-level">(Off)</div></div>
+        <div class="layer-item"><div class="layer-num">6</div><div class="layer-source">Empty</div><div class="layer-level">(Off)</div></div>
+        <div class="layer-item"><div class="layer-num">7</div><div class="layer-source">Empty</div><div class="layer-level">(Off)</div></div>
+        <div class="layer-item"><div class="layer-num">8</div><div class="layer-source">Empty</div><div class="layer-level">(Off)</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · toggle layers and listen</p>
+    <h2>Press play, then flip switches</h2>
+    <p>Hit play below, and you will hear a base tone. The buttons are layer toggles. Press <b>Sub</b> and you add a deep bass layer. Press <b>Saw</b> and you hear a bright layer on top. Keep toggling. The more layers you turn on, the thicker and warmer the pad gets. That is the whole magic: more layers means more colors mixed together.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <div class="row">
+          <button class="btn" id="play" aria-pressed="false">▶ Play a pad</button>
+        </div>
+        <div class="layer-toggles">
+          <button class="btn ghost" id="sub" aria-pressed="false" aria-label="Toggle Sub layer">Sub</button>
+          <button class="btn ghost" id="saw" aria-pressed="false" aria-label="Toggle Saw layer">Saw</button>
+          <button class="btn ghost" id="square" aria-pressed="false" aria-label="Toggle Square layer">Square</button>
+          <button class="btn ghost" id="noise" aria-pressed="false" aria-label="Toggle Noise layer">Noise</button>
+        </div>
+        <p class="hint" id="ahint">Sound is generated live, no files. Works best with headphones or speakers up.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · layer a pad yourself</p>
+    <h2>Five steps to a layered pad</h2>
+    <ol class="steps">
+      <li><b>Make a keygroup track</b><span>New track, set its type to Keygroup. This is the instrument-builder mode.</span></li>
+      <li><b>Set Layer 1 to an oscillator</b><span>On the Samples/Oscs tab, switch Layer 1 from Sample to Oscillator. Pick Warm Sine. This is your base.</span></li>
+      <li><b>Turn on Layer 2 and add Noise</b><span>Scroll down, find Layer 2, set it to Oscillator and choose Noise. Set its level to about 20 percent so it does not drown out Layer 1.</span></li>
+      <li><b>Make both layers swell</b><span>On the Amp envelope tab, raise Attack to 1 second and Release to 0.8 seconds. Both layers now fade in smoothly together when you hit the pad.</span></li>
+      <li><b>Hit your pad and hold it</b><span>On the MPC keyboard, hit the pad and listen. You will hear the sine and noise blend together. That blend is thicker than either one alone. That is layers working.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Say what a layer is</span>
+      <span>Count up to 8 layers on a pad</span>
+      <span>Hear how layers blend</span>
+      <span>Turn layers on and off</span>
+      <span>Mix sample and oscillator layers</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="../engine-map.html"><span class="d">← Previous</span>The map</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="03-samples.html"><span class="d">Next →</span>Samples</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- shared waveform draw utility ---------- */
+function drawWave(cv, spectrum, glow){
+  const ctx = cv.getContext('2d'), W=cv.width, H=cv.height, mid=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c22'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(W,mid); ctx.stroke();
+  ctx.beginPath();
+  for(let x=0;x<=W;x++){
+    const ph=(x/W)*Math.PI*2;
+    let y=0;
+    if(spectrum.sub) y += 0.5*Math.sin(ph*0.5);
+    if(spectrum.saw) y += 0.3*(1 - (ph/Math.PI)%2);
+    if(spectrum.square) y += 0.25*(Math.sin(ph)>=0?1:-1);
+    if(spectrum.noise) y += 0.15*(Math.random()-0.5);
+    const py=mid - y*(mid-14);
+    x?ctx.lineTo(x,py):ctx.moveTo(x,py);
+  }
+  ctx.strokeStyle = glow ? '#E4002B' : '#39D0A0'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  if(glow){ ctx.shadowColor='#E4002B'; ctx.shadowBlur=8; } ctx.stroke(); ctx.shadowBlur=0;
+}
+
+/* ---------- live synth with layer toggles ---------- */
+const playBtn=document.getElementById('play');
+const subBtn=document.getElementById('sub'), sawBtn=document.getElementById('saw');
+const squareBtn=document.getElementById('square'), noiseBtn=document.getElementById('noise');
+const liveCv=document.getElementById('livewave'), ahint=document.getElementById('ahint');
+
+let actx=null, oscs=[], gains=[], filt=null, amp=null, playing=false, rafId=null;
+const FREQ = 130.81; // C3
+const spectrum = {sub:false, saw:false, square:false, noise:false};
+
+function paint(){
+  drawWave(liveCv, spectrum, playing);
+}
+
+function setGains(){
+  if(!gains.length) return;
+  const now=actx.currentTime;
+  const targets = [spectrum.sub?0.4:0, spectrum.saw?0.35:0, spectrum.square?0.25:0, spectrum.noise?0.15:0];
+  gains.forEach((g,i)=> g.gain.setTargetAtTime(targets[i], now, 0.05));
+  paint();
+}
+
+function startAudio(){
+  if(actx) return; // already running
+  actx = new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+
+  amp = actx.createGain(); amp.gain.value=0;
+  filt = actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=2200; filt.Q.value=0.7;
+  filt.connect(amp); amp.connect(actx.destination);
+
+  // Layer sources: sub (0.25Hz sine), saw, square, noise
+  oscs=[]; gains=[];
+
+  // Sub: sine at half freq
+  const subOsc=actx.createOscillator(); subOsc.type='sine'; subOsc.frequency.value=FREQ*0.5;
+  const subGain=actx.createGain(); subGain.gain.value=0; subOsc.connect(subGain); subGain.connect(filt); subOsc.start();
+  oscs.push(subOsc); gains.push(subGain);
+
+  // Saw
+  const sawOsc=actx.createOscillator(); sawOsc.type='sawtooth'; sawOsc.frequency.value=FREQ;
+  const sawGain=actx.createGain(); sawGain.gain.value=0; sawOsc.connect(sawGain); sawGain.connect(filt); sawOsc.start();
+  oscs.push(sawOsc); gains.push(sawGain);
+
+  // Square
+  const sqOsc=actx.createOscillator(); sqOsc.type='square'; sqOsc.frequency.value=FREQ;
+  const sqGain=actx.createGain(); sqGain.gain.value=0; sqOsc.connect(sqGain); sqGain.connect(filt); sqOsc.start();
+  oscs.push(sqOsc); gains.push(sqGain);
+
+  // Noise
+  const buf = actx.createBuffer(1, actx.sampleRate*2, actx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0; i<buf.length; i++) data[i]=Math.random()*2-1;
+  const noiseSrc=actx.createBufferSource(); noiseSrc.buffer=buf; noiseSrc.loop=true;
+  const noiseGain=actx.createGain(); noiseGain.gain.value=0; noiseSrc.connect(noiseGain); noiseGain.connect(filt); noiseSrc.start();
+  oscs.push(noiseSrc); gains.push(noiseGain);
+
+  setGains();
+
+  // Amp envelope: fade in
+  const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(0, now); amp.gain.linearRampToValueAtTime(0.25, now+0.6);
+}
+
+function stopAudio(){
+  if(!actx||!amp) return;
+  const now=actx.currentTime;
+  amp.gain.cancelScheduledValues(now); amp.gain.setValueAtTime(amp.gain.value, now);
+  amp.gain.linearRampToValueAtTime(0, now+0.5);
+  const toStop=oscs.slice();
+  setTimeout(()=>{
+    toStop.forEach(o=>{try{o.stop()}catch(e){}});
+  }, 600);
+  oscs=[]; gains=[];
+  actx=null;
+}
+
+function tick(){
+  if(playing) paint();
+  rafId=requestAnimationFrame(tick);
+}
+
+playBtn.addEventListener('click', ()=>{
+  playing=!playing; playBtn.setAttribute('aria-pressed', playing);
+  if(playing){
+    startAudio();
+    playBtn.textContent='■ Stop';
+    ahint.textContent='Now toggle the layer buttons below. Listen to the tone thicken as you add layers.';
+  }else{
+    stopAudio();
+    playBtn.textContent='▶ Play a pad';
+    ahint.textContent='Sound is generated live, no files. Works best with headphones or speakers up.';
+  }
+  paint();
+});
+
+[
+  {btn:subBtn, key:'sub'},
+  {btn:sawBtn, key:'saw'},
+  {btn:squareBtn, key:'square'},
+  {btn:noiseBtn, key:'noise'}
+].forEach(item=>{
+  item.btn.addEventListener('click', ()=>{
+    spectrum[item.key]=!spectrum[item.key];
+    item.btn.setAttribute('aria-pressed', spectrum[item.key]);
+    setGains();
+  });
+});
+
+paint();
+requestAnimationFrame(tick);
+</script>

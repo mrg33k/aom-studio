@@ -1,0 +1,302 @@
+<title>MPC Keygroup Engine — Signal Map</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --reader:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #17171c 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 110%, #141419 0%, transparent 55%),
+      var(--ground);
+    color:var(--ink); font-family:var(--font-sans);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    min-height:100vh; line-height:1.5;
+  }
+  .stage{max-width:1200px; margin:0 auto; padding:clamp(16px,3vw,34px); display:flex; flex-direction:column; gap:clamp(16px,2.4vw,26px); min-height:100vh}
+
+  /* device chrome */
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:14px 18px; background:linear-gradient(180deg,#141418,#0e0e11);
+    border:1px solid var(--edge); border-radius:var(--r); box-shadow:0 1px 0 #ffffff0a inset}
+  .mark{display:flex; align-items:baseline; gap:8px}
+  .akai b{font-weight:800; font-size:19px; letter-spacing:.5px}
+  .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut)}
+  .mpc{font-weight:900; font-size:22px; letter-spacing:-1px; color:#fff;
+    border:2px solid var(--crimson); border-radius:7px; padding:1px 8px; line-height:1.25}
+  .chrome-mid{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:640px){ .chrome-mid{display:none} }
+
+  .head{padding:2px 4px}
+  .kick{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 10px}
+  .head h1{font-size:clamp(24px,4.5vw,40px); line-height:1.02; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance; max-width:20ch}
+  .head p{margin:12px 0 0; color:var(--mut); max-width:60ch; font-size:15.5px}
+
+  /* work area: board + reader */
+  .work{display:flex; flex-direction:column; gap:clamp(14px,2vw,22px)}
+
+  .board{display:flex; flex-direction:column; gap:20px; background:var(--panel);
+    border:1px solid var(--edge); border-radius:var(--r); padding:clamp(14px,2.2vw,24px)}
+  .lane-label{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); display:flex; align-items:center; gap:10px}
+  .lane-label::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+
+  /* signal flow */
+  .flow{display:flex; align-items:stretch; gap:6px; overflow-x:auto; padding-bottom:6px; scrollbar-width:thin}
+  .flow::-webkit-scrollbar{height:6px} .flow::-webkit-scrollbar-thumb{background:var(--edge); border-radius:6px}
+  .node{position:relative; flex:1 0 auto; min-width:118px; text-align:left; cursor:pointer;
+    background:var(--raised); color:var(--ink); border:1px solid var(--edge);
+    border-radius:12px; padding:13px 13px 14px; font-family:var(--font-sans);
+    display:flex; flex-direction:column; gap:7px; transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease}
+  .node:hover{transform:translateY(-3px); border-color:var(--edge-hi); box-shadow:0 10px 26px -14px #000}
+  .node:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .node .idx{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint)}
+  .node .nm{font-weight:700; font-size:14.5px; letter-spacing:-.01em}
+  .node .sub{font-family:var(--font-mono); font-size:10px; letter-spacing:.4px; color:var(--mut); line-height:1.45}
+  .node .foot{margin-top:auto; font-family:var(--font-mono); font-size:9px; letter-spacing:1.8px; color:var(--faint); text-transform:uppercase; padding-top:14px; border-top:1px solid #232329}
+  .node[aria-pressed="true"]{border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset, 0 12px 30px -16px var(--amber)}
+  .node.term{background:#141417; border-style:dashed}
+
+  .link{flex:0 0 26px; align-self:center; position:relative; height:2px; background:linear-gradient(90deg,var(--edge-hi),var(--red)); border-radius:2px; min-width:26px}
+  .link::after{content:""; position:absolute; right:-1px; top:50%; width:7px; height:7px; border-top:2px solid var(--red); border-right:2px solid var(--red); transform:translateY(-50%) rotate(45deg)}
+  .link .pulse{position:absolute; top:50%; left:0; width:5px; height:5px; margin-top:-2.5px; border-radius:50%; background:var(--red); box-shadow:0 0 8px 1px var(--red); animation:run 2.4s linear infinite}
+  @keyframes run{0%{left:-2px; opacity:0} 12%{opacity:1} 88%{opacity:1} 100%{left:100%; opacity:0}}
+
+  /* source node internals — wavetable star */
+  .srcwrap{flex:2 0 auto; min-width:190px; background:var(--raised); border:1px solid var(--edge); border-radius:12px; padding:13px; display:flex; flex-direction:column; gap:10px}
+  .srcwrap .top{cursor:pointer; background:none; border:0; padding:0; text-align:left; color:var(--ink); font-family:inherit; display:flex; flex-direction:column; gap:7px}
+  .srcwrap .top:focus-visible{outline:2px solid var(--amber); outline-offset:3px; border-radius:6px}
+  .layers{display:flex; gap:3px}
+  .layers i{flex:1; height:5px; border-radius:2px; background:#33333b}
+  .layers i:nth-child(-n+3){background:#4a4a55}
+  .wt{cursor:pointer; display:flex; align-items:center; gap:10px; background:linear-gradient(180deg,#241016,#1a0c11);
+    border:1px solid #4a1622; border-radius:10px; padding:8px 10px; color:var(--ink); font-family:inherit; text-align:left; transition:border-color .16s ease, box-shadow .16s ease}
+  .wt:hover{border-color:var(--red); box-shadow:0 0 22px -8px var(--red)}
+  .wt:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .wt canvas{width:64px; height:30px; display:block; flex:0 0 auto}
+  .wt .lab{display:flex; flex-direction:column; gap:2px}
+  .wt .lab b{font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:6px}
+  .wt .star{color:var(--red)}
+  .wt .lab span{font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+
+  /* modulation rail */
+  .mods{display:flex; flex-direction:column; gap:12px; background:#131317; border:1px solid var(--edge); border-radius:12px; padding:14px}
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{cursor:pointer; background:var(--raised); color:var(--ink); border:1px solid var(--edge); border-radius:999px;
+    padding:8px 13px; font-size:12.5px; font-weight:600; font-family:var(--font-sans);
+    display:inline-flex; align-items:center; gap:8px; transition:transform .14s ease, border-color .14s ease}
+  .chip:hover{transform:translateY(-2px); border-color:var(--edge-hi)}
+  .chip:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .chip[aria-pressed="true"]{border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .chip .dot{width:6px; height:6px; border-radius:50%; background:var(--teal)}
+  .busnote{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--faint); text-transform:uppercase; display:flex; align-items:center; gap:8px}
+  .busnote b{color:var(--amber); font-weight:700; letter-spacing:2px}
+  .busnote .updot{color:var(--red)}
+
+  /* reader panel */
+  .reader{background:var(--reader); border:1px solid var(--edge);
+    border-radius:var(--r); padding:clamp(20px,2.4vw,28px); box-shadow:0 1px 0 #ffffff0d inset}
+  #r-content{display:grid; grid-template-columns:1fr 1fr; gap:2px 44px; align-items:start}
+  @media (max-width:760px){ #r-content{grid-template-columns:1fr; gap:2px} }
+  .reader .ey{font-family:var(--font-mono); font-size:10.5px; letter-spacing:2.5px; text-transform:uppercase; color:var(--red); margin:0 0 14px; min-height:14px}
+  .reader h2{font-size:23px; line-height:1.12; letter-spacing:-.01em; font-weight:800; margin:0 0 6px; text-wrap:balance}
+  .reader .analogy{font-size:16.5px; color:var(--ink); margin:0 0 18px; line-height:1.45}
+  .reader .rowlab{font-family:var(--font-mono); font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--faint); margin:0 0 4px}
+  .reader .body{color:var(--mut); font-size:14.5px; margin:0 0 16px; line-height:1.55}
+  .reader .body:last-child{margin-bottom:0}
+  .reader .magic{background:#2a1017; border:1px solid #4a1622; border-radius:10px; padding:12px 13px; margin-top:4px}
+  .reader .magic .rowlab{color:var(--red)}
+  .reader .magic p{margin:0; color:#f2d9de; font-size:14px; line-height:1.5}
+  .fade{animation:fade .28s ease}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+
+  footer{display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; justify-content:space-between;
+    font-family:var(--font-mono); font-size:10px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; padding:2px 4px}
+  .legend{display:flex; gap:16px; flex-wrap:wrap}
+  .legend span{display:inline-flex; align-items:center; gap:7px}
+  .lg-sig{width:20px; height:2px; background:var(--red); border-radius:2px}
+  .lg-mod{width:20px; height:0; border-top:2px dashed var(--teal)}
+
+  @media (prefers-reduced-motion:reduce){ .pulse{animation:none; display:none} .fade{animation:none} .node,.chip,.wt{transition:none} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="mark akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="chrome-mid">Keygroup Engine · Signal Map</div>
+    <div class="mark mpc">MPC</div>
+  </header>
+
+  <div class="head">
+    <p class="kick">Course 1 · The instrument builder</p>
+    <h1>How a sound gets built inside a keygroup</h1>
+    <p>Every pad on your MPC can become an instrument you make from scratch. Click any block below to learn what it does, in one plain sentence. No experience needed. Wavetables, the new headline, live inside the sound source.</p>
+  </div>
+
+  <div class="work">
+    <div class="board">
+      <!-- SIGNAL PATH -->
+      <div>
+        <div class="lane-label">Signal path — the sound flows left to right</div>
+        <div class="flow" role="group" aria-label="Signal path, five steps">
+          <button class="node" data-id="pad" aria-pressed="false">
+            <span class="idx">01</span><span class="nm">Press a pad</span>
+            <span class="sub">wakes one keygroup</span>
+            <span class="foot">trigger</span>
+          </button>
+          <span class="link" aria-hidden="true"><span class="pulse"></span></span>
+
+          <div class="srcwrap">
+            <button class="top" data-id="source" aria-pressed="false">
+              <span class="idx">02</span><span class="nm">Sound source</span>
+              <span class="sub">up to 8 layers · sample or oscillator</span>
+              <span class="layers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            </button>
+            <button class="wt" data-id="wavetable" aria-pressed="false">
+              <canvas id="wtcanvas" width="128" height="60" aria-hidden="true"></canvas>
+              <span class="lab"><b><span class="star">★</span> Wavetable</b><span>Position · XFade</span></span>
+            </button>
+          </div>
+          <span class="link" aria-hidden="true"><span class="pulse"></span></span>
+
+          <button class="node" data-id="filters" aria-pressed="false">
+            <span class="idx">03</span><span class="nm">Filters</span>
+            <span class="sub">tone · cutoff · resonance</span>
+            <span class="foot">LP · HP · BP · notch</span>
+          </button>
+          <span class="link" aria-hidden="true"><span class="pulse"></span></span>
+
+          <button class="node" data-id="amp" aria-pressed="false">
+            <span class="idx">04</span><span class="nm">Amp</span>
+            <span class="sub">volume shape over time</span>
+            <span class="foot">A · H · D · S · R</span>
+          </button>
+          <span class="link" aria-hidden="true"><span class="pulse"></span></span>
+
+          <button class="node term" data-id="out" aria-pressed="false">
+            <span class="idx">05</span><span class="nm">Output</span>
+            <span class="sub">your speakers</span>
+            <span class="foot">to mix →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- MODULATION RAIL -->
+      <div class="mods">
+        <div class="lane-label">Shapers — they move the knobs for you</div>
+        <div class="chips" role="group" aria-label="Modulation sources">
+          <button class="chip" data-id="envelopes" aria-pressed="false"><span class="dot"></span>Envelopes</button>
+          <button class="chip" data-id="lfos" aria-pressed="false"><span class="dot"></span>LFOs</button>
+          <button class="chip" data-id="velocity" aria-pressed="false"><span class="dot"></span>Velocity</button>
+          <button class="chip" data-id="modwheel" aria-pressed="false"><span class="dot"></span>Mod wheel</button>
+        </div>
+        <div class="busnote"><span class="updot">▲</span> all wire up through the <b>Mod Matrix</b> into any knob above &nbsp;·&nbsp;
+          <button class="chip" data-id="modmatrix" aria-pressed="false" style="padding:5px 11px">Open the Mod Matrix</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- READER -->
+    <aside class="reader" id="reader" aria-live="polite">
+      <p class="ey" id="r-eye">Start here</p>
+      <div id="r-content"></div>
+    </aside>
+  </div>
+
+  <footer>
+    <div class="legend">
+      <span><span class="lg-sig"></span> signal</span>
+      <span><span class="lg-mod"></span> modulation</span>
+    </div>
+    <div>Course centerpiece · our asset, pairs with Akai brand · v0.1 · logo lockups are typographic stand-ins for the official Akai / MPC marks</div>
+  </footer>
+</div>
+
+<script>
+const DATA = {
+  intro:{eye:"Start here", h:"The MPC Keygroup Engine", analogy:"A keygroup turns your MPC into a build-your-own-instrument workshop. Every pad can be a different instrument you made.",
+    rows:[["The idea","A sound is born at the source, gets its tone from the filters, gets its shape from the amp, and comes out your speakers. The shapers on the bottom row move the knobs for you while it plays."],["Try it","Click any block to learn it in one sentence."]]},
+  pad:{eye:"01 · Pad / Key", h:"Press a pad", analogy:"This is you hitting a key. It wakes up one keygroup — the full recipe for a single sound.",
+    rows:[["What it is","Each pad holds its own keygroup, so pad 1 can be a bass and pad 2 a choir, all in one track."],["For your sound","This is the trigger. Everything after this is you designing what that press actually sounds like."]]},
+  source:{eye:"02 · Keygroup · Layers", h:"The sound source", analogy:"A sandwich with up to 8 ingredients. Each layer is either a recording (a sample) or a tone the MPC draws from scratch (an oscillator).",
+    rows:[["What it is","Stack up to 8 layers per pad and mix samples and oscillators together in one hit."],["For your sound","Reinforce a real 808 with a clean sine sub, or thicken a chord with a synth layer. Piano and horns come from recordings; synths and pads come from oscillators."]]},
+  wavetable:{eye:"02 · Wavetable oscillator", h:"Wavetables — the headline", analogy:"A flipbook of waveforms. Position picks which page you're on. XFade is how smoothly you flip between pages.",
+    rows:[["What it is","One of the new oscillator types. It holds many waveforms and lets you move between them."],["For your sound","This is where modern pads, evolving synths, and rich textures come from."]],
+    magic:"The magic trick: let an LFO or an envelope flip the pages for you (wire it in the Mod Matrix). Now the sound moves and breathes on its own — that's the whole point of wavetables."},
+  filters:{eye:"03 · Filters ×2", h:"Filters", analogy:"Sunglasses for sound. Cutoff makes it brighter or darker. Resonance adds a whistle right at the edge.",
+    rows:[["What it is","Two filters you can run side by side or one into the other, with a blend between them."],["For your sound","Open a filter slowly for that classic sweep, or dull a bright sample so it sits back in the mix."]]},
+  amp:{eye:"04 · Amp + Amp Envelope", h:"Amp", analogy:"The volume stage. Its envelope decides how the sound turns on and off — a fast pluck or a slow swell.",
+    rows:[["What it is","The final loudness of the voice, shaped over time by the amp envelope."],["For your sound","The exact same source becomes a sharp stab or a soft pad just by reshaping this one part."]]},
+  out:{eye:"05 · Track Output", h:"Output", analogy:"Out your speakers. The finished sound everyone hears.",
+    rows:[["What it is","Where the built voice leaves the track and hits your mix."],["For your sound","If you got the four steps before this right, this part takes care of itself."]]},
+  envelopes:{eye:"Shaper · Envelopes (DAHDSR)", h:"Envelopes", analogy:"The shape of a sound's life over time — like how a light fades on, holds, and fades off.",
+    rows:[["What it is","Delay, Attack, Hold, Decay, Sustain, Release. There are four: one for volume, one for brightness (filter), one for pitch, and a spare."],["For your sound","Slow attack makes a pad swell. Fast attack and quick release makes a pluck."]]},
+  lfos:{eye:"Shaper · LFOs", h:"LFOs", analogy:"An invisible hand that wiggles a knob over and over, on repeat. Slow gives movement, fast gives wobble.",
+    rows:[["What it is","Four of them (two per note, two shared) with shapes like sine, triangle, and random."],["For your sound","Vibrato on a lead, a filter wobble on a bass, tremolo, or auto-pan on a pad."]]},
+  velocity:{eye:"Shaper · Velocity", h:"Velocity", analogy:"How hard you hit. Softer and harder can change the sound itself, not just the volume.",
+    rows:[["What it is","Your hit strength can be wired to brightness, attack, or which layer plays."],["For your sound","Hit harder and it gets brighter, or a harder-recorded sample plays. That's what makes it feel real, not robotic."]]},
+  modwheel:{eye:"Shaper · Mod Wheel", h:"Mod wheel", analogy:"The wheel on a keyboard you roll with your thumb — a live knob in your hand while you play.",
+    rows:[["What it is","Sends control data you can route to the LFOs or any parameter."],["For your sound","Roll it up to bring in vibrato or open a filter during a note, by feel."]]},
+  modmatrix:{eye:"Advanced · Modulation Matrix", h:"The Mod Matrix", analogy:"A patch board: connect ANY mover to ANY knob. You say 'I want this to control that,' and it does.",
+    rows:[["What it is","Where the shapers on the bottom row get wired to the knobs on the top row."],["For your sound","Wire an LFO to the wavetable Position and your pad evolves forever without you touching a thing."]]},
+};
+
+const reader = document.getElementById('reader');
+const eye = document.getElementById('r-eye');
+const content = document.getElementById('r-content');
+
+function render(id){
+  const d = DATA[id] || DATA.intro;
+  eye.textContent = d.eye;
+  let rest = '';
+  for(const [lab, txt] of d.rows){ rest += `<p class="rowlab">${lab}</p><p class="body">${txt}</p>`; }
+  if(d.magic){ rest += `<div class="magic"><p class="rowlab">The magic trick</p><p>${d.magic.replace(/^The magic trick: /,'')}</p></div>`; }
+  const html = `<div class="r-lead"><h2>${d.h}</h2><p class="analogy">${d.analogy}</p></div><div class="r-rest">${rest}</div>`;
+  content.innerHTML = html;
+  content.classList.remove('fade'); void content.offsetWidth; content.classList.add('fade');
+}
+
+const buttons = [...document.querySelectorAll('[data-id]')];
+function select(id, el){
+  buttons.forEach(b=>b.setAttribute('aria-pressed', b===el ? 'true':'false'));
+  render(id);
+}
+buttons.forEach(b=> b.addEventListener('click', ()=> select(b.dataset.id, b)) );
+render('intro');
+
+/* wavetable morph — a single-cycle wave sweeping through shapes */
+const cv = document.getElementById('wtcanvas');
+if(cv){
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, mid = H/2;
+  const reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function wave(t){
+    ctx.clearRect(0,0,W,H);
+    // blend sine -> saw -> square by phase p
+    const p = (Math.sin(t)*0.5+0.5)*2; // 0..2
+    const wSaw = Math.max(0, 1-Math.abs(p-1));
+    const wSq  = Math.max(0, p-1);
+    const wSin = Math.max(0, 1-p);
+    ctx.beginPath();
+    for(let x=0; x<=W; x++){
+      const ph = (x/W)*Math.PI*2;
+      const sine = Math.sin(ph);
+      const saw = 1 - (ph/Math.PI);           // -1..1 ramp
+      const sq = Math.sin(ph)>=0 ? 1 : -1;
+      const y = sine*wSin + saw*wSaw + sq*wSq;
+      const py = mid - y*(mid-4);
+      x===0 ? ctx.moveTo(x,py) : ctx.lineTo(x,py);
+    }
+    ctx.strokeStyle = '#E4002B'; ctx.lineWidth = 2; ctx.lineJoin='round';
+    ctx.shadowColor='#E4002B'; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
+  }
+  if(reduce){ wave(0.6); }
+  else{ let s=1.7; (function loop(){ s+=0.012; wave(s); requestAnimationFrame(loop); })(); }
+}
+</script>

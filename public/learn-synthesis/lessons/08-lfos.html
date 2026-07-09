@@ -1,0 +1,355 @@
+<title>Module 8. LFOs. MPC Keygroup Course</title>
+<style>
+  :root{
+    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
+    --edge:#2C2C33; --edge-hi:#3A3A43;
+    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:radial-gradient(1200px 600px at 15% -10%,#17171c,transparent 60%),var(--ground);
+    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
+  .stage{max-width:960px; margin:0 auto; padding:clamp(16px,3vw,32px); display:flex; flex-direction:column; gap:clamp(18px,2.6vw,28px)}
+
+  .chrome{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px;
+    background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
+  .akai b{font-weight:800; font-size:18px; letter-spacing:.5px} .akai span{font-family:var(--font-mono); font-size:9px; letter-spacing:3.5px; color:var(--mut); margin-left:8px}
+  .mpc{font-weight:900; font-size:20px; letter-spacing:-1px; color:#fff; border:2px solid var(--crimson); border-radius:7px; padding:0 8px}
+  .crumb{font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase}
+  @media (max-width:600px){ .crumb{display:none} }
+
+  .lhead .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin:0 0 12px; display:flex; gap:10px; align-items:center}
+  .lhead .eyebrow .pips{display:inline-flex; gap:4px}
+  .lhead .eyebrow .pips i{width:14px; height:4px; border-radius:2px; background:#33333c}
+  .lhead .eyebrow .pips i.on{background:var(--red)}
+  .lhead h1{font-size:clamp(28px,5.2vw,46px); line-height:1.03; letter-spacing:-.02em; font-weight:800; margin:0; text-wrap:balance}
+  .lhead .lede{font-size:17px; color:var(--mut); margin:14px 0 0; max-width:64ch}
+
+  .sec{background:var(--panel); border:1px solid var(--edge); border-radius:var(--r); padding:clamp(18px,2.4vw,26px)}
+  .sec > .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  .sec > .tag::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--edge),transparent)}
+  .sec h2{font-size:24px; letter-spacing:-.01em; font-weight:800; margin:0 0 10px; text-wrap:balance}
+  .sec p{color:var(--mut); font-size:15.5px; margin:0 0 12px; max-width:66ch} .sec p:last-child{margin-bottom:0}
+  .sec p b{color:var(--ink)} .sec .big{font-size:18.5px; color:var(--ink); line-height:1.5}
+
+  /* recreated MPC LFO screen */
+  .screen{background:#0e0e11; border:1px solid var(--edge-hi); border-radius:12px; padding:14px; margin-top:6px}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase; margin-bottom:10px}
+  .screen .bar .sel{color:var(--amber); border:1px solid #4a3a12; background:#1c1707; border-radius:5px; padding:2px 8px}
+  .disp{background:#0a0a0c; border:1px solid #23232a; border-radius:8px; height:120px; position:relative; overflow:hidden}
+  .disp canvas{width:100%; height:100%; display:block}
+  .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+  .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
+  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
+  .knob.hot .dial{border-color:var(--red)}
+  .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
+  .knob .kn{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--mut); text-transform:uppercase}
+  .knob .kv{font-family:var(--font-mono); font-size:13px; color:var(--ink); margin-top:2px}
+  .knob .role{font-size:11.5px; color:var(--faint); margin-top:6px; line-height:1.35}
+
+  /* live player */
+  .player{display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:center}
+  @media (max-width:640px){ .player{grid-template-columns:1fr} }
+  .pviz{background:#0a0a0c; border:1px solid #23232a; border-radius:10px; height:140px; overflow:hidden}
+  .pviz canvas{width:100%; height:100%; display:block}
+  .controls{display:flex; flex-direction:column; gap:16px}
+  .row{display:flex; align-items:center; gap:14px}
+  .btn{cursor:pointer; font-family:var(--font-sans); font-weight:700; font-size:15px; color:#fff; background:var(--red);
+    border:0; border-radius:10px; padding:12px 22px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
+  .btn[aria-pressed="true"]{background:var(--raised); color:var(--ink); border:1px solid var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .sl{flex:1; display:flex; flex-direction:column; gap:6px}
+  .sl label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); display:flex; justify-content:space-between}
+  .sl label b{color:var(--red); font-weight:700}
+  .sel{display:flex; flex-direction:column; gap:8px}
+  .sel label{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut)}
+  .sel-group{display:flex; gap:8px; flex-wrap:wrap}
+  .sel-btn{background:var(--raised); border:1px solid var(--edge); color:var(--ink); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; font-family:var(--font-sans); font-weight:600; transition:all .15s ease}
+  .sel-btn:hover{border-color:var(--edge-hi)}
+  .sel-btn[data-active="true"]{border-color:var(--amber); color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  .sel-btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; background:#2a2a31; outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); border:2px solid #1a0a0f; cursor:pointer; box-shadow:0 0 10px -2px var(--red)}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%; background:var(--red); cursor:pointer}
+  input[type=range]:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+  .hint{font-size:13px; color:var(--faint); margin-top:2px}
+
+  /* build-along steps */
+  .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+  .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
+
+  .recap{display:flex; flex-wrap:wrap; gap:10px}
+  .recap span{background:#12120f; border:1px solid #2a2a20; color:#d9d4b8; border-radius:999px; padding:8px 14px; font-size:13.5px}
+
+  .nav{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .nav a{text-decoration:none; color:var(--ink); background:var(--panel); border:1px solid var(--edge); border-radius:10px; padding:12px 16px; font-size:14px; display:inline-flex; flex-direction:column; gap:2px; transition:border-color .15s ease}
+  .nav a:hover{border-color:var(--edge-hi)} .nav a .d{font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--faint)} .nav a.next{text-align:right}
+  footer.fine{font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; text-align:center}
+
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<div class="stage">
+  <header class="chrome">
+    <div class="akai"><b>AKAI</b><span>PROFESSIONAL</span></div>
+    <div class="crumb">Course 1 · Module 8 of 19</div>
+    <div class="mpc">MPC</div>
+  </header>
+
+  <div class="lhead">
+    <p class="eyebrow">Module 08 · The machine
+      <span class="pips" aria-label="Lesson 8 of 19"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </p>
+    <h1>LFOs: automatic movement</h1>
+    <p class="lede">An LFO is an invisible hand that wiggles a knob over and over. By the end you will understand how they work, hear one move a sound in real time, and build a wobbling pad that evolves on its own.</p>
+  </div>
+
+  <!-- A: THE IDEA -->
+  <section class="sec">
+    <p class="tag">The idea</p>
+    <h2>An invisible hand on a knob</h2>
+    <p class="big">Imagine someone is sitting at your synth and they reach over and wiggle a knob back and forth. Slow wiggles. Over and over. That is an LFO.</p>
+    <p><b>LFO</b> stands for Low Frequency Oscillator. It is not a sound itself. It is a slow wave that controls a different knob. You pick which knob. That knob could be Pitch (making the sound vibrate up and down). It could be Filter (making the sound wobble). It could be Volume (making the sound pulse on and off).</p>
+    <p>The only rule is this: the LFO wiggles invisible, but you hear the result on the sound. That is the magic. You get movement without playing anything new.</p>
+  </section>
+
+  <!-- B: THE SCREEN -->
+  <section class="sec">
+    <p class="tag">On the MPC · LFO tabs</p>
+    <h2>Where you will find it</h2>
+    <p>Every keygroup has four LFOs: two that are per-voice (LFO 1 and LFO 2) and two that are global (Global LFO 1 and 2). Each one has the same controls.</p>
+    <div class="screen" aria-label="Recreation of the MPC LFO screen">
+      <div class="bar"><span>LFO 1 (Per-Voice)</span><span class="sel">SINE</span></div>
+      <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
+      <div class="knobs">
+        <div class="knob hot"><div class="dial" style="--rot:-40deg"></div><div class="kn">Rate</div><div class="kv">4.5 Hz</div><div class="role">How fast it wiggles</div></div>
+        <div class="knob"><div class="dial" style="--rot:20deg"></div><div class="kn">Fade In</div><div class="kv">0.5 s</div><div class="role">Ramp up from silent</div></div>
+        <div class="knob"><div class="dial" style="--rot:0deg"></div><div class="kn">Level</div><div class="kv">64</div><div class="role">How much it moves</div></div>
+        <div class="knob"><div class="dial" style="--rot:-20deg"></div><div class="kn">To Pitch</div><div class="kv">100</div><div class="role">Send this LFO somewhere</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C: HEAR IT (live) -->
+  <section class="sec">
+    <p class="tag">Hear it · live in your browser</p>
+    <h2>Choose a destination and listen</h2>
+    <p>Press play. A pad is humming. Now choose <b>Pitch</b> (you hear vibrato, like a voice shaking), <b>Filter</b> (you hear the tone get bright and dark), or <b>Amp</b> (you hear the volume pulsing). Feel the difference in each one. Drag <b>Rate</b> slow and fast to hear how speed changes the feel.</p>
+    <div class="player">
+      <div class="pviz"><canvas id="livewave" width="400" height="280" aria-hidden="true"></canvas></div>
+      <div class="controls">
+        <button class="btn" id="play" aria-pressed="false">▶ Play a pad</button>
+        <div class="sel">
+          <label>LFO destination</label>
+          <div class="sel-group">
+            <button class="sel-btn" data-dest="pitch" data-active="true">Pitch (vibrato)</button>
+            <button class="sel-btn" data-dest="filter">Filter (wobble)</button>
+            <button class="sel-btn" data-dest="amp">Amp (tremolo)</button>
+          </div>
+        </div>
+        <div class="sl">
+          <label for="rate">Rate <b id="ratev">4.5</b> Hz</label>
+          <input type="range" id="rate" min="0.5" max="12" step="0.1" value="4.5" aria-label="LFO rate in hertz">
+        </div>
+        <p class="hint" id="ahint">Sound is generated live, no files. Works best with headphones or speakers up.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D: BUILD IT -->
+  <section class="sec">
+    <p class="tag">Build it with me · make a wobbling pad</p>
+    <h2>Five steps to your own LFO pad</h2>
+    <ol class="steps">
+      <li><b>Make a keygroup track</b><span>New track, set its type to Keygroup. This is the instrument-builder mode.</span></li>
+      <li><b>Set a layer to Wavetable oscillator</b><span>On the Samples/Oscs tab, switch Layer 1 to Oscillator, then pick Wavetable. Wavetable works great with LFOs because it is already interesting.</span></li>
+      <li><b>Make the pad swell</b><span>On the Amp envelope, raise Attack and Release. Long attack means the sound fades in like a breath.</span></li>
+      <li><b>Add a slow filter wobble</b><span>In the LFO 1 tab, set Wave to Sine, set Rate slow (3 to 5 Hz), and turn on To Filter 1. The tone will breathe.</span></li>
+      <li><b>Stir in a low-pass filter</b><span>Drop a gentle low-pass filter and let it open. Play a chord, hold it, listen to the LFO wiggle the tone.</span></li>
+    </ol>
+  </section>
+
+  <!-- E: RECAP -->
+  <section class="sec">
+    <p class="tag">You can now</p>
+    <h2>What you just learned</h2>
+    <div class="recap">
+      <span>Explain what an LFO is</span>
+      <span>Name the LFO wave types</span>
+      <span>Hear the difference between Pitch, Filter, and Amp</span>
+      <span>Set Rate to match the vibe</span>
+      <span>Route an LFO in the Mod Matrix</span>
+      <span>Build a pad with automatic movement</span>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <a class="prev" href="07-envelopes.html"><span class="d">← Previous</span>Envelopes</a>
+    <a class="mapl" href="../engine-map.html"><span class="d">Course map</span>All modules</a>
+    <a class="next" href="09-mod-matrix.html"><span class="d">Next →</span>Mod Matrix</a>
+  </nav>
+  <footer class="fine">Course centerpiece · our asset, pairs with Akai brand · v0.1 · audio synthesized live via Web Audio · logo lockups are typographic stand-ins</footer>
+</div>
+
+<script>
+/* ---------- LFO waveform rendering ---------- */
+function drawLFOWave(cv, waveType, rate, glow){
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, mid = H / 2;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#1c1c22'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
+  ctx.beginPath();
+  const period = W / (rate / 4); // 4 cycles visible across canvas
+  for(let x = 0; x <= W; x++){
+    const t = (x / period) * Math.PI * 2;
+    let y = 0;
+    if(waveType === 'sine') y = Math.sin(t);
+    else if(waveType === 'tri') y = (2 / Math.PI) * Math.asin(Math.sin(t));
+    else if(waveType === 'saw') y = 1 - (t / Math.PI) % 2;
+    else if(waveType === 'sqr') y = Math.sin(t) >= 0 ? 1 : -1;
+    const py = mid - y * (mid - 14);
+    x ? ctx.lineTo(x, py) : ctx.moveTo(x, py);
+  }
+  ctx.strokeStyle = glow ? '#E4002B' : '#39D0A0'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  if(glow){ ctx.shadowColor = '#E4002B'; ctx.shadowBlur = 8; }
+  ctx.stroke(); ctx.shadowBlur = 0;
+}
+
+/* ---------- static screen waveform ---------- */
+drawLFOWave(document.getElementById('screenwave'), 'sine', 4.5, false);
+
+/* ---------- live synth ---------- */
+const playBtn = document.getElementById('play');
+const rateEl = document.getElementById('rate');
+const ratev = document.getElementById('ratev');
+const destBtns = document.querySelectorAll('.sel-btn');
+const liveCv = document.getElementById('livewave');
+const ahint = document.getElementById('ahint');
+
+let actx = null, playing = false, rafId = null;
+let carrier = null, lfoOsc = null, lfoGain = null, filter = null, amp = null;
+let pitchModGain = null, filterModGain = null, ampModGain = null;
+let currentDest = 'pitch';
+const FREQ = 130.81; // C3
+
+function paint(){
+  drawLFOWave(liveCv, 'sine', +rateEl.value, playing);
+}
+
+function setRate(){
+  if(lfoOsc) lfoOsc.frequency.value = +rateEl.value;
+  ratev.textContent = (+rateEl.value).toFixed(1);
+  paint();
+}
+
+function setDest(dest){
+  if(!ampModGain || !pitchModGain || !filterModGain) return;
+  currentDest = dest;
+  destBtns.forEach(btn => btn.setAttribute('data-active', btn.dataset.dest === dest ? 'true' : 'false'));
+  const now = actx.currentTime;
+  pitchModGain.gain.setTargetAtTime(dest === 'pitch' ? 50 : 0, now, 0.05);
+  filterModGain.gain.setTargetAtTime(dest === 'filter' ? 5000 : 0, now, 0.05);
+  ampModGain.gain.setTargetAtTime(dest === 'amp' ? 0.3 : 0, now, 0.05);
+}
+
+function startAudio(){
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+  if(actx.state === 'suspended') actx.resume();
+
+  amp = actx.createGain();
+  amp.gain.value = 0;
+  amp.connect(actx.destination);
+
+  filter = actx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 1200;
+  filter.Q.value = 0.7;
+  filter.connect(amp);
+
+  carrier = actx.createOscillator();
+  carrier.type = 'sine';
+  carrier.frequency.value = FREQ;
+  carrier.connect(filter);
+  carrier.start();
+
+  lfoOsc = actx.createOscillator();
+  lfoOsc.type = 'sine';
+  lfoOsc.frequency.value = +rateEl.value;
+  lfoOsc.start();
+
+  lfoGain = actx.createGain();
+  lfoGain.gain.value = 1;
+  lfoOsc.connect(lfoGain);
+
+  pitchModGain = actx.createGain();
+  pitchModGain.gain.value = 50;
+  filterModGain = actx.createGain();
+  filterModGain.gain.value = 0;
+  ampModGain = actx.createGain();
+  ampModGain.gain.value = 0;
+
+  lfoGain.connect(pitchModGain);
+  lfoGain.connect(filterModGain);
+  lfoGain.connect(ampModGain);
+
+  pitchModGain.connect(carrier.frequency);
+  filterModGain.connect(filter.frequency);
+  ampModGain.connect(amp.gain);
+
+  const now = actx.currentTime;
+  amp.gain.setValueAtTime(0, now);
+  amp.gain.linearRampToValueAtTime(0.25, now + 0.8);
+}
+
+function stopAudio(){
+  if(!actx || !amp || !carrier || !lfoOsc) return;
+  const now = actx.currentTime;
+  amp.gain.cancelScheduledValues(now);
+  amp.gain.setValueAtTime(amp.gain.value, now);
+  amp.gain.linearRampToValueAtTime(0, now + 0.5);
+  const toStop = [carrier, lfoOsc];
+  setTimeout(() => toStop.forEach(o => {
+    try { o.stop(); } catch(e) {}
+  }), 700);
+  carrier = null; lfoOsc = null; lfoGain = null; filter = null; amp = null;
+  pitchModGain = null; filterModGain = null; ampModGain = null;
+}
+
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.setAttribute('aria-pressed', playing);
+  if(playing){
+    startAudio();
+    playBtn.textContent = '■ Stop';
+    ahint.textContent = 'Now try each destination. Hear how the LFO moves different things.';
+  } else {
+    stopAudio();
+    playBtn.textContent = '▶ Play a pad';
+  }
+  paint();
+});
+
+destBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    setDest(btn.dataset.dest);
+  });
+});
+
+rateEl.addEventListener('input', setRate);
+
+destBtns.forEach(btn => {
+  if(btn.dataset.dest === 'pitch') btn.setAttribute('data-active', 'true');
+});
+
+paint();
+ratev.textContent = rateEl.value;
+requestAnimationFrame(() => paint());
+</script>
