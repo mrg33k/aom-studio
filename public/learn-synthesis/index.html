@@ -2,9 +2,9 @@
 <meta name="description" content="Learn synthesis and sound design from zero. Build your own pads, bass, 808s, keys and more, hands-on, on the Akai MPC. Interactive beginner course with real sound in every lesson.">
 <link rel="stylesheet" href="/learn-synthesis/course.css">
 <style>
-  /* ---- page-specific layout (uses course.css tokens) ---- */
+  /* nav */
   .nav{position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:20px;
-    padding:16px clamp(18px,4vw,40px); background:rgba(11,11,11,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--hairline)}
+    padding:15px clamp(18px,4vw,44px); background:rgba(7,6,6,.72); backdrop-filter:blur(12px); border-bottom:1px solid var(--hairline)}
   .brand{display:flex; align-items:center; gap:12px}
   .brand .mono-mark{color:var(--gold)}
   .brand .bt{display:flex; flex-direction:column; line-height:1}
@@ -12,64 +12,77 @@
   .brand .bt span{font-family:var(--body); font-weight:600; font-size:9.5px; letter-spacing:.42em; color:var(--gold); margin-top:3px}
   .navlinks{display:flex; gap:30px; align-items:center}
   .navlinks a{font-family:var(--body); font-weight:600; font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); transition:color .15s}
-  .navlinks a:hover{color:var(--ivory)}
+  .navlinks a:hover{color:var(--gold)}
   .nav .btn{padding:11px 20px; font-size:13px}
-  @media (max-width:860px){ .navlinks{display:none} }
+  @media (max-width:880px){ .navlinks{display:none} }
 
-  /* hero */
-  .hero{display:grid; grid-template-columns:1fr 1fr; gap:clamp(24px,4vw,56px); align-items:center;
-    padding:clamp(40px,6vw,84px) clamp(18px,4vw,40px) clamp(30px,4vw,56px); max-width:1240px; margin:0 auto}
-  @media (max-width:900px){ .hero{grid-template-columns:1fr} .hero .shot{order:-1} }
-  .hero h1{font-size:clamp(52px,9vw,112px)}
+  /* hero — full-bleed photo slideshow blending into near-black */
+  .hero{position:relative; min-height:clamp(560px,88vh,940px); display:flex; align-items:center; overflow:hidden}
+  .hero-media{position:absolute; inset:0; z-index:0}
+  .hero-media .hslide{position:absolute; inset:0; opacity:0; transition:opacity 1.4s var(--ease)}
+  .hero-media .hslide.on{opacity:1}
+  .hero-media .hslide img{width:100%; height:100%; object-fit:cover; object-position:74% center; transform-origin:70% 50%; animation:kenburns 16s ease-in-out infinite alternate}
+  .hero-scrim{position:absolute; inset:0; z-index:1; background:
+      linear-gradient(90deg, var(--obsidian) 6%, rgba(7,6,6,.90) 30%, rgba(7,6,6,.42) 60%, rgba(7,6,6,.12) 100%),
+      linear-gradient(0deg, var(--obsidian) 1%, transparent 22%)}
+  @media (max-width:760px){ .hero-scrim{background:linear-gradient(0deg,var(--obsidian) 12%,rgba(7,6,6,.72) 55%,rgba(7,6,6,.5) 100%)} }
+  .hero-inner{position:relative; z-index:2; width:100%; max-width:1180px; margin:0 auto; padding:0 clamp(18px,4vw,44px)}
+  .hero-inner .col{max-width:640px}
+  .hero h1{font-size:clamp(52px,9.2vw,116px); margin-top:18px}
   .hero .sub{font-family:var(--body); font-weight:600; font-size:clamp(13px,1.5vw,15px); letter-spacing:.24em; text-transform:uppercase; color:var(--muted); margin:20px 0 0}
-  .hero .body{color:var(--muted); font-size:16.5px; margin:22px 0 0; max-width:46ch}
-  .hero .cta{display:flex; flex-wrap:wrap; gap:14px; margin-top:32px; align-items:center}
-  .hero .taste{display:inline-flex; align-items:center; gap:12px}
-  .hero .taste .tbtn{cursor:pointer; width:44px; height:44px; border-radius:50%; border:1.5px solid var(--hairline-hi); background:transparent; color:var(--gold); display:grid; place-items:center; transition:border-color .15s}
-  .hero .taste .tbtn:hover{border-color:var(--gold)}
-  .hero .taste .tl{display:flex; flex-direction:column; line-height:1.2}
-  .hero .taste .tl b{font-family:var(--display); font-weight:700; font-size:14px; letter-spacing:.06em; text-transform:uppercase}
-  .hero .taste .tl span{font-size:11px; color:var(--faint)}
-  .shot{position:relative; border:1px solid var(--hairline); overflow:hidden}
-  .shot img{width:100%; height:100%; object-fit:cover; display:block}
+  .hero .body{color:#C9C4B8; font-size:16.5px; margin:22px 0 0; max-width:44ch}
+  .hero .cta{display:flex; flex-wrap:wrap; gap:14px; margin-top:34px; align-items:center}
+  .taste{display:inline-flex; align-items:center; gap:12px}
+  .taste .tbtn{cursor:pointer; width:46px; height:46px; border-radius:50%; border:1.5px solid var(--gold-deep); background:rgba(7,6,6,.4); color:var(--gold); display:grid; place-items:center; transition:border-color .15s, box-shadow .2s}
+  .taste .tbtn:hover{border-color:var(--gold); box-shadow:0 0 22px -6px var(--gold-glow)}
+  .taste .tl{display:flex; flex-direction:column; line-height:1.2}
+  .taste .tl b{font-family:var(--display); font-weight:700; font-size:14px; letter-spacing:.06em; text-transform:uppercase}
+  .taste .tl span{font-size:11px; color:var(--faint)}
 
   /* sounds */
-  .center{text-align:center; max-width:60ch; margin:0 auto}
-  .sec-head{display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:clamp(28px,4vw,48px)}
-  .sec-head h2{font-size:clamp(30px,5vw,52px)}
+  .sec-head{display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; margin-bottom:clamp(28px,4vw,52px)}
+  .sec-head h2{font-size:clamp(30px,5vw,54px)}
   .sec-head .lead{color:var(--muted); font-size:16px; max-width:56ch; margin:0}
   .sounds{display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(10px,1.4vw,16px)}
   @media (max-width:820px){ .sounds{grid-template-columns:repeat(2,1fr)} }
   .snd{padding:0; overflow:hidden}
-  .snd .thumb{aspect-ratio:16/10; background:#0d0d0c; border-bottom:1px solid var(--hairline)}
+  .snd .thumb{aspect-ratio:16/10; background:#0b0907; border-bottom:1px solid var(--hairline)}
   .snd .thumb canvas{width:100%; height:100%; display:block}
   .snd .meta{padding:14px 16px 16px}
   .snd .meta b{font-family:var(--display); font-weight:700; font-size:18px; letter-spacing:.03em; text-transform:uppercase; color:var(--gold); display:block}
-  .snd .meta span{font-family:var(--body); font-size:12px; color:var(--muted); letter-spacing:.02em}
+  .snd .meta span{font-family:var(--body); font-size:12px; color:var(--muted)}
 
-  /* curriculum */
-  .cur{display:grid; grid-template-columns:1fr 1fr; gap:clamp(20px,3vw,40px); align-items:start}
-  @media (max-width:900px){ .cur{grid-template-columns:1fr} }
-  .curcol .ph{display:flex; align-items:baseline; gap:12px; margin:0 0 16px}
+  /* curriculum slideshow of the real course */
+  .slideshow{position:relative; border:1px solid var(--hairline); overflow:hidden; aspect-ratio:16/9; background:#000; max-width:960px; margin:0 auto clamp(26px,4vw,44px)}
+  .cslide{position:absolute; inset:0; opacity:0; transition:opacity 1s var(--ease)}
+  .cslide.on{opacity:1}
+  .cslide img{width:100%; height:100%; object-fit:cover; object-position:center top}
+  .ss-cap{position:absolute; left:0; bottom:0; z-index:2; width:100%; padding:16px 18px; display:flex; align-items:center; gap:12px;
+    background:linear-gradient(0deg,rgba(7,6,6,.94),rgba(7,6,6,.4) 60%,transparent)}
+  .ss-cap b{font-family:var(--display); font-weight:700; font-size:16px; letter-spacing:.04em; text-transform:uppercase}
+  .ss-cap span{font-size:12.5px; color:var(--muted)}
+  .ss-dots{position:absolute; top:14px; right:14px; z-index:2; display:flex; gap:7px}
+  .ss-dots i{width:8px; height:8px; border:1px solid var(--gold-deep); cursor:pointer; transition:background .2s}
+  .ss-dots i.on{background:var(--gold)}
+  .cur{display:grid; grid-template-columns:1fr 1fr; gap:clamp(20px,3vw,44px); align-items:start}
+  @media (max-width:820px){ .cur{grid-template-columns:1fr} }
+  .curcol .ph{display:flex; align-items:baseline; gap:12px; margin:0 0 14px}
   .curcol .ph b{font-family:var(--body); font-weight:700; font-size:12px; letter-spacing:.18em; color:var(--gold); text-transform:uppercase}
   .curcol .ph span{color:var(--muted); font-size:13.5px; text-transform:uppercase; letter-spacing:.08em}
-  .curimg{border:1px solid var(--hairline); overflow:hidden; margin-bottom:18px}
-  .curimg img{width:100%; display:block; aspect-ratio:16/11; object-fit:cover}
-  .curimg.tall img{aspect-ratio:4/5}
-  .mod{display:grid; grid-template-columns:34px 1fr auto; gap:12px; align-items:center; padding:12px 4px; border-bottom:1px solid var(--hairline); text-decoration:none; transition:padding-left .14s, background .14s}
-  .mod:hover{padding-left:10px; background:#141310}
+  .mod{display:grid; grid-template-columns:34px 1fr auto; gap:12px; align-items:center; padding:12px 4px; border-bottom:1px solid var(--hairline); text-decoration:none; transition:padding-left .16s var(--ease), background .16s}
+  .mod:hover{padding-left:12px; background:#120f0a}
   .mod .n{font-family:var(--mono); font-size:12px; font-weight:700; color:var(--faint)}
   .mod.hot .n{color:var(--gold)}
   .mod .t b{display:block; font-family:var(--display); font-weight:700; font-size:16.5px; letter-spacing:.02em; text-transform:uppercase}
   .mod .t span{color:var(--muted); font-size:12.5px}
 
-  /* why it sticks */
+  /* why */
   .why{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2.5vw,32px)}
   @media (max-width:820px){ .why{grid-template-columns:1fr} }
-  .why .col{padding:26px; border-top:2px solid var(--gold)}
+  .why .col{padding:28px 24px; border-top:2px solid var(--gold)}
   .why .col .ic{color:var(--gold); margin-bottom:16px}
-  .why .col b{font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:.03em; text-transform:uppercase; display:block; margin-bottom:8px}
-  .why .col .no{font-family:var(--mono); font-size:12px; color:var(--gold); margin-bottom:14px}
+  .why .col b{font-family:var(--display); font-weight:700; font-size:21px; letter-spacing:.03em; text-transform:uppercase; display:block; margin-bottom:8px}
+  .why .col .no{font-family:var(--mono); font-size:12px; color:var(--gold); margin-bottom:12px}
   .why .col p{color:var(--muted); font-size:14.5px; margin:0}
 
   /* faq */
@@ -78,16 +91,15 @@
   .qa b{font-family:var(--display); font-weight:700; font-size:19px; letter-spacing:.02em; text-transform:uppercase; display:block; margin-bottom:8px}
   .qa p{color:var(--muted); font-size:15px; margin:0; max-width:70ch}
 
-  /* cta band */
+  /* cta */
   .band{position:relative; overflow:hidden; border-top:1px solid var(--hairline); border-bottom:1px solid var(--hairline)}
-  .band img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.5}
-  .band::after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--obsidian) 30%,rgba(11,11,11,.35) 75%)}
-  .band .inner{position:relative; z-index:2; max-width:1160px; margin:0 auto; padding:clamp(44px,7vw,96px) clamp(18px,4vw,40px); display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between}
-  .band h2{font-size:clamp(30px,5vw,54px); max-width:16ch}
+  .band img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.55; animation:kenburns 20s ease-in-out infinite alternate}
+  .band::after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--obsidian) 28%,rgba(7,6,6,.3) 78%)}
+  .band .inner{position:relative; z-index:2; max-width:1180px; margin:0 auto; padding:clamp(44px,7vw,100px) clamp(18px,4vw,44px); display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between}
+  .band h2{font-size:clamp(30px,5vw,56px); max-width:16ch}
   .band h2 .gold{color:var(--gold)}
 
-  footer{display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; justify-content:space-between;
-    max-width:1160px; margin:0 auto; padding:26px clamp(18px,4vw,40px)}
+  footer{display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; justify-content:space-between; max-width:1180px; margin:0 auto; padding:26px clamp(18px,4vw,44px)}
   footer .fb{font-family:var(--display); font-weight:800; font-size:14px; letter-spacing:.04em; text-transform:uppercase}
   footer .fb span{color:var(--gold)}
   footer .fine{font-family:var(--body); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint)}
@@ -108,29 +120,36 @@
 </nav>
 
 <header class="hero">
-  <div>
-    <p class="eyebrow">Music taught on the Akai MPC</p>
-    <h1 class="display">Learn to make<br>your own <span class="gold">sounds</span></h1>
-    <p class="sub">Interactive course · beginners welcome</p>
-    <p class="body">Synthesis and sound design, explained like you are brand new to it. Build your own bass, 808s, pads, keys, and full instruments, hands-on. Every lesson has a real screen and sound you can actually hear and play.</p>
-    <div class="cta">
-      <a class="btn" href="/learn-synthesis/lessons/00-welcome.html">Start Learning</a>
-      <a class="btn outline" href="/learn-synthesis/engine-map.html">See how a sound is built</a>
-      <span class="taste">
-        <button class="tbtn" id="taste" aria-label="Hear a taste">▶</button>
-        <span class="tl"><b>Hear a taste</b><span id="tastehint">live audio, no download</span></span>
-      </span>
+  <div class="hero-media" id="hero-media">
+    <div class="hslide on"><img src="/learn-synthesis/images/spec-hero.jpg" alt="Akai MPC with glowing pads and a waveform on screen"></div>
+    <div class="hslide"><img src="/learn-synthesis/images/mpc-hero.jpg" alt=""></div>
+    <div class="hslide"><img src="/learn-synthesis/images/mpc-cta.jpg" alt=""></div>
+  </div>
+  <div class="hero-scrim"></div>
+  <div class="hero-inner">
+    <div class="col">
+      <p class="eyebrow reveal">Music taught on the Akai MPC</p>
+      <h1 class="display reveal d1">Learn to make<br>your own <span class="gold">sounds</span></h1>
+      <p class="sub reveal d2">Interactive course · beginners welcome</p>
+      <p class="body reveal d3">Synthesis and sound design, explained like you are brand new to it. Build your own bass, 808s, pads, keys, and full instruments, hands-on. Every lesson has a real screen and sound you can actually hear and play.</p>
+      <div class="cta reveal d4">
+        <a class="btn" href="/learn-synthesis/lessons/00-welcome.html">Start Learning</a>
+        <a class="btn outline" href="/learn-synthesis/engine-map.html">See how a sound is built</a>
+        <span class="taste">
+          <button class="tbtn" id="taste" aria-label="Hear a taste">▶</button>
+          <span class="tl"><b>Hear a taste</b><span id="tastehint">live audio, no download</span></span>
+        </span>
+      </div>
     </div>
   </div>
-  <div class="shot"><img src="/learn-synthesis/images/mpc-hero.jpg" alt="Akai MPC with glowing pads and a waveform on screen"></div>
 </header>
 
 <section class="section" id="sounds">
   <div class="wrap">
     <div class="sec-head">
-      <p class="eyebrow">By the end you can make</p>
-      <h2 class="sec-title display">Any sound you hear</h2>
-      <p class="lead">Eight full instruments, from beat staples to cinematic textures. Each one is its own guided build.</p>
+      <p class="eyebrow reveal">By the end you can make</p>
+      <h2 class="sec-title display reveal"><span class="uline">Any sound you hear</span></h2>
+      <p class="lead reveal d1">Eight full instruments, from beat staples to cinematic textures. Each one is its own guided build.</p>
     </div>
     <div class="sounds" id="sounds-grid"></div>
   </div>
@@ -139,57 +158,44 @@
 <section class="section" id="curriculum" style="padding-top:0">
   <div class="wrap">
     <div class="sec-head">
-      <p class="eyebrow">The full course · 19 lessons</p>
-      <h2 class="sec-title display">What you'll learn</h2>
-      <p class="lead">First you understand the machine, one plain-English piece at a time. Then you build all eight sounds. You finish able to make your own from scratch.</p>
+      <p class="eyebrow reveal">The full course · 19 lessons</p>
+      <h2 class="sec-title display reveal"><span class="uline">What you'll learn</span></h2>
+      <p class="lead reveal d1">A real look inside. First you understand the machine, one plain-English piece at a time. Then you build all eight sounds.</p>
+    </div>
+    <div class="slideshow reveal" id="course-ss" aria-label="A slideshow of the actual course">
+      <div class="cslide on"><img src="/learn-synthesis/images/slides/slide-1.jpeg" alt="The signal map from the course"></div>
+      <div class="cslide"><img src="/learn-synthesis/images/slides/slide-2.jpeg" alt="The wavetable lesson"></div>
+      <div class="cslide"><img src="/learn-synthesis/images/slides/slide-3.jpeg" alt="The Mod Matrix lesson"></div>
+      <div class="ss-dots" id="ss-dots"></div>
+      <div class="ss-cap"><span class="pill">Live</span><b id="ss-cap-t">The engine map</b><span id="ss-cap-s">click through the whole engine</span></div>
     </div>
     <div class="cur">
-      <div class="curcol">
-        <div class="curimg"><img src="/learn-synthesis/images/mpc-screen.jpg" alt="The MPC screen up close"></div>
-        <div class="ph"><b>Part 1</b><span>Understand the machine</span></div>
-        <div id="part1"></div>
-      </div>
-      <div class="curcol">
-        <div class="ph"><b>Part 2</b><span>Build all eight sounds</span></div>
-        <div id="part2"></div>
-        <div class="curimg tall" style="margin-top:18px"><img src="/learn-synthesis/images/mpc-lifestyle.jpg" alt="A producer building sounds on an MPC"></div>
-      </div>
+      <div class="curcol reveal"><div class="ph"><b>Part 1</b><span>Understand the machine</span></div><div id="part1"></div></div>
+      <div class="curcol reveal d1"><div class="ph"><b>Part 2</b><span>Build all eight sounds</span></div><div id="part2"></div></div>
     </div>
   </div>
 </section>
 
 <section class="section" style="padding-top:0">
   <div class="wrap">
-    <div class="sec-head"><h2 class="sec-title display">Why it sticks</h2></div>
+    <div class="sec-head"><h2 class="sec-title display reveal"><span class="uline">Why it sticks</span></h2></div>
     <div class="why">
-      <div class="col">
-        <div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="3.5" width="19" height="13"/><path d="M8.5 20.5h7M12 16.5v4"/><path d="M6 12l3-3 2.5 2.5L16 7"/></svg></div>
-        <div class="no">01</div><b>See the real screen</b>
-        <p>Every lesson shows the actual MPC screen, recreated crisp and clear, so you know exactly where you are on your own device.</p>
-      </div>
-      <div class="col">
-        <div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 12h3l2-7 3 15 3-11 2 5 2-2h5" stroke-linejoin="round" stroke-linecap="round"/></svg></div>
-        <div class="no">02</div><b>Hear it live</b>
-        <p>Drag a knob and the sound changes in your ears, right in the page. No guessing what a word means. You hear it.</p>
-      </div>
-      <div class="col">
-        <div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="8"/><path d="M12 4v3M12 12l4-2" stroke-linecap="round"/></svg></div>
-        <div class="no">03</div><b>Build it yourself</b>
-        <p>Short build-alongs end with a finished, playable instrument you made. Muscle memory, not just notes.</p>
-      </div>
+      <div class="col reveal"><div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="3.5" width="19" height="13"/><path d="M8.5 20.5h7M12 16.5v4"/><path d="M6 12l3-3 2.5 2.5L16 7"/></svg></div><div class="no">01</div><b>See the real screen</b><p>Every lesson shows the actual MPC screen, recreated crisp and clear, so you know exactly where you are on your own device.</p></div>
+      <div class="col reveal d1"><div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 12h3l2-7 3 15 3-11 2 5 2-2h5" stroke-linejoin="round" stroke-linecap="round"/></svg></div><div class="no">02</div><b>Hear it live</b><p>Drag a knob and the sound changes in your ears, right in the page. No guessing what a word means. You hear it.</p></div>
+      <div class="col reveal d2"><div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="8"/><path d="M12 4v3M12 12l4-2" stroke-linecap="round"/></svg></div><div class="no">03</div><b>Build it yourself</b><p>Short build-alongs end with a finished, playable instrument you made. Muscle memory, not just notes.</p></div>
     </div>
   </div>
 </section>
 
 <section class="section" id="faq" style="padding-top:0">
   <div class="wrap">
-    <div class="sec-head"><h2 class="sec-title display">FAQ</h2></div>
+    <div class="sec-head"><h2 class="sec-title display reveal"><span class="uline">FAQ</span></h2></div>
     <div class="faq">
-      <div class="qa"><b>Do I need an Akai MPC to take this?</b><p>No. Every lesson makes sound right in your browser and shows the MPC screen recreated on the page, so you can learn the whole engine first. When you sit down at a real MPC, it will already feel familiar.</p></div>
-      <div class="qa"><b>Do I need to know music theory?</b><p>No. We explain everything like you are brand new. Plain words first, the real name second, and a sound you can hear for every idea.</p></div>
-      <div class="qa"><b>What will I be able to do at the end?</b><p>Build your own bass, 808s, pads, synth leads, piano, choir, horns, and RNB and hip hop sounds from scratch, and explain how every part of the engine works in your own words.</p></div>
-      <div class="qa"><b>How long is it?</b><p>Nineteen short lessons. Part one teaches the machine, part two is a guided build of each sound, and it ends with a make-your-own capstone. Go at your own pace.</p></div>
-      <div class="qa"><b>Is it really for beginners?</b><p>Yes. If you have never made a sound before, start at lesson one. If you already produce, jump straight to the build lab.</p></div>
+      <div class="qa reveal"><b>Do I need an Akai MPC to take this?</b><p>No. Every lesson makes sound right in your browser and shows the MPC screen recreated on the page, so you can learn the whole engine first. When you sit down at a real MPC, it will already feel familiar.</p></div>
+      <div class="qa reveal"><b>Do I need to know music theory?</b><p>No. We explain everything like you are brand new. Plain words first, the real name second, and a sound you can hear for every idea.</p></div>
+      <div class="qa reveal"><b>What will I be able to do at the end?</b><p>Build your own bass, 808s, pads, synth leads, piano, choir, horns, and RNB and hip hop sounds from scratch, and explain how every part of the engine works in your own words.</p></div>
+      <div class="qa reveal"><b>How long is it?</b><p>Nineteen short lessons. Part one teaches the machine, part two is a guided build of each sound, and it ends with a make-your-own capstone. Go at your own pace.</p></div>
+      <div class="qa reveal"><b>Is it really for beginners?</b><p>Yes. If you have never made a sound before, start at lesson one. If you already produce, jump straight to the build lab.</p></div>
     </div>
   </div>
 </section>
@@ -197,8 +203,8 @@
 <section class="band">
   <img src="/learn-synthesis/images/mpc-cta.jpg" alt="">
   <div class="inner">
-    <h2 class="display">Ready to make your <span class="gold">first sound?</span></h2>
-    <a class="btn" href="/learn-synthesis/lessons/00-welcome.html">Start the course →</a>
+    <h2 class="display reveal">Ready to make your <span class="gold">first sound?</span></h2>
+    <a class="btn reveal d1" href="/learn-synthesis/lessons/00-welcome.html">Start the course →</a>
   </div>
 </section>
 
@@ -208,81 +214,58 @@
 </footer>
 
 <script>
-/* ---- 8 sound-card waveform thumbnails (varied, tasteful) ---- */
-const SOUNDS = [
-  ['Bass','sub + synth low end','#C4A46A','sine'],
-  ['808','the beat backbone','#E0894A','pulse'],
-  ['Pads','lush, evolving','#39D0A0','pad'],
-  ['Synths','leads &amp; plucks','#8FD24A','saw'],
-  ['Piano','sampled &amp; real','#E6E1D5','keys'],
-  ['Choir','stacked voices','#B08CE0','pad'],
-  ['Horns','brass with bite','#E7B14A','saw'],
-  ['RNB / Hip Hop','warm &amp; hard-hitting','#C4A46A','pulse'],
-];
-function drawThumb(cv,color,kind){
-  const W=cv.width=640, H=cv.height=400, ctx=cv.getContext('2d'), mid=H/2;
+/* ---------- scroll reveal ---------- */
+const reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+const io = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }); },{threshold:.15});
+document.querySelectorAll('.reveal, .uline').forEach(el=>io.observe(el));
+setTimeout(()=>document.querySelectorAll('.reveal,.uline').forEach(el=>el.classList.add('in')),1400); // safety fallback
+
+/* ---------- 8 animated sound-card thumbnails ---------- */
+const SOUNDS=[['Bass','sub + synth low end','#E7BE68','sine'],['808','the beat backbone','#E0894A','pulse'],['Pads','lush, evolving','#39D0A0','pad'],['Synths','leads &amp; plucks','#8FD24A','saw'],['Piano','sampled &amp; real','#E6E1D5','keys'],['Choir','stacked voices','#B08CE0','pad'],['Horns','brass with bite','#E7B14A','saw'],['RNB / Hip Hop','warm &amp; hard-hitting','#E7BE68','pulse']];
+function drawThumb(cv,color,kind,t){
+  const W=cv.width=640,H=cv.height=400,ctx=cv.getContext('2d'),mid=H/2;
   ctx.clearRect(0,0,W,H); ctx.lineJoin='round'; ctx.lineCap='round';
-  if(kind==='keys'){ // dense spectrum bars filling the card
-    const n=30, bw=W/n*0.62;
-    for(let i=0;i<n;i++){ const x=(i+.5)/n*W;
-      const h=(Math.abs(Math.sin(i*0.7)*0.6+Math.sin(i*1.9)*0.3)+0.12)*(H*0.82);
-      ctx.fillStyle=color; ctx.globalAlpha=.85; ctx.fillRect(x-bw/2,mid-h/2,bw,h);
-    }
-    ctx.globalAlpha=1; return;
-  }
+  if(kind==='keys'){ const n=30,bw=W/n*0.62; for(let i=0;i<n;i++){ const x=(i+.5)/n*W; const h=(Math.abs(Math.sin(i*0.7+t*1.5)*0.6+Math.sin(i*1.9)*0.3)+0.12)*(H*0.82); ctx.fillStyle=color; ctx.globalAlpha=.85; ctx.fillRect(x-bw/2,mid-h/2,bw,h);} ctx.globalAlpha=1; return; }
   const amp=mid*0.72, cyc=(kind==='pad')?2:3.2;
-  const yAt=x=>{ const p=x/W*Math.PI*2*cyc; let y;
+  const yAt=x=>{ const p=x/W*Math.PI*2*cyc + t; let y;
     if(kind==='sine') y=Math.sin(p);
-    else if(kind==='saw') y=((p/Math.PI)%2)-1;
+    else if(kind==='saw') y=(((p/Math.PI)%2)+2)%2-1;
     else if(kind==='pulse') y=(Math.sin(p)>=0?1:-1)*0.9;
-    else y=Math.sin(p)*0.7+Math.sin(p*2.3+1)*0.3; // pad: evolving
-    // envelope so it swells across the card
-    const env=0.45+0.55*Math.sin(x/W*Math.PI);
-    return mid - y*amp*env;
-  };
-  // area fill
-  ctx.beginPath(); ctx.moveTo(0,mid);
-  for(let x=0;x<=W;x+=2) ctx.lineTo(x,yAt(x));
-  ctx.lineTo(W,mid); ctx.closePath();
+    else y=Math.sin(p)*0.7+Math.sin(p*2.3+1)*0.3;
+    const env=0.45+0.55*Math.sin(x/W*Math.PI); return mid - y*amp*env; };
+  ctx.beginPath(); ctx.moveTo(0,mid); for(let x=0;x<=W;x+=2) ctx.lineTo(x,yAt(x)); ctx.lineTo(W,mid); ctx.closePath();
   ctx.globalAlpha=.16; ctx.fillStyle=color; ctx.fill();
-  // stroke line
   ctx.globalAlpha=1; ctx.lineWidth=4.5; ctx.strokeStyle=color; ctx.shadowColor=color; ctx.shadowBlur=14;
-  ctx.beginPath(); for(let x=0;x<=W;x+=2){ const py=yAt(x); x?ctx.lineTo(x,py):ctx.moveTo(x,py); } ctx.stroke();
-  ctx.shadowBlur=0;
+  ctx.beginPath(); for(let x=0;x<=W;x+=2){ const py=yAt(x); x?ctx.lineTo(x,py):ctx.moveTo(x,py);} ctx.stroke(); ctx.shadowBlur=0;
 }
 const grid=document.getElementById('sounds-grid');
-grid.innerHTML=SOUNDS.map(s=>`<div class="card interactive snd"><div class="thumb"><canvas></canvas></div><div class="meta"><b>${s[0]}</b><span>${s[1]}</span></div></div>`).join('');
-requestAnimationFrame(()=>{ [...grid.querySelectorAll('.snd')].forEach((el,i)=>drawThumb(el.querySelector('canvas'),SOUNDS[i][2],SOUNDS[i][3])); });
+grid.innerHTML=SOUNDS.map(s=>`<div class="card interactive snd reveal"><div class="thumb"><canvas></canvas></div><div class="meta"><b>${s[0]}</b><span>${s[1]}</span></div></div>`).join('');
+grid.querySelectorAll('.snd').forEach((el,i)=>{ el.classList.add('d'+((i%4)+1)); io.observe(el); });
+const cans=[...grid.querySelectorAll('canvas')];
+if(reduce){ cans.forEach((c,i)=>drawThumb(c,SOUNDS[i][2],SOUNDS[i][3],0)); }
+else{ let t=0; (function loop(){ t+=0.03; cans.forEach((c,i)=>drawThumb(c,SOUNDS[i][2],SOUNDS[i][3], t + i*0.6)); requestAnimationFrame(loop); })(); }
 
-/* ---- curriculum ---- */
-const P1=[
-  ['00','Welcome','What a keygroup is','/learn-synthesis/lessons/00-welcome.html'],
-  ['01','The map','The whole engine at a glance','/learn-synthesis/engine-map.html'],
-  ['02','Layers','Stack up to 8 sounds on one pad','/learn-synthesis/lessons/02-layers.html'],
-  ['03','Samples','Build from recordings','/learn-synthesis/lessons/03-samples.html'],
-  ['04','Oscillators','Tones drawn from scratch','/learn-synthesis/lessons/04-oscillators.html'],
-  ['05','Wavetables','The headline, a flipbook of waveforms','/learn-synthesis/lessons/05-wavetables.html'],
-  ['06','Filters','Shape the tone','/learn-synthesis/lessons/06-filters.html'],
-  ['07','Envelopes','Shape the sound over time','/learn-synthesis/lessons/07-envelopes.html'],
-  ['08','LFOs','Add automatic movement','/learn-synthesis/lessons/08-lfos.html'],
-  ['09','Mod Matrix','Connect anything to anything','/learn-synthesis/lessons/09-mod-matrix.html'],
-];
-const P2=[
-  ['10','Bass','Tight, punchy low end','/learn-synthesis/lessons/10-bass.html'],
-  ['11','Synths','Your first synth lead','/learn-synthesis/lessons/11-synths.html'],
-  ['12','Pads','The wavetable showcase','/learn-synthesis/lessons/12-pads.html'],
-  ['13','Piano','The sampling craft','/learn-synthesis/lessons/13-piano.html'],
-  ['14','Choir','Stacked voices &amp; swell','/learn-synthesis/lessons/14-choir.html'],
-  ['15','Horns','Brass bite &amp; dynamics','/learn-synthesis/lessons/15-horns.html'],
-  ['16','RNB','Warm keys &amp; soft sub','/learn-synthesis/lessons/16-rnb.html'],
-  ['17','Hip Hop','808s, one-shots, stabs','/learn-synthesis/lessons/17-hiphop.html'],
-  ['18','Capstone','Build your own from scratch','/learn-synthesis/lessons/18-capstone.html'],
-];
-function modHtml(m){ const hot=(m[1]==='Wavetables')?' hot':''; return `<a class="mod${hot}" href="${m[3]}"><span class="n">${m[0]}</span><span class="t"><b>${m[1]}</b><span>${m[2]}</span></span><span class="pill">Live</span></a>`; }
+/* ---------- curriculum ---------- */
+const P1=[['00','Welcome','What a keygroup is','/learn-synthesis/lessons/00-welcome.html'],['01','The map','The whole engine at a glance','/learn-synthesis/engine-map.html'],['02','Layers','Stack up to 8 sounds on one pad','/learn-synthesis/lessons/02-layers.html'],['03','Samples','Build from recordings','/learn-synthesis/lessons/03-samples.html'],['04','Oscillators','Tones drawn from scratch','/learn-synthesis/lessons/04-oscillators.html'],['05','Wavetables','The headline, a flipbook of waveforms','/learn-synthesis/lessons/05-wavetables.html'],['06','Filters','Shape the tone','/learn-synthesis/lessons/06-filters.html'],['07','Envelopes','Shape the sound over time','/learn-synthesis/lessons/07-envelopes.html'],['08','LFOs','Add automatic movement','/learn-synthesis/lessons/08-lfos.html'],['09','Mod Matrix','Connect anything to anything','/learn-synthesis/lessons/09-mod-matrix.html']];
+const P2=[['10','Bass','Tight, punchy low end','/learn-synthesis/lessons/10-bass.html'],['11','Synths','Your first synth lead','/learn-synthesis/lessons/11-synths.html'],['12','Pads','The wavetable showcase','/learn-synthesis/lessons/12-pads.html'],['13','Piano','The sampling craft','/learn-synthesis/lessons/13-piano.html'],['14','Choir','Stacked voices &amp; swell','/learn-synthesis/lessons/14-choir.html'],['15','Horns','Brass bite &amp; dynamics','/learn-synthesis/lessons/15-horns.html'],['16','RNB','Warm keys &amp; soft sub','/learn-synthesis/lessons/16-rnb.html'],['17','Hip Hop','808s, one-shots, stabs','/learn-synthesis/lessons/17-hiphop.html'],['18','Capstone','Build your own from scratch','/learn-synthesis/lessons/18-capstone.html']];
+const modHtml=m=>`<a class="mod${m[1]==='Wavetables'?' hot':''}" href="${m[3]}"><span class="n">${m[0]}</span><span class="t"><b>${m[1]}</b><span>${m[2]}</span></span><span class="pill">Live</span></a>`;
 document.getElementById('part1').innerHTML=P1.map(modHtml).join('');
 document.getElementById('part2').innerHTML=P2.map(modHtml).join('');
 
-/* ---- hero: hear a taste (live evolving pad) ---- */
+/* ---------- slideshows ---------- */
+function slideshow(slideSel, root, ms, onChange){
+  const slides=[...root.querySelectorAll(slideSel)]; if(slides.length<2) return;
+  let i=0; setInterval(()=>{ slides[i].classList.remove('on'); i=(i+1)%slides.length; slides[i].classList.add('on'); if(onChange) onChange(i); }, ms);
+}
+slideshow('.hslide', document.getElementById('hero-media'), 4200);
+const capT=['The engine map','The wavetable lesson','The Mod Matrix lesson'], capS=['click through the whole engine','drag Position, hear it morph','wire anything to anything'];
+const dots=document.getElementById('ss-dots'); dots.innerHTML=capT.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('');
+slideshow('.cslide', document.getElementById('course-ss'), 3600, (i)=>{
+  document.getElementById('ss-cap-t').textContent=capT[i]; document.getElementById('ss-cap-s').textContent=capS[i];
+  dots.querySelectorAll('i').forEach((d,j)=>d.classList.toggle('on',j===i));
+});
+
+/* ---------- hero: hear a taste ---------- */
 const tasteBtn=document.getElementById('taste'), tasteHint=document.getElementById('tastehint');
 let actx,playing=false,stopT=null;
 function wts(pos){const p=(pos/100)*2,sh=2.2;let w=[Math.max(0,1-Math.abs(p)),Math.max(0,1-Math.abs(p-1)),Math.max(0,1-Math.abs(p-2))].map(v=>Math.pow(v,sh));const s=w[0]+w[1]+w[2]||1;return w.map(v=>v/s);}
@@ -290,14 +273,11 @@ tasteBtn.addEventListener('click',()=>{
   if(playing) return;
   actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume();
   playing=true; tasteBtn.textContent='♪'; tasteHint.textContent='a wavetable pad, evolving';
-  const amp=actx.createGain(); amp.gain.value=0; const filt=actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=2200;
-  filt.connect(amp); amp.connect(actx.destination);
+  const amp=actx.createGain(); amp.gain.value=0; const filt=actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=2200; filt.connect(amp); amp.connect(actx.destination);
   const voices=[]; [130.81,196.00].forEach(f=>['sine','sawtooth','square'].forEach(tp=>{const o=actx.createOscillator();o.type=tp;o.frequency.value=f;const g=actx.createGain();g.gain.value=0;o.connect(g);g.connect(filt);o.start();voices.push({o,g,tp});}));
   const now=actx.currentTime; amp.gain.setValueAtTime(0,now); amp.gain.linearRampToValueAtTime(.22,now+.8); amp.gain.setValueAtTime(.22,now+3.2); amp.gain.linearRampToValueAtTime(0,now+4.4);
   const t0=performance.now();
-  (function morph(){ if(!playing) return; const el=(performance.now()-t0)/1000; const pos=50+50*Math.sin(el*.7); const w=wts(pos);
-    voices.forEach(v=>{ const i=v.tp==='sine'?0:v.tp==='sawtooth'?1:2; v.g.gain.setTargetAtTime(w[i]*.5,actx.currentTime,.03); });
-    if(el<4.4) requestAnimationFrame(morph); })();
+  (function morph(){ if(!playing) return; const el=(performance.now()-t0)/1000; const w=wts(50+50*Math.sin(el*.7)); voices.forEach(v=>{const idx=v.tp==='sine'?0:v.tp==='sawtooth'?1:2; v.g.gain.setTargetAtTime(w[idx]*.5,actx.currentTime,.03);}); if(el<4.4) requestAnimationFrame(morph); })();
   clearTimeout(stopT); stopT=setTimeout(()=>{ voices.forEach(v=>{try{v.o.stop()}catch(e){}}); playing=false; tasteBtn.textContent='▶'; tasteHint.textContent='live audio, no download'; },4700);
 });
 </script>
