@@ -3,7 +3,7 @@
   :root{
     --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
     --edge:#2C2C33; --edge-hi:#3A3A43;
-    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --red:#C4A46A; --crimson:#A8884C; --amber:#F5A623; --teal:#9A8752;
     --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
     --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
     --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
@@ -43,7 +43,7 @@
   .disp canvas{width:100%; height:100%; display:block}
   .knobs{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
   .knob{flex:1 1 120px; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:12px; text-align:center}
-  .knob.hot{border-color:#4a1622; box-shadow:0 0 20px -10px var(--red)}
+  .knob.hot{border-color:#463818; box-shadow:0 0 20px -10px var(--red)}
   .dial{width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#26262c,#141418); border:2px solid #3a3a43; position:relative}
   .knob.hot .dial{border-color:var(--red)}
   .dial::after{content:""; position:absolute; left:50%; top:6px; width:2px; height:16px; background:var(--red); transform-origin:50% 20px; transform:translateX(-50%) rotate(var(--rot,20deg)); border-radius:2px}
@@ -76,7 +76,7 @@
   /* build-along steps */
   .steps{list-style:none; counter-reset:s; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
   .steps li{counter-increment:s; position:relative; background:var(--raised); border:1px solid var(--edge); border-radius:10px; padding:14px 16px 14px 68px}
-  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#1a0d11; border:1px solid #3a1620; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .steps li::before{content:counter(s,decimal-leading-zero); position:absolute; left:12px; top:12px; font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--red); background:#141009; border:1px solid #3a2f18; border-radius:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center}
   .steps li b{display:block; font-size:15px; margin-bottom:3px} .steps li span{color:var(--mut); font-size:14px}
 
   .recap{display:flex; flex-wrap:wrap; gap:10px}
@@ -219,8 +219,8 @@ function drawWave(cv, vel, glow){
     const py = mid - y*(mid-14);
     x ? ctx.lineTo(x,py) : ctx.moveTo(x,py);
   }
-  ctx.strokeStyle = glow ? '#E4002B' : '#39D0A0'; ctx.lineWidth=2.5; ctx.lineJoin='round';
-  if(glow){ ctx.shadowColor='#E4002B'; ctx.shadowBlur=8; } ctx.stroke(); ctx.shadowBlur=0;
+  ctx.strokeStyle = glow ? '#C4A46A' : '#9A8752'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  if(glow){ ctx.shadowColor='#C4A46A'; ctx.shadowBlur=8; } ctx.stroke(); ctx.shadowBlur=0;
 }
 
 /* ---------- static screen waveform ---------- */

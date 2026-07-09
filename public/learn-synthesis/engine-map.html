@@ -3,7 +3,7 @@
   :root{
     --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --reader:#212127;
     --edge:#2C2C33; --edge-hi:#3A3A43;
-    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
+    --red:#C4A46A; --crimson:#A8884C; --amber:#F5A623; --teal:#9A8752;
     --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
     --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
     --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
@@ -76,7 +76,7 @@
   .layers i{flex:1; height:5px; border-radius:2px; background:#33333b}
   .layers i:nth-child(-n+3){background:#4a4a55}
   .wt{cursor:pointer; display:flex; align-items:center; gap:10px; background:linear-gradient(180deg,#241016,#1a0c11);
-    border:1px solid #4a1622; border-radius:10px; padding:8px 10px; color:var(--ink); font-family:inherit; text-align:left; transition:border-color .16s ease, box-shadow .16s ease}
+    border:1px solid #463818; border-radius:10px; padding:8px 10px; color:var(--ink); font-family:inherit; text-align:left; transition:border-color .16s ease, box-shadow .16s ease}
   .wt:hover{border-color:var(--red); box-shadow:0 0 22px -8px var(--red)}
   .wt:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
   .wt canvas{width:64px; height:30px; display:block; flex:0 0 auto}
@@ -110,7 +110,7 @@
   .reader .rowlab{font-family:var(--font-mono); font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--faint); margin:0 0 4px}
   .reader .body{color:var(--mut); font-size:14.5px; margin:0 0 16px; line-height:1.55}
   .reader .body:last-child{margin-bottom:0}
-  .reader .magic{background:#2a1017; border:1px solid #4a1622; border-radius:10px; padding:12px 13px; margin-top:4px}
+  .reader .magic{background:#241a0c; border:1px solid #463818; border-radius:10px; padding:12px 13px; margin-top:4px}
   .reader .magic .rowlab{color:var(--red)}
   .reader .magic p{margin:0; color:#f2d9de; font-size:14px; line-height:1.5}
   .fade{animation:fade .28s ease}
@@ -293,8 +293,8 @@ if(cv){
       const py = mid - y*(mid-4);
       x===0 ? ctx.moveTo(x,py) : ctx.lineTo(x,py);
     }
-    ctx.strokeStyle = '#E4002B'; ctx.lineWidth = 2; ctx.lineJoin='round';
-    ctx.shadowColor='#E4002B'; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
+    ctx.strokeStyle = '#C4A46A'; ctx.lineWidth = 2; ctx.lineJoin='round';
+    ctx.shadowColor='#C4A46A'; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
   }
   if(reduce){ wave(0.6); }
   else{ let s=1.7; (function loop(){ s+=0.012; wave(s); requestAnimationFrame(loop); })(); }

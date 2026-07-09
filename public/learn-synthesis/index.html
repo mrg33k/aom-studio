@@ -1,206 +1,303 @@
 <title>Learn Synthesis &amp; Sound Design for Beginners. Make Your Own Sounds | Ahead of Market Music</title>
 <meta name="description" content="Learn synthesis and sound design from zero. Build your own pads, bass, 808s, keys and more, hands-on, on the Akai MPC. Interactive beginner course with real sound in every lesson.">
+<link rel="stylesheet" href="/learn-synthesis/course.css">
 <style>
-  :root{
-    --ground:#0B0B0D; --panel:#161619; --raised:#1E1E22; --card:#212127;
-    --edge:#2C2C33; --edge-hi:#3A3A43;
-    --red:#E4002B; --crimson:#C20439; --amber:#F5A623; --teal:#39D0A0;
-    --ink:#ECECEF; --mut:#9A9AA3; --faint:#6A6A73;
-    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"JetBrains Mono",Consolas,monospace;
-    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
-    --r:14px;
-  }
-  *{box-sizing:border-box} html,body{margin:0} html{scroll-behavior:smooth}
-  body{background:radial-gradient(1200px 640px at 12% -8%,#18181e,transparent 58%),radial-gradient(900px 520px at 100% 8%,#160e11,transparent 55%),var(--ground);
-    color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh}
-  .wrap{max-width:1080px; margin:0 auto; padding:clamp(16px,3vw,32px)}
-  a{color:inherit}
-
-  /* top bar — Ahead of Market Music */
-  .bar{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px; background:linear-gradient(180deg,#141418,#0e0e11); border:1px solid var(--edge); border-radius:var(--r)}
-  .amm{display:flex; align-items:baseline; gap:9px} .amm b{font-weight:800; font-size:16px; letter-spacing:.4px}
-  .amm .m{font-family:var(--font-mono); font-size:10px; letter-spacing:3px; color:#fff; background:var(--red); border-radius:5px; padding:2px 7px; text-transform:uppercase}
-  .bar .tool{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; color:var(--faint); text-transform:uppercase}
-  @media (max-width:560px){ .bar .tool{display:none} }
+  /* ---- page-specific layout (uses course.css tokens) ---- */
+  .nav{position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:20px;
+    padding:16px clamp(18px,4vw,40px); background:rgba(11,11,11,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--hairline)}
+  .brand{display:flex; align-items:center; gap:12px}
+  .brand .mono-mark{color:var(--gold)}
+  .brand .bt{display:flex; flex-direction:column; line-height:1}
+  .brand .bt b{font-family:var(--display); font-weight:800; font-size:17px; letter-spacing:.02em}
+  .brand .bt span{font-family:var(--body); font-weight:600; font-size:9.5px; letter-spacing:.42em; color:var(--gold); margin-top:3px}
+  .navlinks{display:flex; gap:30px; align-items:center}
+  .navlinks a{font-family:var(--body); font-weight:600; font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); transition:color .15s}
+  .navlinks a:hover{color:var(--ivory)}
+  .nav .btn{padding:11px 20px; font-size:13px}
+  @media (max-width:860px){ .navlinks{display:none} }
 
   /* hero */
-  .hero{padding:clamp(30px,7vw,72px) 0 clamp(20px,4vw,40px)}
-  .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:3.5px; text-transform:uppercase; color:var(--red); margin:0 0 18px}
-  .hero h1{font-size:clamp(34px,7vw,68px); line-height:.98; letter-spacing:-.025em; font-weight:800; margin:0; text-wrap:balance; max-width:15ch}
-  .hero .sub{font-size:clamp(16px,2.2vw,20px); color:var(--mut); margin:20px 0 0; max-width:58ch}
-  .cta{display:flex; flex-wrap:wrap; gap:12px; margin-top:30px; align-items:center}
-  .btn{cursor:pointer; text-decoration:none; font-weight:700; font-size:15px; color:#fff; background:var(--red); border:0; border-radius:11px; padding:14px 24px; display:inline-flex; align-items:center; gap:9px; transition:filter .15s ease, transform .1s ease}
-  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
-  .btn.ghost{background:var(--raised); color:var(--ink); border:1px solid var(--edge)}
-  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
-  .taste{font-family:var(--font-mono); font-size:11px; letter-spacing:1px; color:var(--faint)}
+  .hero{display:grid; grid-template-columns:1fr 1fr; gap:clamp(24px,4vw,56px); align-items:center;
+    padding:clamp(40px,6vw,84px) clamp(18px,4vw,40px) clamp(30px,4vw,56px); max-width:1240px; margin:0 auto}
+  @media (max-width:900px){ .hero{grid-template-columns:1fr} .hero .shot{order:-1} }
+  .hero h1{font-size:clamp(52px,9vw,112px)}
+  .hero .sub{font-family:var(--body); font-weight:600; font-size:clamp(13px,1.5vw,15px); letter-spacing:.24em; text-transform:uppercase; color:var(--muted); margin:20px 0 0}
+  .hero .body{color:var(--muted); font-size:16.5px; margin:22px 0 0; max-width:46ch}
+  .hero .cta{display:flex; flex-wrap:wrap; gap:14px; margin-top:32px; align-items:center}
+  .hero .taste{display:inline-flex; align-items:center; gap:12px}
+  .hero .taste .tbtn{cursor:pointer; width:44px; height:44px; border-radius:50%; border:1.5px solid var(--hairline-hi); background:transparent; color:var(--gold); display:grid; place-items:center; transition:border-color .15s}
+  .hero .taste .tbtn:hover{border-color:var(--gold)}
+  .hero .taste .tl{display:flex; flex-direction:column; line-height:1.2}
+  .hero .taste .tl b{font-family:var(--display); font-weight:700; font-size:14px; letter-spacing:.06em; text-transform:uppercase}
+  .hero .taste .tl span{font-size:11px; color:var(--faint)}
+  .shot{position:relative; border:1px solid var(--hairline); overflow:hidden}
+  .shot img{width:100%; height:100%; object-fit:cover; display:block}
 
-  section{margin-top:clamp(34px,6vw,64px)}
-  .kicker{font-family:var(--font-mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--faint); margin:0 0 6px}
-  h2.sec{font-size:clamp(22px,3.4vw,32px); letter-spacing:-.02em; font-weight:800; margin:0 0 6px; text-wrap:balance}
-  .lead{color:var(--mut); font-size:16px; margin:0 0 22px; max-width:62ch}
-
-  /* the 8 sounds */
-  .sounds{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
-  @media (max-width:720px){ .sounds{grid-template-columns:repeat(2,1fr)} }
-  .sound{background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:16px 14px; display:flex; flex-direction:column; gap:4px}
-  .sound b{font-size:16px} .sound span{font-family:var(--font-mono); font-size:10px; letter-spacing:.5px; color:var(--mut)}
-  .sound .dot{width:8px; height:8px; border-radius:50%; background:var(--red); box-shadow:0 0 9px -1px var(--red); margin-bottom:4px}
+  /* sounds */
+  .center{text-align:center; max-width:60ch; margin:0 auto}
+  .sec-head{display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:clamp(28px,4vw,48px)}
+  .sec-head h2{font-size:clamp(30px,5vw,52px)}
+  .sec-head .lead{color:var(--muted); font-size:16px; max-width:56ch; margin:0}
+  .sounds{display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(10px,1.4vw,16px)}
+  @media (max-width:820px){ .sounds{grid-template-columns:repeat(2,1fr)} }
+  .snd{padding:0; overflow:hidden}
+  .snd .thumb{aspect-ratio:16/10; background:#0d0d0c; border-bottom:1px solid var(--hairline)}
+  .snd .thumb canvas{width:100%; height:100%; display:block}
+  .snd .meta{padding:14px 16px 16px}
+  .snd .meta b{font-family:var(--display); font-weight:700; font-size:18px; letter-spacing:.03em; text-transform:uppercase; color:var(--gold); display:block}
+  .snd .meta span{font-family:var(--body); font-size:12px; color:var(--muted); letter-spacing:.02em}
 
   /* curriculum */
-  .parts{display:flex; flex-direction:column; gap:26px}
-  .part .ph{display:flex; align-items:baseline; gap:12px; margin-bottom:14px}
-  .part .ph b{font-family:var(--font-mono); font-size:11px; letter-spacing:2px; color:var(--red); text-transform:uppercase}
-  .part .ph span{color:var(--mut); font-size:14px}
-  .mods{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
-  @media (max-width:720px){ .mods{grid-template-columns:1fr} }
-  .mod{display:grid; grid-template-columns:38px 1fr auto; gap:12px; align-items:center; text-decoration:none;
-    background:var(--panel); border:1px solid var(--edge); border-radius:11px; padding:13px 14px; transition:border-color .15s ease, transform .12s ease}
-  .mod:hover{border-color:var(--edge-hi); transform:translateY(-2px)}
-  .mod .n{font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--faint)}
-  .mod .t b{display:block; font-size:14.5px} .mod .t span{color:var(--mut); font-size:12.5px}
-  .mod .st{font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; padding:3px 8px; border-radius:999px; white-space:nowrap}
-  .mod .st.live{color:var(--teal); border:1px solid #1c4a3a; background:#0c1c17}
-  .mod .st.soon{color:var(--faint); border:1px solid var(--edge)}
-  .mod.hot{border-color:#4a1622} .mod.hot .n{color:var(--red)}
+  .cur{display:grid; grid-template-columns:1fr 1fr; gap:clamp(20px,3vw,40px); align-items:start}
+  @media (max-width:900px){ .cur{grid-template-columns:1fr} }
+  .curcol .ph{display:flex; align-items:baseline; gap:12px; margin:0 0 16px}
+  .curcol .ph b{font-family:var(--body); font-weight:700; font-size:12px; letter-spacing:.18em; color:var(--gold); text-transform:uppercase}
+  .curcol .ph span{color:var(--muted); font-size:13.5px; text-transform:uppercase; letter-spacing:.08em}
+  .curimg{border:1px solid var(--hairline); overflow:hidden; margin-bottom:18px}
+  .curimg img{width:100%; display:block; aspect-ratio:16/11; object-fit:cover}
+  .curimg.tall img{aspect-ratio:4/5}
+  .mod{display:grid; grid-template-columns:34px 1fr auto; gap:12px; align-items:center; padding:12px 4px; border-bottom:1px solid var(--hairline); text-decoration:none; transition:padding-left .14s, background .14s}
+  .mod:hover{padding-left:10px; background:#141310}
+  .mod .n{font-family:var(--mono); font-size:12px; font-weight:700; color:var(--faint)}
+  .mod.hot .n{color:var(--gold)}
+  .mod .t b{display:block; font-family:var(--display); font-weight:700; font-size:16.5px; letter-spacing:.02em; text-transform:uppercase}
+  .mod .t span{color:var(--muted); font-size:12.5px}
 
-  /* how it works */
-  .how{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
-  @media (max-width:720px){ .how{grid-template-columns:1fr} }
-  .step{background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:18px}
-  .step .i{font-family:var(--font-mono); font-size:11px; color:var(--red); letter-spacing:1.5px}
-  .step b{display:block; font-size:16px; margin:8px 0 5px} .step p{color:var(--mut); font-size:14px; margin:0}
+  /* why it sticks */
+  .why{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2.5vw,32px)}
+  @media (max-width:820px){ .why{grid-template-columns:1fr} }
+  .why .col{padding:26px; border-top:2px solid var(--gold)}
+  .why .col .ic{color:var(--gold); margin-bottom:16px}
+  .why .col b{font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:.03em; text-transform:uppercase; display:block; margin-bottom:8px}
+  .why .col .no{font-family:var(--mono); font-size:12px; color:var(--gold); margin-bottom:14px}
+  .why .col p{color:var(--muted); font-size:14.5px; margin:0}
 
-  /* closing cta */
-  .band{background:linear-gradient(180deg,#1a0d11,#120a0d); border:1px solid #3a1620; border-radius:16px; padding:clamp(24px,4vw,40px); text-align:center}
-  .band h2{font-size:clamp(22px,3.6vw,32px); font-weight:800; letter-spacing:-.02em; margin:0 0 10px} .band p{color:var(--mut); margin:0 0 22px}
+  /* faq */
+  .faq{max-width:820px; margin:0 auto}
+  .qa{border-bottom:1px solid var(--hairline); padding:20px 0}
+  .qa b{font-family:var(--display); font-weight:700; font-size:19px; letter-spacing:.02em; text-transform:uppercase; display:block; margin-bottom:8px}
+  .qa p{color:var(--muted); font-size:15px; margin:0; max-width:70ch}
 
-  footer{margin-top:40px; padding:22px 4px; border-top:1px solid var(--edge); display:flex; flex-wrap:wrap; gap:8px 18px; justify-content:space-between;
-    font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--faint); text-transform:uppercase}
-  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .mod:hover,.btn:active{transform:none} }
+  /* cta band */
+  .band{position:relative; overflow:hidden; border-top:1px solid var(--hairline); border-bottom:1px solid var(--hairline)}
+  .band img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.5}
+  .band::after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--obsidian) 30%,rgba(11,11,11,.35) 75%)}
+  .band .inner{position:relative; z-index:2; max-width:1160px; margin:0 auto; padding:clamp(44px,7vw,96px) clamp(18px,4vw,40px); display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between}
+  .band h2{font-size:clamp(30px,5vw,54px); max-width:16ch}
+  .band h2 .gold{color:var(--gold)}
+
+  footer{display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; justify-content:space-between;
+    max-width:1160px; margin:0 auto; padding:26px clamp(18px,4vw,40px)}
+  footer .fb{font-family:var(--display); font-weight:800; font-size:14px; letter-spacing:.04em; text-transform:uppercase}
+  footer .fb span{color:var(--gold)}
+  footer .fine{font-family:var(--body); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint)}
 </style>
 
-<div class="wrap">
-  <div class="bar">
-    <div class="amm"><b>AHEAD OF MARKET</b><span class="m">Music</span></div>
-    <div class="tool">Taught on the Akai MPC</div>
+<nav class="nav">
+  <a class="brand" href="/learn-synthesis">
+    <span class="mono-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" fill="currentColor" role="img" aria-label="Ahead of Market"><mask id="mono1" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"/><g transform="translate(0,1328) scale(0.1,-0.1)" fill="#000"><path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0 -6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30 -82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59 -155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41 -110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575 47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350 39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295 -555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13 -7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357 156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124 335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0 -1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52 -41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59 -161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66 -12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15 61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52 52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64 175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186 199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57 153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151 462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98 9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235 563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31 -125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464 -500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31 81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278 130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97 -111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1 30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9 123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32 104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18 121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325 -14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66 -8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1 -219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128 -89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38 471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134 -62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"/></g></mask><rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#mono1)"/></svg></span>
+    <span class="bt"><b>AHEAD OF MARKET</b><span>Music</span></span>
+  </a>
+  <div class="navlinks">
+    <a href="#curriculum">Course</a>
+    <a href="#curriculum">Curriculum</a>
+    <a href="#sounds">Sounds</a>
+    <a href="#faq">FAQ</a>
   </div>
+  <a class="btn" href="/learn-synthesis/lessons/00-welcome.html">Start Learning</a>
+</nav>
 
-  <header class="hero">
-    <p class="eyebrow">Interactive course · beginners welcome</p>
-    <h1>Learn to make your own sounds</h1>
-    <p class="sub">Synthesis and sound design, explained like you're brand new to it. Build your own bass, 808s, pads, keys, and full instruments, hands-on, on the Akai MPC. Every lesson has a real screen and sound you can actually hear and play.</p>
+<header class="hero">
+  <div>
+    <p class="eyebrow">Music taught on the Akai MPC</p>
+    <h1 class="display">Learn to make<br>your own <span class="gold">sounds</span></h1>
+    <p class="sub">Interactive course · beginners welcome</p>
+    <p class="body">Synthesis and sound design, explained like you are brand new to it. Build your own bass, 808s, pads, keys, and full instruments, hands-on. Every lesson has a real screen and sound you can actually hear and play.</p>
     <div class="cta">
-      <a class="btn" href="#curriculum">Start learning</a>
-      <a class="btn ghost" href="/learn-synthesis/engine-map.html">See how a sound is built</a>
-      <button class="btn ghost" id="taste" aria-pressed="false" style="gap:8px">▶ Hear a taste</button>
-      <span class="taste" id="tastehint">live audio, no download</span>
+      <a class="btn" href="/learn-synthesis/lessons/00-welcome.html">Start Learning</a>
+      <a class="btn outline" href="/learn-synthesis/engine-map.html">See how a sound is built</a>
+      <span class="taste">
+        <button class="tbtn" id="taste" aria-label="Hear a taste">▶</button>
+        <span class="tl"><b>Hear a taste</b><span id="tastehint">live audio, no download</span></span>
+      </span>
     </div>
-  </header>
+  </div>
+  <div class="shot"><img src="/learn-synthesis/images/mpc-hero.jpg" alt="Akai MPC with glowing pads and a waveform on screen"></div>
+</header>
 
-  <!-- 8 sounds -->
-  <section>
-    <p class="kicker">By the end you can make</p>
-    <h2 class="sec">Any sound you hear</h2>
-    <p class="lead">Eight full instruments, from beat staples to cinematic textures. Each one is its own guided build.</p>
-    <div class="sounds" id="sounds"></div>
-  </section>
-
-  <!-- curriculum -->
-  <section id="curriculum">
-    <p class="kicker">The full course · 19 lessons</p>
-    <h2 class="sec">What you'll learn</h2>
-    <p class="lead">First you understand the machine, one plain-English piece at a time. Then you build all eight sounds. You finish able to make your own from scratch.</p>
-    <div class="parts" id="parts"></div>
-  </section>
-
-  <!-- how it works -->
-  <section>
-    <p class="kicker">Why it sticks</p>
-    <h2 class="sec">Learn by doing, not by watching</h2>
-    <div class="how">
-      <div class="step"><span class="i">01</span><b>See the real screen</b><p>Every lesson shows the actual MPC screen, recreated crisp and clear, so you know exactly where you are on your own device.</p></div>
-      <div class="step"><span class="i">02</span><b>Hear it live</b><p>Drag a knob and the sound changes in your ears, right in the page. No guessing what a word means, you hear it.</p></div>
-      <div class="step"><span class="i">03</span><b>Build it yourself</b><p>Short build-alongs end with a finished, playable instrument you made. Muscle memory, not just notes.</p></div>
+<section class="section" id="sounds">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">By the end you can make</p>
+      <h2 class="sec-title display">Any sound you hear</h2>
+      <p class="lead">Eight full instruments, from beat staples to cinematic textures. Each one is its own guided build.</p>
     </div>
-  </section>
+    <div class="sounds" id="sounds-grid"></div>
+  </div>
+</section>
 
-  <!-- closing -->
-  <section>
-    <div class="band">
-      <h2>Ready to make your first sound?</h2>
-      <p>Start with the map of the whole engine, then build a wavetable pad in ten minutes.</p>
-      <a class="btn" href="/learn-synthesis/lessons/00-welcome.html">Start the course</a>
+<section class="section" id="curriculum" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">The full course · 19 lessons</p>
+      <h2 class="sec-title display">What you'll learn</h2>
+      <p class="lead">First you understand the machine, one plain-English piece at a time. Then you build all eight sounds. You finish able to make your own from scratch.</p>
     </div>
-  </section>
+    <div class="cur">
+      <div class="curcol">
+        <div class="curimg"><img src="/learn-synthesis/images/mpc-screen.jpg" alt="The MPC screen up close"></div>
+        <div class="ph"><b>Part 1</b><span>Understand the machine</span></div>
+        <div id="part1"></div>
+      </div>
+      <div class="curcol">
+        <div class="ph"><b>Part 2</b><span>Build all eight sounds</span></div>
+        <div id="part2"></div>
+        <div class="curimg tall" style="margin-top:18px"><img src="/learn-synthesis/images/mpc-lifestyle.jpg" alt="A producer building sounds on an MPC"></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <footer>
-    <div>Ahead of Market Music · Learn Synthesis</div>
-    <div>Course in progress · Akai MPC co-brand pending sign-off · logo lockups are stand-ins</div>
-  </footer>
-</div>
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head"><h2 class="sec-title display">Why it sticks</h2></div>
+    <div class="why">
+      <div class="col">
+        <div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="3.5" width="19" height="13"/><path d="M8.5 20.5h7M12 16.5v4"/><path d="M6 12l3-3 2.5 2.5L16 7"/></svg></div>
+        <div class="no">01</div><b>See the real screen</b>
+        <p>Every lesson shows the actual MPC screen, recreated crisp and clear, so you know exactly where you are on your own device.</p>
+      </div>
+      <div class="col">
+        <div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 12h3l2-7 3 15 3-11 2 5 2-2h5" stroke-linejoin="round" stroke-linecap="round"/></svg></div>
+        <div class="no">02</div><b>Hear it live</b>
+        <p>Drag a knob and the sound changes in your ears, right in the page. No guessing what a word means. You hear it.</p>
+      </div>
+      <div class="col">
+        <div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="8"/><path d="M12 4v3M12 12l4-2" stroke-linecap="round"/></svg></div>
+        <div class="no">03</div><b>Build it yourself</b>
+        <p>Short build-alongs end with a finished, playable instrument you made. Muscle memory, not just notes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head"><h2 class="sec-title display">FAQ</h2></div>
+    <div class="faq">
+      <div class="qa"><b>Do I need an Akai MPC to take this?</b><p>No. Every lesson makes sound right in your browser and shows the MPC screen recreated on the page, so you can learn the whole engine first. When you sit down at a real MPC, it will already feel familiar.</p></div>
+      <div class="qa"><b>Do I need to know music theory?</b><p>No. We explain everything like you are brand new. Plain words first, the real name second, and a sound you can hear for every idea.</p></div>
+      <div class="qa"><b>What will I be able to do at the end?</b><p>Build your own bass, 808s, pads, synth leads, piano, choir, horns, and RNB and hip hop sounds from scratch, and explain how every part of the engine works in your own words.</p></div>
+      <div class="qa"><b>How long is it?</b><p>Nineteen short lessons. Part one teaches the machine, part two is a guided build of each sound, and it ends with a make-your-own capstone. Go at your own pace.</p></div>
+      <div class="qa"><b>Is it really for beginners?</b><p>Yes. If you have never made a sound before, start at lesson one. If you already produce, jump straight to the build lab.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <img src="/learn-synthesis/images/mpc-cta.jpg" alt="">
+  <div class="inner">
+    <h2 class="display">Ready to make your <span class="gold">first sound?</span></h2>
+    <a class="btn" href="/learn-synthesis/lessons/00-welcome.html">Start the course →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="fb">AHEAD OF MARKET <span>MUSIC</span> · Learn Synthesis</div>
+  <div class="fine">Course in progress · Akai MPC co-brand pending sign-off</div>
+</footer>
 
 <script>
+/* ---- 8 sound-card waveform thumbnails (varied, tasteful) ---- */
 const SOUNDS = [
-  ['Bass','sub + synth low end'],['808','the beat backbone'],
-  ['Pads','lush, evolving'],['Synths','leads &amp; plucks'],
-  ['Piano','sampled &amp; real'],['Choir','stacked voices'],
-  ['Horns','brass with bite'],['RNB / Hip Hop','warm &amp; hard-hitting'],
+  ['Bass','sub + synth low end','#C4A46A','sine'],
+  ['808','the beat backbone','#E0894A','pulse'],
+  ['Pads','lush, evolving','#39D0A0','pad'],
+  ['Synths','leads &amp; plucks','#8FD24A','saw'],
+  ['Piano','sampled &amp; real','#E6E1D5','keys'],
+  ['Choir','stacked voices','#B08CE0','pad'],
+  ['Horns','brass with bite','#E7B14A','saw'],
+  ['RNB / Hip Hop','warm &amp; hard-hitting','#C4A46A','pulse'],
 ];
-const PART1=[
-  ['00','Welcome','What a keygroup is','/learn-synthesis/lessons/00-welcome.html','live'],
-  ['01','The map','The whole engine at a glance','/learn-synthesis/engine-map.html','live'],
-  ['02','Layers','Stack up to 8 sounds on one pad','/learn-synthesis/lessons/02-layers.html','live'],
-  ['03','Samples','Build from recordings','/learn-synthesis/lessons/03-samples.html','live'],
-  ['04','Oscillators','Tones drawn from scratch','/learn-synthesis/lessons/04-oscillators.html','live'],
-  ['05','Wavetables','The headline, a flipbook of waveforms','/learn-synthesis/lessons/05-wavetables.html','live'],
-  ['06','Filters','Shape the tone','/learn-synthesis/lessons/06-filters.html','live'],
-  ['07','Envelopes','Shape the sound over time','/learn-synthesis/lessons/07-envelopes.html','live'],
-  ['08','LFOs','Add automatic movement','/learn-synthesis/lessons/08-lfos.html','live'],
-  ['09','Mod Matrix','Connect anything to anything (deep dive)','/learn-synthesis/lessons/09-mod-matrix.html','live'],
-];
-const PART2=[
-  ['10','Bass','Tight, punchy low end','/learn-synthesis/lessons/10-bass.html','live'],
-  ['11','Synths','Your first synth lead','/learn-synthesis/lessons/11-synths.html','live'],
-  ['12','Pads','The wavetable showcase','/learn-synthesis/lessons/12-pads.html','live'],
-  ['13','Piano','The sampling craft','/learn-synthesis/lessons/13-piano.html','live'],
-  ['14','Choir','Stacked voices &amp; swell','/learn-synthesis/lessons/14-choir.html','live'],
-  ['15','Horns','Brass bite &amp; dynamics','/learn-synthesis/lessons/15-horns.html','live'],
-  ['16','RNB','Warm keys &amp; soft sub','/learn-synthesis/lessons/16-rnb.html','live'],
-  ['17','Hip Hop','808s, one-shots, stabs','/learn-synthesis/lessons/17-hiphop.html','live'],
-  ['18','Capstone','Build your own from scratch','/learn-synthesis/lessons/18-capstone.html','live'],
-];
-function sndHtml(s){ return `<div class="sound"><span class="dot"></span><b>${s[0]}</b><span>${s[1]}</span></div>`; }
-document.getElementById('sounds').innerHTML = SOUNDS.map(sndHtml).join('');
-function modHtml(m){
-  const hot = m[1]==='Wavetables' ? ' hot':'';
-  const st = m[4]==='live' ? '<span class="st live">Live</span>' : '<span class="st soon">Soon</span>';
-  const tag = m[3]==='#' ? 'div' : 'a';
-  const href = m[3]==='#' ? '' : `href="${m[3]}"`;
-  return `<${tag} class="mod${hot}" ${href}><span class="n">${m[0]}</span><span class="t"><b>${m[1]}</b><span>${m[2]}</span></span>${st}</${tag}>`;
+function drawThumb(cv,color,kind){
+  const W=cv.width=640, H=cv.height=400, ctx=cv.getContext('2d'), mid=H/2;
+  ctx.clearRect(0,0,W,H); ctx.lineJoin='round'; ctx.lineCap='round';
+  if(kind==='keys'){ // dense spectrum bars filling the card
+    const n=30, bw=W/n*0.62;
+    for(let i=0;i<n;i++){ const x=(i+.5)/n*W;
+      const h=(Math.abs(Math.sin(i*0.7)*0.6+Math.sin(i*1.9)*0.3)+0.12)*(H*0.82);
+      ctx.fillStyle=color; ctx.globalAlpha=.85; ctx.fillRect(x-bw/2,mid-h/2,bw,h);
+    }
+    ctx.globalAlpha=1; return;
+  }
+  const amp=mid*0.72, cyc=(kind==='pad')?2:3.2;
+  const yAt=x=>{ const p=x/W*Math.PI*2*cyc; let y;
+    if(kind==='sine') y=Math.sin(p);
+    else if(kind==='saw') y=((p/Math.PI)%2)-1;
+    else if(kind==='pulse') y=(Math.sin(p)>=0?1:-1)*0.9;
+    else y=Math.sin(p)*0.7+Math.sin(p*2.3+1)*0.3; // pad: evolving
+    // envelope so it swells across the card
+    const env=0.45+0.55*Math.sin(x/W*Math.PI);
+    return mid - y*amp*env;
+  };
+  // area fill
+  ctx.beginPath(); ctx.moveTo(0,mid);
+  for(let x=0;x<=W;x+=2) ctx.lineTo(x,yAt(x));
+  ctx.lineTo(W,mid); ctx.closePath();
+  ctx.globalAlpha=.16; ctx.fillStyle=color; ctx.fill();
+  // stroke line
+  ctx.globalAlpha=1; ctx.lineWidth=4.5; ctx.strokeStyle=color; ctx.shadowColor=color; ctx.shadowBlur=14;
+  ctx.beginPath(); for(let x=0;x<=W;x+=2){ const py=yAt(x); x?ctx.lineTo(x,py):ctx.moveTo(x,py); } ctx.stroke();
+  ctx.shadowBlur=0;
 }
-document.getElementById('parts').innerHTML =
-  `<div class="part"><div class="ph"><b>Part 1</b><span>Understand the machine</span></div><div class="mods">${PART1.map(modHtml).join('')}</div></div>`+
-  `<div class="part"><div class="ph"><b>Part 2</b><span>Build all eight sounds</span></div><div class="mods">${PART2.map(modHtml).join('')}</div></div>`;
+const grid=document.getElementById('sounds-grid');
+grid.innerHTML=SOUNDS.map(s=>`<div class="card interactive snd"><div class="thumb"><canvas></canvas></div><div class="meta"><b>${s[0]}</b><span>${s[1]}</span></div></div>`).join('');
+requestAnimationFrame(()=>{ [...grid.querySelectorAll('.snd')].forEach((el,i)=>drawThumb(el.querySelector('canvas'),SOUNDS[i][2],SOUNDS[i][3])); });
 
-/* hero taste — a short evolving wavetable pad */
+/* ---- curriculum ---- */
+const P1=[
+  ['00','Welcome','What a keygroup is','/learn-synthesis/lessons/00-welcome.html'],
+  ['01','The map','The whole engine at a glance','/learn-synthesis/engine-map.html'],
+  ['02','Layers','Stack up to 8 sounds on one pad','/learn-synthesis/lessons/02-layers.html'],
+  ['03','Samples','Build from recordings','/learn-synthesis/lessons/03-samples.html'],
+  ['04','Oscillators','Tones drawn from scratch','/learn-synthesis/lessons/04-oscillators.html'],
+  ['05','Wavetables','The headline, a flipbook of waveforms','/learn-synthesis/lessons/05-wavetables.html'],
+  ['06','Filters','Shape the tone','/learn-synthesis/lessons/06-filters.html'],
+  ['07','Envelopes','Shape the sound over time','/learn-synthesis/lessons/07-envelopes.html'],
+  ['08','LFOs','Add automatic movement','/learn-synthesis/lessons/08-lfos.html'],
+  ['09','Mod Matrix','Connect anything to anything','/learn-synthesis/lessons/09-mod-matrix.html'],
+];
+const P2=[
+  ['10','Bass','Tight, punchy low end','/learn-synthesis/lessons/10-bass.html'],
+  ['11','Synths','Your first synth lead','/learn-synthesis/lessons/11-synths.html'],
+  ['12','Pads','The wavetable showcase','/learn-synthesis/lessons/12-pads.html'],
+  ['13','Piano','The sampling craft','/learn-synthesis/lessons/13-piano.html'],
+  ['14','Choir','Stacked voices &amp; swell','/learn-synthesis/lessons/14-choir.html'],
+  ['15','Horns','Brass bite &amp; dynamics','/learn-synthesis/lessons/15-horns.html'],
+  ['16','RNB','Warm keys &amp; soft sub','/learn-synthesis/lessons/16-rnb.html'],
+  ['17','Hip Hop','808s, one-shots, stabs','/learn-synthesis/lessons/17-hiphop.html'],
+  ['18','Capstone','Build your own from scratch','/learn-synthesis/lessons/18-capstone.html'],
+];
+function modHtml(m){ const hot=(m[1]==='Wavetables')?' hot':''; return `<a class="mod${hot}" href="${m[3]}"><span class="n">${m[0]}</span><span class="t"><b>${m[1]}</b><span>${m[2]}</span></span><span class="pill">Live</span></a>`; }
+document.getElementById('part1').innerHTML=P1.map(modHtml).join('');
+document.getElementById('part2').innerHTML=P2.map(modHtml).join('');
+
+/* ---- hero: hear a taste (live evolving pad) ---- */
 const tasteBtn=document.getElementById('taste'), tasteHint=document.getElementById('tastehint');
 let actx,playing=false,stopT=null;
-function weights(pos){ const p=(pos/100)*2, sh=2.2; let w=[Math.max(0,1-Math.abs(p)),Math.max(0,1-Math.abs(p-1)),Math.max(0,1-Math.abs(p-2))].map(v=>Math.pow(v,sh)); const s=w[0]+w[1]+w[2]||1; return w.map(v=>v/s); }
+function wts(pos){const p=(pos/100)*2,sh=2.2;let w=[Math.max(0,1-Math.abs(p)),Math.max(0,1-Math.abs(p-1)),Math.max(0,1-Math.abs(p-2))].map(v=>Math.pow(v,sh));const s=w[0]+w[1]+w[2]||1;return w.map(v=>v/s);}
 tasteBtn.addEventListener('click',()=>{
-  if(playing){ return; }
-  actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume();
-  playing=true; tasteBtn.textContent='♪ playing'; tasteHint.textContent='a wavetable pad, evolving';
+  if(playing) return;
+  actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume();
+  playing=true; tasteBtn.textContent='♪'; tasteHint.textContent='a wavetable pad, evolving';
   const amp=actx.createGain(); amp.gain.value=0; const filt=actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=2200;
   filt.connect(amp); amp.connect(actx.destination);
-  const freqs=[130.81,196.00]; const voices=[];
-  freqs.forEach(f=>['sine','sawtooth','square'].forEach(tp=>{const o=actx.createOscillator();o.type=tp;o.frequency.value=f;const g=actx.createGain();g.gain.value=0;o.connect(g);g.connect(filt);o.start();voices.push({o,g,tp});}));
-  const now=actx.currentTime; amp.gain.setValueAtTime(0,now); amp.gain.linearRampToValueAtTime(0.22,now+0.8);
-  amp.gain.setValueAtTime(0.22,now+3.2); amp.gain.linearRampToValueAtTime(0,now+4.4);
+  const voices=[]; [130.81,196.00].forEach(f=>['sine','sawtooth','square'].forEach(tp=>{const o=actx.createOscillator();o.type=tp;o.frequency.value=f;const g=actx.createGain();g.gain.value=0;o.connect(g);g.connect(filt);o.start();voices.push({o,g,tp});}));
+  const now=actx.currentTime; amp.gain.setValueAtTime(0,now); amp.gain.linearRampToValueAtTime(.22,now+.8); amp.gain.setValueAtTime(.22,now+3.2); amp.gain.linearRampToValueAtTime(0,now+4.4);
   const t0=performance.now();
-  (function morph(){ if(!playing) return; const el=(performance.now()-t0)/1000; const pos=50+50*Math.sin(el*0.7); const w=weights(pos);
-    voices.forEach(v=>{ const i=v.tp==='sine'?0:v.tp==='sawtooth'?1:2; v.g.gain.setTargetAtTime(w[i]*0.5,actx.currentTime,0.03); });
+  (function morph(){ if(!playing) return; const el=(performance.now()-t0)/1000; const pos=50+50*Math.sin(el*.7); const w=wts(pos);
+    voices.forEach(v=>{ const i=v.tp==='sine'?0:v.tp==='sawtooth'?1:2; v.g.gain.setTargetAtTime(w[i]*.5,actx.currentTime,.03); });
     if(el<4.4) requestAnimationFrame(morph); })();
-  clearTimeout(stopT); stopT=setTimeout(()=>{ voices.forEach(v=>{try{v.o.stop()}catch(e){}}); playing=false; tasteBtn.textContent='▶ Hear a taste'; tasteHint.textContent='live audio, no download'; }, 4700);
+  clearTimeout(stopT); stopT=setTimeout(()=>{ voices.forEach(v=>{try{v.o.stop()}catch(e){}}); playing=false; tasteBtn.textContent='▶'; tasteHint.textContent='live audio, no download'; },4700);
 });
 </script>
