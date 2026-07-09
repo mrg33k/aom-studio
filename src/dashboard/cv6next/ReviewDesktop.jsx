@@ -327,6 +327,8 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     requestChanges: () => { setChangesOpen(true); },
     sendChecklist: (id) => actions.sendChecklist(id),
     assignAgent: (id) => onAssignDeliverable?.(id, assignExtra()),
+    // Download the reviewed file (any type) with its real filename.
+    download: (id) => actions.download(id),
   };
 
   // Keyboard nav: update ref every render so the single listener always reads live state.

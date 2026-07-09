@@ -202,6 +202,8 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     },
     openNav: onOpenNav,
     search: () => { /* stub */ },
+    // Download the reviewed file (any type) with its real filename.
+    download: (id) => actions.download(id),
     openDeliverable: onOpenDeliverable,
     // "Browse waiting" from the read view's empty branch: back to the pick list,
     // scoped to the full waiting set.

@@ -26,6 +26,46 @@ async function authFetchT(url, ms = 12000) {
   finally { clearTimeout(t); }
 }
 
+// Download a deliverable's real bytes with its true filename, for ANY type.
+// A plain cross-origin `<a download href>` is IGNORED by browsers (they navigate/
+// open the file instead of saving it), so we fetch the bytes ourselves and hand the
+// anchor a same-origin blob: URL — that reliably preserves the filename for every
+// type (image / video / doc / copy / code / live-site draft). Source order mirrors
+// the viewer: (1) the RAG tunnel (CORS *, Range-capable, survives video-sized files —
+// the same source images + video already stream from), then (2) the same-origin authed
+// project-file proxy as a fallback, then (3) open-raw so the user can still save by hand.
+async function downloadDeliverable(item) {
+  const path = item?.id || '';
+  if (!path) return;
+  const title = item?.title || path.split('/').pop() || 'download';
+  const isAbs = /^https?:\/\//i.test(path);
+  const enc = encodeURIComponent(path);
+  const tunnelUrl = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
+  const proxyUrl = isAbs ? path : `/api/dashboard/project-file?path=${enc}&raw=1`;
+  const saveBlob = (blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = title;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+  };
+  try {
+    const r = await fetch(tunnelUrl);
+    if (r?.ok) { saveBlob(await r.blob()); return; }
+  } catch { /* tunnel unreachable — try the authed proxy */ }
+  if (!isAbs) {
+    try {
+      const r = await authFetch(proxyUrl);
+      if (r?.ok) { saveBlob(await r.blob()); return; }
+    } catch { /* fall through to raw open */ }
+  }
+  window.open(tunnelUrl, '_blank', 'noopener');
+}
+
 // Build the read-view innerHTML for one deliverable from its real file.
 // IMPORTANT: the project-file endpoint is tenant-gated (verifyTenant needs a
 // Bearer token). The dashboard session lives in localStorage, NOT a cookie, so a
@@ -811,6 +851,13 @@ export function useReview(worldId = 'aom', injected = null) {
       approve,
       requestChanges,
       sendChecklist,
+      // Download the deliverable's real file (any type). Resolves the item by id from
+      // the loaded queue (covers injected chat "Review all" queues too) and streams its
+      // bytes to a named download — see downloadDeliverable.
+      download: (id) => {
+        const item = (queue?.items || []).find((i) => i.id === id);
+        if (item) downloadDeliverable(item);
+      },
       // One action for every tree node: '__all' resets, 'p:<slug>' picks a project
       // (and clears the mission), 'm:<slug>' / 'm:__root' narrows within it. Any
       // scope change resets the type chips (Organize resets its filter the same way).
