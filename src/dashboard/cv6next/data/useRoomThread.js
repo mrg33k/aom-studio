@@ -258,7 +258,13 @@ export function useRoomThread(worldId, room) {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!alive) return;
-        const raw = Array.isArray(d?.messages) ? d.messages : [];
+        const raw = (Array.isArray(d?.messages) ? d.messages : [])
+          // Follow-up TRIGGER rows are a system prompt to the agent (role:user,
+          // source:task-followup, body "[FOLLOWUP TRIGGER ...]"), not a human
+          // message — the agent's natural-voice come-back is the real reply. Drop
+          // them so a fired come-back never shows a raw trigger bubble in the room
+          // (corner:followups auto-detect, 2026-07-08).
+          .filter((m) => m.source !== 'task-followup' && !(m.metadata && m.metadata.followup_trigger));
         // Drop any optimistic message the server now reflects (matched by text), so the
         // real row replaces it with no duplicate.
         const userTexts = new Set(raw.filter((m) => m.role === 'user' || m.user_name).map((m) => (m.text || '').trim()));
