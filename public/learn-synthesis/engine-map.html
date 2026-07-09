@@ -136,18 +136,30 @@
   <div class="head">
     <p class="kick">Course 1 · The instrument builder</p>
     <h1>How a sound gets built inside a keygroup</h1>
-    <p>Every pad on your MPC can become an instrument you make from scratch. Click any block below to learn what it does, in one plain sentence. No experience needed. Wavetables, the new headline, live inside the sound source.</p>
+    <p>A keygroup is one instrument you build from scratch, played across your keys. A track can hold many of them, arranged by note range. Click any block below to learn what it does, in one plain sentence. No experience needed. Wavetables, the new headline, live inside the sound source.</p>
   </div>
 
   <div class="work">
     <div class="board">
+      <!-- KEYGROUP RANGES (before the signal) -->
+      <div class="mods">
+        <div class="lane-label">Before the signal — your track holds many keygroups, arranged by note range</div>
+        <div class="chips" role="group" aria-label="How keygroups sit on the keyboard by range">
+          <button class="chip" data-id="ranges" aria-pressed="false"><span class="dot"></span>Keygroups &amp; ranges</button>
+          <button class="chip" data-id="split" aria-pressed="false"><span class="dot"></span>Split</button>
+          <button class="chip" data-id="layer" aria-pressed="false"><span class="dot"></span>Layer</button>
+          <button class="chip" data-id="multisample" aria-pressed="false"><span class="dot"></span>Multisample</button>
+        </div>
+        <div class="busnote"><span class="updot">▲</span> the note you play picks which keygroup answers &nbsp;·&nbsp; then it enters the signal path below</div>
+      </div>
+
       <!-- SIGNAL PATH -->
       <div>
         <div class="lane-label">Signal path — the sound flows left to right</div>
         <div class="flow" role="group" aria-label="Signal path, five steps">
           <button class="node" data-id="pad" aria-pressed="false">
-            <span class="idx">01</span><span class="nm">Press a pad</span>
-            <span class="sub">wakes one keygroup</span>
+            <span class="idx">01</span><span class="nm">Play a key or pad</span>
+            <span class="sub">wakes the keygroup for that note</span>
             <span class="foot">trigger</span>
           </button>
           <span class="link" aria-hidden="true"><span class="pulse"></span></span>
@@ -220,12 +232,20 @@
 
 <script>
 const DATA = {
-  intro:{eye:"Start here", h:"The MPC Keygroup Engine", analogy:"A keygroup turns your MPC into a build-your-own-instrument workshop. Every pad can be a different instrument you made.",
+  intro:{eye:"Start here", h:"The MPC Keygroup Engine", analogy:"A keygroup turns your MPC into a build-your-own-instrument workshop. Each keygroup is one sound you play across the keys; a track holds many, arranged by note range.",
     rows:[["The idea","A sound is born at the source, gets its tone from the filters, gets its shape from the amp, and comes out your speakers. The shapers on the bottom row move the knobs for you while it plays."],["Try it","Click any block to learn it in one sentence."]]},
-  pad:{eye:"01 · Pad / Key", h:"Press a pad", analogy:"This is you hitting a key. It wakes up one keygroup — the full recipe for a single sound.",
-    rows:[["What it is","Each pad holds its own keygroup, so pad 1 can be a bass and pad 2 a choir, all in one track."],["For your sound","This is the trigger. Everything after this is you designing what that press actually sounds like."]]},
+  pad:{eye:"01 · Key / Pad", h:"Play a key or pad", analogy:"This is you playing a note. It wakes the keygroup whose range covers that note — the full recipe for one sound.",
+    rows:[["What it is","The note you play decides which keygroup answers. Pads just mirror those notes so you can finger-drum a part too."],["For your sound","This is the trigger. Everything after this is you designing what that note actually sounds like."]]},
+  ranges:{eye:"00 · Keygroups & ranges", h:"Many keygroups, one track", analogy:"A keygroup is one finished sound. A track can hold up to 128 of them, and you give each a range of keys. The note you play decides which one answers.",
+    rows:[["What it is","Set each keygroup's low and high key. Ranges can sit side by side, overlap, or cover the whole keyboard."],["Why it matters","This is the real control surface — not 'which pad', but which range. It's how one track becomes a split, a layer, or a full multisampled instrument."]]},
+  split:{eye:"Ranges · Split", h:"Split the keyboard", analogy:"Two keygroups with ranges that don't overlap. Bass on the low keys, a lead up top — play the whole groove with two hands in one track.",
+    rows:[["How","Keygroup 1 covers the low keys, keygroup 2 the high keys, with no overlap between them."],["Use it","Perform live, or lay a bassline and a melody into a single track."]]},
+  layer:{eye:"Ranges · Layer", h:"Layer on the same keys", analogy:"Two keygroups set to the SAME range. Every key you press plays both at once, stacked into one richer sound.",
+    rows:[["How","Give two keygroups the same low and high key so they fully overlap, and set the track to Poly so they ring together."],["Not the same as layers","The 8 layers live inside one keygroup, all on the same note. This is stacking whole keygroups across the keys."]]},
+  multisample:{eye:"Ranges · Multisample", h:"Spread it across the keys", analogy:"Many keygroups, each covering just a few keys with its own recording. Strung together they play like one real instrument, top to bottom.",
+    rows:[["How","A piano recorded at several pitches; each sample sits in a small range with its own root note and Key Track on."],["Use it","Realistic piano, choir, and horns — the sound stays natural instead of stretching one recording across the whole keyboard."]]},
   source:{eye:"02 · Keygroup · Layers", h:"The sound source", analogy:"A sandwich with up to 8 ingredients. Each layer is either a recording (a sample) or a tone the MPC draws from scratch (an oscillator).",
-    rows:[["What it is","Stack up to 8 layers per pad and mix samples and oscillators together in one hit."],["For your sound","Reinforce a real 808 with a clean sine sub, or thicken a chord with a synth layer. Piano and horns come from recordings; synths and pads come from oscillators."]]},
+    rows:[["What it is","Stack up to 8 layers inside one keygroup and mix samples and oscillators together in one note."],["For your sound","Reinforce a real 808 with a clean sine sub, or thicken a chord with a synth layer. Piano and horns come from recordings; synths and pads come from oscillators."]]},
   wavetable:{eye:"02 · Wavetable oscillator", h:"Wavetables — the headline", analogy:"A flipbook of waveforms. Position picks which page you're on. XFade is how smoothly you flip between pages.",
     rows:[["What it is","One of the new oscillator types. It holds many waveforms and lets you move between them."],["For your sound","This is where modern pads, evolving synths, and rich textures come from."]],
     magic:"The magic trick: let an LFO or an envelope flip the pages for you (wire it in the Mod Matrix). Now the sound moves and breathes on its own — that's the whole point of wavetables."},
