@@ -92,7 +92,7 @@
     <p class="sub">Synthesis and sound design, explained like you're brand new to it. Build your own bass, 808s, pads, keys, and full instruments, hands-on, on the Akai MPC. Every lesson has a real screen and sound you can actually hear and play.</p>
     <div class="cta">
       <a class="btn" href="#curriculum">Start learning</a>
-      <a class="btn ghost" href="engine-map.html">See how a sound is built</a>
+      <a class="btn ghost" href="/learn-synthesis/engine-map.html">See how a sound is built</a>
       <button class="btn ghost" id="taste" aria-pressed="false" style="gap:8px">▶ Hear a taste</button>
       <span class="taste" id="tastehint">live audio, no download</span>
     </div>
@@ -130,7 +130,7 @@
     <div class="band">
       <h2>Ready to make your first sound?</h2>
       <p>Start with the map of the whole engine, then build a wavetable pad in ten minutes.</p>
-      <a class="btn" href="lessons/00-welcome.html">Start the course</a>
+      <a class="btn" href="/learn-synthesis/lessons/00-welcome.html">Start the course</a>
     </div>
   </section>
 
@@ -148,27 +148,27 @@ const SOUNDS = [
   ['Horns','brass with bite'],['RNB / Hip Hop','warm &amp; hard-hitting'],
 ];
 const PART1=[
-  ['00','Welcome','What a keygroup is','lessons/00-welcome.html','live'],
-  ['01','The map','The whole engine at a glance','engine-map.html','live'],
-  ['02','Layers','Stack up to 8 sounds on one pad','lessons/02-layers.html','live'],
-  ['03','Samples','Build from recordings','lessons/03-samples.html','live'],
-  ['04','Oscillators','Tones drawn from scratch','lessons/04-oscillators.html','live'],
-  ['05','Wavetables','The headline, a flipbook of waveforms','lessons/05-wavetables.html','live'],
-  ['06','Filters','Shape the tone','lessons/06-filters.html','live'],
-  ['07','Envelopes','Shape the sound over time','lessons/07-envelopes.html','live'],
-  ['08','LFOs','Add automatic movement','lessons/08-lfos.html','live'],
-  ['09','Mod Matrix','Connect anything to anything (deep dive)','lessons/09-mod-matrix.html','live'],
+  ['00','Welcome','What a keygroup is','/learn-synthesis/lessons/00-welcome.html','live'],
+  ['01','The map','The whole engine at a glance','/learn-synthesis/engine-map.html','live'],
+  ['02','Layers','Stack up to 8 sounds on one pad','/learn-synthesis/lessons/02-layers.html','live'],
+  ['03','Samples','Build from recordings','/learn-synthesis/lessons/03-samples.html','live'],
+  ['04','Oscillators','Tones drawn from scratch','/learn-synthesis/lessons/04-oscillators.html','live'],
+  ['05','Wavetables','The headline, a flipbook of waveforms','/learn-synthesis/lessons/05-wavetables.html','live'],
+  ['06','Filters','Shape the tone','/learn-synthesis/lessons/06-filters.html','live'],
+  ['07','Envelopes','Shape the sound over time','/learn-synthesis/lessons/07-envelopes.html','live'],
+  ['08','LFOs','Add automatic movement','/learn-synthesis/lessons/08-lfos.html','live'],
+  ['09','Mod Matrix','Connect anything to anything (deep dive)','/learn-synthesis/lessons/09-mod-matrix.html','live'],
 ];
 const PART2=[
-  ['10','Bass','Tight, punchy low end','lessons/10-bass.html','live'],
-  ['11','Synths','Your first synth lead','lessons/11-synths.html','live'],
-  ['12','Pads','The wavetable showcase','lessons/12-pads.html','live'],
-  ['13','Piano','The sampling craft','lessons/13-piano.html','live'],
-  ['14','Choir','Stacked voices &amp; swell','lessons/14-choir.html','live'],
-  ['15','Horns','Brass bite &amp; dynamics','lessons/15-horns.html','live'],
-  ['16','RNB','Warm keys &amp; soft sub','lessons/16-rnb.html','live'],
-  ['17','Hip Hop','808s, one-shots, stabs','lessons/17-hiphop.html','live'],
-  ['18','Capstone','Build your own from scratch','lessons/18-capstone.html','live'],
+  ['10','Bass','Tight, punchy low end','/learn-synthesis/lessons/10-bass.html','live'],
+  ['11','Synths','Your first synth lead','/learn-synthesis/lessons/11-synths.html','live'],
+  ['12','Pads','The wavetable showcase','/learn-synthesis/lessons/12-pads.html','live'],
+  ['13','Piano','The sampling craft','/learn-synthesis/lessons/13-piano.html','live'],
+  ['14','Choir','Stacked voices &amp; swell','/learn-synthesis/lessons/14-choir.html','live'],
+  ['15','Horns','Brass bite &amp; dynamics','/learn-synthesis/lessons/15-horns.html','live'],
+  ['16','RNB','Warm keys &amp; soft sub','/learn-synthesis/lessons/16-rnb.html','live'],
+  ['17','Hip Hop','808s, one-shots, stabs','/learn-synthesis/lessons/17-hiphop.html','live'],
+  ['18','Capstone','Build your own from scratch','/learn-synthesis/lessons/18-capstone.html','live'],
 ];
 function sndHtml(s){ return `<div class="sound"><span class="dot"></span><b>${s[0]}</b><span>${s[1]}</span></div>`; }
 document.getElementById('sounds').innerHTML = SOUNDS.map(sndHtml).join('');
