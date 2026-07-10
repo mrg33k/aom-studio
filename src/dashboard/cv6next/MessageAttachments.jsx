@@ -52,6 +52,11 @@ function fileGlyph(kind, className = '') {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}><path d={d} /></svg>;
 }
 
+// Download-to-tray glyph for the icon-button download affordance.
+function downloadGlyph() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v11M7 10l5 5 5-5M5 20h14" /></svg>;
+}
+
 // Single image thumbnail (rounded, click → lightbox, with Review button).
 function SingleImage({ file, onReview }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -159,20 +164,25 @@ function GalleryLightbox({ files, idx, onIdx, onClose, onReview }) {
   );
 }
 
-// Single file card: icon + name + size + Review button.
+// Single file card: a contained, click-to-open row. The icon+name IS the open
+// affordance (mirrors SingleImage — the file opens on click, so no separate
+// "Open" pill); Download is a quiet icon button; Review is the filled primary.
+// Width-capped so the actions sit beside the name, not marooned at the viewport
+// edge on wide desktop. (files-in-app R79-f24, Steffen design pass.)
 function SingleFile({ file, onReview }) {
   const kind = fileKind(file.name, file.mime);
   const ext = String(file.name || '').includes('.') ? String(file.name).split('.').pop() : '';
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--divider)' }}>
-      <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(kind)}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</div>
-        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.04em', color: 'var(--faint)', textTransform: 'uppercase' }}>{formatSize(file.size) || ext || kind}</div>
-      </div>
-      <a href={fileHref(file.url)} target="_blank" rel="noopener noreferrer" title="Preview the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
-      <a {...downloadProps(file)} title="Download the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Download</a>
-      <button onClick={() => onReview?.(file)} title="Open in the Review tab" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 10, maxWidth: 560 }}>
+      <a href={fileHref(file.url)} target="_blank" rel="noopener noreferrer" title="Preview the file" className="mfile-open" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textDecoration: 'none' }}>
+        <span style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(kind)}</span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="mfile-name" style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+          <span style={{ display: 'block', fontSize: 10, fontWeight: 600, letterSpacing: '.04em', color: 'var(--faint)', textTransform: 'uppercase' }}>{formatSize(file.size) || ext || kind}</span>
+        </span>
+      </a>
+      <a {...downloadProps(file)} title="Download the file" aria-label="Download" className="mfile-dl" style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--hair)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{downloadGlyph()}</a>
+      <button onClick={() => onReview?.(file)} title="Open in the Review tab" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 11px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
     </div>
   );
 }
@@ -215,13 +225,12 @@ function FileCollection({ files, onReviewAll, onReview }) {
           <div className="fc-list">
             {shown.map((f, i) => (
               <div key={i} className="fc-lrow">
-                <span className="lg">{fileGlyph(fileKind(f.name, f.mime))}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--fg)' }}>{f.name}</div>
-                </div>
-                <span className="mono" style={{ fontSize: '10px', color: 'var(--faint)' }}>{formatSize(f.size)}</span>
-                <a href={fileHref(f.url)} target="_blank" rel="noopener noreferrer" title="Preview the file" style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '4px 8px', borderRadius: 7, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
-                <a {...downloadProps(f)} title="Download the file" style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '4px 8px', borderRadius: 7, border: '1px solid var(--hair)', flex: 'none' }}>Download</a>
+                <a href={fileHref(f.url)} target="_blank" rel="noopener noreferrer" title="Preview the file" className="mfile-open" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textDecoration: 'none' }}>
+                  <span className="lg">{fileGlyph(fileKind(f.name, f.mime))}</span>
+                  <span className="mfile-name" style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                </a>
+                <span className="mono" style={{ fontSize: '10px', color: 'var(--faint)', flex: 'none' }}>{formatSize(f.size)}</span>
+                <a {...downloadProps(f)} title="Download the file" aria-label="Download" className="mfile-dl" style={{ width: 26, height: 26, borderRadius: 7, border: '1px solid var(--hair)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{downloadGlyph()}</a>
               </div>
             ))}
             {hidden > 0 && (
