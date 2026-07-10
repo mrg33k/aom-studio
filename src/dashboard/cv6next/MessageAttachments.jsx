@@ -16,10 +16,22 @@ function fileKind(name, mime) {
 }
 
 // Return a file's openable URL (absolute http(s) or corner path → authed endpoint).
+// "Open" previews inline (the file host serves pdf/text/media inline; R79-f24).
 function fileHref(url) {
   const u = String(url || '');
   if (/^https?:\/\//i.test(u)) return u;
   return `/api/dashboard/project-file?path=${encodeURIComponent(u.replace(/^\/+/, ''))}&raw=1`;
+}
+
+// Force-download props for a Download button. A cross-origin tunnel file takes
+// `?download=1` (the file host honors it → Content-Disposition: attachment,
+// files-in-app R79-f24); the native `download` attr is ignored cross-origin, so
+// same-origin project-file paths use the attribute instead. Either way, download
+// is now an explicit choice — the default click previews inline.
+function downloadProps(file) {
+  const u = String(file?.url || '');
+  if (/^https?:\/\//i.test(u)) return { href: u + (u.includes('?') ? '&' : '?') + 'download=1' };
+  return { href: fileHref(u), download: file?.name || '' };
 }
 
 // Format file size (bytes) as human-readable (e.g. "2.4 MB").
@@ -158,7 +170,8 @@ function SingleFile({ file, onReview }) {
         <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</div>
         <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.04em', color: 'var(--faint)', textTransform: 'uppercase' }}>{formatSize(file.size) || ext || kind}</div>
       </div>
-      <a href={fileHref(file.url)} target="_blank" rel="noopener noreferrer" title="Open the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
+      <a href={fileHref(file.url)} target="_blank" rel="noopener noreferrer" title="Preview the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
+      <a {...downloadProps(file)} title="Download the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Download</a>
       <button onClick={() => onReview?.(file)} title="Open in the Review tab" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
     </div>
   );
@@ -207,6 +220,8 @@ function FileCollection({ files, onReviewAll, onReview }) {
                   <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--fg)' }}>{f.name}</div>
                 </div>
                 <span className="mono" style={{ fontSize: '10px', color: 'var(--faint)' }}>{formatSize(f.size)}</span>
+                <a href={fileHref(f.url)} target="_blank" rel="noopener noreferrer" title="Preview the file" style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '4px 8px', borderRadius: 7, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
+                <a {...downloadProps(f)} title="Download the file" style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '4px 8px', borderRadius: 7, border: '1px solid var(--hair)', flex: 'none' }}>Download</a>
               </div>
             ))}
             {hidden > 0 && (

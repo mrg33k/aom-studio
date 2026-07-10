@@ -150,11 +150,18 @@ async function buildDeliverableBody(item) {
       );
     }
     if (type === 'doc') {
+      if (/\.pdf$/i.test(path)) {
+        // PDFs stream straight off the rag tunnel (served inline, Range-capable,
+        // CORS *) exactly like the image/video branches above. The old path pulled
+        // the whole PDF through the Vercel raw proxy as a blob, which buffers in the
+        // lambda and dies past its ~4.5MB response cap — big decks "could not be
+        // loaded." An abs store/tunnel URL loads directly. (files-in-app R79-f24)
+        const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
+        return `<div style="position:relative;"><iframe src="${src}" title="${escapeHtml(item.title)}" style="width:100%;height:62vh;border:0;border-radius:10px;display:block;"></iframe>${pinShield()}</div>`;
+      }
+      // Non-PDF docs: auth-fetch the bytes and offer a download (no inline preview).
       const b = await blobOf();
       if (b.err) return errDiv(b.err);
-      if (/\.pdf$/i.test(path)) {
-        return `<div style="position:relative;"><iframe src="${b.url}" title="${escapeHtml(item.title)}" style="width:100%;height:62vh;border:0;border-radius:10px;display:block;"></iframe>${pinShield()}</div>`;
-      }
       return errDiv(`Preview is not available for this file type. <a href="${b.url}" download="${escapeHtml(item.title)}" style="color:#0066FF;">Download ${escapeHtml(item.title)}</a>`);
     }
     // text: copy (.md / .txt) or code. A store URL is read with a plain cross-origin GET
