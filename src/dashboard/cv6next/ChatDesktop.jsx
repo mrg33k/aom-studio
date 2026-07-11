@@ -128,7 +128,9 @@ export function shelfItems(messages) {
       : (msg.attachmentUrl && msg.fileName ? [{ url: msg.attachmentUrl, name: msg.fileName, mime: msg.fileMime, size: msg.fileSize }] : []);
     for (const att of atts) {
       if (!att?.url || !att?.name) continue;
-      items.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime, ts: msg.ts || null, who, size: att.size || 0 });
+      // `uploaded` marks a file the USER dropped into the chat (vs one an agent
+      // produced or a disk-library file) so the "Uploads" filter can select them.
+      items.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime, ts: msg.ts || null, who, size: att.size || 0, uploaded: !!msg.isUser });
     }
     for (const url of extractLinks(msg.text)) {
       items.push({ type: 'link', kind: 'link', name: linkLabel(url), url, ts: msg.ts || null, who });
@@ -148,12 +150,14 @@ export function libKindLabel(k) {
   return ({ canon: 'doc', tape: 'notes', 'research-drop': 'research', deliverable: 'deliverable' })[k] || (k || 'file');
 }
 const FILE_PILLS = [
-  { k: 'all', label: 'All' }, { k: 'recent', label: 'Recent' }, { k: 'photo', label: 'Photos' },
-  { k: 'video', label: 'Video' }, { k: 'pdf', label: 'PDFs' }, { k: 'link', label: 'Links' },
+  { k: 'all', label: 'All' }, { k: 'recent', label: 'Recent' }, { k: 'upload', label: 'Uploads' },
+  { k: 'photo', label: 'Photos' }, { k: 'video', label: 'Video' }, { k: 'pdf', label: 'PDFs' },
+  { k: 'link', label: 'Links' },
 ];
 function pillFilter(items, pill) {
   if (pill === 'all') return items;
   if (pill === 'recent') return items.slice(0, 12);
+  if (pill === 'upload') return items.filter((i) => i.uploaded);
   if (pill === 'link') return items.filter((i) => i.type === 'link');
   return items.filter((i) => i.kind === pill);
 }
@@ -170,6 +174,7 @@ export function FilesShelf({ items, onReview, truncation }) {
   const [pill, setPill] = useState('all');
   const counts = useMemo(() => ({
     all: items.length, recent: Math.min(items.length, 12),
+    upload: items.filter((i) => i.uploaded).length,
     photo: items.filter((i) => i.kind === 'photo').length,
     video: items.filter((i) => i.kind === 'video').length,
     pdf: items.filter((i) => i.kind === 'pdf').length,
@@ -273,8 +278,15 @@ export function useRoomLibrary(projectSlug, messages) {
       type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
       ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
     }));
+    // Uploads a user drops into the chat land in a per-chat Uploads/ folder that
+    // the project-files disk walk doesn't scan, so they never showed here (only
+    // links from the conversation were kept). Surface the conversation's file
+    // attachments too, deduped against the disk library by name+url, so uploads
+    // appear in every project/mission room's Files — and the Uploads filter works.
+    const libKeys = new Set(lib.map((f) => `${f.name}::${f.url}`));
+    const convoFiles = convo.filter((i) => i.type === 'file' && !libKeys.has(`${i.name}::${i.url}`));
     const links = convo.filter((i) => i.type === 'link');
-    const merged = [...lib, ...links];
+    const merged = [...lib, ...convoFiles, ...links];
     merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
     return merged;
   }, [messages, roomFiles, projectSlug]);
