@@ -334,7 +334,7 @@ function DataBlock({ block }) {
           {d.rows.map((r, ri) => (
             <div key={ri} className="tr" style={{ gridTemplateColumns: grid }}>
               {r.cells.map((cell, ci) => (
-                <div key={ci} className={ci === 0 ? '' : 'num'}>
+                <div key={ci} className={ci === 0 ? '' : 'num'} data-label={d.columns[ci] || ''}>
                   {cell}
                 </div>
               ))}
@@ -343,7 +343,7 @@ function DataBlock({ block }) {
           {d.totals ? (
             <div className="tr tf" style={{ gridTemplateColumns: grid }}>
               {d.totals.cells.map((cell, ci) => (
-                <div key={ci} className={ci === 0 ? '' : 'num pos'}>
+                <div key={ci} className={ci === 0 ? '' : 'num pos'} data-label={d.columns[ci] || ''}>
                   {cell}
                 </div>
               ))}
