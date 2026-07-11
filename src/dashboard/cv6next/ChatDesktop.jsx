@@ -306,7 +306,7 @@ export function useRoomLibrary(projectSlug, messages, uploadScope) {
         if (!r.ok) { if (alive) setChatUploads([]); return; }
         const body = await r.json();
         const files = (body?.files || []).map((f) => ({
-          type: 'file', kind: fileKind(f.name, f.mime_type), name: f.name,
+          type: 'file', kind: fileKind(f.name, f.mime_type), name: f.name, mime: f.mime_type || '',
           url: f.url && f.url.startsWith('http') ? f.url : `${RAG_TUNNEL}${f.url || ''}`,
           ts: f.mtime ? new Date(f.mtime).toISOString() : null,
           who: 'You', size: f.size || 0, uploaded: true,

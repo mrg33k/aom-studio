@@ -344,8 +344,13 @@ export function reviewItemsFromFiles(files, project = '') {
       const path = /^https?:\/\//i.test(rawUrl) ? rawUrl : rawUrl.replace(/^\/+/, '');
       if (!path) return null;
       const name = f.name || f.fileName || path.split('/').pop() || 'File';
-      // An explicit type (e.g. 'sitelive' from an artifact card) wins over detection.
-      const key = f.type || typeKeyOf(name, f.mime || f.fileMime, rawUrl);
+      // An explicit VIEWER type (e.g. 'sitelive' from an artifact card) wins over
+      // detection. But shelf items carry a generic discriminator `type:'file'`/'link'
+      // (file-vs-link, NOT a viewer key) — treating that as the viewer type sent every
+      // uploaded image/pdf down the text branch and rendered "Preview is not available."
+      // Fall through to extension/mime detection for those.
+      const explicit = f.type && f.type !== 'file' && f.type !== 'link' ? f.type : '';
+      const key = explicit || typeKeyOf(name, f.mime || f.fileMime, rawUrl);
       return {
         id: path, title: name,
         who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),
