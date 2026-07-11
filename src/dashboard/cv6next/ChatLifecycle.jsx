@@ -506,12 +506,12 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
           {/* The rich composer (CV4 functionality, CV6 look: attach, command menu,
               slash commands, image gen, voice) portals into this host. */}
           <div className="mcomposer" ref={setMComposerHost}
-            style={{ background: 'rgba(5,8,11,.9)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }} />
+            style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }} />
           <Cv6FullComposer target={mComposerHost} room={fullRoom} worldId={worldId} agents={[]}
             quickSend={onSend} onOpenFiles={() => setFilesSheetOpen(true)} />
         </>
       ) : (
-      <div className="mcomposer" style={{ background: 'rgba(5,8,11,.9)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
+      <div className="mcomposer" style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
         {dictate.supported && (
           <button onClick={dictate.toggle} aria-label={dictate.listening ? 'Stop dictation' : 'Speak your message'}
             title={dictate.listening ? 'Listening… tap to stop' : 'Speak your message'}
