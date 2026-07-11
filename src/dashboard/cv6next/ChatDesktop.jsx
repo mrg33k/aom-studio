@@ -9,7 +9,13 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
+import { supabase } from '../lib/supabase.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
+
+// The rag-server tunnel: same host uploads stream to, and the source of truth for
+// a chat's Uploads/ folder (list-chat-files). Reading uploads from disk here is
+// why they show even after they scroll out of the loaded message window.
+const RAG_TUNNEL = 'https://rag.aheadofmarket.com';
 import { SendCtx, ReviewCtx, AgentBlocks, ActionChips, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
@@ -247,11 +253,15 @@ export function FilesShelf({ items, onReview, truncation }) {
 // truncation honesty rides along: `truncation` is null unless the server capped
 // huge folders, and onLoadAll refetches with a raised dir_limit.
 // Shared by the desktop Files drawer AND the mobile chat files sheet.
-export function useRoomLibrary(projectSlug, messages) {
+// `uploadScope` = { world, project?, mission?, agent? } — drives the per-chat
+// Uploads/ folder fetch so uploads show regardless of how far back they were
+// dropped (the message-only approach missed anything past the ~50-message window).
+export function useRoomLibrary(projectSlug, messages, uploadScope) {
   const [roomFiles, setRoomFiles] = useState([]);
   const [libHidden, setLibHidden] = useState(0);
   const [libFull, setLibFull] = useState(false);
   const [libLoading, setLibLoading] = useState(false);
+  const [chatUploads, setChatUploads] = useState([]);
   useEffect(() => { setLibFull(false); }, [projectSlug]);
   useEffect(() => {
     if (!projectSlug) { setRoomFiles([]); setLibHidden(0); return undefined; }
@@ -271,25 +281,64 @@ export function useRoomLibrary(projectSlug, messages) {
       .finally(() => { if (alive) setLibLoading(false); });
     return () => { alive = false; };
   }, [projectSlug, libFull]);
+  // The per-chat Uploads/ folder is the authoritative, COMPLETE record of what a
+  // user uploaded here — it lives under FILES_ROOT (not the repo the disk walk
+  // scans), so we read it straight from the rag-server. Same tunnel + Supabase
+  // JWT posture as upload. Independent of the loaded message window, which is
+  // why old uploads finally appear. Empty list when the folder doesn't exist.
+  const scopeKey = uploadScope && uploadScope.world && (uploadScope.project || uploadScope.agent)
+    ? `${uploadScope.world}|${uploadScope.project || ''}|${uploadScope.mission || ''}|${uploadScope.agent || ''}`
+    : '';
+  useEffect(() => {
+    if (!scopeKey) { setChatUploads([]); return undefined; }
+    let alive = true;
+    const sc = uploadScope;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const jwt = data?.session?.access_token;
+        if (!jwt) { if (alive) setChatUploads([]); return; }
+        const qs = [`world=${encodeURIComponent(sc.world)}`];
+        if (sc.project) qs.push(`project=${encodeURIComponent(sc.project)}`);
+        if (sc.mission) qs.push(`mission=${encodeURIComponent(sc.mission)}`);
+        if (sc.agent && !sc.project) qs.push(`agent=${encodeURIComponent(sc.agent)}`);
+        const r = await fetch(`${RAG_TUNNEL}/list-chat-files?${qs.join('&')}`, { headers: { Authorization: `Bearer ${jwt}` } });
+        if (!r.ok) { if (alive) setChatUploads([]); return; }
+        const body = await r.json();
+        const files = (body?.files || []).map((f) => ({
+          type: 'file', kind: fileKind(f.name, f.mime_type), name: f.name,
+          url: f.url && f.url.startsWith('http') ? f.url : `${RAG_TUNNEL}${f.url || ''}`,
+          ts: f.mtime ? new Date(f.mtime).toISOString() : null,
+          who: 'You', size: f.size || 0, uploaded: true,
+        }));
+        if (alive) setChatUploads(files);
+      } catch { if (alive) setChatUploads([]); }
+    })();
+    return () => { alive = false; };
+  }, [scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const shelf = useMemo(() => {
     const convo = shelfItems(messages);
-    if (!projectSlug) return convo;
-    const lib = roomFiles.map((f) => ({
+    const convoFiles = convo.filter((i) => i.type === 'file');
+    const links = convo.filter((i) => i.type === 'link');
+    const lib = projectSlug ? roomFiles.map((f) => ({
       type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
       ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
-    }));
-    // Uploads a user drops into the chat land in a per-chat Uploads/ folder that
-    // the project-files disk walk doesn't scan, so they never showed here (only
-    // links from the conversation were kept). Surface the conversation's file
-    // attachments too, deduped against the disk library by name+url, so uploads
-    // appear in every project/mission room's Files — and the Uploads filter works.
-    const libKeys = new Set(lib.map((f) => `${f.name}::${f.url}`));
-    const convoFiles = convo.filter((i) => i.type === 'file' && !libKeys.has(`${i.name}::${i.url}`));
-    const links = convo.filter((i) => i.type === 'link');
-    const merged = [...lib, ...convoFiles, ...links];
+    })) : [];
+    // Order matters for dedupe: chatUploads first (the complete disk record of
+    // uploads, tagged uploaded:true) so a message-window duplicate with the same
+    // URL is dropped in its favour, then the project library, then any recent
+    // conversation files not already covered, then links. Dedupe by URL (upload
+    // URLs are unique; lib files carry disk paths, so canon never collides).
+    const seen = new Set();
+    const merged = [...chatUploads, ...lib, ...convoFiles, ...links].filter((it) => {
+      const key = it.url || `${it.name}::${it.ts || ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
     merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
     return merged;
-  }, [messages, roomFiles, projectSlug]);
+  }, [messages, roomFiles, projectSlug, chatUploads]);
   const truncation = useMemo(() => (libHidden > 0
     ? { shown: roomFiles.length, total: roomFiles.length + libHidden, loading: libLoading, onLoadAll: () => setLibFull(true) }
     : null), [libHidden, roomFiles.length, libLoading]);
@@ -694,7 +743,13 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // The room's REAL file library + the conversation's files/links (extracted to
   // useRoomLibrary so the mobile chat's files sheet shows the exact same shelf).
   const libProjectSlug = selected?.isMission ? selected.projectSlug : (selected?.isProject ? selected.id : null);
-  const { shelf, truncation: libTruncation } = useRoomLibrary(libProjectSlug, messages);
+  // Scope for the per-chat Uploads/ folder — same shape the composer uploads with
+  // (project + bare mission slug, or project alone, or agent for a 1:1 room).
+  const uploadScope = selected?.isMission
+    ? { world: worldId, project: selected.projectSlug, mission: String(selected.missionSlug || selected.id || '').split(':').pop() }
+    : selected?.isProject ? { world: worldId, project: selected.id }
+    : selected?.id ? { world: worldId, agent: selected.id } : null;
+  const { shelf, truncation: libTruncation } = useRoomLibrary(libProjectSlug, messages, uploadScope);
   // Host node the rich CV4 composer (ThreadInputBar: command menu / voice / image
   // gen) portals into. Cv6FullComposer is mounted ONCE at the end of the tree and
   // kept alive; it only paints when a room is open + this host exists, so a thread
