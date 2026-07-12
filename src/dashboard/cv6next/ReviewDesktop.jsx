@@ -171,6 +171,14 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // something to review instead of a blank viewer — preferring the catch-up target.
   const firstId = data.queue.items[0]?.id || null;
   const targetAppliedRef = useRef(false);
+  // review-loop: a verdict (approve/dismiss) optimistically removes the open item
+  // from the queue. When the picked id no longer resolves ANYWHERE (live queue OR
+  // the past-decision rows, which are clickable), advance to the next deliverable
+  // instead of leaving a blank viewer. Before verdicts persisted this was
+  // unreachable — approved items never actually left the list.
+  const pickedGone = !!pickedId
+    && !data.queue.items.some((i) => i.id === pickedId)
+    && !historyRowsRef.current.some((i) => i.id === pickedId);
   useEffect(() => {
     if ((injected?.length || targetName) && !targetAppliedRef.current) {
       if (!data.queue.items.length) return; // wait for the queue to land
@@ -179,12 +187,12 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
       if (openId) { setPickedId(openId); actions.openDeliverable(openId); }
       return;
     }
-    if (!pickedId && firstId) {
+    if ((!pickedId || pickedGone) && firstId && firstId !== pickedId) {
       setPickedId(firstId);
       actions.openDeliverable(firstId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickedId, firstId, target, targetId, data.queue.items.length]);
+  }, [pickedId, pickedGone, firstId, target, targetId, data.queue.items.length]);
 
   const desktopHtml = useMemo(() => composeDesktopReview(reviewRaw), []);
 
@@ -322,9 +330,10 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
-    // review-loop: Dismiss drops the item without approval; clearing pickedId
-    // lets the auto-open effect land on the next deliverable.
-    dismiss: (id) => { actions.dismiss(id); setPickedId(null); },
+    // review-loop: Dismiss drops the item without approval. The optimistic queue
+    // removal flips pickedGone, and the auto-open effect advances to the next
+    // deliverable — no manual selection juggling here.
+    dismiss: (id) => actions.dismiss(id),
     // WD40-R3: always open the Changes overlay — the prompt() fallback is gone.
     // The overlay has a textarea for typed notes so feedback flows without pins.
     requestChanges: () => { setChangesOpen(true); },

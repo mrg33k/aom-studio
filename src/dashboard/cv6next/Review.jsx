@@ -229,7 +229,13 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     // A pin marker (or the pin-comment bar) opens the comment popover with delete.
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
-    approve: (id) => actions.approve(id),
+    // review-loop: a verdict removes the item from the queue for real now, so the
+    // read screen would render blank if we stayed — decide, then back to the list.
+    approve: (id) => {
+      actions.approve(id);
+      setScreen('pick');
+      setPickedId(null);
+    },
     // review-loop: Dismiss drops the item without approval and returns to the
     // pick list (the item is optimistically gone from the queue).
     dismiss: (id) => {
