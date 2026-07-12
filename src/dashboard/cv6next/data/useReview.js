@@ -427,12 +427,14 @@ export function useReview(worldId = 'aom', injected = null) {
   // drives the "Last delivery <rel> ago" header line.
   const [newestTs, setNewestTs] = useState(null);
   // review-loop: transient status line after a verdict ("Tracked as task …").
+  // Shape: { text, actionLabel?, onAction? } — an action makes the toast a real
+  // control (the dismiss toast is "Dismissed — Undo", per the design gate).
   const [notice, setNotice] = useState(null);
   const noticeTimerRef = useRef(null);
-  const flashNotice = useCallback((text) => {
-    setNotice(text);
+  const flashNotice = useCallback((payload, ms = 6000) => {
+    setNotice(typeof payload === 'string' ? { text: payload } : payload);
     if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = setTimeout(() => setNotice(null), 6000);
+    noticeTimerRef.current = setTimeout(() => setNotice(null), ms);
   }, []);
   // WD40-R5: total item count reported by the server (may be larger than queue.items.length
   // when more pages exist). Drives hasMore and the "N of M" header display.
@@ -694,8 +696,32 @@ export function useReview(worldId = 'aom', injected = null) {
     }
   }, [load, decisionBody, removeFromQueue, flashNotice]);
 
+  // review-loop: undo a dismiss — deletes the decision row server-side, then
+  // refetches so the item re-enters the queue. Wired to the dismiss toast's Undo.
+  const undoDismiss = useCallback(async (decisionId) => {
+    if (!decisionId) return;
+    try {
+      const r = await authFetch('/api/dashboard/review-decision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'undo', world: worldId, decision_id: decisionId }),
+      });
+      if (r?.ok) {
+        setNotice(null);
+        if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+        load();
+      } else {
+        console.error('[Review undo] response not ok:', await r?.text());
+      }
+    } catch (e) {
+      console.error('[Review undo] exception:', e);
+    }
+  }, [worldId, load]);
+
   // review-loop: dismiss — drop an item from the queue without approving it
-  // (not review-worthy). Recorded as a decision so it never comes back.
+  // (not review-worthy). Recorded as a decision so it never comes back — but the
+  // toast carries a 10s Undo (design gate: dismiss is destructive, so it gets an out).
   const dismiss = useCallback(async (deliverableId) => {
     try {
       const r = await authFetch('/api/dashboard/review-decision', {
@@ -706,6 +732,16 @@ export function useReview(worldId = 'aom', injected = null) {
       });
       if (r?.ok) {
         removeFromQueue(deliverableId);
+        try {
+          const d = await r.json();
+          if (d?.decision_id) {
+            flashNotice({
+              text: 'Dismissed',
+              actionLabel: 'Undo',
+              onAction: () => undoDismiss(d.decision_id),
+            }, 10000);
+          }
+        } catch { /* body optional */ }
         load();
       } else {
         console.error('[Review dismiss] response not ok:', await r?.text());
@@ -713,7 +749,7 @@ export function useReview(worldId = 'aom', injected = null) {
     } catch (e) {
       console.error('[Review dismiss] exception:', e);
     }
-  }, [load, decisionBody, removeFromQueue]);
+  }, [load, decisionBody, removeFromQueue, flashNotice, undoDismiss]);
 
   const sendChecklist = useCallback(async (deliverableId) => {
     try {

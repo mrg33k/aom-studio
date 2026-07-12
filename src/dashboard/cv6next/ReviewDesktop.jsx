@@ -385,16 +385,32 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   return (
     <div ref={viewerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
-      {/* review-loop: transient verdict feedback ("Tracked as task …") */}
+      {/* review-loop: transient verdict feedback. With an action attached (the
+          dismiss toast's Undo — R15b design gate) it's a real control. */}
       {notice && (
         <div style={{
           position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 60, pointerEvents: 'none',
+          zIndex: 60, pointerEvents: notice.onAction ? 'auto' : 'none',
+          display: 'flex', alignItems: 'center', gap: 10,
           background: 'rgba(5,8,11,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
           border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px',
           fontSize: 12.5, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)',
-          whiteSpace: 'nowrap', maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>{notice}</div>
+          whiteSpace: 'nowrap', maxWidth: '70%',
+        }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{notice.text}</span>
+          {notice.onAction && (
+            <button
+              onClick={notice.onAction}
+              style={{
+                border: 'none', background: 'transparent', color: 'var(--accent, #3B82F6)',
+                fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-sans)',
+                cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3,
+              }}
+            >
+              {notice.actionLabel || 'Undo'}
+            </button>
+          )}
+        </div>
       )}
       {pinOverlay}
       {ctxOverlay}

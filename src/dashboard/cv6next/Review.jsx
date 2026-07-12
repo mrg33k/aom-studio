@@ -36,7 +36,9 @@ function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
   // phone screen) instead of two; the body host flows at its natural height.
   const docEl = screen.querySelector('.doc');
   if (docEl) {
-    docEl.setAttribute('style', String(docEl.getAttribute('style') || '').replace(/height:\s*392px/, 'height:calc(100dvh - 250px)'));
+    // 290px of bottom chrome since R15b: header + chips + pin bar + the two-row
+    // decision bar (verdict trio 48px + quiet Assign utility row 34px).
+    docEl.setAttribute('style', String(docEl.getAttribute('style') || '').replace(/height:\s*392px/, 'height:calc(100dvh - 290px)'));
   }
   const bodyHost = screen.querySelector('[data-cv6-keep="review-body"]');
   if (bodyHost) {
@@ -143,17 +145,34 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     'comment': 'comment',
   };
 
-  // review-loop: transient verdict feedback ("Tracked as task …") — shown on both
-  // screens since Dismiss bounces back to the pick list.
+  // review-loop: transient verdict feedback — shown on both screens since Dismiss
+  // bounces back to the pick list. When the notice carries an action (the dismiss
+  // toast's Undo, R15b design gate), the toast is a real control, not just status.
   const noticeToast = notice ? (
     <div style={{
       position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 70px)', left: '50%',
-      transform: 'translateX(-50%)', zIndex: 60, pointerEvents: 'none',
+      transform: 'translateX(-50%)', zIndex: 60,
+      pointerEvents: notice.onAction ? 'auto' : 'none',
+      display: 'flex', alignItems: 'center', gap: 10,
       background: 'rgba(5,8,11,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px',
       fontSize: 12.5, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)',
-      whiteSpace: 'nowrap', maxWidth: '90%', overflow: 'hidden', textOverflow: 'ellipsis',
-    }}>{notice}</div>
+      whiteSpace: 'nowrap', maxWidth: '90%',
+    }}>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{notice.text}</span>
+      {notice.onAction && (
+        <button
+          onClick={notice.onAction}
+          style={{
+            border: 'none', background: 'transparent', color: 'var(--accent, #3B82F6)',
+            fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-sans)',
+            cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3,
+          }}
+        >
+          {notice.actionLabel || 'Undo'}
+        </button>
+      )}
+    </div>
   ) : null;
 
   if (screen === 'pick') {

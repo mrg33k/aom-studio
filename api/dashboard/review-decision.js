@@ -153,12 +153,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Auth verification failed' });
   }
 
-  const did = clean(deliverable, 400);
-  if (!did) return res.status(400).json({ error: 'deliverable required' });
-
   const act = String(action || '').toLowerCase().trim();
-  if (!['approve', 'request-changes', 'dismiss', 'send-checklist'].includes(act)) {
-    return res.status(400).json({ error: 'action must be approve, request-changes, dismiss, or send-checklist' });
+  if (!['approve', 'request-changes', 'dismiss', 'send-checklist', 'undo'].includes(act)) {
+    return res.status(400).json({ error: 'action must be approve, request-changes, dismiss, send-checklist, or undo' });
   }
 
   // Initialize Supabase
@@ -166,6 +163,41 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // undo (review-loop design gate): delete a DISMISS decision row by id so the
+  // item re-enters the queue on the next fetch. Strictly scoped — the row must
+  // be a review-decision message AND its action must be 'dismiss' (approve /
+  // request-changes stay permanent; a task may already be chasing the latter).
+  if (act === 'undo') {
+    const decisionId = clean(req.body.decision_id, 80);
+    if (!decisionId) return res.status(400).json({ error: 'decision_id required' });
+    try {
+      const { data: rows, error: selErr } = await supabase
+        .from('messages')
+        .select('id, metadata')
+        .eq('id', decisionId)
+        .eq('source', 'review-decision')
+        .limit(1);
+      if (selErr) return res.status(500).json({ error: 'Failed to look up decision' });
+      if (!rows || !rows.length) return res.status(404).json({ error: 'Decision not found' });
+      if ((rows[0].metadata || {}).action !== 'dismiss') {
+        return res.status(400).json({ error: 'Only dismiss decisions can be undone' });
+      }
+      const { error: delErr } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', decisionId)
+        .eq('source', 'review-decision');
+      if (delErr) return res.status(500).json({ error: 'Failed to undo decision' });
+      return res.status(200).json({ ok: true, action: 'undo', undone: decisionId });
+    } catch (e) {
+      console.error('[review-decision] undo exception:', e);
+      return res.status(500).json({ error: 'Internal error' });
+    }
+  }
+
+  const did = clean(deliverable, 400);
+  if (!did) return res.status(400).json({ error: 'deliverable required' });
 
   // Identity passthrough fields (the queue item carries these; the decision row
   // stores them so review-queue.js can suppress by content identity too).
@@ -231,8 +263,9 @@ export default async function handler(req, res) {
     // FIXED 2026-07-12 (review-loop): messages.id has NO default — the R-ASSIGN fix
     // still 500'd on the NOT NULL (zero decision rows had EVER persisted). Stamp
     // id + timestamp explicitly, exactly like share-file.py does.
+    const decisionId = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
     const { error } = await supabase.from('messages').insert({
-      id: (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+      id: decisionId,
       timestamp: new Date().toISOString(),
       client_id: worldId,
       agent: clean(req.body.agent, 80) || 'corner',
@@ -267,6 +300,8 @@ export default async function handler(req, res) {
       action: act,
       deliverable: did,
       message,
+      // The decision row's id — the client's "Undo" for a dismiss targets this.
+      decision_id: decisionId,
       ...(taskId ? { task_id: taskId } : {}),
     });
   } catch (e) {

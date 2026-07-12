@@ -363,7 +363,9 @@ export function ReviewView({
                 ✓ Approve
               </button>
               {onDismiss && (
-                <button onClick={onDismiss} style={{ height: 46, borderRadius: 11, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 14.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+                /* R15b design gate: Dismiss = permanent discard — muted-destructive
+                   (--error family) so it never reads as "send back". */
+                <button onClick={onDismiss} style={{ height: 46, borderRadius: 11, border: '1px solid rgba(248,113,113,.38)', background: 'transparent', color: 'var(--error, #F87171)', fontSize: 14.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
                   ✕ Dismiss
                 </button>
               )}
@@ -713,14 +715,15 @@ export function ReviewView({
                 ✓ Approve
               </button>
               {onDismiss && (
+                /* R15b design gate: muted-destructive Dismiss (--error family). */
                 <button
                   onClick={onDismiss}
                   style={{
                     height: 46,
                     borderRadius: 11,
-                    border: '1px solid var(--hair)',
+                    border: '1px solid rgba(248,113,113,.38)',
                     background: 'transparent',
-                    color: 'var(--fg)',
+                    color: 'var(--error, #F87171)',
                     fontSize: 14.5,
                     fontWeight: 600,
                     fontFamily: 'var(--font-sans)',
@@ -1338,23 +1341,26 @@ export function ReviewView({
             Approve
           </button>
           {onDismiss && (
+            /* R15b design gate: equal-thirds (flex:1) so the verdict trio fits 390px
+               with no horizontal scroll; muted-destructive so it never reads as
+               "send back". */
             <button
               onClick={onDismiss}
               style={{
-                flex: 'none',
+                flex: 1,
+                minWidth: 0,
                 height: 48,
-                padding: '0 14px',
                 borderRadius: 13,
-                border: '1px solid var(--hair)',
-                background: 'var(--surface-2)',
-                color: 'var(--fg)',
+                border: '1px solid rgba(248,113,113,.38)',
+                background: 'transparent',
+                color: 'var(--error, #F87171)',
                 fontSize: 13.5,
                 fontWeight: 600,
                 fontFamily: 'var(--font-sans)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 7,
+                gap: 6,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
               }}
