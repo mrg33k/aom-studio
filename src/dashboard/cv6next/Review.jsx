@@ -227,6 +227,12 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   const readActions = {
     nav: (target) => {
       if (target === 'back') {
+        // R15b defect 6: the back control is ORIGIN-AWARE. Entered from a
+        // conversation's file card ("Review" on a file → injected files) or a
+        // catch-up card (named target)? Back returns THERE via the app history
+        // pop — not to the Review index. Only a direct toolbar entry (no
+        // target) backs out to the pick list as before.
+        if (injected?.length || targetName) { onNav?.('back'); return; }
         setScreen('pick');
         setPickedId(null);
       } else {

@@ -42,7 +42,8 @@
   <div style="display:flex;flex:1;min-height:0;">
     <!-- queue -->
     <div style="width:320px;flex:none;border-right:1px solid var(--divider);display:flex;flex-direction:column;overflow:hidden;">
-      <div style="padding:18px 20px 12px;flex:none;"><div style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Review</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;"><span data-bind="queue.readyCount">5</span> deliverables to review</div></div>
+      <!-- R15b copy nit: bind the FULL pluralized phrase (readyLabel) so count=1 reads "1 deliverable". -->
+      <div style="padding:18px 20px 12px;flex:none;"><div style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Review</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;" data-bind="queue.readyLabel">5 deliverables to review</div></div>
       <!-- ALL projects (registry, not just those with queue items); step into a
            project's missions. ONE row per node, Organize left-rail language. -->
       <div style="flex:none;max-height:40%;overflow-y:auto;padding:0 12px 10px;border-bottom:1px solid var(--divider);margin-bottom:8px;">
@@ -153,7 +154,8 @@
 <div data-cv6 data-theme="dark" data-screen="review-mobile" data-screen-label="Review · Pick list" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);display:flex;flex-direction:column;">
   <div class="mhdr">
     <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
-    <div class="mhtitle"><div class="mttl">Review</div><div class="msub"><span data-bind="queue.readyCount">40</span> deliverables to review</div></div>
+    <!-- R15b copy nit: full pluralized phrase (readyLabel) — count=1 reads "1 deliverable". -->
+    <div class="mhtitle"><div class="mttl">Review</div><div class="msub" data-bind="queue.readyLabel">40 deliverables to review</div></div>
     <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
   <!-- ALL projects (registry); step into a project's missions -->

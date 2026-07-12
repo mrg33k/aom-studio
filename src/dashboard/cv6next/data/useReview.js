@@ -890,6 +890,15 @@ export function useReview(worldId = 'aom', injected = null) {
       readyCount: !activeProj && queueServerTotal > allItems.length
         ? `${allItems.length} of ${queueServerTotal}`
         : scoped.length,
+      // R15b copy nit: the whole header phrase, pluralized ("1 deliverable to
+      // review" / "N deliverables to review"). The templates bind THIS, not the
+      // bare count, so count=1 can never render "1 deliverables".
+      readyLabel: (() => {
+        const rc = !activeProj && queueServerTotal > allItems.length
+          ? `${allItems.length} of ${queueServerTotal}`
+          : scoped.length;
+        return `${rc} ${rc === 1 ? 'deliverable' : 'deliverables'} to review`;
+      })(),
       // WD40-R5: all fetched items are rendered (no client-side window). When a type chip is
       // active all matching items in the fetched set show; on "Load older" the server sends the
       // next page and those items join the visible set automatically.
