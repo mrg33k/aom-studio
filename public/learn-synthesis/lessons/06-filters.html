@@ -125,7 +125,7 @@
       <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
       <div class="knobs">
         <div class="knob hot"><div class="dial" style="--rot:55deg"></div><div class="kn">Cutoff</div><div class="kv">2400 Hz</div><div class="role">Dark to bright</div></div>
-        <div class="knob hot"><div class="dial" style="--rot:20deg"></div><div class="kn">Resonance</div><div class="kv">1.2</div><div class="role">The whistle strength</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:20deg"></div><div class="kn">Resonance</div><div class="kv">72</div><div class="role">Push past 80 for the whistle</div></div>
         <div class="knob"><div class="dial" style="--rot:0deg"></div><div class="kn">Output</div><div class="kv">0 dB</div><div class="role">Volume compensation</div></div>
         <div class="knob"><div class="dial" style="--rot:-30deg"></div><div class="kn">Env</div><div class="kv">54</div><div class="role">Envelope opens the filter</div></div>
       </div>
@@ -148,8 +148,8 @@
           <input type="range" id="cut" min="100" max="8000" value="2400" aria-label="Filter cutoff frequency">
         </div>
         <div class="sl">
-          <label for="res">Resonance <b id="resv">1</b></label>
-          <input type="range" id="res" min="0.1" max="20" step="0.1" value="1" aria-label="Filter resonance">
+          <label for="res">Resonance <b id="resv">72</b></label>
+          <input type="range" id="res" min="0" max="100" step="1" value="72" aria-label="Filter resonance">
         </div>
         <p class="hint" id="ahint">Sound is generated live, no files. Works best with headphones or speakers up.</p>
       </div>
@@ -162,10 +162,10 @@
     <h2>Five steps to a filter that opens like a flower</h2>
     <ol class="steps">
       <li><b>Make a keygroup track</b><span>New track, set its type to Keygroup. This is the instrument-builder mode.</span></li>
-      <li><b>Set a layer to Oscillator, pick Sawtooth</b><span>On the Samples/Oscs tab, switch Layer 1 from Sample to Oscillator. Saw has a bright, buzzy quality that makes filter movement obvious.</span></li>
+      <li><b>Set a layer to Oscillator, pick Saw/Square</b><span>On the Samples/Oscs tab, switch Layer 1 from Sample to Oscillator. Saw has a bright, buzzy quality that makes filter movement obvious.</span></li>
       <li><b>Adjust the Amp envelope for a pad</b><span>On the Amp envelope, raise Attack to 0.5 seconds and Release to 1 second. This gives the note time to breathe.</span></li>
       <li><b>Wire the filter envelope to Cutoff</b><span>On the Filters tab, set the Env knob to around 80. This means the filter envelope opens the cutoff when you play. Play a note and hold it, the tone should bloom from dark to bright over time.</span></li>
-      <li><b>Add resonance for character</b><span>Raise the Resonance knob to 8 or 10. The filter sweep now has a vocal, peaked quality. Play a chord and hold it. That is a finished filter sweep pad.</span></li>
+      <li><b>Add resonance for character</b><span>Raise the Resonance knob up past 80. The filter sweep now has a vocal, peaked quality (on the MPC the whistle really shows above 80). Play a chord and hold it. That is a finished filter sweep pad.</span></li>
     </ol>
   </section>
 
@@ -227,7 +227,7 @@ function drawFreq(cv, cutoff, resonance, glow){
 }
 
 /* ---------- static screen waveform (teal, device display) ---------- */
-drawFreq(document.getElementById('screenwave'), 2400, 1.2, false);
+drawFreq(document.getElementById('screenwave'), 2400, qFromReso(72), false);
 
 /* ---------- live synth with filter ---------- */
 const cutEl=document.getElementById('cut'), resEl=document.getElementById('res');
@@ -237,14 +237,15 @@ const playBtn=document.getElementById('play'), ahint=document.getElementById('ah
 let actx=null, osc=null, gain=null, filt=null, amp=null, playing=false, rafId=null;
 const FREQ = 130.81; // C3
 
-function paint(){ drawFreq(liveCv, +cutEl.value, +resEl.value, playing); }
+function qFromReso(v){ return 0.7 + (v/100)*18; }   // 0-100 MPC-style scale -> biquad Q
+function paint(){ drawFreq(liveCv, +cutEl.value, qFromReso(+resEl.value), playing); }
 function updateFilter(){
   if(filt){
     const now=actx.currentTime;
     filt.frequency.setTargetAtTime(+cutEl.value, now, 0.02);
-    filt.Q.setTargetAtTime(+resEl.value, now, 0.02);
+    filt.Q.setTargetAtTime(qFromReso(+resEl.value), now, 0.02);
   }
-  cutv.textContent=cutEl.value; resv.textContent=(+resEl.value).toFixed(1); paint();
+  cutv.textContent=cutEl.value; resv.textContent=resEl.value; paint();
 }
 function startAudio(){
   actx = actx || new (window.AudioContext||window.webkitAudioContext)();
@@ -256,7 +257,7 @@ function startAudio(){
   filt = actx.createBiquadFilter();
   filt.type='lowpass';
   filt.frequency.value=+cutEl.value;
-  filt.Q.value=+resEl.value;
+  filt.Q.value=qFromReso(+resEl.value);
   filt.connect(amp);
   amp.connect(actx.destination);
 
@@ -302,6 +303,6 @@ playBtn.addEventListener('click', ()=>{
 
 cutEl.addEventListener('input', updateFilter);
 resEl.addEventListener('input', updateFilter);
-paint(); cutv.textContent=cutEl.value; resv.textContent=(+resEl.value).toFixed(1);
+paint(); cutv.textContent=cutEl.value; resv.textContent=resEl.value;
 requestAnimationFrame(tick);
 </script>

@@ -116,7 +116,7 @@
     <h2>A shape that vibrates</h2>
     <p class="big">Imagine a piece of string. When it vibrates, your ear hears a tone. An <b>oscillator</b> is like a tiny invisible string that the MPC draws, over and over, thousands of times a second.</p>
     <p>The shape of that string is what you hear. A smooth wave sounds warm and round. A jagged wave sounds bright and buzzy. A bumpy wave sounds broken and weird.</p>
-    <p>The MPC has nine shapes to pick from. Some are classic (sine, saw, square). Some are weird (FM, ring-mod, noise). Each one is good for something different. Below you will hear them all and learn which one builds what.</p>
+    <p>The MPC gives you nine oscillator types. Some are classic shapes (Warm Sine, Saw/Square). Some are wild (FM2, ring-mod, Noise, Wavetables). Each one is good for something different. Below you will hear the main ones and learn which one builds what.</p>
   </section>
 
   <!-- B: THE SCREEN -->
@@ -125,13 +125,13 @@
     <h2>Where you'll find it</h2>
     <p>Set any layer's source to <b>Oscillator</b>. Then pick your type from the list. The screen shows a preview of the shape up top. Each type has its own knobs below.</p>
     <div class="screen" aria-label="Recreation of the MPC oscillator type selector">
-      <div class="bar"><span>Layer 1 · Oscillator</span><span class="sel">SINE</span></div>
+      <div class="bar"><span>Layer 1 · Oscillator</span><span class="sel">WARM SINE</span></div>
       <div class="disp"><canvas id="screenwave" width="820" height="240" aria-hidden="true"></canvas></div>
       <div class="knobs">
-        <div class="knob hot"><div class="dial" style="--rot:30deg"></div><div class="kn">Shape</div><div class="kv">0</div><div class="role">Each type has its own knobs</div></div>
+        <div class="knob hot"><div class="dial" style="--rot:30deg"></div><div class="kn">Precision</div><div class="kv">90</div><div class="role">How clean the sine stays</div></div>
+        <div class="knob"><div class="dial" style="--rot:-20deg"></div><div class="kn">Fuzz</div><div class="kv">14</div><div class="role">Adds grit and harmonics</div></div>
         <div class="knob"><div class="dial" style="--rot:0deg"></div><div class="kn">Decay</div><div class="kv">1.00 s</div><div class="role">How long the tone fades</div></div>
         <div class="knob"><div class="dial" style="--rot:-20deg"></div><div class="kn">Start Phase</div><div class="kv">0</div><div class="role">Where the shape begins</div></div>
-        <div class="knob"><div class="dial" style="--rot:10deg"></div><div class="kn">Level</div><div class="kv">100</div><div class="role">How loud the oscillator is</div></div>
       </div>
     </div>
   </section>
@@ -152,12 +152,11 @@
             <label style="font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut)">Shape</label>
           </div>
           <div class="osc-buttons">
-            <button class="osc-btn" data-osc="sine" data-active="true">Sine</button>
-            <button class="osc-btn" data-osc="sawtooth">Saw</button>
-            <button class="osc-btn" data-osc="square">Square</button>
-            <button class="osc-btn" data-osc="triangle">Triangle</button>
+            <button class="osc-btn" data-osc="sine" data-active="true">Warm Sine</button>
+            <button class="osc-btn" data-osc="sawtooth">Saw/Square</button>
+            <button class="osc-btn" data-osc="square">Pulse</button>
             <button class="osc-btn" data-osc="noise">Noise</button>
-            <button class="osc-btn" data-osc="fm">FM</button>
+            <button class="osc-btn" data-osc="fm">FM2</button>
           </div>
         </div>
         <div class="sl">
@@ -176,7 +175,7 @@
     <ol class="steps">
       <li><b>Make a keygroup track</b><span>New track, set its type to Keygroup. This is the synth-building mode on the MPC.</span></li>
       <li><b>Choose Oscillator in Samples/Oscs</b><span>On the Samples/Oscs tab, change Layer 1 from Sample to Oscillator. You will see the type list.</span></li>
-      <li><b>Pick your shape</b><span>For warm bass or pads, pick Sine. For leads and stabs, pick Saw or Square. For weird sounds, try Pulse or Noise.</span></li>
+      <li><b>Pick your type</b><span>For warm bass or pads, pick Warm Sine. For leads and stabs, pick Saw/Square. For gritty or hollow sounds, try Pulse or Noise.</span></li>
       <li><b>Tweak Decay and Level</b><span>Decay is how fast the tone fades after you release the key. Level is how loud the oscillator is compared to other layers. Balance them to taste.</span></li>
       <li><b>Play a note and listen</b><span>Hit a key on the keyboard. That shape is now singing. Stack a second oscillator layer on the same pad to blend shapes and get even richer tones.</span></li>
     </ol>
