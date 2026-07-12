@@ -359,26 +359,38 @@ async function fetchMessages(query) {
   } catch { return []; }
 }
 
-// Shape one message row (carrying metadata.attachment) into a queue item, or null.
-function rowFromMessage(msg, sourceKind) {
+// Shape one message row into queue item(s). A message can carry EITHER a single
+// attachment (metadata.attachment = {url,mime,name,size}) OR a batch the user
+// dropped at once (metadata.attachments = [ {…}, … ]) — the same two shapes the
+// Files panel reads (files.js). We emit one item per file so a 4-photo or 19-photo
+// drop shows every file, not just the first. Returns an array (possibly empty).
+function rowsFromMessage(msg, sourceKind) {
   const meta = msg?.metadata || {};
-  const att = meta.attachment || {};
-  const rawUrl = String(att.url || meta.source_path || '');
-  if (!rawUrl) return null;
-  const name = att.name || rawUrl.split('/').pop() || 'File';
-  const type = typeForChatFile(name, att.mime, rawUrl);
   const ts = msg.timestamp ? new Date(msg.timestamp).getTime() : 0;
-  if (!ts) return null;
-  return {
-    name,
-    path: rawUrl,                     // the viewer loads this as item.id (abs URL or corner path)
-    project: msg.project || '',
-    mission: meta.mission_slug || null,
-    kind: 'deliverable',
-    type,
-    source_kind: sourceKind,          // 'handoff' | 'upload' — feeds the Review / Uploads filters
-    last_modified: new Date(ts).toISOString(),
-  };
+  if (!ts) return [];
+  // Collect every attachment shape: the plural array first, then the single object,
+  // and finally a bare source_path (agent hand-offs stamp that with no attachment obj).
+  const atts = [];
+  if (Array.isArray(meta.attachments)) atts.push(...meta.attachments.filter((a) => a && typeof a === 'object'));
+  if (meta.attachment && typeof meta.attachment === 'object') atts.push(meta.attachment);
+  if (!atts.length && meta.source_path) atts.push({ url: meta.source_path });
+  const out = [];
+  for (const att of atts) {
+    const rawUrl = String(att.url || att.path || '');
+    if (!rawUrl) continue;
+    const name = att.name || rawUrl.split('/').pop() || 'File';
+    out.push({
+      name,
+      path: rawUrl,                     // the viewer loads this as item.id (abs URL or corner path)
+      project: msg.project || '',
+      mission: meta.mission_slug || null,
+      kind: 'deliverable',
+      type: typeForChatFile(name, att.mime, rawUrl),
+      source_kind: sourceKind,          // 'handoff' | 'upload' — feeds the Review / Uploads filters
+      last_modified: new Date(ts).toISOString(),
+    });
+  }
+  return out;
 }
 
 // The chat-boundary queue: deliberate agent hand-offs (forward-only from the cutoff)
@@ -393,12 +405,19 @@ async function collectFromMessages(world) {
   // the cutoff forward so the watcher's older auto_share dumps never leak in.
   const handoffQ = `${common}&role=eq.assistant&timestamp=gte.${HANDOFF_CUTOFF}`
     + `&or=(metadata->>handoff.eq.true,source.eq.share-file)${worldFilter}`;
-  // Uploads: any message the user attached a file to (all-time — a clean ~88).
+  // Uploads: any message the user attached a file to (all-time — a clean set). A
+  // single upload lands as metadata.attachment; a multi-file drop lands as the plural
+  // metadata.attachments array. Query BOTH shapes (PostgREST can't OR across two jsonb
+  // path filters cleanly, so two calls) — else every multi-file upload is invisible.
   const uploadQ = `${common}&role=eq.user&metadata->attachment=not.is.null${worldFilter}`;
-  const [handoffs, uploads] = await Promise.all([fetchMessages(handoffQ), fetchMessages(uploadQ)]);
+  const uploadMultiQ = `${common}&role=eq.user&metadata->attachments=not.is.null${worldFilter}`;
+  const [handoffs, uploads, uploadsMulti] = await Promise.all([
+    fetchMessages(handoffQ), fetchMessages(uploadQ), fetchMessages(uploadMultiQ),
+  ]);
   const items = [];
-  for (const m of handoffs) { const it = rowFromMessage(m, 'handoff'); if (it) items.push(it); }
-  for (const m of uploads) { const it = rowFromMessage(m, 'upload'); if (it) items.push(it); }
+  for (const m of handoffs) items.push(...rowsFromMessage(m, 'handoff'));
+  for (const m of uploads) items.push(...rowsFromMessage(m, 'upload'));
+  for (const m of uploadsMulti) items.push(...rowsFromMessage(m, 'upload'));
   // Dedupe by file path (an agent may re-share the same deliverable across versions —
   // keep the newest row for each unique path), then newest-first.
   const byPath = new Map();
