@@ -30,6 +30,17 @@ const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.
 const DEFAULT_LIMIT = 40;     // one page of the queue (first load = same cost as before)
 const HARD_CAP = 5000;        // ceiling on the total set served — raised (R5) so deep queues are reachable
 
+// ── Chat-boundary source (files-in-app: Review = what crossed the chat) ─────────
+// Review no longer walks disk (that was the ~10.9k auto_share flood by design).
+// It shows ONLY files that crossed the chat boundary as a deliberate hand-off:
+//   • an agent hand-off  → role=assistant, metadata.handoff=true (share-file.py),
+//     from HANDOFF_CUTOFF forward (older agent posts are the watcher's auto-dumps),
+//   • the user's own uploads → role=user with metadata.attachment (clean, ~88, all-time).
+// Each row also carries source_kind ('handoff' | 'upload') so the UI can split the
+// Review and Uploads filters. Forward-only cutoff = the day the clean signal began.
+const HANDOFF_CUTOFF = '2026-07-12';
+const MSG_FETCH_CAP = 2000;   // rows pulled per side before merge/sort (well past the real volume)
+
 // Kinds that are NOT review material (the canon docs + the agent's own tape).
 const EXCLUDE_KINDS = new Set(['canon', 'tape']);
 
@@ -314,6 +325,90 @@ function collectViaDisk(world) {
   return items;
 }
 
+// Type a chat-boundary file permissively: it already crossed the boundary as a
+// deliberate hand-off, so NEVER drop it for an unknown extension — default to 'doc'
+// (a live link with no file extension reviews as a doc/site). Extension first, then
+// mime, so a .tiff/.heic upload still resolves to an image instead of vanishing.
+function typeForChatFile(name, mime, url = '') {
+  const ext = path.extname(name || '').toLowerCase();
+  for (const [key, exts] of Object.entries(EXTENSIONS)) {
+    if (exts.includes(ext)) return TYPE_MAP[key];
+  }
+  const m = String(mime || '').toLowerCase();
+  if (m.startsWith('image/')) return TYPE_MAP.image;
+  if (m.startsWith('video/')) return TYPE_MAP.video;
+  if (m === 'application/pdf') return TYPE_MAP.doc;
+  // A bare http(s) address with no known file extension is a live-site link — still
+  // reviewable; the viewer renders it in the sitelive frame. Fall back to doc.
+  return TYPE_MAP.doc;
+}
+
+// PostgREST GET against the messages table with the service key. Returns [] on any
+// failure so one bad side can never take down the queue.
+async function fetchMessages(query) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  try {
+    const r = await fetchWithTimeout(
+      `${SUPABASE_URL}/rest/v1/messages?${query}`,
+      8000,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
+    );
+    if (!r.ok) return [];
+    const rows = await r.json();
+    return Array.isArray(rows) ? rows : [];
+  } catch { return []; }
+}
+
+// Shape one message row (carrying metadata.attachment) into a queue item, or null.
+function rowFromMessage(msg, sourceKind) {
+  const meta = msg?.metadata || {};
+  const att = meta.attachment || {};
+  const rawUrl = String(att.url || meta.source_path || '');
+  if (!rawUrl) return null;
+  const name = att.name || rawUrl.split('/').pop() || 'File';
+  const type = typeForChatFile(name, att.mime, rawUrl);
+  const ts = msg.timestamp ? new Date(msg.timestamp).getTime() : 0;
+  if (!ts) return null;
+  return {
+    name,
+    path: rawUrl,                     // the viewer loads this as item.id (abs URL or corner path)
+    project: msg.project || '',
+    mission: meta.mission_slug || null,
+    kind: 'deliverable',
+    type,
+    source_kind: sourceKind,          // 'handoff' | 'upload' — feeds the Review / Uploads filters
+    last_modified: new Date(ts).toISOString(),
+  };
+}
+
+// The chat-boundary queue: deliberate agent hand-offs (forward-only from the cutoff)
+// + the user's own uploads (all-time). AOM is super-admin and sees every room; other
+// worlds are scoped to their own world_id (tenant isolation preserved).
+async function collectFromMessages(world) {
+  const isAom = world === 'aom';
+  const worldFilter = isAom ? '' : `&world_id=eq.${encodeURIComponent(world)}`;
+  const common = `select=timestamp,project,role,source,metadata&order=timestamp.desc&limit=${MSG_FETCH_CAP}`;
+  // Deliberate hand-offs: role=assistant with metadata.handoff=true OR the share-file
+  // source (pre-stamp rows still count — they were always deliberate CLI shares), from
+  // the cutoff forward so the watcher's older auto_share dumps never leak in.
+  const handoffQ = `${common}&role=eq.assistant&timestamp=gte.${HANDOFF_CUTOFF}`
+    + `&or=(metadata->>handoff.eq.true,source.eq.share-file)${worldFilter}`;
+  // Uploads: any message the user attached a file to (all-time — a clean ~88).
+  const uploadQ = `${common}&role=eq.user&metadata->attachment=not.is.null${worldFilter}`;
+  const [handoffs, uploads] = await Promise.all([fetchMessages(handoffQ), fetchMessages(uploadQ)]);
+  const items = [];
+  for (const m of handoffs) { const it = rowFromMessage(m, 'handoff'); if (it) items.push(it); }
+  for (const m of uploads) { const it = rowFromMessage(m, 'upload'); if (it) items.push(it); }
+  // Dedupe by file path (an agent may re-share the same deliverable across versions —
+  // keep the newest row for each unique path), then newest-first.
+  const byPath = new Map();
+  for (const it of items) {
+    const prev = byPath.get(it.path);
+    if (!prev || new Date(it.last_modified) > new Date(prev.last_modified)) byPath.set(it.path, it);
+  }
+  return [...byPath.values()].sort((a, b) => new Date(b.last_modified).getTime() - new Date(a.last_modified).getTime());
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -345,34 +440,13 @@ export default async function handler(req, res) {
     return res.status(200).json({ items, total, offset, hasMore: offset + items.length < total, source });
   };
 
-  let items = [];
-
-  // FAST PATH: serve the pre-built cache (a local cron walks disk and writes it).
-  // This is what keeps the Review tool from hanging — the live tunnel walk of every
-  // project (~10s each, 55 of them) can never finish on the request path. The cron
-  // already sorts newest-first with no age window. Re-apply the exclusion gate on
-  // the way out: a stale or polluted cache (the r17-*.jpeg incident) must never
-  // reach the UI even before the cron rebuilds it.
-  const cached = await readQueueCache(world);
-  if (cached && cached.length) {
-    const clean = cached.filter((it) => it && isReviewable(it.name, it.path));
-    if (clean.length) return page(clean, 'cache');
-  }
-
-  // FALLBACK (no cache yet, or a non-aom world): aggregate through the RAG tunnel,
-  // but BOUNDED — capped concurrency + per-walk timeout + overall deadline — so it
-  // returns promptly (possibly partial) instead of hanging.
-  const slugs = await listProjectSlugs(world);
-  if (slugs.length) {
-    const perProject = await runBounded(slugs, (s) => walkProjectViaTunnel(s), { concurrency: 8, deadlineMs: 20000 });
-    items = perProject.flat();
-  }
-
-  // Local-dev fallback only when the tunnel path yielded nothing.
-  if (!items.length) items = collectViaDisk(world);
-
-  items.sort((a, b) => new Date(b.last_modified).getTime() - new Date(a.last_modified).getTime());
-  return page(items, 'walk');
+  // SOURCE: the chat boundary, not the disk. Review shows only files a person
+  // deliberately handed over in chat (agent hand-offs since the cutoff + the user's
+  // own uploads) — never the ~10.9k watcher auto-dumps that the old disk-walk served
+  // and then fought with a giant blocklist. One clean Supabase query, already
+  // newest-first and deduped.
+  const items = await collectFromMessages(world);
+  return page(items, 'chat');
 }
 
 // Parse a query-string integer, clamped to [min, max], falling back to def.
