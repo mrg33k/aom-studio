@@ -228,7 +228,12 @@ export default async function handler(req, res) {
     // FIXED 2026-07-06 (R-ASSIGN): the original insert used `type`/`content` columns
     // that do not exist in the messages table, so EVERY decision 500'd and nothing was
     // recorded. Insert the real schema (the columns the chat composer writes).
+    // FIXED 2026-07-12 (review-loop): messages.id has NO default — the R-ASSIGN fix
+    // still 500'd on the NOT NULL (zero decision rows had EVER persisted). Stamp
+    // id + timestamp explicitly, exactly like share-file.py does.
     const { error } = await supabase.from('messages').insert({
+      id: (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+      timestamp: new Date().toISOString(),
       client_id: worldId,
       agent: clean(req.body.agent, 80) || 'corner',
       project: projectSlug,
