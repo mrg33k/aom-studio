@@ -31,11 +31,20 @@ function inboxNeedsResponse(msg) {
   const md = (msg && msg.metadata) || {}
   // Embedded widget conversations (e.g. a site's visitor chat) are not Patrik's inbox.
   if (md.embed_source || md.embed_id || md.embed_room || md.embed_visitor_id) return false
+  // Ops/infra alerts from supervisor and watchdog daemons are never user asks.
+  // These land in the ops room (corner:bridge) and are stamped kind='ops-alert'.
+  if (md.kind === 'ops-alert' || md.supervisor_alert === true) return false
   const text = String((msg && msg.text) || '')
   // Internal agent reasoning the bridge logs — never a user-facing ask.
   if (/^\s*THOUGHT\b/i.test(text)) return false
   // Pure file drops are FYI (they live in the room + Files panel), not a bottleneck.
   if (md.attachment && /^\s*attached file/i.test(text)) return false
+  // File-share notices ('Shared a file: ...') are informational.
+  if (/^shared a file\s*:/i.test(text.trim())) return false
+  // Bare acknowledgements ('Synced. Standing by.', 'OK', 'Ready.') are status pings, not asks.
+  if (/^(synced\.?|standing by\.?|ok\.?|ready\.?|on it\.?|noted\.?|all (good|done|clear)\.?)$/i.test(text.trim())) return false
+  // URL-dominated bodies are informational (a bare link, not a question).
+  if (/^https?:\/\/\S+\.?\s*$/.test(text.trim())) return false
   // Explicit machine signals that an agent is blocked on Patrik always count.
   if (md.status === 'needs_input' || md.needs_input === true) return true
   if (Array.isArray(md.blocks) && md.blocks.some((b) => b && (b.type === 'choices' || b.type === 'question' || b.type === 'approval'))) return true

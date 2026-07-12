@@ -604,8 +604,19 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   });
   // The live Catch Up deck: real inbox cards minus the ones cleared on this device.
   // Shaped once so the Home card and the full-screen deck always agree.
+  // isOpsNoise: defense-in-depth text filter for things that should never be a card even
+  // if they slip past the upstream inboxNeedsResponse gate. Catches bare acks, file-share
+  // notices, and URL-dominated bodies that carry no actionable ask for Patrik.
+  const isOpsNoise = (summary) => {
+    if (!summary) return false;
+    const s = String(summary).trim();
+    if (/^(synced\.?|standing by\.?|ok\.?|ready\.?|on it\.?|noted\.?|all (good|done|clear)\.?)$/i.test(s)) return true;
+    if (/^shared a file\s*:/i.test(s)) return true;
+    if (/^https?:\/\/\S+\.?\s*$/.test(s)) return true;
+    return false;
+  };
   const liveCatchUp = useMemo(() => {
-    const all = (data.catchUp?.all || []).filter((c) => !catchUpDismissed.includes(c.id));
+    const all = (data.catchUp?.all || []).filter((c) => !catchUpDismissed.includes(c.id) && !isOpsNoise(c.summary));
     const idx = Math.min(catchUpIndex, Math.max(0, all.length - 1));
     return {
       ...(data.catchUp || {}),
