@@ -150,7 +150,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   // toast's Undo, R15b design gate), the toast is a real control, not just status.
   const noticeToast = notice ? (
     <div style={{
-      position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 70px)', left: '50%',
+      // Bottom-anchored snackbar (mobile standard): the top slot overlapped the
+      // pick list's first tree row and swallowed its taps while visible.
+      position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)', left: '50%',
       transform: 'translateX(-50%)', zIndex: 60,
       pointerEvents: notice.onAction ? 'auto' : 'none',
       display: 'flex', alignItems: 'center', gap: 10,
