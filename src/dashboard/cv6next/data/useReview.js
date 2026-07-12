@@ -402,6 +402,11 @@ function mapQueueItem(it, openId) {
     location: it.mission ? `${it.project} / ${it.mission}` : it.project,
     missionLabel: it.mission ? `/ ${it.mission}` : '',
     missionRaw: it.mission || '',
+    // Content identity (share-file.py stamps both onto the hand-off message).
+    // POSTed with every verdict so the server can suppress re-shares of the
+    // same unchanged bytes (review-loop).
+    sourcePath: it.source_path || '',
+    sha256: it.sha256 || '',
     queueState: 'ready',
     file: `${typeLabel(typeKey)} · ${relTime(it.last_modified)}`,
     bodyHtml: '',
@@ -418,6 +423,17 @@ export function useReview(worldId = 'aom', injected = null) {
   const [openDelId, setOpenDelId] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [bodies, setBodies] = useState({}); // path -> rendered innerHTML ('' while loading)
+  // review-loop: newest hand-off timestamp (pre-decision-filter) from the server —
+  // drives the "Last delivery <rel> ago" header line.
+  const [newestTs, setNewestTs] = useState(null);
+  // review-loop: transient status line after a verdict ("Tracked as task …").
+  const [notice, setNotice] = useState(null);
+  const noticeTimerRef = useRef(null);
+  const flashNotice = useCallback((text) => {
+    setNotice(text);
+    if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = setTimeout(() => setNotice(null), 6000);
+  }, []);
   // WD40-R5: total item count reported by the server (may be larger than queue.items.length
   // when more pages exist). Drives hasMore and the "N of M" header display.
   const [queueServerTotal, setQueueServerTotal] = useState(0);
@@ -508,6 +524,7 @@ export function useReview(worldId = 'aom', injected = null) {
         const total = d.total || items.length;
         queueServerTotalRef.current = total;
         setQueueServerTotal(total);
+        if (d.newest_ts) setNewestTs(d.newest_ts);
         ok = true;
       }
     } catch (e) {
@@ -599,15 +616,49 @@ export function useReview(worldId = 'aom', injected = null) {
     });
   }, [openDelId, queue]);
 
+  // review-loop: every verdict POSTs the item's identity fields (source_path +
+  // sha256 + mission + title + project) so the server can suppress re-shares of
+  // the same unchanged bytes, not just this exact message id.
+  const decisionBody = useCallback((deliverableId, action, extra = {}) => {
+    const item = (queueRef.current?.items || []).find((i) => i.id === deliverableId);
+    return JSON.stringify({
+      deliverable: deliverableId,
+      action,
+      world: worldId,
+      source_path: item?.sourcePath || undefined,
+      sha256: item?.sha256 || undefined,
+      mission: item?.missionRaw || undefined,
+      title: item?.title || undefined,
+      project: item?.whoRaw || undefined,
+      ...extra,
+    });
+  }, [worldId]);
+
+  // Optimistic removal: a decided item leaves the list the moment the server
+  // says 2xx — the follow-up load() reconciles with the real filtered queue.
+  const removeFromQueue = useCallback((deliverableId) => {
+    const cur = queueRef.current;
+    if (!cur) return;
+    const items = (cur.items || []).filter((i) => i.id !== deliverableId);
+    if (items.length === (cur.items || []).length) return;
+    const next = { items, readyCount: items.length };
+    queueRef.current = next;
+    setQueue(next);
+    const total = Math.max(items.length, (queueServerTotalRef.current || 0) - 1);
+    queueServerTotalRef.current = total;
+    setQueueServerTotal(total);
+  }, []);
+
   const approve = useCallback(async (deliverableId) => {
     try {
       const r = await authFetch('/api/dashboard/review-decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ deliverable: deliverableId, action: 'approve', world: worldId }),
+        body: decisionBody(deliverableId, 'approve'),
       });
       if (r?.ok) {
+        removeFromQueue(deliverableId);
         load();
       } else {
         console.error('[Review approve] response not ok:', await r?.text());
@@ -615,7 +666,7 @@ export function useReview(worldId = 'aom', injected = null) {
     } catch (e) {
       console.error('[Review approve] exception:', e);
     }
-  }, [load, worldId]);
+  }, [load, decisionBody, removeFromQueue]);
 
   const requestChanges = useCallback(async (deliverableId, notes) => {
     try {
@@ -623,17 +674,46 @@ export function useReview(worldId = 'aom', injected = null) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ deliverable: deliverableId, action: 'request-changes', notes, world: worldId }),
+        body: decisionBody(deliverableId, 'request-changes', { notes }),
       });
       if (r?.ok) {
+        removeFromQueue(deliverableId);
+        // The server queued a real fix task — tell the reviewer it's tracked.
+        try {
+          const d = await r.json();
+          if (d?.task_id) flashNotice(`Tracked as task ${String(d.task_id).slice(0, 8)} — the agent will pick it up.`);
+        } catch { /* body optional */ }
         load();
       } else {
         console.error('[Review request-changes] response not ok:', await r?.text());
+        flashNotice('Could not send the changes — nothing was recorded. Try again.');
       }
     } catch (e) {
       console.error('[Review request-changes] exception:', e);
+      flashNotice('Could not send the changes — nothing was recorded. Try again.');
     }
-  }, [load, worldId]);
+  }, [load, decisionBody, removeFromQueue, flashNotice]);
+
+  // review-loop: dismiss — drop an item from the queue without approving it
+  // (not review-worthy). Recorded as a decision so it never comes back.
+  const dismiss = useCallback(async (deliverableId) => {
+    try {
+      const r = await authFetch('/api/dashboard/review-decision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: decisionBody(deliverableId, 'dismiss'),
+      });
+      if (r?.ok) {
+        removeFromQueue(deliverableId);
+        load();
+      } else {
+        console.error('[Review dismiss] response not ok:', await r?.text());
+      }
+    } catch (e) {
+      console.error('[Review dismiss] exception:', e);
+    }
+  }, [load, decisionBody, removeFromQueue]);
 
   const sendChecklist = useCallback(async (deliverableId) => {
     try {
@@ -787,6 +867,11 @@ export function useReview(worldId = 'aom', injected = null) {
       // more pages (never for injected queues or type-filtered views — those show all fetched
       // matching items already, and loading more globally is rarely what the user wants mid-filter).
       hasMore: (!hasInjected && !typeFilter && queueServerTotal > allItems.length) ? 'yes' : 'no',
+      // review-loop: when the last agent hand-off landed (pre-decision-filter), from the
+      // server's newest_ts. Binds into the "newest first" slot next to the Files heading.
+      lastDeliveryLabel: newestTs
+        ? (relTime(newestTs) === 'now' ? 'Last delivery just now' : `Last delivery ${relTime(newestTs)} ago`)
+        : 'newest first',
     },
     deliverable: (() => {
       const open = (queue?.items || []).find((i) => i.id === openDelId);
@@ -856,12 +941,14 @@ export function useReview(worldId = 'aom', injected = null) {
     projectsRaw: projects || [],
     missionTreeRaw: missionTree,
     history,       // WD40-R4: past decisions for the active project scope
+    notice,        // review-loop: transient verdict feedback ("Tracked as task …")
     refreshTree: () => setTreeReload((k) => k + 1),
     actions: {
       openDeliverable: (id) => setOpenDelId(id),
       loadMore,
       approve,
       requestChanges,
+      dismiss,
       sendChecklist,
       // Download the deliverable's real file (any type). Resolves the item by id from
       // the loaded queue (covers injected chat "Review all" queues too) and streams its

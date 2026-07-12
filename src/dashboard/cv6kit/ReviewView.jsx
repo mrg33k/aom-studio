@@ -229,6 +229,7 @@ export function ReviewView({
   onSelectItem,
   onApprove,
   onReject,
+  onDismiss,
   onComment,
   onSendNotes,
   onBack,
@@ -361,6 +362,11 @@ export function ReviewView({
               <button onClick={onApprove} style={{ height: 46, borderRadius: 11, border: 'none', background: 'var(--success)', color: 'var(--surface)', fontSize: 14.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
                 ✓ Approve
               </button>
+              {onDismiss && (
+                <button onClick={onDismiss} style={{ height: 46, borderRadius: 11, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 14.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+                  ✕ Dismiss
+                </button>
+              )}
               <button onClick={onReject} style={{ height: 46, borderRadius: 11, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 14.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
                 ≡ Request changes
               </button>
@@ -706,6 +712,28 @@ export function ReviewView({
               >
                 ✓ Approve
               </button>
+              {onDismiss && (
+                <button
+                  onClick={onDismiss}
+                  style={{
+                    height: 46,
+                    borderRadius: 11,
+                    border: '1px solid var(--hair)',
+                    background: 'transparent',
+                    color: 'var(--fg)',
+                    fontSize: 14.5,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-sans)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✕ Dismiss
+                </button>
+              )}
               <button
                 onClick={onReject}
                 style={{
@@ -1273,7 +1301,7 @@ export function ReviewView({
       )}
 
       {/* Action buttons — only when an item is open AND a decision is actually wired */}
-      {selectedItem && (onApprove || onReject) && (
+      {selectedItem && (onApprove || onReject || onDismiss) && (
         <div
           style={{
             display: 'flex',
@@ -1309,6 +1337,34 @@ export function ReviewView({
             </svg>
             Approve
           </button>
+          {onDismiss && (
+            <button
+              onClick={onDismiss}
+              style={{
+                flex: 'none',
+                height: 48,
+                padding: '0 14px',
+                borderRadius: 13,
+                border: '1px solid var(--hair)',
+                background: 'var(--surface-2)',
+                color: 'var(--fg)',
+                fontSize: 13.5,
+                fontWeight: 600,
+                fontFamily: 'var(--font-sans)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 7,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+              Dismiss
+            </button>
+          )}
           <button
             onClick={onReject}
             style={{

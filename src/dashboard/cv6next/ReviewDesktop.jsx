@@ -67,7 +67,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // Fall back to resolving that filename against the real queue, same as Catch-up.
   const targetName = target?.name
     || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
-  const { state, data, actions, scope, projectsRaw, missionTreeRaw, history, refreshTree } = useReview(worldId || 'aom', injected);
+  const { state, data, actions, scope, projectsRaw, missionTreeRaw, history, notice, refreshTree } = useReview(worldId || 'aom', injected);
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
   // "Changes" overlay (R-ASSIGN part D): the bullet list of every comment with its
@@ -322,6 +322,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
+    // review-loop: Dismiss drops the item without approval; clearing pickedId
+    // lets the auto-open effect land on the next deliverable.
+    dismiss: (id) => { actions.dismiss(id); setPickedId(null); },
     // WD40-R3: always open the Changes overlay — the prompt() fallback is gone.
     // The overlay has a textarea for typed notes so feedback flows without pins.
     requestChanges: () => { setChangesOpen(true); },
@@ -373,6 +376,17 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   return (
     <div ref={viewerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
+      {/* review-loop: transient verdict feedback ("Tracked as task …") */}
+      {notice && (
+        <div style={{
+          position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 60, pointerEvents: 'none',
+          background: 'rgba(5,8,11,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px',
+          fontSize: 12.5, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)',
+          whiteSpace: 'nowrap', maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>{notice}</div>
+      )}
       {pinOverlay}
       {ctxOverlay}
       {changesOpen && (

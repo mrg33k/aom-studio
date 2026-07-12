@@ -173,7 +173,9 @@ async function collectFromMessages(world) {
 // (review-decision.js), carrying { action, deliverable_id, source_path?, sha256? } in
 // metadata. Two lookup maps so the queue can suppress decided items by exact id AND
 // by content identity. Rows come newest-first, so the FIRST verdict seen per key wins
-// (i.e. the newest decision is authoritative).
+// (i.e. the newest decision is authoritative). Only CLOSING actions count —
+// send-checklist is notes-in-flight, the item stays under review.
+const CLOSING_ACTIONS = new Set(['approve', 'request-changes', 'dismiss']);
 async function fetchDecisions(world) {
   const isAom = world === 'aom';
   const worldFilter = isAom ? '' : `&client_id=eq.${encodeURIComponent(world)}`;
@@ -184,7 +186,8 @@ async function fetchDecisions(world) {
   const decidedContent = new Map();  // `${source_path} ${sha256}` -> action
   for (const row of rows) {
     const md = row?.metadata || {};
-    const action = md.action || 'decided';
+    const action = md.action || '';
+    if (!CLOSING_ACTIONS.has(action)) continue;
     if (md.deliverable_id && !decidedIds.has(md.deliverable_id)) {
       decidedIds.set(md.deliverable_id, action);
     }

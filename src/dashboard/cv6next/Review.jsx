@@ -57,7 +57,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   // of the file they clicked. Fall back to resolving that filename against the queue.
   const targetName = target?.name
     || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
-  const { state, data, actions } = useReview(worldId || 'aom', injected);
+  const { state, data, actions, notice } = useReview(worldId || 'aom', injected);
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
@@ -143,6 +143,19 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     'comment': 'comment',
   };
 
+  // review-loop: transient verdict feedback ("Tracked as task …") — shown on both
+  // screens since Dismiss bounces back to the pick list.
+  const noticeToast = notice ? (
+    <div style={{
+      position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 70px)', left: '50%',
+      transform: 'translateX(-50%)', zIndex: 60, pointerEvents: 'none',
+      background: 'rgba(5,8,11,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px',
+      fontSize: 12.5, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)',
+      whiteSpace: 'nowrap', maxWidth: '90%', overflow: 'hidden', textOverflow: 'ellipsis',
+    }}>{notice}</div>
+  ) : null;
+
   if (screen === 'pick') {
     const pickActions = {
       nav: (target) => target === 'back' ? onNav?.('back') : onNav?.(target),
@@ -156,8 +169,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
       emptyAction: () => actions.browseWaiting(),
     };
     return (
-      <div ref={pickWrapRef} style={{ width: '100%', height: '100%' }}>
+      <div ref={pickWrapRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
         <TemplateScreen html={pickListHtml} data={data} actions={pickActions} aliases={pickListAliases} state={state} style={{ width: '100%', height: '100%' }} />
+        {noticeToast}
       </div>
     );
   }
@@ -216,6 +230,13 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
+    // review-loop: Dismiss drops the item without approval and returns to the
+    // pick list (the item is optimistically gone from the queue).
+    dismiss: (id) => {
+      actions.dismiss(id);
+      setScreen('pick');
+      setPickedId(null);
+    },
     // WD40-R3: always open the Changes overlay — the prompt() fallback is gone.
     // The overlay has a textarea for typed notes so feedback flows without pins.
     requestChanges: () => { setChangesOpen(true); },
@@ -226,6 +247,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   return (
     <div ref={readRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={readHtml} data={readData} actions={readActions} aliases={readAliases} state={state} style={{ width: '100%', height: '100%' }} />
+      {noticeToast}
       {pinOverlay}
       {changesOpen && (
         <ReviewChangesOverlay
