@@ -181,10 +181,21 @@ function relDur(ms) {
   return `${Math.round(h / 24)}d`;
 }
 
-// One template row per loop. Visual states reuse the kit's astat chips exactly:
-// running → working (green), paused → idle (gray), error → blocked (amber).
-function shapeLoopRow(rt, now) {
-  const failed = rt.status === 'error' || Number(rt.fail_count || 0) > 0;
+// A loop that failed twice in a row (or that the daemon stopped on errors) is
+// FAILING — loud red, not blocked-amber. One failure is RETRYING: the schedule
+// is still trying and amber says so.
+function loopFailing(rt) {
+  return rt.status === 'error' || Number(rt.fail_count || 0) >= 2;
+}
+
+// One template row per loop. Visual states reuse the kit's astat chips:
+// running → working (green), paused → idle (gray), one failure → blocked
+// (amber, RETRYING), two+ failures → error (red, FAILING).
+// `last` is the room's freshest message — the loop row shows what the room
+// actually did with the last run, not just that it ran.
+function shapeLoopRow(rt, now, last) {
+  const failing = loopFailing(rt);
+  const stumbled = !failing && Number(rt.fail_count || 0) > 0;
   const running = rt.status === 'running';
   const bits = [loopCadence(rt)];
   if (running && rt.interval_minutes && rt.next_run_at) {
@@ -195,14 +206,25 @@ function shapeLoopRow(rt, now) {
     const ago = relTime(rt.last_run_at);
     bits.push(ago === 'now' ? 'ran just now' : `last run ${ago} ago`);
   }
+  // Outcome: the room's latest agent reply since the last run, straight off
+  // the message feed. Honest empty when the loop has never run.
+  let outcome = '';
+  const runT = rt.last_run_at ? new Date(rt.last_run_at).getTime() : 0;
+  if (runT && last && last.t > runT && last.role === 'assistant') {
+    const line = cleanCell(firstLine(last.text));
+    if (line) outcome = 'Since last run: ' + (line.length > 110 ? line.slice(0, 107).trimEnd() + '…' : line);
+  } else if (runT && running) {
+    outcome = 'No reply in the room since the last run yet.';
+  }
   return {
     id: String(rt.id || ''),
     name: cleanCell(firstLine(rt.name || rt.prompt || '')) || 'Loop',
     meta: bits.join(' · '),
-    state: failed ? 'blocked' : (running ? 'working' : 'idle'),
-    stateLabel: failed ? 'ERROR' : (running ? 'RUNNING' : 'PAUSED'),
+    state: failing ? 'error' : (stumbled ? 'blocked' : (running ? 'working' : 'idle')),
+    stateLabel: failing ? 'FAILING' : (stumbled ? 'RETRYING' : (running ? 'RUNNING' : 'PAUSED')),
     toggleLabel: running ? 'Pause' : 'Resume',
-    errorNote: failed && rt.last_error ? cleanCell(firstLine(rt.last_error)).slice(0, 120) : '',
+    outcome,
+    errorNote: (failing || stumbled) && rt.last_error ? cleanCell(firstLine(rt.last_error)).slice(0, 120) : '',
   };
 }
 
@@ -254,6 +276,7 @@ function shapeCommand({
   const canonSource = {}; // canonical key → was the winning entry stored under the canonical key?
   const tags = {};
   const projSlugByKey = {}; // canonical mission key → parent project slug (from legacy keys)
+  const missionSlugByKey = {}; // canonical key → the room's TRUE mission slug (from room_id)
   for (const [k, v] of Object.entries(goalRooms || {})) {
     if (!v || typeof v !== 'object') continue;
     const nk = normalizeRoomKey(k);
@@ -262,6 +285,16 @@ function shapeCommand({
       const proj = projectOf(k);
       if (proj && !tags[nk]) { tags[nk] = projectNames[proj] || titleCase(proj); projSlugByKey[nk] = proj; }
     }
+    // Stored fields beat key-shape guesses: the goal-notetaker stamps `project`
+    // and `mission_slug` straight off the room's live room_id (R-trust). The
+    // mission slug is stored VERBATIM — some rooms are prefix-canonical
+    // ('corner:bridge'), some are bare — only the room_id knows which, and a
+    // loop or send addressed with the wrong form talks to an empty room.
+    if (v.project) {
+      projSlugByKey[nk] = v.project;
+      tags[nk] = projectNames[v.project] || titleCase(v.project);
+    }
+    if (v.mission_slug && v.project) missionSlugByKey[nk] = v.mission_slug;
     const isCanon = k === nk;
     const cur = normGoals[nk];
     if (!cur
@@ -273,15 +306,27 @@ function shapeCommand({
 
   // Row universe: every room the goal memory or the state board knows, plus
   // projects active in the last 24h, plus live terminal sessions. Rooms whose
-  // goal is done/parked leave the ledger (test rooms, closed work) — unless the
-  // board or fresh activity below re-adds them, which means they're real again.
-  const keys = new Set(Object.entries(normGoals)
-    .filter(([, v]) => !['done', 'parked'].includes(String((v && v.status) || '').toLowerCase()))
-    .map(([k]) => k));
-  for (const nk of Object.keys(boardByKey)) keys.add(nk);
+  // goal is done/parked leave the ledger (test rooms, closed work) — and a
+  // stale board row or old traffic must NOT sneak them back in. Only evidence
+  // NEWER than the park/done stamp re-adds a room (it is genuinely alive again).
+  const retiredAt = {};
+  for (const [nk, v] of Object.entries(normGoals)) {
+    if (['done', 'parked'].includes(String((v && v.status) || '').toLowerCase())) {
+      retiredAt[nk] = v.last_reviewed ? new Date(v.last_reviewed).getTime() : 0;
+    }
+  }
+  const stillRetired = (nk, evidenceT) => (nk in retiredAt) && !(evidenceT && evidenceT > retiredAt[nk]);
+  const keys = new Set(Object.keys(normGoals).filter((k) => !(k in retiredAt)));
+  for (const nk of Object.keys(boardByKey)) {
+    const bT = boardByKey[nk].updated_at ? new Date(boardByKey[nk].updated_at).getTime() : 0;
+    if (!stillRetired(nk, bT)) keys.add(nk);
+  }
   const activeProjects = (projectRooms || [])
     .filter((p) => p.last_message_at && (now - p.last_message_at) <= DAY_MS);
-  for (const p of activeProjects) keys.add(normalizeRoomKey(p.slug));
+  for (const p of activeProjects) {
+    const nk = normalizeRoomKey(p.slug);
+    if (!stillRetired(nk, p.last_message_at || 0)) keys.add(nk);
+  }
   keys.delete('');
 
   const sessionByAgent = {};
@@ -387,22 +432,24 @@ function shapeCommand({
     const doneCount = checklist.filter((c) => c.state === 'done').length;
 
     // The Loop column is REAL loops only — routines the daemon actually executes.
-    // A room with none shows OFF. The old default-on watcher flag rendered here made
-    // the whole rail read as running loops when zero existed (Patrik, 2026-07-13).
+    // A room with none shows OFF; a room whose loop is failing shows RED at a
+    // glance (the whole point: a broken loop must not look like a healthy one).
     const roomLoops = loopsByKey[key] || [];
     const loopsRunning = roomLoops.filter((l) => l.status === 'running');
     const loopsResumable = roomLoops.filter((l) => l.status !== 'running');
+    const loopsFailing = roomLoops.filter(loopFailing);
     const watchOn = gr.autopilot !== false; // absent/true = watch ON (matches master-loop-tick)
 
     return {
       id: key, key, name, tag, tint: tintFor(name),
       stepStoreKey: storeKey,
       projectSlug: projSlugByKey[key] || '',
+      missionSlug: missionSlugByKey[key] || '',
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
       goalSource, goalFull,
       liveNow, age: lastActivity ? relTime(lastActivity) : '—', lastActivity,
       status, statusLabel: status.toUpperCase(),
-      loop: loopsRunning.length ? 'on' : 'off',
+      loop: loopsFailing.length ? 'error' : (loopsRunning.length ? 'on' : 'off'),
       loopRunningIds: loopsRunning.map((l) => String(l.id)),
       loopResumableIds: loopsResumable.map((l) => String(l.id)),
       loopCount: roomLoops.length,
@@ -436,16 +483,18 @@ function shapeCommand({
     const realGoal = oneLineGoal((board && board.goal) || '');
     const tLoops = loopsByKey['agent:' + agent] || [];
     const tRunning = tLoops.filter((l) => l.status === 'running');
+    const tFailing = tLoops.filter(loopFailing);
     rows.push({
       id: 'agent:' + agent, key: 'agent:' + agent, name, tag: 'Terminal', tint: tintFor(name),
       stepStoreKey: 'agent:' + agent,
+      projectSlug: '', missionSlug: '',
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
       goalSource: realGoal ? 'board' : '',
       goalFull: realGoal ? cleanCell(firstLine((board && board.goal) || '')) : '',
       liveNow: cleanCell(firstLine(s.task_text)).slice(0, 110) || 'Active session',
       age: 'now', lastActivity: now,
       status: 'working', statusLabel: 'WORKING',
-      loop: tRunning.length ? 'on' : 'off',
+      loop: tFailing.length ? 'error' : (tRunning.length ? 'on' : 'off'),
       loopRunningIds: tRunning.map((l) => String(l.id)),
       loopResumableIds: tLoops.filter((l) => l.status !== 'running').map((l) => String(l.id)),
       loopCount: tLoops.length,
@@ -529,8 +578,10 @@ function shapeCommand({
 
   // ── Loops on the focused room (real routines, full control in place) ──
   goal.projectSlug = focus ? (focus.projectSlug || '') : '';
+  goal.missionSlug = focus ? (focus.missionSlug || '') : '';
   const focusLoops = focus ? (loopsByKey[focus.key] || []) : [];
-  goal.loops = focusLoops.map((rt) => shapeLoopRow(rt, now));
+  const focusLast = focus ? findLast(focus.key) : null;
+  goal.loops = focusLoops.map((rt) => shapeLoopRow(rt, now, focusLast));
   goal.loopCount = String(focusLoops.length);
   goal.loopsEmptyNote = focusLoops.length ? '' : 'No loop on this room yet. Start one below.';
   // The create form only renders when there is a real room to attach it to.
@@ -539,6 +590,10 @@ function shapeCommand({
   goal.loopPlanState = (goal.addKey && nextStep) ? 'expanded' : 'collapsed';
   // The master-loop watcher, honestly labeled — it nudges the room, it is not a loop.
   goal.watch = focus ? (focus.watch || 'off') : 'off';
+  // Park / Goal done live on every real room (agent terminals have identities,
+  // not goals to close — they never park).
+  goal.roomControlsState = (goal.addKey && focus && !focus.key.startsWith('agent:'))
+    ? 'expanded' : 'collapsed';
 
   return {
     ledger: {
@@ -608,9 +663,17 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
         if (!alive || !d || !Array.isArray(d.messages)) return;
         const map = {};
         for (const m of d.messages) {
-          const key = m.project; if (!key || !m.timestamp) continue;
+          if (!m.timestamp) continue;
           const t = new Date(m.timestamp).getTime();
-          if (!map[key] || t > map[key].t) map[key] = { t, text: m.text || '', agent: m.agent || '' };
+          // Mission messages ALSO key under their bare mission slug so mission
+          // rows (and their loop outcome lines) resolve their own latest line,
+          // not just the parent project's.
+          const meta = m.metadata || {};
+          const missionKey = meta.mission_slug ? String(meta.mission_slug).split(':').pop() : '';
+          for (const key of [m.project, missionKey]) {
+            if (!key) continue;
+            if (!map[key] || t > map[key].t) map[key] = { t, text: m.text || '', agent: m.agent || '', role: m.role || '' };
+          }
         }
         const sig = JSON.stringify(map);
         if (sig === lastByRoomSig.current) return; // unchanged — skip the re-render
@@ -730,9 +793,12 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   }, [worldId]);
 
   // Create a loop on a ledger room. Key shapes: 'agent:<slug>' → agent room; a bare
-  // slug with a known parent project → mission room; else project room. Model rides
-  // the routines default (sonnet) — never a front-desk-class model in a room.
-  const loopCreate = useCallback(async ({ key, projectSlug = '', prompt, intervalMinutes = null, name = '' } = {}) => {
+  // slug with a known parent project → mission room; else project room. Mission
+  // loops store the room's TRUE mission slug (verbatim off its room_id) so the
+  // daemon's tick lands in the room that actually listens, never a same-named
+  // empty address. Model rides the routines default (sonnet) — never a
+  // front-desk-class model in a room.
+  const loopCreate = useCallback(async ({ key, projectSlug = '', missionSlug = '', prompt, intervalMinutes = null, name = '' } = {}) => {
     const t = String(prompt || '').replace(/\s+/g, ' ').trim();
     const k = String(key || '');
     if (!worldId || !k || !t) return;
@@ -743,7 +809,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
       interval_minutes: intervalMinutes,
     };
     if (k.startsWith('agent:')) { body.room_type = 'agent'; body.agent_slug = k.slice(6); }
-    else if (projectSlug) { body.room_type = 'mission'; body.project_slug = projectSlug; body.mission_slug = k; }
+    else if (projectSlug) { body.room_type = 'mission'; body.project_slug = projectSlug; body.mission_slug = missionSlug || k; }
     else { body.room_type = 'project'; body.project_slug = k; }
     await loopWrite('POST', body);
   }, [worldId, loopWrite]);
@@ -893,11 +959,14 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   }, [worldId]);
 
   // Shape a supabase-messages payload for a ledger room key — the same shapes the
-  // Chat composer sends (agent thread / mission thread / project chat).
-  const roomSendPayload = (world, key, projectSlug, body) => (key.startsWith('agent:')
+  // Chat composer sends (agent thread / mission thread / project chat). Mission
+  // sends carry the room's TRUE mission slug when the goal memory knows it —
+  // a bare slug for a prefix-canonical room ('corner:bridge') lands the message
+  // in a same-named empty room instead of the real one.
+  const roomSendPayload = (world, key, projectSlug, body, missionSlug = '') => (key.startsWith('agent:')
     ? { client_id: world, agent: key.slice(6), text: body, role: 'user', source: 'corner-dashboard' }
     : projectSlug
-      ? { client_id: world, agent: 'corner', project: projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: key } }
+      ? { client_id: world, agent: 'corner', project: projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: missionSlug || key } }
       : { client_id: world, agent: 'corner', project: key, text: body, role: 'user', source: 'corner-dashboard' });
 
   // ── Hand the next unchecked step to the room's agent (wd40 R3) ── one tap
@@ -905,7 +974,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // the real send path. `handed` records the send so the UI can say so honestly
   // and a double-tap inside 60s is ignored.
   const [handed, setHanded] = useState({});
-  const handNextStep = useCallback(async ({ key, projectSlug = '', stepText = '', act = '' } = {}) => {
+  const handNextStep = useCallback(async ({ key, projectSlug = '', missionSlug = '', stepText = '', act = '' } = {}) => {
     const t = String(stepText || '').replace(/\s+/g, ' ').trim();
     if (!worldId || !key || !t) return;
     if (handed[key] && handed[key].act === act) return; // this exact step already sent
@@ -914,7 +983,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
     try {
       await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(roomSendPayload(worldId, key, projectSlug, body)),
+        body: JSON.stringify(roomSendPayload(worldId, key, projectSlug, body, missionSlug)),
       });
     } catch {
       setHanded((h) => { const n = { ...h }; delete n[key]; return n; }); // send failed — allow retry
@@ -927,7 +996,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // 2) the loop's goal memory clears its open_question (command-deck-action
   //    clear_question — non-destructive, unlike the CommandDeck-era answer_question).
   // Optimistic: the row unblocks immediately; the 60s goal poll reconciles.
-  const answerRoomQuestion = useCallback(async ({ key, projectSlug = '', question = '' } = {}, text) => {
+  const answerRoomQuestion = useCallback(async ({ key, projectSlug = '', missionSlug = '', question = '' } = {}, text) => {
     const t = String(text || '').trim();
     if (!worldId || !key || !t) return;
     // Resolve which stored key (canonical or legacy project:mission) holds this
@@ -945,7 +1014,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
     });
     const q = String(question || '').replace(/\s+/g, ' ').trim().slice(0, 140);
     const body = q ? `Answering your question ("${q}"): ${t}` : t;
-    const payload = roomSendPayload(worldId, key, projectSlug, body);
+    const payload = roomSendPayload(worldId, key, projectSlug, body, missionSlug);
     try {
       await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -985,6 +1054,32 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
     } catch { /* poll reconciles to server truth */ }
   }, [worldId, goalRooms]);
 
+  // ── Park a room / mark its goal done, right on the ledger ── writes the
+  // same set_room_status the loop already honors (master-loop-tick skips
+  // parked/done rooms). Optimistic: the row leaves the ledger immediately;
+  // the 60s goal poll reconciles. Reversible — fresh room activity newer than
+  // the stamp re-adds the row, and the room itself is untouched.
+  const setRoomStatus = useCallback(async (key, status, note = '') => {
+    if (!worldId || !key || !['active', 'parked', 'done'].includes(status)) return;
+    let storeKey = key;
+    if (!goalRooms[storeKey]) {
+      for (const k of Object.keys(goalRooms)) {
+        if (normalizeRoomKey(k) === key) { storeKey = k; break; }
+      }
+    }
+    setGoalRooms((g) => {
+      const out = { ...g, [storeKey]: { ...(g[storeKey] || {}), status, last_reviewed: new Date().toISOString() } };
+      goalRoomsSig.current = JSON.stringify(out);
+      return out;
+    });
+    try {
+      await authFetch('/api/dashboard/command-deck-action', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world: worldId, action: 'set_room_status', room: storeKey, status, ...(note ? { answer: note } : {}) }),
+      });
+    } catch { /* poll reconciles to server truth */ }
+  }, [worldId, goalRooms]);
+
   const data = useMemo(
     () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, routines, selectedKey, handed, filter, editingGoal }),
     [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, routines, selectedKey, handed, filter, editingGoal],
@@ -992,7 +1087,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const state = worldId ? 'ready' : 'loading';
   return {
     state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept,
-    answerRoomQuestion, handNextStep, setRoomGoal,
+    answerRoomQuestion, handNextStep, setRoomGoal, setRoomStatus,
     loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle,
   };
 }

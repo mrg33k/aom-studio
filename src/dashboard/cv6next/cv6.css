@@ -452,10 +452,17 @@
 [data-cv6][data-screen^="command"] .wtog-knob { position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--faint); transition:left .15s,background .15s; }
 [data-cv6][data-screen^="command"] .wtog.is-on { background:var(--accent); border-color:transparent; }
 [data-cv6][data-screen^="command"] .wtog.is-on .wtog-knob { left:18px; background:#fff; }
+/* R-trust (2026-07-13): a room whose loop is FAILING reads red at a glance --
+   a broken loop must never look like a healthy one. */
+[data-cv6][data-screen^="command"] .wtog.is-error { background:var(--error-weak); border-color:var(--error); }
+[data-cv6][data-screen^="command"] .wtog.is-error .wtog-knob { left:18px; background:var(--error); }
 /* Goal ledger rebuild (corner:corner-ui-cv6 2026-07-06): IDLE status chip + the
    per-row "Open room" action that only shows when a row is stepped into. */
 [data-cv6] .astat.is-idle { color:var(--muted); background:var(--chip); }
 [data-cv6] .astat.is-idle .sd { background:var(--faint); }
+/* R-trust (2026-07-13): FAILING loop chip -- red, pulsing, unmissable. */
+[data-cv6] .astat.is-error { color:var(--error); background:var(--error-weak); }
+[data-cv6] .astat.is-error .sd { background:var(--error); animation:statPulse 1.7s infinite; }
 [data-cv6][data-screen^="command"] .rowopen { display:none; }
 [data-cv6][data-screen^="command"] .rowopen.is-expanded { display:flex; align-items:center; }
 

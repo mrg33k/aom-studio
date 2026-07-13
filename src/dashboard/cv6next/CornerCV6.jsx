@@ -1924,7 +1924,7 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
   const { command, selectedKey, setSelectedKey, statusFilter, setStatusFilter, goalEdit, setGoalEdit } = useCommandContext();
   const {
     state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept,
-    answerRoomQuestion, handNextStep, setRoomGoal,
+    answerRoomQuestion, handNextStep, setRoomGoal, setRoomStatus,
     loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle,
   } = command;
   const isDesktop = useIsDesktop();
@@ -1943,7 +1943,9 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
         const slug = key.slice(6);
         onOpenRoom?.({ id: slug, slug, name, initials: (name || '?').slice(0, 2).toUpperCase(), status: 'ready' }, worldId);
       } else if (r?.projectSlug) {
-        onOpenRoom?.({ id: key, name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: `${r.projectSlug}:${key}`, projectSlug: r.projectSlug, status: 'ready' }, worldId);
+        // The room's TRUE mission slug when the goal memory knows it (some
+        // rooms are bare-form, some prefix-form — guessing splits the thread).
+        onOpenRoom?.({ id: key, name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: r.missionSlug || `${r.projectSlug}:${key}`, projectSlug: r.projectSlug, status: 'ready' }, worldId);
       } else {
         onOpenRoom?.({ id: key, name, initials: (name || '?').slice(0, 2).toUpperCase(), isProject: true, status: r?.status || 'ready' }, worldId);
       }
@@ -2004,7 +2006,7 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
         const text = inp?.value?.trim();
         if (!text || !id) return;
         const minutes = sel && sel.value ? Number(sel.value) : null;
-        loopCreate?.({ key: String(id), projectSlug: data?.goal?.projectSlug || '', prompt: text, intervalMinutes: minutes });
+        loopCreate?.({ key: String(id), projectSlug: data?.goal?.projectSlug || '', missionSlug: data?.goal?.missionSlug || '', prompt: text, intervalMinutes: minutes });
         if (inp) inp.value = '';
       },
       // Prefill the loop form with a work-the-plan instruction; the user still picks
@@ -2044,7 +2046,7 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
         if (!text || !id) return;
         const rooms = data?.ledger?.rooms || [];
         const r = rooms.find((x) => String(x.key) === String(id));
-        answerRoomQuestion?.({ key: String(id), projectSlug: r?.projectSlug || '', question: r?.openQuestion || '' }, text);
+        answerRoomQuestion?.({ key: String(id), projectSlug: r?.projectSlug || '', missionSlug: r?.missionSlug || '', question: r?.openQuestion || '' }, text);
         if (inp) inp.value = '';
       },
       // Hand the plan's next unchecked step to the room's agent (wd40 R3): one tap
@@ -2054,14 +2056,19 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
         const r = rooms.find((x) => String(x.key) === String(id));
         const next = (r?.fullChecklist || []).find((c) => c.state !== 'done');
         if (!r || !next) return;
-        handNextStep?.({ key: String(id), projectSlug: r.projectSlug || '', stepText: next.label, act: next.act });
+        handNextStep?.({ key: String(id), projectSlug: r.projectSlug || '', missionSlug: r.missionSlug || '', stepText: next.label, act: next.act });
       },
+      // Retire the focused room from the ledger honestly (set_room_status —
+      // the same state the master loop honors). Done = goal complete; Park =
+      // stop tracking for now. Both reversible: fresh activity re-adds the row.
+      markRoomDone: (id) => { if (id) { setRoomStatus?.(String(id), 'done'); setGoalEdit(false); setSelectedKey(''); } },
+      parkRoom: (id) => { if (id) { setRoomStatus?.(String(id), 'parked'); setGoalEdit(false); setSelectedKey(''); } },
       // Absorbs taps on the add-step/answer rows so they don't bubble to the card's open action.
       noop: () => {},
       // A dock card is a live agent session — tapping it opens that agent's room.
       openJob: (id) => openRoomById('agent:' + String(id || '')),
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept, answerRoomQuestion, handNextStep, setRoomGoal, loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle, setSelectedKey, setGoalEdit]);
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept, answerRoomQuestion, handNextStep, setRoomGoal, setRoomStatus, loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle, setSelectedKey, setGoalEdit]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
