@@ -10,6 +10,7 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
+import ResultLinkCards from './ResultLinkCard.jsx';
 import { useDictation } from './data/useDictation.js';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
@@ -96,6 +97,8 @@ function Message({ m, onSend }) {
             ))}
           </div>
         ) : null}
+        {/* Completed web work: the shipped link as a tappable card (Patrik 2026-07-13). */}
+        {!m.isUser && m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
       </div>
     </div>
   );

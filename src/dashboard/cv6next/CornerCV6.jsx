@@ -19,6 +19,7 @@ import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, find
 import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx, ReviewCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
+import ResultLinkCards from './ResultLinkCard.jsx';
 import ChatDesktop, { FilesShelf, fileKind, libKindLabel, shelfItems } from './ChatDesktop.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
 import Organize from './Organize.jsx';
@@ -385,7 +386,13 @@ function InlineBubbleThread({ messages }) {
             <span className={`av is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials || '·'}</span>
             <div className="stack">
               {head.agentName ? <div className="gname">{head.agentName}</div> : null}
-              {g.items.map((m, i) => (m.text ? <div className="pb" key={i}><ChatMessageRenderer content={m.text} /></div> : null))}
+              {g.items.map((m, i) => (
+                <span key={i} style={{ display: 'contents' }}>
+                  {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
+                  {/* Completed web work: the shipped link as a tappable card (Patrik 2026-07-13). */}
+                  {m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
+                </span>
+              ))}
               {lastTime ? <div className="ts">{lastTime}</div> : null}
             </div>
           </div>

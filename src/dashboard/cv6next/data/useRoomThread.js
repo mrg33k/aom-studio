@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase.js';
 import { titleForAgent } from './agentTitles.js';
+import { extractLinkCards, stripTrailingCardUrl } from './resultLinks.js';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function initials(name) {
@@ -339,6 +340,17 @@ export function useRoomThread(worldId, room) {
             attachments = [{ name: single[1], url: textUrls[0] || '', mime: '', size: 0 }];
             displayText = '';
           }
+          // Completed web work lands as a tappable link card, never a bare URL buried in
+          // the text (Patrik 2026-07-13): the structured completion payload
+          // (metadata.result_payload) first, then any URL the agent shared in its text —
+          // bridge-voiced completions carry no payload, so the text lift covers them.
+          // A trailing bare URL the card already carries leaves the bubble text.
+          const resultPayload = (m.metadata && typeof m.metadata.result_payload === 'object') ? m.metadata.result_payload : null;
+          let linkCards = [];
+          if (!isUser) {
+            linkCards = extractLinkCards({ text: displayText, resultPayload, attachments });
+            if (linkCards.length) displayText = stripTrailingCardUrl(displayText, linkCards);
+          }
           return {
             id: m.id || '',
             agentInitials: initials(name),
@@ -362,11 +374,12 @@ export function useRoomThread(worldId, room) {
             attachments, // Array of {url, name, mime, size} for grouped rendering
             blocks: msgBlocks,
             chips: msgChips, // tappable suggestion chips from metadata.chips
+            linkCards, // [{url, summary}] → ResultLinkCards on every chat surface
           };
-        }).filter((m) => m.text || m.isFile || m.blocks || m.attachments?.length);
+        }).filter((m) => m.text || m.isFile || m.blocks || m.attachments?.length || m.linkCards?.length);
         // Only re-commit when the thread actually changed (see sigRef). A no-op poll keeps the
         // existing array ref, so the list doesn't re-render and the scroll holds its place.
-        const sig = msgs.map((m) => `${m.ts}|${m.text}|${m.attachments?.length || 0}|${m.blocks ? m.blocks.length : 0}`).join('~');
+        const sig = msgs.map((m) => `${m.ts}|${m.text}|${m.attachments?.length || 0}|${m.blocks ? m.blocks.length : 0}|${m.linkCards?.length || 0}`).join('~');
         if (sig !== sigRef.current) {
           sigRef.current = sig;
           setMessages(msgs);

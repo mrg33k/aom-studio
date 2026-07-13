@@ -19,6 +19,7 @@ const RAG_TUNNEL = 'https://rag.aheadofmarket.com';
 import { SendCtx, ReviewCtx, AgentBlocks, ActionChips, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
+import ResultLinkCards from './ResultLinkCard.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 
 const NAV = [
@@ -462,6 +463,9 @@ function MsgExtras({ m, onSend }) {
           <MessageAttachments attachments={m.attachments} onReview={handleReview} />
         </div>
       ) : null}
+      {/* Completed web work: the link the agent shipped, as a tappable card — never
+          only a bare URL in the prose (Patrik 2026-07-13). */}
+      {!m.isUser && m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
       {/* Suggestion chips from metadata.chips: tappable quick replies the agent proposed.
           Rendered at the tail of the agent's turn so they feel like part of the reply,
           not a separate panel outside the thread (Patrik 2026-06-30). */}
