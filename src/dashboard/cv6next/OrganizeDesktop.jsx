@@ -62,25 +62,29 @@ const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 // row keys by corner/users/... — the source_path bridges the two).
 export function buildWaitingMap(itemsAll) {
   const m = new Map();
+  // Items arrive newest-first; FIRST WINS per key so an older share of the same
+  // disk file never overwrites the newest one on the shared corner-path key.
   for (const it of (itemsAll || [])) {
     const val = { id: it.id, ts: it.ts || '' };
-    m.set(it.id, val);
+    if (!m.has(it.id)) m.set(it.id, val);
     const sp = String(it.sourcePath || '');
     const ix = sp.indexOf('corner/');
-    if (ix >= 0) m.set(sp.slice(ix), val);
+    if (ix >= 0 && !m.has(sp.slice(ix))) m.set(sp.slice(ix), val);
   }
   return m;
 }
 
-// Same dual-key mapping for decided items (?view=all rows carrying verdict + decision_id).
+// Same dual-key mapping for decided items (?view=all rows carrying verdict +
+// decision_id). Newest-first + first-wins: the NEWEST decision on a disk file is
+// the authoritative badge (a re-share dismissed today beats last week's approve).
 export function buildDecidedMap(decidedRaw) {
   const m = new Map();
   for (const it of (decidedRaw || [])) {
     const val = { verdict: it.verdict, decisionId: it.decision_id || '', itemId: it.path };
-    m.set(it.path, val);
+    if (!m.has(it.path)) m.set(it.path, val);
     const sp = String(it.source_path || '');
     const ix = sp.indexOf('corner/');
-    if (ix >= 0) m.set(sp.slice(ix), val);
+    if (ix >= 0 && !m.has(sp.slice(ix))) m.set(sp.slice(ix), val);
   }
   return m;
 }
