@@ -246,6 +246,9 @@ function GoalTurn({ m, goal, blocks }) {
           <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{m.time}</span>
         </div>
         <GoalThreadBody goal={goal} blocks={blocks || m.blocks} header={false} />
+        {/* A completion message renders as a goal-thread note (injectWorkSteps), so its
+            shipped-link card must ride HERE too — Message's card never runs for it. */}
+        {!m.isUser && m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
       </div>
     </div>
   );
