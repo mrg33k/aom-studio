@@ -135,7 +135,7 @@
       <div style="flex:none;font-size:12px;color:var(--faint);margin-bottom:10px;" data-bind="goal.loopsEmptyNote"></div>
       <!-- Prefill: turn this room's plan into a loop (fills the form; you pick the cadence) -->
       <div class="rowopen" data-mod="is-:goal.loopPlanState" style="flex:none;margin-bottom:10px;">
-        <button data-action="loopPlan" data-arg="goal.id" title="Fill the loop form with a work-the-plan instruction — you pick how often" style="width:100%;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Loop this plan — work the next step each cycle</button>
+        <button data-action="loopPlan" data-arg="goal.id" title="Fill the loop form with a work-the-plan instruction — you pick how often" style="width:100%;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Loop this plan: work the next step each cycle</button>
       </div>
       <!-- Create a loop: plain instruction + cadence → POST /routines; the daemon
            picks it up within ~30s of its due time. -->
@@ -143,7 +143,7 @@
         <input placeholder="Tell this room what to do on a loop…" style="width:100%;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
         <div style="display:flex;gap:8px;">
           <select style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 10px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
-            <option value="">Manual — runs when you tap</option>
+            <option value="">Manual: runs when you tap</option>
             <option value="30">Every 30 minutes</option>
             <option value="60">Every hour</option>
             <option value="240">Every 4 hours</option>
@@ -242,13 +242,13 @@
           </div>
           <div style="font-size:11.5px;color:var(--faint);margin-bottom:9px;" data-bind="goal.loopsEmptyNote"></div>
           <div class="rowopen" data-mod="is-:goal.loopPlanState" data-action="noop" style="margin-bottom:9px;">
-            <button data-action="loopPlan" data-arg="goal.id" title="Fill the loop form with a work-the-plan instruction — you pick how often" style="width:100%;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Loop this plan — work the next step each cycle</button>
+            <button data-action="loopPlan" data-arg="goal.id" title="Fill the loop form with a work-the-plan instruction — you pick how often" style="width:100%;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Loop this plan: work the next step each cycle</button>
           </div>
           <div class="rowopen" data-mod="is-:goal.loopNewState" data-cv6-loopnew data-action="noop" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:11px;">
             <input placeholder="Tell this room what to do on a loop…" style="width:100%;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
             <div style="display:flex;gap:8px;">
               <select style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 10px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
-                <option value="">Manual — runs when you tap</option>
+                <option value="">Manual: runs when you tap</option>
                 <option value="30">Every 30 minutes</option>
                 <option value="60">Every hour</option>
                 <option value="240">Every 4 hours</option>

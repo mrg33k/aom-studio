@@ -166,7 +166,7 @@ function routineRoomKey(rt) {
 
 function loopCadence(rt) {
   const m = Number(rt && rt.interval_minutes);
-  if (!Number.isFinite(m) || m <= 0) return 'manual — runs when you tap';
+  if (!Number.isFinite(m) || m <= 0) return 'manual: runs when you tap';
   if (m % 1440 === 0) { const d = m / 1440; return d === 1 ? 'daily' : `every ${d} days`; }
   if (m % 60 === 0) { const h = m / 60; return h === 1 ? 'every hour' : `every ${h}h`; }
   return `every ${m}m`;
