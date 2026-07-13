@@ -22,6 +22,7 @@ import ChatLifecycle from './ChatLifecycle.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
 import ChatDesktop, { FilesShelf, fileKind, libKindLabel, shelfItems } from './ChatDesktop.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
+import EmailShell from './EmailShell.jsx';
 import Organize from './Organize.jsx';
 import Settings from './Settings.jsx';
 import Onboarding from './Onboarding.jsx';
@@ -2550,7 +2551,7 @@ export default function CornerCV6() {
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} />; viewKey = 'support'; }
+  else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} />; viewKey = 'support'; }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }

@@ -8,12 +8,14 @@
 // /api/dashboard/campaign-actions.js — this file never sends mail.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { csvToContacts, datasetToContacts, EMAIL_RE } from '../_lib/csvAudience.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const STAGES = ['to_contact', 'contacted', 'replied', 'call_set', 'won', 'lost', 'bounced', 'noise'];
 const MAX_AUDIENCE_ROWS = 25000;
+const DATASET_PATH = '/arsenal-municipality-data.json';
 
 function sb(path, opts = {}) {
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -73,8 +75,6 @@ function slugify(name) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);
 }
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -172,7 +172,24 @@ export default async function handler(req, res) {
       }
       const dailyCap = Math.min(Math.max(parseInt(b.daily_cap, 10) || 50, 1), 500);
       const audience = b.audience || {};
-      const contactsIn = Array.isArray(audience.contacts) ? audience.contacts : [];
+      let contactsIn = Array.isArray(audience.contacts) ? audience.contacts : [];
+      let csvSkipped = null;
+      if (audience.source === 'csv_upload' && audience.csv) {
+        const parsed = csvToContacts(String(audience.csv), audience.mapping || {});
+        contactsIn = parsed.contacts;
+        csvSkipped = parsed.skipped;
+        if (!contactsIn.length) return res.status(400).json({ error: 'csv audience has no valid rows' });
+      } else if (audience.source === 'dataset') {
+        if (audience.dataset !== 'us-municipalities') {
+          return res.status(400).json({ error: 'unknown dataset' });
+        }
+        const proto = req.headers['x-forwarded-proto'] || 'https';
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        const dr = await fetch(`${proto}://${host}${DATASET_PATH}`);
+        if (!dr.ok) return res.status(502).json({ error: 'dataset fetch failed' });
+        contactsIn = datasetToContacts((await dr.json()).places || [], audience.filters || {}).contacts;
+        if (!contactsIn.length) return res.status(400).json({ error: 'no places match those filters' });
+      }
       if (audience.source === 'csv_upload' && !contactsIn.length) {
         return res.status(400).json({ error: 'csv audience has no rows' });
       }
@@ -219,12 +236,13 @@ export default async function handler(req, res) {
       if (!cr.ok) return res.status(cr.status).json({ error: await cr.text() });
       const campaign = (await cr.json())[0];
 
-      // contacts from validated wizard rows
+      // contacts from the materialized audience
       let inserted = 0;
       let skipped = 0;
       if (contactsIn.length) {
         const seen = new Set();
-        const rows = [];
+        const withPlace = [];
+        const byEmail = [];
         for (const c of contactsIn) {
           const email = (c.email || '').trim().toLowerCase();
           if (email && (!EMAIL_RE.test(email) || seen.has(email))) {
@@ -232,25 +250,32 @@ export default async function handler(req, res) {
             continue;
           }
           if (email) seen.add(email);
-          rows.push({
+          const row = {
             campaign_id: campaign.id,
             world,
             email: email || null,
             name: (c.name || '').trim() || null,
+            place_key: c.place_key || null,
             merge_fields: c.merge_fields && typeof c.merge_fields === 'object' ? c.merge_fields : {},
             stage: 'to_contact',
             metadata: { source: audience.source || 'wizard' },
-          });
+          };
+          (c.place_key ? withPlace : byEmail).push(row);
         }
-        for (let i = 0; i < rows.length; i += 1000) {
-          const ir = await sb('campaign_contacts?on_conflict=campaign_id,email', {
-            method: 'POST',
-            prefer: 'resolution=ignore-duplicates,return=minimal',
-            body: JSON.stringify(rows.slice(i, i + 1000)),
-          });
-          if (!ir.ok) return res.status(ir.status).json({ error: await ir.text() });
-          inserted += rows.slice(i, i + 1000).length;
-        }
+        const insert = async (rows, conflict) => {
+          for (let i = 0; i < rows.length; i += 1000) {
+            const ir = await sb(`campaign_contacts?on_conflict=${conflict}`, {
+              method: 'POST',
+              prefer: 'resolution=ignore-duplicates,return=minimal',
+              body: JSON.stringify(rows.slice(i, i + 1000)),
+            });
+            if (!ir.ok) throw new Error(await ir.text());
+            inserted += rows.slice(i, i + 1000).length;
+          }
+        };
+        await insert(withPlace, 'campaign_id,place_key');
+        await insert(byEmail, 'campaign_id,email');
+        if (csvSkipped) skipped += csvSkipped.noEmail + csvSkipped.badEmail + csvSkipped.dupes;
       }
 
       await sb('campaign_events', {

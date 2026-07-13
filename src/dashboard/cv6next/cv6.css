@@ -1245,3 +1245,8 @@
 /* in-column empty-state action: shown only when there is somewhere to go */
 [data-cv6][data-screen^="organize"] .lebtn.is-no { display:none; }
 [data-cv6][data-screen^="organize"] .lebtn.is-yes { display:inline-flex; align-items:center; }
+
+/* Campaign tool (corner:campaign-tool R6): amber/red health lights breathe so
+   "waiting on you" and "problem" are visible at a glance on a phone. */
+@keyframes campaignPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.campaign-light-pulse { animation: campaignPulse 1.6s ease-in-out infinite; }

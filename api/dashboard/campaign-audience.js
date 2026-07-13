@@ -1,6 +1,7 @@
-// /api/dashboard/campaign-audience — corner:campaign-tool R3.
+// /api/dashboard/campaign-audience — corner:campaign-tool R3/R6.
 // Wizard audience helpers. No rows are written here; the wizard submits the
-// final contact list to POST /api/dashboard/campaigns.
+// audience spec to POST /api/dashboard/campaigns which materializes it with
+// the SAME shared lib — preview and create can never disagree.
 //   GET  ?world=                       — available dataset sources
 //   POST {world, op:'preview_dataset', dataset:'us-municipalities',
 //         filters:{states:[..], pop_min, pop_max}}   — count + sample
@@ -8,56 +9,9 @@
 //         mapping, validation stats, sample rows
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { parseCsv, guessMapping, EMAIL_RE } from '../_lib/csvAudience.js';
 
 const DATASET_PATH = '/arsenal-municipality-data.json'; // served from public/
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// header names we can auto-map, per schema field
-const GUESSES = {
-  email: ['email', 'contact_email', 'e-mail', 'mail'],
-  name: ['name', 'contact_name', 'full name', 'contact'],
-  first_name: ['first', 'first_name', 'firstname'],
-  city: ['city', 'municipality', 'town', 'place'],
-  state: ['state', 'state_abbr', 'st', 'province'],
-  company: ['company', 'organization', 'org'],
-};
-
-function parseCsv(text, maxRows = 25001) {
-  const rows = [];
-  let row = [];
-  let field = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += ch;
-    } else if (ch === '"') inQuotes = true;
-    else if (ch === ',') { row.push(field); field = ''; }
-    else if (ch === '\n' || ch === '\r') {
-      if (ch === '\r' && text[i + 1] === '\n') i++;
-      row.push(field); field = '';
-      if (row.length > 1 || row[0] !== '') rows.push(row);
-      row = [];
-      if (rows.length >= maxRows) break;
-    } else field += ch;
-  }
-  if (field !== '' || row.length) { row.push(field); rows.push(row); }
-  return rows;
-}
-
-function guessMapping(headers) {
-  const mapping = {};
-  const lower = headers.map((h) => h.trim().toLowerCase());
-  for (const [target, names] of Object.entries(GUESSES)) {
-    const idx = lower.findIndex((h) => names.includes(h));
-    if (idx >= 0) mapping[target] = headers[idx];
-  }
-  return mapping;
-}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

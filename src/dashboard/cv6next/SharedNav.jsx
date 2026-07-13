@@ -22,7 +22,10 @@ export const NAV_TOOLS = [
   // in-app onNav('review') land in Files with the needs-review filter on. The internal id/route
   // stays 'organize' so nothing downstream re-keys — only the label reads "Files".
   { id: 'organize',   label: 'Files',    route: 'organize',   wired: true },
-  { id: 'support',    label: 'Support',  route: 'support',    wired: true },
+  // Support renamed Email (corner:campaign-tool, 2026-07-13): the tool now holds
+  // an Inbox|Campaign toggle (EmailShell). Internal id/route stay 'support' so
+  // deep links and downstream keys never re-key — only the label reads "Email".
+  { id: 'support',    label: 'Email',    route: 'support',    wired: true },
   { id: 'tracker',    label: 'Tracker',  route: 'tracker',    wired: true },
   { id: 'command',    label: 'Command',  route: 'command',    wired: true },
   // Wired 2026-07-01: real capture v1 (mic → Gemini transcription → extracted
@@ -42,7 +45,7 @@ function Icon({ id, size = 19 }) {
     case 'chat':       return <svg {...p}><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z" /></svg>;
     case 'organize':   return <svg {...p}><path d="M12 4 3 8l9 4 9-4-9-4Z" /><path d="m3 12 9 4 9-4" /></svg>;
     case 'review':     return <svg {...p}><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></svg>;
-    case 'support':    return <svg {...p}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /></svg>;
+    case 'support':    return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>;
     case 'tracker':    return <svg {...p}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>;
     case 'command':    return <svg {...p}><path d="M7 4H4v16h3M17 4h3v16h-3" /></svg>;
     case 'livescribe': return <svg {...p}><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>;
