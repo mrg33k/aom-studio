@@ -312,6 +312,15 @@ export default async function handler(req, res) {
       const agent = req.query.agent ? String(req.query.agent).trim().toLowerCase() : null
       const limit = Math.min(parseInt(req.query.limit || '500', 10) || 500, 1000)
 
+      // TENANT ISOLATION (2026-07-12, corner:one-corner M4): same guard as
+      // type=mirror — the messages table holds every world's uploads, so the
+      // JWT must prove access to the requested client before we read it.
+      try {
+        await verifyTenant(clientId, req)
+      } catch (e) {
+        return res.status(e.status || 403).json({ error: e.message || 'forbidden', files: [] })
+      }
+
       // R79-f19 (2026-05-29): uploads now carry chat scope on metadata so the
       // right-rail file browser can filter to "files uploaded in THIS chat":
       //   - metadata.project_slug = '<slug>'    (project + mission rooms)
@@ -333,9 +342,15 @@ export default async function handler(req, res) {
       // Strategy: two scoped PostgREST queries using jsonb path filters
       // (metadata->attachment=not.is.null + metadata->attachments=not.is.null),
       // merge by message id, then extract every attachment from the metadata.
+      // 2026-07-12 (corner:one-corner M4): role=eq.user pins this to the SAME
+      // uploads identity review-queue.js uses ("the user's own uploads → role=user
+      // with metadata.attachment(s)") — one definition across Review and Organize,
+      // and agent messages that happen to carry attachment metadata never count
+      // as "my uploads".
       const sel = 'id,client_id,project,metadata,user_name,timestamp,text'
       const baseFilters = [
         `client_id=eq.${encodeURIComponent(clientId)}`,
+        'role=eq.user',
         `select=${sel}`,
         'order=timestamp.desc',
         `limit=${limit}`,
@@ -378,7 +393,7 @@ export default async function handler(req, res) {
 
       const out = []
       const seenUrls = new Set()
-      function pushAtt({ url: attUrl, mime, size, name, ts, who }) {
+      function pushAtt({ url: attUrl, mime, size, name, ts, who, proj, missionSlug, agentSlug }) {
         if (!attUrl || seenUrls.has(attUrl)) return
         seenUrls.add(attUrl)
         // The RAG tunnel URL ends with the uuid-prefixed filename; strip
@@ -399,6 +414,11 @@ export default async function handler(req, res) {
           mime: mime || null,
           uploader: who || null,
           url: attUrl,
+          // 2026-07-12 (corner:one-corner M4): chat scope rides along so Organize
+          // can slot each upload under its project + mission in the tree.
+          project: proj || null,
+          mission: missionSlug || null,
+          agent: agentSlug || null,
         })
       }
 
@@ -407,16 +427,23 @@ export default async function handler(req, res) {
         const who = row.user_name || null
         const md = row.metadata
         if (!md || typeof md !== 'object') continue
+        // Scope: the project column is authoritative; metadata.project_slug covers
+        // rows that landed without it (R79-f22). mission/agent come from metadata.
+        const scope = {
+          proj: row.project || md.project_slug || null,
+          missionSlug: md.mission_slug || null,
+          agentSlug: md.agent_slug || null,
+        }
         // Single-attachment shape
         const ma = md.attachment
         if (ma && ma.url) {
-          pushAtt({ url: ma.url, mime: ma.mime, size: ma.size, name: ma.name, ts, who })
+          pushAtt({ url: ma.url, mime: ma.mime, size: ma.size, name: ma.name, ts, who, ...scope })
         }
         // Multi-attachment shape
         const mas = md.attachments
         if (Array.isArray(mas)) {
           for (const a of mas) {
-            if (a && a.url) pushAtt({ url: a.url, mime: a.mime, size: a.size, name: a.name, ts, who })
+            if (a && a.url) pushAtt({ url: a.url, mime: a.mime, size: a.size, name: a.name, ts, who, ...scope })
           }
         }
       }

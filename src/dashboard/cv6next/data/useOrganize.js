@@ -79,6 +79,29 @@ function fileKind(name) {
   return 'doc';
 }
 
+// Upload rows carry a mime from the chat attachment — use it when the extension
+// is inconclusive (a pasted screenshot named "image" still resolves to image).
+function uploadKind(name, mime) {
+  const byExt = fileKind(name);
+  if (byExt !== 'doc') return byExt;
+  const m = String(mime || '');
+  if (m.startsWith('image/')) return 'image';
+  if (m.startsWith('video/')) return 'video';
+  if (m.startsWith('audio/')) return 'audio';
+  if (m === 'application/pdf') return 'pdf';
+  return byExt;
+}
+
+// Top-level mission key for an upload's chat scope. mission_slug can arrive
+// colon-joined ("project:mission[:sub]") from nested rooms — strip a leading
+// project segment and keep the first mission segment, matching missionOf()'s
+// top-level-folder convention.
+function uploadMissionKey(missionSlug, projectSlug) {
+  const segs = String(missionSlug || '').split(':').filter(Boolean);
+  if (segs.length && segs[0] === projectSlug) segs.shift();
+  return segs[0] || null;
+}
+
 function initialsOf(name) {
   const s = String(name || '').trim();
   if (!s) return 'SY';
@@ -232,6 +255,11 @@ export function useOrganize(worldId = 'aom') {
   const SS_KEY = `org_state_${worldId}`;
   const [projects, setProjects] = useState(null);
   const [files, setFiles] = useState(null);        // metadata rows (no content)
+  // The user's own chat uploads (messages: role=user + metadata.attachment(s) —
+  // the SAME identity review-queue.js uses). They live under FILES_ROOT per-chat
+  // Uploads/ folders, a different root than the disk mirror scans, so without
+  // this fetch they are invisible to Organize entirely (corner:one-corner M4).
+  const [uploads, setUploads] = useState([]);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   // DEF-02: restore project/filter/mission after tool navigation via sessionStorage.
   const [selectedId, setSelectedId] = useState(() => ssRead(SS_KEY).selectedId ?? null);
@@ -290,6 +318,20 @@ export function useOrganize(worldId = 'aom') {
       console.error('Failed to load projects:', err);
     }
 
+    // The user's own uploads (best-effort, never gates the state). type=uploads
+    // reads the messages table with the review-queue identity (role=user +
+    // metadata.attachment/attachments) and carries chat scope per row.
+    try {
+      const upRes = await authFetch(
+        `/api/dashboard/files?type=uploads&client=${encodeURIComponent(worldId)}&limit=1000`,
+        { credentials: 'include' }
+      );
+      const upData = await upRes.json();
+      if (Array.isArray(upData.files)) setUploads(upData.files);
+    } catch (err) {
+      console.error('Failed to load uploads:', err);
+    }
+
     // Tertiary, best-effort: mission tree for nested room structure in the tree panel.
     try {
       const mtRes = await authFetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId) + bust, { credentials: 'include' });
@@ -334,6 +376,38 @@ export function useOrganize(worldId = 'aom') {
   // set so a double-tap (or auto-open + tap) never fires two requests.
   const fetchContent = useCallback(async (id) => {
     if (!id || contentCache[id] || inFlight.current.has(id)) return;
+    // Upload rows aren't in the mirror — their id IS the tunnel URL, and media
+    // streams straight off it (same client-direct posture as the chat cards).
+    // Synthesize the preview locally instead of asking the mirror for a row it
+    // doesn't have (which would leave the pane on "Loading file…" forever).
+    const up = (uploads || []).find((u) => u.url === id);
+    if (up) {
+      const kind = uploadKind(up.name, up.mime);
+      const esc = (s) => String(s || '').replace(/"/g, '&quot;');
+      let bodyHtml;
+      if (kind === 'image') {
+        const fallback = nonTextPreview(up.name, 'image').replace(/"/g, '&quot;');
+        bodyHtml = `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}`
+          + `<img src="${esc(up.url)}" alt="${escapeHtml(up.name || 'Image')}" loading="lazy" onload="${HIDE_WAIT}" onerror="${HIDE_WAIT}this.outerHTML=this.dataset.fb" data-fb="${fallback}" style="position:relative;max-width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--hair);" />`
+          + '</div>';
+      } else if (kind === 'video') {
+        bodyHtml = `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${esc(up.url)}" ${mediaAttrs(up.url, 'video')} controls preload="metadata" playsinline onloadeddata="${HIDE_WAIT}this.style.background='#000';" style="position:relative;width:100%;max-height:68vh;display:block;border-radius:10px;background:transparent;"></video></div>`;
+      } else if (kind === 'audio') {
+        bodyHtml = `<audio src="${esc(up.url)}" ${mediaAttrs(up.url, 'audio')} controls preload="metadata" style="width:100%;display:block;margin:12px 0;border-radius:8px;"></audio>`;
+      } else {
+        bodyHtml = nonTextPreview(up.name, kind);
+      }
+      setContentCache((cache) => ({
+        ...cache,
+        [id]: {
+          title: up.name || 'Untitled',
+          bodyHtml,
+          editor: up.uploader || 'You',
+          editorInitials: initialsOf(up.uploader || 'You'),
+        },
+      }));
+      return;
+    }
     inFlight.current.add(id);
     try {
       const res = await authFetch(
@@ -396,7 +470,7 @@ export function useOrganize(worldId = 'aom') {
     } finally {
       inFlight.current.delete(id);
     }
-  }, [worldId, contentCache]);
+  }, [worldId, contentCache, uploads]);
 
   const openFile = useCallback((id) => { setOpenedId(id); fetchContent(id); }, [fetchContent]);
 
@@ -413,6 +487,38 @@ export function useOrganize(worldId = 'aom') {
     const slug = f.project || 'unfiled';
     if (!groups.has(slug)) groups.set(slug, []);
     groups.get(slug).push(f);
+  });
+
+  // Merge the user's uploads into their project groups (corner:one-corner M4).
+  // Uploads live outside the mirrored repo tree, so each row is synthesized into
+  // the mirror-row shape: rel_path places it under missions/<slug>/Uploads (or
+  // Uploads at the project root) so mission narrowing works unchanged. Tagged
+  // uploaded:true — that flag IS the "My uploads" filter. Dedupe by name+mission
+  // against mirror rows so a file that also got committed never doubles up.
+  (uploads || []).forEach((u) => {
+    const slug = String(u.project || '').trim().toLowerCase();
+    if (!slug || !u.url || !u.name) return; // agent-room/legacy uploads carry no project home
+    const mKey = uploadMissionKey(u.mission, slug);
+    if (!groups.has(slug)) groups.set(slug, []);
+    const bucket = groups.get(slug);
+    const nameLc = String(u.name).toLowerCase();
+    const dupe = bucket.some((r) => String(r.name || '').toLowerCase() === nameLc
+      && ((r.uploaded ? r.__missionKey : missionOf(r.rel_path)) || null) === (mKey || null));
+    if (dupe) return;
+    bucket.push({
+      id: u.url, // upload urls are unique and stable — safe list key, never collides with mirror uuids
+      project: slug,
+      rel_path: mKey ? `missions/${mKey}/Uploads` : 'Uploads',
+      name: u.name,
+      kind: uploadKind(u.name, u.mime),
+      size: u.size || 0,
+      updated_at: u.date || null,
+      last_editor: u.uploader || 'You',
+      uploaded: true,
+      __missionKey: mKey,
+      upload_url: u.url,
+      mime: u.mime || null,
+    });
   });
 
   // Project list = every real project in this world (so all show), counts merged in,
@@ -466,8 +572,10 @@ export function useOrganize(worldId = 'aom') {
   // Filters (Patrik 2026-06-30): Recent (all, newest-first) · Links · Docs · Pdfs ·
   // Images · Video. "docs" is the catch-all for anything that isn't one of the typed
   // kinds, so no file is unreachable (sheets/unknowns land here too).
-  const fileMatchesFilter = (kind, eff) => {
+  const fileMatchesFilter = (f, eff) => {
+    const kind = f.kind;
     switch (eff) {
+      case 'uploads': return !!f.uploaded; // "My uploads" — the files Patrik dropped into chats
       case 'links':  return kind === 'link';
       case 'pdfs':   return kind === 'pdf';
       case 'images': return kind === 'image';
@@ -494,11 +602,14 @@ export function useOrganize(worldId = 'aom') {
         size: formatSize(f.size || 0),
         kind,
         status: 'ready',
+        uploaded: !!f.uploaded, // feeds the "My uploads" chip
         // In the 'missions' pseudo-project (tenant-level missions), the first
         // rel_path segment IS the mission slug; elsewhere it's missions/<slug>/.
-        missionKey: openProject.id === 'missions'
-          ? (String(f.rel_path || '').split('/').filter(Boolean)[0] || null)
-          : missionOf(f.rel_path),
+        missionKey: f.uploaded
+          ? (f.__missionKey || null)
+          : (openProject.id === 'missions'
+            ? (String(f.rel_path || '').split('/').filter(Boolean)[0] || null)
+            : missionOf(f.rel_path)),
       };
     });
 
@@ -540,13 +651,16 @@ export function useOrganize(worldId = 'aom') {
   const pdfCount = countKind('pdf');
   const linkCount = countKind('link');
   const docCount = missionFiles.filter((f) => !['image', 'video', 'audio', 'pdf', 'link'].includes(f.kind)).length;
+  const uploadCount = missionFiles.filter((f) => f.uploaded).length;
   // If the active type filter has no files in the new mission/project scope, fall
-  // back to Recent instead of showing an inexplicable empty column.
+  // back to Recent instead of showing an inexplicable empty column. "My uploads"
+  // is exempt: the chip is always present (Patrik 2026-07-12), so staying on it
+  // with an empty list is honest, not inexplicable.
   const kindCountFor = { links: linkCount, docs: docCount, pdfs: pdfCount, images: imageCount, video: videoCount, audio: audioCount };
-  const effFilter = (filter !== 'recent' && !kindCountFor[filter]) ? 'recent' : filter;
+  const effFilter = (filter !== 'recent' && filter !== 'uploads' && !kindCountFor[filter]) ? 'recent' : filter;
   const q = query.trim().toLowerCase();
   const fileList = missionFiles
-    .filter((f) => fileMatchesFilter(f.kind, effFilter))
+    .filter((f) => fileMatchesFilter(f, effFilter))
     .filter((f) => !q || f.name.toLowerCase().includes(q));
 
   // The open file: the explicitly-opened one if it's in this project's list, else the first.
@@ -557,8 +671,10 @@ export function useOrganize(worldId = 'aom') {
   const openRawRow = openInList ? (groups.get(openProject.id) || []).find((r) => r.id === openInList.id) : null;
   // DEF-01 FIX: compute corner path; if cornerPathOf fails (returns ''), try to construct it from openRawRow anyway.
   // This ensures videos and other file types always pass through to Review.
-  let openCornerPath = cornerPathOf(openRawRow, worldId);
-  if (!openCornerPath && openRawRow && openInList) {
+  // Uploads are NOT in the mirrored repo tree — their identity is the tunnel URL,
+  // which Review's viewer loads directly (it handles full RAG-store URLs).
+  let openCornerPath = openRawRow?.uploaded ? (openRawRow.upload_url || '') : cornerPathOf(openRawRow, worldId);
+  if (!openCornerPath && openRawRow && openInList && !openRawRow.uploaded) {
     const rel = openRawRow.rel_path ? `${openRawRow.rel_path}/` : '';
     const root = openRawRow.project === 'missions' ? 'missions' : `projects/${openRawRow.project}`;
     openCornerPath = `corner/users/${worldId}/${root}/${rel}${openRawRow.name}`;
@@ -581,16 +697,19 @@ export function useOrganize(worldId = 'aom') {
     projects: projectList,
     breadcrumb: [{ id: 'root', name: 'Corner' }, openProject].filter((x) => x.id),
     // Zero-count type chips are dropped entirely — a permanently-dead "Video 0"
-    // button reads as broken. Recent always shows (it's the reset).
+    // button reads as broken. Recent always shows (it's the reset), and so does
+    // "My uploads" (Patrik 2026-07-12: present at every project/mission scope —
+    // a chip that comes and goes reads as removed; count is omitted at zero).
     filters: [
-      { id: 'recent', label: `Recent ${missionFiles.length}`, active: effFilter === 'recent' ? 'on' : 'off' },
+      { id: 'recent',  label: `Recent ${missionFiles.length}`, active: effFilter === 'recent' ? 'on' : 'off' },
+      { id: 'uploads', label: `My uploads${uploadCount ? ` ${uploadCount}` : ''}`, count: uploadCount, active: effFilter === 'uploads' ? 'on' : 'off' },
       { id: 'links',  label: `Links ${linkCount}`,        count: linkCount,  active: effFilter === 'links'  ? 'on' : 'off' },
       { id: 'docs',   label: `Docs ${docCount}`,          count: docCount,   active: effFilter === 'docs'   ? 'on' : 'off' },
       { id: 'pdfs',   label: `Pdfs ${pdfCount}`,          count: pdfCount,   active: effFilter === 'pdfs'   ? 'on' : 'off' },
       { id: 'images', label: `Images ${imageCount}`,      count: imageCount, active: effFilter === 'images' ? 'on' : 'off' },
       { id: 'video',  label: `Video ${videoCount}`,       count: videoCount, active: effFilter === 'video'  ? 'on' : 'off' },
       { id: 'audio',  label: `Audio ${audioCount}`,       count: audioCount, active: effFilter === 'audio'  ? 'on' : 'off' },
-    ].filter((c) => c.id === 'recent' || c.count > 0),
+    ].filter((c) => c.id === 'recent' || c.id === 'uploads' || c.count > 0),
     missions: missionChips,
     sorts: [
       { id: 'newest', label: 'Newest', active: sort === 'newest' ? 'on' : 'off' },
