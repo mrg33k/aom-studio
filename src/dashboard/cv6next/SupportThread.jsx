@@ -30,7 +30,13 @@ function relTime(d) {
   return `${Math.round(h / 24)}d ago`;
 }
 
-function firstLine(s) { return String(s || '').split('\n').map(l => l.trim()).find(Boolean) || ''; }
+// Preview line for a collapsed row: the first line with actual content — skip
+// greeting-only openers ("Hi Patrik,") so the row shows the ask, not the hello.
+function firstLine(s) {
+  const lines = String(s || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  const meaty = lines.find((l) => !/^(hi|hey|hello|dear|good (morning|afternoon|evening))\b[^a-z]*[a-z]*[,!.\s]*$/i.test(l));
+  return meaty || lines[0] || '';
+}
 
 // One message in the chain. Collapsed = a single scannable row; expanded = the
 // full body with the sender header.

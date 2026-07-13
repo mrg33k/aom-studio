@@ -100,7 +100,7 @@ export default async function handler(req, res) {
   const { wish_id, access_code, fresh } = req.query
   if (!wish_id && !access_code) return res.status(400).json({ ok: false, error: 'wish_id or access_code required' })
   const sel = wish_id ? `id=eq.${encodeURIComponent(wish_id)}` : `access_code=eq.${encodeURIComponent(String(access_code).toUpperCase())}`
-  const wr = await supa(`support_wishes?select=id,email,source,message&${sel}&limit=1`)
+  const wr = await supa(`support_wishes?select=id,email,source,message,first_response_at&${sel}&limit=1`)
   const rows = wr.ok ? await wr.json() : []
   const wish = Array.isArray(rows) && rows.length ? rows[0] : null
   if (!wish) return res.status(404).json({ ok: false, error: 'wish not found' })
@@ -196,6 +196,22 @@ export default async function handler(req, res) {
       body: stripQuotedTail(extractText(m.payload)) || (m.snippet || '').trim(),
     }
   }).sort((a, b) => new Date(a.date) - new Date(b.date))
+
+  // Gmail is the latency truth: replies sent outside the wish system (hooks,
+  // manual Gmail replies) never write a response row, so a wish can read
+  // "never replied" while its thread plainly shows our answer. Stamp
+  // first_response_at from the first outbound message that follows an inbound
+  // one (is.null guard — a live stamp always wins).
+  if (!wish.first_response_at) {
+    const firstIn = messages.find((m) => m.direction === 'in')
+    const firstOut = firstIn && messages.find((m) => m.direction === 'out' && new Date(m.date) >= new Date(firstIn.date))
+    if (firstOut && firstOut.date) {
+      await supa(`support_wishes?id=eq.${wish.id}&first_response_at=is.null`, {
+        method: 'PATCH',
+        body: JSON.stringify({ first_response_at: new Date(firstOut.date).toISOString() }),
+      }).catch(() => {})
+    }
+  }
 
   // Refresh the cache row (PATCH the existing one so rows don't pile up).
   const cacheBody = JSON.stringify({ fetched_at: new Date().toISOString(), thread_id: threadId, messages })
