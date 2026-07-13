@@ -8,8 +8,9 @@
 // column = world slug, e.g. "aom" or "ben"). The caller never supplies the
 // world — it is looked up and verified, not trusted.
 //
-// Hidden files (never returned, never acknowledged to exist):
-//   PHONEBOOK.md, history.md, rules.md, decisions.md, archive/*, vision-qa/*
+// Hidden files: the ONE shared hide-list (api/_lib/hideList.js — Python twin
+// AOM-EA/scripts/lib/files_hide_list.py). System junk only; nothing
+// content-shaped hides (corner:one-corner M7 trust contract).
 //
 // Response shape:
 // {
@@ -42,19 +43,14 @@ const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARD
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// ── Hidden-file list (Pillar 1 from files-in-app VISION) ─────────────────────
-const HIDDEN_NAMES = new Set([
-  'PHONEBOOK.md', 'history.md', 'rules.md', 'decisions.md',
-  'lessons.md', 'manifest.yaml', 'assets',
-  '.DS_Store', '.gitignore', '.gitkeep',
-]);
-const HIDDEN_DIRS = new Set(['archive', 'vision-qa', 'assets', 'node_modules', '.git']);
+// ── Hidden-file list: the ONE shared module (api/_lib/hideList.js) ───────────
+// corner:one-corner M7 replaced the old content-shaped list (PHONEBOOK.md /
+// manifest.yaml / assets / archive / vision-qa all hid) with junk-only hiding —
+// Files must never lie by omission. Name-only check used for dirs AND files.
+import { isHiddenDir, isHiddenFile } from '../_lib/hideList.js';
 
 function isHidden(name) {
-  if (HIDDEN_NAMES.has(name)) return true;
-  if (HIDDEN_DIRS.has(name)) return true;
-  if (name.startsWith('.')) return true;
-  return false;
+  return isHiddenDir(name) || isHiddenFile(name);
 }
 
 // ── Canon file definitions (in display order) ─────────────────────────────────

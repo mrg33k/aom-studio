@@ -484,8 +484,12 @@ export default async function handler(req, res) {
 
       // Metadata list. Paginate internally so PostgREST's default 1000-row cap
       // never silently truncates a large world (no silent truncation rule).
+      // storage_ref rides along (null for most rows): rows mirrored from OUTSIDE
+      // the users tree (Corner platform missions, corner:one-corner M7) carry
+      // 'ea://<true-repo-path>' so the client can build the real tunnel path —
+      // deriving it from project+rel_path would point at a dir that doesn't exist.
       const project = req.query.project
-      const cols = 'id,project,rel_path,name,ext,kind,size,updated_at,last_editor'
+      const cols = 'id,project,rel_path,name,ext,kind,size,updated_at,last_editor,storage_ref'
       const PAGE = 1000
       const HARD_CAP = 20000
       const files = []

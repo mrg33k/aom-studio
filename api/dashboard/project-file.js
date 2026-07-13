@@ -34,15 +34,17 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // ── Hidden names (never surfaced) ─────────────────────────────────────────────
-// Any path segment matching these or any path containing these directories
-// returns a 404.  Never a 403 — we do not acknowledge that the file exists.
-const HIDDEN_SEGMENTS = new Set([
-  'PHONEBOOK.md', 'history.md', 'rules.md', 'decisions.md',
-  'lessons.md', 'manifest.yaml', 'archive', 'vision-qa', 'assets',
-]);
+// The ONE shared hide-list (api/_lib/hideList.js; Python twin
+// AOM-EA/scripts/lib/files_hide_list.py): system junk only. The old local list
+// hid content-shaped names (PHONEBOOK.md / manifest.yaml / archive / assets) —
+// files the mirror now LISTS, so reading them must work (corner:one-corner M7:
+// Files must never lie by omission). Never a 403 — hidden paths 404.
+import { isHiddenDir, isHiddenFile } from '../_lib/hideList.js';
 
 function containsHiddenSegment(segments) {
-  return segments.some(s => HIDDEN_SEGMENTS.has(s));
+  if (!segments.length) return true;
+  const leaf = segments[segments.length - 1];
+  return segments.slice(0, -1).some((s) => isHiddenDir(s)) || isHiddenFile(leaf);
 }
 
 // ── Project world lookup ──────────────────────────────────────────────────────
@@ -137,20 +139,29 @@ export default async function handler(req, res) {
   const segments = normPath.split('/');
 
   // ── Path must start with corner/users/<world>/projects/<slug>
-  //    OR corner/users/<world>/missions/<slug> (user-level mission files) ───────
-  // Expected structure: corner / users / <world> / (projects|missions) / <slug> / <rest...>
+  //    OR corner/users/<world>/missions/<slug> (user-level mission files)
+  //    OR corner/missions/<slug> (Corner PLATFORM mission homes — the ea:// rows
+  //       the file mirror emits since corner:one-corner M7) ────────────────────
+  const isPlatformMission =
+    segments.length >= 4 && segments[0] === 'corner' && segments[1] === 'missions';
+
   if (
-    segments.length < 6 ||
-    segments[0] !== 'corner' ||
-    segments[1] !== 'users' ||
-    (segments[3] !== 'projects' && segments[3] !== 'missions')
+    !isPlatformMission &&
+    (segments.length < 6 ||
+      segments[0] !== 'corner' ||
+      segments[1] !== 'users' ||
+      (segments[3] !== 'projects' && segments[3] !== 'missions'))
   ) {
     return res.status(404).json({ error: 'Not found' });
   }
 
-  const world       = segments[2];
-  const slug        = segments[4];
-  const isMission   = segments[3] === 'missions';
+  // Platform missions belong to the 'corner' project — their world is whoever
+  // owns that project row (no world segment exists in the path to trust).
+  const world       = isPlatformMission
+    ? (await resolveProjectWorld('corner')) || 'aom'
+    : segments[2];
+  const slug        = isPlatformMission ? 'corner' : segments[4];
+  const isMission   = !isPlatformMission && segments[3] === 'missions';
 
   // Validate world + slug format. Project slugs may contain dots (a real project
   // folder is literally named "aheadofmarket.com"), so the slug allows internal
@@ -160,8 +171,8 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Not found' });
   }
 
-  // The rest of the path (after the project slug).
-  const rest = segments.slice(5);
+  // The rest of the path (after the project slug / the platform-missions root).
+  const rest = isPlatformMission ? segments.slice(2) : segments.slice(5);
   if (rest.length === 0) {
     return res.status(404).json({ error: 'Not found' });
   }

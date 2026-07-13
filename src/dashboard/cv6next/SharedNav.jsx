@@ -55,10 +55,19 @@ const SearchGlyph = ({ size = 18 }) => (
 );
 
 // A badge on a tool: {kind:'status', status:'live'|'working'|..., count} renders an
-// .astat chip; {kind:'needs', count} renders the red needs-count. Omit when zero.
+// .astat chip; {kind:'needs', count} renders the needs-count pill. Omit when zero.
+// The needs badge is AMBER (--warn), not accent: "waiting on you" speaks one color
+// across the nav badge, the per-file NEEDS REVIEW badge, and the top-line pill
+// (design-critic send-back, 2026-07-13 — red stays reserved for destructive Dismiss).
 function Badge({ badge }) {
   if (!badge || !badge.count) return null;
-  if (badge.kind === 'needs') return <span className="needs-count">{badge.count}</span>;
+  if (badge.kind === 'needs') {
+    return (
+      <span className="needs-count" style={{ background: 'var(--warn-weak, rgba(251,191,36,.16))', color: 'var(--warn, #FBBF24)', border: '1px solid rgba(251,191,36,.35)' }}>
+        {badge.count}
+      </span>
+    );
+  }
   return <span className={`astat is-${badge.status || 'live'}`}><span className="sd" />{badge.count}</span>;
 }
 

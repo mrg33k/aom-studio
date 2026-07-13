@@ -6,6 +6,13 @@
 // (metadata.attachment / metadata.attachments). The watcher's auto-dumps
 // (source='auto-share', no handoff flag) never qualify.
 //
+// NEEDS-REVIEW SEMANTICS (Patrik, 2026-07-13): the WAITING set is AGENT
+// deliverables only. "Things agents send me need review — my own uploads don't."
+// User uploads NEVER enter the waiting set, the badge count, or the default
+// (needs-review) response. They stay in the collection so ?view=all can still
+// stamp a verdict on an upload the user chose to review manually (review is a
+// manual action available on ANY file — that path is client-side openFileItem).
+//
 // Review-loop (2026-07-12): the queue now CONSULTS DECISION ROWS. Every verdict
 // (approve / request-changes / dismiss / send-checklist) is a messages row with
 // source='review-decision' (review-decision.js). Decided items are suppressed
@@ -257,12 +264,18 @@ export default async function handler(req, res) {
     return null;
   };
 
-  const waiting = all.filter((it) => !verdictFor(it));
-  const counts = { waiting: waiting.length, decided: all.length - waiting.length };
+  // WAITING = undecided AGENT hand-offs only (needs-review semantics, 2026-07-13).
+  // A user's own upload is never "waiting on you" — it only reaches review when the
+  // user opens it into review manually. Decided count spans BOTH kinds so the
+  // Reviewed toggle stays honest about uploads the user did verdict on.
+  const waiting = all.filter((it) => it.source_kind === 'handoff' && !verdictFor(it));
+  const decidedCount = all.reduce((n, it) => n + (verdictFor(it) ? 1 : 0), 0);
+  const counts = { waiting: waiting.length, decided: decidedCount };
 
-  // Default = only undecided items. ?view=all = everything, each stamped with its
-  // verdict + decision row id (null when still waiting) so a "Reviewed" toggle can
-  // render honestly AND restore a dismissed item via the undo action.
+  // Default = only undecided agent hand-offs. ?view=all = everything (uploads
+  // included), each stamped with its verdict + decision row id (null when still
+  // waiting) so a "Reviewed" toggle can render honestly AND restore a dismissed
+  // item via the undo action.
   const viewAll = String(Array.isArray(req.query.view) ? req.query.view[0] : req.query.view || '') === 'all';
   const served = viewAll
     ? all.map((it) => {

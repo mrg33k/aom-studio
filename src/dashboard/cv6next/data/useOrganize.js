@@ -229,8 +229,14 @@ function nonTextPreview(name, kind) {
 // rel_path is the dir within the project (no filename), '' at the project root.
 // Tenant-level missions are mirrored under the pseudo-project 'missions' with
 // rel_path leading with the mission slug — those live at corner/users/<world>/missions/.
+// Rows mirrored from OUTSIDE the users tree (Corner platform missions at repo-root
+// corner/missions/, corner:one-corner M7) carry their true repo path in
+// storage_ref='ea://…' — that wins, because deriving from project+rel_path would
+// point at a users-tree dir that doesn't exist.
 function cornerPathOf(row, worldId) {
   if (!row || !row.project || !row.name) return '';
+  const ref = String(row.storage_ref || '');
+  if (ref.startsWith('ea://')) return ref.slice(5);
   const rel = row.rel_path ? `${row.rel_path}/` : '';
   const root = row.project === 'missions' ? 'missions' : `projects/${row.project}`;
   return `corner/users/${worldId}/${root}/${rel}${row.name}`;
