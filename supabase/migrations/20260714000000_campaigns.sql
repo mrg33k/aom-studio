@@ -47,7 +47,8 @@ create table if not exists campaign_contacts (
   id                 uuid primary key default gen_random_uuid(),
   campaign_id        uuid not null references campaigns(id) on delete cascade,
   world              text not null default 'aom',
-  email              text not null,
+  email              text,            -- null until the contact is enriched
+  place_key          text,            -- stable dataset identity (e.g. census geoid)
   name               text,
   merge_fields       jsonb not null default '{}'::jsonb,   -- first_name, city, state, population...
   stage              text not null default 'to_contact'
@@ -64,6 +65,7 @@ create table if not exists campaign_contacts (
 );
 
 create unique index if not exists campaign_contacts_campaign_email_uidx on campaign_contacts (campaign_id, email);
+create unique index if not exists campaign_contacts_place_uidx on campaign_contacts (campaign_id, place_key);
 create index if not exists campaign_contacts_stage_idx on campaign_contacts (campaign_id, stage);
 create index if not exists campaign_contacts_email_idx on campaign_contacts (email);
 create index if not exists campaign_contacts_followup_idx on campaign_contacts (campaign_id, follow_up_due_at);
