@@ -13,6 +13,7 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { verifyTenant } from '../_lib/verifyTenant.js'
+import { UPLOADS_ROLE_FILTER, UPLOADS_PRESENCE_FILTERS, attachmentsOfMessage } from '../_lib/uploadsIdentity.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -342,15 +343,16 @@ export default async function handler(req, res) {
       // Strategy: two scoped PostgREST queries using jsonb path filters
       // (metadata->attachment=not.is.null + metadata->attachments=not.is.null),
       // merge by message id, then extract every attachment from the metadata.
-      // 2026-07-12 (corner:one-corner M4): role=eq.user pins this to the SAME
-      // uploads identity review-queue.js uses ("the user's own uploads → role=user
-      // with metadata.attachment(s)") — one definition across Review and Organize,
-      // and agent messages that happen to carry attachment metadata never count
-      // as "my uploads".
+      // 2026-07-13 (corner:review-loop R16): the uploads identity (role filter,
+      // the two metadata shapes, attachment extraction) is now the SHARED
+      // definition in api/_lib/uploadsIdentity.js — the same one review-queue.js
+      // uses, so a file can never show in Organize but vanish from Review (or
+      // vice versa), and agent messages that happen to carry attachment metadata
+      // never count as "my uploads".
       const sel = 'id,client_id,project,metadata,user_name,timestamp,text'
       const baseFilters = [
         `client_id=eq.${encodeURIComponent(clientId)}`,
-        'role=eq.user',
+        UPLOADS_ROLE_FILTER,
         `select=${sel}`,
         'order=timestamp.desc',
         `limit=${limit}`,
@@ -370,8 +372,9 @@ export default async function handler(req, res) {
       if (mission) baseFilters.push(`metadata->>mission_slug=eq.${encodeURIComponent(mission)}`)
       if (agent) baseFilters.push(`metadata->>agent_slug=eq.${encodeURIComponent(agent)}`)
 
-      const urlSingle = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata->attachment=not.is.null`
-      const urlMulti = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata->attachments=not.is.null`
+      const [singleF, multiF] = UPLOADS_PRESENCE_FILTERS
+      const urlSingle = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&${singleF}`
+      const urlMulti = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&${multiF}`
 
       let rowsSingle = [], rowsMulti = []
       try {
@@ -434,17 +437,10 @@ export default async function handler(req, res) {
           missionSlug: md.mission_slug || null,
           agentSlug: md.agent_slug || null,
         }
-        // Single-attachment shape
-        const ma = md.attachment
-        if (ma && ma.url) {
-          pushAtt({ url: ma.url, mime: ma.mime, size: ma.size, name: ma.name, ts, who, ...scope })
-        }
-        // Multi-attachment shape
-        const mas = md.attachments
-        if (Array.isArray(mas)) {
-          for (const a of mas) {
-            if (a && a.url) pushAtt({ url: a.url, mime: a.mime, size: a.size, name: a.name, ts, who, ...scope })
-          }
+        // Both attachment shapes, via the shared uploads identity (one extraction
+        // path with review-queue.js — see api/_lib/uploadsIdentity.js).
+        for (const a of attachmentsOfMessage(md)) {
+          pushAtt({ url: a.url, mime: a.mime, size: a.size, name: a.name, ts, who, ...scope })
         }
       }
 

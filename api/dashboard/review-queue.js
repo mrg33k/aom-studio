@@ -22,6 +22,7 @@
 
 import path from 'path';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { UPLOADS_ROLE_FILTER, UPLOADS_PRESENCE_FILTERS, attachmentsOfMessage } from '../_lib/uploadsIdentity.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -105,15 +106,14 @@ function rowsFromMessage(msg, sourceKind) {
   const meta = msg?.metadata || {};
   const ts = msg.timestamp ? new Date(msg.timestamp).getTime() : 0;
   if (!ts) return [];
-  // Collect every attachment shape: the plural array first, then the single object,
-  // and finally a bare source_path (agent hand-offs stamp that with no attachment obj).
-  const atts = [];
-  if (Array.isArray(meta.attachments)) atts.push(...meta.attachments.filter((a) => a && typeof a === 'object'));
-  if (meta.attachment && typeof meta.attachment === 'object') atts.push(meta.attachment);
+  // Collect every attachment shape via the SHARED uploads identity (one definition
+  // with files.js type=uploads — see api/_lib/uploadsIdentity.js), plus a bare
+  // source_path fallback (agent hand-offs stamp that with no attachment obj).
+  const atts = attachmentsOfMessage(meta);
   if (!atts.length && meta.source_path) atts.push({ url: meta.source_path });
   const out = [];
   for (const att of atts) {
-    const rawUrl = String(att.url || att.path || '');
+    const rawUrl = String(att.url || '');
     if (!rawUrl) continue;
     const name = att.name || rawUrl.split('/').pop() || 'File';
     out.push({
@@ -139,19 +139,27 @@ function rowsFromMessage(msg, sourceKind) {
 // worlds are scoped to their own world_id (tenant isolation preserved).
 async function collectFromMessages(world) {
   const isAom = world === 'aom';
-  const worldFilter = isAom ? '' : `&world_id=eq.${encodeURIComponent(world)}`;
+  // Tenancy column is client_id, NOT world_id — verified against live data
+  // 2026-07-13: every messages row carries world_id='aom' (mis-stamped default)
+  // while client_id is truthful, so a world_id filter matched ZERO rows for real
+  // tenants and their queues sat silently empty. Same column fetchDecisions and
+  // files.js type=uploads already use.
+  const worldFilter = isAom ? '' : `&client_id=eq.${encodeURIComponent(world)}`;
   const common = `select=timestamp,project,role,source,metadata&order=timestamp.desc&limit=${MSG_FETCH_CAP}`;
   // Deliberate hand-offs: role=assistant with metadata.handoff=true OR the share-file
   // source (pre-stamp rows still count — they were always deliberate CLI shares), from
   // the cutoff forward so the watcher's older auto_share dumps never leak in.
   const handoffQ = `${common}&role=eq.assistant&timestamp=gte.${HANDOFF_CUTOFF}`
     + `&or=(metadata->>handoff.eq.true,source.eq.share-file)${worldFilter}`;
-  // Uploads: any message the user attached a file to (all-time — a clean set). A
-  // single upload lands as metadata.attachment; a multi-file drop lands as the plural
-  // metadata.attachments array. Query BOTH shapes (PostgREST can't OR across two jsonb
-  // path filters cleanly, so two calls) — else every multi-file upload is invisible.
-  const uploadQ = `${common}&role=eq.user&metadata->attachment=not.is.null${worldFilter}`;
-  const uploadMultiQ = `${common}&role=eq.user&metadata->attachments=not.is.null${worldFilter}`;
+  // Uploads: any message the user attached a file to — ALL-TIME, deliberately NOT
+  // subject to HANDOFF_CUTOFF (the cutoff exists to exclude the watcher's historical
+  // role=assistant auto-dump spam; a user upload is always a deliberate act). The
+  // identity (role + the two metadata shapes) is the SHARED definition in
+  // api/_lib/uploadsIdentity.js — two queries because PostgREST can't OR across two
+  // jsonb path filters cleanly; else every multi-file upload is invisible.
+  const [singleF, multiF] = UPLOADS_PRESENCE_FILTERS;
+  const uploadQ = `${common}&${UPLOADS_ROLE_FILTER}&${singleF}${worldFilter}`;
+  const uploadMultiQ = `${common}&${UPLOADS_ROLE_FILTER}&${multiF}${worldFilter}`;
   const [handoffs, uploads, uploadsMulti] = await Promise.all([
     fetchMessages(handoffQ), fetchMessages(uploadQ), fetchMessages(uploadMultiQ),
   ]);
