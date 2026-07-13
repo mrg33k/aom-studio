@@ -130,6 +130,11 @@ export default async function handler(req, res) {
     method: 'POST',
     body: JSON.stringify({ wish_id: wish.id, kind: 'response', body: reply, author: 'patrik', visible_to_client: true }),
   })
+  // First reply stamps the latency clock (only fills once — is.null guard, M27).
+  await supa(`support_wishes?id=eq.${wish.id}&first_response_at=is.null`, {
+    method: 'PATCH',
+    body: JSON.stringify({ first_response_at: new Date().toISOString() }),
+  }).catch(() => {})
   await supa(`support_wishes?id=eq.${wish.id}`, {
     method: 'PATCH',
     body: JSON.stringify({ status: 'working', updated_at: new Date().toISOString() }),

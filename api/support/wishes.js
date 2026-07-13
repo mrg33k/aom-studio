@@ -78,10 +78,21 @@ export default async function handler(req, res) {
           const rr = await supa(`support_wish_updates?select=wish_id,body,created_at&kind=eq.response&wish_id=in.${encodeURIComponent(inList)}&order=created_at.desc`);
           const ups = await rr.json();
           const latest = {};
+          const earliest = {};
           for (const u of Array.isArray(ups) ? ups : []) {
             if (u.wish_id && !latest[u.wish_id]) latest[u.wish_id] = { body: u.body || '', created_at: u.created_at };
+            if (u.wish_id) earliest[u.wish_id] = u.created_at; // desc order → last seen = first response
           }
           for (const w of wishes) w.latest_response = latest[w.id] || null;
+          // Reply-time truth (M27): first_response_at column wins (stamped by every
+          // send path going forward); fall back to the earliest response update for
+          // rows the backfill hasn't touched. latency_seconds = ask → first reply.
+          for (const w of wishes) {
+            w.first_response_at = w.first_response_at || earliest[w.id] || null;
+            w.latency_seconds = (w.first_response_at && w.created_at)
+              ? Math.max(0, Math.round((new Date(w.first_response_at) - new Date(w.created_at)) / 1000))
+              : null;
+          }
           // Also flag the 10-min holding note (soft_ack) so the board shows "we replied
           // automatically" at a glance. Newest soft_ack per wish wins.
           const sr = await supa(`support_wish_updates?select=wish_id,created_at&kind=eq.soft_ack&wish_id=in.${encodeURIComponent(inList)}&order=created_at.desc`);
@@ -131,6 +142,9 @@ export default async function handler(req, res) {
     if (response) {
       await supa('support_wish_updates', { method: 'POST', body: JSON.stringify({
         wish_id: id, kind: 'response', body: response, author: author || 'aom', visible_to_client: true }) });
+      // First reply stamps the latency clock (only fills once — is.null guard).
+      await supa(`support_wishes?id=eq.${id}&first_response_at=is.null`, { method: 'PATCH',
+        body: JSON.stringify({ first_response_at: new Date().toISOString() }) }).catch(() => {});
       const subject = `Re: your message to AOM`;
       const html = `<p>Hi${wish.name ? ' ' + wish.name : ''},</p><p>${response}</p>` +
         `<p>You can check the status anytime: <a href="${SITE}/support?code=${wish.access_code}">${SITE}/support?code=${wish.access_code}</a></p>`;

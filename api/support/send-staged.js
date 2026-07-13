@@ -155,6 +155,11 @@ export default async function handler(req, res) {
     const sent = await sendResp.json()
     await logUpdate(wish_id, 'response', 'Staged reply sent (press-send from the support dashboard).', undefined)
     await logUpdate(wish_id, 'status_change', 'Sent — resolved from the dashboard.', 'resolved')
+    // First reply stamps the latency clock (only fills once — is.null guard, M27).
+    await supa(`support_wishes?id=eq.${wish_id}&first_response_at=is.null`, {
+      method: 'PATCH',
+      body: JSON.stringify({ first_response_at: new Date().toISOString() }),
+    }).catch(() => {})
     await supa(`support_wishes?id=eq.${wish_id}`, {
       method: 'PATCH',
       body: JSON.stringify({ status: 'resolved', updated_at: new Date().toISOString() }),
@@ -231,6 +236,11 @@ export default async function handler(req, res) {
     const sent = await sendResp.json()
     await logUpdate(wish_id, 'response', 'Custom reply sent from the dashboard.', undefined)
     await logUpdate(wish_id, 'status_change', 'Custom reply sent — resolved from the dashboard.', 'resolved')
+    // First reply stamps the latency clock (only fills once — is.null guard, M27).
+    await supa(`support_wishes?id=eq.${wish_id}&first_response_at=is.null`, {
+      method: 'PATCH',
+      body: JSON.stringify({ first_response_at: new Date().toISOString() }),
+    }).catch(() => {})
     await supa(`support_wishes?id=eq.${wish_id}`, {
       method: 'PATCH',
       body: JSON.stringify({ status: 'resolved', updated_at: new Date().toISOString() }),
