@@ -120,6 +120,12 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
   const options = suggest?.options || selected?.replyOptions || [];
   const summary = (suggest?.summary?.length ? suggest.summary : selected?.summary) || [];
   const recommendation = (suggest?.recommendation?.length ? suggest.recommendation : selected?.recommendation) || [];
+  // The worker's actual read wins over the ingest paraphrase (M27 Stage 3).
+  const agentRead = suggest?.agent_read || selected?.agentRead || null;
+  const readRows = agentRead ? [
+    ['Who', agentRead.who], ['Ask', agentRead.ask], ['Where it stands', agentRead.state],
+    ['What we did', agentRead.did], ['Next', agentRead.next],
+  ].filter(([, v]) => v && String(v).trim()) : [];
 
   const doSend = useCallback(async () => {
     const text = composer.trim();
@@ -248,11 +254,24 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                     <div style={{ border: '1px solid var(--accent-weak)', background: 'linear-gradient(180deg,var(--accent-weak),transparent)', borderRadius: 16, padding: '18px 20px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                         <Star />
-                        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)' }}>Summary by your agent</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+                          {readRows.length ? 'Your agent read this' : 'Summary by your agent'}
+                        </span>
                         {suggestState === 'loading' && <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>thinking…</span>}
                       </div>
+                      {/* the worker's structured read — who / ask / state / did / next */}
+                      {readRows.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: (summary.length || recommendation.length) ? 12 : 0 }}>
+                          {readRows.map(([label, value]) => (
+                            <div key={label} style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+                              <span style={{ flex: 'none', width: 108, fontSize: 10.5, fontWeight: 600, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--muted)', marginTop: 2.5 }}>{label}</span>
+                              <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{normalizeLinks(String(value))}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                        {summary.map((pt, i) => (
+                        {!readRows.length && summary.map((pt, i) => (
                           <div key={i} style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flex: 'none', marginTop: 7 }} />
                             <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{normalizeLinks(pt)}</div>
@@ -264,13 +283,13 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                             <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{normalizeLinks(pt)}</div>
                           </div>
                         ))}
-                        {summary.length === 0 && recommendation.length === 0 && suggestState === 'loading' && (
+                        {!readRows.length && summary.length === 0 && recommendation.length === 0 && suggestState === 'loading' && (
                           <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>Summarizing… the full email is below.</div>
                         )}
-                        {summary.length === 0 && recommendation.length === 0 && suggestState === 'error' && (
+                        {!readRows.length && summary.length === 0 && recommendation.length === 0 && suggestState === 'error' && (
                           <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>The summary didn't come back this time. The full email is below.</div>
                         )}
-                        {summary.length === 0 && recommendation.length === 0 && suggestState === 'ready' && (
+                        {!readRows.length && summary.length === 0 && recommendation.length === 0 && suggestState === 'ready' && (
                           <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>No summary for this one. The full email is below.</div>
                         )}
                       </div>

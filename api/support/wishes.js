@@ -105,13 +105,16 @@ export default async function handler(req, res) {
         }
       } catch { /* enrichment is best-effort; board still renders without it */ }
     }
-    // Parse JSON fields (recommendation, reply_options) so they're objects on the client
+    // Parse JSON fields (recommendation, reply_options, agent_read) so they're objects on the client
     for (const w of wishes) {
       if (w.recommendation && typeof w.recommendation === 'string') {
         try { w.recommendation = JSON.parse(w.recommendation); } catch { w.recommendation = null; }
       }
       if (w.reply_options && typeof w.reply_options === 'string') {
         try { w.reply_options = JSON.parse(w.reply_options); } catch { w.reply_options = null; }
+      }
+      if (w.agent_read && typeof w.agent_read === 'string') {
+        try { w.agent_read = JSON.parse(w.agent_read); } catch { w.agent_read = null; }
       }
     }
     // Noise gate on DISPLAY only: blasts that became wishes before the watcher's

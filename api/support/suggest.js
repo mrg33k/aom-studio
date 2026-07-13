@@ -193,5 +193,8 @@ export default async function handler(req, res) {
     options,
     staged,
     original: parsed.original || String(wish.message || ''),
+    // The worker's actual read {who, ask, state, did, next} — when present the
+    // board renders THIS as the summary, not the ingest-time paraphrase (M27).
+    agent_read: parseJsonish(wish.agent_read),
   })
 }
