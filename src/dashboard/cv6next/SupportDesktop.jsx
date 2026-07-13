@@ -225,7 +225,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
               <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Inbox</div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>
                 {needsYou.length} open · {watching.length} waiting on you
-                {medianLatency != null && <span> · replies in ~{latencyLabel(medianLatency)}</span>}
+                {latencyLabel(medianLatency) != null && <span> · replies in ~{latencyLabel(medianLatency)}</span>}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 7 }}>
@@ -251,7 +251,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                   <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.015em', color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.subject}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
                     {selected.sender}{selected.address ? ` · ${selected.address}` : ''} · {selected.time}
-                    {selected.latencySeconds != null && (
+                    {latencyLabel(selected.latencySeconds) != null && (
                       <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 8, background: 'var(--success-weak)', color: 'var(--success)', fontSize: 11, fontWeight: 600 }}>
                         Replied in {latencyLabel(selected.latencySeconds)}
                       </span>

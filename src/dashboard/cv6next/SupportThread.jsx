@@ -59,7 +59,7 @@ function ThreadMessage({ msg, expanded, onToggle, tint, initials }) {
           borderLeft: rail,
         }}
       >
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: ours ? railColor : 'var(--fg)', flex: 'none' }}>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: ours ? railColor : 'var(--fg)', flex: 'none', width: 108, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {ours ? (isDraft ? 'AOM · draft' : 'AOM') : (msg.from || 'Client')}
         </span>
         <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

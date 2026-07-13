@@ -32,9 +32,12 @@ function relTime(d) {
 function firstLine(s) { return String(s || '').split('\n')[0].slice(0, 140); }
 
 // "Replied in 32s" truth (M27): humanize the ask → first-reply gap.
+// Sub-5s gaps are clock artifacts (a reply cannot beat the 60s pipeline), never a
+// real reply — return null so a nonsense "Replied in 1s" can never render (M27b,
+// Steffen's implausible-latency floor).
 export function latencyLabel(seconds) {
-  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return null;
-  if (seconds < 90) return `${Math.max(1, Math.round(seconds))}s`;
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 5) return null;
+  if (seconds < 90) return `${Math.round(seconds)}s`;
   const m = Math.round(seconds / 60);
   if (m < 90) return `${m}m`;
   const h = Math.round(m / 60);
