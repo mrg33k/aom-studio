@@ -41,10 +41,15 @@
   <div style="display:flex;flex:1;min-height:0;">
     <!-- tree -->
     <div style="width:280px;flex:none;border-right:1px solid var(--divider);padding:18px 14px;overflow:hidden;display:flex;flex-direction:column;">
+      <!-- top-line needs-you pill: the honest waiting-review total across the world;
+           tapping it jumps straight into needs-review triage (files-tool merge) -->
+      <div data-switch="needsPill.state" style="flex:none;">
+        <button data-case="show" data-action="needsPillGo" style="width:100%;margin:0 0 12px;display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:11px;border:1px solid rgba(251,191,36,.35);background:var(--warn-weak,rgba(251,191,36,.12));color:var(--warn);font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;text-align:left;box-sizing:border-box;"><span class="sdot is-blocked" style="flex:none;"></span><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="needsPill.label">3 need your review</span></button>
+      </div>
       <div class="eyebrow" style="margin:0 6px 12px;flex:none;">Projects</div>
       <div style="flex:1;min-height:0;overflow-y:auto;">
-      <!-- ONE row per tree node; is-:node.depth → indent (is-d1|is-d2); is-open marks the selected node; is-:node.tint on the folder glyph; the chevron reflects node.collapsed -->
-      <div class="trow is-open" data-each="tree" data-action="openTreeNode" data-arg="node.id" data-mod="is-:node.depth"><span class="caretbtn"><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.chev"><path d="m9 6 6 6-6 6"/></svg></span><svg class="folder is-violet" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span data-bind="node.name">Dashboard</span></div>
+      <!-- ONE row per tree node; is-:node.depth → indent (is-d1|is-d2); is-open marks the selected node; is-:node.tint on the glyph; node.glyph switches folder vs person (Personal bucket) -->
+      <div class="trow is-open" data-each="tree" data-action="openTreeNode" data-arg="node.id" data-mod="is-:node.depth"><span class="caretbtn"><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.chev"><path d="m9 6 6 6-6 6"/></svg></span><span data-switch="node.glyph" style="display:flex;align-items:center;flex:none;"><svg data-case="folder" class="folder is-violet" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><svg data-case="person" class="folder is-accent" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.tint"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span data-bind="node.name">Dashboard</span></div>
       </div>
     </div>
     <!-- file list -->
@@ -57,6 +62,8 @@
         <input data-org-search data-cv6-keep="org-search-desktop" type="text" placeholder="Find a file…" style="flex:1;min-width:0;height:34px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:11px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
         <!-- sort toggle: ONE chip per option; is-on marks the active sort -->
         <button class="ochip is-on" data-each="sorts" data-action="setSort" data-arg="sort.id" data-mod="is-:sort.active" style="flex:none;padding:0 11px;"><span data-bind="sort.label">Newest</span></button>
+        <!-- Reviewed toggle: show decided files with their verdict badge (+ Restore on dismissed) -->
+        <button class="ochip is-off" data-action="toggleReviewed" data-mod="is-:reviewed.active" style="flex:none;padding:0 11px;">Reviewed</button>
       </div>
       <!-- mission chips: narrow within the project; ONE per mission folder that has
            files (empty projects render no row); is-on marks the active narrowing;
@@ -68,30 +75,68 @@
            data hook); wraps so all chips stay visible regardless of how many types are present;
            ochip-filter-row gives a lighter active state vs mission chips (secondary axis) -->
       <div class="ochip-filter-row" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 14px;flex:none;">
+        <!-- Needs review FIRST (files-tool merge): amber count = "these want you";
+             renders only when the scoped count > 0 (or while the filter is active) -->
+        <span data-switch="needsChip.state" style="display:contents;"><button data-case="show" class="ochip is-off" data-action="setFilter" data-arg="needsChip.id" data-mod="is-:needsChip.active" style="flex:none;">Needs review <span class="needsn" data-bind="needsChip.count">3</span></button></span>
         <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active" style="flex:none;"><span data-bind="filter.label">All 12</span></button>
       </div>
       <div style="padding:0 12px;flex:1;min-height:0;overflow-y:auto;">
-        <!-- ONE row per file; is-open marks the previewed file; is-:file.kind on the glyph -->
-        <div class="file" data-each="files" data-action="openFile" data-arg="file.id" data-mod="is-:file.picked"><svg class="fglyph is-doc" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:file.kind"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div class="fn" data-bind="file.name">dashboard-port-plan.md</div><div class="fm"><span data-bind="file.edited">34m</span> · <span data-bind="file.size">8 KB</span></div></div></div>
+        <!-- ONE row per file; is-open marks the previewed file; is-:file.kind on the glyph;
+             file.badge switches the status chip (needs review / verdict / none — a badge must MEAN something) -->
+        <div class="file" data-each="files" data-action="openFile" data-arg="file.id" data-mod="is-:file.picked"><svg class="fglyph is-doc" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:file.kind"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div class="fn" data-bind="file.name">dashboard-port-plan.md</div><div class="fm"><span data-bind="file.edited">34m</span> · <span data-bind="file.size">8 KB</span></div></div><span data-switch="file.badge" style="flex:none;display:flex;align-items:center;"><span data-case="needs" class="astat is-blocked"><span class="sd"></span>NEEDS REVIEW</span><span data-case="approved" class="astat" style="color:var(--success);background:var(--success-weak,rgba(52,211,153,.14));">✓ APPROVED</span><span data-case="returned" class="astat is-blocked">↩ CHANGES</span><button data-case="dismissed" class="astat" data-action="restoreDismiss" data-arg="file.decisionId" title="Restore to review" style="border:1px solid var(--hair);background:var(--chip);color:var(--muted);cursor:pointer;font-family:var(--font-sans);">DISMISSED · RESTORE</button></span></div>
+        <!-- in-column empty state (needs-review cleared / empty room / Personal) -->
+        <div data-switch="listEmpty.state"><div data-case="show" style="padding:36px 18px;text-align:center;">
+          <div style="font-size:14.5px;font-weight:600;color:var(--fg);margin-bottom:6px;" data-bind="listEmpty.title">No files here yet</div>
+          <div style="font-size:12.5px;color:var(--muted);line-height:1.5;" data-bind="listEmpty.body">Files your crew produces in this room will land here.</div>
+          <button class="lebtn is-no" data-mod="is-:listEmpty.actionState" data-action="browseWaiting" style="margin:14px auto 0;height:34px;padding:0 14px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-bind="listEmpty.actionLabel">Browse waiting</button>
+        </div></div>
       </div>
     </div>
-    <!-- preview: header bar (file name + actions) over a scrolling body. The body
-         switches shells on preview.mode — text reads on the paper card, video/image
-         render full-width on the dark ground. -->
-    <div style="flex:1;min-width:0;background:var(--surface);display:flex;flex-direction:column;overflow:hidden;" data-state="ready">
-      <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--divider);">
-        <span style="flex:1;min-width:0;font-family:var(--font-mono);font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="preview.fileName">dashboard-port-plan.md</span>
-        <button class="assign is-quiet" data-action="assignAgent" data-arg="viewFile.id" style="flex:none;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Assign to agent</button>
-        <button class="assign" data-action="openInReview" data-arg="viewFile.id" style="flex:none;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Open in Review</button>
+    <!-- detail pane = the REVIEW VIEWER (rehomed from the Review tool, files-tool merge):
+         switches by deliverable.type (doc|image|video|audio|siteshot|sitelive), pin layer
+         on top. "Open in Review" is DEAD — review is already here on every open file. -->
+    <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;position:relative;padding:28px;" data-state="ready">
+      <div class="doc" style="width:560px;padding:46px 50px;" data-mod="is-:deliverable.type">
+        <div style="font-family:var(--font-mono);font-size:12px;color:#999;margin-bottom:18px;" data-bind="deliverable.file">handoff.md · 8 KB</div>
+        <h1 style="font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0 0 16px;" data-bind="deliverable.title">Support ask · handoff</h1>
+        <div style="font-size:15px;line-height:1.65;color:#333;" data-html="deliverable.bodyHtml" data-cv6-keep="review-body"><p style="margin:0 0 14px;">Loading…</p></div>
+        <!-- ONE pin per comment; host positions it from pin.x/pin.y (live %) -->
+        <div class="pin" data-each="deliverable.pins" data-mod="left:pin.x;top:pin.y" data-action="openPin" data-arg="pin.id" data-bind="pin.n">1</div>
       </div>
-      <div style="flex:1;min-height:0;overflow-y:auto;padding:32px 28px;" data-switch="preview.mode">
-        <div data-case="paper" style="max-width:560px;margin:0 auto;background:var(--surface);border:1px solid var(--hair);border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,.28);padding:44px 48px;color:var(--fg);">
-          <h1 style="font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0 0 14px;color:var(--fg);" data-bind="preview.title">Dashboard port plan</h1>
-          <div style="font-size:15px;line-height:1.65;color:var(--fg);" data-html="preview.bodyHtml" data-cv6-keep="organize-preview-paper"><p style="margin:0 0 14px;">Port CV6 to mobile parity: dynamic viewport units, safe-area insets, the side menu, and the swipe-deck Catch Up.</p></div>
+      <div style="position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.55);border-radius:16px;padding:6px 12px;font-size:11.5px;font-weight:600;color:#fff;">Click anywhere to comment</div>
+    </div>
+    <!-- verdict rail (rehomed verbatim from the Review tool — R15b tier: verdict trio
+         loudest, Assign + Download one quiet tier down, zero accent on utilities) -->
+    <div style="width:330px;flex:none;border-left:1px solid var(--divider);overflow-y:auto;">
+      <div style="padding:22px;">
+        <div class="eyebrow" style="margin-bottom:12px;">This file</div>
+        <div style="background:var(--surface);border:1px solid var(--hair);border-radius:12px;overflow:hidden;margin-bottom:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;border-bottom:1px solid var(--divider);"><span style="font-size:13px;color:var(--muted);">Type</span><span style="font-size:13.5px;font-weight:500;color:var(--fg);" data-bind="deliverable.typeLabel">Document</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;border-bottom:1px solid var(--divider);"><span style="font-size:13px;color:var(--muted);">From</span><span style="display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;color:var(--fg);"><span class="ava is-green" data-mod="is-:deliverable.whoTint" style="width:20px;height:20px;font-size:9px;" data-bind="deliverable.whoInitials">EL</span><span data-bind="deliverable.who">Elon</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;"><span style="font-size:13px;color:var(--muted);">Location</span><span style="font-size:13.5px;font-weight:500;color:var(--fg);" data-bind="deliverable.location">Corner · Dashboard</span></div>
         </div>
-        <div data-case="media" style="max-width:880px;margin:0 auto;">
-          <div data-html="preview.bodyHtml" data-cv6-keep="organize-preview-media"></div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:18px;">
+          <!-- R15b design gate: VERDICT TRIO first (Approve loudest); utilities demoted below. -->
+          <button style="height:46px;border-radius:11px;border:none;background:var(--success);color:#06281c;font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="approve" data-arg="deliverable.id"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve</button>
+          <!-- Dismiss = permanent discard: muted-destructive (--error family). Toast carries Undo. -->
+          <button style="height:46px;border-radius:11px;border:1px solid rgba(248,113,113,.38);background:transparent;color:var(--error,#F87171);font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="dismiss" data-arg="deliverable.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Dismiss</button>
+          <button style="height:46px;border-radius:11px;border:1px solid var(--hair);background:transparent;color:var(--fg);font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="requestChanges" data-arg="deliverable.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h12"/></svg>Request changes</button>
+          <!-- Utility row: Assign + Download as quiet neutral ghosts one tier down (38px, no accent). -->
+          <div style="display:flex;gap:9px;">
+            <button class="assign" style="flex:1;height:38px;border-radius:10px;border:1px solid var(--hair);background:transparent;color:var(--fg);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" data-action="assignAgent" data-arg="deliverable.id"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Assign</button>
+            <button style="flex:1;height:38px;border-radius:10px;border:1px solid var(--hair);background:transparent;color:var(--fg);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" data-action="download" data-arg="deliverable.id"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Download</button>
+          </div>
         </div>
+        <div class="eyebrow" style="margin-bottom:11px;"><span data-bind="deliverable.commentsLabel">Pin-comments</span> · <span data-bind="deliverable.openCount">0</span> open</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px;">
+          <!-- ONE row per pin-comment -->
+          <div style="display:flex;gap:10px;padding:11px 12px;background:var(--surface);border:1px solid var(--hair);border-radius:11px;cursor:pointer;" data-each="deliverable.comments" data-action="openPin" data-arg="comment.id"><span class="pin" style="position:static;transform:none;width:22px;height:22px;font-size:11px;flex:none;" data-bind="comment.n">1</span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;line-height:1.45;color:var(--fg);" data-bind="comment.text">Pin the exact framing term before this locks.</div><div style="font-size:11px;color:var(--faint);margin-top:4px;" data-bind="comment.anchor">on "Interactive/community"</div></div></div>
+        </div>
+        <!-- Send-notes appears ONLY once a comment is pinned (deliverable.hasNotes = yes) -->
+        <div data-switch="deliverable.hasNotes"><div data-case="yes">
+          <button style="width:100%;height:40px;border-radius:11px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="sendChecklist" data-arg="deliverable.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Send <span data-bind="deliverable.openCount">2</span> <span data-bind="deliverable.notesWord">notes</span> → <span data-bind="deliverable.who">Elon</span></button>
+          <div style="font-size:11.5px;line-height:1.5;color:var(--faint);text-align:center;margin-top:10px;">Comments become a fix-list the agent works through, then re-submits.</div>
+        </div></div>
       </div>
     </div>
   </div>
@@ -107,10 +152,11 @@
   <div style="position:absolute;left:0;right:0;top:138px;bottom:82px;overflow:hidden;padding:12px 16px 0;">
     <!-- breadcrumb -->
     <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:12px;" data-each="breadcrumb" data-action="openCrumb" data-arg="crumb.id"><span data-bind="crumb.name">Corner</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-    <!-- type-to-find (kept node; host delegates the input event) + sort toggle -->
+    <!-- type-to-find (kept node; host delegates the input event) + sort toggle + Reviewed -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
       <input data-org-search data-cv6-keep="org-search-mobile" type="text" placeholder="Find a file…" style="flex:1;min-width:0;height:40px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:0 13px;color:var(--fg);font-size:14px;font-family:var(--font-sans);outline:none;">
       <button class="ochip is-on" data-each="sorts" data-action="setSort" data-arg="sort.id" data-mod="is-:sort.active" style="flex:none;padding:0 11px;"><span data-bind="sort.label">Newest</span></button>
+      <button class="ochip is-off" data-action="toggleReviewed" data-mod="is-:reviewed.active" style="flex:none;padding:0 11px;">Reviewed</button>
     </div>
     <!-- mission chips: same narrowing as desktop; single row that scrolls horizontally; ochip-row-fade signals more chips beyond the edge -->
     <div class="ochip-row-fade" style="display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;">
@@ -118,6 +164,8 @@
     </div>
     <!-- filter chips: ochip-filter-row lighter active state (secondary axis) -->
     <div class="ochip-filter-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:14px;">
+      <!-- Needs review FIRST (files-tool merge): amber count, renders only when > 0 -->
+      <span data-switch="needsChip.state" style="display:contents;"><button data-case="show" class="ochip is-off" data-action="setFilter" data-arg="needsChip.id" data-mod="is-:needsChip.active" style="flex:none;">Needs review <span class="needsn" data-bind="needsChip.count">3</span></button></span>
       <!-- ONE chip per filter; is-on marks the active filter -->
       <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active" style="flex:none;"><span data-bind="filter.label">All 12</span></button>
       <span style="margin-left:auto;font-size:12.5px;font-weight:600;color:var(--accent);" data-action="toggleSelectMode">Done</span>
@@ -125,9 +173,16 @@
     <div style="background:var(--surface);border:1px solid var(--hair);border-radius:16px;overflow:hidden;">
       <!-- folder row (leads into the folder) -->
       <div class="selrow" data-each="folders" data-action="openFolder" data-arg="subfolder.id"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="subfolder.name">cv6</div><div style="font-size:11px;color:var(--muted);"><span data-bind="subfolder.fileCount">12</span> files</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-      <!-- ONE file row; is-on marks selected; is-:file.kind on the glyph; tap toggles selection -->
-      <div class="selrow is-on" data-each="files" data-action="toggleSelect" data-arg="file.id" data-mod="is-:file.selected"><span class="selbox"><svg class="ck" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 7"/></svg></span><svg class="fglyph is-doc" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);" data-mod="is-:file.kind"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="file.name">dashboard-port-plan.md</div><div class="mono" style="font-size:10.5px;color:var(--faint);"><span data-bind="file.edited">34m</span> · <span data-bind="file.size">8 KB</span></div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--faint)" data-action="openFileMenu" data-arg="file.id"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></div>
+      <!-- ONE file row; is-on marks selected; is-:file.kind on the glyph; tap toggles selection;
+           file.badge switches the status chip (needs review / verdict / none) -->
+      <div class="selrow is-on" data-each="files" data-action="toggleSelect" data-arg="file.id" data-mod="is-:file.selected"><span class="selbox"><svg class="ck" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 7"/></svg></span><svg class="fglyph is-doc" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);" data-mod="is-:file.kind"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="file.name">dashboard-port-plan.md</div><div class="mono" style="font-size:10.5px;color:var(--faint);"><span data-bind="file.edited">34m</span> · <span data-bind="file.size">8 KB</span></div></div><span data-switch="file.badge" style="flex:none;display:flex;align-items:center;"><span data-case="needs" class="astat is-blocked"><span class="sd"></span>NEEDS REVIEW</span><span data-case="approved" class="astat" style="color:var(--success);background:var(--success-weak,rgba(52,211,153,.14));">✓ APPROVED</span><span data-case="returned" class="astat is-blocked">↩ CHANGES</span><button data-case="dismissed" class="astat" data-action="restoreDismiss" data-arg="file.decisionId" title="Restore to review" style="border:1px solid var(--hair);background:var(--chip);color:var(--muted);cursor:pointer;font-family:var(--font-sans);">DISMISSED · RESTORE</button></span><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--faint)" data-action="openFileMenu" data-arg="file.id"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></div>
     </div>
+    <!-- in-column empty state (needs-review cleared / empty room / Personal) -->
+    <div data-switch="listEmpty.state"><div data-case="show" style="padding:32px 18px;text-align:center;">
+      <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px;" data-bind="listEmpty.title">No files here yet</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.5;" data-bind="listEmpty.body">Files your crew produces in this room will land here.</div>
+      <button class="lebtn is-no" data-mod="is-:listEmpty.actionState" data-action="browseWaiting" style="margin:14px auto 0;height:38px;padding:0 16px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-bind="listEmpty.actionLabel">Browse waiting</button>
+    </div></div>
   </div>
   <!-- selection action bar -->
   <div style="position:absolute;left:0;right:0;bottom:0;height:82px;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:12px;padding:0 16px;">
@@ -168,26 +223,44 @@
   </div>
 </div>
 
-<!-- ============ MOBILE C · view / review a file ============ -->
-<div data-cv6 data-theme="dark" data-screen="organize-mobile" data-screen-label="Organize · View file" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+<!-- ============ MOBILE C · view a file = READ + DECIDE (review rehomed) ============
+     The old paper reader + "Open in Review" jump are DEAD: the review viewer renders
+     the file (all types, pin layer) and the R15b two-row verdict bar sits below —
+     verdict trio (Approve fill / Dismiss destructive ghost / Changes neutral) + the
+     quiet Assign+Download utility row. Verified at 390px: trio fits one row. -->
+<div data-cv6 data-theme="dark" data-screen="organize-mobile" data-screen-label="Organize · View file" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);display:flex;flex-direction:column;">
   <div class="mhdr">
     <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
     <div class="mhtitle"><div class="mttl" data-bind="viewFile.name">dashboard-port-plan.md</div><div class="msub" data-bind="viewFile.path">Corner · Dashboard</div></div>
-    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--divider);"><span class="ava is-green" data-mod="is-:viewFile.editorTint" style="width:22px;height:22px;font-size:9px;flex:none;" data-bind="viewFile.editorInitials">EL</span><span style="font-size:12px;color:var(--muted);flex:1;">Edited by <span data-bind="viewFile.editor">Elon</span> · <span data-bind="viewFile.edited">34m ago</span></span><span class="astat is-ready" data-mod="is-:viewFile.status"><span class="sd"></span><span data-bind="viewFile.statusLabel">READY</span></span></div>
-  <div style="position:absolute;left:0;right:0;top:158px;bottom:78px;overflow:hidden;padding:16px;" data-state="ready">
-    <div style="background:var(--surface);border:1px solid var(--hair);border-radius:8px;min-height:100%;box-sizing:border-box;box-shadow:0 12px 36px rgba(0,0,0,.28);padding:24px 22px;color:var(--fg);">
-      <div style="font-family:var(--font-mono);font-size:11px;color:var(--faint);margin-bottom:14px;" data-bind="viewFile.name">dashboard-port-plan.md</div>
-      <h1 style="font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0 0 12px;color:var(--fg);" data-bind="viewFile.title">Dashboard port plan</h1>
-      <div style="font-size:13.5px;line-height:1.6;color:var(--fg);" data-html="viewFile.bodyHtml"><p style="margin:0;">Port CV6 to mobile parity: dynamic viewport units, safe-area insets, the side menu, and the swipe-deck Catch Up.</p></div>
+  <div style="flex:none;display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--divider);"><span class="ava is-green" data-mod="is-:viewFile.editorTint" style="width:22px;height:22px;font-size:9px;flex:none;" data-bind="viewFile.editorInitials">EL</span><span style="font-size:12px;color:var(--muted);flex:1;">Edited by <span data-bind="viewFile.editor">Elon</span> · <span data-bind="viewFile.edited">34m ago</span></span><span data-switch="viewFile.needs" style="flex:none;display:flex;align-items:center;"><span data-case="yes" class="astat is-blocked"><span class="sd"></span>NEEDS REVIEW</span></span></div>
+  <div style="flex:1;min-height:0;overflow:hidden;padding:12px 14px;display:flex;" data-state="ready">
+    <div class="doc" style="flex:1;min-width:0;border-radius:10px;padding:18px;overflow-y:auto;box-sizing:border-box;" data-mod="is-:deliverable.type">
+      <div style="font-family:var(--font-mono);font-size:11px;color:#999;margin-bottom:12px;" data-bind="deliverable.file">handoff.md · 8 KB</div>
+      <h1 style="font-size:18px;font-weight:700;margin:0 0 10px;" data-bind="deliverable.title">Support ask · handoff</h1>
+      <div style="font-size:13.5px;line-height:1.6;color:#333;" data-html="deliverable.bodyHtml" data-cv6-keep="review-body"><p style="margin:0;">Loading…</p></div>
+      <div class="pin" data-each="deliverable.pins" data-mod="left:pin.x;top:pin.y" data-action="openPin" data-arg="pin.id" data-bind="pin.n">1</div>
     </div>
   </div>
-  <div style="position:absolute;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:10px;padding:0 16px;">
-    <button style="flex:1;height:48px;border-radius:13px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="openInReview" data-arg="viewFile.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Open in Review</button>
-    <button style="width:48px;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;" data-action="assignAgent" data-arg="viewFile.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
-    <button style="width:48px;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;" data-action="commentFile" data-arg="viewFile.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg></button>
-    <button style="width:48px;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;" data-action="moveFile" data-arg="viewFile.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M13 17h8M18 14l3 3-3 3"/></svg></button>
+  <!-- pin-comment count bar (hidden entirely at zero pins via .mpinbar.is-none) -->
+  <div class="mpinbar" style="flex:none;padding:11px 14px;border-top:1px solid var(--divider);background:var(--ground);" data-action="openComments" data-mod="is-:deliverable.pinState">
+    <span class="pin" style="position:static;transform:none;width:22px;height:22px;font-size:11px;flex:none;" data-bind="deliverable.openCount">3</span>
+    <div style="flex:1;min-width:0;font-size:12.5px;color:var(--muted);line-height:1.3;"><span data-bind="deliverable.openCount">3</span> <span data-bind="deliverable.commentsLabelLower">pin-comments</span> queued for <span data-bind="deliverable.who">Gary</span></div>
+    <span style="font-size:12.5px;font-weight:600;color:var(--accent);">View</span>
+  </div>
+  <!-- decision bar — R15b two-row layout, reused verbatim: verdict trio fits 390px
+       with NO horizontal scroll; utilities one quiet tier below, zero accent. -->
+  <div style="flex:none;padding:12px 16px 14px;border-top:1px solid var(--divider);background:var(--ground);display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;gap:8px;">
+      <button style="flex:1;min-width:0;height:48px;border-radius:13px;border:none;background:var(--success);color:#06281c;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;" data-action="approve" data-arg="deliverable.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve</button>
+      <button style="flex:1;min-width:0;height:48px;border-radius:13px;border:1px solid rgba(248,113,113,.38);background:transparent;color:var(--error,#F87171);font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;" data-action="dismiss" data-arg="deliverable.id"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Dismiss</button>
+      <button style="flex:1;min-width:0;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;" data-action="requestChanges" data-arg="deliverable.id"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h12"/></svg>Changes</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="assign" style="flex:1;height:34px;border-radius:10px;border:1px solid var(--hair);background:transparent;color:var(--fg);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" data-action="assignAgent" data-arg="deliverable.id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Assign</button>
+      <button style="flex:1;height:34px;border-radius:10px;border:1px solid var(--hair);background:transparent;color:var(--fg);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" data-action="download" data-arg="deliverable.id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Download</button>
+    </div>
   </div>
 </div>
 
@@ -198,9 +271,13 @@
     <div class="mhtitle"><div class="mttl">Organize</div><div class="msub">Pick a project</div></div>
     <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
-  <div data-state="ready" style="flex:1;overflow:hidden;">
-    <!-- ONE row per project; is-:project.tint on .pgly -->
-    <div class="prow" data-each="projects" data-action="openProject" data-arg="project.id"><div class="pgly is-accent" data-mod="is-:project.tint"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></div><div style="flex:1;min-width:0;"><div class="pname" data-bind="project.name">Corner CV6</div><div class="pmeta" data-bind="project.countLabel">34 files · 3 folders</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9 18l6-6-6-6"/></svg></div>
+  <div data-state="ready" style="flex:1;overflow-y:auto;">
+    <!-- top-line needs-you pill (files-tool merge): honest waiting total, tap = triage -->
+    <div data-switch="needsPill.state">
+      <button data-case="show" data-action="needsPillGo" style="display:flex;align-items:center;gap:8px;width:calc(100% - 32px);margin:12px 16px 4px;height:42px;padding:0 14px;border-radius:12px;border:1px solid rgba(251,191,36,.35);background:var(--warn-weak,rgba(251,191,36,.12));color:var(--warn);font-size:13px;font-weight:600;font-family:var(--font-sans);cursor:pointer;text-align:left;box-sizing:border-box;"><span class="sdot is-blocked" style="flex:none;"></span><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="needsPill.label">3 need your review</span></button>
+    </div>
+    <!-- ONE row per project; is-:project.tint on .pgly; project.glyph switches folder vs person (Personal) -->
+    <div class="prow" data-each="projects" data-action="openProject" data-arg="project.id"><div class="pgly is-accent" data-mod="is-:project.tint"><span data-switch="project.glyph" style="display:flex;"><svg data-case="folder" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><svg data-case="person" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span></div><div style="flex:1;min-width:0;"><div class="pname" data-bind="project.name">Corner CV6</div><div class="pmeta" data-bind="project.countLabel">34 files · 3 folders</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9 18l6-6-6-6"/></svg></div>
   </div>
   <div style="flex:none;padding:14px 16px;border-top:1px solid var(--divider);background:var(--ground);"><button style="width:100%;height:46px;border-radius:13px;border:1px dashed var(--hair);background:transparent;color:var(--accent);font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="newProject"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New project</button></div>
 </div>

@@ -251,7 +251,37 @@ function imageBodyHtml(f, worldId) {
     + '</div>';
 }
 
-export function useOrganize(worldId = 'aom') {
+// PDF preview: stream the file straight off the tunnel into the browser's native
+// viewer — project-file-raw serves PDFs inline, Range-capable, CORS * (the exact
+// posture Review's doc branch shipped in R79-f24). Spinner sits under the frame
+// until it loads (O2: no silent black pane). iOS Safari only paints page 1 of a
+// PDF inside an iframe, so an Open-full-size link rides above the frame.
+function pdfBodyHtml(src, name) {
+  const title = escapeHtml(name || 'PDF');
+  return (
+    `<div style="display:flex;justify-content:flex-end;margin:0 0 8px;">`
+    + `<a href="${src}" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">Open full-size ↗</a></div>`
+    + `<div style="position:relative;min-height:420px;">${MEDIA_WAIT_HTML}`
+    + `<iframe src="${src}" title="${title}" onload="${HIDE_WAIT}" style="position:relative;width:100%;height:70vh;min-height:420px;border:1px solid var(--hair);border-radius:10px;display:block;background:#fff;"></iframe>`
+    + '</div>'
+  );
+}
+
+// Files-tool merge (corner:one-corner, 2026-07-13): the container mounts useReview
+// beside this hook and passes the review join in via opts — pure derivation, no new
+// endpoint. A file's review identity is its corner path (mirror rows) or its upload
+// URL (uploads); queue items key by BOTH their id and their source_path-derived
+// corner path, so agent hand-offs (absolute store URLs) still join their mirror row.
+//   opts.reviewWaiting  Map<identity, { id, ts }>  — the waiting set (needs review)
+//   opts.reviewTotal    number                     — honest waiting total across pages
+//   opts.reviewDecided  Map<identity, { verdict, decisionId, itemId }> | null
+//                       (only when the Reviewed toggle is on)
+//   opts.reviewedOn     boolean                    — the Reviewed toggle state
+export function useOrganize(worldId = 'aom', opts = {}) {
+  const reviewWaiting = opts.reviewWaiting || null;
+  const reviewTotal = Number(opts.reviewTotal) || 0;
+  const reviewDecided = opts.reviewDecided || null;
+  const reviewedOn = !!opts.reviewedOn;
   const SS_KEY = `org_state_${worldId}`;
   const [projects, setProjects] = useState(null);
   const [files, setFiles] = useState(null);        // metadata rows (no content)
@@ -394,6 +424,9 @@ export function useOrganize(worldId = 'aom') {
         bodyHtml = `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${esc(up.url)}" ${mediaAttrs(up.url, 'video')} controls preload="metadata" playsinline onloadeddata="${HIDE_WAIT}this.style.background='#000';" style="position:relative;width:100%;max-height:68vh;display:block;border-radius:10px;background:transparent;"></video></div>`;
       } else if (kind === 'audio') {
         bodyHtml = `<audio src="${esc(up.url)}" ${mediaAttrs(up.url, 'audio')} controls preload="metadata" style="width:100%;display:block;margin:12px 0;border-radius:8px;"></audio>`;
+      } else if (kind === 'pdf') {
+        // Uploads' id IS their store URL — the browser's PDF viewer loads it directly.
+        bodyHtml = pdfBodyHtml(esc(up.url), up.name);
       } else {
         bodyHtml = nonTextPreview(up.name, kind);
       }
@@ -443,6 +476,13 @@ export function useOrganize(worldId = 'aom') {
       } else if (kind === 'image') {
         // Real image render, streaming off the tunnel (see imageBodyHtml).
         bodyHtml = imageBodyHtml(f, worldId);
+        title = f.name || 'Untitled';
+      } else if (kind === 'pdf') {
+        // PDFs stream off the tunnel into the browser's native viewer (see pdfBodyHtml).
+        const cornerPath = cornerPathOf(f, worldId);
+        bodyHtml = cornerPath
+          ? pdfBodyHtml(`${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}`, f.name)
+          : nonTextPreview(f.name, 'pdf');
         title = f.name || 'Untitled';
       } else if (f.content && DATA_EXT.test(f.name || '')) {
         // Structured-data files: monospace verbatim, titled by their real filename (O2).
@@ -496,8 +536,11 @@ export function useOrganize(worldId = 'aom') {
   // uploaded:true — that flag IS the "My uploads" filter. Dedupe by name+mission
   // against mirror rows so a file that also got committed never doubles up.
   (uploads || []).forEach((u) => {
-    const slug = String(u.project || '').trim().toLowerCase();
-    if (!slug || !u.url || !u.name) return; // agent-room/legacy uploads carry no project home
+    // No project home (a 1:1 agent-chat drop, a legacy upload) -> the Personal
+    // bucket, a synthetic pseudo-project pinned at the top of the tree. These are
+    // real files; hiding them was the old behavior and it was dishonest.
+    const slug = String(u.project || '').trim().toLowerCase() || '__personal';
+    if (!u.url || !u.name) return;
     const mKey = uploadMissionKey(u.mission, slug);
     if (!groups.has(slug)) groups.set(slug, []);
     const bucket = groups.get(slug);
@@ -536,31 +579,50 @@ export function useOrganize(worldId = 'aom') {
       fileCount: (groups.get(p.slug) || []).length,
       folderCount: 0, // Phase 2 turns folders on
       tint: tintFor(p.slug),
+      glyph: 'folder',
       countLabel: `${(groups.get(p.slug) || []).length} file${(groups.get(p.slug) || []).length === 1 ? '' : 's'}`,
     };
   });
   for (const [slug, fs] of groups.entries()) {
-    if (slug === 'unfiled' || seenSlugs.has(slug)) continue;
-    projectList.push({ id: slug, name: nameBySlug[slug] || prettify(slug), fileCount: fs.length, folderCount: 0, tint: tintFor(slug), countLabel: `${fs.length} file${fs.length === 1 ? '' : 's'}` });
+    if (slug === 'unfiled' || slug === '__personal' || seenSlugs.has(slug)) continue;
+    projectList.push({ id: slug, name: nameBySlug[slug] || prettify(slug), fileCount: fs.length, folderCount: 0, tint: tintFor(slug), glyph: 'folder', countLabel: `${fs.length} file${fs.length === 1 ? '' : 's'}` });
   }
   // Alphabetical by display name (case-insensitive), so the list is scannable instead of
   // arriving in the table's recency order. This order also drives the desktop tree panel.
   projectList.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  // Personal bucket pinned ABOVE the alphabetical list (person glyph, not a folder):
+  // the honest home for 1:1 chat uploads with no project. Always present so the
+  // "where do my 1:1 files go" answer never disappears.
+  {
+    const personalFiles = groups.get('__personal') || [];
+    projectList.unshift({
+      id: '__personal',
+      name: 'Personal',
+      fileCount: personalFiles.length,
+      folderCount: 0,
+      tint: 'accent',
+      glyph: 'person',
+      countLabel: `${personalFiles.length} file${personalFiles.length === 1 ? '' : 's'}`,
+    });
+  }
 
   const inList = (id) => projectList.some((p) => p.id === id);
-  const activeProjectId = (selectedId && inList(selectedId)) ? selectedId : (projectList[0]?.id || null);
+  // Default landing skips Personal — the first REAL project stays the front door.
+  const activeProjectId = (selectedId && inList(selectedId))
+    ? selectedId
+    : (projectList.find((p) => p.id !== '__personal')?.id || projectList[0]?.id || null);
 
   // Build treeNodes: d0 project rows, then d1 mission rows for the active project.
   const treeNodes = [];
   for (const p of projectList) {
     const isActive = p.id === activeProjectId;
     const missions = isActive ? (missionTree[p.id] || []) : [];
-    treeNodes.push({ id: p.id, name: p.name, depth: 'd0', tint: p.tint, chev: missions.length ? 'down' : (p.fileCount ? 'down' : 'none'), open: isActive });
+    treeNodes.push({ id: p.id, name: p.name, depth: 'd0', tint: p.tint, glyph: p.glyph || 'folder', chev: missions.length ? 'down' : (p.fileCount ? 'down' : 'none'), open: isActive });
     if (isActive) {
       for (const m of missions) {
         const mSlug = String(m.slug || '').includes(':') ? m.slug : `${p.id}:${m.slug}`;
         const mName = String(m.name || m.slug || '').includes(':') ? String(m.name || m.slug || '').slice(String(m.name || m.slug || '').lastIndexOf(':') + 1).trim() : (m.name || m.slug);
-        treeNodes.push({ id: mSlug, name: mName, depth: 'd1', tint: p.tint, chev: 'none', open: false });
+        treeNodes.push({ id: mSlug, name: mName, depth: 'd1', tint: p.tint, glyph: 'folder', chev: 'none', open: false });
       }
     }
   }
@@ -575,6 +637,7 @@ export function useOrganize(worldId = 'aom') {
   const fileMatchesFilter = (f, eff) => {
     const kind = f.kind;
     switch (eff) {
+      case 'needs':   return !!f.needsReview; // needs-review triage (files-tool merge)
       case 'uploads': return !!f.uploaded; // "My uploads" — the files Patrik dropped into chats
       case 'links':  return kind === 'link';
       case 'pdfs':   return kind === 'pdf';
@@ -595,14 +658,32 @@ export function useOrganize(worldId = 'aom') {
     .map((f) => {
       const fname = f.name || 'Untitled';
       const kind = resolveKind(f.kind, fname);
+      // Review identity join (files-tool merge): waiting set membership drives the
+      // NEEDS REVIEW badge + the needs-review filter; the decided map (Reviewed
+      // toggle on) drives the verdict badges + Restore on dismissed rows.
+      const identity = f.uploaded ? (f.upload_url || f.id) : cornerPathOf(f, worldId);
+      const wHit = reviewWaiting ? reviewWaiting.get(identity) : null;
+      const dHit = (!wHit && reviewDecided) ? reviewDecided.get(identity) : null;
       return {
         id: f.id,
         name: fname,
         edited: relTime(f.updated_at),
         size: formatSize(f.size || 0),
         kind,
+        mime: f.mime || null,
         status: 'ready',
         uploaded: !!f.uploaded, // feeds the "My uploads" chip
+        // The identity verdicts/pins/viewer key on: the queue item's id when the file
+        // is (or was) in the review flow, else its own corner path / upload URL.
+        reviewId: wHit ? wHit.id : (dHit ? (dHit.itemId || identity) : identity),
+        needsReview: !!wHit,
+        reviewTs: wHit ? (wHit.ts || '') : '',
+        // Row badge: a badge must MEAN something — waiting files wear NEEDS REVIEW;
+        // decided files (Reviewed toggle on) wear their verdict; everything else none.
+        badge: wHit ? 'needs'
+          : dHit ? (dHit.verdict === 'approve' ? 'approved' : dHit.verdict === 'request-changes' ? 'returned' : 'dismissed')
+            : 'none',
+        decisionId: dHit ? (dHit.decisionId || '') : '',
         // In the 'missions' pseudo-project (tenant-level missions), the first
         // rel_path segment IS the mission slug; elsewhere it's missions/<slug>/.
         missionKey: f.uploaded
@@ -656,12 +737,20 @@ export function useOrganize(worldId = 'aom') {
   // back to Recent instead of showing an inexplicable empty column. "My uploads"
   // is exempt: the chip is always present (Patrik 2026-07-12), so staying on it
   // with an empty list is honest, not inexplicable.
+  const needsCount = missionFiles.filter((f) => f.needsReview).length;
   const kindCountFor = { links: linkCount, docs: docCount, pdfs: pdfCount, images: imageCount, video: videoCount, audio: audioCount };
-  const effFilter = (filter !== 'recent' && filter !== 'uploads' && !kindCountFor[filter]) ? 'recent' : filter;
+  // 'needs' is exempt from the zero-count fallback like 'uploads': the cleared
+  // triage list must show its honest empty state, never silently flip to Recent.
+  const effFilter = (filter !== 'recent' && filter !== 'uploads' && filter !== 'needs' && !kindCountFor[filter]) ? 'recent' : filter;
   const q = query.trim().toLowerCase();
   const fileList = missionFiles
     .filter((f) => fileMatchesFilter(f, effFilter))
-    .filter((f) => !q || f.name.toLowerCase().includes(q));
+    .filter((f) => !q || f.name.toLowerCase().includes(q))
+    // Triage order: under the needs-review filter the list reads newest HAND-OFF
+    // first (the queue's own byNewest), not newest file-edit first.
+    .sort((a, b) => (effFilter === 'needs'
+      ? String(b.reviewTs || '').localeCompare(String(a.reviewTs || ''))
+      : 0));
 
   // The open file: the explicitly-opened one if it's in this project's list, else the first.
   const openInList = fileList.find((f) => f.id === openedId) || fileList[0] || null;
@@ -692,7 +781,15 @@ export function useOrganize(worldId = 'aom') {
 
   const data = {
     tree: treeNodes,
-    folder: { name: openProject.name, fileCount: fileList.length, folderCount: 0, fileCountLabel: `${fileList.length} file${fileList.length === 1 ? '' : 's'}` },
+    folder: {
+      name: openProject.name,
+      fileCount: fileList.length,
+      folderCount: 0,
+      // Under the needs-review filter the header counts what WAITS, honestly scoped.
+      fileCountLabel: effFilter === 'needs'
+        ? `${fileList.length} to review`
+        : `${fileList.length} file${fileList.length === 1 ? '' : 's'}`,
+    },
     files: fileList,
     projects: projectList,
     breadcrumb: [{ id: 'root', name: 'Corner' }, openProject].filter((x) => x.id),
@@ -710,6 +807,47 @@ export function useOrganize(worldId = 'aom') {
       { id: 'video',  label: `Video ${videoCount}`,       count: videoCount, active: effFilter === 'video'  ? 'on' : 'off' },
       { id: 'audio',  label: `Audio ${audioCount}`,       count: audioCount, active: effFilter === 'audio'  ? 'on' : 'off' },
     ].filter((c) => c.id === 'recent' || c.id === 'uploads' || c.count > 0),
+    // The needs-review chip: FIRST in the chip row (its own template slot, left of
+    // Recent), amber count = "these want you". Renders only when its scoped count
+    // is > 0 — except while the filter itself is active, so the cleared state stays
+    // legible until the next scope change collapses it.
+    needsChip: {
+      id: 'needs',
+      state: (needsCount > 0 || effFilter === 'needs') ? 'show' : 'hide',
+      active: effFilter === 'needs' ? 'on' : 'off',
+      count: needsCount,
+    },
+    // All-projects top-line pill: the honest waiting total across the whole world
+    // (server total, not the fetched window). Tapping it jumps into triage.
+    needsPill: {
+      state: reviewTotal > 0 ? 'show' : 'hide',
+      label: `${reviewTotal} need${reviewTotal === 1 ? 's' : ''} your review`,
+    },
+    // Reviewed toggle (segmented, next to the sort control): off = normal browse;
+    // on = decided files wear their verdict badge and dismissed rows offer Restore.
+    reviewed: { active: reviewedOn ? 'on' : 'off' },
+    // In-column empty states (the file list itself, not the whole-screen empty).
+    listEmpty: (() => {
+      const none = { state: 'none', title: '', body: '', actionState: 'no', actionLabel: '' };
+      if (fileList.length) return none;
+      if (effFilter === 'needs') {
+        if (reviewTotal > 0) {
+          return {
+            state: 'show',
+            title: 'Nothing here to review',
+            body: `${reviewTotal} ${reviewTotal === 1 ? 'is' : 'are'} waiting across your other rooms.`,
+            actionState: 'yes',
+            actionLabel: `Browse waiting (${reviewTotal})`,
+          };
+        }
+        return { state: 'show', title: "You're all caught up", body: 'Nothing needs your review right now. New deliverables your crew flags will land here.', actionState: 'no', actionLabel: '' };
+      }
+      if (q) return none; // a live search with no hits reads fine as an empty list
+      if (openProject.id === '__personal') {
+        return { state: 'show', title: 'Nothing personal yet', body: 'Files you drop into 1:1 chats land here.', actionState: 'no', actionLabel: '' };
+      }
+      return { state: 'show', title: 'No files here yet', body: 'Files your crew produces in this room will land here.', actionState: 'no', actionLabel: '' };
+    })(),
     missions: missionChips,
     sorts: [
       { id: 'newest', label: 'Newest', active: sort === 'newest' ? 'on' : 'off' },
@@ -730,8 +868,12 @@ export function useOrganize(worldId = 'aom') {
           edited: openInList.edited,
           status: openInList.status,
           statusLabel: (openInList.status || 'ready').toUpperCase(),
-          // "Open in Review": the file's real corner path + project slug, so Review
-          // injects and opens THIS exact file instead of landing on the queue.
+          // Review identity of the open file (verdicts/pins/viewer key on this).
+          reviewId: openInList.reviewId || openCornerPath || '',
+          needsReview: !!openInList.needsReview,
+          needs: openInList.needsReview ? 'yes' : 'no',
+          mime: openInList.mime || null,
+          kind: openInList.kind,
           reviewFile: openCornerPath ? { url: openCornerPath, name: openInList.name } : null,
           projectSlug: openProject.id,
         }

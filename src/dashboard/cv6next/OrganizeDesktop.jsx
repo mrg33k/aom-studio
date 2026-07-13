@@ -1,11 +1,18 @@
-// cv6next — Organize, desktop (tree → files → preview).
-// Structure from design-system-2026-06-24 wired/tools/organize.html, mounted via
-// TemplateScreen with real data from useOrganize. We extract the organize-desktop
-// screen node from the design fragment, inject the shared loading/error/empty states,
-// and bind real data + actions behind it (no redraw).
+// cv6next — Files, desktop (tree → files → review viewer + verdict rail).
+// The Organize browser with the Review tool REHOMED inside it (corner:one-corner
+// files-tool merge, spec: corner/missions/one-corner/design/files-tool-spec.md):
+// useOrganize stays the browser's data source; useReview mounts HERE for exactly
+// two jobs — the needs-review waiting set and the verdicts/viewer on the open
+// file. The verdict machinery (approve fill / destructive dismiss + 10s Undo /
+// request-changes→task / pins / j-k-a / optimistic removal) is the shipped R15b
+// build, mounted — never rebuilt.
 
 import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import { useOrganize } from './data/useOrganize.js';
+import { useReview } from './data/useReview.js';
+import { usePins } from './data/usePins.js';
+import { useReviewPinUI } from './ReviewPins.jsx';
+import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import NewComposer from './NewComposer.jsx';
@@ -15,7 +22,18 @@ import statesRaw from './templates/states-extra.html?raw';
 
 // data-each item aliases the engine can't derive (tree→node, breadcrumb→crumb,
 // destinations→dest, folders→subfolder); the singularizable ones are kept explicit too.
-const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission', sorts: 'sort' };
+const ORG_ALIASES = {
+  tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb',
+  destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission',
+  sorts: 'sort', 'deliverable.pins': 'pin', 'deliverable.comments': 'comment',
+};
+
+// Loading placeholder for the review viewer body while a file's bytes are in flight.
+const VIEWER_LOADING_HTML =
+  '<div style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:160px;color:#9a9a9a;">'
+  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
+  + '<span style="font-size:13px;font-weight:500;">Opening the file…</span></div>';
+const VIEWER_NONE_HTML = '<div style="padding:14px 0;color:#888;font-size:13.5px;">No file selected — pick one from the list.</div>';
 
 function composeOrganize(raw, screenName) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -38,17 +56,195 @@ function composeOrganize(raw, screenName) {
 
 const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
-export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
+// Build the identity → waiting-item map. A queue item joins by its own id (upload
+// URLs match upload rows directly) AND by the corner path derived from its
+// source_path (agent hand-offs carry absolute store URLs, but their disk mirror
+// row keys by corner/users/... — the source_path bridges the two).
+export function buildWaitingMap(itemsAll) {
+  const m = new Map();
+  for (const it of (itemsAll || [])) {
+    const val = { id: it.id, ts: it.ts || '' };
+    m.set(it.id, val);
+    const sp = String(it.sourcePath || '');
+    const ix = sp.indexOf('corner/');
+    if (ix >= 0) m.set(sp.slice(ix), val);
+  }
+  return m;
+}
+
+// Same dual-key mapping for decided items (?view=all rows carrying verdict + decision_id).
+export function buildDecidedMap(decidedRaw) {
+  const m = new Map();
+  for (const it of (decidedRaw || [])) {
+    const val = { verdict: it.verdict, decisionId: it.decision_id || '', itemId: it.path };
+    m.set(it.path, val);
+    const sp = String(it.source_path || '');
+    const ix = sp.indexOf('corner/');
+    if (ix >= 0) m.set(sp.slice(ix), val);
+  }
+  return m;
+}
+
+export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target }) {
   const worldId = 'aom';
-  const { state, data, reload, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId, projects, missionTree } = useOrganize(worldId);
-  // "New project" (tree column footer) -> the shared NewComposer overlay (same flow as
-  // Home's "New"), opened on the project tab. On create, reload with bust so it shows now.
+
+  // ── review machinery (the rehomed Review tool) ──
+  const review = useReview(worldId);
+  const itemsAll = review.data.queue.itemsAll || [];
+  const reviewWaiting = useMemo(() => buildWaitingMap(itemsAll), [itemsAll]);
+  const reviewTotal = review.data.queue.waitingTotal || 0;
+
+  // Reviewed toggle: decided files (?view=all) fetched once on first flip.
+  const [reviewedOn, setReviewedOn] = useState(false);
+  const [decidedRaw, setDecidedRaw] = useState(null);
+  useEffect(() => {
+    if (!reviewedOn || decidedRaw) return undefined;
+    let dead = false;
+    (async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}&view=all&limit=500`);
+        if (r?.ok) {
+          const d = await r.json();
+          if (!dead) setDecidedRaw((d.items || []).filter((i) => i.verdict));
+        }
+      } catch { /* toggle stays on; badges simply don't render */ }
+    })();
+    return () => { dead = true; };
+  }, [reviewedOn, decidedRaw, worldId]);
+  const reviewDecided = useMemo(() => (reviewedOn ? buildDecidedMap(decidedRaw) : null), [reviewedOn, decidedRaw]);
+
+  const { state, data, reload, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId, projects, missionTree } =
+    useOrganize(worldId, { reviewWaiting, reviewTotal, reviewDecided, reviewedOn });
+
+  // "New project" (tree column footer) -> the shared NewComposer overlay.
   const [showNew, setShowNew] = useState(false);
 
-  // The search input is an uncontrolled kept DOM node (see template); the engine only
-  // wires clicks, so the input event is delegated from this React wrapper. Debounced a
-  // beat so each keystroke doesn't force a full template rebind mid-word.
+  // ── open file → review viewer (the detail pane IS review now) ──
+  const openedRow = useMemo(() => (data.files || []).find((f) => f.id === data.openedId) || null, [data.files, data.openedId]);
+  const openReviewId = openedRow?.reviewId || null;
+  const reviewActionsRef = useRef(review.actions);
+  reviewActionsRef.current = review.actions;
+  useEffect(() => {
+    if (!openReviewId || !openedRow) return;
+    reviewActionsRef.current.openFileItem({
+      id: openReviewId,
+      name: openedRow.name,
+      project: activeProjectId === '__personal' ? '' : (activeProjectId || ''),
+      mime: openedRow.mime || '',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openReviewId]);
+
+  // Pins ride the review identity (same store the Review tool used — history intact).
+  const { pins, addPin, deletePin } = usePins(openReviewId, worldId);
   const wrapRef = useRef(null);
+  const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef, pins, addPin, deletePin });
+
+  // Changes overlay (typed notes + pins → tracked task via the assign path).
+  const [changesOpen, setChangesOpen] = useState(false);
+  useEffect(() => { setChangesOpen(false); }, [openReviewId]);
+  const assignExtra = useCallback((extraNotes = '') => ({
+    artifactTitle: openedRow?.name || String(openReviewId || '').split('/').pop() || '',
+    project: activeProjectId === '__personal' ? '' : (activeProjectId || ''),
+    details: (() => {
+      const compiled = compileChanges(pins, extraNotes);
+      return compiled ? `Requested changes:\n${compiled}` : '';
+    })(),
+  }), [openedRow, openReviewId, activeProjectId, pins]);
+  const sendBackToAgent = useCallback((extraNotes = '') => {
+    const compiled = compileChanges(pins, extraNotes);
+    if (openReviewId && compiled) review.actions.requestChanges(openReviewId, compiled);
+    setChangesOpen(false);
+    onAssignFile?.(openReviewId, assignExtra(extraNotes));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pins, openReviewId, onAssignFile, assignExtra]);
+
+  // ── deep-link / in-app target: select the room, flip needs-review on, open the file ──
+  const targetKeyRef = useRef(null);
+  const pendingOpenRef = useRef(null);
+  useEffect(() => {
+    if (!target) return;
+    const key = JSON.stringify([target.name || '', target.project || '', (target.files || []).map((f) => f?.url || f?.path || f?.name || ''), !!target.needsReview]);
+    if (targetKeyRef.current === key) return;
+    const wantsFile = !!(target.name || (target.files && target.files.length));
+    if (wantsFile && !itemsAll.length && review.state === 'loading') return; // queue still landing
+    targetKeyRef.current = key;
+    const base = (p) => String(p || '').split('/').pop();
+    let item = null;
+    let rawPath = '';
+    let rawName = target.name || '';
+    if (target.files && target.files.length) {
+      const f = target.files[0] || {};
+      rawPath = String(f.url || f.path || '').replace(/^\/+/, '');
+      rawName = f.name || rawName || base(rawPath);
+      item = (rawPath && itemsAll.find((i) => i.id === rawPath))
+        || (rawName ? itemsAll.find((i) => base(i.id) === rawName) : null) || null;
+    } else if (target.name) {
+      item = itemsAll.find((i) => base(i.id) === target.name && (!target.project || i.whoRaw === target.project))
+        || itemsAll.find((i) => base(i.id) === target.name) || null;
+    }
+    const proj = (item && (item.whoRaw || '__personal')) || target.project || null;
+    if (proj) selectProject(proj);
+    // The needs-review filter goes on for triage entries; a target that is NOT in
+    // the waiting set opens in plain browse (the filter would hide it).
+    if (target.needsReview && (item || !wantsFile)) setFilter('needs');
+    const rid = item ? item.id : rawPath;
+    if (rid || rawName) pendingOpenRef.current = { rid, name: rawName, project: target.project || (item && item.whoRaw) || '' };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, itemsAll, review.state]);
+  // Resolve the pending target to a real row once the list shows it; if no row ever
+  // materializes (a file outside the tree), open it directly in the review pane.
+  useEffect(() => {
+    const pend = pendingOpenRef.current;
+    if (!pend) return;
+    const row = (data.files || []).find((f) => (pend.rid && f.reviewId === pend.rid) || (!pend.rid && pend.name && f.name === pend.name));
+    if (row) { pendingOpenRef.current = null; openFile(row.id); return; }
+    if (state === 'ready' && pend.rid) {
+      pendingOpenRef.current = null;
+      reviewActionsRef.current.openFileItem({ id: pend.rid, name: pend.name, project: pend.project });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.files, state]);
+
+  // ── keyboard triage: j/k move through the CURRENT filtered list, a approves + advances ──
+  const kbRef = useRef({});
+  kbRef.current = {
+    files: data.files || [],
+    openedId: data.openedId,
+    open: (id) => openFile(id),
+    approve: (rid) => review.actions.approve(rid),
+    changesOpen,
+  };
+  useEffect(() => {
+    const handler = (e) => {
+      const { files, openedId, open, approve, changesOpen: co } = kbRef.current;
+      if (co) return;
+      const el = document.activeElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const idx = openedId ? files.findIndex((f) => f.id === openedId) : -1;
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = files[idx + 1];
+        if (next) open(next.id);
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (idx > 0) open(files[idx - 1].id);
+      } else if (e.key === 'a') {
+        e.preventDefault();
+        const cur = idx >= 0 ? files[idx] : null;
+        if (!cur || !cur.reviewId) return;
+        const next = files[idx + 1];
+        approve(cur.reviewId);
+        if (next) open(next.id);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // The search input is an uncontrolled kept DOM node (see template); the engine only
+  // wires clicks, so the input event is delegated from this React wrapper.
   const debRef = useRef(null);
   const onSearchInput = (e) => {
     const el = e.target;
@@ -56,18 +252,13 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     clearTimeout(debRef.current);
     debRef.current = setTimeout(() => setQuery(el.value), 120);
   };
-  // Hook resets the query when the project changes; mirror that in the DOM node.
   useEffect(() => {
     const el = wrapRef.current?.querySelector('[data-org-search]');
     if (el) el.value = '';
   }, [activeProjectId]);
-  // Switching project resets the open file inside the hook (auto-opens the new
-  // project's first file), so the preview always follows the selected project.
   const switchProject = (id) => { selectProject(id); };
 
   // ── R-TREE-MENU: right-click / long-press on tree rows → Rename / Move ──
-  // Tree row ids (stamped as data-cv6-arg by the engine): a bare slug is a
-  // project, a colon-joined path is a mission of that project.
   const projectName = useCallback((slug) => {
     const p = (projects || []).find((x) => x.slug === slug);
     return p?.name || slug;
@@ -75,7 +266,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
   const resolveHit = useCallback((rowEl) => {
     if (!rowEl.classList.contains('trow')) return null;
     const id = rowEl.getAttribute('data-cv6-arg') || '';
-    if (!id || id === '__all') return null;
+    if (!id || id === '__all' || id === '__personal') return null; // Personal is synthetic — nothing to rename/move
     if (!id.includes(':')) {
       return { kind: 'project', projectSlug: id, name: projectName(id) };
     }
@@ -89,49 +280,43 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
       missionSlug: node?.folder_name || String(node?.slug || id).split(':').pop(),
       name: node?.name || id.split(':').pop(),
       path,
-      // Platform missions (corner/missions/...) have no per-project home to
-      // move between; user-project missions do. No path = record-only, movable.
       canMove: !path || path.startsWith('corner/users/'),
     };
   }, [missionTree, projectName]);
-  // O3 (census): a project/mission rename lands in the projects table and in
-  // Organize's own tree (reload bust), but the chat sidebar room list and the
-  // composer's project picker read a DIFFERENT pipe (useDataPipe → useHome), which
-  // only refetches on a 60s poll or a `projects` realtime event that isn't reliably
-  // published. Fire a same-tab signal so that pipe refetches NOW — the new name shows
-  // on all three surfaces without a manual reload. Harmless if realtime also fires
-  // (fetchAll is idempotent + signature-deduped). Every structural mutation
-  // (rename/move/create/archive) touches the registry those surfaces render, so all
-  // four broadcast.
   const broadcastRegistryChange = useCallback(() => {
-    try { window.dispatchEvent(new CustomEvent('cv6:data-refresh')); } catch { /* SSR / no window — non-fatal */ }
+    try { window.dispatchEvent(new CustomEvent('cv6:data-refresh')); } catch { /* SSR — non-fatal */ }
   }, []);
   const { overlay: ctxOverlay } = useTreeContextMenu({
     wrapRef,
     resolveHit,
     listProjects: () => (projects || []).map((p) => ({ slug: p.slug, name: p.name })),
-    onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
-    onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
-    onCreate: async (target, name) => { await createNode(authFetch, target, name, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
-    onArchive: async (target) => { await archiveNode(authFetch, target, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
+    onRename: async (t, name) => { await renameNode(authFetch, t, name, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
+    onMove: async (t, dest) => { await moveNode(authFetch, t, dest, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
+    onCreate: async (t, name) => { await createNode(authFetch, t, name, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
+    onArchive: async (t) => { await archiveNode(authFetch, t, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
   });
 
-  // Mark the open row from the hook's openedId so the highlighted row and the
-  // preview never disagree. Content/preview/viewFile already come from the hook.
+  // ── bind data: rows picked-marked; deliverable = review viewer + live pins ──
   const bindData = useMemo(() => {
     const effectiveId = data.openedId;
     const files = (data.files || []).map((x) => ({ ...x, picked: x.id === effectiveId ? 'open' : 'closed' }));
-    return { ...data, files };
-  }, [data]);
+    const del = review.data.deliverable || {};
+    const deliverable = {
+      ...del,
+      bodyHtml: del.id ? (del.bodyHtml || VIEWER_LOADING_HTML) : VIEWER_NONE_HTML,
+      file: del.id ? del.file : (openedRow ? openedRow.name : ''),
+      title: del.id ? del.title : (openedRow?.name || 'No file selected'),
+      pins: pins.map((p) => ({ id: p.id, n: p.n, x: p.x, y: p.y })),
+      comments: pins.map((p) => ({ id: p.id, n: p.n, text: p.text, anchor: p.anchor })),
+      openCount: pins.length,
+      notesWord: pins.length === 1 ? 'note' : 'notes',
+      hasNotes: pins.length ? 'yes' : 'no',
+    };
+    return { ...data, files, deliverable };
+  }, [data, review.data.deliverable, pins, openedRow]);
 
-  // O3-adjacent census closure: the default-active sort ("Newest") and filter
-  // ("Recent") chips are ALREADY selected — re-clicking them is a no-op by design,
-  // not a dead control. Stamp the active chip with aria-current + cursor:default so it
-  // reads (and audits) as intentional. TemplateScreen wipes the DOM (innerHTML) on
-  // every realtime tick and the page remounts under heavy agent churn, so a one-shot
-  // effect can leave a transient window with no aria-current — enough for an audit to
-  // catch the chip "bare". A MutationObserver re-applies it on any class/child change
-  // so the marker is effectively always present.
+  // Census closure: the default-active sort/filter chips are already selected — mark
+  // aria-current so a re-click reads as an intentional no-op, not a dead control.
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
@@ -144,11 +329,18 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
       });
     };
     sync();
-    // Observe only class + childList (NOT aria-current) so our own writes don't re-fire.
     const obs = new MutationObserver(sync);
     obs.observe(wrap, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
     return () => obs.disconnect();
   }, [bindData]);
+
+  // Jump into triage: newest waiting item's room + the needs-review filter on.
+  const goToTriage = useCallback(() => {
+    const it = itemsAll[0];
+    if (it) selectProject(it.whoRaw || '__personal');
+    setFilter('needs');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsAll]);
 
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
@@ -157,9 +349,6 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     openProfile: () => {},
     search: () => {},
     openFile: (id) => openFile(id),
-    // Mission nodes arrive as "project:mission-slug" (nested missions carry more
-    // segments). Select the parent project AND narrow the file list to that mission —
-    // candidates run leaf-first so the deepest matching mission folder wins.
     openTreeNode: (id) => {
       const s = String(id || '');
       if (!s.includes(':')) return switchProject(s);
@@ -177,11 +366,23 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     setFilter: (id) => setFilter(id || 'recent'),
     toggleSelect: () => {},
     toggleSelectMode: () => {},
-    openInReview: () => {
-      const rf = data.viewFile?.reviewFile;
-      onNav?.('review', rf ? { files: [rf], project: data.viewFile.projectSlug || '' } : null);
+    // ── the rehomed review actions ──
+    approve: (id) => review.actions.approve(id),
+    dismiss: (id) => review.actions.dismiss(id),
+    requestChanges: () => setChangesOpen(true),
+    sendChecklist: (id) => review.actions.sendChecklist(id),
+    download: (id) => review.actions.download(id),
+    openPin: (id) => openPinById(id),
+    openComments: () => {},
+    toggleReviewed: () => setReviewedOn((v) => !v),
+    restoreDismiss: (decisionId) => {
+      if (!decisionId) return;
+      review.actions.undoDismiss(decisionId);
+      setDecidedRaw((prev) => (prev ? prev.filter((i) => (i.decision_id || '') !== decisionId) : prev));
     },
-    assignAgent: (fileId) => onAssignFile?.(fileId),
+    needsPillGo: () => goToTriage(),
+    browseWaiting: () => goToTriage(),
+    assignAgent: (fileId) => onAssignFile?.(fileId, assignExtra()),
     newProject: () => setShowNew(true),
     // Held-c (the file store is flat — no folder tree): inert, never faked.
     addFile: () => {}, newFolder: () => {}, commentFile: () => {},
@@ -189,10 +390,60 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     pickDestination: () => {}, deleteSelection: () => {}, renameSelection: () => {}, shareSelection: () => {},
   };
 
+  // Transient verdict feedback (the dismiss toast's 10s Undo — a real control).
+  const notice = review.notice;
+
   return (
     <div ref={wrapRef} onInput={onSearchInput} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={DESKTOP_HTML} data={bindData} actions={actions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
       {ctxOverlay}
+      {pinOverlay}
+      {notice && (
+        <div style={{
+          position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 60, pointerEvents: notice.onAction ? 'auto' : 'none',
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'rgba(5,8,11,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px',
+          fontSize: 12.5, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)',
+          whiteSpace: 'nowrap', maxWidth: '70%',
+        }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{notice.text}</span>
+          {notice.onAction && (
+            <button onClick={notice.onAction}
+              style={{ border: 'none', background: 'transparent', color: 'var(--accent, #3B82F6)', fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-sans)', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+              {notice.actionLabel || 'Undo'}
+            </button>
+          )}
+        </div>
+      )}
+      {changesOpen && (
+        <ReviewChangesOverlay
+          pins={pins}
+          title={openedRow?.name || ''}
+          onSendBack={sendBackToAgent}
+          onClose={() => setChangesOpen(false)}
+        />
+      )}
+      {/* keyboard hint pill — pointer-events:none so it never blocks content */}
+      {data.openedId && (
+        <div style={{
+          position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+          pointerEvents: 'none', display: 'flex', gap: 20,
+          background: 'rgba(5,8,11,0.72)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20,
+          padding: '5px 18px', fontSize: 11,
+          color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--font-mono,ui-monospace,monospace)',
+          zIndex: 40, letterSpacing: 0.3, whiteSpace: 'nowrap', userSelect: 'none',
+        }}>
+          {[['j', 'next'], ['k', 'prev'], ['a', 'approve']].map(([key, label]) => (
+            <span key={key}>
+              <span style={{ color: 'rgba(255,255,255,0.62)', fontWeight: 700 }}>{key}</span>
+              {' '}{label}
+            </span>
+          ))}
+        </div>
+      )}
       {showNew ? (
         <NewComposer worldId={worldId} projects={projects || []} agents={[]} initialMode="project"
           onClose={() => setShowNew(false)} onCreated={() => reload({ bust: true })} />

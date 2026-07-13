@@ -1199,3 +1199,42 @@
 /* Touch feedback (loop R8, parity audit): rows whose only pressed-state was :hover
    now light up on :active so taps feel acknowledged on iPhone/iPad. */
 [data-cv6] .restrow:active, [data-cv6] .room:active, [data-cv6] .grow:active { background: var(--surface-hover, var(--surface-2)); }
+
+/* ---- Files tool (Review merged into Organize, corner:one-corner 2026-07-13) ----
+   The review viewer + pin layer now render INSIDE the organize screens (the file
+   detail pane is the review viewer). These are the review primitives, re-scoped —
+   values verbatim from the review-scoped rules above, no new visual language. */
+[data-cv6][data-screen^="organize"] .pin { position:absolute; width:26px; height:26px; border-radius:50% 50% 50% 3px; background:var(--accent); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px -3px rgba(0,0,0,.5); cursor:pointer; transform:translate(-50%,-100%); }
+[data-cv6][data-screen^="organize"] .doc { background:#fbfbfa; border-radius:6px; box-shadow:0 16px 50px rgba(0,0,0,.5); color:#1a1a1a; position:relative; }
+[data-cv6][data-screen^="organize"] .doc code { background:rgba(0,0,0,.06); padding:1px 6px; border-radius:5px; font-family:var(--font-mono); font-size:.85em; }
+[data-cv6][data-screen^="organize"] .browser { width:100%; max-width:100%; border-radius:10px; overflow:hidden; box-shadow:0 18px 54px rgba(0,0,0,.55); background:#fff; position:relative; }
+[data-cv6][data-screen^="organize"] .bchrome { height:42px; background:#e9e7e4; display:flex; align-items:center; gap:9px; padding:0 14px; border-bottom:1px solid #d9d6d2; }
+[data-cv6][data-screen^="organize"] .bdot { width:11px; height:11px; border-radius:50%; flex:none; }
+[data-cv6][data-screen^="organize"] .burl { flex:1; height:24px; border-radius:7px; background:#fff; border:1px solid #d9d6d2; display:flex; align-items:center; gap:7px; padding:0 10px; font-size:11.5px; color:#888; font-family:var(--font-mono); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+[data-cv6][data-screen^="organize"] .doc.is-image,
+[data-cv6][data-screen^="organize"] .doc.is-photo,
+[data-cv6][data-screen^="organize"] .doc.is-video,
+[data-cv6][data-screen^="organize"] .doc.is-audio,
+[data-cv6][data-screen^="organize"] .doc.is-siteshot,
+[data-cv6][data-screen^="organize"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:min(760px, 100%) !important; }
+[data-cv6][data-screen^="organize"] .doc.is-image [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-photo [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-video [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-audio [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-siteshot [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-sitelive [data-bind="deliverable.file"] { color:#7a7a82 !important; }
+[data-cv6][data-screen^="organize"] .doc.is-image h1,
+[data-cv6][data-screen^="organize"] .doc.is-photo h1,
+[data-cv6][data-screen^="organize"] .doc.is-video h1,
+[data-cv6][data-screen^="organize"] .doc.is-audio h1,
+[data-cv6][data-screen^="organize"] .doc.is-siteshot h1,
+[data-cv6][data-screen^="organize"] .doc.is-sitelive h1 { color:#e6e8ea !important; font-size:16px !important; margin:0 0 12px !important; }
+/* The audio viewer keeps the paper card readable width but the file-line/title colors
+   above flip for the dark ground — the <audio> element carries its own chrome. */
+/* Needs-review chip count: amber = "waiting on you" (never the destructive red);
+   flips to white when the chip itself is the active accent fill. */
+[data-cv6][data-screen^="organize"] .needsn { color:var(--warn); font-family:var(--font-mono); font-weight:700; font-size:11px; }
+[data-cv6][data-screen^="organize"] .ochip.is-on .needsn { color:#fff; }
+/* in-column empty-state action: shown only when there is somewhere to go */
+[data-cv6][data-screen^="organize"] .lebtn.is-no { display:none; }
+[data-cv6][data-screen^="organize"] .lebtn.is-yes { display:inline-flex; align-items:center; }

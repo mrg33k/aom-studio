@@ -1022,8 +1022,10 @@ export function useReview(worldId = 'aom', injected = null) {
       openFileItem: (fileLike) => {
         const id = String(fileLike?.id || '');
         if (!id) return;
-        const inQueue = (queueRef.current?.items || []).some((i) => i.id === id);
-        if (!inQueue && !extraItemsRef.current[id]) {
+        // Register the external shape even when the id IS in the queue: a verdict
+        // optimistically removes the queue item, and in browse mode the file stays
+        // open — the extra item keeps the viewer alive instead of blanking it.
+        if (!extraItemsRef.current[id]) {
           const [item] = reviewItemsFromFiles(
             [{ url: id, name: fileLike.name || id.split('/').pop(), mime: fileLike.mime || '' }],
             fileLike.project || '',

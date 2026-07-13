@@ -187,22 +187,25 @@ const CLOSING_ACTIONS = new Set(['approve', 'request-changes', 'dismiss']);
 async function fetchDecisions(world) {
   const isAom = world === 'aom';
   const worldFilter = isAom ? '' : `&client_id=eq.${encodeURIComponent(world)}`;
-  const q = `select=timestamp,metadata&source=eq.review-decision&timestamp=gte.${HANDOFF_CUTOFF}`
+  // `id` rides along so ?view=all can hand the client the decision ROW id — the
+  // Files tool's "Restore to review" targets it with the existing undo action
+  // (review-decision.js action:'undo', dismiss rows only).
+  const q = `select=id,timestamp,metadata&source=eq.review-decision&timestamp=gte.${HANDOFF_CUTOFF}`
     + `&order=timestamp.desc&limit=${MSG_FETCH_CAP}${worldFilter}`;
   const rows = await fetchMessages(q);
-  const decidedIds = new Map();      // deliverable_id -> action
-  const decidedContent = new Map();  // `${source_path} ${sha256}` -> action
+  const decidedIds = new Map();      // deliverable_id -> { action, id }
+  const decidedContent = new Map();  // `${source_path} ${sha256}` -> { action, id }
   for (const row of rows) {
     const md = row?.metadata || {};
     const action = md.action || '';
     if (!CLOSING_ACTIONS.has(action)) continue;
     if (md.deliverable_id && !decidedIds.has(md.deliverable_id)) {
-      decidedIds.set(md.deliverable_id, action);
+      decidedIds.set(md.deliverable_id, { action, id: row.id || null });
     }
     // Content key only when BOTH parts are present — a partial key would collide.
     if (md.source_path && md.sha256) {
       const key = `${md.source_path} ${md.sha256}`;
-      if (!decidedContent.has(key)) decidedContent.set(key, action);
+      if (!decidedContent.has(key)) decidedContent.set(key, { action, id: row.id || null });
     }
   }
   return { decidedIds, decidedContent };
@@ -243,7 +246,8 @@ export default async function handler(req, res) {
   const newestHandoff = all.find((it) => it.source_kind === 'handoff');
   const newestTs = newestHandoff ? newestHandoff.last_modified : null;
 
-  // The verdict for an item: exact id first, then content identity (both parts required).
+  // The verdict for an item: exact id first, then content identity (both parts
+  // required). Returns { action, id } (the decision row id) or null.
   const verdictFor = (it) => {
     if (decidedIds.has(it.path)) return decidedIds.get(it.path);
     if (it.source_path && it.sha256) {
@@ -257,9 +261,15 @@ export default async function handler(req, res) {
   const counts = { waiting: waiting.length, decided: all.length - waiting.length };
 
   // Default = only undecided items. ?view=all = everything, each stamped with its
-  // verdict (null when still waiting) so a "Reviewed" toggle can render honestly.
+  // verdict + decision row id (null when still waiting) so a "Reviewed" toggle can
+  // render honestly AND restore a dismissed item via the undo action.
   const viewAll = String(Array.isArray(req.query.view) ? req.query.view[0] : req.query.view || '') === 'all';
-  const served = viewAll ? all.map((it) => ({ ...it, verdict: verdictFor(it) })) : waiting;
+  const served = viewAll
+    ? all.map((it) => {
+      const v = verdictFor(it);
+      return { ...it, verdict: v ? v.action : null, decision_id: v ? v.id : null };
+    })
+    : waiting;
 
   const total = served.length;
   const items = served.slice(offset, offset + limit);
