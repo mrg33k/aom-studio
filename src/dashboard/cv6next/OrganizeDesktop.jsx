@@ -119,7 +119,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target
   const reviewDecided = useMemo(() => (reviewedOn ? buildDecidedMap(decidedRaw) : null), [reviewedOn, decidedRaw]);
 
   const { state, data, reload, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId, projects, missionTree } =
-    useOrganize(worldId, { reviewWaiting, reviewTotal, reviewDecided, reviewedOn });
+    useOrganize(worldId, { reviewWaiting, reviewTotal, reviewDecided, reviewedOn, reviewItems: itemsAll });
 
   // "New project" (tree column footer) -> the shared NewComposer overlay.
   const [showNew, setShowNew] = useState(false);

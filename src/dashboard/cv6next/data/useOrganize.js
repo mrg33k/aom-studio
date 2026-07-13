@@ -277,11 +277,18 @@ function pdfBodyHtml(src, name) {
 //   opts.reviewDecided  Map<identity, { verdict, decisionId, itemId }> | null
 //                       (only when the Reviewed toggle is on)
 //   opts.reviewedOn     boolean                    — the Reviewed toggle state
+//   opts.reviewItems    array — the RAW waiting queue items (useReview itemsAll).
+//                       The needs-review dimension is QUEUE-driven: a waiting item
+//                       whose disk file vanished (deleted after hand-off, or shared
+//                       from outside the tree) still MUST show under the needs
+//                       filter, or the badge says 3 while the list says 0 (the
+//                       2026-07-13 design-critic dead-pill finding — M8).
 export function useOrganize(worldId = 'aom', opts = {}) {
   const reviewWaiting = opts.reviewWaiting || null;
   const reviewTotal = Number(opts.reviewTotal) || 0;
   const reviewDecided = opts.reviewDecided || null;
   const reviewedOn = !!opts.reviewedOn;
+  const reviewItems = Array.isArray(opts.reviewItems) ? opts.reviewItems : [];
   const SS_KEY = `org_state_${worldId}`;
   const [projects, setProjects] = useState(null);
   const [files, setFiles] = useState(null);        // metadata rows (no content)
@@ -439,6 +446,17 @@ export function useOrganize(worldId = 'aom', opts = {}) {
           editor: up.uploader || 'You',
           editorInitials: initialsOf(up.uploader || 'You'),
         },
+      }));
+      return;
+    }
+    // A ghost row's id is its store URL (a waiting queue item with no mirror row —
+    // M8). The merged detail pane renders it through the review viewer from that
+    // URL; there is no mirror row to fetch, so don't fire a doomed lookup.
+    if (/^https?:\/\//i.test(id)) {
+      const leaf = String(id).split('/').pop() || 'File';
+      setContentCache((cache) => ({
+        ...cache,
+        [id]: { title: leaf, bodyHtml: nonTextPreview(leaf, 'doc'), editor: 'Agent', editorInitials: 'AG' },
       }));
       return;
     }
@@ -695,6 +713,35 @@ export function useOrganize(worldId = 'aom', opts = {}) {
       };
     });
 
+  // Ghost rows (M8): waiting queue items filed to THIS room that joined no
+  // on-disk row — the hand-off's repo copy was deleted (or it was shared from
+  // outside the tree), but the deliverable still exists at its store URL and
+  // still wants a verdict. They surface ONLY in the needs-review dimension
+  // (chip count + needs-filtered list), never under Recent or the type chips —
+  // the browse dimensions stay disk-truth.
+  const joinedReviewIds = new Set();
+  for (const f of allFiles) { if (f.needsReview && f.reviewId) joinedReviewIds.add(f.reviewId); }
+  const ghosts = reviewItems
+    .filter((it) => it && it.id && !joinedReviewIds.has(it.id)
+      && ((it.whoRaw || '__personal') === openProject.id))
+    .map((it) => ({
+      id: it.id,
+      name: it.title || String(it.id).split('/').pop() || 'File',
+      edited: it.time || '',
+      size: '',
+      kind: uploadKind(it.title || '', it.mime || ''),
+      mime: it.mime || null,
+      status: 'ready',
+      uploaded: false,
+      reviewId: it.id,
+      needsReview: true,
+      reviewTs: it.ts || '',
+      badge: 'needs',
+      decisionId: '',
+      missionKey: uploadMissionKey(it.missionRaw, openProject.id),
+      ghost: true,
+    }));
+
   // Mission narrowing: chips are built FROM the files themselves (top-level
   // missions/<slug> folders that actually hold files), so picking one never lands
   // on an empty column. Root-level files get their own bucket when missions exist.
@@ -734,18 +781,25 @@ export function useOrganize(worldId = 'aom', opts = {}) {
   const linkCount = countKind('link');
   const docCount = missionFiles.filter((f) => !['image', 'video', 'audio', 'pdf', 'link'].includes(f.kind)).length;
   const uploadCount = missionFiles.filter((f) => f.uploaded).length;
+  // Ghosts narrowed to the active mission scope (same rule as missionFiles).
+  const ghostsScoped = activeMission == null
+    ? ghosts
+    : ghosts.filter((f) => (activeMission === '__root' ? !f.missionKey : f.missionKey === activeMission));
   // If the active type filter has no files in the new mission/project scope, fall
   // back to Recent instead of showing an inexplicable empty column. "My uploads"
   // is exempt: the chip is always present (Patrik 2026-07-12), so staying on it
   // with an empty list is honest, not inexplicable.
-  const needsCount = missionFiles.filter((f) => f.needsReview).length;
+  // needsCount INCLUDES ghosts: the chip, the badge, and the needs-filtered list
+  // must all agree — counts tell the truth (M8).
+  const needsCount = missionFiles.filter((f) => f.needsReview).length + ghostsScoped.length;
   const kindCountFor = { links: linkCount, docs: docCount, pdfs: pdfCount, images: imageCount, video: videoCount, audio: audioCount };
   // 'needs' is exempt from the zero-count fallback like 'uploads': the cleared
   // triage list must show its honest empty state, never silently flip to Recent.
   const effFilter = (filter !== 'recent' && filter !== 'uploads' && filter !== 'needs' && !kindCountFor[filter]) ? 'recent' : filter;
   const q = query.trim().toLowerCase();
-  const fileList = missionFiles
-    .filter((f) => fileMatchesFilter(f, effFilter))
+  const fileList = (effFilter === 'needs'
+    ? [...missionFiles.filter((f) => f.needsReview), ...ghostsScoped]
+    : missionFiles.filter((f) => fileMatchesFilter(f, effFilter)))
     .filter((f) => !q || f.name.toLowerCase().includes(q))
     // Triage order: under the needs-review filter the list reads newest HAND-OFF
     // first (the queue's own byNewest), not newest file-edit first.

@@ -137,7 +137,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
   const reviewDecided = useMemo(() => (reviewedOn ? buildDecidedMap(decidedRaw) : null), [reviewedOn, decidedRaw]);
 
   const { state, data, selectProject, selectMission, setFilter, setQuery, setSort, reload, openFile, projects } =
-    useOrganize(worldId, { reviewWaiting, reviewTotal, reviewDecided, reviewedOn });
+    useOrganize(worldId, { reviewWaiting, reviewTotal, reviewDecided, reviewedOn, reviewItems: itemsAll });
 
   const [projectId, setProjectId] = useState(null); // null = show the picker
   const [pickedFileId, setPickedFileId] = useState(null);
