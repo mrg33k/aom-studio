@@ -117,7 +117,8 @@ export function useSupportInbox(worldId = 'aom') {
       address: w.email || '',
       body: parsed.original || String(w.message || '').trim(),
       summary: parsed.summary,
-      hasStaged: parsed.hasStaged,
+      // A resolved wish's draft already fired (or is moot) — no "Draft ready" lie.
+      hasStaged: parsed.hasStaged && w.status !== 'resolved',
       recommendation: Array.isArray(w.recommendation) ? w.recommendation : [],
       replyOptions: Array.isArray(w.reply_options) ? w.reply_options : [],
       status: w.status,
