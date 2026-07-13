@@ -132,6 +132,12 @@ async function buildDeliverableBody(item) {
       // (~100dvh-250px) without scrolling; margin:auto centers the portrait.
       return `<video src="${src}" ${mediaAttrs(src, 'video')} preload="metadata" playsinline style="max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video>`;
     }
+    if (type === 'audio') {
+      // Streams off the tunnel like video (Range-capable, CORS *). Native controls are
+      // fine for audio — the DS7 scrub bar is a video-frame affordance (pins on frames).
+      const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
+      return `<audio src="${src}" ${mediaAttrs(src, 'audio')} controls preload="metadata" style="width:100%;display:block;margin:12px 0;border-radius:8px;"></audio>`;
+    }
     if (type === 'siteshot') {
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
       return browserChrome(item.title, `<img src="${src}" alt="${escapeHtml(item.title)}" style="width:100%;height:auto;display:block;" />`);
@@ -279,6 +285,7 @@ function typeLabel(type) {
     image: 'Image',
     photo: 'Photo',
     video: 'Video',
+    audio: 'Audio',
     copy: 'Copy',
     code: 'Code',
     siteshot: 'Screenshot',
@@ -297,6 +304,7 @@ function typeGlyph(type) {
     code: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z|M14 2v6h6|M9 13h6M9 17h4',
     siteshot: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z',
     sitelive: 'M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z|M12 9a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+    audio: 'M9 18V5l12-2v13|M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z|M18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   };
   return glyphs[type] || glyphs.doc;
 }
@@ -322,10 +330,15 @@ function looksBinary(s) {
 function typeKeyOf(name, mime, url = '') {
   const ext = String(name || '').toLowerCase().split('.').pop();
   const m = String(mime || '').toLowerCase();
-  if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'].includes(ext)) return 'image';
-  if (m.startsWith('video/') || ['mp4', 'mov', 'webm', 'mkv'].includes(ext)) return 'video';
-  if (['pdf', 'docx', 'doc', 'pptx', 'ppt', 'xlsx'].includes(ext)) return 'doc';
-  if (['md', 'txt'].includes(ext)) return 'copy';
+  if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff', 'bmp'].includes(ext)) return 'image';
+  if (m.startsWith('video/') || ['mp4', 'mov', 'webm', 'mkv', 'm4v', 'avi'].includes(ext)) return 'video';
+  // Audio gets its own viewer (files-tool merge: Files browses audio too — the doc
+  // branch's "no preview, download" card would be a regression vs Organize's player).
+  if (m.startsWith('audio/') || ['wav', 'mp3', 'aac', 'm4a', 'ogg', 'flac', 'aiff', 'opus'].includes(ext)) return 'audio';
+  if (['pdf', 'docx', 'doc', 'pptx', 'ppt'].includes(ext)) return 'doc';
+  // Structured-data + plain-text files read inline as text (monospace via the copy
+  // branch) — same set Organize's dataFilePreview covered.
+  if (['md', 'txt', 'json', 'jsonl', 'ndjson', 'yaml', 'yml', 'toml', 'csv', 'tsv', 'xml', 'ini', 'log'].includes(ext)) return 'copy';
   if (['js', 'jsx', 'ts', 'tsx', 'py', 'go', 'rs', 'java'].includes(ext)) return 'code';
   if (/^https?:\/\//i.test(String(url || name || ''))) return 'sitelive';
   return 'doc';
@@ -381,7 +394,7 @@ function mapQueueItem(it, openId) {
   // everything else.
   const nameForType = it.name || String(it.id || it.path || '').split('/').pop() || '';
   const extKey = typeKeyOf(nameForType, it.mime || '', it.id || it.path || '');
-  const typeKey = (extKey === 'image' || extKey === 'video') ? extKey : apiKey;
+  const typeKey = (extKey === 'image' || extKey === 'video' || extKey === 'audio') ? extKey : apiKey;
   return {
     id: it.id || it.path,
     title: it.name || 'Untitled',
@@ -421,6 +434,13 @@ export function useReview(worldId = 'aom', injected = null) {
   const hasInjected = Array.isArray(injected) && injected.length > 0;
   const [queue, setQueue] = useState(null);
   const [openDelId, setOpenDelId] = useState(null);
+  // Files-tool merge (corner:one-corner): any browsed file can open in review, even
+  // when it is NOT in the waiting queue (already decided, or never handed off).
+  // "External" items register here so the body fetch / deliverable panel / verdicts
+  // resolve them exactly like queue items — shared machinery, never a fork.
+  const [extraItems, setExtraItems] = useState({}); // id -> mapped item shape
+  const extraItemsRef = useRef({});
+  extraItemsRef.current = extraItems;
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [bodies, setBodies] = useState({}); // path -> rendered innerHTML ('' while loading)
   // review-loop: newest hand-off timestamp (pre-decision-filter) from the server —
@@ -609,20 +629,21 @@ export function useReview(worldId = 'aom', injected = null) {
   useEffect(() => {
     if (!openDelId) return;
     if (fetchedRef.current[openDelId]) return; // fetch already started for this id
-    const item = (queue?.items || []).find((i) => i.id === openDelId);
+    const item = (queue?.items || []).find((i) => i.id === openDelId) || extraItems[openDelId];
     if (!item) return;
     fetchedRef.current[openDelId] = true;
     setBodies((b) => ({ ...b, [openDelId]: '' })); // '' = loading sentinel
     buildDeliverableBody(item).then((html) => {
       setBodies((b) => ({ ...b, [openDelId]: html || ' ' }));
     });
-  }, [openDelId, queue]);
+  }, [openDelId, queue, extraItems]);
 
   // review-loop: every verdict POSTs the item's identity fields (source_path +
   // sha256 + mission + title + project) so the server can suppress re-shares of
   // the same unchanged bytes, not just this exact message id.
   const decisionBody = useCallback((deliverableId, action, extra = {}) => {
-    const item = (queueRef.current?.items || []).find((i) => i.id === deliverableId);
+    const item = (queueRef.current?.items || []).find((i) => i.id === deliverableId)
+      || extraItemsRef.current[deliverableId];
     return JSON.stringify({
       deliverable: deliverableId,
       action,
@@ -776,7 +797,7 @@ export function useReview(worldId = 'aom', injected = null) {
   // Gated on the item actually existing in the queue, so a stale/unmatched id can
   // never pin the tool on the loading cover forever.
   const bodyLoading = !!openDelId
-    && (queue?.items || []).some((i) => i.id === openDelId)
+    && ((queue?.items || []).some((i) => i.id === openDelId) || !!extraItems[openDelId])
     && !bodies[openDelId];
 
   const byNewest = (a, b) => String(b.ts || '').localeCompare(String(a.ts || ''));
@@ -917,9 +938,13 @@ export function useReview(worldId = 'aom', injected = null) {
       lastDeliveryLabel: newestTs
         ? (relTime(newestTs) === 'now' ? 'Last delivery just now' : `Last delivery ${relTime(newestTs)} ago`)
         : 'newest first',
+      // Files-tool merge: the HONEST waiting total across server pages (itemsAll only
+      // holds the fetched window) — drives the "N need your review" pill and the
+      // needs-review chip's cross-page truth.
+      waitingTotal: hasInjected ? allItems.length : (queueServerTotal || allItems.length),
     },
     deliverable: (() => {
-      const open = (queue?.items || []).find((i) => i.id === openDelId);
+      const open = (queue?.items || []).find((i) => i.id === openDelId) || extraItems[openDelId];
       if (!open) {
         return {
           id: '', file: '', title: '', bodyHtml: '', type: 'doc', typeLabel: 'Document',
@@ -990,6 +1015,26 @@ export function useReview(worldId = 'aom', injected = null) {
     refreshTree: () => setTreeReload((k) => k + 1),
     actions: {
       openDeliverable: (id) => setOpenDelId(id),
+      // Files-tool merge: open ANY file in review. An id already in the loaded queue
+      // opens as-is (verdicts feed the waiting set); anything else registers as an
+      // external item shaped by the same mapper the chat "Review all" path uses, so
+      // the viewer + verdict rail work identically on it.
+      openFileItem: (fileLike) => {
+        const id = String(fileLike?.id || '');
+        if (!id) return;
+        const inQueue = (queueRef.current?.items || []).some((i) => i.id === id);
+        if (!inQueue && !extraItemsRef.current[id]) {
+          const [item] = reviewItemsFromFiles(
+            [{ url: id, name: fileLike.name || id.split('/').pop(), mime: fileLike.mime || '' }],
+            fileLike.project || '',
+          );
+          if (item) setExtraItems((m) => ({ ...m, [item.id]: item }));
+        }
+        setOpenDelId(id);
+      },
+      // Undo a dismiss decision by row id — the Reviewed toggle's "Restore to review"
+      // reuses the exact undo the 10s snackbar fires.
+      undoDismiss,
       loadMore,
       approve,
       requestChanges,
@@ -1028,4 +1073,47 @@ export function useReview(worldId = 'aom', injected = null) {
       },
     },
   };
+}
+
+// ── Files nav badge: the live waiting-review count ─────────────────────────────
+// Lightweight shell-level hook (limit=1 — the counts ride the response envelope,
+// not the items). 60s poll + a realtime nudge on any messages INSERT (a new
+// hand-off, upload, or decision all land as messages rows). The Files container's
+// own useReview does the heavy lifting; this exists only so the nav badge can
+// show "N waiting" without mounting the whole queue.
+export function useReviewWaitingCount(worldId = 'aom') {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let dead = false;
+    const load = async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=1`);
+        if (r?.ok) {
+          const d = await r.json();
+          const n = Number(d?.counts?.waiting ?? d?.total);
+          if (!dead && Number.isFinite(n)) setCount(n);
+        }
+      } catch { /* keep the last known count */ }
+    };
+    load();
+    const t = setInterval(load, 60000);
+    let debounce = null;
+    let channel = null;
+    if (supabase) {
+      channel = supabase
+        .channel(`review-badge-${Math.random().toString(36).slice(2, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+          if (debounce) clearTimeout(debounce);
+          debounce = setTimeout(() => { debounce = null; load(); }, 3500);
+        })
+        .subscribe();
+    }
+    return () => {
+      dead = true;
+      clearInterval(t);
+      if (debounce) clearTimeout(debounce);
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [worldId]);
+  return count;
 }

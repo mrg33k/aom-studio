@@ -18,8 +18,6 @@ import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx, ReviewCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
-import Review from './Review.jsx';
-import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop, { FilesShelf, fileKind, libKindLabel, shelfItems } from './ChatDesktop.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
@@ -32,6 +30,7 @@ import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import NewComposer from './NewComposer.jsx';
 import { useSupportInbox } from './data/useSupportInbox.js';
+import { useReviewWaitingCount } from './data/useReview.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
 import { useCommandContext } from './providers/DataContext.jsx';
@@ -93,10 +92,11 @@ function useIsDesktop() {
 // desktop top bar + rails) hardcodes the full 8-tool set, so any tile pointing at a
 // tool we haven't wired to /dashboard yet would be a dead control ("doesn't open").
 // Until those screens are built live, drop those tiles so the nav only shows what works.
-// 'review' was missing here, so design templates whose chrome carries a Review tile
-// silently dropped it — a live tool with a stripped tile (2026-07-01 audit). The
+// 'review' dropped 2026-07-13 (corner:one-corner files-tool merge): the Review tool no
+// longer exists as a destination — any design-chrome tile still pointing at it is
+// re-pointed to 'organize' (Files) below, so it routes instead of dead-ending. The
 // design files also write the Scribe target as 'live-scribe'; accept both spellings.
-const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'review', 'command', 'tracker', 'onboarding', 'livescribe', 'live-scribe', 'back']);
+const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'onboarding', 'livescribe', 'live-scribe', 'back']);
 
 function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -108,6 +108,8 @@ function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}
   // normalize the attribute so the tile survives AND routes.
   screen.querySelectorAll('[data-action="nav"][data-target]').forEach((tile) => {
     if (tile.getAttribute('data-target') === 'live-scribe') tile.setAttribute('data-target', 'livescribe');
+    // Review folded into Files: a baked Review tile re-points to organize (never a dead end).
+    if (tile.getAttribute('data-target') === 'review') tile.setAttribute('data-target', 'organize');
     if (!LIVE_NAV.has(tile.getAttribute('data-target'))) tile.remove();
   });
   // One shared nav (design item 7): the desktop top bar is now mounted once in the
@@ -1247,11 +1249,11 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       const agent = (data.agents || []).find((a) => a.id === card.agent) || { id: card.agent || card.id, name: card.from, initials: (card.from || '?').slice(0, 2).toUpperCase(), status: 'ready' };
       onOpenRoom?.(agent, worldId);
     },
-    // Attachment cards: tapping the file (or Review) opens the Review tool ON that file.
-    // The card carries only the filename + its room, so we hand Review { name, project,
-    // missionSlug } and let it resolve the real deliverable in the queue.
-    review: (fileId) => { const c = curCardRef.current; onNav?.('review', fileId ? { name: String(fileId), project: c?.project || '', missionSlug: c?.missionSlug || '' } : null); },
-    openAttachment: (fileId) => { const c = curCardRef.current; onNav?.('review', fileId ? { name: String(fileId), project: c?.project || '', missionSlug: c?.missionSlug || '' } : null); },
+    // Attachment cards: tapping the file (or Review) opens FILES on that exact file with
+    // the needs-review filter on (the Review tool folded into Files, 2026-07-13). The card
+    // carries only the filename + its room; Files resolves the real deliverable in the queue.
+    review: (fileId) => { const c = curCardRef.current; onNav?.('organize', fileId ? { name: String(fileId), project: c?.project || '', missionSlug: c?.missionSlug || '', needsReview: true } : null); },
+    openAttachment: (fileId) => { const c = curCardRef.current; onNav?.('organize', fileId ? { name: String(fileId), project: c?.project || '', missionSlug: c?.missionSlug || '', needsReview: true } : null); },
     voiceInput: () => {}, composeMessage: () => {},
     // Files button in the col3 conversation header: open the room's file shelf in place
     // (HomeFilesPanel overlay), instead of jumping to the Organize tool. Only meaningful when
@@ -1392,10 +1394,11 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const recentList = data.recent || [];
   const agentsList = agentsOpen ? (data.agents || []) : [];
   const HOME_MISSION_CAP = 8;
-  // Corner's top-level rooms mirror the top nav exactly: the 8 tools in nav order
-  // first, then the 3 grouping folders (General / Business Ops / Older Versions).
+  // Corner's top-level rooms mirror the top nav exactly: the live tools in nav order
+  // first, then the grouping folders (General / Business Ops / Older Versions).
   // So the sidebar tree reads like the nav bar, and no tool hides behind "Show more".
-  const CORNER_NAV_ORDER = ['home', 'chat', 'organize', 'review', 'support', 'tracker', 'command', 'live-scribe'];
+  // ('review' and 'chat' dropped 2026-07-13 with the Files merge — dead nav entries.)
+  const CORNER_NAV_ORDER = ['home', 'organize', 'support', 'tracker', 'command', 'live-scribe'];
   const cornerRootRank = (node) => {
     const raw = String(node.slug || node.name || '').split(':').pop().toLowerCase();
     const i = CORNER_NAV_ORDER.indexOf(raw);
@@ -1532,7 +1535,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         awaiting={quickThread && quickThread.awaiting}
         liveSteps={quickThread && quickThread.liveSteps}
         room={displayedRoom}
-        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('review', files?.length ? { files } : null); }}
+        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, needsReview: true } : null); }}
       />
       <Cv6FullComposer
         target={knavOpenedRoom ? composerHost : null}
@@ -1547,7 +1550,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         room={knavOpenedRoom}
         messages={quickThread && quickThread.messages}
         onClose={() => setFilesOpen(false)}
-        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('review', files?.length ? { files } : null); }}
+        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, needsReview: true } : null); }}
       />
       {trackerOverlay}
       {composerOverlay}
@@ -1892,7 +1895,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
       messages={messages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
-      onOpenReview={(files) => onNav('review', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : '') } : null)}
+      onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), needsReview: true } : null)}
     />
   );
 }
@@ -2305,9 +2308,22 @@ function initialViewFromUrl() {
     // corner:corner-ui-cv6 BUG1-fix — 'scribe' and 'live-scribe' are the natural deep-link
     // spellings agents/users write; map them to the internal 'livescribe' view key.
     if (v === 'scribe' || v === 'live-scribe') return 'livescribe';
-    if (['home', 'support', 'organize', 'command', 'tracker', 'review', 'settings', 'onboarding', 'livescribe'].includes(v)) return v;
+    // Review folded into Files (corner:one-corner, 2026-07-13): ?view=review lands in
+    // Files with the needs-review filter on (see initialFilesTargetFromUrl). Never a 404.
+    if (v === 'review') return 'organize';
+    if (['home', 'support', 'organize', 'command', 'tracker', 'settings', 'onboarding', 'livescribe'].includes(v)) return v;
   } catch { /* no window */ }
   return 'home';
+}
+
+// A ?view=review deep link carries an implicit intent: land in Files with the
+// needs-review filter already on (the old Review tool's whole job).
+function initialFilesTargetFromUrl() {
+  try {
+    const v = new URLSearchParams(window.location.search).get('view');
+    if (v === 'review') return { needsReview: true };
+  } catch { /* no window */ }
+  return null;
 }
 
 // ?demo=blocks — a no-auth preview of the live Goal Thread that renders one of EVERY chat
@@ -2366,17 +2382,20 @@ function DemoChatBlocks() {
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
+  // Live waiting-review count for the Files nav badge (light poll + realtime nudge).
+  const reviewWaiting = useReviewWaitingCount(worldId);
   const [view, setView] = useState(initialViewFromUrl); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
   const [assignConfig, setAssignConfig] = useState(null); // { type, id, title } for AssignButton overlay
-  // When you tap "Review" on a Home catch-up file card, this carries the deliverable to
-  // open ({ name, project, missionSlug }) into the Review tool. Reset on every nav to
-  // review, so opening Review from the tool bar (no target) lands on the queue, not a
-  // stale file.
-  const [reviewTarget, setReviewTarget] = useState(null);
+  // When you tap "Review" on a file card anywhere (Home catch-up, a chat attachment),
+  // this carries the target into FILES ({ name | files, project, missionSlug,
+  // needsReview }) — Files selects the room, flips the needs-review filter on, and
+  // auto-opens that exact file with the verdict rail live. Reset on every plain nav
+  // to Files so the toolbar entry lands on the browse view, not a stale file.
+  const [filesTarget, setFilesTarget] = useState(initialFilesTargetFromUrl);
   // Tapping a project anywhere (Chat list, etc.) opens that project's home on Home —
   // its missions list + the "step into general project chat" button — instead of jumping
   // straight into a chat. Home consumes this and opens its (proven) project-detail screen.
@@ -2421,10 +2440,16 @@ export default function CornerCV6() {
   }, []);
   const onNav = useCallback((target, arg) => {
     if (target === 'back') { back(); return; }
-    if (['home', 'support', 'command', 'tracker', 'organize', 'review', 'settings', 'livescribe'].includes(target)) {
-      // Carry a catch-up "Review this file" target into the Review tool; a plain
-      // toolbar nav('review') passes no arg and clears any prior target.
-      if (target === 'review') setReviewTarget(arg && typeof arg === 'object' ? arg : null);
+    // Legacy 'review' navs (any straggler call site) land in Files with the
+    // needs-review filter on — the Review tool is a mode of Files now.
+    if (target === 'review') {
+      target = 'organize';
+      arg = arg && typeof arg === 'object' ? { ...arg, needsReview: true } : { needsReview: true };
+    }
+    if (['home', 'support', 'command', 'tracker', 'organize', 'settings', 'livescribe'].includes(target)) {
+      // Carry a "Review this file" target into Files; a plain toolbar nav('organize')
+      // passes no arg and clears any prior target.
+      if (target === 'organize') setFilesTarget(arg && typeof arg === 'object' ? arg : null);
       goTo(target, null);
       return;
     }
@@ -2466,22 +2491,24 @@ export default function CornerCV6() {
     body = <ChatDesktop worldId={worldId}
       initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText } : null}
       onNav={onNav} onOpenNav={onOpenNav}
-      onReviewFile={(f, proj) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('review', files?.length ? { files, project: proj || '' } : null); }} />;
+      onReviewFile={(f, proj) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', needsReview: true } : null); }} />;
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
   else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} />; viewKey = 'support'; }
-  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onAssignFile={(fileId) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '' })} />; viewKey = 'organize'; }
+  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }
   else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'livescribe'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
-  else if (view === 'review') { const onAssignDeliverable = (delivId, extra) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent', artifactTitle: String(delivId || '').split('/').pop() || '', ...(extra || {}) }); body = isDesktop ? <ReviewDesktop worldId={worldId} target={reviewTarget} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={onAssignDeliverable} /> : <Review worldId={worldId} target={reviewTarget} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={onAssignDeliverable} />; viewKey = 'review'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
+  // Needs-review count rides the Files nav entry (desktop tile + mobile drawer row) —
+  // the at-a-glance signal that replaced the retired Review tool.
+  const navBadges = reviewWaiting > 0 ? { organize: { kind: 'needs', count: reviewWaiting } } : {};
   return (
     <div data-cv6 data-theme="dark" data-app-theme={theme} style={{
       position: 'relative',
@@ -2493,13 +2520,13 @@ export default function CornerCV6() {
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
-      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={() => setSearchOpen(true)} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} />}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={() => setSearchOpen(true)} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(jobId) => onNav?.('command')} />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
-      <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} />
+      <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} badges={navBadges} />
       {/* ⌘K command palette — jump to any room or mission. Opens its own data. */}
       {searchOpen && (
         <Search

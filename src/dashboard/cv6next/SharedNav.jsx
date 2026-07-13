@@ -17,8 +17,11 @@ export const NAV_TOOLS = [
   // Chat tab retired (Patrik 2026-06-30): the standalone conversations list was redundant
   // with Home's All Rooms + col3 quick chat. The full Chat tool is still reachable by opening
   // any room from Home (→ again on a row). Deep link ?view=chat still resolves for safety.
-  { id: 'organize',   label: 'Organize', route: 'organize',   wired: true },
-  { id: 'review',     label: 'Review',   route: 'review',     wired: true },
+  // Review tool retired (corner:one-corner files-tool merge, 2026-07-13): review is now a
+  // verdict rail on any open file inside Files (the renamed Organize). ?view=review and every
+  // in-app onNav('review') land in Files with the needs-review filter on. The internal id/route
+  // stays 'organize' so nothing downstream re-keys — only the label reads "Files".
+  { id: 'organize',   label: 'Files',    route: 'organize',   wired: true },
   { id: 'support',    label: 'Support',  route: 'support',    wired: true },
   { id: 'tracker',    label: 'Tracker',  route: 'tracker',    wired: true },
   { id: 'command',    label: 'Command',  route: 'command',    wired: true },
@@ -99,9 +102,15 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, use
       <div className="toolnav">
         {VISIBLE_TOOLS.map((t) => (
           <div key={t.id} className={`ctile${t.id === current ? ' on' : ''}`}
-            onClick={() => onPick?.(t.route)} role="button" aria-label={t.label}>
+            onClick={() => onPick?.(t.route)} role="button" aria-label={t.label}
+            style={{ position: 'relative' }}>
             <Icon id={t.id} />
             <span className="clab">{t.label}</span>
+            {/* Needs-you count on a tool tile (the Files row carries the waiting review
+                count since the Review tool folded into Files). Same Badge the drawer uses. */}
+            {badges[t.id]?.count ? (
+              <span style={{ position: 'absolute', top: -6, right: -8 }}><Badge badge={badges[t.id]} /></span>
+            ) : null}
           </div>
         ))}
       </div>
