@@ -55,14 +55,11 @@ async function pipelineCounts(campaignId) {
 
 async function statsFor(campaignId, pipeline) {
   const sent = await countWhere('campaign_sends', `campaign_id=eq.${campaignId}`);
-  const replies = await countWhere(
-    'campaign_contacts',
-    `campaign_id=eq.${campaignId}&last_reply_at=not.is.null`
-  );
   const p = pipeline || (await pipelineCounts(campaignId));
   return {
     sent,
-    replies,
+    // human replies only — auto-replies sit in the 'noise' stage and don't count
+    replies: (p.replied || 0) + (p.call_set || 0) + (p.won || 0),
     calls: (p.call_set || 0) + (p.won || 0),
     won: p.won || 0,
   };

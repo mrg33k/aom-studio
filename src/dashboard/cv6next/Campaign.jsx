@@ -98,6 +98,9 @@ function HealthStrip({ health, act, busy }) {
   };
   const isProblem = status === 'problem';
   const needsYou = status === 'waiting' || status === 'paused';
+  // waiting-on-approval keeps ONE obvious tap: the TODAY batch card right
+  // below carries the Send button, so the strip stays a status line.
+  const showFix = action && (isProblem || status === 'paused');
   return (
     <div style={{ ...card, padding: 18, borderColor: isProblem ? 'rgba(248,113,113,.4)' : needsYou ? 'rgba(251,191,36,.35)' : 'var(--hair)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -106,7 +109,7 @@ function HealthStrip({ health, act, busy }) {
           {healthLine(health)}
         </div>
       </div>
-      {(isProblem || needsYou) && action && (
+      {showFix && (
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             style={{ ...btnPrimary(isProblem), flex: '1 1 auto', maxWidth: 340, height: 48 }}
@@ -292,7 +295,13 @@ function CityDetail({ campaignId, worldId, contactId, onClose, onOpenInbox, act,
   const ct = data?.contact;
   const mf = ct?.merge_fields || {};
   const replies = (data?.events || []).filter((e) => e.kind === 'replied');
-  const timeline = (data?.events || []).slice(0, 20);
+  // the send ledger is part of the story: historical sends have no event row
+  const timeline = [
+    ...(data?.events || []),
+    ...(data?.sends || []).map((s) => ({
+      id: `send-${s.sent_at}`, kind: 'sent', summary: 'Email sent', created_at: s.sent_at,
+    })),
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 20);
   const NEXT = { contacted: ['replied', 'call_set'], replied: ['call_set', 'won', 'lost'], call_set: ['won', 'lost'], noise: ['replied'] };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', overflow: 'auto' }}>
@@ -781,8 +790,8 @@ export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
   return (
     <div style={{ height: '100%', overflow: 'auto', padding: isDesktop ? '20px 24px' : '14px 14px calc(24px + env(safe-area-inset-bottom))' }}>
       {isDesktop ? (
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-          <div style={{ flex: '1 1 640px', minWidth: 0 }}>{missionControl}</div>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', justifyContent: 'center' }}>
+          <div style={{ flex: '0 1 640px', minWidth: 0 }}>{missionControl}</div>
           {cityPane && (
             <div style={{ width: 380, flexShrink: 0, position: 'sticky', top: 0, maxHeight: 'calc(100vh - 140px)' }}>
               {cityPane}
