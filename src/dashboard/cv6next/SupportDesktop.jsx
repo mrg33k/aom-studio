@@ -122,6 +122,27 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
   const recommendation = (suggest?.recommendation?.length ? suggest.recommendation : selected?.recommendation) || [];
   // The worker's actual read wins over the ingest paraphrase (M27 Stage 3).
   const agentRead = suggest?.agent_read || selected?.agentRead || null;
+
+  // Scheduled auto-send state (timer policy): countdown + a Hold-it cancel.
+  const [scheduleState, setScheduleState] = useState('idle'); // idle | clearing | cleared
+  useEffect(() => { setScheduleState('idle'); }, [selected?.id]);
+  const autoSendAt = scheduleState === 'cleared' ? null : (suggest?.auto_send_at || selected?.autoSendAt || null);
+  const autoSendLabel = useMemo(() => {
+    if (!autoSendAt) return '';
+    const mins = Math.max(1, Math.round((new Date(autoSendAt) - Date.now()) / 60000));
+    return mins < 90 ? `in ${mins}m` : `in ${Math.round(mins / 60)}h`;
+  }, [autoSendAt]);
+  const cancelSchedule = useCallback(async () => {
+    if (!isWish || scheduleState === 'clearing') return;
+    setScheduleState('clearing');
+    try {
+      await authFetch('/api/support/send-staged', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ action: 'clear_schedule', wish_id: selected.wishId }),
+      });
+      setScheduleState('cleared');
+    } catch { setScheduleState('idle'); }
+  }, [isWish, scheduleState, selected]);
   const readRows = agentRead ? [
     ['Who', agentRead.who], ['Ask', agentRead.ask], ['Where it stands', agentRead.state],
     ['What we did', agentRead.did], ['Next', agentRead.next],
@@ -316,6 +337,30 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
               {/* suggested actions + composer — wishes only (email-scan rows reply via the wish pipeline) */}
               {isWish ? (
                 <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {/* M27 solve-then-stage: a held draft is LOUD — what the agent did, and
+                      that the reply waits on you (with the countdown when scheduled). */}
+                  {suggest?.staged?.draft_id && selected.status !== 'resolved' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 12, background: 'var(--accent-weak)', border: '1px solid var(--accent-weak)' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', flex: 'none' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
+                          {autoSendAt && new Date(autoSendAt) > Date.now()
+                            ? `Draft ready — sends itself ${autoSendLabel} unless you step in`
+                            : 'Draft ready — waiting on you'}
+                        </div>
+                        {suggest?.worker_note?.body && (
+                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            Agent: {normalizeLinks(suggest.worker_note.body)}
+                          </div>
+                        )}
+                      </div>
+                      {autoSendAt && new Date(autoSendAt) > Date.now() && (
+                        <button onClick={cancelSchedule} style={{ height: 30, padding: '0 12px', borderRadius: 15, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
+                          {scheduleState === 'clearing' ? 'Stopping…' : 'Hold it'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
                     <Star />
                     <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested</span>

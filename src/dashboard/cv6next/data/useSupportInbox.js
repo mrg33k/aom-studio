@@ -127,6 +127,7 @@ export function useSupportInbox(worldId = 'aom') {
       firstResponseAt: w.first_response_at || null,
       latencySeconds: Number.isFinite(w.latency_seconds) ? w.latency_seconds : null,
       agentRead: (w.agent_read && typeof w.agent_read === 'object') ? w.agent_read : null,
+      autoSendAt: w.auto_send_at || null,
     };
     if (w.status === 'resolved') watching.push(item);
     else needsYou.push(item);

@@ -160,6 +160,17 @@ export default async function handler(req, res) {
   let recommendation = parseJsonish(wish.recommendation) || []
   let options = parseJsonish(wish.reply_options) || []
 
+  // Latest internal worker receipt ("fixed the page and checked it live") so the
+  // pane can show WHAT the agent did under the staged draft (M27 Stage 4).
+  let workerNote = null
+  try {
+    const nr = await supa(`support_wish_updates?select=body,created_at&wish_id=eq.${wish.id}&kind=eq.worker_note&order=created_at.desc&limit=1`)
+    if (nr.ok) {
+      const nrows = await nr.json()
+      if (Array.isArray(nrows) && nrows.length) workerNote = { body: nrows[0].body || '', created_at: nrows[0].created_at }
+    }
+  } catch { /* receipt is optional */ }
+
   let staged = null
   if (parsed.staged) {
     const body = await stagedDraftBody(parsed.staged)
@@ -196,5 +207,7 @@ export default async function handler(req, res) {
     // The worker's actual read {who, ask, state, did, next} — when present the
     // board renders THIS as the summary, not the ingest-time paraphrase (M27).
     agent_read: parseJsonish(wish.agent_read),
+    worker_note: workerNote,
+    auto_send_at: wish.auto_send_at || null,
   })
 }
