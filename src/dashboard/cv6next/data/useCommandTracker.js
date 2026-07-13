@@ -233,9 +233,13 @@ function shapeCommand({
   const projectNames = {};
   for (const p of projectRooms || []) projectNames[p.slug] = p.name || titleCase(p.slug);
 
-  // Real loops indexed by their room's canonical ledger key.
+  // Real loops indexed by their room's canonical ledger key. System routines
+  // (kind='system', launchd mirrors like the master loop itself) are NOT room
+  // loops — they live in the Routines panel and never count here, or the header
+  // claims "39 loops running" while every room toggle is honestly off.
   const loopsByKey = {};
   for (const rt of routines || []) {
+    if (rt && rt.kind === 'system') continue;
     const lk = routineRoomKey(rt);
     if (!lk) continue;
     if (!loopsByKey[lk]) loopsByKey[lk] = [];
@@ -462,7 +466,8 @@ function shapeCommand({
   // whole ledger; only the visible rows narrow. Active filter is named in the
   // sub line and the chip label carries a clear affordance.
   const visible = filter ? rows.filter((r) => r.status === filter) : rows;
-  const loopsRunningTotal = (routines || []).filter((l) => l.status === 'running').length;
+  // Count only room loops (what the rail's toggles show), never system mirrors.
+  const loopsRunningTotal = Object.values(loopsByKey).flat().filter((l) => l.status === 'running').length;
   const subLine = filter
     ? `Showing ${visible.length} ${filter} · tap the chip to show all`
     : `${rows.length} rooms · ${workingCount} working · ${loopsRunningTotal} ${loopsRunningTotal === 1 ? 'loop' : 'loops'} running`;
