@@ -335,6 +335,8 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awai
                         The live working thread renders once, below (WorkingTurn), so no double render. */}
                     {m.blocks?.length ? <div style={{ marginTop: 8, width: '100%' }}><AgentBlocks goal={goal} blocks={m.blocks} /></div> : null}
                     {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
+                    {/* Completed web work: the shipped link as a tappable card (Patrik 2026-07-13). */}
+                    {m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
                   </span>
                 ))}
                 {lastTime ? <div className="ts">{lastTime}</div> : null}
