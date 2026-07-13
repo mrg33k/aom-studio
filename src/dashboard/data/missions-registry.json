@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-07T04:07:27.895Z",
+  "generated_at": "2026-07-13T22:49:17.304Z",
   "missions": [
     {
       "slug": "corner:business-ops",
@@ -210,6 +210,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/business-ops/missions/worktree-discipline"
+    },
+    {
+      "slug": "corner:campaign-tool",
+      "raw_slug": "campaign-tool",
+      "folder_name": "campaign-tool",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Campaign Tool",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/campaign-tool"
     },
     {
       "slug": "corner:chat",
@@ -1176,6 +1190,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/older-versions/missions/mail-room"
+    },
+    {
+      "slug": "corner:one-corner",
+      "raw_slug": "one-corner",
+      "folder_name": "one-corner",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "One Corner",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/one-corner"
     },
     {
       "slug": "corner:one-write-path",
@@ -2452,6 +2480,20 @@
       "path": "corner/users/aom/projects/aheadofmarket.com/missions/summerschool"
     },
     {
+      "slug": "akai-mpc-course:keygroups-wavetables",
+      "raw_slug": "keygroups-wavetables",
+      "folder_name": "keygroups-wavetables",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "akai-mpc-course",
+      "workstream": null,
+      "name": "Keygroups Wavetables",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/akai-mpc-course/missions/keygroups-wavetables"
+    },
+    {
       "slug": "ambition-mechanical:ambition-social-clips",
       "raw_slug": "ambition-social-clips",
       "folder_name": "ambition-social-clips",
@@ -2464,6 +2506,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/ambition-mechanical/missions/ambition-social-clips"
+    },
+    {
+      "slug": "ambition-mechanical:facility-pipe-titles",
+      "raw_slug": "facility-pipe-titles",
+      "folder_name": "facility-pipe-titles",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "ambition-mechanical",
+      "workstream": null,
+      "name": "Facility Pipe Titles",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/facility-pipe-titles"
     },
     {
       "slug": "ambition-mechanical:google-ads-launch",
@@ -2492,6 +2548,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/ambition-mechanical/missions/linkedin-flood"
+    },
+    {
+      "slug": "ambition-mechanical:photo-bank",
+      "raw_slug": "photo-bank",
+      "folder_name": "photo-bank",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "ambition-mechanical",
+      "workstream": null,
+      "name": "Photo Bank",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/photo-bank"
     },
     {
       "slug": "ambition-mechanical:seo-organic",
@@ -2702,6 +2772,34 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/content-engine/missions/pipeline-v1"
+    },
+    {
+      "slug": "health-app:app-buildout",
+      "raw_slug": "app-buildout",
+      "folder_name": "app-buildout",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "health-app",
+      "workstream": null,
+      "name": "App Buildout",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/health-app/missions/app-buildout"
+    },
+    {
+      "slug": "health-app:design",
+      "raw_slug": "design",
+      "folder_name": "design",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "health-app",
+      "workstream": null,
+      "name": "Design",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/health-app/missions/design"
     },
     {
       "slug": "higher-orbits:documentary-scope",
@@ -3491,8 +3589,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 108,
-      "in_flight": 108,
+      "total": 110,
+      "in_flight": 110,
       "done": 0
     },
     {
@@ -3508,9 +3606,15 @@
       "done": 0
     },
     {
+      "slug": "akai-mpc-course",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
       "slug": "ambition-mechanical",
-      "total": 7,
-      "in_flight": 7,
+      "total": 9,
+      "in_flight": 9,
       "done": 0
     },
     {
@@ -3565,6 +3669,12 @@
       "slug": "content-engine",
       "total": 1,
       "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "health-app",
+      "total": 2,
+      "in_flight": 2,
       "done": 0
     },
     {
