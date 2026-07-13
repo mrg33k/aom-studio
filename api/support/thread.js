@@ -100,7 +100,7 @@ export default async function handler(req, res) {
   const { wish_id, access_code, fresh } = req.query
   if (!wish_id && !access_code) return res.status(400).json({ ok: false, error: 'wish_id or access_code required' })
   const sel = wish_id ? `id=eq.${encodeURIComponent(wish_id)}` : `access_code=eq.${encodeURIComponent(String(access_code).toUpperCase())}`
-  const wr = await supa(`support_wishes?select=id,email,source&${sel}&limit=1`)
+  const wr = await supa(`support_wishes?select=id,email,source,message&${sel}&limit=1`)
   const rows = wr.ok ? await wr.json() : []
   const wish = Array.isArray(rows) && rows.length ? rows[0] : null
   if (!wish) return res.status(404).json({ ok: false, error: 'wish not found' })
@@ -112,7 +112,38 @@ export default async function handler(req, res) {
     const trows = await tr.json()
     if (Array.isArray(trows) && trows.length) { try { meta = JSON.parse(trows[0].body || '{}') } catch { meta = {} } }
   }
-  const threadId = meta.thread_id || ''
+  let threadId = meta.thread_id || ''
+
+  // Fallback: press-send cards (triage lane) historically carried no thread_meta row,
+  // but their staged Gmail draft IS threaded onto the client's conversation — resolve
+  // the thread through the draft, then persist a thread_meta row so the next hit (and
+  // reply.js) routes without the extra Gmail call.
+  if (!threadId) {
+    const tag = String(wish.message || '').match(/\[staged_draft:([^|\]]+)\|conn:([^\]]+)\]/)
+    if (tag) {
+      try {
+        const creds = await getGmailTokenByConnection(tag[2])
+        if (creds) {
+          const dr = await gmailFetch(creds.accessToken, `/drafts/${encodeURIComponent(tag[1])}?format=minimal`)
+          if (dr.ok) {
+            const d = await dr.json()
+            threadId = d?.message?.threadId || ''
+            if (threadId) {
+              meta = { thread_id: threadId, in_reply_to: '', connection_id: tag[2] }
+              await supa('support_wish_updates', {
+                method: 'POST',
+                body: JSON.stringify({
+                  wish_id: wish.id, kind: 'thread_meta', author: 'system', visible_to_client: false,
+                  body: JSON.stringify(meta),
+                }),
+              }).catch(() => {})
+            }
+          }
+        }
+      } catch { /* fall through to no-thread */ }
+    }
+  }
+
   if (!threadId) {
     // Web-form wish / forwarded mail / pre-threading capture: no Gmail thread exists.
     return res.status(200).json({ ok: true, thread: [], cached: false, reason: 'no-thread' })
