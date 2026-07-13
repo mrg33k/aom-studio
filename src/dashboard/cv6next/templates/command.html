@@ -53,11 +53,13 @@
         <!-- ONE row per room/terminal; click = step in (detail panel); is-:room.rowState marks
              the open row; is-:room.status on the status chip; the loop toggle is per-row and real
              (room-autopilot — master-loop-tick honors it). -->
-        <div class="grow" data-each="ledger.rooms" data-mod="is-:room.rowState" data-action="openGoal" data-arg="room.id" style="cursor:pointer;"><div style="width:180px;flex:none;display:flex;align-items:center;gap:9px;min-width:0;"><span class="pdot is-violet" data-mod="is-:room.tint" style="flex:none;"></span><div style="min-width:0;"><div style="font-size:13.5px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.name">Space Rising</div><div style="font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.tag">Project</div></div></div><div class="gcell" data-mod="is-:room.goalKind" style="flex:1.1;min-width:0;padding-right:12px;font-size:13px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="room.goal">Lock Interactive/community framing before Apr 29 print</div><div style="flex:1;min-width:0;padding-right:12px;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="room.liveNow">—</div><div style="width:52px;flex:none;font-size:12px;color:var(--muted);" data-bind="room.age">2h</div><div style="width:92px;flex:none;"><span class="astat is-working" data-mod="is-:room.status"><span class="sd"></span><span data-bind="room.statusLabel">WORKING</span></span></div><div style="width:52px;flex:none;display:flex;justify-content:flex-end;"><span class="wtog" role="switch" aria-label="Master loop for this room" data-mod="is-:room.loop" data-action="toggleRoomLoop" data-arg="room.key" title="Master loop: on = the loop keeps pushing this room forward by itself"><span class="wtog-knob"></span></span></div></div>
+        <div class="grow" data-each="ledger.rooms" data-mod="is-:room.rowState" data-action="openGoal" data-arg="room.id" style="cursor:pointer;"><div style="width:180px;flex:none;display:flex;align-items:center;gap:9px;min-width:0;"><span class="pdot is-violet" data-mod="is-:room.tint" style="flex:none;"></span><div style="min-width:0;"><div style="font-size:13.5px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.name">Space Rising</div><div style="font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.tag">Project</div></div></div><div class="gcell" data-mod="is-:room.goalKind" style="flex:1.1;min-width:0;padding-right:12px;font-size:13px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="room.goal">Lock Interactive/community framing before Apr 29 print</div><div style="flex:1;min-width:0;padding-right:12px;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="room.liveNow">—</div><div style="width:52px;flex:none;font-size:12px;color:var(--muted);" data-bind="room.age">2h</div><div style="width:92px;flex:none;"><span class="astat is-working" data-mod="is-:room.status"><span class="sd"></span><span data-bind="room.statusLabel">WORKING</span></span></div><div style="width:52px;flex:none;display:flex;justify-content:flex-end;"><span class="wtog" role="switch" aria-label="Loop for this room" data-mod="is-:room.loop" data-action="toggleRoomLoop" data-arg="room.key" title="Loop: on = a scheduled loop is actually running in this room. Tap to pause/resume; no loop yet = step in to set one up"><span class="wtog-knob"></span></span></div></div>
       </div>
     </div>
     <!-- goal detail -->
-    <div style="width:400px;flex:none;border-left:1px solid var(--divider);padding:22px;overflow:hidden;display:flex;flex-direction:column;" data-state="ready">
+    <!-- overflow-y:auto (was hidden): the panel gained the Loops + watch sections and
+         must scroll as a whole instead of clipping the controls off short windows -->
+    <div style="width:400px;flex:none;border-left:1px solid var(--divider);padding:22px;overflow-y:auto;display:flex;flex-direction:column;" data-state="ready">
       <div style="flex:none;display:flex;align-items:center;gap:8px;margin-bottom:14px;"><span class="pdot is-violet" data-mod="is-:goal.tint"></span><span style="font-size:16px;font-weight:600;color:var(--fg);flex:1;" data-bind="goal.roomName">Space Rising</span><span class="astat is-live" data-mod="is-:goal.status"><span class="sd"></span><span data-bind="goal.statusLabel">LIVE</span></span></div>
       <div style="flex:none;display:flex;align-items:center;margin-bottom:8px;"><span class="eyebrow" style="flex:1;">Current goal</span><span class="rowopen" data-mod="is-:goal.addState" data-action="toggleGoalEdit" title="State this room's goal yourself — a goal you set is never overwritten" style="font-size:11.5px;font-weight:600;color:var(--accent);cursor:pointer;" data-bind="goal.editLabel">Edit</span></div>
       <div style="flex:none;font-size:17px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:5px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
@@ -85,12 +87,12 @@
       <!-- Queue note on its OWN row (Steffen gate R1: inline on the header line it overlapped
            the step count when the text wrapped). Free to wrap here without colliding. -->
       <div class="stat" style="flex:none;max-width:100%;box-sizing:border-box;color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));margin-bottom:12px;"><svg style="flex:none;" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span data-bind="goal.queueNote">1 in master-loop queue</span></div>
-      <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:14px;overflow-y:auto;flex:0 1 auto;min-height:0;">
+      <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:14px;overflow-y:auto;flex:none;max-height:230px;">
         <!-- ONE row per checklist step; is-:step.state → done | queued | active; the tag is the
              step's source (You / Agent / Proposed) or Done/Running. Empty = honest empty note.
              ACTIONABLE (wd40 R1): tap a row = mark done / not done for real (room-goal-steps
              store; tapping a Proposed step also claims it). -->
-        <div class="cstep is-done" style="display:flex;align-items:center;gap:11px;cursor:pointer;" data-each="goal.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag">Verified</span><span data-action="deleteStep" data-arg="step.act" title="Remove this step from the plan" style="flex:none;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--faint);cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div>
+        <div class="cstep is-done" style="display:flex;align-items:center;gap:11px;cursor:pointer;" data-each="goal.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-action="acceptStep" data-arg="step.act" title="Proposed step? Tap the tag to accept it onto the plan without marking it done" data-bind="step.tag">Verified</span><span data-action="deleteStep" data-arg="step.act" title="Remove this step from the plan" style="flex:none;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--faint);cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div>
         <div style="font-size:12px;color:var(--faint);" data-bind="goal.emptyNote"></div>
       </div>
       <!-- Hand the next unchecked step to the room's agent (wd40 R3) — one tap sends it
@@ -106,6 +108,58 @@
       <div class="rowopen" data-mod="is-:goal.addState" data-cv6-addstep style="gap:8px;margin-bottom:14px;">
         <input placeholder="Add a step to this plan…" style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
         <button data-action="addStep" data-arg="goal.addKey" title="Add this step to the room's plan" style="height:38px;padding:0 15px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Add</button>
+      </div>
+      <!-- ── LOOPS — real scheduled instructions (routines; the daemon runs them).
+           This is where a loop gets set up, paused, run now, or removed. Rows reuse
+           the kit's astat/surface-2 vocabulary; loop states ride existing chips
+           (running→working, paused→idle, error→blocked). The cadence select is a
+           new primitive → logged in GAP-LIST-FOR-DESIGN.md. -->
+      <div style="flex:none;display:flex;align-items:center;margin-bottom:4px;"><span class="eyebrow" style="flex:1;">Loops · <span data-bind="goal.loopCount">0</span></span></div>
+      <div style="flex:none;font-size:11px;color:var(--muted);margin-bottom:10px;">Instructions this room runs on a schedule, for real.</div>
+      <div style="flex:none;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:190px;overflow-y:auto;">
+        <!-- ONE row per loop; is-:loop.state → working | idle | blocked -->
+        <div data-each="goal.loops" style="display:flex;flex-direction:column;gap:7px;background:var(--surface-2);border-radius:11px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <span class="astat is-working" data-mod="is-:loop.state" style="flex:none;"><span class="sd"></span><span data-bind="loop.stateLabel">RUNNING</span></span>
+            <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="loop.name">Loop</span>
+            <span data-action="deleteLoop" data-arg="loop.id" title="Remove this loop for good" style="flex:none;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--faint);cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div class="mono" style="font-size:11px;color:var(--muted);" data-bind="loop.meta">every hour</div>
+          <div style="font-size:11px;color:var(--warn);" data-bind="loop.errorNote"></div>
+          <div style="display:flex;gap:7px;">
+            <button data-action="toggleLoop" data-arg="loop.id" title="Pause or resume this loop" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--hair);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-bind="loop.toggleLabel">Pause</button>
+            <button data-action="runLoopNow" data-arg="loop.id" title="Run this loop once right now" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--hair);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Run now</button>
+          </div>
+        </div>
+      </div>
+      <div style="flex:none;font-size:12px;color:var(--faint);margin-bottom:10px;" data-bind="goal.loopsEmptyNote"></div>
+      <!-- Prefill: turn this room's plan into a loop (fills the form; you pick the cadence) -->
+      <div class="rowopen" data-mod="is-:goal.loopPlanState" style="flex:none;margin-bottom:10px;">
+        <button data-action="loopPlan" data-arg="goal.id" title="Fill the loop form with a work-the-plan instruction — you pick how often" style="width:100%;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Loop this plan — work the next step each cycle</button>
+      </div>
+      <!-- Create a loop: plain instruction + cadence → POST /routines; the daemon
+           picks it up within ~30s of its due time. -->
+      <div class="rowopen" data-mod="is-:goal.loopNewState" data-cv6-loopnew style="flex:none;flex-direction:column;align-items:stretch;gap:8px;margin-bottom:14px;">
+        <input placeholder="Tell this room what to do on a loop…" style="width:100%;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+        <div style="display:flex;gap:8px;">
+          <select style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 10px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+            <option value="">Manual — runs when you tap</option>
+            <option value="30">Every 30 minutes</option>
+            <option value="60">Every hour</option>
+            <option value="240">Every 4 hours</option>
+            <option value="1440">Daily</option>
+          </select>
+          <button data-action="createLoop" data-arg="goal.id" title="Start this loop" style="height:38px;padding:0 15px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Start loop</button>
+        </div>
+      </div>
+      <!-- The master-loop watcher, honestly separated from loops: it checks the room
+           and nudges it toward its goal. It never runs instructions itself. -->
+      <div style="flex:none;display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:11px;padding:10px 12px;margin-bottom:14px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--fg);">Master-loop watch</div>
+          <div style="font-size:11px;color:var(--muted);">The system checks this room and nudges it toward its goal.</div>
+        </div>
+        <span class="wtog" role="switch" aria-label="Master-loop watch for this room" data-mod="is-:goal.watch" data-action="toggleWatch" data-arg="goal.id" title="Watch on/off — nudges only, not a loop" style="flex:none;"><span class="wtog-knob"></span></span>
       </div>
       <button style="width:100%;height:42px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="openRoom" data-arg="goal.id" title="Open this room's conversation">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg>Open room
@@ -152,7 +206,7 @@
 
         <div style="display:flex;flex-direction:column;gap:11px;">
           <!-- ONE row per checklist step — tap = done / not done for real -->
-          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-each="goal.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag"></span></div>
+          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-each="goal.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-action="acceptStep" data-arg="step.act" title="Proposed step? Tap the tag to accept it onto the plan without marking it done" data-bind="step.tag"></span></div>
           <div style="font-size:11.5px;color:var(--faint);" data-bind="goal.emptyNote"></div>
         </div>
         <!-- Hand the next unchecked step to the room's agent (noop guards the card tap) -->
@@ -165,17 +219,64 @@
           <input placeholder="Add a step to this plan…" style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
           <button data-action="addStep" data-arg="goal.addKey" title="Add this step to the room's plan" style="height:38px;padding:0 15px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Add</button>
         </div>
+        <!-- ── LOOPS (mobile) — real scheduled instructions, controllable in place.
+             Every container carries noop so taps never bubble to the card's openRoom. -->
+        <div data-action="noop" style="margin-top:14px;">
+          <div style="display:flex;align-items:center;margin-bottom:4px;"><span class="eyebrow" style="flex:1;">Loops · <span data-bind="goal.loopCount">0</span></span></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">Instructions this room runs on a schedule, for real.</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:9px;">
+            <!-- ONE row per loop; is-:loop.state → working | idle | blocked -->
+            <div data-each="goal.loops" data-action="noop" style="display:flex;flex-direction:column;gap:7px;background:var(--surface-2);border-radius:11px;padding:11px 13px;">
+              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <span class="astat is-working" data-mod="is-:loop.state" style="flex:none;"><span class="sd"></span><span data-bind="loop.stateLabel">RUNNING</span></span>
+                <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="loop.name">Loop</span>
+                <span data-action="deleteLoop" data-arg="loop.id" title="Remove this loop for good" style="flex:none;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--faint);cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+              </div>
+              <div class="mono" style="font-size:11px;color:var(--muted);" data-bind="loop.meta">every hour</div>
+              <div style="font-size:11px;color:var(--warn);" data-bind="loop.errorNote"></div>
+              <div style="display:flex;gap:7px;">
+                <button data-action="toggleLoop" data-arg="loop.id" title="Pause or resume this loop" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--hair);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-bind="loop.toggleLabel">Pause</button>
+                <button data-action="runLoopNow" data-arg="loop.id" title="Run this loop once right now" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--hair);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Run now</button>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:var(--faint);margin-bottom:9px;" data-bind="goal.loopsEmptyNote"></div>
+          <div class="rowopen" data-mod="is-:goal.loopPlanState" data-action="noop" style="margin-bottom:9px;">
+            <button data-action="loopPlan" data-arg="goal.id" title="Fill the loop form with a work-the-plan instruction — you pick how often" style="width:100%;height:34px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Loop this plan — work the next step each cycle</button>
+          </div>
+          <div class="rowopen" data-mod="is-:goal.loopNewState" data-cv6-loopnew data-action="noop" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:11px;">
+            <input placeholder="Tell this room what to do on a loop…" style="width:100%;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+            <div style="display:flex;gap:8px;">
+              <select style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 10px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+                <option value="">Manual — runs when you tap</option>
+                <option value="30">Every 30 minutes</option>
+                <option value="60">Every hour</option>
+                <option value="240">Every 4 hours</option>
+                <option value="1440">Daily</option>
+              </select>
+              <button data-action="createLoop" data-arg="goal.id" title="Start this loop" style="height:38px;padding:0 15px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Start loop</button>
+            </div>
+          </div>
+          <!-- Watcher, honestly separated: it nudges the room, it is not a loop -->
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:11px;padding:10px 12px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--fg);">Master-loop watch</div>
+              <div style="font-size:11px;color:var(--muted);">Checks this room and nudges it toward its goal.</div>
+            </div>
+            <span class="wtog" role="switch" aria-label="Master-loop watch for this room" data-mod="is-:goal.watch" data-action="toggleWatch" data-arg="goal.id" title="Watch on/off — nudges only, not a loop" style="flex:none;"><span class="wtog-knob"></span></span>
+          </div>
+        </div>
       </div>
       <!-- ONE card per ledger room/terminal. Tap = step in (expands the room's plan
            checklist inline); the loop toggle is per-row and real (room-autopilot). -->
       <div style="display:flex;flex-direction:column;gap:9px;padding:13px 15px;margin-bottom:10px;background:var(--surface);border:1px solid var(--hair);border-radius:14px;cursor:pointer;" data-each="ledger.others" data-action="openGoal" data-arg="room.id">
-        <div style="display:flex;align-items:center;gap:10px;min-width:0;"><span class="pdot is-pink" data-mod="is-:room.tint" style="flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.name">Included Health</div><div style="font-size:10.5px;color:var(--faint);" data-bind="room.tag"></div></div><span style="font-size:11px;color:var(--muted);flex:none;" data-bind="room.age">2h</span><span class="astat is-blocked" data-mod="is-:room.status" style="flex:none;"><span class="sd"></span><span data-bind="room.statusLabel">BLOCKED</span></span><span class="wtog" role="switch" aria-label="Master loop for this room" data-mod="is-:room.loop" data-action="toggleRoomLoop" data-arg="room.key" title="Master loop on/off for this room" style="flex:none;"><span class="wtog-knob"></span></span></div>
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;"><span class="pdot is-pink" data-mod="is-:room.tint" style="flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.name">Included Health</div><div style="font-size:10.5px;color:var(--faint);" data-bind="room.tag"></div></div><span style="font-size:11px;color:var(--muted);flex:none;" data-bind="room.age">2h</span><span class="astat is-blocked" data-mod="is-:room.status" style="flex:none;"><span class="sd"></span><span data-bind="room.statusLabel">BLOCKED</span></span><span class="wtog" role="switch" aria-label="Loop for this room" data-mod="is-:room.loop" data-action="toggleRoomLoop" data-arg="room.key" title="Loop: on = a scheduled loop is actually running in this room" style="flex:none;"><span class="wtog-knob"></span></span></div>
         <div class="gclamp gcell" data-mod="is-:room.goalKind" style="font-size:13px;color:var(--fg);" data-bind="room.goal">Batch02 culture deck</div>
         <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.liveNow">—</div>
         <!-- Level 2: the room's plan, inline when this row is stepped into (collapsed rows bind
              zero steps). Steps are ACTIONABLE: tap = done / not done for real. -->
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-each="room.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13px;" data-bind="step.label">Step</span><span class="cstep-tag" data-bind="step.tag"></span></div>
+          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-each="room.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13px;" data-bind="step.label">Step</span><span class="cstep-tag" data-action="acceptStep" data-arg="step.act" title="Proposed step? Tap the tag to accept it onto the plan without marking it done" data-bind="step.tag"></span></div>
         </div>
         <div style="font-size:11.5px;color:var(--faint);" data-bind="room.stepNote"></div>
         <!-- Add a step — only when stepped in (rowopen shows on is-expanded); noop stops the

@@ -1913,14 +1913,18 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
 // focuses the detail panel (goal + plan checklist), mobile expands the checklist
 // inline. "Open room" (explicit) opens the room's conversation.
 const COMMAND_ALIASES = {
-  'activity.jobs': 'job', 'goal.checklist': 'step',
+  'activity.jobs': 'job', 'goal.checklist': 'step', 'goal.loops': 'loop',
   'ledger.others': 'room', 'ledger.rooms': 'room', 'room.checklist': 'step',
 };
 function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
   // Get command data from context instead of calling useCommand directly.
   // This prevents redundant hook instantiation on screen navigation.
   const { command, selectedKey, setSelectedKey, statusFilter, setStatusFilter, goalEdit, setGoalEdit } = useCommandContext();
-  const { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep, setRoomGoal } = command;
+  const {
+    state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept,
+    answerRoomQuestion, handNextStep, setRoomGoal,
+    loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle,
+  } = command;
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
@@ -1976,8 +1980,43 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
         setGoalEdit(false);
       },
       openRoom: (id) => openRoomById(id),
-      // Per-row master-loop toggle — real (room-autopilot; master-loop-tick honors it).
-      toggleRoomLoop: (key) => toggleWatcher?.(key),
+      // Per-row Loop toggle — REAL loops (routines). On = pause them, paused = resume
+      // them, none at all = step into the room, where the create form lives.
+      toggleRoomLoop: async (key) => {
+        const rooms = data?.ledger?.rooms || [];
+        const r = rooms.find((x) => String(x.key) === String(key));
+        const acted = await roomLoopsToggle?.(r?.loopRunningIds || [], r?.loopResumableIds || []);
+        if (!acted) { setGoalEdit(false); setSelectedKey(String(key)); }
+      },
+      // The master-loop watcher (room-autopilot) — its own labeled switch now.
+      toggleWatch: (key) => toggleWatcher?.(key),
+      // ── Loop controls (routines API; routine-daemon executes) ──
+      toggleLoop: (id) => loopToggle?.(id),
+      runLoopNow: (id) => loopRunNow?.(id),
+      deleteLoop: (id) => loopDelete?.(id),
+      // Create a loop from the in-place form: plain instruction + cadence select.
+      createLoop: (id, e) => {
+        const wrap = e?.currentTarget?.closest('[data-cv6-loopnew]');
+        const inp = wrap?.querySelector('input');
+        const sel = wrap?.querySelector('select');
+        const text = inp?.value?.trim();
+        if (!text || !id) return;
+        const minutes = sel && sel.value ? Number(sel.value) : null;
+        loopCreate?.({ key: String(id), projectSlug: data?.goal?.projectSlug || '', prompt: text, intervalMinutes: minutes });
+        if (inp) inp.value = '';
+      },
+      // Prefill the loop form with a work-the-plan instruction; the user still picks
+      // the cadence and taps Start — nothing fires on its own.
+      loopPlan: (_id, e) => {
+        const root = e?.currentTarget?.closest('[data-cv6]') || document;
+        const inp = root.querySelector('[data-cv6-loopnew] input');
+        if (inp) {
+          inp.value = "Take the next unchecked step on this room's plan and report back when it's done.";
+          inp.focus();
+        }
+      },
+      // Accept an agent-proposed step from its tag without flipping it done.
+      acceptStep: (act) => stepAccept?.(act),
       // Actionable checklist (wd40 R1): tap a step = done/undone for real (room-goal-steps
       // store; checking a Proposed step claims it); Add appends a user-sourced step to the
       // same store the room's agent reads. The add input is uncontrolled — read at tap time.
@@ -2020,7 +2059,7 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
       // A dock card is a live agent session — tapping it opens that agent's room.
       openJob: (id) => openRoomById('agent:' + String(id || '')),
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep, setRoomGoal]);
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept, answerRoomQuestion, handNextStep, setRoomGoal, loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle, setSelectedKey, setGoalEdit]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }

@@ -152,9 +152,63 @@ const hasOpenQuestion = (r) => {
   return Boolean(q) && q.toLowerCase() !== 'none' && q.toLowerCase() !== 'null';
 };
 
+// ── Real loops (Supabase routines) ── the scheduled instructions that actually run
+// in a room: routine-daemon.py polls the routines table every 30s and posts a due
+// routine's prompt into its room as a message. This is THE loop the ledger's Loop
+// column reflects. The master-loop watcher (autopilot) is a different thing — a
+// nudge flag — and renders as its own labeled switch, never as "a running loop".
+function routineRoomKey(rt) {
+  if (!rt || typeof rt !== 'object') return '';
+  if (rt.room_type === 'agent') return rt.agent_slug ? 'agent:' + String(rt.agent_slug) : '';
+  if (rt.room_type === 'mission') return normalizeRoomKey(String(rt.mission_slug || ''));
+  return normalizeRoomKey(String(rt.project_slug || ''));
+}
+
+function loopCadence(rt) {
+  const m = Number(rt && rt.interval_minutes);
+  if (!Number.isFinite(m) || m <= 0) return 'manual — runs when you tap';
+  if (m % 1440 === 0) { const d = m / 1440; return d === 1 ? 'daily' : `every ${d} days`; }
+  if (m % 60 === 0) { const h = m / 60; return h === 1 ? 'every hour' : `every ${h}h`; }
+  return `every ${m}m`;
+}
+
+function relDur(ms) {
+  const m = Math.round(ms / 60000);
+  if (m < 1) return 'under a minute';
+  if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.round(h / 24)}d`;
+}
+
+// One template row per loop. Visual states reuse the kit's astat chips exactly:
+// running → working (green), paused → idle (gray), error → blocked (amber).
+function shapeLoopRow(rt, now) {
+  const failed = rt.status === 'error' || Number(rt.fail_count || 0) > 0;
+  const running = rt.status === 'running';
+  const bits = [loopCadence(rt)];
+  if (running && rt.interval_minutes && rt.next_run_at) {
+    const ms = new Date(rt.next_run_at).getTime() - now;
+    bits.push(ms <= 30000 ? 'next run due now' : `next in ${relDur(ms)}`);
+  }
+  if (rt.last_run_at) {
+    const ago = relTime(rt.last_run_at);
+    bits.push(ago === 'now' ? 'ran just now' : `last run ${ago} ago`);
+  }
+  return {
+    id: String(rt.id || ''),
+    name: cleanCell(firstLine(rt.name || rt.prompt || '')) || 'Loop',
+    meta: bits.join(' · '),
+    state: failed ? 'blocked' : (running ? 'working' : 'idle'),
+    stateLabel: failed ? 'ERROR' : (running ? 'RUNNING' : 'PAUSED'),
+    toggleLabel: running ? 'Pause' : 'Resume',
+    errorNote: failed && rt.last_error ? cleanCell(firstLine(rt.last_error)).slice(0, 120) : '',
+  };
+}
+
 function shapeCommand({
   sessions = [], projectRooms = [], lastByRoom = {}, goalRooms = {},
-  boardRows = [], stepsByRoom = {}, selectedKey = '', handed = {}, filter = '',
+  boardRows = [], stepsByRoom = {}, routines = [], selectedKey = '', handed = {}, filter = '',
   editingGoal = false,
 }) {
   const now = Date.now();
@@ -178,6 +232,15 @@ function shapeCommand({
 
   const projectNames = {};
   for (const p of projectRooms || []) projectNames[p.slug] = p.name || titleCase(p.slug);
+
+  // Real loops indexed by their room's canonical ledger key.
+  const loopsByKey = {};
+  for (const rt of routines || []) {
+    const lk = routineRoomKey(rt);
+    if (!lk) continue;
+    if (!loopsByKey[lk]) loopsByKey[lk] = [];
+    loopsByKey[lk].push(rt);
+  }
 
   // Goal memory normalized onto the canonical roomKey convention. Legacy
   // 'project:mission' keys fold into their bare slug; when both exist the
@@ -205,8 +268,12 @@ function shapeCommand({
   }
 
   // Row universe: every room the goal memory or the state board knows, plus
-  // projects active in the last 24h, plus live terminal sessions.
-  const keys = new Set(Object.keys(normGoals));
+  // projects active in the last 24h, plus live terminal sessions. Rooms whose
+  // goal is done/parked leave the ledger (test rooms, closed work) — unless the
+  // board or fresh activity below re-adds them, which means they're real again.
+  const keys = new Set(Object.entries(normGoals)
+    .filter(([, v]) => !['done', 'parked'].includes(String((v && v.status) || '').toLowerCase()))
+    .map(([k]) => k));
   for (const nk of Object.keys(boardByKey)) keys.add(nk);
   const activeProjects = (projectRooms || [])
     .filter((p) => p.last_message_at && (now - p.last_message_at) <= DAY_MS);
@@ -247,11 +314,14 @@ function shapeCommand({
     const last = findLast(key);
     const { name, tag } = roomNameFor(key, projectNames, tags);
 
-    // Last activity = the freshest of message / board stamp / loop review.
+    // Last activity = the freshest of message / board stamp. NOT the loop's
+    // last_reviewed: the goal-notetaker sweeps rooms in batches, and counting its
+    // stamp as activity made untouched rooms read WORKING for 30 minutes after
+    // every sweep (the "6 working, all with a dash in LIVE NOW" lie). Only a real
+    // message or an agent-stamped board line counts as the room doing something.
     const times = [
       last && last.t,
       board && board.updated_at ? new Date(board.updated_at).getTime() : 0,
-      gr.last_reviewed ? new Date(gr.last_reviewed).getTime() : 0,
     ].filter((t) => t && !Number.isNaN(t));
     const lastActivity = times.length ? Math.max(...times) : 0;
 
@@ -311,7 +381,14 @@ function shapeCommand({
     const expanded = selectedKey && selectedKey === key;
     const checklist = checklistFromSteps(steps, status === 'working', storeKey);
     const doneCount = checklist.filter((c) => c.state === 'done').length;
-    const loopOn = gr.autopilot !== false; // absent/true = loop default ON (matches master-loop-tick)
+
+    // The Loop column is REAL loops only — routines the daemon actually executes.
+    // A room with none shows OFF. The old default-on watcher flag rendered here made
+    // the whole rail read as running loops when zero existed (Patrik, 2026-07-13).
+    const roomLoops = loopsByKey[key] || [];
+    const loopsRunning = roomLoops.filter((l) => l.status === 'running');
+    const loopsResumable = roomLoops.filter((l) => l.status !== 'running');
+    const watchOn = gr.autopilot !== false; // absent/true = watch ON (matches master-loop-tick)
 
     return {
       id: key, key, name, tag, tint: tintFor(name),
@@ -321,7 +398,11 @@ function shapeCommand({
       goalSource, goalFull,
       liveNow, age: lastActivity ? relTime(lastActivity) : '—', lastActivity,
       status, statusLabel: status.toUpperCase(),
-      loop: loopOn ? 'on' : 'off',
+      loop: loopsRunning.length ? 'on' : 'off',
+      loopRunningIds: loopsRunning.map((l) => String(l.id)),
+      loopResumableIds: loopsResumable.map((l) => String(l.id)),
+      loopCount: roomLoops.length,
+      watch: watchOn ? 'on' : 'off',
       // Level 2 (step in): the room's plan. Mobile renders it inline when expanded;
       // desktop shows it in the detail panel via `goal` below.
       checklist: expanded ? checklist : [],
@@ -349,6 +430,8 @@ function shapeCommand({
     const name = titleForAgent(agent);
     const board = boardByKey['agent:' + agent] || null;
     const realGoal = oneLineGoal((board && board.goal) || '');
+    const tLoops = loopsByKey['agent:' + agent] || [];
+    const tRunning = tLoops.filter((l) => l.status === 'running');
     rows.push({
       id: 'agent:' + agent, key: 'agent:' + agent, name, tag: 'Terminal', tint: tintFor(name),
       stepStoreKey: 'agent:' + agent,
@@ -358,7 +441,12 @@ function shapeCommand({
       liveNow: cleanCell(firstLine(s.task_text)).slice(0, 110) || 'Active session',
       age: 'now', lastActivity: now,
       status: 'working', statusLabel: 'WORKING',
-      loop: 'off', checklist: [], fullChecklist: [], stepNote: '', openLabel: '',
+      loop: tRunning.length ? 'on' : 'off',
+      loopRunningIds: tRunning.map((l) => String(l.id)),
+      loopResumableIds: tLoops.filter((l) => l.status !== 'running').map((l) => String(l.id)),
+      loopCount: tLoops.length,
+      watch: 'on',
+      checklist: [], fullChecklist: [], stepNote: '', openLabel: '',
       expandedState: 'collapsed', rowState: 'row', openQuestion: '',
     });
   }
@@ -374,9 +462,10 @@ function shapeCommand({
   // whole ledger; only the visible rows narrow. Active filter is named in the
   // sub line and the chip label carries a clear affordance.
   const visible = filter ? rows.filter((r) => r.status === filter) : rows;
+  const loopsRunningTotal = (routines || []).filter((l) => l.status === 'running').length;
   const subLine = filter
     ? `Showing ${visible.length} ${filter} · tap the chip to show all`
-    : `${rows.length} rooms · ${workingCount} working`;
+    : `${rows.length} rooms · ${workingCount} working · ${loopsRunningTotal} ${loopsRunningTotal === 1 ? 'loop' : 'loops'} running`;
   const workingChip = (filter === 'working' ? '✕ ' : '') + `${workingCount} working`;
   const blockedChip = (filter === 'blocked' ? '✕ ' : '') + `${blockedCount} blocked`;
 
@@ -432,6 +521,19 @@ function shapeCommand({
   const handedCurrent = Boolean(nextStep && goal.id && handed[goal.id] && handed[goal.id].act === nextStep.act);
   goal.handState = (goal.addKey && nextStep && !handedCurrent) ? 'expanded' : 'collapsed';
   goal.handedState = handedCurrent ? 'expanded' : 'collapsed';
+
+  // ── Loops on the focused room (real routines, full control in place) ──
+  goal.projectSlug = focus ? (focus.projectSlug || '') : '';
+  const focusLoops = focus ? (loopsByKey[focus.key] || []) : [];
+  goal.loops = focusLoops.map((rt) => shapeLoopRow(rt, now));
+  goal.loopCount = String(focusLoops.length);
+  goal.loopsEmptyNote = focusLoops.length ? '' : 'No loop on this room yet. Start one below.';
+  // The create form only renders when there is a real room to attach it to.
+  goal.loopNewState = goal.addKey ? 'expanded' : 'collapsed';
+  // "Loop this plan" prefill only offers itself when the plan has a next step.
+  goal.loopPlanState = (goal.addKey && nextStep) ? 'expanded' : 'collapsed';
+  // The master-loop watcher, honestly labeled — it nudges the room, it is not a loop.
+  goal.watch = focus ? (focus.watch || 'off') : 'off';
 
   return {
     ledger: {
@@ -585,6 +687,90 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
     return () => { alive = false; clearInterval(id); };
   }, [worldId, stepsReload]);
 
+  // Real loops — the routines the daemon executes (corner:routines). 30s cadence
+  // matches the daemon's own poll; loopsReload forces an immediate refetch after a
+  // write so optimistic state reconciles to server truth in seconds.
+  const [routines, setRoutines] = useState([]);
+  const [loopsReload, setLoopsReload] = useState(0);
+  const routinesSig = useRef('');
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    const load = () => authFetch('/api/dashboard/routines?client_id=' + encodeURIComponent(worldId))
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d || !Array.isArray(d.routines)) return;
+        const sig = JSON.stringify(d.routines);
+        if (sig === routinesSig.current) return;
+        routinesSig.current = sig; setRoutines(d.routines);
+      })
+      .catch(() => {});
+    load();
+    const id = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(id); };
+  }, [worldId, loopsReload]);
+
+  // One write path for every loop control; always reconcile to server truth after.
+  const loopWrite = useCallback(async (method, body) => {
+    if (!worldId) return;
+    try {
+      await authFetch('/api/dashboard/routines', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: worldId, ...body }),
+      });
+    } finally {
+      routinesSig.current = ''; setLoopsReload((n) => n + 1);
+    }
+  }, [worldId]);
+
+  // Create a loop on a ledger room. Key shapes: 'agent:<slug>' → agent room; a bare
+  // slug with a known parent project → mission room; else project room. Model rides
+  // the routines default (sonnet) — never a front-desk-class model in a room.
+  const loopCreate = useCallback(async ({ key, projectSlug = '', prompt, intervalMinutes = null, name = '' } = {}) => {
+    const t = String(prompt || '').replace(/\s+/g, ' ').trim();
+    const k = String(key || '');
+    if (!worldId || !k || !t) return;
+    const body = {
+      name: String(name || '').trim() || (t.length > 44 ? t.slice(0, 43).trimEnd() + '…' : t),
+      prompt: t,
+      model: 'sonnet',
+      interval_minutes: intervalMinutes,
+    };
+    if (k.startsWith('agent:')) { body.room_type = 'agent'; body.agent_slug = k.slice(6); }
+    else if (projectSlug) { body.room_type = 'mission'; body.project_slug = projectSlug; body.mission_slug = k; }
+    else { body.room_type = 'project'; body.project_slug = k; }
+    await loopWrite('POST', body);
+  }, [worldId, loopWrite]);
+
+  const loopToggle = useCallback(async (id) => {
+    const rt = (routines || []).find((r) => String(r.id) === String(id));
+    if (!rt) return;
+    const action = rt.status === 'running' ? 'pause' : 'resume';
+    setRoutines((rs) => rs.map((r) => (String(r.id) === String(id) ? { ...r, status: action === 'pause' ? 'paused' : 'running' } : r)));
+    await loopWrite('PATCH', { id, action });
+  }, [routines, loopWrite]);
+
+  const loopRunNow = useCallback(async (id) => {
+    setRoutines((rs) => rs.map((r) => (String(r.id) === String(id) ? { ...r, status: 'running', next_run_at: new Date().toISOString() } : r)));
+    await loopWrite('PATCH', { id, action: 'run_now' });
+  }, [loopWrite]);
+
+  const loopDelete = useCallback(async (id) => {
+    setRoutines((rs) => rs.filter((r) => String(r.id) !== String(id)));
+    await loopWrite('DELETE', { id });
+  }, [loopWrite]);
+
+  // The ledger's per-row Loop toggle: pause every running loop on the room, or
+  // resume the paused ones. Returns false when the room has no loop at all — the
+  // caller steps into the room instead (the create form lives in the detail panel).
+  const roomLoopsToggle = useCallback(async (runningIds = [], resumableIds = []) => {
+    const ids = runningIds.length ? runningIds : resumableIds;
+    if (!ids.length) return false;
+    for (const id of ids) await loopToggle(id);
+    return true;
+  }, [loopToggle]);
+
   // Arm/disarm the master loop for a room (the per-row toggle). Optimistic; the
   // 60s goal poll reconciles to the file the daemon actually reads. The row key is
   // canonical — resolve which stored key (canonical or legacy project:mission)
@@ -633,6 +819,29 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
       // the user touched is theirs), then flips done for real.
       if (wasProposed) await post({ action: 'accept' });
       await post({ action: 'toggle' });
+    } finally {
+      stepsSig.current = ''; setStepsReload((n) => n + 1);
+    }
+  }, [worldId, stepsByRoom]);
+
+  // Accept an agent proposal WITHOUT flipping it done (tap its Proposed tag): the
+  // step becomes yours and stays on the plan as a next step. No-op on non-proposals.
+  const stepAccept = useCallback(async (act) => {
+    const [room, id] = String(act || '').split('|');
+    if (!worldId || !room || !id) return;
+    const it = (stepsByRoom[room] || []).find((s) => s.id === id);
+    if (!it || !it.proposed) return;
+    setStepsByRoom((prev) => {
+      const cur = prev[room] || [];
+      const out = { ...prev, [room]: cur.map((s) => (s.id === id ? { ...s, proposed: false, source: 'user' } : s)) };
+      stepsSig.current = JSON.stringify(out);
+      return out;
+    });
+    try {
+      await authFetch('/api/dashboard/room-goal-steps', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accept', world: worldId, room, id }),
+      });
     } finally {
       stepsSig.current = ''; setStepsReload((n) => n + 1);
     }
@@ -772,11 +981,15 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   }, [worldId, goalRooms]);
 
   const data = useMemo(
-    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed, filter, editingGoal }),
-    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed, filter, editingGoal],
+    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, routines, selectedKey, handed, filter, editingGoal }),
+    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, routines, selectedKey, handed, filter, editingGoal],
   );
   const state = worldId ? 'ready' : 'loading';
-  return { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep, setRoomGoal };
+  return {
+    state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept,
+    answerRoomQuestion, handNextStep, setRoomGoal,
+    loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle,
+  };
 }
 
 // ── Tracker: the real CV6 bug tracker ──
