@@ -180,7 +180,11 @@ export default async function handler(req, res) {
   const data = await gr.json()
   const ownEmail = (creds.row && creds.row.config && creds.row.config.account_email) || (creds.profile && creds.profile.email) || ''
 
-  const messages = (data.messages || []).map((m) => {
+  // Unsent drafts live on the thread too — they are NOT part of the conversation
+  // (the staged draft has its own surface: the composer + Send). Rendering one as
+  // a sent message would be fake state on the board.
+  const realMessages = (data.messages || []).filter((m) => !(m.labelIds || []).includes('DRAFT'))
+  const messages = realMessages.map((m) => {
     const headers = m.payload?.headers || []
     const header = (name) => {
       const h = headers.find((x) => String(x.name || '').toLowerCase() === name)
