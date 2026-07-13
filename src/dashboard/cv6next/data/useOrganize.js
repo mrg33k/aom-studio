@@ -220,7 +220,7 @@ function nonTextPreview(name, kind) {
     + 'background:var(--accent-weak);border-left:3px solid var(--accent);">'
     + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>'
     + `<span style="font-size:13px;font-weight:600;color:var(--fg);">${label}</span></div>`
-    + `<p style="margin:0;color:var(--muted);">This ${lower} can't preview inline yet. Open it in Review to work with it.</p>`
+    + `<p style="margin:0;color:var(--muted);">This ${lower} can't preview inline yet. Use Download to work with it.</p>`
   );
 }
 

@@ -203,7 +203,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
     const key = JSON.stringify([target.name || '', target.project || '', (target.files || []).map((f) => f?.url || f?.path || f?.name || ''), !!target.needsReview]);
     if (targetKeyRef.current === key) return;
     const wantsFile = !!(target.name || (target.files && target.files.length));
-    if (wantsFile && !itemsAll.length && review.state === 'loading') return;
+    if ((wantsFile || target.needsReview) && !itemsAll.length && review.state === 'loading') return;
     targetKeyRef.current = key;
     const base = (p) => String(p || '').split('/').pop();
     let item = null;
@@ -221,7 +221,15 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
     }
     const proj = (item && (item.whoRaw || '__personal')) || target.project || null;
     if (proj) enterProject(proj);
-    if (target.needsReview && (item || !wantsFile)) setFilterBoth('needs');
+    // A bare ?view=review (no file) lands IN triage: newest waiting room, filter on.
+    if (target.needsReview) {
+      if (item) setFilterBoth('needs');
+      else if (!wantsFile) {
+        const it0 = itemsAll[0];
+        if (it0) enterProject(it0.whoRaw || '__personal');
+        setFilterBoth('needs');
+      }
+    }
     const rid = item ? item.id : rawPath;
     if (rid || rawName) {
       pendingOpenRef.current = { rid, name: rawName };

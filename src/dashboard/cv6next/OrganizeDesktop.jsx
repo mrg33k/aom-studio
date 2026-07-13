@@ -167,7 +167,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target
     const key = JSON.stringify([target.name || '', target.project || '', (target.files || []).map((f) => f?.url || f?.path || f?.name || ''), !!target.needsReview]);
     if (targetKeyRef.current === key) return;
     const wantsFile = !!(target.name || (target.files && target.files.length));
-    if (wantsFile && !itemsAll.length && review.state === 'loading') return; // queue still landing
+    if ((wantsFile || target.needsReview) && !itemsAll.length && review.state === 'loading') return; // queue still landing
     targetKeyRef.current = key;
     const base = (p) => String(p || '').split('/').pop();
     let item = null;
@@ -186,8 +186,16 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target
     const proj = (item && (item.whoRaw || '__personal')) || target.project || null;
     if (proj) selectProject(proj);
     // The needs-review filter goes on for triage entries; a target that is NOT in
-    // the waiting set opens in plain browse (the filter would hide it).
-    if (target.needsReview && (item || !wantsFile)) setFilter('needs');
+    // the waiting set opens in plain browse (the filter would hide it). A bare
+    // ?view=review (no file) lands IN triage: newest waiting room, filter on.
+    if (target.needsReview) {
+      if (item) setFilter('needs');
+      else if (!wantsFile) {
+        const it0 = itemsAll[0];
+        if (it0) selectProject(it0.whoRaw || '__personal');
+        setFilter('needs');
+      }
+    }
     const rid = item ? item.id : rawPath;
     if (rid || rawName) pendingOpenRef.current = { rid, name: rawName, project: target.project || (item && item.whoRaw) || '' };
     // eslint-disable-next-line react-hooks/exhaustive-deps
