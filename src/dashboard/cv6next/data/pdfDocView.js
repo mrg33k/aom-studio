@@ -87,16 +87,17 @@ async function hydrateOne(node, registry) {
       const holder = document.createElement('div');
       holder.setAttribute('data-pdf-page', String(ix + 1));
       holder.setAttribute('style',
-        `position:relative;width:100%;aspect-ratio:${p.w}/${p.h};margin:0 0 12px;`
+        `position:relative;width:100%;aspect-ratio:${p.w}/${p.h};margin:0 0 3px;`
         + 'background:#fff;border:1px solid var(--hair,rgba(0,0,0,.12));border-radius:10px;overflow:hidden;');
-      const chip = document.createElement('span');
-      chip.className = 'mono';
-      chip.setAttribute('style',
-        'position:absolute;right:8px;bottom:8px;z-index:2;padding:2px 7px;border-radius:8px;'
-        + 'background:rgba(0,0,0,.45);color:#fff;font-size:10px;letter-spacing:.4px;pointer-events:none;');
-      chip.textContent = `${ix + 1} / ${doc.numPages}`;
-      holder.appendChild(chip);
       frag.appendChild(holder);
+      // Page number lives UNDER the page, never on it — an overlay chip covered
+      // real content in bottom-right corners (totals bars, slide footers).
+      const cap = document.createElement('div');
+      cap.className = 'mono';
+      cap.setAttribute('style',
+        'text-align:right;margin:0 2px 10px;font-size:10px;letter-spacing:.4px;color:var(--faint,#999);');
+      cap.textContent = `${ix + 1} / ${doc.numPages}`;
+      frag.appendChild(cap);
       holders.push(holder);
     });
 
