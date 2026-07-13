@@ -6,8 +6,9 @@
 // create-project-from-chat). Live build of the CV6 design
 // deliverables/design-system-2026-06-28/guidelines/pattern-new-mission.html.
 //
-// One overlay, two modes via data-switch on composer.mode: "Start a mission" (goal +
-// project + assign + priority + when) and "New project" (name + about). Field picks
+// One overlay, two modes via data-switch on composer.mode: "Start a mission" (name +
+// goal + project + assign + priority + when; name optional, goal-derived when blank)
+// and "New project" (name + about). Field picks
 // ride the DOM (.is-on) + a ref — no setState — so the uncontrolled text boxes are
 // never wiped mid-edit by a re-bind; the project/agent lists are frozen at open so a
 // realtime data tick can't rebuild the overlay under the user's thumbs.
@@ -60,6 +61,10 @@ const NEW_COMPOSER_HTML = `
     </div>
     <div data-switch="composer.mode" style="padding:16px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:18px;">
       <div data-case="mission" style="display:flex;flex-direction:column;gap:18px;">
+        <div class="cmp-field">
+          <div class="cmp-flab">Mission name <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--faint);">· blank = named from the goal</span></div>
+          <input class="cmp-inp" data-bind="draft.missionName" placeholder="e.g. Print framing lock">
+        </div>
         <div class="cmp-field">
           <div class="cmp-flab">What should the room get done?</div>
           <textarea class="cmp-inp" data-bind="draft.goal" placeholder="e.g. Lock the print framing before Apr 29" style="min-height:64px;"></textarea>
@@ -206,7 +211,10 @@ export default function NewComposer({ worldId, projects, agents, initialMode = '
       if (!goal) { showErr('Tell the room what to get done first.'); return; }
       const projectSlug = sel.projectId;
       if (!projectSlug) { showErr('Pick a project for this mission.'); return; }
-      const title = goal.split('\n')[0].slice(0, 80);
+      // The mission is named by the user when they typed one; the goal-derived title is
+      // only the fallback so the fast path (goal only) still works in one field.
+      const missionName = root?.querySelector('[data-bind="draft.missionName"]')?.value?.trim() || '';
+      const title = (missionName || goal.split('\n')[0]).slice(0, 80);
       const priLabel = { low: 'Low', med: 'Medium', high: 'High' }[sel.priority] || '';
       const whenLabel = { now: 'Now', 'this-week': 'This week' }[sel.when] || '';
       setBusy(true);
