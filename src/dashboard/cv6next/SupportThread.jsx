@@ -39,9 +39,14 @@ function firstLine(s) {
 }
 
 // One message in the chain. Collapsed = a single scannable row; expanded = the
-// full body with the sender header.
+// full body with the sender header. Three outbound flavors, all truthful:
+// sent (accent), draft:true = written but NOT sent yet (warn), recorded:true =
+// a reply logged on the board whose email lives on another thread (accent, quiet note).
 function ThreadMessage({ msg, expanded, onToggle, tint, initials }) {
   const ours = msg.direction === 'out';
+  const isDraft = !!msg.draft;
+  const railColor = isDraft ? 'var(--warn)' : 'var(--accent)';
+  const rail = ours ? `3px solid ${railColor}` : '3px solid transparent';
   if (!expanded) {
     return (
       <button
@@ -51,11 +56,11 @@ function ThreadMessage({ msg, expanded, onToggle, tint, initials }) {
           display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left',
           padding: '10px 16px', border: 'none', borderTop: '1px solid var(--divider)',
           background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-sans)',
-          borderLeft: ours ? '3px solid var(--accent)' : '3px solid transparent',
+          borderLeft: rail,
         }}
       >
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: ours ? 'var(--accent)' : 'var(--fg)', flex: 'none' }}>
-          {ours ? 'AOM' : (msg.from || 'Client')}
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: ours ? railColor : 'var(--fg)', flex: 'none' }}>
+          {ours ? (isDraft ? 'AOM · draft' : 'AOM') : (msg.from || 'Client')}
         </span>
         <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {firstLine(msg.body) || '(no text)'}
@@ -65,7 +70,7 @@ function ThreadMessage({ msg, expanded, onToggle, tint, initials }) {
     );
   }
   return (
-    <div style={{ borderTop: '1px solid var(--divider)', borderLeft: ours ? '3px solid var(--accent)' : '3px solid transparent' }}>
+    <div style={{ borderTop: '1px solid var(--divider)', borderLeft: rail }}>
       <button
         onClick={onToggle}
         aria-expanded="true"
@@ -81,9 +86,15 @@ function ThreadMessage({ msg, expanded, onToggle, tint, initials }) {
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--fg)' }}>
             {ours ? 'AOM' : (msg.from || 'Client')}
-            {ours && <span style={{ marginLeft: 8, fontSize: 10.5, fontWeight: 600, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--accent)' }}>sent</span>}
+            {ours && (
+              <span style={{ marginLeft: 8, fontSize: 10.5, fontWeight: 600, letterSpacing: '.05em', textTransform: 'uppercase', color: railColor }}>
+                {isDraft ? 'draft · not sent' : 'sent'}
+              </span>
+            )}
           </span>
-          <span style={{ display: 'block', fontSize: 11.5, color: 'var(--faint)', marginTop: 1 }}>{msg.fromEmail || ''}</span>
+          <span style={{ display: 'block', fontSize: 11.5, color: 'var(--faint)', marginTop: 1 }}>
+            {msg.recorded ? 'logged reply' : (msg.fromEmail || '')}
+          </span>
         </span>
         <span className="mono" style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{relTime(msg.date)}</span>
       </button>
@@ -94,8 +105,9 @@ function ThreadMessage({ msg, expanded, onToggle, tint, initials }) {
   );
 }
 
-export default function SupportThread({ wishId, refreshToken, fallback }) {
-  // fallback = { sender, address, initials, avatarTint, time, body, showQuoteToggle }
+export default function SupportThread({ wishId, threadId, account, refreshToken, fallback }) {
+  // Two lanes: wish cards fetch by wishId; mailbox-scan rows fetch by threadId+account.
+  // fallback = { sender, address, initials, avatarTint, time, body }
   const [thread, setThread] = useState(null);
   const [state, setState] = useState('idle'); // idle | loading | ready | error
   const [open, setOpen] = useState({}); // index -> expanded (latest is always open by default)
@@ -104,15 +116,18 @@ export default function SupportThread({ wishId, refreshToken, fallback }) {
 
   useEffect(() => {
     setThread(null); setOpen({}); setShowEarlier(false);
-    if (!wishId) { setState('idle'); return; }
+    const query = wishId
+      ? `wish_id=${encodeURIComponent(wishId)}`
+      : (threadId && account ? `thread_id=${encodeURIComponent(threadId)}&account=${encodeURIComponent(account)}` : null);
+    if (!query) { setState('idle'); return; }
     let dead = false;
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 20000);
-    threadFor.current = wishId + String(refreshToken || '');
+    threadFor.current = query + String(refreshToken || '');
     const mine = threadFor.current;
     setState('loading');
     const freshQ = String(refreshToken || '').includes('sent') ? '&fresh=1' : '';
-    authFetch(`/api/support/thread?wish_id=${encodeURIComponent(wishId)}${freshQ}`, { credentials: 'include', signal: ctl.signal })
+    authFetch(`/api/support/thread?${query}${freshQ}`, { credentials: 'include', signal: ctl.signal })
       .then((r) => r.json())
       .then((d) => {
         if (dead || threadFor.current !== mine) return;
@@ -122,19 +137,26 @@ export default function SupportThread({ wishId, refreshToken, fallback }) {
       .catch(() => { if (!dead && threadFor.current === mine) setState('error'); })
       .finally(() => clearTimeout(timer));
     return () => { dead = true; ctl.abort(); clearTimeout(timer); };
-  }, [wishId, refreshToken]);
+  }, [wishId, threadId, account, refreshToken]);
 
   const chain = state === 'ready' && thread && thread.length > 0 ? thread : null;
 
   // ── the chain ──
   if (chain) {
     const lastIdx = chain.length - 1;
+    const draftCount = chain.filter((m) => m.draft).length;
+    const realCount = chain.length - draftCount;
     return (
       <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 16, overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px' }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--faint)' }}>
-            Conversation · {chain.length} message{chain.length === 1 ? '' : 's'}
+            Conversation · {realCount} message{realCount === 1 ? '' : 's'}
           </span>
+          {draftCount > 0 && (
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--warn)' }}>
+              · {draftCount} draft{draftCount === 1 ? '' : 's'} waiting
+            </span>
+          )}
         </div>
         {chain.map((msg, i) => (
           <ThreadMessage

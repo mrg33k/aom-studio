@@ -152,10 +152,13 @@ export function useSupportInbox(worldId = 'aom') {
       const senderSub = `to you · ${it.email || 'mail'}`;
       const body = String(it.lastInbound?.body || it.lastInbound?.snippet || it.snippet || '').trim();
       const threadCount = it.messageCount || (Array.isArray(it.messages) ? it.messages.length : 1) || 1;
+      // threadId + the mailbox it lives in let the pane fetch the REAL chain for
+      // scan rows too (M27b — these rows used to render a single message only).
+      const threadRef = { threadId: it.threadId || null, boxEmail: box.email || null };
       if (kind === 'need') {
-        needsYou.push({ id, kind: 'email', initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount, tags: [] });
+        needsYou.push({ id, kind: 'email', initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount, tags: [], ...threadRef });
       } else {
-        watching.push({ id, kind: 'email', subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount });
+        watching.push({ id, kind: 'email', subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount, ...threadRef });
       }
     }
   }

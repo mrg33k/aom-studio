@@ -321,6 +321,8 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                       single-message fallback otherwise (SupportThread handles both) */}
                   <SupportThread
                     wishId={isWish ? selected.wishId : null}
+                    threadId={!isWish ? selected.threadId : null}
+                    account={!isWish ? selected.boxEmail : null}
                     refreshToken={`${selected.id}${sendState === 'sent' ? '-sent' : ''}`}
                     fallback={{
                       sender: selected.sender,
