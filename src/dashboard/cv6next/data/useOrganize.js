@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
 import { mediaAttrs } from './mediaFallback';
+import { pdfShellHtml } from './pdfDocView';
 
 const TINTS = ['violet', 'accent', 'pink', 'success'];
 
@@ -251,20 +252,13 @@ function imageBodyHtml(f, worldId) {
     + '</div>';
 }
 
-// PDF preview: stream the file straight off the tunnel into the browser's native
-// viewer — project-file-raw serves PDFs inline, Range-capable, CORS * (the exact
-// posture Review's doc branch shipped in R79-f24). Spinner sits under the frame
-// until it loads (O2: no silent black pane). iOS Safari only paints page 1 of a
-// PDF inside an iframe, so an Open-full-size link rides above the frame.
+// PDF preview: the real reader (M7) — pdf.js paints every page onto stacked
+// canvases inside the doc flow, hydrated by usePdfDocs on the host screen.
+// One vertical scroll, whole document visible, clicks reach the pin listener
+// directly (the iframe reader free-scrolled, showed one page on iOS, and
+// swallowed clicks). Bytes still stream off the tunnel (inline, Range, CORS *).
 function pdfBodyHtml(src, name) {
-  const title = escapeHtml(name || 'PDF');
-  return (
-    `<div style="display:flex;justify-content:flex-end;margin:0 0 8px;">`
-    + `<a href="${src}" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;">Open full-size ↗</a></div>`
-    + `<div style="position:relative;min-height:420px;">${MEDIA_WAIT_HTML}`
-    + `<iframe src="${src}" title="${title}" onload="${HIDE_WAIT}" style="position:relative;width:100%;height:70vh;min-height:420px;border:1px solid var(--hair);border-radius:10px;display:block;background:#fff;"></iframe>`
-    + '</div>'
-  );
+  return pdfShellHtml(src, name);
 }
 
 // Files-tool merge (corner:one-corner, 2026-07-13): the container mounts useReview
@@ -425,8 +419,9 @@ export function useOrganize(worldId = 'aom', opts = {}) {
       } else if (kind === 'audio') {
         bodyHtml = `<audio src="${esc(up.url)}" ${mediaAttrs(up.url, 'audio')} controls preload="metadata" style="width:100%;display:block;margin:12px 0;border-radius:8px;"></audio>`;
       } else if (kind === 'pdf') {
-        // Uploads' id IS their store URL — the browser's PDF viewer loads it directly.
-        bodyHtml = pdfBodyHtml(esc(up.url), up.name);
+        // Uploads' id IS their store URL — the reader loads it directly
+        // (pdfShellHtml escapes attributes itself; no esc() here).
+        bodyHtml = pdfBodyHtml(up.url, up.name);
       } else {
         bodyHtml = nonTextPreview(up.name, kind);
       }

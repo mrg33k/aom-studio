@@ -2704,6 +2704,9 @@ export default defineConfig({
           // 3D stack rides the lazy ActGear3D chunk — forcing it into shared
           // vendor chunks creates circular-init (TDZ) crashes at page load.
           if (id.includes('/three') || id.includes('/@react-three/') || id.includes('/react-reconciler/') || id.includes('/its-fine/') || id.includes('/zustand/') || id.includes('/@mediapipe/') || id.includes('/troika-') || id.includes('/suspend-react/')) return undefined
+          // pdfjs-dist is dynamic-imported by the PDF reader (pdfDocView) — keep it
+          // out of the eager vendor chunk so non-PDF sessions never download it.
+          if (id.includes('/pdfjs-dist/')) return undefined
           if (id.includes('/d3-force/')) return 'vendor-d3'
           if (id.includes('/html-to-image/')) return 'vendor-html2img'
           if (id.includes('/marked/')) return 'vendor-marked'

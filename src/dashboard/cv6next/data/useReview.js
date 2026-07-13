@@ -8,6 +8,7 @@ import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase';
 import { titleForAgent } from './agentTitles';
 import { mediaAttrs } from './mediaFallback';
+import { pdfShellHtml } from './pdfDocView';
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -157,13 +158,13 @@ async function buildDeliverableBody(item) {
     }
     if (type === 'doc') {
       if (/\.pdf$/i.test(path)) {
-        // PDFs stream straight off the rag tunnel (served inline, Range-capable,
-        // CORS *) exactly like the image/video branches above. The old path pulled
-        // the whole PDF through the Vercel raw proxy as a blob, which buffers in the
-        // lambda and dies past its ~4.5MB response cap — big decks "could not be
-        // loaded." An abs store/tunnel URL loads directly. (files-in-app R79-f24)
+        // The real PDF reader (M7): pdf.js paints every page onto stacked canvases
+        // (usePdfDocs hydrates the shell on the host screen). One vertical scroll,
+        // all pages visible, and clicks reach the pin listener directly — no more
+        // iframe (free-scrolled, one page on iOS) and no pinshield needed. Bytes
+        // still stream off the tunnel (inline, Range, CORS * — R79-f24 posture).
         const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
-        return `<div style="position:relative;"><iframe src="${src}" title="${escapeHtml(item.title)}" style="width:100%;height:62vh;border:0;border-radius:10px;display:block;"></iframe>${pinShield()}</div>`;
+        return pdfShellHtml(src, item.title);
       }
       // Non-PDF docs: auth-fetch the bytes and offer a download (no inline preview).
       const b = await blobOf();
