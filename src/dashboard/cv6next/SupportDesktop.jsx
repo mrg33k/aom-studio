@@ -14,7 +14,8 @@
 // their reply plumbing is the wish pipeline; no dead Send button on them.
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { useSupportInbox } from './data/useSupportInbox.js';
+import { useSupportInbox, latencyLabel } from './data/useSupportInbox.js';
+import SupportThread from './SupportThread.jsx';
 import { authFetch } from '../lib/authFetch';
 
 // Strips angle-bracket URL syntax (<https://...>) that agent-produced markdown emits.
@@ -73,6 +74,16 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
   const selected = useMemo(() => picked || list[0] || null, [picked, list]);
   const isWish = selected?.kind === 'wish';
 
+  // Board-level reply speed: median ask → first-reply gap over the last 7 days.
+  const medianLatency = useMemo(() => {
+    const week = 7 * 86400000;
+    const vals = [...needsYou, ...watching]
+      .filter((it) => it.latencySeconds != null && it.createdAt && Date.now() - new Date(it.createdAt).getTime() < week)
+      .map((it) => it.latencySeconds)
+      .sort((a, b) => a - b);
+    return vals.length ? vals[Math.floor(vals.length / 2)] : null;
+  }, [needsYou, watching]);
+
   // Reply-pane intelligence: staged draft body + reply options via /api/support/suggest.
   // The fetch is BOUNDED (20s abort): "thinking…" always resolves to real bullets or an
   // honest failed line — a hung endpoint can never leave the card spinning forever.
@@ -103,8 +114,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
   const [composer, setComposer] = useState('');
   const [sendState, setSendState] = useState('idle'); // idle | sending | sent | error
   const [sendError, setSendError] = useState('');
-  const [showEarlier, setShowEarlier] = useState(false);
-  useEffect(() => { setComposer(''); setSendState('idle'); setSendError(''); setShowEarlier(false); }, [selected?.id]);
+  useEffect(() => { setComposer(''); setSendState('idle'); setSendError(''); }, [selected?.id]);
 
   const stagedBody = suggest?.staged?.body || null;
   const options = suggest?.options || selected?.replyOptions || [];
@@ -186,7 +196,10 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 14px' }}>
             <div>
               <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Inbox</div>
-              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>{needsYou.length} open · {watching.length} waiting on you</div>
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>
+                {needsYou.length} open · {watching.length} waiting on you
+                {medianLatency != null && <span> · replies in ~{latencyLabel(medianLatency)}</span>}
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 7 }}>
               {[['open', 'Open'], ['waiting', 'Waiting']].map(([k, label]) => (
@@ -209,7 +222,14 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 26px', borderBottom: '1px solid var(--divider)' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.015em', color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.subject}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{selected.sender}{selected.address ? ` · ${selected.address}` : ''} · {selected.time}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                    {selected.sender}{selected.address ? ` · ${selected.address}` : ''} · {selected.time}
+                    {selected.latencySeconds != null && (
+                      <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 8, background: 'var(--success-weak)', color: 'var(--success)', fontSize: 11, fontWeight: 600 }}>
+                        Replied in {latencyLabel(selected.latencySeconds)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <button onClick={() => onAssignEmail?.(selected.id, selected)} style={{ height: 36, padding: '0 14px', borderRadius: 10, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Assign</button>
                 {isWish && (
@@ -257,40 +277,20 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                     </div>
                   )}
 
-                  {/* original email */}
-                  <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 16, overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '18px 22px', borderBottom: '1px solid var(--divider)' }}>
-                      <span className={`ava is-${selected.avatarTint || 'violet'}`} style={{ width: 44, height: 44, fontSize: 15 }}>{selected.initials || '·'}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{selected.sender} {selected.address ? <span style={{ fontWeight: 400, color: 'var(--faint)', fontSize: 13 }}>&lt;{selected.address}&gt;</span> : null}</div>
-                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>to Patrik (you)</div>
-                      </div>
-                      <span className="mono" style={{ fontSize: 11, color: 'var(--faint)' }}>{selected.time}</span>
-                    </div>
-                    <div style={{ padding: '22px 26px', fontSize: 14.5, lineHeight: 1.75, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {(() => {
-                        const full = (suggest?.original || selected.body || 'No message body.');
-                        const cut = full.search(/^\s*>|^-{2,}\s*Forwarded message|^Begin forwarded message:|^On .{5,80} wrote:/m);
-                        const head = cut >= 0 ? full.slice(0, cut).trim() : full;
-                        const tail = cut >= 0 ? full.slice(cut).trim() : '';
-                        return (
-                          <>
-                            {(tail && head) ? head : full}
-                            {(tail && head) && (
-                              // Persistent disclosure toggle: aria-expanded reflects real state,
-                              // so Show/Hide is a true toggle (and assistive tech + QA read the
-                              // reveal as a live state change, not a dead click).
-                              <button aria-expanded={showEarlier ? 'true' : 'false'} onClick={() => setShowEarlier((v) => !v)} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 36, padding: '0 14px', marginTop: 16, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                                <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--muted)' }}>Earlier in this thread</span>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{showEarlier ? 'Hide' : 'Show'}</span>
-                              </button>
-                            )}
-                            {(tail && head) && showEarlier && <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--divider)', color: 'var(--muted)', fontSize: 13 }}>{tail}</div>}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                  {/* the conversation — real Gmail chain when the wish has a thread,
+                      single-message fallback otherwise (SupportThread handles both) */}
+                  <SupportThread
+                    wishId={isWish ? selected.wishId : null}
+                    refreshToken={`${selected.id}${sendState === 'sent' ? '-sent' : ''}`}
+                    fallback={{
+                      sender: selected.sender,
+                      address: selected.address,
+                      initials: selected.initials,
+                      avatarTint: selected.avatarTint,
+                      time: selected.time,
+                      body: suggest?.original || selected.body || 'No message body.',
+                    }}
+                  />
                 </div>
               </div>
 

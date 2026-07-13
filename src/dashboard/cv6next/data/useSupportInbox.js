@@ -31,6 +31,17 @@ function relTime(d) {
 }
 function firstLine(s) { return String(s || '').split('\n')[0].slice(0, 140); }
 
+// "Replied in 32s" truth (M27): humanize the ask → first-reply gap.
+export function latencyLabel(seconds) {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return null;
+  if (seconds < 90) return `${Math.max(1, Math.round(seconds))}s`;
+  const m = Math.round(seconds / 60);
+  if (m < 90) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 36) return `${h}h`;
+  return `${Math.round(h / 24)}d`;
+}
+
 // wish.message = subject line + • summary bullets + "--- ORIGINAL MESSAGE ---" +
 // original text + optional [staged_draft:ID|conn:ID] tag (support-email-watch.py).
 // Split it here so the pane renders summary and original as separate cards.
@@ -112,6 +123,9 @@ export function useSupportInbox(worldId = 'aom') {
       status: w.status,
       threadCount: 1,
       tags: [],
+      createdAt: w.created_at || null,
+      firstResponseAt: w.first_response_at || null,
+      latencySeconds: Number.isFinite(w.latency_seconds) ? w.latency_seconds : null,
     };
     if (w.status === 'resolved') watching.push(item);
     else needsYou.push(item);
