@@ -17,9 +17,18 @@
 
 import { useEffect } from 'react';
 
+// The reader renders on the .doc paper, which is FORCED LIGHT in every app theme
+// (cv6.css .doc background:#fbfbfa, no theme qualifier). Theme-reactive tokens
+// (--fg/--muted/--faint/--hair) track the APP theme and resolve near-white on this
+// light paper in Dark/Glass — invisible ink (Steffen design-gate send-back,
+// 2026-07-13). Every color below is therefore paper-locked, never a var().
+const INK = '#1a1a1a';        // titles on paper
+const INK_MID = '#6a6a72';    // captions / labels / loading on paper (AA on #fbfbfa)
+const PAPER_HAIR = 'rgba(0,0,0,.12)';
+
 // Spinner matches the O2 loading affordance used by the media viewers.
 const WAIT_HTML =
-  '<div data-pdf-wait style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:180px;color:#9a9a9a;">'
+  `<div data-pdf-wait style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:180px;color:${INK_MID};">`
   + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
   + '<span style="font-size:13px;font-weight:500;">Loading PDF…</span></div>';
 
@@ -39,8 +48,8 @@ const PAINT_MARGIN = '1400px 0px';     // start painting pages this far from the
 function errorCard(src, name) {
   return (
     '<div style="display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:10px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);">'
-    + '<span style="font-size:13px;font-weight:600;color:var(--fg,#333);">This PDF couldn\'t load</span>'
-    + `<span style="font-size:12px;color:var(--muted,#666);">Open it directly or download it instead.</span>`
+    + `<span style="font-size:13px;font-weight:600;color:${INK};">This PDF couldn't load</span>`
+    + `<span style="font-size:12px;color:${INK_MID};">Open it directly or download it instead.</span>`
     + `<span style="display:flex;gap:14px;"><a href="${escAttr(src)}" target="_blank" rel="noopener" style="font-size:12.5px;font-weight:600;color:#0066FF;text-decoration:none;">Open ↗</a>`
     + `<a href="${escAttr(src)}" download="${escAttr(name)}" style="font-size:12.5px;font-weight:600;color:#0066FF;text-decoration:none;">Download</a></span></div>`
   );
@@ -78,7 +87,7 @@ async function hydrateOne(node, registry) {
     const head = document.createElement('div');
     head.setAttribute('style', 'display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;');
     head.innerHTML =
-      `<span class="mono" style="font-size:10.5px;letter-spacing:.4px;color:var(--faint,#999);">PDF · ${doc.numPages} PAGE${doc.numPages === 1 ? '' : 'S'}</span>`
+      `<span class="mono" style="font-size:10.5px;letter-spacing:.4px;color:${INK_MID};">PDF · ${doc.numPages} PAGE${doc.numPages === 1 ? '' : 'S'}</span>`
       + `<a href="${escAttr(src)}" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#0066FF;text-decoration:none;">Open ↗</a>`;
     frag.appendChild(head);
 
@@ -87,15 +96,17 @@ async function hydrateOne(node, registry) {
       const holder = document.createElement('div');
       holder.setAttribute('data-pdf-page', String(ix + 1));
       holder.setAttribute('style',
+        // 4px radius, not 10: a document page is a rectangle — heavier rounding
+        // shaved the corners off edge-bleed slides (full-width footer bars).
         `position:relative;width:100%;aspect-ratio:${p.w}/${p.h};margin:0 0 3px;`
-        + 'background:#fff;border:1px solid var(--hair,rgba(0,0,0,.12));border-radius:10px;overflow:hidden;');
+        + `background:#fff;border:1px solid ${PAPER_HAIR};border-radius:4px;overflow:hidden;`);
       frag.appendChild(holder);
       // Page number lives UNDER the page, never on it — an overlay chip covered
       // real content in bottom-right corners (totals bars, slide footers).
       const cap = document.createElement('div');
       cap.className = 'mono';
       cap.setAttribute('style',
-        'text-align:right;margin:0 2px 10px;font-size:10px;letter-spacing:.4px;color:var(--faint,#999);');
+        `text-align:right;margin:0 2px 10px;font-size:10px;letter-spacing:.4px;color:${INK_MID};`);
       cap.textContent = `${ix + 1} / ${doc.numPages}`;
       frag.appendChild(cap);
       holders.push(holder);
