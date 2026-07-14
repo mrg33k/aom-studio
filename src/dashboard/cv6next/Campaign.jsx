@@ -784,19 +784,6 @@ function MessageCard({ campaign, worldId, onSaved }) {
               ))}
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button
-              style={{ ...btnPrimary(false), height: 36, minWidth: 0, padding: '0 18px', fontSize: 13, opacity: saveState === 'saving' ? 0.6 : 1 }}
-              disabled={saveState === 'saving'}
-              onClick={save}
-            >
-              {saveState === 'saving' ? 'Saving…' : 'Save changes'}
-            </button>
-            <button style={btnGhost} disabled={saveState === 'saving'} onClick={() => { setEditing(false); setSaveState('idle'); }}>Cancel</button>
-            {saveState === 'error' && (
-              <span style={{ fontSize: 12.5, color: '#F87171' }}>Didn't save. Try again.</span>
-            )}
-          </div>
         </div>
       )}
 
@@ -812,7 +799,7 @@ function MessageCard({ campaign, worldId, onSaved }) {
         </div>
         <div style={hairRow}>
           <span style={hairKey}>To</span>
-          <span style={{ color: 'var(--muted)' }}>
+          <span style={{ color: 'var(--fg)', fontWeight: 500 }}>
             {sample ? `${sample.name ? `${sample.name} ` : ''}${sample.email ? `<${sample.email}>` : ''}` : 'each contact on your list'}
           </span>
         </div>
@@ -829,6 +816,21 @@ function MessageCard({ campaign, worldId, onSaved }) {
           ? `This is the email exactly as it goes out, previewed with ${sampleCity} from your list. Every send fills in that contact's own details.`
           : 'Fields like {{city}} fill in with each contact’s own details when the email goes out.'}
       </div>
+      {editing && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
+          <button
+            style={{ ...btnPrimary(false), height: 36, minWidth: 0, padding: '0 18px', fontSize: 13, opacity: saveState === 'saving' ? 0.6 : 1 }}
+            disabled={saveState === 'saving'}
+            onClick={save}
+          >
+            {saveState === 'saving' ? 'Saving…' : 'Save changes'}
+          </button>
+          <button style={btnGhost} disabled={saveState === 'saving'} onClick={() => { setEditing(false); setSaveState('idle'); }}>Cancel</button>
+          {saveState === 'error' && (
+            <span style={{ fontSize: 12.5, color: '#F87171' }}>Didn't save. Try again.</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
