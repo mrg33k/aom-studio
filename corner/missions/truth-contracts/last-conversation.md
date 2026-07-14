@@ -73,3 +73,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/data/useCommandTracker.js` now gives local/no-Supabase mode a render-only `aom` world id, skips tenant-gated Command/Tracker polls and writes when Supabase is absent, initializes Tracker boards to empty, and disables create/update actions in no-Supabase mode. The audit spec now asserts Tracker and Command visible empty states on desktop and mobile.
 
 Verification: `npm run build` passed. Claude ran external browser verification with `CV6_AUDIT_BASE=http://127.0.0.1:5199 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`; 2 tests passed in 9.6s. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Review JSON normalization audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Files/Review-backed panels plus sibling tools and keep the workflow understandable when local Vite serves API source/non-JSON bodies instead of real JSON.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Review-backed data reads logged repeated `Unexpected token '/' ... is not valid JSON` errors for projects, missions-tree, and review-queue. Files still looked usable, but the console made the product appear broken and hid real regressions in noise.
+2. P2: The visible desktop and mobile sibling journeys completed through Files, Tracker, Command, Scribe, and Home; the issue was misleading/error-noisy state rather than navigation breakage.
+3. P2: Generic local missing-resource 404 console entries remain filtered as non-product noise in the practical audit test.
+
+Fix shipped: `src/dashboard/cv6next/data/useReview.js` now guards read-only Review JSON parsing. Non-JSON successful read responses become empty/unavailable local data instead of thrown parse errors; Review mutation responses remain strict. The CV6 practical audit spec no longer ignores the old `Unexpected token '/'` JSON parse failure.
+
+Verification: desktop and mobile Playwright probes completed the sibling journey without Review parse errors; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.

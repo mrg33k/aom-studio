@@ -91,3 +91,13 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: hidden template loading text remains in the DOM by design, so tests assert visible empty states instead of absence of hidden template strings. No stored login/world/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and verified for the delegated tracker-command-empty-states audit.
+
+- 2026-07-14 delegated review-json-normalization slice:
+  - User goal: from desktop and mobile CV6, open Files/Review-backed panels and sibling tools without raw local API source responses producing scary JSON parse errors or breaking navigation.
+  - Audit: desktop and mobile probes opened Files, Tracker, Command, Scribe, and Home. The visible workflow stayed usable, but the Review-backed data hook emitted repeated `Unexpected token '/' ... is not valid JSON` errors for projects, missions-tree, and review-queue when Vite served API source/non-JSON bodies.
+  - Ranked finding: P1 high-frequency developer/local workflow noise. Files depends on the Review hook for waiting-review state; repeated parse errors make the shell look broken and hide real regressions in console noise even when the correct local state is empty.
+  - Fixed this round: `useReview.js` now reads Review GET responses through a guarded JSON parser, treats non-JSON read responses as unavailable/empty local data, and keeps mutation responses strict. The audit spec no longer ignores the old `Unexpected token '/'` console failure.
+  - Verification: desktop/mobile Playwright probes completed the sibling journey without Review parse errors; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed; `npm run build` passed.
+  - Remaining notes: local Vite still reports generic missing-resource 404 console entries, which the existing practical audit filter treats as non-product noise. No stored login/world/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
+
+**Status:** shipped and verified for the delegated review-json-normalization audit.

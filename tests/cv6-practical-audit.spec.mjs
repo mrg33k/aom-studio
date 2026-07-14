@@ -20,8 +20,7 @@ async function expectNoCrash(page) {
 
 function productConsoleErrors(errors) {
   return errors.filter((line) => (
-    !/Failed to load resource/.test(line) &&
-    !/Unexpected token '\/'.*is not valid JSON/.test(line)
+    !/Failed to load resource/.test(line)
   ))
 }
 
