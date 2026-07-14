@@ -237,7 +237,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
           <div className="eyebrow" style={{ margin: '0 24px 8px', fontSize: 11, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--faint)', fontWeight: 600 }}>{tab === 'open' ? 'Open asks' : 'Waiting'}</div>
           <div style={{ padding: '0 16px 16px' }}>
             {state === 'loading' ? <div style={{ color: 'var(--muted)', fontSize: 13, padding: 14 }}>Gathering your inbox…</div>
-              : list.length === 0 ? <div style={{ color: 'var(--muted)', fontSize: 13.5, padding: 14 }}>{tab === 'open' ? "You're all caught up. New asks the agent flags as real land here." : 'Nothing waiting right now.'}</div>
+              : list.length === 0 ? <div style={{ color: 'var(--muted)', fontSize: 13.5, padding: 14 }}>{tab === 'open' ? "You're all caught up. New asks the agent flags as real will land here." : 'Nothing waiting right now.'}</div>
                 : list.map((it) => <InboxRow key={it.id} it={it} open={selected?.id === it.id} onClick={() => setPicked(it)} />)}
           </div>
         </div>
@@ -412,7 +412,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
               )}
             </>
           ) : (
-            <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14, padding: 24 }}>Pick an ask on the left to read it.</div>
+            <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14, padding: 24 }}>{list.length === 0 ? 'Nothing to read yet.' : 'Pick an ask on the left to read it.'}</div>
           )}
         </div>
       </div>
