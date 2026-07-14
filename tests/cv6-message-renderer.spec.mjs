@@ -290,4 +290,28 @@ test.describe('CV6 shared message renderer', () => {
     const foldedThread = page.locator('[data-cv6-message-thread][data-variant="desktop"][data-mode="day-folded"]')
     await expect(foldedThread.getByText('Older day reply folded under the day card.')).toBeVisible()
   })
+
+  test('Mobile ChatLifecycle keeps folded days, clamp, gallery, and live goal turn in the shared renderer', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(`${BASE}/dashboard?cv6=1&demo=mobile-chat-lifecycle`, { waitUntil: 'domcontentloaded' })
+
+    const latestThread = page.locator('[data-cv6-message-thread][data-variant="mobile"][data-mode="latest-day"]')
+    await latestThread.waitFor({ timeout: 15_000 })
+
+    const foldedDay = page.locator('.goalcard').filter({ hasText: '2 messages' })
+    await expect(foldedDay).toBeVisible()
+    await foldedDay.click()
+    const foldedThread = page.locator('[data-cv6-message-thread][data-variant="mobile"][data-mode="day-folded"]')
+    await expect(foldedThread.getByText('Older mobile reply stays inside the folded day.')).toBeVisible()
+
+    await expect(latestThread.getByText('Mobile long message clamp proof begins here.')).toBeVisible()
+    await expect(latestThread.getByRole('button', { name: 'Show more' })).toBeVisible()
+    await latestThread.getByRole('button', { name: 'Show more' }).click()
+    await expect(latestThread.getByRole('button', { name: 'Show less' })).toBeVisible()
+
+    await expect(latestThread.getByText('sent 1 file')).toBeVisible()
+    await expect(latestThread.getByRole('button', { name: 'mobile-gallery-proof.png' })).toBeVisible()
+    await expect(latestThread.getByRole('button', { name: 'Review all' })).toBeVisible()
+    await expect(latestThread.getByText('Checking mobile renderer output')).toBeVisible()
+  })
 })
