@@ -1,13 +1,17 @@
 // GET  /api/dashboard/worlds       -- list all user worlds (admin view)
 // POST /api/dashboard/worlds       -- create a new world (new user + world slug)
 
+import {
+  authenticateWorldRequest,
+  sendWorldAuthError,
+  setWorldCors,
+} from '../_lib/worldAuth.js'
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  setWorldCors(req, res, 'GET,POST')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -18,6 +22,13 @@ export default async function handler(req, res) {
     'apikey': SUPABASE_KEY,
     'Authorization': `Bearer ${SUPABASE_KEY}`,
     'Content-Type': 'application/json',
+  }
+
+  try {
+    const { isSuperAdmin } = await authenticateWorldRequest(req)
+    if (!isSuperAdmin) return res.status(403).json({ error: 'Super-admin access required' })
+  } catch (error) {
+    return sendWorldAuthError(res, error)
   }
 
   // GET: list all worlds from Supabase admin users
