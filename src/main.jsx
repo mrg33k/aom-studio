@@ -247,8 +247,11 @@ function AuthGuard({ children }) {
       return
     }
 
-    // onAuthStateChange fires immediately with current session, then on changes.
-    const unsubscribe = onAuthStateChange(async (session) => {
+    let cancelled = false
+    let initialSettled = false
+
+    const handleSession = async (session) => {
+      if (cancelled) return
       if (session) {
         // Admin-created accounts must change their temp password first
         if (isTempPassword(session.user)) {
@@ -313,12 +316,49 @@ function AuthGuard({ children }) {
           setChecked(true)
         } else {
           // Supabase configured, no session -- redirect to login.
+          setAuthed(false)
           setChecked(true)
           navigate('/login', { replace: true })
         }
       }
+    }
+
+    const settleInitial = (session) => {
+      if (initialSettled || cancelled) return
+      initialSettled = true
+      handleSession(session)
+    }
+
+    // Resolve once immediately. In some browser/runtime combinations the auth
+    // listener/session read can miss or hang on the initial state, leaving users
+    // on "Loading your workspace..." forever before they ever reach CV6 or Login.
+    if (!supabase) {
+      settleInitial(null)
+      return () => { cancelled = true }
+    }
+
+    const initialTimer = window.setTimeout(() => settleInitial(null), 4000)
+
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        window.clearTimeout(initialTimer)
+        settleInitial(data?.session || null)
+      })
+      .catch(() => {
+        window.clearTimeout(initialTimer)
+        settleInitial(null)
+      })
+
+    const unsubscribe = onAuthStateChange((session) => {
+      window.clearTimeout(initialTimer)
+      if (!initialSettled) settleInitial(session)
+      else handleSession(session)
     })
-    return unsubscribe
+    return () => {
+      cancelled = true
+      window.clearTimeout(initialTimer)
+      unsubscribe()
+    }
   }, [navigate])
 
   if (!checked) {

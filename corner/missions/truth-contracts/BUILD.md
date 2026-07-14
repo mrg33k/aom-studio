@@ -11,8 +11,19 @@
 - Map file identity across Files, Review, upload rows, storage keys, and previews.
 - Map count/list and status derivation for Review, Files, Command, Campaign, and Support.
 - Rank fixes by user risk, tenant isolation, and shared blast radius.
+- 2026-07-14 delegated product audit slice:
+  - User goal: open `/dashboard`, land in CV6, orient from Home, open current work, and move across Files, Email, Tracker, Command, and Scribe on desktop and mobile without getting trapped.
+  - Screen/tool inventory: Home = orient/open rooms; Search = jump to rooms/missions; Files = browse/review files; Email = inbox/campaign work; Tracker = inspect bugs/work items; Command = monitor active work; Scribe = capture meeting notes; Settings/Profile = account/config.
+  - Ranked findings:
+    1. P0 high frequency/high severity: direct `/dashboard` resolved to stale `dashboard.html`, which mounted the old dashboard entry and left users at "Loading your workspace..." instead of CV6.
+    2. P0 high frequency/high severity: safe local/no-Supabase CV6 Home could stay on "Gathering your rooms..." forever because `useHome()` required a world id even when no Supabase client exists.
+    3. P1 medium frequency/high severity: configured unauthenticated auth gate could rely on a session listener/read that never settles, causing the same permanent loading state instead of Login/CV6.
+    4. P2 local/dev friction: Vite-only API requests return function source text, so Files/Review surfaces show offline states and console JSON parse errors locally; product shell remains navigable.
+    5. P2 consistency: some mobile sibling tool headers expose visual search/menu icons without the same accessible labels as Home.
+  - Fixed this round: made `dashboard.html` mount the main router, added deterministic auth-gate session resolution with a watchdog, and allowed no-Supabase Home to settle from the data context instead of permanent loading.
+  - Verification: `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed desktop/mobile CV6 journey; `npm run build` passed.
 
-**Status:** queued for the recurring loop.
+**Status:** shipped and verified for the delegated CV6 product-audit round.
 
 ### R2 - Canonical tenant context
 

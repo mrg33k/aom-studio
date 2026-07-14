@@ -19,11 +19,11 @@
       html, body { background: #020202; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; height: 100%; overflow: hidden; }
       /* Fix Safari standalone mode (Add to Homescreen) viewport */
       @supports (-webkit-touch-callout: none) {
-        html, body, #dashboard-root { height: -webkit-fill-available; }
+        html, body, #root { height: -webkit-fill-available; }
       }
       /* Fix standalone display-mode viewport */
       @media all and (display-mode: standalone) {
-        html, body, #dashboard-root {
+        html, body, #root {
           height: 100vh;
           height: -webkit-fill-available;
           height: 100dvh;
@@ -32,7 +32,7 @@
     </style>
   </head>
   <body>
-    <div id="dashboard-root"></div>
-    <script type="module" src="/src/dashboard/main.jsx"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
