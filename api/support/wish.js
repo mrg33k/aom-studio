@@ -6,6 +6,7 @@
 // Instead this drops a scoped row into the `messages` table; supabase-listener.py
 // picks it up and dispatches the support worker, which triages and writes back.
 import crypto from 'crypto';
+import { requiredTenantFromEnv } from '../_lib/tenantContext.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -46,6 +47,12 @@ export default async function handler(req, res) {
 
   const { email, name, message, source, recommendation, reply_options } = req.body || {};
   if (!email || !message) return res.status(400).json({ ok: false, error: 'email and message required' });
+  let tenantId
+  try {
+    tenantId = requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']);
+  } catch (error) {
+    return res.status(error.status || 500).json({ ok: false, error: error.message || 'tenant not configured' });
+  }
 
   const access_code = await uniqueCode();
   const ins = await supa('support_wishes', { method: 'POST', body: JSON.stringify({
@@ -65,7 +72,7 @@ export default async function handler(req, res) {
   // The messages table has no default id — generate one (mirrors api/dashboard/supabase-messages.js).
   const drop = await supa('messages', { method: 'POST', body: JSON.stringify({
     id: crypto.randomUUID(),
-    agent: SUPPORT_AGENT, role: 'user', source: 'support-desk', client_id: 'aom',
+    agent: SUPPORT_AGENT, role: 'user', source: 'support-desk', client_id: tenantId,
     text: `[SUPPORT WISH ${access_code}] from ${name || email} <${email}> (${source || 'web'}):\n\n${message}`,
     metadata: { mission_slug: 'corner:support-desk', support_wish_id: wish.id, support_access_code: access_code,
       support_email: email, support_source: source || 'web' } }) });

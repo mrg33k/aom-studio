@@ -3,7 +3,7 @@
 // Priority order for resolving client_id:
 //   1. Supabase auth user metadata: user.user_metadata.world
 //   2. URL param: ?client=acme
-//   3. Default: 'aom' (us)
+//   3. No fallback: unauthenticated callers must wait for auth or pass a tenant.
 //
 // NOTE: localStorage removed. No persistence until offline features are built.
 // Everything reads from Supabase auth or URL params only.
@@ -11,7 +11,7 @@
 // This is the FOUNDATION layer only. No Supabase schema changes required here.
 // The client_id flows into API calls so each tenant's data is isolated.
 
-const DEFAULT_CLIENT_ID = 'aom'
+const DEFAULT_CLIENT_ID = null
 
 // Super-admin user ID: Patrik. Has full access to all worlds.
 export const SUPER_ADMIN_USER_ID = '833f6828-1dae-409c-a24b-1438f46544d0'
@@ -110,7 +110,7 @@ export function setWorldOverride(worldId) {
  * Use this to show "Return to My World" when an override is active.
  */
 export function getUserWorld() {
-  return _authClientId || DEFAULT_CLIENT_ID
+  return _authClientId || null
 }
 
 /**
@@ -149,9 +149,7 @@ export const CLIENT_CONFIG = {
   id: DEFAULT_CLIENT_ID,
 
   // Per-client display names. Grows as clients onboard.
-  names: {
-    aom: 'AOM',
-  },
+  names: {},
 
   /**
    * getDisplayName(clientId) -- human-readable client name.
@@ -159,6 +157,7 @@ export const CLIENT_CONFIG = {
    */
   getDisplayName(clientId) {
     const id = clientId || getClientId()
+    if (!id) return ''
     return this.names[id] || id.charAt(0).toUpperCase() + id.slice(1)
   },
 }

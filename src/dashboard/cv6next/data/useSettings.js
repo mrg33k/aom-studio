@@ -14,7 +14,7 @@ function initials(name) {
   return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
 }
 
-export function useSettings(worldId = 'aom') {
+export function useSettings(worldId = null) {
   const [currentUser, setCurrentUser] = useState(null);
   const [projects, setProjects] = useState(null);
   const [theme, setTheme] = useState(() => {

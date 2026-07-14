@@ -5,6 +5,7 @@
 
 import { useState, useMemo } from 'react';
 import { useSettings } from './data/useSettings.js';
+import { useWorldId } from '../lib/tenantContext.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/settings.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -42,7 +43,8 @@ function composeSettingsDesktop(raw, screenName) {
 const DESKTOP_HTML = composeSettingsDesktop(template, 'settings-desktop');
 
 export default function SettingsDesktop({ onNav, onOpenNav }) {
-  const { state, data } = useSettings('aom');
+  const worldId = useWorldId();
+  const { state, data } = useSettings(worldId);
   const [activeSection, setActiveSection] = useState(
     data?.activeSection?.id || 'env'
   );

@@ -291,7 +291,7 @@ function pdfBodyHtml(src, name) {
 //                       from outside the tree) still MUST show under the needs
 //                       filter, or the badge says 3 while the list says 0 (the
 //                       2026-07-13 design-critic dead-pill finding — M8).
-export function useOrganize(worldId = 'aom', opts = {}) {
+export function useOrganize(worldId = null, opts = {}) {
   const reviewWaiting = opts.reviewWaiting || null;
   const reviewTotal = Number(opts.reviewTotal) || 0;
   const reviewDecided = opts.reviewDecided || null;

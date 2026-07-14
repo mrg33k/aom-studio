@@ -4,6 +4,7 @@
 
 import { useState, useMemo } from 'react';
 import { useSettings } from './data/useSettings.js';
+import { useWorldId } from '../lib/tenantContext.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/settings.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -37,7 +38,8 @@ function composeSettingsMobile(raw, screenName) {
 const MOBILE_HTML = composeSettingsMobile(template, 'settings-mobile');
 
 export default function SettingsMobile({ onNav, onOpenNav }) {
-  const { state, data } = useSettings('aom');
+  const worldId = useWorldId();
+  const { state, data } = useSettings(worldId);
   const [view, setView] = useState('list'); // 'list' | 'detail'
   const [selectedSection, setSelectedSection] = useState(null);
 

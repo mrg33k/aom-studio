@@ -283,26 +283,27 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
     if (!selected || trackerState === 'adding') return;
     setTrackerState('adding');
     try {
-      const lr = await authFetch('/api/dashboard/trackers?world=aom', { credentials: 'include' });
+      if (!worldId) return;
+      const lr = await authFetch('/api/dashboard/trackers?world=' + encodeURIComponent(worldId), { credentials: 'include' });
       const ld = await lr.json();
       let trk = (ld.trackers || []).find((t) => t.name === SUPPORT_TRACKER_NAME);
       if (!trk) {
         const cr = await authFetch('/api/dashboard/trackers', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-          body: JSON.stringify({ action: 'create', world: 'aom', name: SUPPORT_TRACKER_NAME, scope: 'Support', template: 'mission', columns: ['Item', 'Status'] }),
+          body: JSON.stringify({ action: 'create', world: worldId, name: SUPPORT_TRACKER_NAME, scope: 'Support', template: 'mission', columns: ['Item', 'Status'] }),
         });
         trk = (await cr.json()).tracker;
       }
       if (trk) {
         await authFetch('/api/dashboard/trackers', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-          body: JSON.stringify({ action: 'add-row', world: 'aom', id: trk.id, row: { Item: `${selected.sender}: ${selected.subject}`, Status: 'Open' } }),
+          body: JSON.stringify({ action: 'add-row', world: worldId, id: trk.id, row: { Item: `${selected.sender}: ${selected.subject}`, Status: 'Open' } }),
         });
       }
       setTrackerState('added');
       setTimeout(() => setTrackerState('idle'), 2500);
     } catch { setTrackerState('idle'); }
-  }, [selected, trackerState]);
+  }, [selected, trackerState, worldId]);
 
   return (
     <div data-cv6 data-theme="dark" className="cv6-screen" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

@@ -5,6 +5,7 @@
 
 import { useMemo } from 'react';
 import { useOnboarding } from './data/useOnboarding.js';
+import { useWorldId } from '../lib/tenantContext.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/onboarding.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -35,7 +36,8 @@ function composeOnboardingDesktop(raw, screenName) {
 const DESKTOP_HTML = composeOnboardingDesktop(template, 'onboarding-desktop');
 
 export default function OnboardingDesktop({ onNav, onOpenNav }) {
-  const { state, data, stepIndex, setStepIndex, theme, setTheme } = useOnboarding('aom');
+  const worldId = useWorldId();
+  const { state, data, stepIndex, setStepIndex, theme, setTheme } = useOnboarding(worldId);
 
   const actions = {
     back: () => {

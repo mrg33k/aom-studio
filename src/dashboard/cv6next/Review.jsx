@@ -59,10 +59,10 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   // of the file they clicked. Fall back to resolving that filename against the queue.
   const targetName = target?.name
     || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
-  const { state, data, actions, notice } = useReview(worldId || 'aom', injected);
+  const { state, data, actions, notice } = useReview(worldId, injected);
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
-  const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
+  const { pins, addPin, deletePin } = usePins(pickedId, worldId);
 
   const picked = useMemo(() => pickedId ? data.queue.items.find((i) => i.id === pickedId) : null, [pickedId, data.queue.items]);
 

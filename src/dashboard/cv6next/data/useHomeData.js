@@ -11,8 +11,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
-import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
-import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
+import { useTenantContext } from '../../lib/tenantContext.jsx';
 import { useDataContext } from '../providers/DataContext.jsx';
 import { curateTitledAgents, titleForAgent } from './agentTitles.js';
 
@@ -228,28 +227,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
 // data pipe, and shape it. Mirrors how CornerVG seeds worldId so we ride the same
 // auth-derived world (Patrik -> aom).
 export function useHome() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [worldId, setWorldId] = useState(null);
-
-  useEffect(() => {
-    if (!supabase) return undefined;
-    let alive = true;
-    // setClientIdFromUser seeds the auth-derived world cache that getClientId()
-    // reads — without it getClientId() returns null, useDataPipe never fetches, and
-    // Home is stuck on the loading skeleton (the bug Patrik's screenshot caught).
-    supabase.auth.getUser().then(({ data }) => {
-      if (!alive) return;
-      if (data?.user) { setClientIdFromUser(data.user); setCurrentUser(data.user); setWorldId(getClientId()); }
-    }).catch(() => {});
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!alive) return;
-      if (session?.user) { setClientIdFromUser(session.user); setCurrentUser(session.user); setWorldId(getClientId()); }
-      else { setCurrentUser(null); setWorldId(null); }
-    });
-    return () => { alive = false; sub?.subscription?.unsubscribe?.(); };
-  }, []);
-
-  const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
+  const { status, worldId } = useTenantContext();
   const { agents, projectRooms, inboxItems, missionRooms } = useDataContext();
 
   // Memoize the shaped data so its identity is stable between renders (it only changes
@@ -260,7 +238,7 @@ export function useHome() {
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
-  const loading = (supabase && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
+  const loading = (supabase && status === 'loading') || (supabase && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 
@@ -304,22 +282,11 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] 
 }
 
 export function useChatList() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [worldId, setWorldId] = useState(null);
-  useEffect(() => {
-    if (!supabase) return undefined;
-    let alive = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!alive || !data?.user) return;
-      setClientIdFromUser(data.user); setCurrentUser(data.user); setWorldId(getClientId());
-    }).catch(() => {});
-    return () => { alive = false; };
-  }, []);
-  const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
+  const { status, worldId } = useTenantContext();
   const { agents, projectRooms, inboxItems } = useDataContext();
   const shaped = useMemo(() => shapeChatList({ agents, projectRooms, inboxItems }), [agents, projectRooms, inboxItems]);
   // Same DEF-2 null-check fix applied to the chat-list hook.
-  const loading = !worldId || (agents == null && projectRooms == null && inboxItems == null);
+  const loading = (supabase && status === 'loading') || (supabase && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 

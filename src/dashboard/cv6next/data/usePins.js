@@ -30,7 +30,7 @@ function fmtTime(sec) {
   return `${m}:${String(r).padStart(2, '0')}`;
 }
 
-export function usePins(deliverableId, worldId = 'aom') {
+export function usePins(deliverableId, worldId = null) {
   const [pins, setPins] = useState([]);
   const reqRef = useRef(0); // guards against out-of-order loads when switching files
 

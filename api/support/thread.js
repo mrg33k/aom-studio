@@ -23,7 +23,7 @@
 // chain as JSON {fetched_at, thread_id, messages}. Fresh (< TTL) hits skip Gmail so
 // the 30s board poll can't burn quota; ?fresh=1 forces a refetch (used after a send).
 
-import { verifyTenant } from '../_lib/verifyTenant.js'
+import { requiredTenantFromEnv, resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js'
 import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../_lib/gmailClient.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -135,9 +135,11 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ ok: false, error: 'GET only' })
 
   try {
-    await verifyTenant('aom', req)
-  } catch {
-    return res.status(401).json({ ok: false, error: 'Sign in to the dashboard.' })
+    await resolveTenantContext(req, {
+      fallback: requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']),
+    })
+  } catch (error) {
+    return sendTenantContextError(res, error)
   }
 
   const { wish_id, access_code, thread_id, account, connection_id, fresh } = req.query

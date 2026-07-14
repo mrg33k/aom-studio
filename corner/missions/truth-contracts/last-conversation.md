@@ -73,3 +73,17 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/data/useCommandTracker.js` now gives local/no-Supabase mode a render-only `aom` world id, skips tenant-gated Command/Tracker polls and writes when Supabase is absent, initializes Tracker boards to empty, and disables create/update actions in no-Supabase mode. The audit spec now asserts Tracker and Command visible empty states on desktop and mobile.
 
 Verification: `npm run build` passed. Claude ran external browser verification with `CV6_AUDIT_BASE=http://127.0.0.1:5199 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`; 2 tests passed in 9.6s. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - R2 Canonical Tenant Context
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: build one authenticated tenant context and compatibility adapters without renaming existing worlds, slugs, memberships, logins, or data rows.
+
+Fix shipped: added `api/_lib/tenantContext.js` for server-side tenant context resolution and compat field handling; added `src/dashboard/lib/tenantContext.jsx` and mounted it around CV6 so dashboard data hooks read the authenticated tenant once. Wired the highest-traffic CV6 callers and support/email APIs from today's slice through that contract. Removed active CV6/support hardcoded home-tenant selectors and added `npm run test:tenant-context` with alias/compat assertions plus a guarded hardcoded-tenant grep baseline.
+
+Migration note: legacy CV3/CV4, some `api/dashboard/*`, `api/_lib/*`, integrations, relay, and CV6Kit demo wrappers still have baselined hardcoded tenant selectors. The guard now blocks new ones outside the explicit baseline while later rounds migrate those callers deliberately.
+
+Required env note: support/email runtime now needs `SUPPORT_TENANT_ID` or `CORNER_HOME_TENANT` set to the existing support tenant slug.
+
+Verification: `npm run test:tenant-context`, `node --check` on the new/changed support tenant endpoints, `npm run build`, and `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` all passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.

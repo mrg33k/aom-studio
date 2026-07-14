@@ -18,7 +18,7 @@ const STEP_LABELS = {
   done: { eyebrow: 'All set', title: 'You\'re ready to go', sub: '', nextLabel: 'Take me to Corner' },
 };
 
-export function useOnboarding(worldId = 'aom') {
+export function useOnboarding(worldId = null) {
   const [currentUser, setCurrentUser] = useState(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [theme, setTheme] = useState(() => {

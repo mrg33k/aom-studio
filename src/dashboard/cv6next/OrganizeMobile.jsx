@@ -19,6 +19,7 @@ import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import NewComposer from './NewComposer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { buildWaitingMap, buildDecidedMap } from './OrganizeDesktop.jsx';
+import { useWorldId } from '../lib/tenantContext.jsx';
 import template from './templates/organize.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -112,7 +113,7 @@ const BROWSE_HTML = composeBrowse(template);
 const VIEW_HTML = composeView(template);
 
 export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target }) {
-  const worldId = 'aom';
+  const worldId = useWorldId();
 
   // ── review machinery (the rehomed Review tool) ──
   const review = useReview(worldId);

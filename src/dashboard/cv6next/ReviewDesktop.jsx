@@ -67,9 +67,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // Fall back to resolving that filename against the real queue, same as Catch-up.
   const targetName = target?.name
     || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
-  const { state, data, actions, scope, projectsRaw, missionTreeRaw, history, notice, refreshTree } = useReview(worldId || 'aom', injected);
+  const { state, data, actions, scope, projectsRaw, missionTreeRaw, history, notice, refreshTree } = useReview(worldId, injected);
   const [pickedId, setPickedId] = useState(null);
-  const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
+  const { pins, addPin, deletePin } = usePins(pickedId, worldId);
   // "Changes" overlay (R-ASSIGN part D): the bullet list of every comment with its
   // timecode, with Send-back-to-agent routing through the assign path.
   const [changesOpen, setChangesOpen] = useState(false);
@@ -145,10 +145,10 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     wrapRef: viewerRef,
     resolveHit,
     listProjects: () => (projectsRaw || []).map((p) => ({ slug: p.slug, name: p.name })),
-    onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId || 'aom'); refreshTree(); },
-    onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId || 'aom'); refreshTree(); },
-    onCreate: async (target, name) => { await createNode(authFetch, target, name, worldId || 'aom'); refreshTree(); },
-    onArchive: async (target) => { await archiveNode(authFetch, target, worldId || 'aom'); refreshTree(); },
+    onRename: async (target, name) => { if (!worldId) return; await renameNode(authFetch, target, name, worldId); refreshTree(); },
+    onMove: async (target, dest) => { if (!worldId) return; await moveNode(authFetch, target, dest, worldId); refreshTree(); },
+    onCreate: async (target, name) => { if (!worldId) return; await createNode(authFetch, target, name, worldId); refreshTree(); },
+    onArchive: async (target) => { if (!worldId) return; await archiveNode(authFetch, target, worldId); refreshTree(); },
   });
 
   // Catch-up → Review carries a filename (+ its project); resolve it to a real queue

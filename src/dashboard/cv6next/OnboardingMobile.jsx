@@ -4,6 +4,7 @@
 
 import { useMemo } from 'react';
 import { useOnboarding } from './data/useOnboarding.js';
+import { useWorldId } from '../lib/tenantContext.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/onboarding.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -32,7 +33,8 @@ function composeOnboardingMobile(raw, screenName) {
 const MOBILE_HTML = composeOnboardingMobile(template, 'onboarding-mobile');
 
 export default function OnboardingMobile({ onNav, onOpenNav }) {
-  const { state, data, stepIndex, setStepIndex, theme, setTheme } = useOnboarding('aom');
+  const worldId = useWorldId();
+  const { state, data, stepIndex, setStepIndex, theme, setTheme } = useOnboarding(worldId);
 
   const actions = {
     back: () => {

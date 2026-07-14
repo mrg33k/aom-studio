@@ -7,6 +7,7 @@
     "dev": "vite",
     "prebuild": "node scripts/generate-briefs-index.js && node scripts/build-missions-registry.cjs && node scripts/sync-cv4-static.cjs",
     "build": "vite build",
+    "test:tenant-context": "node scripts/check-tenant-context.mjs && node scripts/check-no-hardcoded-tenant-slugs.mjs",
     "generate-briefs": "node scripts/generate-briefs-index.js",
     "enrich-municipalities": "node scripts/enrich-municipality-contacts.js",
     "snapshot": "node --env-file=.env scripts/snapshot-dashboard-data.mjs",

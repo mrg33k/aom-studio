@@ -12,6 +12,7 @@ import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
 import { titleForAgent, AGENT_TITLES } from './agentTitles.js';
+export { useWorldId } from '../../lib/tenantContext.jsx';
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -36,21 +37,6 @@ function relTime(ts) {
   const h = Math.round(m / 60);
   if (h < 24) return `${h}h`;
   return `${Math.round(h / 24)}d`;
-}
-
-// Resolve the viewer's world the same way Home does (auth -> world cache -> getClientId).
-export function useWorldId() {
-  const [worldId, setWorldId] = useState(() => (supabase ? null : 'aom'));
-  useEffect(() => {
-    if (!supabase) return undefined;
-    let alive = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!alive || !data?.user) return;
-      setClientIdFromUser(data.user); setWorldId(getClientId());
-    }).catch(() => {});
-    return () => { alive = false; };
-  }, []);
-  return worldId;
 }
 
 // ── Command: the goal ledger (corner:corner-ui-cv6, rebuilt 2026-07-06) ──

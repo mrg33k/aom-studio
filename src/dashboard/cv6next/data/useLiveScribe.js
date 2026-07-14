@@ -70,7 +70,7 @@ function pickAudioMime() {
   return prefs.find((t) => MediaRecorder.isTypeSupported(t)) || '';
 }
 
-export function useLiveScribe(worldId = 'aom') {
+export function useLiveScribe(worldId = null) {
   // phase = the machine's truth: idle | starting | recording | error
   const [phase, setPhase] = useState('idle');
   const [elapsed, setElapsed] = useState(0);

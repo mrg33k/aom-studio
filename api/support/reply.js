@@ -7,14 +7,14 @@
 // normal reply in their own conversation. It mirrors the agent-side in-thread send.
 //
 // Body: { wish_id? , access_code?, text }   (one of wish_id/access_code required)
-// Auth: verified aom dashboard session (verifyTenant) — sending client email is irreversible, so it
+// Auth: verified support-tenant dashboard session — sending client email is irreversible, so it
 // stays behind the human's own login, exactly like send-staged.js.
 //
 // Thread routing: reads the hidden `thread_meta` update the watcher wrote {thread_id, in_reply_to,
 // connection_id}. Falls back to the canonical mailbox for the wish's source if no meta exists.
 // Response: { ok: true, threadId }.
 
-import { verifyTenant } from '../_lib/verifyTenant.js'
+import { requiredTenantFromEnv, resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -62,9 +62,11 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' })
 
   try {
-    await verifyTenant('aom', req)
-  } catch {
-    return res.status(401).json({ ok: false, error: 'Sign in to the dashboard to reply.' })
+    await resolveTenantContext(req, {
+      fallback: requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']),
+    })
+  } catch (error) {
+    return sendTenantContextError(res, error, 401, 'Sign in to the dashboard to reply.')
   }
 
   let body

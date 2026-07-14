@@ -11,6 +11,7 @@
 
 import { useMediaQuery } from '../cv6kit/useMediaQuery.js';
 import { useLiveScribe } from './data/useLiveScribe.js';
+import { useWorldId } from '../lib/tenantContext.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/livescribe.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -48,7 +49,8 @@ const HTML_DESKTOP = composeLiveScribe(template, 'livescribe-desktop');
 const HTML_MOBILE = composeLiveScribe(template, 'livescribe-mobile');
 
 export default function LiveScribe({ onNav, onOpenNav }) {
-  const { state, recording, data, controls } = useLiveScribe('aom');
+  const worldId = useWorldId();
+  const { state, recording, data, controls } = useLiveScribe(worldId);
   const isMobile = useMediaQuery('(max-width: 899px)'); // app-wide tablet rule: below 900 = mobile layout (loop R15)
 
   const actions = {

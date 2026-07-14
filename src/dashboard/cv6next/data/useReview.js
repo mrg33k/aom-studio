@@ -439,7 +439,7 @@ function mapQueueItem(it, openId) {
   };
 }
 
-export function useReview(worldId = 'aom', injected = null) {
+export function useReview(worldId = null, injected = null) {
   const hasInjected = Array.isArray(injected) && injected.length > 0;
   const [queue, setQueue] = useState(null);
   const [openDelId, setOpenDelId] = useState(null);
@@ -497,11 +497,11 @@ export function useReview(worldId = 'aom', injected = null) {
   // showing all-world history when browsing the full queue adds no value and noise.
   const [history, setHistory] = useState([]);
   useEffect(() => {
-    if (!projSel) { setHistory([]); return; }
+    if (!projSel || !worldId) { setHistory([]); return; }
     let dead = false;
     (async () => {
       try {
-        const r = await authFetch(`/api/dashboard/review-history?world=${encodeURIComponent(worldId || 'aom')}&project=${encodeURIComponent(projSel)}&limit=30`, { credentials: 'include' });
+        const r = await authFetch(`/api/dashboard/review-history?world=${encodeURIComponent(worldId)}&project=${encodeURIComponent(projSel)}&limit=30`, { credentials: 'include' });
         if (!dead && r?.ok) {
           const d = await r.json();
           setHistory(Array.isArray(d.items) ? d.items : []);
@@ -517,13 +517,18 @@ export function useReview(worldId = 'aom', injected = null) {
   useEffect(() => {
     let dead = false;
     (async () => {
+      if (!worldId) {
+        setProjects([]);
+        setMissionTree({});
+        return;
+      }
       try {
         const r = await authFetch('/api/dashboard/projects', { credentials: 'include' });
         const d = await r.json();
         if (!dead && d?.ok && Array.isArray(d.projects)) setProjects(d.projects);
       } catch (e) { console.error('[Review projects]', e); }
       try {
-        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId || 'aom')}${treeReload > 0 ? '&bust=1' : ''}`, { credentials: 'include' });
+        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}${treeReload > 0 ? '&bust=1' : ''}`, { credentials: 'include' });
         const d = r?.ok ? await r.json() : null;
         if (!dead && d && Array.isArray(d.projects)) {
           const next = {};
@@ -536,6 +541,14 @@ export function useReview(worldId = 'aom', injected = null) {
   }, [worldId, treeReload]);
 
   const load = useCallback(async () => {
+    if (!worldId) {
+      const next = { items: [], readyCount: 0 };
+      queueRef.current = next;
+      setQueue(next);
+      setQueueServerTotal(0);
+      setStatus('loaded');
+      return;
+    }
     let ok = false;
     // WD40-R5: on a realtime/timer refresh, fetch enough to cover what is already on screen
     // so the list doesn't collapse back to PAGE_SIZE when a single new item arrives.
@@ -545,7 +558,7 @@ export function useReview(worldId = 'aom', injected = null) {
     const currentCount = queueRef.current?.items?.length || 0;
     const fetchLimit = Math.max(PAGE_SIZE, currentCount);
     try {
-      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${fetchLimit}&offset=0`);
+      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}&limit=${fetchLimit}&offset=0`);
       if (r?.ok) {
         const d = await r.json();
         const items = (d.items || []).map((it) => mapQueueItem(it, openDelIdRef.current));
@@ -576,7 +589,7 @@ export function useReview(worldId = 'aom', injected = null) {
     const offset = queueRef.current?.items?.length || 0;
     if (offset >= queueServerTotalRef.current) return; // nothing more on the server
     try {
-      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${PAGE_SIZE}&offset=${offset}`);
+      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}&limit=${PAGE_SIZE}&offset=${offset}`);
       if (r?.ok) {
         const d = await r.json();
         const newItems = (d.items || []).map((it) => mapQueueItem(it, openDelIdRef.current));
@@ -828,7 +841,7 @@ export function useReview(worldId = 'aom', injected = null) {
   // EVERY project in this world (registry, same filter Organize applies), plus any
   // queue project the registry misses — so the list is complete, not queue-derived.
   const CRUFT = /(^|-)(smoke|proj-tool|loop-test|test-project|lr2test)/i;
-  const registry = (projects || []).filter((p) => p.slug && p.client_id === (worldId || 'aom') && !CRUFT.test(p.slug));
+  const registry = (projects || []).filter((p) => p.slug && p.client_id === worldId && !CRUFT.test(p.slug));
   const seenSlugs = new Set(registry.map((p) => p.slug));
   const projList = registry.map((p) => ({ slug: p.slug, name: p.name || prettify(p.slug) }));
   for (const slug of countsByProj.keys()) {
@@ -1092,13 +1105,17 @@ export function useReview(worldId = 'aom', injected = null) {
 // hand-off, upload, or decision all land as messages rows). The Files container's
 // own useReview does the heavy lifting; this exists only so the nav badge can
 // show "N waiting" without mounting the whole queue.
-export function useReviewWaitingCount(worldId = 'aom') {
+export function useReviewWaitingCount(worldId = null) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     let dead = false;
     const load = async () => {
+      if (!worldId) {
+        if (!dead) setCount(0);
+        return;
+      }
       try {
-        const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=1`);
+        const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}&limit=1`);
         if (r?.ok) {
           const d = await r.json();
           const n = Number(d?.counts?.waiting ?? d?.total);

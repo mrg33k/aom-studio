@@ -13,7 +13,8 @@
 
 import React, { createContext, useContext, useRef, useCallback, useEffect, useState } from 'react'
 import { useDataPipe } from '../../hooks/useDataPipe'
-import { useCommand, useTrackerBugs, useWorldId } from '../data/useCommandTracker'
+import { useWorldId } from '../../lib/tenantContext.jsx'
+import { useCommand, useTrackerBugs } from '../data/useCommandTracker'
 
 const DataContext = createContext(null)
 const CommandContext = createContext(null)

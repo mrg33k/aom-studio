@@ -19,7 +19,7 @@
 // visible — the board now shows their message AND our reply, not just a flag.
 
 import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
-import { verifyTenant } from '../_lib/verifyTenant.js'
+import { requiredTenantFromEnv, resolveTenantContext } from '../_lib/tenantContext.js'
 import { isNoiseMail, getKnownSenders, isKnownSender, isBlockedSender } from '../_lib/mailNoise.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -217,15 +217,17 @@ export default async function handler(req, res) {
 
   const { email, password, days, all } = body || {}
 
-  // Auth path 1 — a verified Supabase session in the aom world (or super-admin
+  // Auth path 1 — a verified Supabase session in the configured support tenant
   // Patrik). This is STRONGER than the shared password: it requires a real JWT
   // proving who you are. When the dashboard opens the Inbox tab in Patrik's own
   // logged-in session, the token rides via Authorization and we skip the
-  // password entirely (no friction). verifyTenant throws on any non-aom/invalid
+  // password entirely (no friction). The tenant resolver throws on any invalid
   // session, so we fall through to the password path for everyone else.
   let authed = false
   try {
-    await verifyTenant('aom', req)
+    await resolveTenantContext(req, {
+      fallback: requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']),
+    })
     authed = true
   } catch {
     authed = false

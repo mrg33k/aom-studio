@@ -13,11 +13,11 @@
 //       on the wish (kind=change_request) and flips status → working so the agent
 //       picks it up, revises, and re-stages.
 //
-// Auth: verified aom dashboard session ONLY (verifyTenant) — sending client email is
+// Auth: verified support-tenant dashboard session ONLY — sending client email is
 // the irreversible step; it stays behind the human's own login. No password fallback.
 
 import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
-import { verifyTenant } from '../_lib/verifyTenant.js'
+import { requiredTenantFromEnv, resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -53,9 +53,11 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' })
 
   try {
-    await verifyTenant('aom', req)
-  } catch {
-    return res.status(401).json({ ok: false, error: 'Sign in to the dashboard to send.' })
+    await resolveTenantContext(req, {
+      fallback: requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']),
+    })
+  } catch (error) {
+    return sendTenantContextError(res, error, 401, 'Sign in to the dashboard to send.')
   }
 
   let body

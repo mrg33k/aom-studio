@@ -6,7 +6,7 @@
 // to `events` as message_step rows keyed to that parent message. The Email pane
 // needs both sources to answer "what is being done on this thread?"
 
-import { verifyTenant } from '../_lib/verifyTenant.js'
+import { requiredTenantFromEnv, resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -66,11 +66,15 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ ok: false, error: 'GET only' })
   if (!SUPABASE_URL || !SERVICE_KEY) return res.status(500).json({ ok: false, error: 'Supabase not configured' })
 
+  let tenantContext
   try {
-    await verifyTenant('aom', req)
-  } catch {
-    return res.status(401).json({ ok: false, error: 'Sign in to the dashboard.' })
+    tenantContext = await resolveTenantContext(req, {
+      fallback: requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']),
+    })
+  } catch (error) {
+    return sendTenantContextError(res, error)
   }
+  const tenantId = tenantContext.tenantId
 
   const wishId = String(req.query.wish_id || '').trim()
   const accessCode = String(req.query.access_code || '').trim().toUpperCase()
@@ -78,7 +82,7 @@ export default async function handler(req, res) {
 
   const triggerFilters = [
     'select=*',
-    'client_id=eq.aom',
+    `client_id=eq.${encodeURIComponent(tenantId)}`,
     `agent=eq.${encodeURIComponent(String(req.query.agent || SUPPORT_AGENT).toLowerCase())}`,
     'order=timestamp.asc',
     'limit=1',
@@ -110,7 +114,7 @@ export default async function handler(req, res) {
 
   const agent = trigger.agent || SUPPORT_AGENT
   const since = encodeURIComponent(trigger.timestamp || new Date(0).toISOString())
-  const roomRows = await supa(`messages?select=*&client_id=eq.aom&agent=eq.${encodeURIComponent(agent)}&timestamp=gte.${since}&order=timestamp.asc&limit=40`)
+  const roomRows = await supa(`messages?select=*&client_id=eq.${encodeURIComponent(tenantId)}&agent=eq.${encodeURIComponent(agent)}&timestamp=gte.${since}&order=timestamp.asc&limit=40`)
   const scoped = []
   for (const row of Array.isArray(roomRows) ? roomRows : []) {
     if (row.id !== trigger.id && (row.role === 'user' || row.user_name)) break
@@ -121,7 +125,7 @@ export default async function handler(req, res) {
     'events?select=id,agent,payload,timestamp',
     'event_type=eq.message_step',
     `agent=eq.${encodeURIComponent(agent)}`,
-    'payload->>client_id=eq.aom',
+    `payload->>client_id=eq.${encodeURIComponent(tenantId)}`,
     `payload->>parent_message_id=eq.${encodeURIComponent(trigger.id)}`,
     'order=timestamp.asc',
     'limit=100',
@@ -147,4 +151,3 @@ export default async function handler(req, res) {
     updates: publicUpdates,
   })
 }
-

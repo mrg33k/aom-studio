@@ -69,7 +69,6 @@ function parseWishMessage(message) {
 // fetched until then, so another tenant's world can never flash AOM's inbox
 // (corner:support R3; same guard pattern as useCampaign).
 export function useSupportInbox(worldId) {
-  const isAom = worldId === 'aom';
   const [wishes, setWishes] = useState(null);
   const [mailboxes, setMailboxes] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
@@ -89,7 +88,7 @@ export function useSupportInbox(worldId) {
       const d = await r.json();
       if (d.ok) { setWishes(d.wishes || []); ok = true; }
     } catch { /* keep last */ }
-    if (isAom) {
+    if (worldId) {
       try {
         const r2 = await authFetch('/api/support/inbox', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
@@ -101,7 +100,7 @@ export function useSupportInbox(worldId) {
     } else { setMailboxes([]); ok = true; }
     if (ok) hasDataRef.current = true;
     setStatus((prev) => (ok || hasDataRef.current ? 'loaded' : (prev === 'loading' ? 'error' : prev)));
-  }, [worldId, isAom]);
+  }, [worldId]);
 
   useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]);
 

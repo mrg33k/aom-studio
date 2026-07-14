@@ -4,7 +4,8 @@
 //   GET    /api/support/wishes?access_code=XXX  → client status lookup (wish + visible updates)
 //   PATCH  /api/support/wishes?id=...           → { status?, response?, author? }
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { requiredTenantFromEnv, resolveTenantContext } from '../_lib/tenantContext.js';
+import { TenantAuthError } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -60,16 +61,17 @@ export default async function handler(req, res) {
       const updates = await ur.json();
       return res.status(200).json({ ok: true, wish, updates, status_label: CLIENT_LABEL[wish.status] || wish.status });
     }
-    // Tenant scope (corner:support R3). Support intake is single-tenant today —
-    // the watcher reads only AOM's mailboxes, so every wish row is AOM's and the
+    // Tenant scope (corner:support R3). Support intake is single-tenant today:
+    // the watcher reads only the configured support mailboxes, so every wish row is that tenant's and the
     // table has no world column yet. A verified non-aom world gets an honestly
-    // empty list; it must never see AOM's desk. JWT-less callers stay pinned to
-    // aom so the legacy surfaces (/support/admin, ?cv4=1) keep working. When a
+    // empty list; it must never see the support desk. JWT-less callers stay pinned to
+    // the configured support tenant so the legacy surfaces (/support/admin, ?cv4=1) keep working. When a
     // second tenant gets a support intake, add a world column and filter here.
-    const world = (typeof req.query.world === 'string' && req.query.world.trim().toLowerCase()) || 'aom';
-    if (world !== 'aom') {
+    const supportTenant = requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']);
+    const world = (typeof req.query.world === 'string' && req.query.world.trim().toLowerCase()) || supportTenant;
+    if (world !== supportTenant) {
       try {
-        await verifyTenant(world, req);
+        await resolveTenantContext(req, { fallback: world });
       } catch (err) {
         if (err instanceof TenantAuthError) return res.status(err.status).json({ ok: false, error: err.message });
         throw err;
@@ -162,7 +164,7 @@ export default async function handler(req, res) {
 
     if (response) {
       await supa('support_wish_updates', { method: 'POST', body: JSON.stringify({
-        wish_id: id, kind: 'response', body: response, author: author || 'aom', visible_to_client: true }) });
+        wish_id: id, kind: 'response', body: response, author: author || 'dashboard', visible_to_client: true }) });
       // First reply stamps the latency clock (only fills once — is.null guard).
       await supa(`support_wishes?id=eq.${id}&first_response_at=is.null`, { method: 'PATCH',
         body: JSON.stringify({ first_response_at: new Date().toISOString() }) }).catch(() => {});
@@ -175,7 +177,7 @@ export default async function handler(req, res) {
     const newStatus = status || (response ? 'resolved' : wish.status);
     if (newStatus !== wish.status) {
       await supa('support_wish_updates', { method: 'POST', body: JSON.stringify({
-        wish_id: id, kind: 'status_change', status: newStatus, author: author || 'aom',
+        wish_id: id, kind: 'status_change', status: newStatus, author: author || 'dashboard',
         visible_to_client: true }) });
     }
     const upd = await supa(`support_wishes?id=eq.${id}`, { method: 'PATCH',

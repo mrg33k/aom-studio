@@ -29,7 +29,23 @@
 
 Build the shared authenticated tenant contract and compatibility adapters without renaming existing worlds or data.
 
-**Status:** queued.
+- 2026-07-14 implementation:
+  - Added shared API tenant context in `api/_lib/tenantContext.js`: `{ tenantId, canonicalSlug, aliases, userId }`, alias normalization, compatibility field extraction for `tenant/world/world_id/client/client_id`, and legacy compat output fields.
+  - Added shared browser tenant context in `src/dashboard/lib/tenantContext.jsx`, mounted at the CV6 auth boundary in `src/main.jsx`, so CV6 reads the authenticated tenant once instead of recomputing or falling back to a home-world literal.
+  - Wired highest-traffic CV6 data callers through the contract: `DataProvider`, `CommandProvider`, Home/Chat list, Files/Organize desktop/mobile, Review badge/queue, Settings, Onboarding, Live Scribe, Support inbox, and Support add-to-Tracker.
+  - Wired the support/email APIs touched in the email-thread slice through the server contract: `activity`, `thread`, `suggest`, `reply`, `send-staged`, `inbox`, `wishes`, and `wish`. Support's single-tenant fallback now comes from `SUPPORT_TENANT_ID` or `CORNER_HOME_TENANT`; no world/login/data rows were renamed.
+  - Added `npm run test:tenant-context`, covering alias/compat helpers plus a grep-style hardcoded-tenant guard over `src/` and `api/` with an explicit legacy baseline allowlist.
+  - Compatibility preserved: old callers can still send `world`, `world_id`, `client`, or `client_id`; the resolver canonicalizes once and endpoints use `tenantId`.
+  - Migration note / remaining hardcoded-tenant baseline:
+    `api/_lib/mailNoise.js`, `api/_lib/uploadsIdentity.js`, `api/dashboard/agent-customize.js`, `api/dashboard/create-project-from-chat.js`, `api/dashboard/project-file.js`, `api/dashboard/project-files.js`, `api/dashboard/project-summary.js`, `api/dashboard/reset-agent.js`, `api/dashboard/review-queue.js`, `api/dashboard/supabase-messages.js`, `api/dashboard/supabase-status.js`, `api/dashboard/mission-folders.js`, `api/dashboard/poke-agent.js`, `api/dashboard/voice-session.js`, `api/dashboard/admin-tickets.js`, `api/integrations/list.js`, `api/relay-sms.js`, `api/deal-bank/add.js`, `src/dashboard/lib/clientConfig.js`, `src/dashboard/lib/fixtureClient.js`, CV3/CV4 legacy callers, and CV6Kit live demo wrappers. These are baselined in the guard so new hardcoded tenant selectors fail while later rounds can retire the baseline deliberately.
+  - Required env note: support/email runtime now needs `SUPPORT_TENANT_ID` or `CORNER_HOME_TENANT` set to the existing support tenant slug. This does not rename existing data; it only removes the literal from code.
+  - Verification:
+    - `npm run test:tenant-context` passed.
+    - `node --check api/_lib/tenantContext.js api/support/activity.js api/support/wish.js api/support/send-staged.js api/support/reply.js api/support/suggest.js api/support/thread.js api/support/wishes.js api/support/inbox.js` passed.
+    - `npm run build` passed.
+    - `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests).
+
+**Status:** shipped and verified for the canonical tenant context R2 slice.
 
 ### R3 - Canonical file identity
 
