@@ -63,9 +63,15 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const world = clean(req.query.world || 'aom', 60) || 'aom';
     const items = await loadSteps(world);
+    // Archived steps (stale never-accepted proposals the goal-notetaker aged
+    // out) stay in the store but never render — filtered here once so every
+    // surface (Command ledger, Chat plan, legacy) agrees.
+    const hideArchived = (lst) => (Array.isArray(lst) ? lst.filter((x) => !(x && x.archived)) : []);
     const room = req.query.room;
-    if (room) return res.status(200).json({ room, list: items[room] || [] });
-    return res.status(200).json({ items, updated: new Date().toISOString() });
+    if (room) return res.status(200).json({ room, list: hideArchived(items[room]) });
+    const visible = {};
+    for (const [k, lst] of Object.entries(items)) visible[k] = hideArchived(lst);
+    return res.status(200).json({ items: visible, updated: new Date().toISOString() });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
