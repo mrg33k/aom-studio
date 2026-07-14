@@ -41,6 +41,7 @@ export function Cv6MessageExtras({
   allowAttachments = true,
   allowLinkCards = true,
   allowChips = true,
+  chipsPrimaryFirst = true,
   onReviewAttachment,
 }) {
   if (!message) return null;
@@ -58,7 +59,7 @@ export function Cv6MessageExtras({
       ) : null}
       {allowAttachments && attachments.length ? <MessageAttachments attachments={attachments} onReview={onReviewAttachment} /> : null}
       {allowLinkCards && linkCards.length ? <ResultLinkCards cards={linkCards} /> : null}
-      {allowChips && chips.length ? <ActionChips actions={chips} /> : null}
+      {allowChips && chips.length ? <ActionChips actions={chips} primaryFirst={chipsPrimaryFirst} /> : null}
     </div>
   );
 }
@@ -72,6 +73,7 @@ export function Cv6MessageTurn({
   allowAttachments = true,
   allowLinkCards = true,
   allowChips = true,
+  chipsPrimaryFirst = true,
   onReviewAttachment,
 }) {
   if (!message) return null;
@@ -95,6 +97,7 @@ export function Cv6MessageTurn({
           allowAttachments={allowAttachments}
           allowLinkCards={allowLinkCards}
           allowChips={allowChips}
+          chipsPrimaryFirst={chipsPrimaryFirst}
           onReviewAttachment={onReviewAttachment}
         />
       ) : null}
@@ -111,6 +114,7 @@ export function Cv6MessageGroup({
   allowAttachments = true,
   allowLinkCards = true,
   allowChips = true,
+  chipsPrimaryFirst = true,
   onReviewAttachment,
 }) {
   if (!group?.items?.length) return null;
@@ -118,28 +122,32 @@ export function Cv6MessageGroup({
   const lastTime = group.items[group.items.length - 1]?.time;
   if (group.isUser) {
     return (
-      <div className="me" data-cv6-message-group="user" data-variant={variant}>
-        {group.items.map((m, i) => (
-          <Cv6MessageTurn
-            key={m.id || i}
-            message={m}
-            goal={goal}
-            variant={variant}
-            renderBlocks={renderBlocks}
-            allowBlocks={allowBlocks}
-            allowAttachments={allowAttachments}
-            allowLinkCards={allowLinkCards}
-            allowChips={allowChips}
-            onReviewAttachment={onReviewAttachment}
-          />
-        ))}
-        {lastTime ? <div className="ts">{lastTime}</div> : null}
+      <div className="grp" data-cv6-message-group="user" data-variant={variant}>
+        <span className={`ava is-${head.agentTint || 'accent'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials || '·'}</span>
+        <div className="stack">
+          {group.items.map((m, i) => (
+            <Cv6MessageTurn
+              key={m.id || i}
+              message={m}
+              goal={goal}
+              variant={variant}
+              renderBlocks={renderBlocks}
+              allowBlocks={allowBlocks}
+              allowAttachments={allowAttachments}
+              allowLinkCards={allowLinkCards}
+              allowChips={allowChips}
+              chipsPrimaryFirst={chipsPrimaryFirst}
+              onReviewAttachment={onReviewAttachment}
+            />
+          ))}
+          {lastTime ? <div className="ts">{lastTime}</div> : null}
+        </div>
       </div>
     );
   }
   return (
     <div className="grp" data-cv6-message-group="agent" data-variant={variant}>
-      <span className={`av is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials || '·'}</span>
+      <span className={`ava is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials || '·'}</span>
       <div className="stack">
         {head.agentName ? <div className="gname">{head.agentName}</div> : null}
         {group.items.map((m, i) => (
@@ -153,6 +161,7 @@ export function Cv6MessageGroup({
             allowAttachments={allowAttachments}
             allowLinkCards={allowLinkCards}
             allowChips={allowChips}
+            chipsPrimaryFirst={chipsPrimaryFirst}
             onReviewAttachment={onReviewAttachment}
           />
         ))}
@@ -184,6 +193,7 @@ export function Cv6MessageThread({
   allowAttachments = true,
   allowChips = true,
   allowLinkCards = true,
+  chipsPrimaryFirst = true,
   onAction,
   onReviewAttachment,
   empty = 'No conversation yet.',
@@ -211,6 +221,7 @@ export function Cv6MessageThread({
               allowAttachments={allowAttachments}
               allowLinkCards={allowLinkCards}
               allowChips={allowChips}
+              chipsPrimaryFirst={chipsPrimaryFirst}
               onReviewAttachment={onReviewAttachment}
             />
           ))}

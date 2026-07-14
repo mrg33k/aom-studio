@@ -196,3 +196,19 @@ Follow-up from Claude's external Playwright run: demo blocks, Catch Up modal, an
 Fix-forward: changed `?demo=home-quick-thread` from a data-pipe-dependent route into a direct fixture component. `DemoHomeQuickThread` renders the real desktop Home template and the real migrated `Cv6QuickThread`, but supplies a seeded `Renderer Room` recent row and seeded normalized messages directly in-process. The test now clicks that visible Home row and asserts text, attachment review affordance, and link card inside `[data-variant="homeQuick"]`; it no longer depends on `supabase-status` or `supabase-messages` route seeding for the Home demo.
 
 Re-verification run in sandbox: `node --check tests/cv6-message-renderer.spec.mjs`, `git diff --check`, `npm run test:tenant-context`, and `npm run build` passed. Attempted a focused browser rerun by starting `npm run dev -- --host 127.0.0.1 --port 5200`, but this sandbox still cannot bind Vite (`listen EPERM: operation not permitted 127.0.0.1:5200`). External browser rerun still needed with `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line`.
+
+## 2026-07-14 - R5c Desktop Chat Shared Renderer
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: implement exactly slice 3 of the renderer consolidation plan: migrate desktop `ChatDesktop` from its private `BubbleThread`/`BubbleGroup`/`MsgExtras` message loop to shared `Cv6MessageThread variant="desktop"`, while leaving day folding, drawer, composer, and room selection owned by `ChatDesktop`.
+
+Fix shipped: `ChatDesktop` now keeps `groupByDayD`, `DesktopDayCard`, and `PlainThread` as the day-folding shell, but each visible day body delegates the message loop to `Cv6MessageThread`. Deleted the private desktop `groupChat`, `MsgExtras`, `BubbleGroup`, and `BubbleThread` code. Review attachment taps still route through `handleThreadAction`; chips still send through `SendCtx`; blocks, attachments, result link cards, and live `WorkingTurn` remain enabled for desktop. `MessageThread.jsx` now uses the existing `.grp`/`.stack`/`.ava` bubble classes for shared groups and accepts `chipsPrimaryFirst`, so desktop preserves its prior non-primary chip treatment.
+
+Tests added: extended `tests/cv6-message-renderer.spec.mjs` with a seeded desktop Chat case at `?view=chat`. The fixture uses the real `ChatDesktop` route and bare `/api/dashboard/supabase-messages*` intercepts, then asserts folded older-day messages, latest-day desktop shared renderer, text bubble, `desktop-renderer-audit.pdf` attachment + Review, result link card, suggestion chip, and the live working row from `/api/dashboard/message-steps`.
+
+Verification run in sandbox: `node --check tests/cv6-message-renderer.spec.mjs`, `git diff --check`, `npm run test:tenant-context`, and `npm run build` passed. Direct `node --check` on `.jsx` files was not usable with Node v25 because it rejects the `.jsx` extension; `npm run build` covered JSX parse/bundling. Browser verification could not run because Vite cannot bind in this sandbox (`listen EPERM: operation not permitted 127.0.0.1:5200`).
+
+External commands to run: `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line` and `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
+
+No `ChatLifecycle`, `SupportThread`, schema/data migration, deploy, push, secret rotation, external message send, stored tenant/world/login/data mutation, or commit. Pre-existing dirty `test-results/.last-run.json` was left untouched.
