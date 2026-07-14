@@ -11,15 +11,12 @@ import { createPortal } from 'react-dom';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
-import MessageAttachments from './MessageAttachments.jsx';
-import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import ActivityDock from './ActivityDock.jsx';
-import { GoalThreadBody, SendCtx, ReviewCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
-import ResultLinkCards from './ResultLinkCard.jsx';
 import ChatDesktop, { FilesShelf, fileKind, libKindLabel, shelfItems } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
@@ -255,20 +252,7 @@ async function postTrackerApi(body) {
 // into the template's empty .convo-thread host) so attachments draw as real cards
 // (image thumbs, galleries, file cards, collections) with Review affordances — same
 // MessageAttachments the main Chat tool uses — instead of plain "Attached file:" text.
-// Group consecutive messages from the same sender into one visual group (one avatar
-// + name + timestamp, N bubbles), matching the design system's plain-conversation.
-function groupChatMessages(list) {
-  const groups = [];
-  for (const m of list) {
-    const key = m.isUser ? '__you' : (m.agentName || 'agent');
-    const last = groups[groups.length - 1];
-    if (last && last.key === key) last.items.push(m);
-    else groups.push({ key, isUser: !!m.isUser, items: [m] });
-  }
-  return groups;
-}
-
-function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awaiting, liveSteps, room }) {
+function Cv6QuickThread({ target, messages, goal, onReview, onSend, awaiting, liveSteps, room }) {
   // FIX G: scroll-to-bottom on load and new messages; guard against yanking the user
   // back when they've scrolled up (>100px from the bottom). Hooks must come before the
   // early return so React's rules-of-hooks are satisfied.
@@ -288,73 +272,24 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awai
   }, [list.length, target]);
 
   if (!target) return null;
-  const groups = groupChatMessages(list);
-  // Live step loader: while the agent is actively working this turn, useRoomThread exposes
-  // the in-flight goal-thread blocks (same source the full Chat tool reads). Show the loader
-  // even before the first message lands so an empty room still ticks (parity with Chat).
-  const live = Array.isArray(blocks) && blocks.length > 0;
-  // The working strip's header restates the ask: room goal if set, else the newest user
-  // message (same rule the full Chat tool uses, so the two read identically).
-  const askGoal = (() => {
-    if (goal?.title) return goal;
-    for (let i = list.length - 1; i >= 0; i -= 1) { if (list[i]?.isUser && list[i].text) return { title: list[i].text }; }
-    return goal;
-  })();
   return createPortal(
-    (list.length === 0 && !live && !awaiting) ? (
-      <div className="convo-empty" style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 13, maxWidth: 240, lineHeight: 1.5 }}>
-        No messages in this room yet. Send the first one below.
-      </div>
-    ) : (
-      <SendCtx.Provider value={onSend || (() => {})}>
-      <ReviewCtx.Provider value={(file) => { if (file) onReview?.(file); }}>
-      <div className="pconv">
-        {groups.map((g, gi) => {
-          const head = g.items[0];
-          const lastTime = g.items[g.items.length - 1].time;
-          if (g.isUser) {
-            return (
-              <div className="me" key={gi}>
-                {g.items.map((m, i) => (
-                  <span key={i} style={{ display: 'contents' }}>
-                    {m.text ? <div className="pb-me"><ChatMessageRenderer content={m.text} /></div> : null}
-                    {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
-                  </span>
-                ))}
-                {lastTime ? <div className="ts">{lastTime}</div> : null}
-              </div>
-            );
-          }
-          return (
-            <div className="grp" key={gi}>
-              <span className={`av is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials || '·'}</span>
-              <div className="stack">
-                {head.agentName ? <div className="gname">{head.agentName}</div> : null}
-                {g.items.map((m, i) => (
-                  <span key={i} style={{ display: 'contents' }}>
-                    {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
-                    {/* Rich blocks: a finished turn shows its step thread inline (the durable
-                        record), lone answer blocks render inline — AgentBlocks decides per message.
-                        The live working thread renders once, below (WorkingTurn), so no double render. */}
-                    {m.blocks?.length ? <div style={{ marginTop: 8, width: '100%' }}><AgentBlocks goal={goal} blocks={m.blocks} /></div> : null}
-                    {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
-                    {/* Completed web work: the shipped link as a tappable card (Patrik 2026-07-13). */}
-                    {m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
-                  </span>
-                ))}
-                {lastTime ? <div className="ts">{lastTime}</div> : null}
-              </div>
-            </div>
-          );
-        })}
-        {/* The live "agent is working" strip — the SAME one the full Chat tool shows, so the
-            quick chat reads identically. On iff the agent is working this turn (awaiting),
-            its steps ticking from real tool activity. (Patrik 2026-06-27: was missing here.) */}
-        {awaiting ? <WorkingTurn room={room} steps={liveSteps} goal={askGoal} /> : null}
-      </div>
-      </ReviewCtx.Provider>
-      </SendCtx.Provider>
-    ),
+    <Cv6MessageThread
+      messages={list}
+      goal={goal}
+      room={room}
+      variant="homeQuick"
+      mode="plain"
+      liveSteps={liveSteps}
+      awaiting={awaiting}
+      renderLiveWork="workingTurn"
+      allowBlocks
+      allowAttachments
+      allowLinkCards
+      allowChips={false}
+      onAction={onSend}
+      onReviewAttachment={onReview}
+      empty="No messages in this room yet. Send the first one below."
+    />,
     target,
   );
 }
@@ -1519,7 +1454,6 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       <Cv6QuickThread
         target={knavOpenedRoom ? threadHost : null}
         messages={(quickThread && quickThread.messages ? quickThread.messages : []).slice(-40)}
-        blocks={quickThread && quickThread.blocks}
         goal={quickGoal}
         onSend={quickSend}
         awaiting={quickThread && quickThread.awaiting}
@@ -2373,6 +2307,10 @@ function demoCatchUpModalRequested() {
   try { return new URLSearchParams(window.location.search).get('demo') === 'catchup-modal'; }
   catch { return false; }
 }
+function demoHomeQuickThreadRequested() {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'home-quick-thread'; }
+  catch { return false; }
+}
 const DEMO_GOAL = { title: 'Show every chat element', step: 4, doneCount: 2, total: 11, pct: 18, checklist: [] };
 const DEMO_BLOCKS = [
   { type: 'step', stepIndex: 0, title: 'Read the brief and pull the repo', state: 'done', detail: 'Scanned 28 missions and the task runner.' },
@@ -2441,6 +2379,140 @@ function DemoCatchUpModal({ worldId }) {
         onNext={() => {}}
         onClose={() => {}}
         onGoToRoom={() => {}}
+      />
+    </div>
+  );
+}
+
+const DEMO_HOME_ROOM = {
+  id: 'renderer-room',
+  name: 'Renderer Room',
+  initials: 'RR',
+  isProject: true,
+  status: 'ready',
+  statusText: 'project chat',
+};
+
+const DEMO_HOME_MESSAGES = [
+  {
+    id: 'home-thread-user',
+    agentInitials: 'YO',
+    agentName: 'You',
+    agentTint: 'accent',
+    isUser: true,
+    text: 'Please check the Home quick renderer.',
+    time: '11:30 AM',
+  },
+  {
+    id: 'home-thread-text',
+    agentInitials: 'CO',
+    agentName: 'Corner',
+    agentTint: 'violet',
+    isUser: false,
+    text: 'Home quick thread has a fresh seeded reply.',
+    time: '11:40 AM',
+  },
+  {
+    id: 'home-thread-attachment',
+    agentInitials: 'CO',
+    agentName: 'Corner',
+    agentTint: 'violet',
+    isUser: false,
+    text: '',
+    time: '11:42 AM',
+    attachments: [{
+      url: '/demo/renderer-audit.pdf',
+      name: 'renderer-audit.pdf',
+      mime: 'application/pdf',
+      size: 18320,
+    }],
+  },
+  {
+    id: 'home-thread-link',
+    agentInitials: 'CO',
+    agentName: 'Corner',
+    agentTint: 'violet',
+    isUser: false,
+    text: 'The renderer report is live.',
+    time: '11:44 AM',
+    linkCards: [{
+      url: 'https://example.test/home-renderer-report',
+      summary: 'Home renderer report is live',
+    }],
+  },
+];
+
+function DemoHomeQuickThread() {
+  const [open, setOpen] = useState(false);
+  const [threadHost, setThreadHost] = useState(null);
+  const homeHtml = useMemo(() => composeScreen(homeDesktopRaw, { mobile: false, pick: 0, sharedNav: true }), []);
+  useEffect(() => {
+    const pick = () => {
+      const el = document.querySelector('[data-screen="convo"] .convo-thread');
+      setThreadHost((prev) => (prev === el ? prev : (el || null)));
+    };
+    pick();
+    const obs = new MutationObserver(pick);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, []);
+  const recent = [{
+    key: 'p:renderer-room',
+    id: 'renderer-room',
+    kind: 'project',
+    project: 'renderer-room',
+    name: 'Renderer Room',
+    sub: 'Project chat',
+    preview: 'Home quick thread has a fresh seeded reply.',
+    age: 'now',
+    status: 'ready',
+    initials: 'RR',
+    tint: 'violet',
+    knavSel: 'off',
+    roomOpen: open ? 'open' : 'off',
+  }];
+  recent.count = recent.length;
+  recent.has = 'has';
+  const projects = [];
+  projects.count = 0;
+  projects.moreCount = 0;
+  projects.moreState = 'none';
+  const agents = [];
+  agents.count = 0;
+  const homeData = {
+    rooms: { total: 1 },
+    agents,
+    agentsTotal: 0,
+    agentsOpen: 'closed',
+    recent,
+    projects,
+    catchUp: { count: 0, position: 0, current: {}, rest: [], all: [] },
+    room: open ? DEMO_HOME_ROOM : { name: 'Your rooms', initials: '·', statusText: '', status: 'ready' },
+    goal: open
+      ? { has: 'active', title: '', step: '', total: '', pct: 0, summary: [], checklist: [] }
+      : { has: 'none', title: 'Pick a room to see its goal', step: '', total: '', pct: 0, summary: [], checklist: [] },
+    convo: { messages: [], has: open ? 'has' : 'none', loading: 'off' },
+  };
+  const actions = {
+    openRecent: () => setOpen(true),
+    openRoom: () => setOpen(true),
+    nav: () => {},
+    toggleFiles: () => {},
+    toggleProjectMissions: () => {},
+    showMoreProjects: () => {},
+  };
+  return (
+    <div data-cv6 data-theme="dark" style={{ minHeight: '100dvh', background: 'var(--ground, #05080b)' }}>
+      <TemplateScreen html={homeHtml} data={homeData} actions={actions} state="ready" aliases={HOME_ALIASES} style={{ width: '100vw', height: '100dvh' }} />
+      <Cv6QuickThread
+        target={open ? threadHost : null}
+        messages={DEMO_HOME_MESSAGES}
+        goal={homeData.goal}
+        awaiting={false}
+        liveSteps={[]}
+        room={DEMO_HOME_ROOM}
+        onSend={() => {}}
+        onReview={() => {}}
       />
     </div>
   );
@@ -2542,7 +2614,9 @@ export default function CornerCV6() {
   // (After all hooks above, so hook order stays stable; the flag is constant per load.)
   const demoBlocks = useMemo(() => demoBlocksRequested(), []);
   const demoCatchUpModal = useMemo(() => demoCatchUpModalRequested(), []);
+  const demoHomeQuickThread = useMemo(() => demoHomeQuickThreadRequested(), []);
   if (demoCatchUpModal) return <DemoCatchUpModal worldId={worldId} />;
+  if (demoHomeQuickThread) return <DemoHomeQuickThread />;
   if (demoBlocks) {
     // Auto-height (no 100dvh cap, no overflow:hidden) so the whole thread is one tall page
     // the browser scrolls — a full-page capture then reaches every element end to end.

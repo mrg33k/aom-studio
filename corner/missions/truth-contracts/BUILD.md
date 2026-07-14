@@ -111,6 +111,28 @@ Consolidate message, attachment, preview, and status behavior across every live 
 
 **Status:** research shipped; recommended first build slice is a shared read-only `Cv6MessageThread` adapter behind `InlineBubbleThread`, then Home quick thread.
 
+### R5b - Home quick thread shared renderer migration
+
+- 2026-07-14 implementation:
+  - Migrated Home's `Cv6QuickThread` message body to render through shared `Cv6MessageThread` with `variant="homeQuick"`.
+  - Kept the Home portal host tracking and sticky-scroll wrapper outside the renderer unchanged.
+  - Kept attachments enabled on this surface (`allowAttachments`) and preserved blocks, link cards, live `WorkingTurn`, review handoff, and send/chip action plumbing through the shared renderer contract.
+  - Added `?demo=home-quick-thread` as an explicit fixture URL while still exercising the real Home column and `useRoomThread` path.
+  - Extended `tests/cv6-message-renderer.spec.mjs` with seeded Home quick thread coverage: open a seeded room in the Home column, assert plain text renders, assert attachment card/review affordance renders, and assert a result link card renders.
+  - Did not touch `ChatDesktop`, `ChatLifecycle`, or `SupportThread`.
+  - External fix-forward:
+    - Claude's external run passed demo blocks, Catch Up modal, and practical audit, but the new Home test timed out waiting for `Renderer Room`.
+    - Root cause: `?demo=home-quick-thread` still depended on full Home/useDataPipe room-list derivation, and stubbed `supabase-status.projects` did not reach the Home rooms column in no-Supabase mode.
+    - Fix: added a direct `DemoHomeQuickThread` fixture that renders the real desktop Home template plus the real migrated `Cv6QuickThread`, with a directly-provided seeded recent row and seeded normalized messages. The test no longer relies on `supabase-status` or `supabase-messages` seeding for this route.
+  - Verification:
+    - `node --check tests/cv6-message-renderer.spec.mjs` passed.
+    - `git diff --check` passed.
+    - `npm run test:tenant-context` passed.
+    - `npm run build` passed. Prebuild printed the existing local notices about missing sibling registry sources and Vite printed the existing chunk-size warning.
+    - Focused browser rerun was attempted locally, but Vite cannot bind in this sandbox: `listen EPERM: operation not permitted 127.0.0.1:5200`. Rerun externally with the commands in the handoff.
+
+**Status:** implemented and locally verified; awaiting external browser spec rerun.
+
 ### R4b - Command backend-owned status truth
 
 - 2026-07-14 implementation:
