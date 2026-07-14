@@ -67,3 +67,5 @@
 - `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` completed locally, but final visual/browser verification remains Claude's external pass per request.
 
 **Status:** shipped for external visual rerun.
+
+- 2026-07-14 deployed: branch merged to main (one hand-resolved import conflict with R2 in the app entry) and auto-deployed to production. EA verified live boot shows the Corner loading card and settles cleanly to sign-in when logged out. Mobile verified pre-merge in dark/light/glass via emulated iPhone captures.

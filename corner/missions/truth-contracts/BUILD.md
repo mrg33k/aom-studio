@@ -147,3 +147,5 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
 - Live dev-server pass is blocked by sandbox networking: `lsof` sees a Node process listening on `127.0.0.1:5200`, but `curl` cannot connect and `nc -vz 127.0.0.1 5200` returns `Operation not permitted`. Starting a replacement Vite server in this sandbox also fails with `listen EPERM`.
 
 **Status:** shipped; Claude (EA) ran the live verification outside the sandbox after merging the CV6 entry fix into this branch.
+
+- 2026-07-14 deployed: branch merged to main (fast-forward through 47b707f0) and auto-deployed to production. EA verified live: /dashboard boot + settle clean, support endpoints healthy (wishes 200, inbox 405-method-guard). SUPPORT_TENANT_ID=aom added to aom-studio production env before deploy (required by R2 tenant contract). Note: /api/support/wishes still answers unauthenticated — pre-existing legacy debt, queued, not a regression.
