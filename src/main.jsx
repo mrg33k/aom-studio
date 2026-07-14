@@ -8,6 +8,7 @@ import { injectThemeVars } from './dashboard/lib/cv3Colors.js'
 import { SystemToastProvider } from './dashboard/SystemToast.jsx' // R84: mount toasts on the real app entry (/cvg, /dashboard) so create-failure warnings actually render
 import { DataProvider, CommandProvider } from './dashboard/cv6next/providers/DataContext.jsx' // Root-level data + command context for dashboard performance fix
 import { TenantProvider } from './dashboard/lib/tenantContext.jsx'
+import { FullscreenLoading } from './dashboard/cv6kit/FullscreenLoading.jsx'
 
 // Bind CSS-variable palettes before first paint so every `C.bg` etc.
 // resolves. The active palette is keyed off <html data-theme>, which
@@ -332,7 +333,7 @@ function AuthGuard({ children }) {
 
     // Resolve once immediately. In some browser/runtime combinations the auth
     // listener/session read can miss or hang on the initial state, leaving users
-    // on "Loading your workspace..." forever before they ever reach CV6 or Login.
+    // on the boot loading state forever before they ever reach CV6 or Login.
     if (!supabase) {
       settleInitial(null)
       return () => { cancelled = true }
@@ -363,15 +364,7 @@ function AuthGuard({ children }) {
   }, [navigate])
 
   if (!checked) {
-    return (
-      <div style={{
-        minHeight: '100vh', background: '#0A0F1A',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', borderTop: '2px solid #E85D26', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+    return <FullscreenLoading label="Preparing your workspace" />
   }
 
   return authed ? children : null
@@ -491,7 +484,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <TestModeBanner />
       <SystemToastProvider>
-      <Suspense fallback={<div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-[#8A847C] font-body text-sm">Loading...</div>}>
+      <Suspense fallback={<FullscreenLoading label="Preparing your workspace" />}>
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/about" element={<App />} />

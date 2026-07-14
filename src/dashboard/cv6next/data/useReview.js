@@ -1007,7 +1007,7 @@ export function useReview(worldId = null, injected = null) {
     // The shared loading fragment covers the viewer BOTH while the queue gathers and
     // while an opened file's body is in flight — one standard loading look (states.html),
     // never the raw template with placeholder copy.
-    loading: { label: bodyLoading ? 'Opening the file…' : 'Gathering deliverables…' },
+    loading: { label: bodyLoading ? 'Preparing the file' : 'Preparing deliverables' },
     error: { title: "We couldn't load your review queue", body: 'Your connection dropped. Nothing was lost. Your last view is saved.', code: 'review · retrying' },
   };
 

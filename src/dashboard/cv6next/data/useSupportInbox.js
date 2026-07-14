@@ -173,7 +173,7 @@ export function useSupportInbox(worldId) {
     counts: { needYou: needsYou.length, watching: watching.length },
     needsYou, watching,
     empty: { title: "You're all caught up", body: 'Nothing needs you right now. New asks the agent flags as real will land here.', actionLabel: watching.length ? `Browse watching (${watching.length})` : 'All clear' },
-    loading: { label: 'Gathering your inbox…' },
+    loading: { label: 'Preparing your inbox' },
     error: { title: "We couldn't reach your inbox", body: 'Your connection dropped. Nothing was lost. Your last view is saved.', code: 'support · retrying' },
   };
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 import { AssignButton } from './AssignButton.jsx';
+import { FullscreenLoading } from './FullscreenLoading.jsx';
 
 /**
  * CV6 kit Support — MOBILE inbox of wishes + emails, then agent conversation.
@@ -169,10 +170,7 @@ function SupportView({
             {/* Inbox list (scrollable) */}
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {status === 'loading' && items.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
-                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your inbox…</div>
-                </div>
+                <FullscreenLoading inline theme="glass" label="Preparing your inbox" />
               ) : status === 'error' && items.length === 0 ? (
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
                   <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your inbox just now. It keeps trying on its own.</div>

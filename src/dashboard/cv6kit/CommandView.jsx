@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityDock } from './ActivityDock.jsx';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
+import { FullscreenLoading } from './FullscreenLoading.jsx';
 
 /**
  * CV6 kit Command — the goal ledger (mobile). Kit-faithful to
@@ -217,10 +218,7 @@ export function CommandView({ status = 'loaded', summary = {}, featured, rooms =
         {emptyBody ? (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
             {status === 'loading' ? (
-              <>
-                <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
-                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Loading room goals…</div>
-              </>
+              <FullscreenLoading inline theme="glass" label="Preparing Command" />
             ) : status === 'error' ? (
               <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load the room goals just now. It keeps trying on its own.</div>
             ) : (
