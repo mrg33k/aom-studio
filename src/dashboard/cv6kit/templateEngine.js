@@ -87,6 +87,34 @@ function applyValue(el, val) {
   el.textContent = String(val);
 }
 
+function isNativeInteractive(el) {
+  return ['BUTTON', 'A', 'INPUT', 'TEXTAREA', 'SELECT', 'SUMMARY'].includes(el.tagName);
+}
+
+function actionLabel(action, el) {
+  const target = el.getAttribute('data-target');
+  if (action === 'search' || action === 'openCommandK') return 'Search';
+  if (action === 'openNav') return 'Menu';
+  if (action === 'openProfile') return 'Profile';
+  if (action === 'toggleTheme') return 'Theme';
+  if (action === 'openNotifications') return 'Notifications';
+  if (action === 'download') return 'Download';
+  if (action === 'nav' && target === 'back') return 'Back';
+  if (/^(close|cancel)/i.test(action)) return 'Close';
+  return '';
+}
+
+function prepareActionControl(el, action) {
+  if (!isNativeInteractive(el)) {
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+  }
+  if (!el.hasAttribute('aria-label') && !el.textContent.trim()) {
+    const label = actionLabel(action, el);
+    if (label) el.setAttribute('aria-label', label);
+  }
+}
+
 function applyBindings(el, scopes, ctx) {
   if (!el || el.nodeType !== 1) return;
 
@@ -208,6 +236,7 @@ function applyBindings(el, scopes, ctx) {
   // data-action — wire the click.
   const action = el.getAttribute('data-action');
   if (action) {
+    prepareActionControl(el, action);
     const argPath = el.getAttribute('data-arg');
     const target = el.getAttribute('data-target');
     // Stamp the RESOLVED arg onto the node so delegated listeners on a stable
@@ -229,7 +258,17 @@ function applyBindings(el, scopes, ctx) {
       fn(arg, e);
     };
     el.addEventListener('click', handler);
-    ctx.cleanups.push(() => el.removeEventListener('click', handler));
+    const keyHandler = (e) => {
+      if (isNativeInteractive(el)) return;
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      handler(e);
+    };
+    el.addEventListener('keydown', keyHandler);
+    ctx.cleanups.push(() => {
+      el.removeEventListener('click', handler);
+      el.removeEventListener('keydown', keyHandler);
+    });
   }
 
   // recurse — snapshot children first because data-each mutates the sibling list.

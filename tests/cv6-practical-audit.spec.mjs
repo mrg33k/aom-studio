@@ -64,13 +64,13 @@ test.describe('CV6 practical product audit', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     const errors = await openCv6(page)
 
-    await expect(page.locator('[aria-label="Search"]').first()).toBeVisible()
-    await page.locator('[aria-label="Search"]').first().click()
+    await expect(page.getByRole('button', { name: 'Search' }).first()).toBeVisible()
+    await page.getByRole('button', { name: 'Search' }).first().click()
     await page.waitForTimeout(350)
     await expect(page.getByPlaceholder('Search rooms and missions…')).toBeVisible()
     await page.keyboard.press('Escape')
 
-    await page.locator('[aria-label="Menu"]').first().click()
+    await page.getByRole('button', { name: 'Menu' }).first().click()
     await expect(page.locator('.navdrawer')).toBeVisible()
     const drawerLabels = await page.locator('.navdrawer .nl').allTextContents()
     expect(drawerLabels).toEqual(['Home', 'Files', 'Email', 'Tracker', 'Command', 'Live Scribe'])
@@ -80,7 +80,8 @@ test.describe('CV6 practical product audit', () => {
       await page.waitForTimeout(350)
       await expectNoCrash(page)
       if (tool !== 'Home') {
-        await page.locator('[data-action="openNav"]:visible').first().click()
+        await expect(page.getByRole('button', { name: 'Menu' }).first()).toBeVisible()
+        await page.getByRole('button', { name: 'Menu' }).first().click()
         await expect(page.locator('.navdrawer')).toBeVisible()
       }
     }
