@@ -144,3 +144,15 @@ Tests added: `tests/api/_lib/campaignTruth.test.js` covers alias-configured, not
 Verification: `node --check api/_lib/campaignTruth.js api/dashboard/campaigns.js api/dashboard/campaign-health.js api/dashboard/campaign-contacts.js api/dashboard/campaign-activity.js api/dashboard/campaign-actions.js api/dashboard/campaign-audience.js src/dashboard/cv6next/data/useCampaign.js src/dashboard/cv6next/Campaign.jsx`, `node --test tests/api/_lib/campaignTruth.test.js tests/api/_lib/filesTruth.test.js tests/api/_lib/fileRef.test.js tests/api/_lib/reviewTruth.test.js tests/api/_lib/commandTruth.test.js`, `npm run test:tenant-context`, `git diff --check`, and `npm run build` all passed. Build had the existing prebuild notices and Vite chunk-size warning. Browser/network CV6 audit was not run in this sandbox.
 
 No new env requirement, schema/data migration, row rename, deploy, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - R5-research Renderer Consolidation Map
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: research only, no product code changes. Map CV6 chat renderer duplication before any consolidation build.
+
+Research shipped: created `corner/missions/truth-contracts/research/renderer-consolidation-map.md`. The map covers the four duplicated room-chat renderers (`ChatDesktop`/`MsgExtras`, Home `Cv6QuickThread`, mobile `ChatLifecycle` `Message` + `GoalTurn`, and Catch Up `InlineBubbleThread`), plus the adjacent Email/Support `SupportThread` renderer. It documents how `useRoomThread()` and `injectWorkSteps()` route plain replies into the blocks path, the feature matrix, drift bugs from BUILD/code comments, a staged consolidation proposal, verification plan, and risk register.
+
+Recommendation: first migration slice should build a shared read-only `Cv6MessageThread` adapter and use it behind `InlineBubbleThread` only. After that passes, migrate Home `Cv6QuickThread` while keeping its portal host and sticky-scroll code outside the renderer.
+
+Verification: research doc read-through completed; `git diff --check -- corner/missions/truth-contracts/BUILD.md corner/missions/truth-contracts/research/renderer-consolidation-map.md corner/missions/truth-contracts/last-conversation.md` passed. No product code, tests, schema/data migration, deploy, push, secret rotation, external message send, or stored login/world/data mutation.

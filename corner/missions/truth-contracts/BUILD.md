@@ -100,6 +100,17 @@ Consolidate message, attachment, preview, and status behavior across every live 
 
 **Status:** queued.
 
+### R5-research - Renderer consolidation map
+
+- 2026-07-14 research-only round:
+  - Mapped the four duplicated CV6 room-chat renderers: `ChatDesktop`/`MsgExtras`, Home `Cv6QuickThread`, mobile `ChatLifecycle` `Message` + `GoalTurn`, and Catch Up `InlineBubbleThread`.
+  - Included the routing contract from `useRoomThread()`, especially `injectWorkSteps()`, which converts plain agent replies into `blocks`/goal-thread turns and bypasses the normal text-message path.
+  - Included Email/Support as an adjacent non-room conversation renderer (`SupportThread`) because it does not mount the four room-chat renderers and has already drifted on agent-work truth and suggested-action behavior.
+  - Wrote the feature matrix, drift history, migration proposal, verification plan, and risk register to `corner/missions/truth-contracts/research/renderer-consolidation-map.md`.
+  - No product code changes, renames, tests, schema/data migration, deploy, or push.
+
+**Status:** research shipped; recommended first build slice is a shared read-only `Cv6MessageThread` adapter behind `InlineBubbleThread`, then Home quick thread.
+
 ### R4b - Command backend-owned status truth
 
 - 2026-07-14 implementation:
