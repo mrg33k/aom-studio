@@ -99,3 +99,17 @@ Root cause: `TenantProvider` resolved no-Supabase mode to `tenantId=null`, which
 Fix: no-Supabase mode now emits a render-only tenant context from `src/dashboard/lib/tenantContext.jsx` with `tenantId='local-render'` and `renderOnly=true`. Configured Supabase mode still resolves from the authenticated user context.
 
 Verification run in sandbox: `npm run test:tenant-context`, `node --check` on tenant/support scripts, and `npm run build` passed. Browser verification still needs Claude's external rerun: `CV6_AUDIT_BASE=http://127.0.0.1:5200 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
+
+## 2026-07-14 - R3 Canonical File Identity
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: unify file identity and health across Files and Review without renaming existing data, tables, or storage keys.
+
+Fix shipped: added `api/_lib/fileRef.js` as the canonical FileRef contract for tenant, source row, storage key/path, URL, MIME/type, size, project/mission scope, review identity, source_path/sha256, and health. `review-queue.js` now builds queue items through FileRef while preserving legacy fields. `files.js?type=uploads` now builds upload rows through the same contract and adds `file_ref`/`health_status` beside the old shape. CV6 Review keeps the ref on mapped queue/injected items, Files canonicalizes mirror/upload rows before deriving kind/status/review IDs/badges/counts, and the Files waiting/decided maps now use the shared FileRef identity list.
+
+Tests added: `tests/api/_lib/fileRef.test.js` covers mirror storage identity, chat attachment/review queue identity, and store URL to corner path identity bridging.
+
+Verification: `node --check api/_lib/fileRef.js api/dashboard/review-queue.js api/dashboard/files.js src/dashboard/cv6next/data/useReview.js src/dashboard/cv6next/data/useOrganize.js src/dashboard/cv6next/OrganizeDesktop.jsx src/dashboard/cv6next/OrganizeMobile.jsx`, `node --test tests/api/_lib/fileRef.test.js`, `npm run test:tenant-context`, `git diff --check`, and `npm run build` all passed. Browser verification was not run in the sandbox.
+
+No new env requirement, schema/data migration, storage key rename, deploy, secret rotation, external message send, or stored login/world/data mutation.
