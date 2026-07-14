@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
 import { docxShellHtml, isDocxName } from './docxDocView';
+import { fileRefFromProjectFileRow, fileRefFromUploadRow } from '../../../../api/_lib/fileRef.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'success'];
 
@@ -609,6 +610,8 @@ export function useOrganize(worldId = null, opts = {}) {
       __missionKey: mKey,
       upload_url: u.url,
       mime: u.mime || null,
+      file_ref: u.file_ref || fileRefFromUploadRow(u, { tenantId: worldId }),
+      health_status: u.health_status || u.file_ref?.health?.status || 'ready',
     });
   });
 
@@ -705,21 +708,34 @@ export function useOrganize(worldId = null, opts = {}) {
       : String(b.updated_at || '').localeCompare(String(a.updated_at || ''))))
     .map((f) => {
       const fname = f.name || 'Untitled';
-      const kind = resolveKind(f.kind, fname);
+      const fileRef = f.file_ref || (f.uploaded
+        ? fileRefFromUploadRow({
+          id: f.id,
+          url: f.upload_url || f.id,
+          name: fname,
+          mime: f.mime,
+          size: f.size,
+          project: f.project,
+          mission: f.__missionKey,
+          date: f.updated_at,
+        }, { tenantId: worldId })
+        : fileRefFromProjectFileRow(f, { tenantId: worldId }));
+      const kind = resolveKind(fileRef.kind || f.kind, fname);
       // Review identity join (files-tool merge): waiting set membership drives the
       // NEEDS REVIEW badge + the needs-review filter; the decided map (Reviewed
       // toggle on) drives the verdict badges + Restore on dismissed rows.
-      const identity = f.uploaded ? (f.upload_url || f.id) : cornerPathOf(f, worldId);
-      const wHit = reviewWaiting ? reviewWaiting.get(identity) : null;
-      const dHit = (!wHit && reviewDecided) ? reviewDecided.get(identity) : null;
+      const identities = fileRef.identities?.length ? fileRef.identities : [f.uploaded ? (f.upload_url || f.id) : cornerPathOf(f, worldId)];
+      const wHit = reviewWaiting ? identities.map((id) => reviewWaiting.get(id)).find(Boolean) : null;
+      const dHit = (!wHit && reviewDecided) ? identities.map((id) => reviewDecided.get(id)).find(Boolean) : null;
+      const identity = fileRef.review?.id || identities[0] || '';
       return {
         id: f.id,
         name: fname,
         edited: relTime(f.updated_at),
-        size: formatSize(f.size || 0),
+        size: formatSize(fileRef.sizeBytes || f.size || 0),
         kind,
-        mime: f.mime || null,
-        status: 'ready',
+        mime: fileRef.mime || f.mime || null,
+        status: fileRef.health?.status || f.health_status || 'ready',
         uploaded: !!f.uploaded, // feeds the "My uploads" chip
         // The identity verdicts/pins/viewer key on: the queue item's id when the file
         // is (or was) in the review flow, else its own corner path / upload URL.
@@ -732,6 +748,7 @@ export function useOrganize(worldId = null, opts = {}) {
           : dHit ? (dHit.verdict === 'approve' ? 'approved' : dHit.verdict === 'request-changes' ? 'returned' : 'dismissed')
             : 'none',
         decisionId: dHit ? (dHit.decisionId || '') : '',
+        fileRef,
         // In the 'missions' pseudo-project (tenant-level missions), the first
         // rel_path segment IS the mission slug; elsewhere it's missions/<slug>/.
         missionKey: f.uploaded

@@ -30,6 +30,7 @@
 import path from 'path';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 import { UPLOADS_ROLE_FILTER, UPLOADS_PRESENCE_FILTERS, attachmentsOfMessage } from '../_lib/uploadsIdentity.js';
+import { fileRefFromChatAttachment, fileRefToReviewQueueItem } from '../_lib/fileRef.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -122,21 +123,17 @@ function rowsFromMessage(msg, sourceKind) {
   for (const att of atts) {
     const rawUrl = String(att.url || '');
     if (!rawUrl) continue;
-    const name = att.name || rawUrl.split('/').pop() || 'File';
-    out.push({
-      name,
-      path: rawUrl,                     // the viewer loads this as item.id (abs URL or corner path)
-      project: msg.project || '',
-      mission: meta.mission_slug || null,
-      kind: 'deliverable',
-      type: typeForChatFile(name, att.mime, rawUrl),
-      source_kind: sourceKind,          // 'handoff' | 'upload' — feeds the Review / Uploads filters
-      // Content identity (share-file.py stamps both): lets a decision on THIS
-      // file suppress the same unchanged bytes even across re-shares.
-      source_path: att.source_path || meta.source_path || null,
-      sha256: att.sha256 || null,
-      last_modified: new Date(ts).toISOString(),
+    const fileRef = fileRefFromChatAttachment({
+      attachment: att,
+      message: msg,
+      sourceKind,
+      tenantId: msg.client_id,
     });
+    out.push(fileRefToReviewQueueItem(fileRef, {
+      // Preserve the historical viewer id: an absolute store URL or a corner path.
+      path: rawUrl,
+      last_modified: new Date(ts).toISOString(),
+    }));
   }
   return out;
 }
@@ -152,7 +149,7 @@ async function collectFromMessages(world) {
   // tenants and their queues sat silently empty. Same column fetchDecisions and
   // files.js type=uploads already use.
   const worldFilter = isAom ? '' : `&client_id=eq.${encodeURIComponent(world)}`;
-  const common = `select=timestamp,project,role,source,metadata&order=timestamp.desc&limit=${MSG_FETCH_CAP}`;
+  const common = `select=id,client_id,timestamp,project,role,source,metadata&order=timestamp.desc&limit=${MSG_FETCH_CAP}`;
   // Deliberate hand-offs: role=assistant with metadata.handoff=true OR the share-file
   // source (pre-stamp rows still count — they were always deliberate CLI shares), from
   // the cutoff forward so the watcher's older auto_share dumps never leak in.

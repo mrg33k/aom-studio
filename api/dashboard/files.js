@@ -14,6 +14,7 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import { verifyTenant } from '../_lib/verifyTenant.js'
 import { UPLOADS_ROLE_FILTER, UPLOADS_PRESENCE_FILTERS, attachmentsOfMessage } from '../_lib/uploadsIdentity.js'
+import { fileRefFromChatAttachment } from '../_lib/fileRef.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -396,7 +397,7 @@ export default async function handler(req, res) {
 
       const out = []
       const seenUrls = new Set()
-      function pushAtt({ url: attUrl, mime, size, name, ts, who, proj, missionSlug, agentSlug }) {
+      function pushAtt({ row, attachment, url: attUrl, mime, size, name, ts, who, proj, missionSlug, agentSlug }) {
         if (!attUrl || seenUrls.has(attUrl)) return
         seenUrls.add(attUrl)
         // The RAG tunnel URL ends with the uuid-prefixed filename; strip
@@ -407,6 +408,27 @@ export default async function handler(req, res) {
           try { displayName = decodeURIComponent(attUrl.split('/').pop().split('?')[0]) }
           catch { displayName = attUrl.split('/').pop() }
         }
+        const fileRef = fileRefFromChatAttachment({
+          attachment: {
+            ...(attachment || {}),
+            url: attUrl,
+            mime,
+            size,
+            name: displayName,
+          },
+          message: {
+            ...(row || {}),
+            project: proj || row?.project || null,
+            metadata: {
+              ...((row && row.metadata && typeof row.metadata === 'object') ? row.metadata : {}),
+              project_slug: proj || null,
+              mission_slug: missionSlug || null,
+              agent_slug: agentSlug || null,
+            },
+          },
+          sourceKind: 'upload',
+          tenantId: clientId,
+        })
         out.push({
           id: attUrl,
           name: displayName,
@@ -422,6 +444,8 @@ export default async function handler(req, res) {
           project: proj || null,
           mission: missionSlug || null,
           agent: agentSlug || null,
+          health_status: fileRef.health.status,
+          file_ref: fileRef,
         })
       }
 
@@ -440,7 +464,7 @@ export default async function handler(req, res) {
         // Both attachment shapes, via the shared uploads identity (one extraction
         // path with review-queue.js — see api/_lib/uploadsIdentity.js).
         for (const a of attachmentsOfMessage(md)) {
-          pushAtt({ url: a.url, mime: a.mime, size: a.size, name: a.name, ts, who, ...scope })
+          pushAtt({ row, attachment: a, url: a.url, mime: a.mime, size: a.size, name: a.name, ts, who, ...scope })
         }
       }
 

@@ -10,6 +10,7 @@ import { titleForAgent } from './agentTitles';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
 import { docxShellHtml, isDocxName } from './docxDocView';
+import { createFileRef } from '../../../../api/_lib/fileRef.js';
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -373,6 +374,18 @@ export function reviewItemsFromFiles(files, project = '') {
       // Fall through to extension/mime detection for those.
       const explicit = f.type && f.type !== 'file' && f.type !== 'link' ? f.type : '';
       const key = explicit || typeKeyOf(name, f.mime || f.fileMime, rawUrl);
+      const fileRef = createFileRef({
+        id: path,
+        url: /^https?:\/\//i.test(path) ? path : '',
+        path,
+        name,
+        mime: f.mime || f.fileMime || '',
+        project,
+        source: 'injected',
+        sourceKind: 'injected',
+        kind: key,
+        reviewStatus: 'available',
+      });
       return {
         id: path, title: name,
         who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),
@@ -381,6 +394,7 @@ export function reviewItemsFromFiles(files, project = '') {
         count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '', missionLabel: '', missionRaw: '',
         location: project || '', queueState: 'ready', file: typeLabel(key),
         bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
+        fileRef,
       };
     })
     .filter(Boolean);
@@ -394,6 +408,22 @@ const PAGE_SIZE = 40; // items fetched per server page (initial load + each load
 // Map one raw queue item (from the API) to the shape the templates expect.
 // Extracted so load() and loadMore() share identical mapping logic.
 function mapQueueItem(it, openId) {
+  const fileRef = it.file_ref || createFileRef({
+    id: it.id || it.path,
+    path: it.id || it.path,
+    url: /^https?:\/\//i.test(String(it.id || it.path || '')) ? (it.id || it.path) : '',
+    name: it.name,
+    mime: it.mime,
+    sizeBytes: it.size,
+    project: it.project,
+    mission: it.mission,
+    source: it.source_kind,
+    sourceKind: it.source_kind,
+    sourcePath: it.source_path,
+    sha256: it.sha256,
+    updatedAt: it.last_modified,
+    healthStatus: it.health_status,
+  });
   const apiKey = (it.type && typeof it.type === 'object') ? it.type.key : (it.type || 'doc');
   // A deliverable's stored type can be mis-stamped (e.g. a .png filed as 'doc'/'copy'/a
   // deliverable kind), which sends real media down the text branch of renderBody and
@@ -429,6 +459,8 @@ function mapQueueItem(it, openId) {
     // same unchanged bytes (review-loop).
     sourcePath: it.source_path || '',
     sha256: it.sha256 || '',
+    fileRef,
+    healthStatus: fileRef.health?.status || it.health_status || 'ready',
     queueState: 'ready',
     file: `${typeLabel(typeKey)} · ${relTime(it.last_modified)}`,
     bodyHtml: '',

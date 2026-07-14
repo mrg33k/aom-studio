@@ -56,7 +56,21 @@ Build the shared authenticated tenant contract and compatibility adapters withou
 
 Unify file identity and health across Files and Review.
 
-**Status:** queued.
+- 2026-07-14 implementation:
+  - Added `api/_lib/fileRef.js`, a pure canonical FileRef contract spanning tenant, source table/row, storage key/path, URL, MIME/type, size, project/mission scope, review identity, source_path/sha256, and health status.
+  - Wired `api/dashboard/review-queue.js` through FileRef for chat-boundary handoffs/uploads while preserving the existing queue response fields; each item now carries `file_ref` and `health_status` beside legacy `path`, `type`, `source_path`, and `sha256`.
+  - Wired `api/dashboard/files.js?type=uploads` through the same FileRef adapter so Files upload rows and Review upload rows share attachment extraction, display name, MIME, size, project/mission scope, and review identity.
+  - Wired CV6 Review and Files adapters through FileRef compatibility: `useReview` retains the ref on mapped queue/injected items; `OrganizeDesktop`/mobile waiting and decided maps now derive identities from the shared contract; `useOrganize` canonicalizes mirror/upload rows before deriving file kind, health, review IDs, badges, and counts.
+  - Kept existing tables, row fields, storage keys, URLs, and old caller shapes intact. No schema/data rename and no new env requirement.
+  - Added `tests/api/_lib/fileRef.test.js` covering project-file storage identity, chat attachment/review queue identity, and URL-to-corner-path identity map bridging.
+  - Verification:
+    - `node --check api/_lib/fileRef.js api/dashboard/review-queue.js api/dashboard/files.js src/dashboard/cv6next/data/useReview.js src/dashboard/cv6next/data/useOrganize.js src/dashboard/cv6next/OrganizeDesktop.jsx src/dashboard/cv6next/OrganizeMobile.jsx` passed.
+    - `node --test tests/api/_lib/fileRef.test.js` passed.
+    - `npm run test:tenant-context` passed.
+    - `git diff --check` passed.
+    - `npm run build` passed.
+
+**Status:** shipped; awaiting external no-Supabase browser audit rerun.
 
 ### R4 - Backend-owned truth
 
