@@ -21,6 +21,7 @@ import { GoalThreadBody, SendCtx, ReviewCtx, AgentBlocks, WorkingTurn } from './
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
 import ChatDesktop, { FilesShelf, fileKind, libKindLabel, shelfItems } from './ChatDesktop.jsx';
+import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
 import Organize from './Organize.jsx';
@@ -370,39 +371,17 @@ function cardToRoom(card) {
 // The conversation, rendered as grouped bubbles (shared look with the quick-reply thread
 // and the Chat tool). Non-portal so it can live inside the Catch Up modal.
 function InlineBubbleThread({ messages }) {
-  const groups = groupChatMessages(Array.isArray(messages) ? messages : []);
-  if (!groups.length) return <div style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '28px 0' }}>No conversation yet.</div>;
   return (
-    <div className="pconv">
-      {groups.map((g, gi) => {
-        const head = g.items[0];
-        const lastTime = g.items[g.items.length - 1].time;
-        if (g.isUser) {
-          return (
-            <div className="me" key={gi}>
-              {g.items.map((m, i) => (m.text ? <div className="pb-me" key={i}><ChatMessageRenderer content={m.text} /></div> : null))}
-              {lastTime ? <div className="ts">{lastTime}</div> : null}
-            </div>
-          );
-        }
-        return (
-          <div className="grp" key={gi}>
-            <span className={`av is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials || '·'}</span>
-            <div className="stack">
-              {head.agentName ? <div className="gname">{head.agentName}</div> : null}
-              {g.items.map((m, i) => (
-                <span key={i} style={{ display: 'contents' }}>
-                  {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
-                  {/* Completed web work: the shipped link as a tappable card (Patrik 2026-07-13). */}
-                  {m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
-                </span>
-              ))}
-              {lastTime ? <div className="ts">{lastTime}</div> : null}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <Cv6MessageThread
+      messages={messages}
+      variant="modal"
+      mode="modalPreview"
+      allowBlocks
+      allowLinkCards
+      allowAttachments={false}
+      allowChips={false}
+      empty="No conversation yet."
+    />
   );
 }
 
@@ -2390,6 +2369,10 @@ function demoBlocksRequested() {
   try { return new URLSearchParams(window.location.search).get('demo') === 'blocks'; }
   catch { return false; }
 }
+function demoCatchUpModalRequested() {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'catchup-modal'; }
+  catch { return false; }
+}
 const DEMO_GOAL = { title: 'Show every chat element', step: 4, doneCount: 2, total: 11, pct: 18, checklist: [] };
 const DEMO_BLOCKS = [
   { type: 'step', stepIndex: 0, title: 'Read the brief and pull the repo', state: 'done', detail: 'Scanned 28 missions and the task runner.' },
@@ -2433,6 +2416,33 @@ function DemoChatBlocks() {
         <GoalThreadBody goal={DEMO_GOAL} blocks={DEMO_BLOCKS} />
       </div>
     </SendCtx.Provider>
+  );
+}
+
+function DemoCatchUpModal({ worldId }) {
+  const card = {
+    id: 'demo-catchup-modal',
+    kind: 'agent',
+    kindLabel: 'AGENT',
+    from: 'Renderer Room',
+    subject: 'Modal renderer',
+    summary: 'Can you confirm the renderer migration?',
+    project: 'renderer-room',
+    missionSlug: 'renderer-room:modal-proof',
+  };
+  return (
+    <div data-cv6 data-theme="dark" style={{ minHeight: '100dvh', background: 'var(--ground, #05080b)', position: 'relative' }}>
+      <CatchUpModal
+        card={card}
+        worldId={worldId || 'local-render'}
+        idx={0}
+        total={1}
+        onPrev={() => {}}
+        onNext={() => {}}
+        onClose={() => {}}
+        onGoToRoom={() => {}}
+      />
+    </div>
   );
 }
 
@@ -2531,6 +2541,8 @@ export default function CornerCV6() {
   // ?demo=blocks — render the full chat-element preview through the real renderer and stop.
   // (After all hooks above, so hook order stays stable; the flag is constant per load.)
   const demoBlocks = useMemo(() => demoBlocksRequested(), []);
+  const demoCatchUpModal = useMemo(() => demoCatchUpModalRequested(), []);
+  if (demoCatchUpModal) return <DemoCatchUpModal worldId={worldId} />;
   if (demoBlocks) {
     // Auto-height (no 100dvh cap, no overflow:hidden) so the whole thread is one tall page
     // the browser scrolls — a full-page capture then reaches every element end to end.

@@ -156,3 +156,21 @@ Research shipped: created `corner/missions/truth-contracts/research/renderer-con
 Recommendation: first migration slice should build a shared read-only `Cv6MessageThread` adapter and use it behind `InlineBubbleThread` only. After that passes, migrate Home `Cv6QuickThread` while keeping its portal host and sticky-scroll code outside the renderer.
 
 Verification: research doc read-through completed; `git diff --check -- corner/missions/truth-contracts/BUILD.md corner/missions/truth-contracts/research/renderer-consolidation-map.md corner/missions/truth-contracts/last-conversation.md` passed. No product code, tests, schema/data migration, deploy, push, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - R5a Shared CV6 Room Message Renderer, Catch Up First Slice
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: implement exactly slice 1 from the R5 renderer consolidation proposal.
+
+Fix shipped: added `src/dashboard/cv6next/MessageThread.jsx` exporting `Cv6MessageThread`, `Cv6MessageGroup`, `Cv6MessageTurn`, `Cv6MessageExtras`, and `groupMessagesBySender`. The renderer targets only normalized `useRoomThread()` messages and composes existing primitives: `ChatMessageRenderer`, `AgentBlocks`, `GoalThreadBody`, `WorkingTurn`, `liveStepsToBlocks`, `MessageAttachments`, `ResultLinkCards`, and `ActionChips`. Migrated only Catch Up modal `InlineBubbleThread` to `Cv6MessageThread variant="modal"` with blocks and link cards enabled. Modal attachments remain off because the fixed-height modal has not carried attachment galleries before, and this slice is scoped to fixing transformed block/link-card truth without adding layout risk.
+
+Tests added: `tests/cv6-message-renderer.spec.mjs` covers `?demo=blocks` core block vocabulary and a seeded no-Supabase Catch Up modal path asserting transformed block messages render, a result link card renders, and the modal composer still sends.
+
+Implementation note: desktop Home no longer exposes a visible Catch Up opener, but the existing modal path still exists. Browser verification uses the no-auth renderer fixture `?demo=catchup-modal`, which renders the real Catch Up modal and room-thread path without adding visible product UI.
+
+Verification: `npm run build`, `npm run test:tenant-context`, and `git diff --check` passed. `node --test` was run repo-wide and failed on two unrelated existing tests: `tests/api/_lib/mailAccess.test.js` expected 2 rows but got 0, and `tests/rightclick-menus.test.mjs` failed its bundle test-id check. Focused Playwright was not executable in the sandbox because Vite failed to bind `127.0.0.1:5173` with `listen EPERM`; rerun externally with `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line` and the practical audit spec.
+
+No SupportThread, ChatDesktop, ChatLifecycle, or Cv6QuickThread migration. No schema/data migration, deploy, push, secret rotation, external message send, or stored login/world/data mutation.
+
+Follow-up from Claude's external Playwright run: both new renderer specs initially failed. Fixed the demo blocks test by targeting the exact `.cmail-tag` Email label instead of broad `getByText('Email')`. Diagnosed the Catch Up modal failure as test seeding, not renderer output: no-Supabase local `useDataPipe` does not create Catch Up cards from stubbed `supabase-status.messages`, so the previous `cv6_catchup_modal=1` Home opener stayed in the caught-up state and never mounted the modal thread. Replaced that with `?demo=catchup-modal`, a no-auth renderer fixture that renders the real `CatchUpModal` and `useRoomThread` path directly. Re-verified `npm run build`, `npm run test:tenant-context`, and `git diff --check` in the sandbox; browser rerun still needs an external Vite server.

@@ -249,3 +249,37 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
 - Live dev-server pass is blocked by sandbox networking: `lsof` sees a Node process listening on `127.0.0.1:5200`, but `curl` cannot connect and `nc -vz 127.0.0.1 5200` returns `Operation not permitted`. Starting a replacement Vite server in this sandbox also fails with `listen EPERM`.
 
 **Status:** shipped; Claude (EA) ran the live verification outside the sandbox after merging the CV6 entry fix into this branch.
+
+## R5a — Shared CV6 Room Message Renderer, Catch Up First Slice
+
+**Date:** 2026-07-14
+
+**Scope:** Implemented exactly slice 1 from the R5 renderer consolidation proposal.
+
+- Built `src/dashboard/cv6next/MessageThread.jsx` exporting `Cv6MessageThread`, `Cv6MessageGroup`, `Cv6MessageTurn`, `Cv6MessageExtras`, and `groupMessagesBySender`.
+- The shared renderer targets the normalized `useRoomThread()` message shape only and composes the existing primitives: `ChatMessageRenderer`, `AgentBlocks`, `GoalThreadBody`, `WorkingTurn`, `liveStepsToBlocks`, `MessageAttachments`, `ResultLinkCards`, and `ActionChips`.
+- Added compatibility flags for `variant`, `mode`, live-work rendering, block rendering, and `allowBlocks` / `allowAttachments` / `allowChips` / `allowLinkCards`.
+- Migrated only the Catch Up modal `InlineBubbleThread` to `Cv6MessageThread variant="modal"` with `allowBlocks` and `allowLinkCards`.
+- Left modal attachments off intentionally (`allowAttachments={false}`) because the fixed-height Catch Up modal has never carried attachment galleries, and this slice is meant to fix transformed block/link-card truth without adding modal layout risk.
+- Added `tests/cv6-message-renderer.spec.mjs` for `?demo=blocks` vocabulary coverage plus the Catch Up modal path with seeded no-Supabase data.
+- Follow-up fix after external browser run:
+  - Tightened the demo Email assertion to the `.cmail-tag` exact label so Playwright strict mode does not match surrounding email-related prose.
+  - Diagnosed the Catch Up modal failure as a test seeding issue: no-Supabase local `useDataPipe` does not derive Catch Up cards from stubbed `supabase-status.messages`, so the previous `cv6_catchup_modal=1` Home opener rendered the caught-up state and never mounted `InlineBubbleThread`.
+  - Replaced that brittle opener with `?demo=catchup-modal`, a no-auth renderer fixture that renders the real `CatchUpModal` + `useRoomThread` path directly. Normal Home behavior is unchanged.
+
+**Verification:**
+
+- `npm run build` passed. Prebuild printed the existing local notices about missing sibling registry sources and Vite printed the existing chunk-size warning.
+- `npm run test:tenant-context` passed, including the hardcoded tenant guard.
+- `git diff --check` passed.
+- After the follow-up fix, `npm run build`, `npm run test:tenant-context`, and `git diff --check` passed again.
+- `node --test` was run repo-wide and failed on two unrelated existing tests: `tests/api/_lib/mailAccess.test.js` expected 2 rows but got 0, and `tests/rightclick-menus.test.mjs` failed its existing bundle test-id check. Other Node tests passed.
+- `node --check src/dashboard/cv6next/MessageThread.jsx` is not applicable because Node cannot syntax-check `.jsx` ESM files directly (`ERR_UNKNOWN_FILE_EXTENSION`); `npm run build` covered the JSX transform.
+- Focused browser specs were not executable in this sandbox because Vite cannot bind a local server here: `listen EPERM: operation not permitted 127.0.0.1:5173`.
+
+**External browser commands:**
+
+- `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line`
+- `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`
+
+**Status:** implemented; browser verification pending outside this sandbox.
