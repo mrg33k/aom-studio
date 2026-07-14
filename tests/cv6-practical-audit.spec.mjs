@@ -55,6 +55,10 @@ test.describe('CV6 practical product audit', () => {
       await page.waitForTimeout(350)
       await expectNoCrash(page)
       await expect(page.locator('[data-cv6]').first()).toBeVisible()
+      if (tool === 'Files') {
+        await expect(page.getByText("We couldn't load your files")).toHaveCount(0)
+        await expect(page.getByText('Nothing personal yet')).toBeVisible()
+      }
     }
 
     expect(productConsoleErrors(errors)).toEqual([])
@@ -79,6 +83,12 @@ test.describe('CV6 practical product audit', () => {
       await page.locator('.navdrawer .navrow', { hasText: tool }).click()
       await page.waitForTimeout(350)
       await expectNoCrash(page)
+      if (tool === 'Files') {
+        await expect(page.getByText("We couldn't load your files")).toHaveCount(0)
+        await expect(page.getByRole('button', { name: /Personal 0 files/ })).toBeVisible()
+        await page.getByRole('button', { name: /Personal 0 files/ }).click()
+        await expect(page.getByText('Nothing personal yet')).toBeVisible()
+      }
       if (tool !== 'Home') {
         await expect(page.getByRole('button', { name: 'Menu' }).first()).toBeVisible()
         await page.getByRole('button', { name: 'Menu' }).first().click()

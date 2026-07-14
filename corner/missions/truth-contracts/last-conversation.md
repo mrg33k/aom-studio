@@ -41,3 +41,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: normalized CV6 template action controls centrally in `src/dashboard/cv6kit/templateEngine.js`. Non-native `data-action` controls now receive button role/focusability, common labels such as Search/Menu/Back/Profile, and Enter/Space activation through the shared renderer instead of per-template patches.
 
 Verification: restarted Vite in safe no-Supabase mode, ran `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` (2 passed, including role-based mobile Search/Menu interactions across sibling tools), then ran `npm run build` successfully. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Delegated local Files empty-state audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Files and sibling data-heavy tools and understand whether the panel is offline, empty, or loading without misleading data-loss language or broken navigation.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Files showed "We couldn't load your files / Your connection dropped" in safe local/no-Supabase mode. Evidence came from the desktop probe against `/dashboard?cv6=1`: Vite was serving non-JSON/source for tenant-gated API routes, but the UI presented it as a dropped connection.
+2. P2: Mobile Files opens the project picker first; the empty copy appears after tapping "Personal 0 files." That is an extra click, but the state is honest and the Menu/Search controls remain available.
+3. P2: Tracker and Command still show loading/empty local states when their live sources are unavailable. They stayed navigable in the sibling workflow and were not the highest-impact fix for this slice.
+
+Fix shipped: `src/dashboard/cv6next/data/useOrganize.js` now treats absent Supabase as an explicit local empty Files mode. It skips tenant-gated Files/projects/uploads/mission-tree API calls, clears those arrays, and marks the panel loaded. Real configured sessions still fetch the mirror and still show real load errors.
+
+Verification: ran `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` (2 passed, with desktop and mobile Files assertions for no dropped-connection banner and the empty workflow), then ran `npm run build` successfully. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
