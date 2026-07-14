@@ -40,7 +40,7 @@ function relTime(ts) {
 
 // Resolve the viewer's world the same way Home does (auth -> world cache -> getClientId).
 export function useWorldId() {
-  const [worldId, setWorldId] = useState(null);
+  const [worldId, setWorldId] = useState(() => (supabase ? null : 'aom'));
   useEffect(() => {
     if (!supabase) return undefined;
     let alive = true;
@@ -640,7 +640,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
 
   // Live agent sessions — poll the heartbeat-backed active-processes endpoint.
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) return undefined;
     let alive = true;
     const load = () => authFetch('/api/dashboard/active-agents?client=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
@@ -659,7 +659,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
 
   // Latest line + who, per room, from the recent-messages feed (for the ledger rows).
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) return undefined;
     let alive = true;
     const load = () => authFetch('/api/dashboard/supabase-status?client=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
@@ -698,7 +698,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [goalRooms, setGoalRooms] = useState({});
   const goalRoomsSig = useRef('');
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) return undefined;
     let alive = true;
     const load = () => authFetch('/api/dashboard/room-goals?world=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
@@ -719,7 +719,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [boardRows, setBoardRows] = useState([]);
   const boardSig = useRef('');
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) return undefined;
     let alive = true;
     const load = () => authFetch('/api/dashboard/state-board?world=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
@@ -743,7 +743,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [stepsReload, setStepsReload] = useState(0);
   const stepsSig = useRef('');
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) return undefined;
     let alive = true;
     const load = () => authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}`)
       .then((r) => (r && r.ok ? r.json() : null))
@@ -766,7 +766,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [loopsReload, setLoopsReload] = useState(0);
   const routinesSig = useRef('');
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) return undefined;
     let alive = true;
     const load = () => authFetch('/api/dashboard/routines?client_id=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
@@ -784,7 +784,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
 
   // One write path for every loop control; always reconcile to server truth after.
   const loopWrite = useCallback(async (method, body) => {
-    if (!worldId) return;
+    if (!worldId || !supabase) return;
     try {
       await authFetch('/api/dashboard/routines', {
         method,
@@ -851,7 +851,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // canonical — resolve which stored key (canonical or legacy project:mission)
   // actually holds this room's record so the write lands on the real entry.
   const toggleWatcher = useCallback(async (key) => {
-    if (!worldId || !key) return;
+    if (!worldId || !supabase || !key) return;
     let storeKey = key;
     let cur = goalRooms[key];
     if (!cur) {
@@ -876,7 +876,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // refetch reconciles to server truth.
   const stepToggle = useCallback(async (act) => {
     const [room, id] = String(act || '').split('|');
-    if (!worldId || !room || !id) return;
+    if (!worldId || !supabase || !room || !id) return;
     const wasProposed = Boolean((stepsByRoom[room] || []).find((s) => s.id === id)?.proposed);
     setStepsByRoom((prev) => {
       const cur = prev[room] || [];
@@ -903,7 +903,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // step becomes yours and stays on the plan as a next step. No-op on non-proposals.
   const stepAccept = useCallback(async (act) => {
     const [room, id] = String(act || '').split('|');
-    if (!worldId || !room || !id) return;
+    if (!worldId || !supabase || !room || !id) return;
     const it = (stepsByRoom[room] || []).find((s) => s.id === id);
     if (!it || !it.proposed) return;
     setStepsByRoom((prev) => {
@@ -926,7 +926,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // agent proposal is dismissed). Optimistic; forced refetch reconciles.
   const stepDelete = useCallback(async (act) => {
     const [room, id] = String(act || '').split('|');
-    if (!worldId || !room || !id) return;
+    if (!worldId || !supabase || !room || !id) return;
     setStepsByRoom((prev) => {
       const cur = prev[room] || [];
       const out = { ...prev, [room]: cur.filter((x) => x.id !== id) };
@@ -945,7 +945,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
 
   const stepAdd = useCallback(async (room, text) => {
     const t = String(text || '').replace(/\s+/g, ' ').trim();
-    if (!worldId || !room || !t) return;
+    if (!worldId || !supabase || !room || !t) return;
     setStepsByRoom((prev) => {
       const cur = prev[room] || [];
       const out = { ...prev, [room]: [...cur, { id: 'tmp-' + Date.now().toString(36), text: t, done: false, source: 'user', proposed: false }] };
@@ -980,7 +980,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [handed, setHanded] = useState({});
   const handNextStep = useCallback(async ({ key, projectSlug = '', missionSlug = '', stepText = '', act = '' } = {}) => {
     const t = String(stepText || '').replace(/\s+/g, ' ').trim();
-    if (!worldId || !key || !t) return;
+    if (!worldId || !supabase || !key || !t) return;
     if (handed[key] && handed[key].act === act) return; // this exact step already sent
     setHanded((h) => ({ ...h, [key]: { act, ts: Date.now() } }));
     const body = `Please take the next step on this room's plan and report back when it's done: "${t.slice(0, 240)}"`;
@@ -1002,7 +1002,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // Optimistic: the row unblocks immediately; the 60s goal poll reconciles.
   const answerRoomQuestion = useCallback(async ({ key, projectSlug = '', missionSlug = '', question = '' } = {}, text) => {
     const t = String(text || '').trim();
-    if (!worldId || !key || !t) return;
+    if (!worldId || !supabase || !key || !t) return;
     // Resolve which stored key (canonical or legacy project:mission) holds this
     // room's goal record, same as toggleWatcher.
     let storeKey = key;
@@ -1038,7 +1038,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // canon-sync both respect it). Optimistic; the 60s goal poll reconciles.
   const setRoomGoal = useCallback(async (key, text) => {
     const t = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 280);
-    if (!worldId || !key || !t) return;
+    if (!worldId || !supabase || !key || !t) return;
     let storeKey = key;
     if (!goalRooms[storeKey]) {
       for (const k of Object.keys(goalRooms)) {
@@ -1064,7 +1064,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // the 60s goal poll reconciles. Reversible — fresh room activity newer than
   // the stamp re-adds the row, and the room itself is untouched.
   const setRoomStatus = useCallback(async (key, status, note = '') => {
-    if (!worldId || !key || !['active', 'parked', 'done'].includes(status)) return;
+    if (!worldId || !supabase || !key || !['active', 'parked', 'done'].includes(status)) return;
     let storeKey = key;
     if (!goalRooms[storeKey]) {
       for (const k of Object.keys(goalRooms)) {
@@ -1129,9 +1129,9 @@ function trackerShape(t, activeId) {
 
 export function useTrackerBugs(worldId) {
   const [bugs, setBugs] = useState([]);
-  const [status, setStatus] = useState('loading');
+  const [status, setStatus] = useState(() => (supabase ? 'loading' : 'empty'));
   const [spaceTickets, setSpaceTickets] = useState([]);
-  const [spaceStatus, setSpaceStatus] = useState('loading');
+  const [spaceStatus, setSpaceStatus] = useState(() => (supabase ? 'loading' : 'empty'));
   const [customTrackers, setCustomTrackers] = useState([]);
   const [activeId, setActiveId] = useState(CV6_BOARD_ID);
   const [reloadKey, setReloadKey] = useState(0);
@@ -1151,7 +1151,11 @@ export function useTrackerBugs(worldId) {
 
   // CV6 bug board.
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) {
+      setBugs([]);
+      setStatus('empty');
+      return undefined;
+    }
     let alive = true;
     setStatus((s) => (s === 'ready' ? s : 'loading'));
     authFetch('/api/dashboard/cv6-bugs').then((r) => (r.ok ? r.json() : null)).then((d) => {
@@ -1182,7 +1186,11 @@ export function useTrackerBugs(worldId) {
 
   // Space Rising ticket board (read-only, behind admin-tickets).
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) {
+      setSpaceTickets([]);
+      setSpaceStatus('empty');
+      return undefined;
+    }
     let alive = true;
     setSpaceStatus('loading');
     authFetch('/api/dashboard/admin-tickets').then((r) => (r && r.ok ? r.json() : null)).then((d) => {
@@ -1210,7 +1218,10 @@ export function useTrackerBugs(worldId) {
 
   // User-created custom trackers (persisted). Refetched after a create.
   useEffect(() => {
-    if (!worldId) return undefined;
+    if (!worldId || !supabase) {
+      setCustomTrackers([]);
+      return undefined;
+    }
     let alive = true;
     authFetch('/api/dashboard/trackers?world=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
@@ -1224,6 +1235,7 @@ export function useTrackerBugs(worldId) {
   // Create a tracker for real, then refetch + switch to it. The new-tracker form is
   // uncontrolled in the component (so typing isn't wiped on a re-bind); kind is passed in.
   const createTracker = async ({ name, scope, kind }) => {
+    if (!supabase) return null;
     const k = kind === 'mission' ? 'mission' : 'project';
     try {
       const r = await authFetch('/api/dashboard/trackers', {
@@ -1249,7 +1261,7 @@ export function useTrackerBugs(worldId) {
   // Space Rising is read-only (the "+" never opens there). Then refetch.
   const SEVERITY = { high: 'high', med: 'medium', low: 'low' };
   const createBug = async ({ title, description, priority, status, assigneeId }) => {
-    if (!title || showingSpace) return null;
+    if (!supabase || !title || showingSpace) return null;
     const owner = assigneeId ? (agentNameById[assigneeId] || '') : '';
     const st = STATUS_LABELS[status] || 'Open';
     try {
@@ -1275,7 +1287,7 @@ export function useTrackerBugs(worldId) {
   // CV6 board only (Space Rising is read-only).
   const STATUS_LABELS = { Open: 'Open', 'In progress': 'In progress', Done: 'Done' };
   const updateBug = async ({ id, status, owner }) => {
-    if (!id || !showingCv6) return null;
+    if (!supabase || !id || !showingCv6) return null;
     const label = status != null ? STATUS_LABELS[status] : null;
     if (status != null && !label) return null;
     if (label == null && owner == null) return null;
@@ -1359,5 +1371,5 @@ export function useTrackerBugs(worldId) {
     empty: { title: 'No bugs in this tracker', body: 'Nothing logged yet. New issues land here.', actionLabel: '' },
     error: { title: "Couldn't load the tracker", body: 'Your connection dropped. Nothing was lost.', code: 'tracker · retry' },
   };
-  return { state: listState, data, switchTracker, createTracker, createBug, updateBug, canCreate: !showingSpace };
+  return { state: listState, data, switchTracker, createTracker, createBug, updateBug, canCreate: !showingSpace && !!supabase };
 }

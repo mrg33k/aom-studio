@@ -14,6 +14,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { isSuperAdmin, isAdminOverride } from '../lib/clientConfig'
+import { authFetch } from '../lib/authFetch'
 
 // Color palette matching cv3.html / CornerV3.jsx
 const C = {
@@ -73,13 +74,13 @@ export default function WorldSelector({
   const wrapperRef = useRef(null)
   const dropdownRef = useRef(null)
 
-  // Fetch worlds from /api/worlds?user_id=...
+  // Fetch worlds for the authenticated session.
   const fetchWorlds = useCallback(async () => {
     if (!currentUser?.id) return
     setLoading(true)
     setError(null)
     try {
-      const r = await fetch(`/api/worlds?user_id=${encodeURIComponent(currentUser.id)}`)
+      const r = await authFetch('/api/worlds')
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const data = await r.json()
       const raw = data.worlds || []
@@ -541,7 +542,7 @@ export default function WorldSelector({
                     setCreating(true)
                     setCreateError(null)
                     try {
-                      const r = await fetch('/api/dashboard/create-world', {
+                      const r = await authFetch('/api/dashboard/create-world', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name: createName.trim(), email: createEmail.trim() }),

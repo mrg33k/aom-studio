@@ -260,7 +260,7 @@ export function useHome() {
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
-  const loading = !worldId || (agents == null && projectRooms == null && inboxItems == null);
+  const loading = (supabase && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 

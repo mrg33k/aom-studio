@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
+import { supabase } from '../../lib/supabase';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
 import { docxShellHtml, isDocxName } from './docxDocView';
@@ -339,6 +340,16 @@ export function useOrganize(worldId = 'aom', opts = {}) {
     // lambda's 30s registry cache so the change shows now, not next poll.
     const bust = opts && opts.bust ? '&bust=1' : '';
     let gotFiles = false;
+
+    if (!supabase) {
+      setFiles([]);
+      setProjects([]);
+      setUploads([]);
+      setMissionTree({});
+      setStatus('loaded');
+      return;
+    }
+
     try {
       const filesRes = await authFetch(
         `/api/dashboard/files?type=mirror&client=${encodeURIComponent(worldId)}`,
