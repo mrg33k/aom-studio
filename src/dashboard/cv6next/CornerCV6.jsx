@@ -100,7 +100,7 @@ function useIsDesktop() {
 // design files also write the Scribe target as 'live-scribe'; accept both spellings.
 const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'onboarding', 'livescribe', 'live-scribe', 'back']);
 
-function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}) {
+function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false, dropEmbeddedStates = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const nodes = doc.querySelectorAll('[data-cv6]');
   const screen = nodes[pick] || nodes[0];
@@ -128,6 +128,9 @@ function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}
   // append shared states next to this screen's ready region
   const ready = screen.querySelector('[data-state="ready"]');
   const host = ready?.parentNode || screen;
+  if (dropEmbeddedStates && host) {
+    host.querySelectorAll(':scope > [data-state="loading"], :scope > [data-state="error"], :scope > [data-state="empty"]').forEach((node) => node.remove());
+  }
   // The design body is overflow:hidden (fine for a fixed mockup, wrong for the live app
   // with many rooms). On mobile make the scroll body actually scroll, and pad the bottom
   // so the last row clears the home indicator. Desktop columns scroll on their own.
@@ -1639,7 +1642,7 @@ const SUPPORT_THREAD_ALIASES = { 'thread.summary': 'pt' };
 const EARLIER_CUT = /^\s*>|^-{2,}\s*Forwarded message|^Begin forwarded message:|^On .{5,80} wrote:/m;
 function SupportInbox({ onNav, onOpenNav, onAssignEmail, worldId }) {
   const { state, data, reload } = useSupportInbox(worldId);
-  const html = useMemo(() => composeScreen(inboxRaw, { mobile: true }), []);
+  const html = useMemo(() => composeScreen(inboxRaw, { mobile: true, dropEmbeddedStates: true }), []);
   const threadHtml = useMemo(() => composeScreen(supportThreadRaw, { mobile: true }), []);
   // The "Draft reply" screen the design ships next to the inbox (pick=1). Tone and
   // Redo have no live mechanism yet, so they're stripped at compose time — same

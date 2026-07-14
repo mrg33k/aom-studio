@@ -89,3 +89,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/data/useReview.js` now guards read-only Review JSON parsing. Non-JSON successful read responses become empty/unavailable local data instead of thrown parse errors; Review mutation responses remain strict. The CV6 practical audit spec no longer ignores the old `Unexpected token '/'` JSON parse failure.
 
 Verification: desktop and mobile Playwright probes completed the sibling journey without Review parse errors; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Email local workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Email, understand the inbox/campaign state, and return to sibling tools without misleading local errors, stale labels, duplicate empty copy, or broken navigation.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Mobile Email showed "We couldn't reach your inbox / Your connection dropped" in safe no-Supabase local mode, while desktop Email showed the honest caught-up inbox. Same product state, contradictory meaning.
+2. P1: Once the local state settled empty, mobile rendered the caught-up empty block twice because the support inbox template carried its own empty branch and the shared composer injected another.
+3. P2: Mobile Email still titled the inbox "Support" even though the shared nav and Email shell present this as Email.
+
+Fix shipped: `src/dashboard/cv6next/data/useSupportInbox.js` now treats absent Supabase as explicit read-only local empty data. `src/dashboard/cv6next/CornerCV6.jsx` can drop embedded state branches before injecting shared states, and mobile Email uses that path to avoid duplicate empty copy. `src/dashboard/cv6next/templates/support-inbox.html` now shows the visible title "Email."
+
+Verification: desktop/mobile Playwright probes completed Email with one caught-up state and no dropped-connection banner; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests with Email assertions); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.

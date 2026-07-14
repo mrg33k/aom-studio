@@ -101,3 +101,13 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: local Vite still reports generic missing-resource 404 console entries, which the existing practical audit filter treats as non-product noise. No stored login/world/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and verified for the delegated review-json-normalization audit.
+
+- 2026-07-14 delegated email-local-workflow slice:
+  - User goal: from desktop and mobile CV6, open Email, understand inbox/campaign state, and return to sibling tools without misleading local errors, dead controls, or confusing loading/empty states.
+  - Audit: desktop Email showed an honest caught-up inbox, but mobile Email showed "We couldn't reach your inbox / Your connection dropped" for the same safe no-Supabase local state. After the local-state fix, mobile exposed a duplicate caught-up block and still titled the inbox "Support" inside the Email tool.
+  - Ranked finding: P1 high-frequency mobile Email inconsistency. A core sibling tool implied a connection/data problem on mobile while desktop was calm and empty; the duplicate empty copy and stale Support title made the tool feel unfinished.
+  - Fixed this round: `useSupportInbox` now treats absent Supabase as explicit read-only local empty data, the mobile Email inbox drops its embedded duplicate empty branch before shared states are injected, and the mobile title now reads Email.
+  - Verification: desktop/mobile Playwright probes completed Email with one caught-up state and no dropped-connection banner; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed with Email assertions; `npm run build` passed.
+  - Remaining notes: local Vite still reports generic missing-resource 404 console entries that the practical audit filters as non-product noise. No stored login/world/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
+
+**Status:** shipped and verified for the delegated email-local-workflow audit.

@@ -58,6 +58,11 @@ test.describe('CV6 practical product audit', () => {
         await expect(page.getByText("We couldn't load your files")).toHaveCount(0)
         await expect(page.getByText('Nothing personal yet')).toBeVisible()
       }
+      if (tool === 'Email') {
+        await expect(page.getByText("We couldn't reach your inbox")).toHaveCount(0)
+        await expect(page.getByText("You're all caught up")).toHaveCount(1)
+        await expect(page.getByText("You're all caught up")).toBeVisible()
+      }
       if (tool === 'Tracker') {
         await expect(page.getByText('Loading the tracker…')).toHaveCount(0)
         await expect(page.getByText('No bugs in this tracker')).toBeVisible()
@@ -94,6 +99,13 @@ test.describe('CV6 practical product audit', () => {
         await expect(page.getByRole('button', { name: /Personal 0 files/ })).toBeVisible()
         await page.getByRole('button', { name: /Personal 0 files/ }).click()
         await expect(page.getByText('Nothing personal yet')).toBeVisible()
+      }
+      if (tool === 'Email') {
+        await expect(page.getByText('Email').first()).toBeVisible()
+        await expect(page.getByText('Support', { exact: true })).toHaveCount(0)
+        await expect(page.getByText("We couldn't reach your inbox")).toHaveCount(0)
+        await expect(page.getByText("You're all caught up")).toHaveCount(1)
+        await expect(page.getByText("You're all caught up")).toBeVisible()
       }
       if (tool === 'Tracker') {
         await expect(page.getByText('Loading the tracker…')).toHaveCount(0)
