@@ -4,6 +4,8 @@
 //   GET    /api/support/wishes?access_code=XXX  → client status lookup (wish + visible updates)
 //   PATCH  /api/support/wishes?id=...           → { status?, response?, author? }
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const INTERNAL_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -57,6 +59,22 @@ export default async function handler(req, res) {
       const ur = await supa(`support_wish_updates?select=*&wish_id=eq.${wish.id}&visible_to_client=eq.true&order=created_at.asc`);
       const updates = await ur.json();
       return res.status(200).json({ ok: true, wish, updates, status_label: CLIENT_LABEL[wish.status] || wish.status });
+    }
+    // Tenant scope (corner:support R3). Support intake is single-tenant today —
+    // the watcher reads only AOM's mailboxes, so every wish row is AOM's and the
+    // table has no world column yet. A verified non-aom world gets an honestly
+    // empty list; it must never see AOM's desk. JWT-less callers stay pinned to
+    // aom so the legacy surfaces (/support/admin, ?cv4=1) keep working. When a
+    // second tenant gets a support intake, add a world column and filter here.
+    const world = (typeof req.query.world === 'string' && req.query.world.trim().toLowerCase()) || 'aom';
+    if (world !== 'aom') {
+      try {
+        await verifyTenant(world, req);
+      } catch (err) {
+        if (err instanceof TenantAuthError) return res.status(err.status).json({ ok: false, error: err.message });
+        throw err;
+      }
+      return res.status(200).json({ ok: true, wishes: [] });
     }
     // Default admin list = real asks only. dismissed/spam stay out unless asked
     // for explicitly (?status=spam), and the noise gate below drops blasts that

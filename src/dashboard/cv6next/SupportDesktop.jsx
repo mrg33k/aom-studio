@@ -64,8 +64,8 @@ const chipStyle = (primary) => ({
   fontFamily: 'var(--font-sans)', cursor: 'pointer',
 });
 
-export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
-  const { state, data, reload } = useSupportInbox('aom');
+export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldId }) {
+  const { state, data, reload } = useSupportInbox(worldId);
   const needsYou = data?.needsYou || [];
   const watching = data?.watching || [];
   const [tab, setTab] = useState('open'); // open | waiting

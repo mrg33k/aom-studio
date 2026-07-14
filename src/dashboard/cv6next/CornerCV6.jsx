@@ -1637,8 +1637,8 @@ const SUPPORT_THREAD_ALIASES = { 'thread.summary': 'pt' };
 // Where the quoted "earlier in this thread" part of an email body starts. Same split
 // the desktop reading pane uses — one truth for what counts as history.
 const EARLIER_CUT = /^\s*>|^-{2,}\s*Forwarded message|^Begin forwarded message:|^On .{5,80} wrote:/m;
-function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
-  const { state, data, reload } = useSupportInbox('aom');
+function SupportInbox({ onNav, onOpenNav, onAssignEmail, worldId }) {
+  const { state, data, reload } = useSupportInbox(worldId);
   const html = useMemo(() => composeScreen(inboxRaw, { mobile: true }), []);
   const threadHtml = useMemo(() => composeScreen(supportThreadRaw, { mobile: true }), []);
   // The "Draft reply" screen the design ships next to the inbox (pick=1). Tone and
@@ -2551,7 +2551,7 @@ export default function CornerCV6() {
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} onOpenNav={onOpenNav} />; viewKey = 'support'; }
+  else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} onOpenNav={onOpenNav} />; viewKey = 'support'; }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }

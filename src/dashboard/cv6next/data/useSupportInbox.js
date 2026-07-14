@@ -65,7 +65,10 @@ function parseWishMessage(message) {
   };
 }
 
-export function useSupportInbox(worldId = 'aom') {
+// worldId comes from useWorldId() and is null until auth resolves — nothing is
+// fetched until then, so another tenant's world can never flash AOM's inbox
+// (corner:support R3; same guard pattern as useCampaign).
+export function useSupportInbox(worldId) {
   const isAom = worldId === 'aom';
   const [wishes, setWishes] = useState(null);
   const [mailboxes, setMailboxes] = useState(null);
@@ -79,9 +82,10 @@ export function useSupportInbox(worldId = 'aom') {
   // failed poll wipe data we already have (keep last data until fresh data arrives).
   const hasDataRef = useRef(false);
   const load = useCallback(async () => {
+    if (!worldId) return;
     let ok = false;
     try {
-      const r = await fetch('/api/support/wishes');
+      const r = await authFetch(`/api/support/wishes?world=${encodeURIComponent(worldId)}`, { credentials: 'include' });
       const d = await r.json();
       if (d.ok) { setWishes(d.wishes || []); ok = true; }
     } catch { /* keep last */ }
@@ -97,7 +101,7 @@ export function useSupportInbox(worldId = 'aom') {
     } else { setMailboxes([]); ok = true; }
     if (ok) hasDataRef.current = true;
     setStatus((prev) => (ok || hasDataRef.current ? 'loaded' : (prev === 'loading' ? 'error' : prev)));
-  }, [isAom]);
+  }, [worldId, isAom]);
 
   useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]);
 

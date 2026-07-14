@@ -685,7 +685,7 @@ function CreateWizard({ worldId, onClose, onCreated }) {
 // ------------------------------------------------------------------ main ---
 
 export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
-  const { campaigns, reload: reloadList } = useCampaignList(worldId);
+  const { campaigns, error: listError, reload: reloadList } = useCampaignList(worldId);
   const [selectedId, setSelectedId] = useState(null);
   const [cityId, setCityId] = useState(null);
   const [stage, setStage] = useState(null);
@@ -704,6 +704,21 @@ export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
   });
 
   const campaign = detail?.campaign || (campaigns || []).find((c) => c.id === selectedId) || null;
+
+  // campaigns === null means the list hasn't loaded (worldId unresolved, fetch in
+  // flight, or fetch failing — the hook retries on its 20s poll). Rendering the
+  // detail skeleton here looked like a broken/unconfigured page (corner:support R3).
+  if (!campaigns && !wizard) {
+    return (
+      <div style={{ padding: 24, maxWidth: 480, margin: '0 auto' }}>
+        <div style={{ ...card, textAlign: 'center', padding: 32 }}>
+          <div style={{ fontSize: 13.5, color: 'var(--muted)' }}>
+            {listError ? 'Campaigns didn’t load. Retrying automatically.' : 'Loading campaigns…'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (campaigns && campaigns.length === 0 && !wizard) {
     return (
