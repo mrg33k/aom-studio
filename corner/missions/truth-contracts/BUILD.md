@@ -133,6 +133,29 @@ Consolidate message, attachment, preview, and status behavior across every live 
 
 **Status:** implemented and locally verified; awaiting external browser spec rerun.
 
+### R5c - Desktop Chat shared renderer migration
+
+- 2026-07-14 implementation:
+  - Migrated desktop `ChatDesktop` message rendering to the shared `Cv6MessageThread` with `variant="desktop"`.
+  - Kept day folding in `ChatDesktop`: older day cards still own their open/closed state, latest-day dividers stay outside the renderer, and each day body now delegates only the message loop to `Cv6MessageThread`.
+  - Kept room selection, the control drawer, files/goals drawer, composer host, scroll anchoring, and live `WorkingTurn` outside the renderer unchanged.
+  - Deleted the private desktop `groupChat`, `MsgExtras`, `BubbleGroup`, and `BubbleThread` loop that this slice replaces.
+  - Preserved desktop rich-message features through the shared renderer: text bubbles, blocks, attachments with Review routing, result link cards, suggestion chips, and existing live work.
+  - Adjusted shared `Cv6MessageThread` group markup to use the existing `.grp`/`.stack`/`.ava` bubble classes for both user and agent groups, and added `chipsPrimaryFirst` so desktop can keep its previous non-primary suggestion-chip emphasis.
+  - Did not touch `ChatLifecycle` mobile or `SupportThread`.
+- Tests:
+  - Extended `tests/cv6-message-renderer.spec.mjs` with a seeded real desktop Chat route (`?view=chat`) using POST/GET intercepts on the bare `/api/dashboard/supabase-messages*` path.
+  - The new desktop case asserts a folded older-day card, latest-day shared desktop thread, text bubble, attachment card plus `Review`, result link card, chips, live working row from `/message-steps`, and opened folded-day content.
+- Verification:
+  - `node --check tests/cv6-message-renderer.spec.mjs` passed.
+  - `git diff --check` passed.
+  - `npm run test:tenant-context` passed.
+  - `npm run build` passed. Prebuild printed the existing missing sibling registry notices and Vite printed the existing chunk-size warning.
+  - Direct `node --check` on `.jsx` files is not usable with this Node version; it rejects `.jsx` as an unknown extension. The Vite build was the JSX parse/bundle check.
+  - Focused browser rerun was attempted locally, but Vite cannot bind in this sandbox: `listen EPERM: operation not permitted 127.0.0.1:5200`. Rerun externally with the commands in the handoff.
+
+**Status:** implemented and locally verified; awaiting external browser spec and practical audit reruns.
+
 ### R4b - Command backend-owned status truth
 
 - 2026-07-14 implementation:

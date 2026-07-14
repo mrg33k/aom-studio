@@ -104,6 +104,127 @@ async function seedCatchUp(page) {
   return () => sent
 }
 
+async function seedDesktopChat(page) {
+  await page.route('**/api/local/file?**', async (route) => {
+    await route.fulfill({ json: { content: '' } })
+  })
+  await page.route('**/api/dashboard/supabase-status?**', async (route) => {
+    await route.fulfill({
+      json: {
+        agents: [{ slug: 'corner', title: 'Corner', name: 'Corner', status: 'idle' }],
+        projects: [{ id: 'renderer-room', slug: 'renderer-room', name: 'Renderer Room', status: 'IDLE' }],
+        projectDefs: [],
+        tasks: [],
+        tasksV2: [],
+        messages: [],
+      },
+    })
+  })
+  await page.route('**/api/dashboard/supabase-messages*', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ json: { ok: true, message: { id: 'desktop-posted-message' } } })
+      return
+    }
+    const nowMs = Date.now()
+    const at = (minutesAgo) => new Date(nowMs - minutesAgo * 60_000).toISOString()
+    await route.fulfill({
+      json: {
+        messages: [
+          {
+            id: 'desktop-old-user',
+            role: 'user',
+            agent: 'corner',
+            project: 'renderer-room',
+            source: 'corner-dashboard',
+            text: 'Older day request for the desktop renderer.',
+            timestamp: at(60 * 48),
+          },
+          {
+            id: 'desktop-old-agent',
+            role: 'assistant',
+            agent: 'corner',
+            project: 'renderer-room',
+            text: 'Older day reply folded under the day card.',
+            timestamp: at(60 * 48 - 5),
+          },
+          {
+            id: 'desktop-agent-text',
+            role: 'assistant',
+            agent: 'corner',
+            project: 'renderer-room',
+            text: 'Desktop text bubble renders through the shared renderer.',
+            timestamp: at(35),
+          },
+          {
+            id: 'desktop-agent-attachment',
+            role: 'assistant',
+            agent: 'corner',
+            project: 'renderer-room',
+            text: '',
+            timestamp: at(32),
+            metadata: {
+              attachments: [{
+                url: '/demo/desktop-renderer-audit.pdf',
+                name: 'desktop-renderer-audit.pdf',
+                mime: 'application/pdf',
+                size: 24000,
+              }],
+            },
+          },
+          {
+            id: 'desktop-agent-link-chip',
+            role: 'assistant',
+            agent: 'corner',
+            project: 'renderer-room',
+            text: 'Desktop link and chips are ready. https://example.test/desktop-renderer-report',
+            timestamp: at(28),
+            metadata: {
+              result_payload: {
+                type: 'link',
+                payload: 'https://example.test/desktop-renderer-report',
+                summary: 'Desktop renderer report is live',
+              },
+              chips: ['Approve desktop renderer', 'Ask for changes'],
+            },
+          },
+          {
+            id: 'desktop-live-user',
+            role: 'user',
+            agent: 'corner',
+            project: 'renderer-room',
+            source: 'corner-dashboard',
+            text: 'Keep working on the desktop renderer.',
+            timestamp: at(1),
+          },
+        ],
+      },
+    })
+  })
+  await page.route('**/api/dashboard/message-steps?**', async (route) => {
+    await route.fulfill({
+      json: {
+        steps: [
+          { id: 'desktop-live-step-1', parent_message_id: 'desktop-live-user', step_index: 0, text: 'Reading desktop thread fixture', timestamp: ts(1) },
+          { id: 'desktop-live-step-2', parent_message_id: 'desktop-live-user', step_index: 1, text: 'Checking shared renderer output', timestamp: ts(0) },
+        ],
+      },
+    })
+  })
+  await page.route('**/api/dashboard/room-goal-steps?**', async (route) => route.fulfill({ json: { list: [] } }))
+  await page.route('**/api/dashboard/room-goals?**', async (route) => route.fulfill({ json: { rooms: {} } }))
+  await page.route('**/api/dashboard/project-summary?**', async (route) => route.fulfill({ json: { event: { payload: {} } } }))
+  await page.route('**/api/dashboard/active-agents?**', async (route) => route.fulfill({ json: { agents: [] } }))
+  await page.route('**/api/dashboard/state-board?**', async (route) => route.fulfill({ json: { columns: [] } }))
+  await page.route('**/api/dashboard/routines?**', async (route) => route.fulfill({ json: { routines: [] } }))
+  await page.route('**/api/dashboard/cv6-bugs**', async (route) => route.fulfill({ json: { bugs: [] } }))
+  await page.route('**/api/dashboard/admin-tickets**', async (route) => route.fulfill({ json: { tickets: [] } }))
+  await page.route('**/api/dashboard/trackers?**', async (route) => route.fulfill({ json: { trackers: [] } }))
+  await page.route('**/api/dashboard/review-queue?**', async (route) => route.fulfill({ json: { items: [], total: 0 } }))
+  await page.route('**/api/dashboard/missions-tree?**', async (route) => route.fulfill({ json: { projects: [] } }))
+  await page.route('**/api/dashboard/list-chat-files?**', async (route) => route.fulfill({ json: { files: [] } }))
+  await page.route('**/api/dashboard/project-files?**', async (route) => route.fulfill({ json: { files: [], total: 0 } }))
+}
+
 test.describe('CV6 shared message renderer', () => {
   test('demo blocks exposes the core block vocabulary', async ({ page }) => {
     await page.goto(`${BASE}/dashboard?cv6=1&demo=blocks`, { waitUntil: 'domcontentloaded' })
@@ -147,5 +268,26 @@ test.describe('CV6 shared message renderer', () => {
     await expect(homeThread.getByText('renderer-audit.pdf')).toBeVisible()
     await expect(homeThread.getByRole('button', { name: /^Review$/ })).toBeVisible()
     await expect(homeThread.getByRole('link', { name: /example\.test/ })).toBeVisible()
+  })
+
+  test('Desktop Chat renders folded days, rich messages, chips, and live work through the shared renderer', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 950 })
+    await seedDesktopChat(page)
+    await page.goto(`${BASE}/dashboard?cv6=1&view=chat`, { waitUntil: 'domcontentloaded' })
+
+    const latestThread = page.locator('[data-cv6-message-thread][data-variant="desktop"][data-mode="latest-day"]')
+    await latestThread.waitFor({ timeout: 15_000 })
+
+    await expect(page.locator('.goalcard').filter({ hasText: '2 messages' })).toBeVisible()
+    await expect(latestThread.getByText('Desktop text bubble renders through the shared renderer.')).toBeVisible()
+    await expect(latestThread.getByText('desktop-renderer-audit.pdf')).toBeVisible()
+    await expect(latestThread.getByRole('button', { name: /^Review$/ })).toBeVisible()
+    await expect(latestThread.getByRole('link', { name: /example\.test/ })).toBeVisible()
+    await expect(latestThread.getByRole('button', { name: 'Approve desktop renderer' })).toBeVisible()
+    await expect(page.getByText('Checking shared renderer output')).toBeVisible()
+
+    await page.locator('.goalcard').filter({ hasText: '2 messages' }).getByRole('button').click()
+    const foldedThread = page.locator('[data-cv6-message-thread][data-variant="desktop"][data-mode="day-folded"]')
+    await expect(foldedThread.getByText('Older day reply folded under the day card.')).toBeVisible()
   })
 })

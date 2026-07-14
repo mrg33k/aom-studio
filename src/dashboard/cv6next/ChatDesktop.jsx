@@ -16,11 +16,9 @@ import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 // a chat's Uploads/ folder (list-chat-files). Reading uploads from disk here is
 // why they show even after they scroll out of the loaded message window.
 const RAG_TUNNEL = 'https://rag.aheadofmarket.com';
-import { SendCtx, ReviewCtx, AgentBlocks, ActionChips, WorkingTurn } from './ChatGoalThread.jsx';
+import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
-import MessageAttachments from './MessageAttachments.jsx';
-import ResultLinkCards from './ResultLinkCard.jsx';
-import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
+import { Cv6MessageThread } from './MessageThread.jsx';
 
 const NAV = [
   { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
@@ -432,103 +430,10 @@ function groupByDayD(messages) {
   return groups;
 }
 
-// Group consecutive messages from the same sender (one avatar + name + timestamp,
-// N bubbles) per the CV6 design system's plain-conversation kit.
-function groupChat(messages) {
-  const groups = [];
-  for (const m of messages || []) {
-    const key = m.isUser ? '__you' : (m.agentName || 'agent');
-    const last = groups[groups.length - 1];
-    if (last && last.key === key) last.items.push(m);
-    else groups.push({ key, isUser: !!m.isUser, items: [m] });
-  }
-  return groups;
-}
-
-// The rich content of one message (blocks + attachments + suggestion chips), shown below its bubble.
-function MsgExtras({ m, onSend }) {
-  const handleReview = (attachment) => { if (onSend) onSend({ type: 'review', attachment }); };
-  return (
-    <>
-      {/* A finished turn shows its step thread inline (the durable record); lone answer blocks
-          render inline. (A still-working thread renders as the live WorkingTurn at the top level,
-          so it never reaches here.) AgentBlocks decides. */}
-      {m.blocks?.length ? (
-        <div style={{ marginTop: 8, width: '100%' }}>
-          <AgentBlocks blocks={m.blocks} />
-        </div>
-      ) : null}
-      {m.attachments?.length ? (
-        <div style={{ marginTop: 8, width: '100%' }}>
-          <MessageAttachments attachments={m.attachments} onReview={handleReview} />
-        </div>
-      ) : null}
-      {/* Completed web work: the link the agent shipped, as a tappable card — never
-          only a bare URL in the prose (Patrik 2026-07-13). */}
-      {!m.isUser && m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
-      {/* Suggestion chips from metadata.chips: tappable quick replies the agent proposed.
-          Rendered at the tail of the agent's turn so they feel like part of the reply,
-          not a separate panel outside the thread (Patrik 2026-06-30). */}
-      {!m.isUser && m.chips?.length ? (
-        <div style={{ marginTop: 8, width: '100%' }}>
-          {/* Tapping a suggestion sends it as your reply — wire onSend (was a
-              dead no-op before) so the proposed quick-replies actually fire. */}
-          <ActionChips actions={m.chips} primaryFirst={false} onAction={onSend} actionVerb="Send reply" />
-        </div>
-      ) : null}
-    </>
-  );
-}
-
-// One grouped run of messages, rendered as bubbles (agent left / you right).
-function BubbleGroup({ group, onSend }) {
-  const head = group.items[0];
-  const lastTime = group.items[group.items.length - 1].time;
-  if (group.isUser) {
-    return (
-      <div className="grp">
-        <span className={`ava is-${head.agentTint || 'accent'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials}</span>
-        <div className="stack">
-          {group.items.map((m, i) => (
-            <span key={i} style={{ display: 'contents' }}>
-              {m.text ? <div className="pb-me"><ChatMessageRenderer content={m.text} /></div> : null}
-              <MsgExtras m={m} onSend={onSend} />
-            </span>
-          ))}
-          {lastTime ? <div className="ts">{lastTime}</div> : null}
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="grp">
-      <span className={`ava is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials}</span>
-      <div className="stack">
-        {head.agentName ? <div className="gname">{head.agentName}</div> : null}
-        {group.items.map((m, i) => (
-          <span key={i} style={{ display: 'contents' }}>
-            {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
-            <MsgExtras m={m} onSend={onSend} />
-          </span>
-        ))}
-        {lastTime ? <div className="ts">{lastTime}</div> : null}
-      </div>
-    </div>
-  );
-}
-
-// A run of messages rendered as grouped bubbles.
-function BubbleThread({ messages, onSend }) {
-  return (
-    <div className="pconv">
-      {groupChat(messages).map((g, i) => <BubbleGroup key={i} group={g} onSend={onSend} />)}
-    </div>
-  );
-}
-
 // An older day, folded into a one-line card you tap to open (reuses the .goalcard CSS).
 function DesktopDayCard({ group, onSend }) {
   const [open, setOpen] = useState(false);
+  const handleReview = (attachment) => { if (onSend) onSend({ type: 'review', attachment }); };
   return (
     <div className={`goalcard${open ? ' is-open' : ''}`}>
       <div className="gc-head" role="button" aria-expanded={open ? 'true' : 'false'} onClick={() => setOpen((v) => !v)}>
@@ -538,7 +443,14 @@ function DesktopDayCard({ group, onSend }) {
       </div>
       <div className="gc-body">
         <div style={{ paddingTop: 8 }}>
-          <BubbleThread messages={group.items} onSend={onSend} />
+          <Cv6MessageThread
+            messages={group.items}
+            variant="desktop"
+            mode="day-folded"
+            onAction={onSend}
+            onReviewAttachment={handleReview}
+            chipsPrimaryFirst={false}
+          />
         </div>
       </div>
     </div>
@@ -558,13 +470,21 @@ function PlainThread({ messages, onSend }) {
   const groups = groupByDayD(messages);
   const older = groups.slice(0, -1);
   const latest = groups[groups.length - 1] || null;
+  const handleReview = (attachment) => { if (onSend) onSend({ type: 'review', attachment }); };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {older.map((g, i) => <DesktopDayCard key={`${g.key}-${i}`} group={g} onSend={onSend} />)}
       {latest && (
         <>
           <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
-          <BubbleThread messages={latest.items} onSend={onSend} />
+          <Cv6MessageThread
+            messages={latest.items}
+            variant="desktop"
+            mode="latest-day"
+            onAction={onSend}
+            onReviewAttachment={handleReview}
+            chipsPrimaryFirst={false}
+          />
         </>
       )}
     </div>
