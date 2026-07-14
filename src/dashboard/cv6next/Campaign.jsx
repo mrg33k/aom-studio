@@ -682,6 +682,152 @@ function CreateWizard({ worldId, onClose, onCreated }) {
   );
 }
 
+// --------------------------------------------------------------- message ---
+
+// Mirror of the engine's render() in scripts/campaign-send.py — the preview
+// must show EXACTLY what goes out: {{field}} fills from the contact's
+// merge_fields, first_name falls back to the first word of the name or
+// "there", and an unknown tag stays literal so a typo is visible, never
+// silently blank.
+function renderTemplate(template, contact) {
+  const mf = { ...((contact && contact.merge_fields) || {}) };
+  if (!mf.first_name) {
+    const nm = String((contact && contact.name) || '').trim();
+    mf.first_name = nm ? nm.split(/\s+/)[0] : 'there';
+  }
+  return String(template || '').replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (m, k) => String(mf[k] ?? '') || m);
+}
+
+const msgInput = {
+  width: '100%', height: 42, padding: '0 12px', borderRadius: 10,
+  border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)',
+  fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box',
+};
+const msgLabel = { fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, display: 'block' };
+
+function MessageCard({ campaign, worldId, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | error
+  // One real recipient from the list keeps the preview honest — no invented data.
+  const { rows } = useCampaignContacts(campaign?.id, worldId, { stage: 'to_contact', limit: 1 });
+  const sample = (rows && rows[0]) || null;
+
+  useEffect(() => { setEditing(false); setSaveState('idle'); }, [campaign?.id]);
+
+  if (!campaign) return null;
+
+  const draftSubject = editing ? subject : (campaign.template_subject || '');
+  const draftBody = editing ? body : (campaign.template_body || '');
+  const previewSubject = renderTemplate(draftSubject, sample);
+  const previewBody = renderTemplate(draftBody, sample);
+  const sampleCity = sample?.merge_fields?.city
+    ? `${sample.merge_fields.city}${sample.merge_fields.state ? `, ${sample.merge_fields.state}` : ''}`
+    : (sample?.name || sample?.email || null);
+
+  const startEdit = () => {
+    setSubject(campaign.template_subject || '');
+    setBody(campaign.template_body || '');
+    setEditing(true); setSaveState('idle');
+  };
+  const save = async () => {
+    if (saveState === 'saving') return;
+    setSaveState('saving');
+    try {
+      const r = await authFetch('/api/dashboard/campaigns', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ world: worldId, id: campaign.id, template_subject: subject, template_body: body }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.error || `save failed ${r.status}`);
+      setEditing(false); setSaveState('idle');
+      if (onSaved) onSaved();
+    } catch {
+      setSaveState('error');
+    }
+  };
+
+  const hairRow = { display: 'flex', gap: 8, padding: '8px 16px', borderBottom: '1px solid var(--divider)', fontSize: 12.5 };
+  const hairKey = { color: 'var(--faint)', width: 52, flexShrink: 0 };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--faint)', flex: 1 }}>MESSAGE</div>
+        {!editing && <button style={btnGhost} onClick={startEdit}>Edit message</button>}
+      </div>
+
+      {editing && (
+        <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <span style={msgLabel}>Subject</span>
+            <input style={msgInput} value={subject} onChange={(e) => setSubject(e.target.value)} />
+          </div>
+          <div>
+            <span style={msgLabel}>Body</span>
+            <textarea
+              style={{ ...msgInput, height: 200, padding: 12, lineHeight: 1.5, resize: 'vertical' }}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+            />
+          </div>
+          {Array.isArray(campaign.merge_fields) && campaign.merge_fields.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Fills in per contact:</span>
+              {campaign.merge_fields.map((f) => (
+                <code key={f} style={{
+                  fontSize: 11, fontFamily: 'var(--font-mono, monospace)', color: 'var(--muted)',
+                  background: 'var(--surface-2)', border: '1px solid var(--hair)',
+                  borderRadius: 8, padding: '2px 7px',
+                }}>{`{{${f}}}`}</code>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              style={{ ...btnPrimary(false), height: 36, minWidth: 0, padding: '0 18px', fontSize: 13, opacity: saveState === 'saving' ? 0.6 : 1 }}
+              disabled={saveState === 'saving'}
+              onClick={save}
+            >
+              {saveState === 'saving' ? 'Saving…' : 'Save changes'}
+            </button>
+            <button style={btnGhost} disabled={saveState === 'saving'} onClick={() => { setEditing(false); setSaveState('idle'); }}>Cancel</button>
+            {saveState === 'error' && (
+              <span style={{ fontSize: 12.5, color: '#F87171' }}>Didn't save. Try again.</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+        <div style={hairRow}>
+          <span style={hairKey}>From</span>
+          <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{campaign.sending_email || 'your connected email'}</span>
+        </div>
+        <div style={hairRow}>
+          <span style={hairKey}>To</span>
+          <span style={{ color: 'var(--muted)' }}>
+            {sample ? `${sample.name ? `${sample.name} ` : ''}${sample.email ? `<${sample.email}>` : ''}` : 'each contact on your list'}
+          </span>
+        </div>
+        <div style={{ ...hairRow, borderBottom: '1px solid var(--hair)' }}>
+          <span style={hairKey}>Subject</span>
+          <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{previewSubject || '(no subject yet)'}</span>
+        </div>
+        <div style={{ padding: '14px 16px 16px', fontSize: 13.5, lineHeight: 1.6, color: 'var(--fg)', whiteSpace: 'pre-wrap' }}>
+          {previewBody || 'No message written yet. Tap Edit message to write it.'}
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--faint)', lineHeight: 1.5 }}>
+        {sampleCity
+          ? `This is the email exactly as it goes out, previewed with ${sampleCity} from your list. Every send fills in that contact's own details.`
+          : 'Fields like {{city}} fill in with each contact’s own details when the email goes out.'}
+      </div>
+    </div>
+  );
+}
+
 // ------------------------------------------------------------------ main ---
 
 export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
@@ -768,6 +914,7 @@ export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
         onOpenCity={(id) => setCityId(id)}
         onReviewFlagged={() => { setFlagged(true); setStage(null); }}
       />
+      <MessageCard campaign={campaign} worldId={worldId} onSaved={reloadDetail} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--faint)' }}>PIPELINE</div>
         <PipelineBar pipeline={detail?.pipeline} active={flagged ? null : stage} onStage={(s) => { setStage(s); setFlagged(false); }} />
