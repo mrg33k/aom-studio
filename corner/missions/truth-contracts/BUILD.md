@@ -76,7 +76,23 @@ Unify file identity and health across Files and Review.
 
 Make counts, lists, and statuses use the same backend snapshots and eligibility rules.
 
-**Status:** queued.
+- 2026-07-14 implementation:
+  - Shipped the Review slice: added `api/_lib/reviewTruth.js` as the backend-owned domain snapshot for Review queue truth.
+  - `api/dashboard/review-queue.js` now returns `items`, `total`, `hasMore`, `newest_ts`, and `counts` from `buildReviewTruthSnapshot()` after the chat-boundary query and decision query resolve. Waiting rows, reviewed/all rows, verdict stamps, and counts now share the same eligibility pass instead of duplicated endpoint math.
+  - Preserved additive response shape and existing fields. No data/schema rename, no new env requirements, and tenant scoping remains through the existing R2 `verifyTenant`/TenantContext path before any queue query runs.
+  - Added `tests/api/_lib/reviewTruth.test.js`, covering default waiting rows/counts, `view=all` verdict stamping from content identity, and the rule that user uploads never enter the waiting count.
+  - Deferred for later R4 slices:
+    - Files count and visible files still need a server-owned files snapshot/eligibility ruleset over mirror rows + upload rows + FileRef review joins.
+    - Command status still needs a real-work-events status contract that excludes bookkeeping stamps.
+    - Campaign setup still needs server-side resolution rather than per-screen inference.
+  - Verification:
+    - `node --check api/_lib/reviewTruth.js api/dashboard/review-queue.js` passed.
+    - `node --test tests/api/_lib/reviewTruth.test.js tests/api/_lib/fileRef.test.js` passed.
+    - `npm run test:tenant-context` passed.
+    - `npm run build` passed. Prebuild printed existing local notices about missing sibling registry sources and Vite printed the existing chunk-size warning.
+    - Browser/network verification not run in this sandbox.
+
+**Status:** Review backend truth slice shipped; Files, Command, and campaign setup deferred.
 
 ### R5 - Shared CV6 primitives and state semantics
 

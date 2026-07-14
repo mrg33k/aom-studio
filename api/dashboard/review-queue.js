@@ -31,6 +31,7 @@ import path from 'path';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 import { UPLOADS_ROLE_FILTER, UPLOADS_PRESENCE_FILTERS, attachmentsOfMessage } from '../_lib/uploadsIdentity.js';
 import { fileRefFromChatAttachment, fileRefToReviewQueueItem } from '../_lib/fileRef.js';
+import { buildReviewTruthSnapshot } from '../_lib/reviewTruth.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -245,53 +246,13 @@ export default async function handler(req, res) {
     fetchDecisions(world),
   ]);
 
-  // Newest hand-off timestamp BEFORE the decided filter — "when did an agent last
-  // deliver anything", regardless of whether it has since been reviewed.
-  const newestHandoff = all.find((it) => it.source_kind === 'handoff');
-  const newestTs = newestHandoff ? newestHandoff.last_modified : null;
-
-  // The verdict for an item: exact id first, then content identity (both parts
-  // required). Returns { action, id } (the decision row id) or null.
-  const verdictFor = (it) => {
-    if (decidedIds.has(it.path)) return decidedIds.get(it.path);
-    if (it.source_path && it.sha256) {
-      const key = `${it.source_path} ${it.sha256}`;
-      if (decidedContent.has(key)) return decidedContent.get(key);
-    }
-    return null;
-  };
-
-  // WAITING = undecided AGENT hand-offs only (needs-review semantics, 2026-07-13).
-  // A user's own upload is never "waiting on you" — it only reaches review when the
-  // user opens it into review manually. Decided count spans BOTH kinds so the
-  // Reviewed toggle stays honest about uploads the user did verdict on.
-  const waiting = all.filter((it) => it.source_kind === 'handoff' && !verdictFor(it));
-  const decidedCount = all.reduce((n, it) => n + (verdictFor(it) ? 1 : 0), 0);
-  const counts = { waiting: waiting.length, decided: decidedCount };
-
-  // Default = only undecided agent hand-offs. ?view=all = everything (uploads
-  // included), each stamped with its verdict + decision row id (null when still
-  // waiting) so a "Reviewed" toggle can render honestly AND restore a dismissed
-  // item via the undo action.
-  const viewAll = String(Array.isArray(req.query.view) ? req.query.view[0] : req.query.view || '') === 'all';
-  const served = viewAll
-    ? all.map((it) => {
-      const v = verdictFor(it);
-      return { ...it, verdict: v ? v.action : null, decision_id: v ? v.id : null };
-    })
-    : waiting;
-
-  const total = served.length;
-  const items = served.slice(offset, offset + limit);
-  return res.status(200).json({
-    items,
-    total,
+  return res.status(200).json(buildReviewTruthSnapshot({
+    items: all,
+    decisions: { decidedIds, decidedContent },
+    view: req.query.view,
+    limit,
     offset,
-    hasMore: offset + items.length < total,
-    source: 'chat',
-    newest_ts: newestTs,
-    counts,
-  });
+  }));
 }
 
 // Parse a query-string integer, clamped to [min, max], falling back to def.
