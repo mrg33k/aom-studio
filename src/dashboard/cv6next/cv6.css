@@ -472,7 +472,9 @@
 [data-cv6][data-screen^="command"] .gd-more {
   position:sticky; bottom:0; align-self:stretch; flex:none;
   display:flex; justify-content:center; padding:22px 0 8px; margin-top:-10px;
-  background:linear-gradient(180deg, transparent, var(--ground, #0A0A0B) 78%);
+  /* Steffen gate note (2026-07-13): steeper ramp so the scrim reads as a visible
+     fade band on the Dark ground too, not only on Light/Glass. */
+  background:linear-gradient(180deg, transparent, var(--ground, #0A0A0B) 52%);
   pointer-events:none; opacity:0;
 }
 [data-cv6][data-screen^="command"] .gd-more-pill {
