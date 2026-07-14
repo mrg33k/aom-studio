@@ -129,3 +129,18 @@ Verification: `node --check api/_lib/filesTruth.js api/dashboard/files.js api/da
 Deferred: campaign setup server truth remains the next backend-owned-truth round to stop Email/Campaign screens independently inferring setup state.
 
 No new env requirement, schema/data migration, storage key rename, deploy, secret rotation, external message send, or stored login/world/data mutation.
+## 2026-07-14 - R4d Campaign Setup Backend-Owned Truth
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: ship the last deferred R4 backend-owned-truth slice so Email > Campaign setup state is resolved server-side instead of each screen inferring setup from an empty campaign list.
+
+Fix shipped: added `api/_lib/campaignTruth.js` as the Campaign setup truth contract (`configured`, `not_configured`, `misfiled`). `/api/dashboard/campaigns` now resolves through R2 TenantContext, reads campaigns across canonical tenant aliases, and returns additive `campaign_setup` with existing `campaigns` untouched. Misfiled detection is tenant-scoped through workspace-owned Gmail connections whose workspace id is in the current TenantContext alias set, so a campaign filed under a non-alias world key is surfaced as setup repair instead of “No campaigns yet.” Campaign health, contacts, activity, actions, and audience endpoints now use TenantContext and alias-aware campaign/contact/event reads. New campaign writes still stamp the canonical tenant id.
+
+CV6 change: `useCampaignList` carries `campaignSetup`; `Campaign.jsx` renders server-owned misfiled/not-configured states from `campaign_setup.status` rather than inferring setup from `campaigns.length`. No-Supabase local render skips tenant-gated campaign API calls and settles to the existing empty state.
+
+Tests added: `tests/api/_lib/campaignTruth.test.js` covers alias-configured, not-configured, and misfiled classifications.
+
+Verification: `node --check api/_lib/campaignTruth.js api/dashboard/campaigns.js api/dashboard/campaign-health.js api/dashboard/campaign-contacts.js api/dashboard/campaign-activity.js api/dashboard/campaign-actions.js api/dashboard/campaign-audience.js src/dashboard/cv6next/data/useCampaign.js src/dashboard/cv6next/Campaign.jsx`, `node --test tests/api/_lib/campaignTruth.test.js tests/api/_lib/filesTruth.test.js tests/api/_lib/fileRef.test.js tests/api/_lib/reviewTruth.test.js tests/api/_lib/commandTruth.test.js`, `npm run test:tenant-context`, `git diff --check`, and `npm run build` all passed. Build had the existing prebuild notices and Vite chunk-size warning. Browser/network CV6 audit was not run in this sandbox.
+
+No new env requirement, schema/data migration, row rename, deploy, secret rotation, external message send, or stored login/world/data mutation.

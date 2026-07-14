@@ -7,8 +7,10 @@
 // Sending/health mutation lives in the engine (scripts/campaign-send.py) and
 // /api/dashboard/campaign-actions.js — this file never sends mail.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
 import { csvToContacts, datasetToContacts, EMAIL_RE } from '../_lib/csvAudience.js';
+import { buildCampaignSetupTruth } from '../_lib/campaignTruth.js';
+import { listConnectionsForUser } from '../_lib/mailAccess.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -28,6 +30,39 @@ function sb(path, opts = {}) {
       ...(opts.headers || {}),
     },
   });
+}
+
+function restIn(values) {
+  return (values || [])
+    .map(value => encodeURIComponent(String(value)))
+    .join(',');
+}
+
+async function scopedCampaignConnectionIds(tenantContext) {
+  if (!tenantContext?.userId) return [];
+  const aliasSet = new Set(tenantContext.aliases || []);
+  try {
+    const connections = await listConnectionsForUser(tenantContext.userId);
+    return connections
+      .filter(connection => connection.workspace_id && aliasSet.has(String(connection.workspace_id).trim().toLowerCase()))
+      .map(connection => connection.id)
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function listMisfiledCampaigns(tenantContext, limit = 10) {
+  const connectionIds = await scopedCampaignConnectionIds(tenantContext);
+  if (!connectionIds.length || !(tenantContext?.aliases || []).length) return [];
+  const r = await sb(
+    `campaigns?sending_connection_id=in.(${restIn(connectionIds)})` +
+      `&world=not.in.(${restIn(tenantContext.aliases)})` +
+      `&select=id,name,slug,status,world,created_at,updated_at&order=created_at.desc&limit=${limit}`,
+  );
+  if (!r.ok) return [];
+  const rows = await r.json();
+  return Array.isArray(rows) ? rows : [];
 }
 
 async function countWhere(table, filter) {
@@ -83,27 +118,27 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
 
-  const requested =
-    (typeof req.query.world === 'string' && req.query.world.trim()) ||
-    (req.body && typeof req.body.world === 'string' && req.body.world.trim()) ||
-    'aom';
+  let tenantContext;
   let world;
   try {
-    ({ tenant: world } = await verifyTenant(requested, req));
+    tenantContext = await resolveTenantContext(req);
+    world = tenantContext.tenantId;
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
-    throw err;
+    return sendTenantContextError(res, err);
   }
+  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
+  const campaignWorldFilter = `world=in.(${restIn(campaignWorlds)})`;
 
   try {
     if (req.method === 'GET' && req.query.id) {
       // ---- detail ------------------------------------------------------
       const id = String(req.query.id);
-      const r = await sb(`campaigns?id=eq.${id}&world=eq.${encodeURIComponent(world)}&select=*`);
+      const r = await sb(`campaigns?id=eq.${id}&${campaignWorldFilter}&select=*`);
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
       const rows = await r.json();
       if (!rows.length) return res.status(404).json({ error: 'campaign not found' });
       const campaign = rows[0];
+      const campaignSetup = buildCampaignSetupTruth({ tenantContext, campaigns: rows });
 
       const pipeline = await pipelineCounts(id);
       const stats = await statsFor(id, pipeline);
@@ -131,6 +166,8 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         ok: true,
+        campaign_setup: campaignSetup,
+        tenant_id: world,
         campaign,
         pipeline,
         stats,
@@ -146,14 +183,21 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       // ---- list --------------------------------------------------------
       const r = await sb(
-        `campaigns?world=eq.${encodeURIComponent(world)}&select=*&order=created_at.asc`
+        `campaigns?${campaignWorldFilter}&select=*&order=created_at.asc`
       );
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
       const campaigns = await r.json();
+      const misfiledCampaigns = campaigns.length ? [] : await listMisfiledCampaigns(tenantContext);
+      const campaignSetup = buildCampaignSetupTruth({ tenantContext, campaigns, misfiledCampaigns });
       const withStats = await Promise.all(
         campaigns.map(async (c) => ({ ...c, stats: await statsFor(c.id) }))
       );
-      return res.status(200).json({ ok: true, campaigns: withStats });
+      return res.status(200).json({
+        ok: true,
+        tenant_id: world,
+        campaign_setup: campaignSetup,
+        campaigns: withStats,
+      });
     }
 
     if (req.method === 'POST') {

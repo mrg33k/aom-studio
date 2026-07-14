@@ -13,7 +13,7 @@
 // "run soon": the dispatcher routine ticks every few minutes; actions set
 // next_run_at=now so the next tick picks the campaign up.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -31,6 +31,10 @@ function sb(path, opts = {}) {
       ...(opts.headers || {}),
     },
   });
+}
+
+function restIn(values) {
+  return (values || []).map(value => encodeURIComponent(String(value))).join(',');
 }
 
 async function logEvent(campaignId, world, kind, summary, details = {}, contactId = null) {
@@ -56,24 +60,25 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const b = req.body || {};
-  const requested = (typeof b.world === 'string' && b.world.trim()) || 'aom';
+  let tenantContext;
   let world;
   let user = null;
   try {
-    const v = await verifyTenant(requested, req);
-    world = v.tenant;
-    user = v.user || null;
+    tenantContext = await resolveTenantContext(req, { body: b });
+    world = tenantContext.tenantId;
+    user = tenantContext.userId ? { id: tenantContext.userId } : null;
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
-    throw err;
+    return sendTenantContextError(res, err);
   }
+  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
+  const campaignWorldFilter = `world=in.(${restIn(campaignWorlds)})`;
 
   const id = String(b.id || '');
   const op = String(b.op || '');
   if (!id || !op) return res.status(400).json({ error: 'id and op required' });
 
   try {
-    const cr = await sb(`campaigns?id=eq.${id}&world=eq.${encodeURIComponent(world)}&select=id,status,autopilot,send_hour_local`);
+    const cr = await sb(`campaigns?id=eq.${id}&${campaignWorldFilter}&select=id,status,autopilot,send_hour_local`);
     if (!cr.ok) return res.status(cr.status).json({ error: await cr.text() });
     const campaigns = await cr.json();
     if (!campaigns.length) return res.status(404).json({ error: 'campaign not found' });
