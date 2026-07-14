@@ -42,6 +42,14 @@ test.describe('CV6 practical product audit', () => {
     await expect(page.getByText('Nothing matches “space”.')).toBeVisible()
     await page.keyboard.press('Escape')
 
+    await page.getByRole('button', { name: 'New' }).click()
+    await expect(page.getByText('Creation needs a connected workspace. Local mode is read-only.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
+    await page.locator('[data-action="setComposerMode"][data-target="project"]').click()
+    await expect(page.getByText('New project')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel' }).click()
+
     const firstRecent = page.locator('[data-action="openRecent"]:visible').first()
     if (await firstRecent.count()) {
       await firstRecent.click()
@@ -106,6 +114,14 @@ test.describe('CV6 practical product audit', () => {
     await page.getByPlaceholder('Search rooms and missions…').fill('space')
     await expect(page.getByText('Nothing matches “space”.')).toBeVisible()
     await page.keyboard.press('Escape')
+
+    await page.getByRole('button', { name: 'New' }).click()
+    await expect(page.getByText('Creation needs a connected workspace. Local mode is read-only.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
+    await page.locator('[data-action="setComposerMode"][data-target="project"]').click()
+    await expect(page.getByText('New project')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel' }).click()
 
     await page.getByRole('button', { name: 'Menu' }).first().click()
     await expect(page.locator('.navdrawer')).toBeVisible()

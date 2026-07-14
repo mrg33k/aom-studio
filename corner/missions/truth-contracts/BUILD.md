@@ -149,3 +149,17 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: no stored login/world/member/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and verified for the delegated search-finds-workflow audit.
+
+- 2026-07-14 delegated new-composer-local-workflow slice:
+  - User goal: from desktop and mobile CV6 Home, press New, understand whether a mission/project can be started, recover from missing fields, and avoid dead local write controls.
+  - Screen/tool inventory for this slice: Home is the entry point; New Composer starts a mission or project; Search, Files, Email/Campaign, Tracker, Command, and Scribe are sibling CV6 surfaces that must remain stable after the visit.
+  - Audit: opened New from desktop and mobile Home in safe local/no-Supabase mode, tried blank mission submit, mission with goal but no project, blank project submit, and filled project submit. Validation copy for missing fields was clear, but the filled project path attempted a local write and ended with "Could not create the project. Please try again."
+  - Ranked findings:
+    1. P1 high-frequency/high-impact local workflow promise: `Start mission` and `Create project` looked available when local writes could not succeed, then blamed a retryable failure instead of the absent connected workspace.
+    2. P2 validation quality: blank mission/project validation was recoverable and specific, so the main break was the impossible write path after the user had done the work.
+    3. P2 local noise: generic missing-resource 404 console entries remain filtered as non-product noise.
+  - Fixed this round: `NewComposer` now detects absent Supabase, binds the footer hint and primary CTA to "Creation needs a connected workspace. Local mode is read-only." / "Read-only locally", styles the CTA as inactive, and returns that truth-state before calling create APIs. Configured sessions keep the normal Start/Create labels and backend flow.
+  - Verification: desktop/mobile Playwright probe confirmed mission and project tabs show the read-only local state and no failing create attempt; `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed; `npm run build` passed.
+  - Remaining notes: no stored login/world/member/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
+
+**Status:** shipped and verified for the delegated new-composer-local-workflow audit.

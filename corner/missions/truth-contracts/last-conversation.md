@@ -153,3 +153,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/CornerCV6.jsx` now copies the project array binding props (`count`, `moreCount`, `moreState`) after mapping project rows, so empty project lists bind as `0/none` instead of leaving template fallback text visible. `src/dashboard/cv6next/data/useHomeData.js` aligns `useChatList` loading with Home in no-Supabase local mode. The practical audit spec now opens Search on desktop/mobile, checks the `space` no-result recovery, and asserts the stale `84/78` Home copy is gone.
 
 Verification: desktop/mobile Playwright probe showed `PROJECTS · 0`, no stale `Show 78 more`, and Search `space` recovery; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across Home/Search and sibling tools); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - New composer local workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6 Home, press New, understand whether a mission or project can be started, recover from missing fields, and avoid dead local write controls.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: In safe local/no-Supabase mode, New Composer offered active `Start mission` and `Create project` actions even though writes could not succeed. A filled project submit ended with `Could not create the project. Please try again.`, which implied a retryable product failure instead of the true read-only local workspace.
+2. P2: Blank validation was clear and recoverable: mission submit asked for the work to get done, project submit asked for a project name, and mission-with-goal in an empty local workspace asked for a project.
+3. P2: Generic local missing-resource 404 console entries remain filtered as non-product noise.
+
+Fix shipped: `src/dashboard/cv6next/NewComposer.jsx` now detects absent Supabase and binds the composer hint/primary CTA to `Creation needs a connected workspace. Local mode is read-only.` and `Read-only locally`. The CTA is styled inactive, and submit returns the same read-only truth before any create API runs. Configured sessions keep the normal Start/Create labels and backend path.
+
+Verification: desktop/mobile Playwright probe confirmed mission and project tabs show the read-only local state and no failing create attempt. `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across Home/New and sibling CV6 tools). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.

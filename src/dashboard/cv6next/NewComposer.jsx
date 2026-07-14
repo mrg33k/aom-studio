@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { createMissionInProject, createProjectFromHome } from './data/useHomeData.js';
+import { supabase } from '../lib/supabase';
 
 // Agents show as TITLES (roles), never persona names — hard doctrine 2026-06-23
 // (agentTitles.js: "a name never leaks ANYWHERE"). The Assign-To list shows the role
@@ -47,6 +48,7 @@ const NEW_COMPOSER_HTML = `
     .cmp-card .cmp-row .cmp-chk{margin-left:auto;color:var(--accent);opacity:0;display:flex;}
     .cmp-card .cmp-row.is-on .cmp-chk{opacity:1;}
     .cmp-card .cmp-list{display:flex;flex-direction:column;gap:7px;max-height:168px;overflow-y:auto;}
+    .cmp-card .cmp-submit.is-off{opacity:.55;cursor:not-allowed;}
   </style>
   <div data-action="closeComposer" style="position:absolute;inset:0;background:rgba(4,6,9,.62);"></div>
   <div class="cmp-card" style="position:relative;width:100%;max-width:520px;max-height:92%;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:var(--ground);box-shadow:0 34px 80px -22px rgba(0,0,0,.62);border:1px solid var(--hair);">
@@ -98,10 +100,10 @@ const NEW_COMPOSER_HTML = `
       </div>
     </div>
     <div style="padding:4px 22px 20px;display:flex;align-items:center;gap:11px;flex:none;border-top:1px solid var(--divider);padding-top:16px;">
-      <span class="cmp-hint" style="flex:1;font-size:11.5px;color:var(--faint);line-height:1.4;">The more you give it, the better the room starts.</span>
+      <span class="cmp-hint" style="flex:1;font-size:11.5px;color:var(--faint);line-height:1.4;" data-bind="composer.hint">The more you give it, the better the room starts.</span>
       <span class="cmp-err" role="alert" style="display:none;flex:1;font-size:11.5px;color:#e5484d;line-height:1.4;font-weight:600;"></span>
       <button data-action="closeComposer" style="height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Cancel</button>
-      <button data-action="submitComposer" style="height:44px;padding:0 20px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;gap:8px;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span data-bind="composer.ctaLabel">Start mission</span></button>
+      <button class="cmp-submit" data-mod="is-:composer.submitState" data-action="submitComposer" style="height:44px;padding:0 20px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;gap:8px;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span data-bind="composer.ctaLabel">Start mission</span></button>
     </div>
   </div>
 </div>`;
@@ -110,6 +112,7 @@ const NEW_COMPOSER_HTML = `
 // "Auto" is always offered), initialMode 'mission' | 'project', onClose(), and
 // onCreated(kind) fired after a successful submit so the host can refetch its lists.
 export default function NewComposer({ worldId, projects, agents, initialMode = 'mission', onClose, onCreated }) {
+  const localReadOnly = !supabase;
   // Freeze the project/agent lists at open so a realtime data tick can't re-bind the
   // overlay and wipe a half-typed goal (same guarantee the Home inline version gave).
   const [snap] = useState(() => ({
@@ -194,6 +197,10 @@ export default function NewComposer({ worldId, projects, agents, initialMode = '
         if (btn) { btn.style.opacity = on ? '.6' : ''; btn.style.pointerEvents = on ? 'none' : ''; }
       };
       clearErr();
+      if (localReadOnly) {
+        showErr('Creation needs a connected workspace. Local mode is read-only.');
+        return;
+      }
 
       if (sel.mode === 'project') {
         const name = root?.querySelector('[data-bind="draft.name"]')?.value?.trim() || '';
@@ -234,7 +241,9 @@ export default function NewComposer({ worldId, projects, agents, initialMode = '
       mode,
       title: mode === 'project' ? 'New project' : 'Start a mission',
       subtitle: mode === 'project' ? 'A home for related missions & files' : 'A room + an agent, pointed at one goal',
-      ctaLabel: mode === 'project' ? 'Create project' : 'Start mission',
+      ctaLabel: localReadOnly ? 'Read-only locally' : (mode === 'project' ? 'Create project' : 'Start mission'),
+      hint: localReadOnly ? 'Creation needs a connected workspace. Local mode is read-only.' : 'The more you give it, the better the room starts.',
+      submitState: localReadOnly ? 'off' : 'on',
       tabMission: mode === 'mission' ? 'on' : 'off',
       tabProject: mode === 'project' ? 'on' : 'off',
       projects: snap.projects.map((p) => ({ id: p.id, slug: p.slug, name: p.name, picked: (p.slug === sel.projectId) ? 'on' : 'off' })),
