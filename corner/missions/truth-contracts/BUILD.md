@@ -122,6 +122,26 @@ Consolidate message, attachment, preview, and status behavior across every live 
 
 **Status:** Command backend-owned status truth shipped; Files counts/eligibility and campaign setup remain deferred.
 
+### R4c - Files backend-owned eligibility truth
+
+- 2026-07-14 implementation:
+  - Shipped the Files count/list slice: added `api/_lib/filesTruth.js` as the backend-owned Files snapshot over disk mirror rows, chat upload rows, and Review waiting rows.
+  - Added additive `/api/dashboard/files?type=organize&client=<tenant>` response. It verifies tenant access via the R2 `verifyTenant` path, fetches mirror/upload/Review sources server-side, decorates visible rows with R3 `FileRef`, and returns `files_truth` with visible files, uploads, review ghosts, and by-project counts from one eligibility ruleset.
+  - CV6 `useOrganize` now prefers the combined backend snapshot. When present, row `needs_review` stamps and `files_truth.ghosts` drive both the needs-review badge count and the list; if the combined endpoint is unavailable, the previous mirror/uploads fallback remains in place.
+  - Removed the remaining literal tenant fallback from the touched `type=mirror` and `type=uploads` Files reads; both now require the caller's tenant param and still pass through `verifyTenant`.
+  - Kept response shapes additive: existing `files`, `uploads`, `review`, and old mirror/upload row fields remain available; no schema/data rename and no new env requirement.
+  - Deferred for next backend-owned-truth round:
+    - Campaign setup resolution server-side, so Email/Campaign screens stop independently inferring "Campaign not set up" and avoid Ben/arsenal-style false negatives.
+  - Verification:
+    - `node --check api/_lib/filesTruth.js api/dashboard/files.js api/dashboard/review-queue.js src/dashboard/cv6next/data/useOrganize.js` passed.
+    - `node --test tests/api/_lib/filesTruth.test.js tests/api/_lib/fileRef.test.js tests/api/_lib/reviewTruth.test.js tests/api/_lib/commandTruth.test.js` passed.
+    - `npm run test:tenant-context` passed, including the uppercase hardcoded tenant guard.
+    - `git diff --check` passed.
+    - `npm run build` passed. Prebuild printed existing local notices about missing sibling registry sources and Vite printed the existing chunk-size warning.
+    - Browser/network CV6 audit not run in this sandbox; rerun externally with `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
+
+**Status:** Files backend-owned eligibility/count truth shipped; campaign setup server truth remains next.
+
 ### R6 - Product goal audit
 
 Audit each CV6 screen and tool as a real person completing real work. For every surface:

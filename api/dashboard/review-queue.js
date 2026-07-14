@@ -142,7 +142,7 @@ function rowsFromMessage(msg, sourceKind) {
 // The chat-boundary queue: deliberate agent hand-offs (forward-only from the cutoff)
 // + the user's own uploads (all-time). AOM is super-admin and sees every room; other
 // worlds are scoped to their own world_id (tenant isolation preserved).
-async function collectFromMessages(world) {
+export async function collectFromMessages(world) {
   const isAom = world === 'aom';
   // Tenancy column is client_id, NOT world_id — verified against live data
   // 2026-07-13: every messages row carries world_id='aom' (mis-stamped default)
@@ -189,7 +189,7 @@ async function collectFromMessages(world) {
 // (i.e. the newest decision is authoritative). Only CLOSING actions count —
 // send-checklist is notes-in-flight, the item stays under review.
 const CLOSING_ACTIONS = new Set(['approve', 'request-changes', 'dismiss']);
-async function fetchDecisions(world) {
+export async function fetchDecisions(world) {
   const isAom = world === 'aom';
   const worldFilter = isAom ? '' : `&client_id=eq.${encodeURIComponent(world)}`;
   // `id` rides along so ?view=all can hand the client the decision ROW id — the

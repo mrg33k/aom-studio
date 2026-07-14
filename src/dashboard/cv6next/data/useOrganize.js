@@ -294,7 +294,7 @@ function pdfBodyHtml(src, name) {
 //                       2026-07-13 design-critic dead-pill finding — M8).
 export function useOrganize(worldId = null, opts = {}) {
   const reviewWaiting = opts.reviewWaiting || null;
-  const reviewTotal = Number(opts.reviewTotal) || 0;
+  const reviewTotalFromReview = Number(opts.reviewTotal) || 0;
   const reviewDecided = opts.reviewDecided || null;
   const reviewedOn = !!opts.reviewedOn;
   const reviewItems = Array.isArray(opts.reviewItems) ? opts.reviewItems : [];
@@ -306,6 +306,7 @@ export function useOrganize(worldId = null, opts = {}) {
   // Uploads/ folders, a different root than the disk mirror scans, so without
   // this fetch they are invisible to Organize entirely (corner:one-corner M4).
   const [uploads, setUploads] = useState([]);
+  const [filesTruth, setFilesTruth] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   // DEF-02: restore project/filter/mission after tool navigation via sessionStorage.
   const [selectedId, setSelectedId] = useState(() => ssRead(SS_KEY).selectedId ?? null);
@@ -341,28 +342,50 @@ export function useOrganize(worldId = null, opts = {}) {
     // lambda's 30s registry cache so the change shows now, not next poll.
     const bust = opts && opts.bust ? '&bust=1' : '';
     let gotFiles = false;
+    let gotFilesTruth = false;
 
     if (!supabase) {
       setFiles([]);
       setProjects([]);
       setUploads([]);
+      setFilesTruth(null);
       setMissionTree({});
       setStatus('loaded');
       return;
     }
 
     try {
-      const filesRes = await authFetch(
-        `/api/dashboard/files?type=mirror&client=${encodeURIComponent(worldId)}`,
+      const organizeRes = await authFetch(
+        `/api/dashboard/files?type=organize&client=${encodeURIComponent(worldId)}`,
         { credentials: 'include' }
       );
-      const filesData = await filesRes.json();
-      if (Array.isArray(filesData.files)) {
-        setFiles(filesData.files);
+      const organizeData = await organizeRes.json();
+      if (Array.isArray(organizeData.files)) {
+        setFiles(organizeData.files);
+        setUploads(Array.isArray(organizeData.uploads) ? organizeData.uploads : []);
+        setFilesTruth(organizeData.files_truth || null);
         gotFiles = true;
+        gotFilesTruth = !!organizeData.files_truth;
       }
     } catch (err) {
-      console.error('Failed to load files:', err);
+      console.error('Failed to load files truth:', err);
+    }
+
+    if (!gotFiles) {
+      try {
+        const filesRes = await authFetch(
+          `/api/dashboard/files?type=mirror&client=${encodeURIComponent(worldId)}`,
+          { credentials: 'include' }
+        );
+        const filesData = await filesRes.json();
+        if (Array.isArray(filesData.files)) {
+          setFiles(filesData.files);
+          setFilesTruth(null);
+          gotFiles = true;
+        }
+      } catch (err) {
+        console.error('Failed to load files:', err);
+      }
     }
 
     // Secondary, best-effort: nicer project names. Never gates the state.
@@ -377,15 +400,17 @@ export function useOrganize(worldId = null, opts = {}) {
     // The user's own uploads (best-effort, never gates the state). type=uploads
     // reads the messages table with the review-queue identity (role=user +
     // metadata.attachment/attachments) and carries chat scope per row.
-    try {
-      const upRes = await authFetch(
-        `/api/dashboard/files?type=uploads&client=${encodeURIComponent(worldId)}&limit=1000`,
-        { credentials: 'include' }
-      );
-      const upData = await upRes.json();
-      if (Array.isArray(upData.files)) setUploads(upData.files);
-    } catch (err) {
-      console.error('Failed to load uploads:', err);
+    if (!gotFilesTruth) {
+      try {
+        const upRes = await authFetch(
+          `/api/dashboard/files?type=uploads&client=${encodeURIComponent(worldId)}&limit=1000`,
+          { credentials: 'include' }
+        );
+        const upData = await upRes.json();
+        if (Array.isArray(upData.files)) setUploads(upData.files);
+      } catch (err) {
+        console.error('Failed to load uploads:', err);
+      }
     }
 
     // Tertiary, best-effort: mission tree for nested room structure in the tree panel.
@@ -570,6 +595,19 @@ export function useOrganize(worldId = null, opts = {}) {
   const prettify = (slug) =>
     String(slug || 'Untitled').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const backendGhostItems = Array.isArray(filesTruth?.ghosts)
+    ? filesTruth.ghosts.map((g) => ({
+      id: g.review_id || g.id,
+      title: g.name || String(g.review_id || g.id || '').split('/').pop() || 'File',
+      whoRaw: g.project || '__personal',
+      missionRaw: g.mission || '',
+      ts: g.review_ts || g.date || '',
+      mime: g.mime || '',
+    })).filter((g) => g.id)
+    : [];
+  const effectiveReviewItems = filesTruth ? backendGhostItems : reviewItems;
+  const reviewTotal = Number(filesTruth?.counts?.waitingTotal) || reviewTotalFromReview;
+
   // Group mirror rows by their project slug.
   const groups = new Map();
   (files || []).forEach((f) => {
@@ -725,7 +763,8 @@ export function useOrganize(worldId = null, opts = {}) {
       // NEEDS REVIEW badge + the needs-review filter; the decided map (Reviewed
       // toggle on) drives the verdict badges + Restore on dismissed rows.
       const identities = fileRef.identities?.length ? fileRef.identities : [f.uploaded ? (f.upload_url || f.id) : cornerPathOf(f, worldId)];
-      const wHit = reviewWaiting ? identities.map((id) => reviewWaiting.get(id)).find(Boolean) : null;
+      const backendHit = f.needs_review ? { id: f.review_id || fileRef.review?.id || identities[0], ts: f.review_ts || f.updated_at || '' } : null;
+      const wHit = backendHit || (reviewWaiting ? identities.map((id) => reviewWaiting.get(id)).find(Boolean) : null);
       const dHit = (!wHit && reviewDecided) ? identities.map((id) => reviewDecided.get(id)).find(Boolean) : null;
       const identity = fileRef.review?.id || identities[0] || '';
       return {
@@ -767,7 +806,7 @@ export function useOrganize(worldId = null, opts = {}) {
   // the browse dimensions stay disk-truth.
   const joinedReviewIds = new Set();
   for (const f of allFiles) { if (f.needsReview && f.reviewId) joinedReviewIds.add(f.reviewId); }
-  const ghosts = reviewItems
+  const ghosts = effectiveReviewItems
     .filter((it) => it && it.id && !joinedReviewIds.has(it.id)
       && ((it.whoRaw || '__personal') === openProject.id))
     .map((it) => ({

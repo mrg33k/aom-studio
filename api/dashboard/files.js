@@ -15,6 +15,9 @@ import { join } from 'path'
 import { verifyTenant } from '../_lib/verifyTenant.js'
 import { UPLOADS_ROLE_FILTER, UPLOADS_PRESENCE_FILTERS, attachmentsOfMessage } from '../_lib/uploadsIdentity.js'
 import { fileRefFromChatAttachment } from '../_lib/fileRef.js'
+import { buildFilesTruthSnapshot } from '../_lib/filesTruth.js'
+import { buildReviewTruthSnapshot } from '../_lib/reviewTruth.js'
+import { collectFromMessages, fetchDecisions } from './review-queue.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -126,6 +129,157 @@ function dbHeaders() {
     'Content-Type': 'application/json',
     Prefer: 'return=representation',
   }
+}
+
+async function fetchUploadFilesForTenant({ clientId, project = null, mission = null, agent = null, limit = 1000 }) {
+  const sel = 'id,client_id,project,metadata,user_name,timestamp,text'
+  const baseFilters = [
+    `client_id=eq.${encodeURIComponent(clientId)}`,
+    UPLOADS_ROLE_FILTER,
+    `select=${sel}`,
+    'order=timestamp.desc',
+    `limit=${Math.min(parseInt(limit || '500', 10) || 500, 1000)}`,
+  ]
+  if (project) baseFilters.push(`or=(project.eq.${encodeURIComponent(project)},and(project.is.null,metadata->>project_slug.eq.${encodeURIComponent(project)}))`)
+  if (mission) baseFilters.push(`metadata->>mission_slug=eq.${encodeURIComponent(mission)}`)
+  if (agent) baseFilters.push(`metadata->>agent_slug=eq.${encodeURIComponent(agent)}`)
+
+  const [singleF, multiF] = UPLOADS_PRESENCE_FILTERS
+  const urlSingle = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&${singleF}`
+  const urlMulti = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&${multiF}`
+
+  let rowsSingle = [], rowsMulti = []
+  try {
+    const [rS, rM] = await Promise.all([
+      fetch(urlSingle, { headers: dbHeaders() }),
+      fetch(urlMulti, { headers: dbHeaders() }),
+    ])
+    if (rS.ok) rowsSingle = await rS.json()
+    if (rM.ok) rowsMulti = await rM.json()
+  } catch { /* best-effort */ }
+
+  const byId = new Map()
+  for (const row of [...rowsSingle, ...rowsMulti]) {
+    if (row && row.id) byId.set(row.id, row)
+  }
+
+  const out = []
+  const seenUrls = new Set()
+  function pushAtt({ row, attachment, url: attUrl, mime, size, name, ts, who, proj, missionSlug, agentSlug }) {
+    if (!attUrl || seenUrls.has(attUrl)) return
+    seenUrls.add(attUrl)
+    let displayName = name
+    if (!displayName) {
+      try { displayName = decodeURIComponent(attUrl.split('/').pop().split('?')[0]) }
+      catch { displayName = attUrl.split('/').pop() }
+    }
+    const fileRef = fileRefFromChatAttachment({
+      attachment: {
+        ...(attachment || {}),
+        url: attUrl,
+        mime,
+        size,
+        name: displayName,
+      },
+      message: {
+        ...(row || {}),
+        project: proj || row?.project || null,
+        metadata: {
+          ...((row && row.metadata && typeof row.metadata === 'object') ? row.metadata : {}),
+          project_slug: proj || null,
+          mission_slug: missionSlug || null,
+          agent_slug: agentSlug || null,
+        },
+      },
+      sourceKind: 'upload',
+      tenantId: clientId,
+    })
+    out.push({
+      id: attUrl,
+      name: displayName,
+      path: displayName,
+      relativePath: displayName,
+      date: ts,
+      size: size ?? null,
+      mime: mime || null,
+      uploader: who || null,
+      url: attUrl,
+      project: proj || null,
+      mission: missionSlug || null,
+      agent: agentSlug || null,
+      health_status: fileRef.health.status,
+      file_ref: fileRef,
+    })
+  }
+
+  for (const row of [...byId.values()]) {
+    const md = row?.metadata
+    if (!md || typeof md !== 'object') continue
+    const scope = {
+      proj: row.project || md.project_slug || null,
+      missionSlug: md.mission_slug || null,
+      agentSlug: md.agent_slug || null,
+    }
+    for (const a of attachmentsOfMessage(md)) {
+      pushAtt({
+        row,
+        attachment: a,
+        url: a.url,
+        mime: a.mime,
+        size: a.size,
+        name: a.name,
+        ts: row.timestamp,
+        who: row.user_name || null,
+        ...scope,
+      })
+    }
+  }
+
+  return out
+}
+
+async function fetchMirrorFilesForTenant({ clientId, project = null }) {
+  const cols = 'id,project,rel_path,name,ext,kind,size,updated_at,last_editor,storage_ref'
+  const PAGE = 1000
+  const HARD_CAP = 20000
+  const files = []
+  let offset = 0
+  let truncated = false
+  try {
+    while (offset < HARD_CAP) {
+      let url = `${SUPABASE_URL}/rest/v1/project_files`
+        + `?client_id=eq.${encodeURIComponent(clientId)}`
+        + `&is_deleted=eq.false&select=${cols}`
+        + `&order=updated_at.desc&limit=${PAGE}&offset=${offset}`
+      if (project) url += `&project=eq.${encodeURIComponent(project)}`
+      const r = await fetch(url, { headers: dbHeaders() })
+      if (!r.ok) break
+      const rows = await r.json()
+      if (!Array.isArray(rows) || rows.length === 0) break
+      files.push(...rows)
+      if (rows.length < PAGE) break
+      offset += PAGE
+      if (offset >= HARD_CAP) truncated = true
+    }
+  } catch { /* return whatever we have */ }
+
+  try {
+    const ar = await fetch(
+      `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&is_active=eq.false&select=slug`,
+      { headers: dbHeaders() },
+    )
+    if (ar.ok) {
+      const rows = await ar.json()
+      const archived = new Set((rows || []).map(p => p?.slug).filter(Boolean))
+      if (archived.size) {
+        for (let i = files.length - 1; i >= 0; i--) {
+          if (archived.has(files[i].project)) files.splice(i, 1)
+        }
+      }
+    }
+  } catch { /* over-show on failure; never hide live files by accident */ }
+
+  return { files, truncated }
 }
 
 export default async function handler(req, res) {
@@ -302,13 +456,57 @@ export default async function handler(req, res) {
       return res.status(200).json({ files: allFiles })
     }
 
+    if (type === 'organize') {
+      const clientId = client ? String(client).trim().toLowerCase() : ''
+      if (!clientId) return res.status(400).json({ error: 'client required', files: [], uploads: [] })
+      try {
+        await verifyTenant(clientId, req)
+      } catch (e) {
+        return res.status(e.status || 403).json({ error: e.message || 'forbidden', files: [], uploads: [] })
+      }
+
+      const project = req.query.project ? String(req.query.project).trim().toLowerCase() : null
+      const [mirrorResult, uploads, reviewRows, decisions] = await Promise.all([
+        fetchMirrorFilesForTenant({ clientId, project }),
+        fetchUploadFilesForTenant({ clientId, project, limit: req.query.uploadLimit || '1000' }),
+        collectFromMessages(clientId),
+        fetchDecisions(clientId),
+      ])
+      const review = buildReviewTruthSnapshot({
+        items: reviewRows,
+        decisions,
+        view: 'waiting',
+        limit: 5000,
+      })
+      const filesTruth = buildFilesTruthSnapshot({
+        tenantId: clientId,
+        mirrorRows: mirrorResult.files,
+        uploadRows: uploads,
+        reviewItems: review.items,
+        reviewTotal: review.total,
+      })
+      return res.status(200).json({
+        files: filesTruth.files,
+        uploads: filesTruth.uploads,
+        review: {
+          items: filesTruth.reviewItems,
+          total: review.total,
+          counts: review.counts,
+          newest_ts: review.newest_ts,
+        },
+        files_truth: filesTruth,
+        truncated: mirrorResult.truncated,
+      })
+    }
+
     // type=uploads (R79-f14, 2026-05-25): pull every chat-uploaded file for
     // the world (+ optional project) by scanning the `messages` table. Chat
     // uploads land on the RAG server tunnel and never enter Supabase Storage,
     // so this is the only way the FilesPanel sees them. Returns rows shaped
     // like the type=images response so the panel merges them uniformly.
     if (type === 'uploads') {
-      const clientId = (client || 'aom').toString().trim().toLowerCase()
+      const clientId = client ? client.toString().trim().toLowerCase() : ''
+      if (!clientId) return res.status(400).json({ error: 'client required', files: [] })
       const project = req.query.project ? String(req.query.project).trim().toLowerCase() : null
       const mission = req.query.mission ? String(req.query.mission).trim().toLowerCase() : null
       const agent = req.query.agent ? String(req.query.agent).trim().toLowerCase() : null
@@ -477,7 +675,8 @@ export default async function handler(req, res) {
     // so a 7k-file world doesn't ship megabytes each poll; content is fetched
     // per file on open via ?type=mirror&id=<uuid>&content=1.
     if (type === 'mirror') {
-      const clientId = client || 'aom'
+      const clientId = client ? String(client).trim().toLowerCase() : ''
+      if (!clientId) return res.status(400).json({ error: 'client required', files: [] })
 
       // TENANT ISOLATION (hard requirement): the project_files table holds EVERY
       // world's files, so a caller must NOT read a world that isn't theirs. Verify
@@ -544,7 +743,7 @@ export default async function handler(req, res) {
       // not deleted — unarchive brings the files straight back.
       try {
         const ar = await fetch(
-          `${SUPABASE_URL}/rest/v1/projects?is_active=eq.false&select=slug`,
+          `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&is_active=eq.false&select=slug`,
           { headers: dbHeaders() },
         )
         if (ar.ok) {
