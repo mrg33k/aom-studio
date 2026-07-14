@@ -368,9 +368,13 @@ function shapeCommand({
     // stamp as activity made untouched rooms read WORKING for 30 minutes after
     // every sweep (the "6 working, all with a dash in LIVE NOW" lie). Only a real
     // message or an agent-stamped board line counts as the room doing something.
+    // The notetaker's own board_latest goal PATCH is the same lie through another
+    // door — its updated_at is bookkeeping, never the room working.
+    const boardIsAgentStamped = board && board.updated_at
+      && String(board.updated_by || '') !== 'goal-notetaker';
     const times = [
       last && last.t,
-      board && board.updated_at ? new Date(board.updated_at).getTime() : 0,
+      boardIsAgentStamped ? new Date(board.updated_at).getTime() : 0,
     ].filter((t) => t && !Number.isNaN(t));
     const lastActivity = times.length ? Math.max(...times) : 0;
 
