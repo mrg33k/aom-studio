@@ -91,3 +91,38 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: hidden template loading text remains in the DOM by design, so tests assert visible empty states instead of absence of hidden template strings. No stored login/world/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and verified for the delegated tracker-command-empty-states audit.
+
+
+## R6 — Email Thread Product Goal Audit
+
+**Date:** 2026-07-14
+
+**User goal:** The Email screen should show an accurate collapsible conversation, including agent-sent replies, suggested actions, and the work being done on each thread.
+
+**Workflow exercised:** Trace a support/email wish from intake (`/api/support/wish`) through agent dispatch (`messages` table), reply/suggest paths (`/api/support/suggest`, `/api/support/reply`, `/api/support/send-staged`), thread rendering (`/api/support/thread`, `SupportThread`), and CV6 Email UI (`EmailShell`, `SupportDesktop`, `useSupportInbox`).
+
+**Broken / missing, ranked by frequency, severity, impact:**
+
+1. High frequency / high severity / high impact: Email thread rendering showed Gmail conversation truth, but not the agent-room work truth for the same support wish. The agent dispatch row is written to `messages`, and live work steps are written to `events` as `message_step`; Email did not query either source for the selected support wish.
+2. Medium frequency / high severity / high impact: Agent-sent replies depend on Gmail thread fetch plus `support_wish_updates.kind=response` fallback. If a worker sends or stages through a path that only writes generic update text, the Email thread can only show a generic recorded reply or draft, not the exact body.
+3. Medium frequency / medium severity / medium impact: Suggested actions existed for `wish` rows, but the UI label was just "Suggested" and raw mailbox-scan rows had no suggested-action strip, making the affordance easy to miss or absent depending on row type.
+
+**Root cause answers:**
+
+- Agent support work starts in `api/support/wish.js`, which writes a `messages` row with `source: support-desk` and metadata including `support_wish_id` / `support_access_code`. The listener/worker picks that up from the agent room.
+- Human/manual Email replies are sent through `/api/support/reply` or `/api/support/send-staged`, which send through Gmail/internal mail and write `support_wish_updates.kind=response` plus `support_wishes.first_response_at`.
+- The Email conversation view reads `/api/support/thread`, which fetches Gmail thread truth and merges `support_wish_updates.kind=response`. It did not read the agent-room `messages` row or `events.message_step` work ledger, so work-in-progress was invisible.
+- Suggested actions already existed for `wish` rows via `/api/support/suggest` and `support_wishes.reply_options`, but raw mailbox-scan rows had no action strip and the wish strip was labelled only "Suggested".
+
+**Fix slice:** Shipped. Added `/api/support/activity` to join a selected wish to its agent-room dispatch row, immediate agent messages, durable `message_step` events, and relevant support updates. Rendered a collapsible "Agent work" block in the Email pane for wish rows. Renamed the footer to "Suggested actions" and added explicit Assign/Add-to-Tracker actions for raw mailbox-scan rows.
+
+**Pending Patrik:** Claude recommends logging the exact outgoing email body into `support_wish_updates.kind=response` on every send-success, treating it like the app's Sent copy, while Gmail remains the verification source. This should become the default unless Patrik wants Gmail-only truth.
+
+**Verification:**
+
+- `node --check api/support/activity.js` passes.
+- `git diff --check` passes.
+- `npm run build` passes after Claude installed dependencies.
+- Live dev-server pass is blocked by sandbox networking: `lsof` sees a Node process listening on `127.0.0.1:5200`, but `curl` cannot connect and `nc -vz 127.0.0.1 5200` returns `Operation not permitted`. Starting a replacement Vite server in this sandbox also fails with `listen EPERM`.
+
+**Status:** shipped; Claude (EA) ran the live verification outside the sandbox after merging the CV6 entry fix into this branch.
