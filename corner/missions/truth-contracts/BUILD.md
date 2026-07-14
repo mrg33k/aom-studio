@@ -330,3 +330,32 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
 - `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`
 
 **Status:** shipped; EA ran the browser specs externally (renderer spec 2/2, practical audit 2/2) after fixing the spec's send-intercept route pattern (POST goes to the bare supabase-messages path, no query string).
+
+## R5d — Shared Renderer Mobile ChatLifecycle Migration
+
+**Date:** 2026-07-14
+
+**Scope:** Shipped. Built the mobile compatibility flags needed by `Cv6MessageThread`, then migrated mobile `ChatLifecycle` while preserving day folding, long-message clamp, custom file gallery/viewer, scroll pinning outside the renderer, and synthetic live GoalTurn behavior.
+
+- `Cv6MessageThread` now has a `variant="mobile"` path that preserves the previous mobile per-turn markup instead of using desktop grouped bubbles.
+- Added `renderAttachments="mobileGallery"` plus `MobileFileGallery`, `onOpenFile`, and `onReviewFiles` hooks so mobile keeps its custom `FileGallery` / `FileCollectionViewer` path this round.
+- Added mobile long-message clamping inside the shared renderer path using the existing `.longmsg` / `.longmsg-more` behavior.
+- Added mobile synthetic live work support with `renderLiveWork="goalBody"`, rendering the live `GoalThreadBody` under the pinned user turn.
+- Migrated `ChatLifecycle` day bodies to `Cv6MessageThread`; left `scrbody`, safe-area padding, composer positioning, jump-to-latest, and pin-last-user scroll logic untouched.
+- Extended `tests/cv6-message-renderer.spec.mjs` with a 390x844 mobile seeded-room spec that asserts folded days, long-message expansion, mobile gallery affordance, and live goal-turn output. The POST intercept for `/api/dashboard/supabase-messages` uses the bare path.
+
+**Verification:**
+
+- `npm run build` passed. Prebuild printed the existing missing-sibling-registry notices and Vite printed the existing chunk-size warning.
+- `npm run test:tenant-context` passed.
+- `git diff --check` passed.
+- Browser specs could not run in this sandbox because Vite cannot bind localhost: `listen EPERM: operation not permitted 127.0.0.1:5173`.
+
+**External browser commands:**
+
+- `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line`
+- `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`
+
+**Status:** implemented; browser verification pending outside this sandbox.
+
+**Follow-up:** Claude's external browser run showed the new mobile spec timing out before entering the room: seeded `supabase-status` data did not reach the mobile chat list under `?view=chat`, same failure class as R5b's first Home quick thread fixture. Fixed by replacing the data-pipe-dependent mobile browser test with `?demo=mobile-chat-lifecycle`, a direct fixture that mounts the real `ChatLifecycle` with seeded normalized messages. EA then fixed the gallery filename assertion (thumbnail exposes the name as the button's accessible name, not visible text) and ran the browser specs externally: renderer spec 5/5, practical audit 2/2. Status upgraded to shipped; all four room renderers now share Cv6MessageThread.

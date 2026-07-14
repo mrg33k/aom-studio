@@ -212,3 +212,23 @@ Verification run in sandbox: `node --check tests/cv6-message-renderer.spec.mjs`,
 External commands to run: `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line` and `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
 
 No `ChatLifecycle`, `SupportThread`, schema/data migration, deploy, push, secret rotation, external message send, stored tenant/world/login/data mutation, or commit. Pre-existing dirty `test-results/.last-run.json` was left untouched.
+
+## 2026-07-14 - R5d Mobile ChatLifecycle Shared Renderer
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: implement slice 4 of the renderer consolidation plan: add the mobile compatibility flags to `Cv6MessageThread`, then migrate mobile `ChatLifecycle` without changing mobile behavior.
+
+Fix shipped: `Cv6MessageThread` now has a `variant="mobile"` path that preserves the previous mobile per-turn markup instead of using desktop grouped bubbles. It owns the mobile message loop, long-message clamp, block/goal turn rendering, and synthetic live goal turn via `renderLiveWork="goalBody"`. Added `renderAttachments="mobileGallery"` plus `MobileFileGallery`, `onOpenFile`, and `onReviewFiles` so mobile still uses `ChatLifecycle`'s custom `FileGallery` / `FileCollectionViewer` this round, not `MessageAttachments`.
+
+ChatLifecycle migration: older folded day cards and the latest day now delegate their message bodies to `Cv6MessageThread variant="mobile"`. Day folding remains in `ChatLifecycle`. The mobile scroll body, safe-area padding, composer positioning, jump-to-latest, pin-last-user hooks, and viewport spacer remain outside the renderer and were not edited.
+
+Tests added: extended `tests/cv6-message-renderer.spec.mjs` with a 390x844 mobile seeded-room case at `?view=chat`. The fixture seeds an agent room, old-day messages, a long agent message, an auto-shared image file, and a recent user turn with message steps. The spec asserts the folded day opens, the long message shows `Show more` and expands to `Show less`, the custom mobile gallery affordance renders with `Review all`, and the live goal turn shows the seeded work step. The POST intercept for `/api/dashboard/supabase-messages` uses the bare path.
+
+Verification run in sandbox: `npm run build`, `npm run test:tenant-context`, and `git diff --check` passed. Attempting `npm run dev -- --host 127.0.0.1 --port 5173` failed with the existing sandbox networking restriction: `listen EPERM: operation not permitted 127.0.0.1:5173`, so browser specs need Claude's external run.
+
+External commands to run: `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line` and `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
+
+No `SupportThread`, schema/data migration, deploy, push, secret rotation, external message send, stored tenant/world/login/data mutation, or commit. Pre-existing dirty `test-results/.last-run.json` was left untouched.
+
+Follow-up from Claude's external Playwright run: the four existing renderer tests and `cv6-practical-audit` passed, but the new mobile test timed out waiting for `Renderer Room` under `?view=chat`. Root cause matched R5b's first fixture failure: seeded `supabase-status` data did not reliably flow through the mobile chat list data pipe. Fix-forward: added `?demo=mobile-chat-lifecycle`, a direct no-auth fixture that mounts the real `ChatLifecycle` in a 100dvh mobile host with seeded normalized messages, file row, and live steps. Updated the mobile spec to load that fixture directly and removed its data-pipe seeding/click through ChatList. Re-verified `npm run build`, `npm run test:tenant-context`, and `git diff --check` in the sandbox. Browser rerun still needs an external Vite server because this sandbox cannot bind localhost (`listen EPERM: operation not permitted 127.0.0.1:5173`).

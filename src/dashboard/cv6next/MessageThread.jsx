@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
+import { Result } from './BlockRenderer.jsx';
 import {
   SendCtx,
   ReviewCtx,
@@ -179,6 +180,135 @@ function defaultAskGoal(messages, goal) {
   return goal;
 }
 
+function MobileAvatar({ message }) {
+  const tint = message.agentTint === 'accent' ? 'var(--accent)' : `var(--${message.agentTint || 'muted'}, var(--muted))`;
+  return (
+    <div style={{ width: 30, height: 30, borderRadius: '50%', background: message.isUser ? 'var(--accent-weak)' : 'var(--surface-2)', color: message.isUser ? 'var(--accent)' : tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flex: 'none' }}>
+      {message.agentInitials}
+    </div>
+  );
+}
+
+function MobileMessageTurn({ message, onAction }) {
+  const ref = useRef(null);
+  const [clamped, setClamped] = useState(false);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (el && !open) setClamped(el.scrollHeight > 168 + 4);
+  }, [message.text, open]);
+  return (
+    <div data-cv6-message-turn="" data-variant="mobile" data-userturn={message.isUser ? '' : undefined} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+      <MobileAvatar message={message} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{message.agentName}</span>
+          <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{message.time}</span>
+        </div>
+        <div ref={ref} className={`longmsg${clamped && !open ? ' is-clamped' : ''}`} style={open ? { maxHeight: 'none' } : undefined}>
+          {message.isUser
+            ? <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{message.text}</div>
+            : <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', wordBreak: 'break-word' }}><ChatMessageRenderer content={message.text} /></div>}
+        </div>
+        {clamped ? (
+          <button className="longmsg-more" onClick={() => setOpen((v) => !v)}>{open ? 'Show less' : 'Show more'}</button>
+        ) : null}
+        {message.blocks?.length ? (
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {message.blocks.map((block, i) => (
+              <Result key={i} block={block} onAction={onAction} />
+            ))}
+          </div>
+        ) : null}
+        {!message.isUser && message.linkCards?.length ? <ResultLinkCards cards={message.linkCards} /> : null}
+      </div>
+    </div>
+  );
+}
+
+function MobileGoalTurn({ message, goal, blocks }) {
+  return (
+    <div data-cv6-message-turn="" data-variant="mobile-goal" style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+      <MobileAvatar message={message} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{message.agentName}</span>
+          <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{message.time}</span>
+        </div>
+        <GoalThreadBody goal={goal} blocks={blocks || message.blocks} header={false} />
+        {!message.isUser && message.linkCards?.length ? <ResultLinkCards cards={message.linkCards} /> : null}
+      </div>
+    </div>
+  );
+}
+
+function MobileMessageThread({
+  messages,
+  goal,
+  room,
+  mode,
+  liveSteps,
+  awaiting,
+  renderLiveWork,
+  renderAttachments,
+  MobileFileGallery,
+  onAction,
+  onOpenFile,
+  onReviewFiles,
+  empty,
+}) {
+  const list = Array.isArray(messages) ? messages : [];
+  const liveBlocks = liveStepsToBlocks(liveSteps);
+  const showLive = !!awaiting;
+  const askGoal = defaultAskGoal(list, goal);
+  const out = [];
+  let fileRun = [];
+  const flushFiles = (key) => {
+    if (!fileRun.length) return;
+    if (renderAttachments === 'mobileGallery' && MobileFileGallery) {
+      out.push(
+        <MobileFileGallery
+          key={`files-${key}`}
+          files={fileRun}
+          sender={fileRun[0]}
+          onOpen={onOpenFile}
+          onReview={onReviewFiles}
+        />,
+      );
+    }
+    fileRun = [];
+  };
+  list.forEach((message, i) => {
+    if (message?.isFile && renderAttachments === 'mobileGallery') {
+      fileRun.push(message);
+      return;
+    }
+    flushFiles(i);
+    if (message?.blocks?.length) {
+      out.push(<MobileGoalTurn key={message.id || i} message={message} goal={goal} />);
+    } else {
+      out.push(<MobileMessageTurn key={message?.id || i} message={message} onAction={onAction} />);
+    }
+  });
+  flushFiles('end');
+  if (!out.length && !showLive) {
+    return <div style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '28px 0' }}>{empty}</div>;
+  }
+  return (
+    <div data-cv6-message-thread="" data-variant="mobile" data-mode={mode}>
+      {out}
+      {showLive && renderLiveWork === 'goalBody' ? (
+        <MobileGoalTurn
+          message={{ agentName: room?.name, agentInitials: room?.initials || '·', agentTint: 'accent', time: '' }}
+          goal={askGoal}
+          blocks={liveBlocks}
+        />
+      ) : null}
+      {showLive && renderLiveWork !== 'goalBody' ? <WorkingTurn room={room} liveSteps={liveSteps} goal={askGoal} /> : null}
+    </div>
+  );
+}
+
 export function Cv6MessageThread({
   messages,
   goal,
@@ -189,6 +319,7 @@ export function Cv6MessageThread({
   awaiting = false,
   renderLiveWork = 'workingTurn',
   renderBlocks = 'agentBlocks',
+  renderAttachments = 'messageAttachments',
   allowBlocks = true,
   allowAttachments = true,
   allowChips = true,
@@ -196,9 +327,39 @@ export function Cv6MessageThread({
   chipsPrimaryFirst = true,
   onAction,
   onReviewAttachment,
+  onOpenFile,
+  onReviewFiles,
+  MobileFileGallery,
   empty = 'No conversation yet.',
 }) {
   const list = Array.isArray(messages) ? messages : [];
+  if (variant === 'mobile') {
+    return (
+      <SendCtx.Provider value={onAction || (() => {})}>
+        <ReviewCtx.Provider value={(file) => {
+          if (!file) return;
+          if (onReviewFiles) onReviewFiles([file]);
+          else onReviewAttachment?.(file);
+        }}>
+          <MobileMessageThread
+            messages={list}
+            goal={goal}
+            room={room}
+            mode={mode}
+            liveSteps={liveSteps}
+            awaiting={awaiting}
+            renderLiveWork={renderLiveWork}
+            renderAttachments={renderAttachments}
+            MobileFileGallery={MobileFileGallery}
+            onAction={onAction}
+            onOpenFile={onOpenFile}
+            onReviewFiles={onReviewFiles}
+            empty={empty}
+          />
+        </ReviewCtx.Provider>
+      </SendCtx.Provider>
+    );
+  }
   const groups = groupMessagesBySender(list);
   const liveBlocks = liveStepsToBlocks(liveSteps);
   const showLive = !!awaiting;

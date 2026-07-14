@@ -15,6 +15,7 @@ import { useDictation } from './data/useDictation.js';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { FilesShelf, useRoomLibrary } from './ChatDesktop.jsx';
+import { Cv6MessageThread } from './MessageThread.jsx';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -282,7 +283,23 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
         <svg className="gc-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
       </div>
       <div className="gc-body">
-        {renderItems(group.items, onOpenFile, goal, onReview, onSend)}
+        <Cv6MessageThread
+          messages={group.items}
+          goal={goal}
+          variant="mobile"
+          mode="day-folded"
+          renderBlocks="goalBody"
+          renderAttachments="mobileGallery"
+          renderLiveWork="goalBody"
+          allowBlocks
+          allowAttachments
+          allowLinkCards
+          allowChips={false}
+          onAction={onSend}
+          onOpenFile={onOpenFile}
+          onReviewFiles={onReview}
+          MobileFileGallery={FileGallery}
+        />
       </div>
     </div>
   );
@@ -478,20 +495,27 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
               {latest && (
                 <>
                   <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
-                  {renderItems(latest.items, openFile, threadGoal, reviewHandoff, onSend)}
+                  <Cv6MessageThread
+                    messages={latest.items}
+                    goal={threadGoal}
+                    room={{ name: room?.name, initials: room?.initials || '·' }}
+                    variant="mobile"
+                    mode="latest-day"
+                    liveSteps={liveSteps}
+                    awaiting={awaiting}
+                    renderBlocks="goalBody"
+                    renderAttachments="mobileGallery"
+                    renderLiveWork="goalBody"
+                    allowBlocks
+                    allowAttachments
+                    allowLinkCards
+                    allowChips={false}
+                    onAction={onSend}
+                    onOpenFile={openFile}
+                    onReviewFiles={reviewHandoff}
+                    MobileFileGallery={FileGallery}
+                  />
                 </>
-              )}
-              {/* Reply pending: the agent's live Goal Thread builds right under the pinned
-                  question — goal = your ask, steps tick (done rows + a newest active row) in real
-                  time from the agent's actual activity. Before the first step lands, liveStepsToBlocks
-                  yields a single active "Getting started" row, so it's always the progress thread —
-                  never a separate typing indicator (Patrik 2026-06-27: progress bar, not dots). */}
-              {awaiting && (
-                <GoalTurn
-                  m={{ agentName: room?.name, agentInitials: room?.initials || '·', agentTint: 'accent', time: '' }}
-                  goal={threadGoal}
-                  blocks={liveStepsToBlocks(liveSteps)}
-                />
               )}
             </>
           )}

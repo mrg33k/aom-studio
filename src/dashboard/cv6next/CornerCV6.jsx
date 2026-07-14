@@ -2311,6 +2311,10 @@ function demoHomeQuickThreadRequested() {
   try { return new URLSearchParams(window.location.search).get('demo') === 'home-quick-thread'; }
   catch { return false; }
 }
+function demoMobileChatLifecycleRequested() {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'mobile-chat-lifecycle'; }
+  catch { return false; }
+}
 const DEMO_GOAL = { title: 'Show every chat element', step: 4, doneCount: 2, total: 11, pct: 18, checklist: [] };
 const DEMO_BLOCKS = [
   { type: 'step', stepIndex: 0, title: 'Read the brief and pull the repo', state: 'done', detail: 'Scanned 28 missions and the task runner.' },
@@ -2518,6 +2522,100 @@ function DemoHomeQuickThread() {
   );
 }
 
+function DemoMobileChatLifecycle() {
+  const nowMs = Date.now();
+  const at = (minutesAgo) => new Date(nowMs - minutesAgo * 60_000).toISOString();
+  const room = { id: 'renderer-room', name: 'Renderer Room', initials: 'RR', status: 'working', statusText: 'mobile fixture' };
+  const messages = [
+    {
+      id: 'mobile-old-user',
+      agentInitials: 'YO',
+      agentName: 'You',
+      agentTint: 'accent',
+      isUser: true,
+      text: 'Older mobile request for day folding.',
+      time: '9:00 AM',
+      ts: at(60 * 48),
+    },
+    {
+      id: 'mobile-old-agent',
+      agentInitials: 'RR',
+      agentName: 'Renderer Room',
+      agentTint: 'violet',
+      isUser: false,
+      text: 'Older mobile reply stays inside the folded day.',
+      time: '9:05 AM',
+      ts: at(60 * 48 - 5),
+    },
+    {
+      id: 'mobile-long-agent',
+      agentInitials: 'RR',
+      agentName: 'Renderer Room',
+      agentTint: 'violet',
+      isUser: false,
+      text: [
+        'Mobile long message clamp proof begins here.',
+        'This seeded reply is intentionally verbose so the mobile renderer keeps the prior long-message containment behavior.',
+        'It needs enough copy to overflow the 168px clamp used by the shipped mobile ChatLifecycle turn.',
+        'The shared renderer must still show Show more before expansion and Show less after expansion.',
+        'Any regression here usually means the migration switched mobile into desktop bubble markup.',
+        'The paragraph continues with more detail about renderer compatibility flags, day folding, and attachment galleries.',
+        'This final line should remain hidden until the clamped message is expanded.',
+      ].join('\n\n'),
+      time: '11:26 AM',
+      ts: at(34),
+    },
+    {
+      id: 'mobile-gallery-file',
+      agentInitials: 'RR',
+      agentName: 'Renderer Room',
+      agentTint: 'violet',
+      isUser: false,
+      text: '',
+      time: '11:32 AM',
+      ts: at(28),
+      isFile: true,
+      fileName: 'mobile-gallery-proof.png',
+      attachmentUrl: '/demo/mobile-gallery-proof.png',
+      fileMime: 'image/png',
+      fileSize: 18500,
+      attachments: [{ url: '/demo/mobile-gallery-proof.png', name: 'mobile-gallery-proof.png', mime: 'image/png', size: 18500 }],
+    },
+    {
+      id: 'mobile-live-user',
+      agentInitials: 'YO',
+      agentName: 'You',
+      agentTint: 'accent',
+      isUser: true,
+      text: 'Keep checking the mobile renderer.',
+      time: '11:59 AM',
+      ts: at(1),
+    },
+  ];
+  const liveSteps = [
+    { id: 'mobile-live-step-1', parent_message_id: 'mobile-live-user', step_index: 0, text: 'Checking mobile renderer output', timestamp: at(1) },
+    { id: 'mobile-live-step-2', parent_message_id: 'mobile-live-user', step_index: 1, text: 'Keeping mobile gallery compatibility', timestamp: at(0) },
+  ];
+  return (
+    <div data-cv6 data-theme="dark" style={{ width: '100vw', height: '100dvh', background: 'var(--ground, #05080b)' }}>
+      <ChatLifecycle
+        room={room}
+        fullRoom={null}
+        worldId="local-render"
+        messages={messages}
+        status="ready"
+        goal={{ title: 'Keep checking the mobile renderer.' }}
+        liveSteps={liveSteps}
+        awaiting
+        onBack={() => {}}
+        onOpenNav={() => {}}
+        onSend={() => {}}
+        onOpenReview={() => {}}
+      />
+    </div>
+  );
+}
+
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
@@ -2615,8 +2713,10 @@ export default function CornerCV6() {
   const demoBlocks = useMemo(() => demoBlocksRequested(), []);
   const demoCatchUpModal = useMemo(() => demoCatchUpModalRequested(), []);
   const demoHomeQuickThread = useMemo(() => demoHomeQuickThreadRequested(), []);
+  const demoMobileChatLifecycle = useMemo(() => demoMobileChatLifecycleRequested(), []);
   if (demoCatchUpModal) return <DemoCatchUpModal worldId={worldId} />;
   if (demoHomeQuickThread) return <DemoHomeQuickThread />;
+  if (demoMobileChatLifecycle) return <DemoMobileChatLifecycle />;
   if (demoBlocks) {
     // Auto-height (no 100dvh cap, no overflow:hidden) so the whole thread is one tall page
     // the browser scrolls — a full-page capture then reaches every element end to end.
