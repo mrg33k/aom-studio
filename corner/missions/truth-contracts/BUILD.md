@@ -43,9 +43,14 @@ Build the shared authenticated tenant contract and compatibility adapters withou
     - `npm run test:tenant-context` passed.
     - `node --check api/_lib/tenantContext.js api/support/activity.js api/support/wish.js api/support/send-staged.js api/support/reply.js api/support/suggest.js api/support/thread.js api/support/wishes.js api/support/inbox.js` passed.
     - `npm run build` passed.
-    - `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests).
+    - Initial sandbox Playwright output was not treated as a valid fresh no-Supabase browser verification after Claude's external rerun showed Command did not settle.
+- 2026-07-14 fix-forward:
+  - Claude reran `tests/cv6-practical-audit.spec.mjs` against a fresh no-Supabase Vite server on port 5200 and both desktop/mobile tests failed waiting for Command's visible `No rooms yet` empty state.
+  - Root cause: the new browser `TenantProvider` resolved absent Supabase to `tenantId=null`, undoing the earlier render-only world id behavior that let Command/Tracker/Files settle locally.
+  - Fix: no-Supabase mode now resolves a render-only tenant context with `tenantId='local-render'` and `renderOnly=true` from `TenantProvider`; configured Supabase mode still resolves from authenticated user context.
+  - Verification I can run in sandbox passed: `npm run test:tenant-context`, `node --check` on the tenant/support scripts, and `npm run build`. Fresh browser audit must be rerun externally with `CV6_AUDIT_BASE=http://127.0.0.1:5200 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
 
-**Status:** shipped and verified for the canonical tenant context R2 slice.
+**Status:** fix-forward implemented; awaiting external fresh no-Supabase CV6 audit rerun.
 
 ### R3 - Canonical file identity
 

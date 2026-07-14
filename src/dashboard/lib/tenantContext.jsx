@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { supabase } from './supabase.js'
 import { getClientId, setClientIdFromUser } from './clientConfig.js'
 
+export const RENDER_ONLY_TENANT_ID = 'local-render'
+
 const TenantContext = createContext({
   status: 'loading',
   tenant: null,
@@ -25,10 +27,16 @@ function aliasesFor(user, tenantId) {
 
 export function TenantProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [tenantId, setTenantId] = useState(null)
+  const [tenantId, setTenantId] = useState(() => (supabase ? null : RENDER_ONLY_TENANT_ID))
   const [status, setStatus] = useState(() => (supabase ? 'loading' : 'ready'))
 
   const applyUser = useCallback((nextUser) => {
+    if (!supabase) {
+      setUser(null)
+      setTenantId(RENDER_ONLY_TENANT_ID)
+      setStatus('ready')
+      return
+    }
     if (nextUser) setClientIdFromUser(nextUser)
     const resolved = nextUser ? getClientId() : null
     setUser(nextUser || null)
@@ -63,6 +71,7 @@ export function TenantProvider({ children }) {
       canonicalSlug: tenantId,
       aliases: aliasesFor(user, tenantId),
       userId: user?.id || null,
+      renderOnly: !supabase,
     }
   }, [tenantId, user])
 

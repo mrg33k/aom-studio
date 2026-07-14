@@ -87,3 +87,15 @@ Migration note: legacy CV3/CV4, some `api/dashboard/*`, `api/_lib/*`, integratio
 Required env note: support/email runtime now needs `SUPPORT_TENANT_ID` or `CORNER_HOME_TENANT` set to the existing support tenant slug.
 
 Verification: `npm run test:tenant-context`, `node --check` on the new/changed support tenant endpoints, `npm run build`, and `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` all passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - R2 Tenant Context No-Supabase Fix-Forward
+
+Mission path: `corner:truth-contracts`.
+
+Claude reran the CV6 practical audit against a fresh no-Supabase Vite server on port 5200 and both tests failed waiting for Command to show `No rooms yet`. The prior sandbox Playwright result was not a valid fresh no-Supabase browser pass and should not be treated as verification.
+
+Root cause: `TenantProvider` resolved no-Supabase mode to `tenantId=null`, which regressed the earlier render-only world behavior Command needed to settle to an honest empty state.
+
+Fix: no-Supabase mode now emits a render-only tenant context from `src/dashboard/lib/tenantContext.jsx` with `tenantId='local-render'` and `renderOnly=true`. Configured Supabase mode still resolves from the authenticated user context.
+
+Verification run in sandbox: `npm run test:tenant-context`, `node --check` on tenant/support scripts, and `npm run build` passed. Browser verification still needs Claude's external rerun: `CV6_AUDIT_BASE=http://127.0.0.1:5200 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
