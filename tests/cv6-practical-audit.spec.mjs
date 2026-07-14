@@ -31,9 +31,16 @@ test.describe('CV6 practical product audit', () => {
 
     await expect(page.locator('.ctile', { hasText: 'Home' })).toBeVisible()
     await expect(page.getByText('All rooms').first()).toBeVisible()
+    await expect(page.getByText('PROJECTS · 84')).toHaveCount(0)
+    await expect(page.getByText('Show 78 more projects')).toHaveCount(0)
 
     const navLabels = await page.locator('.ctile .clab').allTextContents()
     expect(navLabels).toEqual(['Home', 'Files', 'Email', 'Tracker', 'Command', 'Scribe'])
+
+    await page.getByRole('button', { name: 'Search' }).first().click()
+    await page.getByPlaceholder('Search rooms and missions…').fill('space')
+    await expect(page.getByText('Nothing matches “space”.')).toBeVisible()
+    await page.keyboard.press('Escape')
 
     const firstRecent = page.locator('[data-action="openRecent"]:visible').first()
     if (await firstRecent.count()) {
@@ -92,9 +99,12 @@ test.describe('CV6 practical product audit', () => {
     const errors = await openCv6(page)
 
     await expect(page.getByRole('button', { name: 'Search' }).first()).toBeVisible()
+    await expect(page.getByText('Show 78 more rooms')).toHaveCount(0)
     await page.getByRole('button', { name: 'Search' }).first().click()
     await page.waitForTimeout(350)
     await expect(page.getByPlaceholder('Search rooms and missions…')).toBeVisible()
+    await page.getByPlaceholder('Search rooms and missions…').fill('space')
+    await expect(page.getByText('Nothing matches “space”.')).toBeVisible()
     await page.keyboard.press('Escape')
 
     await page.getByRole('button', { name: 'Menu' }).first().click()

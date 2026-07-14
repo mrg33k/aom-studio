@@ -137,3 +137,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/templates/livescribe.html` now binds the record dot, waveform, mobile status bar, and speaker indicator to `session.capturing`. `src/dashboard/cv6next/cv6.css` makes the off state muted/static and keeps the red pulsing recording look only for `is-on`. The practical audit spec now asserts Scribe's desktop and mobile idle state during the sibling workflow.
 
 Verification: a focused fake-microphone Playwright probe confirmed idle `rec/wave is-off` with no animation and Start flips to `Stop & save` plus active recording classes. `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop/mobile sibling tools with Scribe assertions). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Home/Search consistency audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Search, find visible work by name, open it or recover from no results, and return to sibling tools without misleading empty states.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Home leaked stale design sample data in safe local/no-Supabase mode. Desktop showed `PROJECTS · 84` and `Show 78 more projects`; mobile showed `Show 78 more rooms`. Search then said `Nothing matches "space"`, which was correct for local data but contradicted the fake Home project counts.
+2. P2: `useChatList` still blocked its state on `!worldId` even when Supabase was absent, unlike Home's local render contract. That made Search/Chat-list semantics easier to drift from Home.
+3. P2: Generic local missing-resource 404 console entries remain filtered as non-product noise.
+
+Fix shipped: `src/dashboard/cv6next/CornerCV6.jsx` now copies the project array binding props (`count`, `moreCount`, `moreState`) after mapping project rows, so empty project lists bind as `0/none` instead of leaving template fallback text visible. `src/dashboard/cv6next/data/useHomeData.js` aligns `useChatList` loading with Home in no-Supabase local mode. The practical audit spec now opens Search on desktop/mobile, checks the `space` no-result recovery, and asserts the stale `84/78` Home copy is gone.
+
+Verification: desktop/mobile Playwright probe showed `PROJECTS · 0`, no stale `Show 78 more`, and Search `space` recovery; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across Home/Search and sibling tools); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.

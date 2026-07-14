@@ -318,8 +318,11 @@ export function useChatList() {
   const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
   const { agents, projectRooms, inboxItems } = useDataContext();
   const shaped = useMemo(() => shapeChatList({ agents, projectRooms, inboxItems }), [agents, projectRooms, inboxItems]);
-  // Same DEF-2 null-check fix applied to the chat-list hook.
-  const loading = !worldId || (agents == null && projectRooms == null && inboxItems == null);
+  // Same local-mode contract as Home: when Supabase is absent there is no auth-derived
+  // worldId to wait for, but the shared data context can still provide local project
+  // rooms. Blocking on !worldId made Search/Chat List easier to drift from Home's
+  // local empty/ready state.
+  const loading = (supabase && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 

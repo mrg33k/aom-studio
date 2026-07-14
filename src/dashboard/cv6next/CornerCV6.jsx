@@ -1496,6 +1496,12 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     moreCount: pn.more,
     moreState: pn.more > 0 ? 'has' : 'none',
   }));
+  // Arrays double as binding hosts for header/show-more counts. Mapping creates a
+  // fresh array, so copy the scalar props from projShown or the template falls back
+  // to its baked "Projects · 84 / Show 78 more" sample when there are zero projects.
+  projectsWithNav.count = projShown.count;
+  projectsWithNav.moreCount = projShown.moreCount;
+  projectsWithNav.moreState = projShown.moreState;
 
   // When a room is opened (click or keyboard), col3 shows that room's real conversation.
   const baseRoom = knavOpenedRoom || data.room || { name: '', initials: '', statusText: '', status: 'ready' };

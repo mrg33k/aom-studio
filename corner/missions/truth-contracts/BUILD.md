@@ -135,3 +135,17 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: no stored login/world/member/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and verified for the delegated scribe-capture-workflow audit.
+
+- 2026-07-14 delegated search-finds-workflow slice:
+  - User goal: from desktop and mobile CV6, open Search, find visible work by name, open it or recover from no results, and return to sibling tools without misleading empty states.
+  - Screen/tool inventory for this slice: Home advertises available rooms/projects; Search finds rooms/missions from the same shared data; Chat list is the sibling room picker that also consumes the chat-list shape.
+  - Audit: opened Home on desktop/mobile, opened Search, typed `space`, checked no-result recovery, escaped back to Home, then continued the sibling Files/Email/Tracker/Command/Scribe journey. Search honestly had no local project data, but Home leaked baked template project counts (`PROJECTS · 84`, `Show 78 more`) and mobile leaked `Show 78 more rooms`, making Search appear broken.
+  - Ranked findings:
+    1. P1 high-frequency trust issue: Home showed stale design project counts/overflow controls in safe local empty mode, while Search correctly returned no matches. The product contradicted itself before the user did any work.
+    2. P2 consistency: `useChatList` still treated absent `worldId` as loading even when Supabase was absent; Home had already adopted the no-Supabase local render contract.
+    3. P2 local noise: generic missing-resource 404 console entries remain filtered as non-product noise.
+  - Fixed this round: preserved project array binding props after Home maps project rows so `projects.count`, `projects.moreCount`, and `projects.moreState` bind as `0/none` instead of falling back to template samples; aligned `useChatList` loading with Home's no-Supabase local contract.
+  - Verification: Playwright desktop/mobile probe showed `PROJECTS · 0`, no stale `Show 78 more`, and Search `space` no-result recovery; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed with Home/Search plus sibling surface assertions; `npm run build` passed.
+  - Remaining notes: no stored login/world/member/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
+
+**Status:** shipped and verified for the delegated search-finds-workflow audit.
