@@ -59,6 +59,13 @@ test.describe('CV6 practical product audit', () => {
         await expect(page.getByText("We couldn't load your files")).toHaveCount(0)
         await expect(page.getByText('Nothing personal yet')).toBeVisible()
       }
+      if (tool === 'Tracker') {
+        await expect(page.getByText('Loading the tracker…')).toHaveCount(0)
+        await expect(page.getByText('No bugs in this tracker')).toBeVisible()
+      }
+      if (tool === 'Command') {
+        await expect(page.getByText('No rooms yet')).toBeVisible()
+      }
     }
 
     expect(productConsoleErrors(errors)).toEqual([])
@@ -88,6 +95,13 @@ test.describe('CV6 practical product audit', () => {
         await expect(page.getByRole('button', { name: /Personal 0 files/ })).toBeVisible()
         await page.getByRole('button', { name: /Personal 0 files/ }).click()
         await expect(page.getByText('Nothing personal yet')).toBeVisible()
+      }
+      if (tool === 'Tracker') {
+        await expect(page.getByText('Loading the tracker…')).toHaveCount(0)
+        await expect(page.getByText('No bugs in this tracker')).toBeVisible()
+      }
+      if (tool === 'Command') {
+        await expect(page.getByText('No rooms yet')).toBeVisible()
       }
       if (tool !== 'Home') {
         await expect(page.getByRole('button', { name: 'Menu' }).first()).toBeVisible()

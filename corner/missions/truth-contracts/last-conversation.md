@@ -57,3 +57,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/data/useOrganize.js` now treats absent Supabase as an explicit local empty Files mode. It skips tenant-gated Files/projects/uploads/mission-tree API calls, clears those arrays, and marks the panel loaded. Real configured sessions still fetch the mirror and still show real load errors.
 
 Verification: ran `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` (2 passed, with desktop and mobile Files assertions for no dropped-connection banner and the empty workflow), then ran `npm run build` successfully. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Tracker and Command empty-state audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Tracker and Command in safe local/no-Supabase mode and see stable honest empty states instead of indefinite loading labels.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Command stayed in `state='loading'` because `useWorldId()` returned `null` when Supabase was absent, so the screen rendered "Gathering your rooms..." instead of the empty ledger.
+2. P1: Tracker initialized `status='loading'` / `spaceStatus='loading'` and only settled after tenant-gated API calls that are unavailable in local/no-Supabase mode.
+3. P2: Hidden template loading text remains in the DOM after the ready state; the test now asserts visible empty states rather than absence of hidden template strings.
+
+Fix shipped: `src/dashboard/cv6next/data/useCommandTracker.js` now gives local/no-Supabase mode a render-only `aom` world id, skips tenant-gated Command/Tracker polls and writes when Supabase is absent, initializes Tracker boards to empty, and disables create/update actions in no-Supabase mode. The audit spec now asserts Tracker and Command visible empty states on desktop and mobile.
+
+Verification: `npm run build` passed. Claude ran external browser verification with `CV6_AUDIT_BASE=http://127.0.0.1:5199 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`; 2 tests passed in 9.6s. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
