@@ -32,9 +32,10 @@ const ORG_ALIASES = {
 
 // Loading placeholder for the review viewer body while a file's bytes are in flight.
 const VIEWER_LOADING_HTML =
-  '<div style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:160px;color:#9a9a9a;">'
-  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
-  + '<span style="font-size:13px;font-weight:500;">Opening the file…</span></div>';
+  '<div class="cv6-loading is-inline" role="status" aria-live="polite" style="min-height:220px;">'
+  + '<div class="cv6-loading__inner"><div class="cv6-loading__mark" aria-hidden="true">Corner.</div>'
+  + '<div class="cv6-loading__rail" aria-hidden="true"><span class="cv6-loading__bar"></span></div>'
+  + '<div class="cv6-loading__label">Preparing the file</div><div class="cv6-loading__detail" hidden></div></div></div>';
 const VIEWER_NONE_HTML = '<div style="padding:14px 0;color:#888;font-size:13.5px;">No file selected — pick one from the list.</div>';
 
 function composeOrganize(raw, screenName) {

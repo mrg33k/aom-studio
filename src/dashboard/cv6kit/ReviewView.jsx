@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 import { AssignButton } from './AssignButton.jsx';
+import { FullscreenLoading } from './FullscreenLoading.jsx';
 
 /**
  * CV6 kit Review — queue → document → decision flow. Kit-faithful to
@@ -269,10 +270,7 @@ export function ReviewView({
             </div>
             <div style={{ flex: 1, minHeight: 0, padding: '0 12px', overflowY: 'auto' }}>
               {status === 'loading' && (!queueItems || queueItems.length === 0) ? (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
-                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your review queue…</div>
-                </div>
+                <FullscreenLoading inline theme="glass" label="Preparing your review queue" />
               ) : status === 'error' && (!queueItems || queueItems.length === 0) ? (
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
                   <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your review queue just now. It keeps trying on its own.</div>
@@ -539,10 +537,7 @@ export function ReviewView({
             </div>
             <div style={{ padding: '0 12px', overflowY: 'auto', maxHeight: 'calc(100% - 100px)' }}>
               {status === 'loading' && (!queueItems || queueItems.length === 0) ? (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center', paddingTop: 40 }}>
-                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your review queue…</div>
-                </div>
+                <FullscreenLoading inline theme="glass" label="Preparing your review queue" />
               ) : status === 'error' && (!queueItems || queueItems.length === 0) ? (
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
                   <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your review queue just now. It keeps trying on its own.</div>

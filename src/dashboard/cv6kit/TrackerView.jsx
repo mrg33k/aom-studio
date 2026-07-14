@@ -2,6 +2,7 @@ import React from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 import { CvgMobileHeader } from './CvgMobileHeader.jsx';
 import { AssignButton } from './AssignButton.jsx';
+import { FullscreenLoading } from './FullscreenLoading.jsx';
 
 /**
  * CV6 kit Tracker — mobile bug/issue list + desktop design baseline.
@@ -199,10 +200,7 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
                 <div style={{ width: 50, flex: 'none' }}>Upd</div>
               </div>
               {status === 'loading' && (!tableData || tableData.length === 0) ? (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center', paddingTop: 40 }}>
-                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your issues…</div>
-                </div>
+                <FullscreenLoading inline label="Preparing the tracker" />
               ) : status === 'error' && (!tableData || tableData.length === 0) ? (
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
                   <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your issues just now. It keeps trying on its own.</div>

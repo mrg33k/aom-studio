@@ -974,7 +974,7 @@ export function useOrganize(worldId = 'aom', opts = {}) {
       body: 'Create your first project to start organizing files.',
       actionLabel: 'New project',
     },
-    loading: { label: 'Gathering your files…' },
+    loading: { label: 'Preparing your files' },
     error: {
       title: "We couldn't load your files",
       body: 'Your connection dropped. Nothing was lost. Your last view is saved.',

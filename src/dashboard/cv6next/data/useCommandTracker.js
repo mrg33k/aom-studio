@@ -1367,7 +1367,7 @@ export function useTrackerBugs(worldId) {
     // (which would throw on .forEach in the engine and crash the desktop screen).
     attachments: withCount([], 0),
     agent: { name: '', initials: '·', tint: 'violet', step: '', total: '', pct: 0, pctLabel: '', checklist: [] },
-    loading: { label: 'Loading the tracker…' },
+    loading: { label: 'Preparing the tracker' },
     empty: { title: 'No bugs in this tracker', body: 'Nothing logged yet. New issues land here.', actionLabel: '' },
     error: { title: "Couldn't load the tracker", body: 'Your connection dropped. Nothing was lost.', code: 'tracker · retry' },
   };

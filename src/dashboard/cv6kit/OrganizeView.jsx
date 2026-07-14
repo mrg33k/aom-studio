@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 import { CvgMobileHeader } from './CvgMobileHeader.jsx';
 import { AssignButton } from './AssignButton.jsx';
+import { FullscreenLoading } from './FullscreenLoading.jsx';
 
 /**
  * CV6 kit Organize — desktop & mobile file browse, multi-select, move-to-folder, and view/review.
@@ -761,10 +762,7 @@ export function OrganizeView({
             </div>
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 12px' }}>
               {status === 'loading' && (!files || files.length === 0) ? (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
-                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your files…</div>
-                </div>
+                <FullscreenLoading inline theme="glass" label="Preparing your files" />
               ) : status === 'error' && (!files || files.length === 0) ? (
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
                   <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your files just now. It keeps trying on its own.</div>

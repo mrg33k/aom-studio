@@ -14,9 +14,118 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://aheadofmarket.com/og-image.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      (function () {
+        var theme = 'dark';
+        try {
+          var stored = window.localStorage && window.localStorage.getItem('cv6-theme');
+          if (stored === 'light' || stored === 'glass' || stored === 'dark') theme = stored;
+        } catch (e) {}
+        document.documentElement.setAttribute('data-cv6-boot', 'on');
+        document.documentElement.setAttribute('data-app-theme', theme);
+      })();
+    </script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { background: #020202; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; height: 100%; overflow: hidden; }
+      html[data-app-theme="dark"] {
+        --cv6-boot-ground: #0A0A0B;
+        --cv6-boot-surface: #161619;
+        --cv6-boot-fg: #E9E9EC;
+        --cv6-boot-muted: #9a9aa2;
+        --cv6-boot-hair: rgba(255,255,255,.09);
+        --cv6-boot-chip: rgba(255,255,255,.06);
+        --cv6-boot-accent: #3B82F6;
+      }
+      html[data-app-theme="light"] {
+        --cv6-boot-ground: #F6F6F7;
+        --cv6-boot-surface: #FFFFFF;
+        --cv6-boot-fg: #18181B;
+        --cv6-boot-muted: #6a6a72;
+        --cv6-boot-hair: rgba(0,0,0,.08);
+        --cv6-boot-chip: rgba(0,0,0,.04);
+        --cv6-boot-accent: #0066FF;
+      }
+      html[data-app-theme="glass"] {
+        --cv6-boot-ground:
+          radial-gradient(54% 40% at 22% 12%, rgba(74,116,148,.55), transparent 62%),
+          radial-gradient(50% 34% at 86% 20%, rgba(206,148,70,.34), transparent 58%),
+          radial-gradient(46% 34% at 72% 86%, rgba(46,96,128,.45), transparent 64%),
+          linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%);
+        --cv6-boot-surface: rgba(22,26,33,.55);
+        --cv6-boot-fg: #F3F4F6;
+        --cv6-boot-muted: #c0c4cc;
+        --cv6-boot-hair: rgba(255,255,255,.16);
+        --cv6-boot-chip: rgba(255,255,255,.1);
+        --cv6-boot-accent: #5B9BFF;
+      }
+      html, body {
+        background: var(--cv6-boot-ground, #0A0A0B);
+        color: var(--cv6-boot-fg, #E9E9EC);
+        font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+        height: 100%;
+        overflow: hidden;
+      }
+      #cv6-boot-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483000;
+        min-height: 100dvh;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding:
+          calc(env(safe-area-inset-top, 0px) + 28px)
+          calc(env(safe-area-inset-right, 0px) + 20px)
+          calc(env(safe-area-inset-bottom, 0px) + 28px)
+          calc(env(safe-area-inset-left, 0px) + 20px);
+        background: var(--cv6-boot-ground);
+        color: var(--cv6-boot-fg);
+      }
+      .cv6-boot-card {
+        width: min(320px, 100%);
+        display: grid;
+        justify-items: start;
+        gap: 14px;
+        padding: 20px;
+        border: 1px solid var(--cv6-boot-hair);
+        border-radius: 16px;
+        background: var(--cv6-boot-surface);
+        box-shadow: 0 14px 36px -14px rgba(0,0,0,.5);
+      }
+      html[data-app-theme="glass"] .cv6-boot-card {
+        backdrop-filter: blur(22px) saturate(1.3);
+        -webkit-backdrop-filter: blur(22px) saturate(1.3);
+      }
+      .cv6-boot-mark {
+        font-size: clamp(30px, 8vw, 46px);
+        line-height: 1;
+        font-weight: 700;
+        letter-spacing: 0;
+        color: var(--cv6-boot-fg);
+      }
+      .cv6-boot-rail {
+        width: 100%;
+        height: 3px;
+        border-radius: 10px;
+        background: var(--cv6-boot-chip);
+        overflow: hidden;
+      }
+      .cv6-boot-bar {
+        display: block;
+        width: 72%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--cv6-boot-accent);
+      }
+      .cv6-boot-label {
+        font-size: 13px;
+        line-height: 1.4;
+        color: var(--cv6-boot-muted);
+      }
       /* Fix Safari standalone mode (Add to Homescreen) viewport */
       @supports (-webkit-touch-callout: none) {
         html, body, #root { height: -webkit-fill-available; }
@@ -33,6 +142,13 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="cv6-boot-loader" role="status" aria-live="polite" aria-label="Preparing your workspace">
+      <div class="cv6-boot-card">
+        <div class="cv6-boot-mark" aria-hidden="true">Corner.</div>
+        <div class="cv6-boot-rail" aria-hidden="true"><span class="cv6-boot-bar"></span></div>
+        <div class="cv6-boot-label">Preparing your workspace</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

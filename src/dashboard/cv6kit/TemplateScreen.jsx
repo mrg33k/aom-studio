@@ -189,6 +189,45 @@ export function TemplateScreen({ html, data, actions, state = 'ready', aliases, 
   // is the first short-circuit; maybeApply's desc guard covers the deferred-flush path.
   useLayoutEffect(() => { maybeApplyRef.current(); }, [html, sig, state, aliasSig]);
 
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return undefined;
+    const clearDelayed = () => {
+      root.querySelectorAll('.cv6-loading.is-delayed').forEach((el) => {
+        el.classList.remove('is-delayed');
+        const label = el.querySelector('.cv6-loading__label');
+        const detail = el.querySelector('.cv6-loading__detail');
+        if (label && label.dataset.defaultLabel) label.textContent = label.dataset.defaultLabel;
+        if (detail) detail.hidden = true;
+      });
+    };
+    if (state !== 'loading') {
+      clearDelayed();
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      const current = ref.current;
+      if (!current) return;
+      current.querySelectorAll('.cv6-loading').forEach((el) => {
+        el.classList.add('is-delayed');
+        const label = el.querySelector('.cv6-loading__label');
+        const detail = el.querySelector('.cv6-loading__detail');
+        if (label) {
+          if (!label.dataset.defaultLabel) label.dataset.defaultLabel = label.textContent || '';
+          label.textContent = el.getAttribute('data-delayed-label') || 'Still working';
+        }
+        if (detail) {
+          detail.textContent = el.getAttribute('data-delayed-detail') || 'This is taking longer than expected. Corner will show the real state as soon as it settles.';
+          detail.hidden = false;
+        }
+      });
+    }, 10000);
+    return () => {
+      window.clearTimeout(timer);
+      clearDelayed();
+    };
+  }, [state, sig]);
+
   // One-time wiring: live scroll capture + pointer-gesture guard + unmount teardown.
   useEffect(() => {
     const root = ref.current;

@@ -17,6 +17,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useSupportInbox, latencyLabel } from './data/useSupportInbox.js';
 import SupportThread from './SupportThread.jsx';
 import { authFetch } from '../lib/authFetch';
+import { FullscreenLoading } from '../cv6kit/FullscreenLoading.jsx';
 
 // Strips angle-bracket URL syntax (<https://...>) that agent-produced markdown emits.
 // Shared helper: used here for the desktop React render and exported for the mobile
@@ -325,7 +326,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
           </div>
           <div className="eyebrow" style={{ margin: '0 24px 8px', fontSize: 11, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--faint)', fontWeight: 600 }}>{tab === 'open' ? 'Open asks' : 'Waiting'}</div>
           <div style={{ padding: '0 16px 16px' }}>
-            {state === 'loading' ? <div style={{ color: 'var(--muted)', fontSize: 13, padding: 14 }}>Gathering your inbox…</div>
+            {state === 'loading' ? <FullscreenLoading inline label="Preparing your inbox" />
               : list.length === 0 ? <div style={{ color: 'var(--muted)', fontSize: 13.5, padding: 14 }}>{tab === 'open' ? "You're all caught up. New asks the agent flags as real will land here." : 'Nothing waiting right now.'}</div>
                 : list.map((it) => <InboxRow key={it.id} it={it} open={selected?.id === it.id} onClick={() => setPicked(it)} />)}
           </div>
