@@ -800,6 +800,11 @@ function MessageCard({ campaign, worldId, onSaved }) {
         </div>
       )}
 
+      {editing && (
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', color: 'var(--faint)', marginTop: 2 }}>
+          RECIPIENT VIEW · UPDATES AS YOU TYPE
+        </div>
+      )}
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
         <div style={hairRow}>
           <span style={hairKey}>From</span>
