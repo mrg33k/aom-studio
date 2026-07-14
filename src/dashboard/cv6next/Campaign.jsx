@@ -162,7 +162,7 @@ function GoalStrip({ campaign, stats }) {
 
 // ----------------------------------------------------------------- today ---
 
-function TodayCards({ detail, act, busy, onOpenCity, onReviewFlagged }) {
+function TodayCards({ detail, act, busy, onOpenCity, onReviewFlagged, blocked }) {
   const today = detail?.today || {};
   const replies = today.newReplies || [];
   const batch = today.batch;
@@ -184,9 +184,15 @@ function TodayCards({ detail, act, busy, onOpenCity, onReviewFlagged }) {
               Goes out the moment you approve.
             </div>
           </div>
-          <button style={{ ...btnPrimary(false), height: 44 }} disabled={!!busy} onClick={() => act('approve_batch', { batch_id: batch.id })}>
-            {busy === 'approve_batch' ? 'Sending…' : 'Send'}
-          </button>
+          {blocked ? (
+            <span style={{ fontSize: 12, color: 'var(--faint)', maxWidth: 120, textAlign: 'right' }}>
+              fix the problem above first
+            </span>
+          ) : (
+            <button style={{ ...btnPrimary(false), height: 44 }} disabled={!!busy} onClick={() => act('approve_batch', { batch_id: batch.id })}>
+              {busy === 'approve_batch' ? 'Sending…' : 'Send'}
+            </button>
+          )}
         </div>
       )}
       {replies.map((r) => (
@@ -743,6 +749,7 @@ export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
         detail={detail}
         act={act}
         busy={busy}
+        blocked={health?.status === 'problem'}
         onOpenCity={(id) => setCityId(id)}
         onReviewFlagged={() => { setFlagged(true); setStage(null); }}
       />
