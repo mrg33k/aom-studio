@@ -456,6 +456,33 @@
    a broken loop must never look like a healthy one. */
 [data-cv6][data-screen^="command"] .wtog.is-error { background:var(--error-weak); border-color:var(--error); }
 [data-cv6][data-screen^="command"] .wtog.is-error .wtog-knob { left:18px; background:var(--error); }
+/* Checklist round (2026-07-13): the cadence select, kit-dressed. The element carries
+   appearance:none inline; this adds the chevron + keeps the native popup on-theme.
+   Closes the GAP-LIST select primitive for the command screen. */
+[data-cv6] select.cv6-select {
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%238a8f98" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+  background-repeat:no-repeat; background-position:right 11px center; background-size:12px 12px;
+  color-scheme:dark;
+}
+[data-app-theme="light"] [data-cv6] select.cv6-select { color-scheme:light; }
+/* Checklist round (2026-07-13): scroll cue for the goal detail panel. Base state is
+   hidden; when the panel actually overflows, the scroll-driven animation takes over --
+   visible at the top of the scroll range, gone by the bottom. Browsers without
+   scroll-timeline simply never show it (same as before the cue existed). */
+[data-cv6][data-screen^="command"] .gd-more {
+  position:sticky; bottom:6px; align-self:center; flex:none;
+  display:flex; align-items:center; gap:6px; padding:5px 12px; margin-top:4px;
+  border-radius:999px; background:var(--surface-2); border:1px solid var(--hair);
+  color:var(--muted); font-size:11px; font-weight:600; font-family:var(--font-sans);
+  pointer-events:none; opacity:0; box-shadow:0 6px 18px -8px rgba(0,0,0,.45);
+}
+@supports (animation-timeline: scroll()) {
+  [data-cv6][data-screen^="command"] .gd-more {
+    animation:gdMoreFade linear both;
+    animation-timeline:scroll(nearest);
+  }
+}
+@keyframes gdMoreFade { 0%,55% { opacity:1; } 85%,100% { opacity:0; } }
 /* Goal ledger rebuild (corner:corner-ui-cv6 2026-07-06): IDLE status chip + the
    per-row "Open room" action that only shows when a row is stepped into. */
 [data-cv6] .astat.is-idle { color:var(--muted); background:var(--chip); }

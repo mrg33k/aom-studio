@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-14T04:19:13.056Z",
+  "generated_at": "2026-07-14T04:36:10.295Z",
   "missions": [
     {
       "slug": "corner:aztc-post-behind-the-scene-storytelling",
@@ -2676,6 +2676,20 @@
       "path": "corner/users/aom/projects/artlink/missions/brand-page"
     },
     {
+      "slug": "az-tech-council:aerospace-booth-flyer",
+      "raw_slug": "aerospace-booth-flyer",
+      "folder_name": "aerospace-booth-flyer",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "az-tech-council",
+      "workstream": null,
+      "name": "Aerospace Booth Flyer",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/az-tech-council/missions/aerospace-booth-flyer"
+    },
+    {
       "slug": "aztacoboys:website",
       "raw_slug": "website",
       "folder_name": "website",
@@ -3653,6 +3667,12 @@
     },
     {
       "slug": "artlink",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "az-tech-council",
       "total": 1,
       "in_flight": 1,
       "done": 0
