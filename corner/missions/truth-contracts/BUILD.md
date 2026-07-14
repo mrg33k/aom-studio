@@ -100,6 +100,28 @@ Consolidate message, attachment, preview, and status behavior across every live 
 
 **Status:** queued.
 
+### R4b - Command backend-owned status truth
+
+- 2026-07-14 implementation:
+  - Shipped the Command status slice: added `api/_lib/commandTruth.js` as the shared status ruleset for Command room state.
+  - CV6 Command ledger now derives `working` from heartbeat-backed live sessions or fresh non-bookkeeping work events only. Goal-notetaker sweeps, goal seed lines, and other bookkeeping stamps no longer refresh `lastActivity` or keep rows falsely green.
+  - Rows keep the existing additive shape and now also carry `statusSource`/`statusReason` provenance for future debugging without renaming existing fields.
+  - The Command activity rail no longer polls `tasks status=running`; it reads `/api/dashboard/active-agents`, backed by `active_processes` heartbeat TTL, so stale task rows cannot advertise active work after a process disappears.
+  - Added `verifyTenant` gating to `/api/dashboard/state-board?world=...` and returns additive `tenant_id`. No new env requirement and no schema/data rename.
+  - Added `tests/api/_lib/commandTruth.test.js`, covering fresh real work, bookkeeping exclusion, live process truth, stale/open-question behavior, and freshest-event selection.
+  - Review correction: removed the hardcoded `DEFAULT_CLIENT_ID = 'aom'` fallback from `state-board.js`. The endpoint now resolves tenant from `world`/`client`/`client_id`, then `CORNER_HOME_TENANT` or `SUPPORT_TENANT_ID`; if none exists it returns `400 { error: 'world required' }`.
+  - Guard correction: `scripts/check-no-hardcoded-tenant-slugs.mjs` now catches uppercase constants containing `CLIENT`/`TENANT`/`WORLD` assigned prohibited slugs. Verified it failed on the old `api/dashboard/state-board.js:19: const DEFAULT_CLIENT_ID = 'aom';` line before the endpoint fix, then passed after the fix.
+  - Verification:
+    - `node --check api/_lib/commandTruth.js api/dashboard/state-board.js src/dashboard/cv6next/data/useCommandTracker.js src/dashboard/cv6kit/useRunningJobs.js` passed.
+    - `node --test tests/api/_lib/commandTruth.test.js tests/api/_lib/reviewTruth.test.js tests/api/_lib/fileRef.test.js` passed.
+    - `node --test tests/api/_lib/commandTruth.test.js` passed after the review correction.
+    - `npm run test:tenant-context` passed, including the expanded hardcoded tenant guard.
+    - `git diff --check` passed.
+    - `npm run build` passed. Prebuild printed existing local notices about missing sibling registry sources and Vite printed the existing chunk-size warning.
+    - Browser/network CV6 audit not run in this sandbox; rerun externally with `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
+
+**Status:** Command backend-owned status truth shipped; Files counts/eligibility and campaign setup remain deferred.
+
 ### R6 - Product goal audit
 
 Audit each CV6 screen and tool as a real person completing real work. For every surface:

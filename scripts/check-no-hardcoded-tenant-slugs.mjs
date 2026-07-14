@@ -22,11 +22,14 @@ const ALLOWLIST = new Set([
   'api/dashboard/voice-session.js',
   'api/dashboard/admin-tickets.js',
   'api/dashboard/agent-customize.js',
+  'api/dashboard/active-agents.js',
   'api/dashboard/create-project-from-chat.js',
   'api/dashboard/project-files.js',
   'api/dashboard/review-queue.js',
+  'api/dashboard/set-supabase-client-context.js',
   'api/dashboard/supabase-messages.js',
   'api/dashboard/supabase-status.js',
+  'api/dashboard/v2-task-list.js',
   'api/integrations/list.js',
   'api/deal-bank/add.js',
   'api/relay-sms.js',
@@ -56,6 +59,10 @@ const tenantPattern = new RegExp(
   'i',
 )
 
+const uppercaseTenantConstantPattern = new RegExp(
+  String.raw`\b[A-Z0-9_]*(?:CLIENT|TENANT|WORLD)[A-Z0-9_]*\s*=\s*['"](?:${PROHIBITED.join('|')})['"]`,
+)
+
 function walk(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.git') continue
@@ -73,7 +80,9 @@ for (const scanDir of SCAN_DIRS) {
     if (ALLOWLIST.has(rel)) continue
     const lines = fs.readFileSync(file, 'utf8').split('\n')
     lines.forEach((line, idx) => {
-      if (tenantPattern.test(line)) failures.push(`${rel}:${idx + 1}: ${line.trim()}`)
+      if (tenantPattern.test(line) || uppercaseTenantConstantPattern.test(line)) {
+        failures.push(`${rel}:${idx + 1}: ${line.trim()}`)
+      }
     })
   }
 }

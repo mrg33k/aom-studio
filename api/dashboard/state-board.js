@@ -12,6 +12,9 @@
 //            source: 'live' | 'none' }
 // Fails open to an empty list — the ledger renders honest fallbacks, never fakes.
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { normalizeTenantSlug } from '../_lib/tenantContext.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -23,7 +26,19 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
+  const envTenant = normalizeTenantSlug(process.env.CORNER_HOME_TENANT || process.env.SUPPORT_TENANT_ID);
+  const requested = normalizeTenantSlug(req.query.world || req.query.client || req.query.client_id || envTenant);
+  if (!requested) return res.status(400).json({ error: 'world required' });
+
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(200).json({ rows: [], source: 'none' });
+
+  let tenantId = requested;
+  try {
+    ({ tenant: tenantId } = await verifyTenant(requested, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    return res.status(500).json({ error: 'Auth verification failed' });
+  }
 
   try {
     const r = await fetch(
@@ -34,7 +49,7 @@ export default async function handler(req, res) {
     );
     if (!r.ok) return res.status(200).json({ rows: [], source: 'none' });
     const rows = await r.json();
-    return res.status(200).json({ rows: Array.isArray(rows) ? rows : [], source: 'live' });
+    return res.status(200).json({ rows: Array.isArray(rows) ? rows : [], source: 'live', tenant_id: tenantId });
   } catch (_) {
     return res.status(200).json({ rows: [], source: 'none' });
   }
