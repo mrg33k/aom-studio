@@ -13,6 +13,7 @@ import { useReview } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { useReviewPinUI } from './ReviewPins.jsx';
 import { usePdfDocs } from './data/pdfDocView.js';
+import { useDocxDocs } from './data/docxDocView.js';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import NewComposer from './NewComposer.jsx';
@@ -187,6 +188,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
     wrapRef, pins, addPin, deletePin, enabled: !!pickedFileId,
   });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
+  useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)
 
   const [changesOpen, setChangesOpen] = useState(false);
   useEffect(() => { setChangesOpen(false); }, [openReviewId]);

@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
+import { docxShellHtml, isDocxName } from './docxDocView';
 
 const TINTS = ['violet', 'accent', 'pink', 'success'];
 
@@ -190,7 +191,9 @@ const DATA_EXT = /\.(json|jsonl|ndjson|yaml|yml|toml|csv|tsv|xml|ini|env|lock)$/
 function dataFilePreview(content) {
   const text = String(content);
   const shown = text.length > 20000 ? `${text.slice(0, 20000)}\n… (truncated)` : text;
-  return `<pre style="margin:0;font-family:var(--font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:var(--fg);">${escapeHtml(shown)}</pre>`;
+  // Paper-locked ink (M7/M9): this renders on the forced-light .doc paper, so
+  // var(--fg) resolves near-white in Dark/Glass — invisible JSON.
+  return `<pre style="margin:0;font-family:var(--font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#1a1a1a;">${escapeHtml(shown)}</pre>`;
 }
 
 // Loading state while a file's content lazy-loads. Centered and sized to hold the pane,
@@ -216,12 +219,16 @@ const HIDE_WAIT = "var w=this.parentElement&&this.parentElement.querySelector('[
 function nonTextPreview(name, kind) {
   const label = kind === 'image' ? 'Image file' : kind === 'pdf' ? 'PDF file' : kind === 'sheet' ? 'Spreadsheet' : kind === 'video' ? 'Video file' : kind === 'audio' ? 'Audio file' : 'File';
   const lower = label.toLowerCase();
+  // Paper-locked ink (M7/M9): this card renders on the forced-light .doc paper,
+  // where theme tokens (--fg/--muted/--accent-weak) resolve near-white in
+  // Dark/Glass — the card read as an empty pane, i.e. "the file didn't load".
+  // Blue is the readers' fixed action color (pdfDocView/docxDocView).
   return (
     '<div style="display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:12px 14px;border-radius:8px;'
-    + 'background:var(--accent-weak);border-left:3px solid var(--accent);">'
-    + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>'
-    + `<span style="font-size:13px;font-weight:600;color:var(--fg);">${label}</span></div>`
-    + `<p style="margin:0;color:var(--muted);">This ${lower} can't preview inline yet. Use Download to work with it.</p>`
+    + 'background:rgba(0,102,255,.08);border-left:3px solid #0066FF;">'
+    + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0066FF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>'
+    + `<span style="font-size:13px;font-weight:600;color:#1a1a1a;">${label}</span></div>`
+    + `<p style="margin:0;color:#6a6a72;">This ${lower} can't preview inline yet. Use Download to work with it.</p>`
   );
 }
 
@@ -435,6 +442,9 @@ export function useOrganize(worldId = 'aom', opts = {}) {
         // Uploads' id IS their store URL — the reader loads it directly
         // (pdfShellHtml escapes attributes itself; no esc() here).
         bodyHtml = pdfBodyHtml(up.url, up.name);
+      } else if (isDocxName(up.name)) {
+        // Word docs read inline (M9) — useDocxDocs hydrates the shell.
+        bodyHtml = docxShellHtml(up.url, up.name);
       } else {
         bodyHtml = nonTextPreview(up.name, kind);
       }
@@ -502,6 +512,14 @@ export function useOrganize(worldId = 'aom', opts = {}) {
         bodyHtml = cornerPath
           ? pdfBodyHtml(`${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}`, f.name)
           : nonTextPreview(f.name, 'pdf');
+        title = f.name || 'Untitled';
+      } else if (isDocxName(f.name)) {
+        // Word docs read inline (M9) — same tunnel-streamed shell+hydrator
+        // pattern as the PDF reader.
+        const cornerPath = cornerPathOf(f, worldId);
+        bodyHtml = cornerPath
+          ? docxShellHtml(`${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}`, f.name)
+          : nonTextPreview(f.name, 'doc');
         title = f.name || 'Untitled';
       } else if (f.content && DATA_EXT.test(f.name || '')) {
         // Structured-data files: monospace verbatim, titled by their real filename (O2).

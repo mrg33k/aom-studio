@@ -13,6 +13,7 @@ import { useReview } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { useReviewPinUI } from './ReviewPins.jsx';
 import { usePdfDocs } from './data/pdfDocView.js';
+import { useDocxDocs } from './data/docxDocView.js';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
@@ -145,6 +146,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target
   const wrapRef = useRef(null);
   const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef, pins, addPin, deletePin });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
+  useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)
 
   // Changes overlay (typed notes + pins → tracked task via the assign path).
   const [changesOpen, setChangesOpen] = useState(false);

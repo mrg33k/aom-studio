@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { titleForAgent } from './agentTitles';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
+import { docxShellHtml, isDocxName } from './docxDocView';
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -166,7 +167,14 @@ async function buildDeliverableBody(item) {
         const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
         return pdfShellHtml(src, item.title);
       }
-      // Non-PDF docs: auth-fetch the bytes and offer a download (no inline preview).
+      if (isDocxName(path)) {
+        // Word docs read inline too (M9) — useDocxDocs hydrates the shell on the
+        // host screen (mammoth converts docx→HTML in a lazy chunk); bytes stream
+        // off the tunnel exactly like the PDF reader.
+        const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
+        return docxShellHtml(src, item.title);
+      }
+      // Other docs (pptx/xls/legacy .doc): auth-fetch the bytes and offer a download.
       const b = await blobOf();
       if (b.err) return errDiv(b.err);
       return errDiv(`Preview is not available for this file type. <a href="${b.url}" download="${escapeHtml(item.title)}" style="color:#0066FF;">Download ${escapeHtml(item.title)}</a>`);

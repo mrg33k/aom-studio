@@ -2707,6 +2707,9 @@ export default defineConfig({
           // pdfjs-dist is dynamic-imported by the PDF reader (pdfDocView) — keep it
           // out of the eager vendor chunk so non-PDF sessions never download it.
           if (id.includes('/pdfjs-dist/')) return undefined
+          // mammoth is dynamic-imported by the Word reader (docxDocView) — same
+          // posture: only docx sessions download it.
+          if (id.includes('/mammoth/')) return undefined
           if (id.includes('/d3-force/')) return 'vendor-d3'
           if (id.includes('/html-to-image/')) return 'vendor-html2img'
           if (id.includes('/marked/')) return 'vendor-marked'
