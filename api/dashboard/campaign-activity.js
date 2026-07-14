@@ -4,12 +4,16 @@
 // Noise (run_started/run_finished heartbeats) is filtered out; the feed shows
 // human-meaningful events only.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const FEED_KINDS = 'in.(sent,replied,bounced,flagged,stage_changed,batch_prepared,batch_approved,batch_sent,health,import)';
+
+function restIn(values) {
+  return (values || []).map(value => encodeURIComponent(String(value))).join(',');
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,14 +22,15 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  const requested = (typeof req.query.world === 'string' && req.query.world.trim()) || 'aom';
+  let tenantContext;
   let world;
   try {
-    ({ tenant: world } = await verifyTenant(requested, req));
+    tenantContext = await resolveTenantContext(req);
+    world = tenantContext.tenantId;
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
-    throw err;
+    return sendTenantContextError(res, err);
   }
+  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
 
   const id = String(req.query.id || '');
   if (!id) return res.status(400).json({ error: 'id required' });
@@ -34,7 +39,7 @@ export default async function handler(req, res) {
 
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/campaign_events?campaign_id=eq.${id}&world=eq.${encodeURIComponent(world)}` +
+      `${SUPABASE_URL}/rest/v1/campaign_events?campaign_id=eq.${id}&world=in.(${restIn(campaignWorlds)})` +
         `&kind=${FEED_KINDS}&select=id,kind,summary,details,contact_id,created_at&order=created_at.desc&limit=${limit}&offset=${offset}`,
       {
         headers: {
@@ -50,6 +55,7 @@ export default async function handler(req, res) {
     const total = parseInt(range.split('/')[1], 10);
     return res.status(200).json({
       ok: true,
+      tenant_id: world,
       feed,
       hasMore: Number.isFinite(total) ? offset + feed.length < total : false,
     });

@@ -14,7 +14,7 @@
 // The engine writes health_problem_code/user_action/message; this endpoint is
 // read-only and additionally catches "engine went silent" on its own.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,6 +39,10 @@ function sb(path) {
   });
 }
 
+function restIn(values) {
+  return (values || []).map(value => encodeURIComponent(String(value))).join(',');
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -46,21 +50,22 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  const requested = (typeof req.query.world === 'string' && req.query.world.trim()) || 'aom';
+  let tenantContext;
   let world;
   try {
-    ({ tenant: world } = await verifyTenant(requested, req));
+    tenantContext = await resolveTenantContext(req);
+    world = tenantContext.tenantId;
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
-    throw err;
+    return sendTenantContextError(res, err);
   }
+  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
 
   const id = String(req.query.id || '');
   if (!id) return res.status(400).json({ error: 'id required' });
 
   try {
     const r = await sb(
-      `campaigns?id=eq.${id}&world=eq.${encodeURIComponent(world)}` +
+      `campaigns?id=eq.${id}&world=in.(${restIn(campaignWorlds)})` +
       `&select=id,status,autopilot,daily_cap,health_status,health_problem_code,health_user_action,health_message,health_checked_at,last_run_at,last_result,next_run_at`
     );
     if (!r.ok) return res.status(r.status).json({ error: await r.text() });
@@ -109,6 +114,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
+      tenant_id: world,
       health: {
         status,
         autopilot: !!c.autopilot,

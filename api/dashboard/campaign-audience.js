@@ -8,7 +8,7 @@
 //   POST {world, op:'parse_csv', csv:'<raw text>'}   — headers, guessed
 //         mapping, validation stats, sample rows
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
 import { parseCsv, guessMapping, EMAIL_RE } from '../_lib/csvAudience.js';
 
 const DATASET_PATH = '/arsenal-municipality-data.json'; // served from public/
@@ -19,21 +19,18 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const requested =
-    (typeof req.query.world === 'string' && req.query.world.trim()) ||
-    (req.body && typeof req.body.world === 'string' && req.body.world.trim()) ||
-    'aom';
+  let tenantContext;
   try {
-    await verifyTenant(requested, req);
+    tenantContext = await resolveTenantContext(req);
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
-    throw err;
+    return sendTenantContextError(res, err);
   }
 
   try {
     if (req.method === 'GET') {
       return res.status(200).json({
         ok: true,
+        tenant_id: tenantContext.tenantId,
         datasets: [
           {
             id: 'us-municipalities',
@@ -75,6 +72,7 @@ export default async function handler(req, res) {
       const withEmail = matches.filter((p) => p.contact_email).length;
       return res.status(200).json({
         ok: true,
+        tenant_id: tenantContext.tenantId,
         count: matches.length,
         withEmail,
         sample: matches.slice(0, 5).map((p) => ({
@@ -110,6 +108,7 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({
         ok: true,
+        tenant_id: tenantContext.tenantId,
         headers,
         mapping,
         totalRows: rows.length - 1,

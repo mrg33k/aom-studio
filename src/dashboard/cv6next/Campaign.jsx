@@ -838,7 +838,7 @@ function MessageCard({ campaign, worldId, onSaved }) {
 // ------------------------------------------------------------------ main ---
 
 export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
-  const { campaigns, error: listError, reload: reloadList } = useCampaignList(worldId);
+  const { campaigns, campaignSetup, error: listError, reload: reloadList } = useCampaignList(worldId);
   const [selectedId, setSelectedId] = useState(null);
   const [cityId, setCityId] = useState(null);
   const [stage, setStage] = useState(null);
@@ -873,7 +873,25 @@ export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
     );
   }
 
-  if (campaigns && campaigns.length === 0 && !wizard) {
+  if (campaignSetup?.status === 'misfiled' && !wizard) {
+    const misfiledCount = campaignSetup.misfiled_count || campaignSetup.misfiled_campaigns?.length || 0;
+    return (
+      <div style={{ padding: 24, maxWidth: 520, margin: '0 auto' }}>
+        <div style={{ ...card, textAlign: 'center', padding: 32, borderColor: 'rgba(251,191,36,.35)' }}>
+          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--fg)' }}>Campaign setup needs repair</div>
+          <div style={{ fontSize: 13.5, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>
+            {misfiledCount === 1 ? 'A campaign exists' : `${misfiledCount} campaigns exist`}, but the server found
+            {misfiledCount === 1 ? ' it' : ' them'} under a workspace key that is not assigned to this workspace.
+          </div>
+          <div style={{ fontSize: 12.5, color: 'var(--faint)', marginTop: 12, lineHeight: 1.45 }}>
+            No campaign controls are shown until the backend filing is corrected.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (campaignSetup?.status === 'not_configured' && !wizard) {
     return (
       <div style={{ padding: 24, maxWidth: 480, margin: '0 auto' }}>
         <div style={{ ...card, textAlign: 'center', padding: 32 }}>

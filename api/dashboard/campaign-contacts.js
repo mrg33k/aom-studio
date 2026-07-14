@@ -6,7 +6,7 @@
 //   PATCH {world, id, contact_id, notes?, follow_up_due_at?}
 // Stage moves go through campaign-actions (op=set_stage) so they're logged.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -26,23 +26,26 @@ function sb(path, opts = {}) {
   });
 }
 
+function restIn(values) {
+  return (values || []).map(value => encodeURIComponent(String(value))).join(',');
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,PATCH,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const requested =
-    (typeof req.query.world === 'string' && req.query.world.trim()) ||
-    (req.body && typeof req.body.world === 'string' && req.body.world.trim()) ||
-    'aom';
+  let tenantContext;
   let world;
   try {
-    ({ tenant: world } = await verifyTenant(requested, req));
+    tenantContext = await resolveTenantContext(req);
+    world = tenantContext.tenantId;
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
-    throw err;
+    return sendTenantContextError(res, err);
   }
+  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
+  const campaignWorldFilter = `world=in.(${restIn(campaignWorlds)})`;
 
   const id = String(req.query.id || (req.body && req.body.id) || '');
   if (!id) return res.status(400).json({ error: 'id (campaign) required' });
@@ -51,7 +54,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET' && req.query.contact) {
       const contactId = String(req.query.contact);
       const [cr, er] = await Promise.all([
-        sb(`campaign_contacts?id=eq.${contactId}&campaign_id=eq.${id}&world=eq.${encodeURIComponent(world)}&select=*`),
+        sb(`campaign_contacts?id=eq.${contactId}&campaign_id=eq.${id}&${campaignWorldFilter}&select=*`),
         sb(`campaign_events?contact_id=eq.${contactId}&campaign_id=eq.${id}&select=id,kind,summary,details,created_at&order=created_at.desc&limit=50`),
       ]);
       if (!cr.ok) return res.status(cr.status).json({ error: await cr.text() });
@@ -60,7 +63,7 @@ export default async function handler(req, res) {
       const events = er.ok ? await er.json() : [];
       const sr = await sb(`campaign_sends?campaign_id=eq.${id}&contact_id=eq.${contactId}&select=sent_at,thread_id,message_id&order=sent_at.desc`);
       const sends = sr.ok ? await sr.json() : [];
-      return res.status(200).json({ ok: true, contact: contacts[0], events, sends });
+      return res.status(200).json({ ok: true, tenant_id: world, contact: contacts[0], events, sends });
     }
 
     if (req.method === 'GET') {
@@ -69,7 +72,7 @@ export default async function handler(req, res) {
       const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
       const q = String(req.query.q || '').trim();
 
-      let filter = `campaign_id=eq.${id}&world=eq.${encodeURIComponent(world)}`;
+      let filter = `campaign_id=eq.${id}&${campaignWorldFilter}`;
       if (stage && STAGES.has(stage)) filter += `&stage=eq.${stage}`;
       if (req.query.flagged === '1') filter += `&hygiene_flag=not.is.null`;
       if (q) {
@@ -90,6 +93,7 @@ export default async function handler(req, res) {
       const total = parseInt(range.split('/')[1], 10);
       return res.status(200).json({
         ok: true,
+        tenant_id: world,
         contacts,
         total: Number.isFinite(total) ? total : contacts.length,
         hasMore: Number.isFinite(total) ? offset + contacts.length < total : false,
@@ -104,13 +108,13 @@ export default async function handler(req, res) {
       if ('follow_up_due_at' in b) patch.follow_up_due_at = b.follow_up_due_at || null;
       if (Object.keys(patch).length === 1) return res.status(400).json({ error: 'nothing to update' });
       const r = await sb(
-        `campaign_contacts?id=eq.${b.contact_id}&campaign_id=eq.${id}&world=eq.${encodeURIComponent(world)}`,
+        `campaign_contacts?id=eq.${b.contact_id}&campaign_id=eq.${id}&${campaignWorldFilter}`,
         { method: 'PATCH', body: JSON.stringify(patch) }
       );
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
       const rows = await r.json();
       if (!rows.length) return res.status(404).json({ error: 'contact not found' });
-      return res.status(200).json({ ok: true, contact: rows[0] });
+      return res.status(200).json({ ok: true, tenant_id: world, contact: rows[0] });
     }
 
     return res.status(405).json({ error: 'method not allowed' });

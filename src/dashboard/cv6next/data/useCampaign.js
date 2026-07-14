@@ -4,6 +4,7 @@
 // product; detail polls at 20s. Nothing here touches the chat bridge.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
+import { supabase } from '../../lib/supabase';
 
 async function getJson(url) {
   const r = await authFetch(url, { credentials: 'include' });
@@ -13,11 +14,29 @@ async function getJson(url) {
 
 export function useCampaignList(worldId) {
   const [campaigns, setCampaigns] = useState(null); // null=loading, []=none
+  const [campaignSetup, setCampaignSetup] = useState(null);
   const [error, setError] = useState(null);
   const load = useCallback(() => {
     if (!worldId) return;
+    if (!supabase) {
+      setCampaigns([]);
+      setCampaignSetup({
+        contract: 'corner.campaign_setup_truth.v1',
+        status: 'not_configured',
+        configured: false,
+        campaign_count: 0,
+        misfiled_count: 0,
+        reason: 'local_render_no_supabase',
+      });
+      setError(null);
+      return;
+    }
     getJson(`/api/dashboard/campaigns?world=${encodeURIComponent(worldId)}`)
-      .then((d) => { setCampaigns(d.campaigns || []); setError(null); })
+      .then((d) => {
+        setCampaigns(d.campaigns || []);
+        setCampaignSetup(d.campaign_setup || null);
+        setError(null);
+      })
       .catch((e) => setError(String(e.message || e)));
   }, [worldId]);
   useEffect(() => {
@@ -25,7 +44,7 @@ export function useCampaignList(worldId) {
     const t = setInterval(load, 20000);
     return () => clearInterval(t);
   }, [load]);
-  return { campaigns, error, reload: load };
+  return { campaigns, campaignSetup, error, reload: load };
 }
 
 export function useCampaignDetail(campaignId, worldId) {

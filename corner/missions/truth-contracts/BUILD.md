@@ -142,6 +142,25 @@ Consolidate message, attachment, preview, and status behavior across every live 
 
 **Status:** Files backend-owned eligibility/count truth shipped; campaign setup server truth remains next.
 
+### R4d - Campaign setup backend-owned truth
+
+- 2026-07-14 implementation:
+  - Shipped the campaign setup slice: added `api/_lib/campaignTruth.js` as the server-owned setup contract for Email > Campaign.
+  - `/api/dashboard/campaigns` now resolves tenant through R2 `TenantContext`, lists campaigns across canonical tenant aliases, and returns additive `campaign_setup` with `configured`, `not_configured`, or `misfiled` status. Existing `campaigns` rows/fields remain intact; no schema/data rename.
+  - Misfiled detection is tenant-scoped: when no alias-matching campaigns exist, the resolver only considers campaigns tied to workspace-owned Gmail connections whose workspace id is in the current TenantContext alias set, then reports rows filed under non-alias world keys instead of letting the UI call that "No campaigns yet."
+  - Campaign sub-endpoints used by the screen (`campaign-health`, `campaign-contacts`, `campaign-activity`, `campaign-actions`, `campaign-audience`) now resolve through TenantContext and read alias-stamped campaign/contact/event rows consistently. New campaign writes still stamp the canonical tenant id.
+  - CV6 `useCampaignList` now carries `campaignSetup`; the Campaign screen renders server-owned misfiled/not-configured states from `campaign_setup.status` instead of inferring setup from `campaigns.length`. No-Supabase local render skips tenant-gated campaign API calls and settles to the existing empty setup state.
+  - Added `tests/api/_lib/campaignTruth.test.js`, covering alias-configured, not-configured, and misfiled classifications.
+  - Verification:
+    - `node --check api/_lib/campaignTruth.js api/dashboard/campaigns.js api/dashboard/campaign-health.js api/dashboard/campaign-contacts.js api/dashboard/campaign-activity.js api/dashboard/campaign-actions.js api/dashboard/campaign-audience.js src/dashboard/cv6next/data/useCampaign.js src/dashboard/cv6next/Campaign.jsx` passed.
+    - `node --test tests/api/_lib/campaignTruth.test.js tests/api/_lib/filesTruth.test.js tests/api/_lib/fileRef.test.js tests/api/_lib/reviewTruth.test.js tests/api/_lib/commandTruth.test.js` passed.
+    - `npm run test:tenant-context` passed, including the hardcoded tenant guard.
+    - `git diff --check` passed.
+    - `npm run build` passed. Prebuild printed existing local notices about missing sibling registry sources and Vite printed the existing chunk-size warning.
+    - Browser/network CV6 audit not run in this sandbox; rerun externally with `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
+
+**Status:** shipped; R4 backend-owned truth slices are complete.
+
 ### R6 - Product goal audit
 
 Audit each CV6 screen and tool as a real person completing real work. For every surface:
