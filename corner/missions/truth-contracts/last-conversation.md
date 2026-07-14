@@ -113,3 +113,19 @@ Tests added: `tests/api/_lib/fileRef.test.js` covers mirror storage identity, ch
 Verification: `node --check api/_lib/fileRef.js api/dashboard/review-queue.js api/dashboard/files.js src/dashboard/cv6next/data/useReview.js src/dashboard/cv6next/data/useOrganize.js src/dashboard/cv6next/OrganizeDesktop.jsx src/dashboard/cv6next/OrganizeMobile.jsx`, `node --test tests/api/_lib/fileRef.test.js`, `npm run test:tenant-context`, `git diff --check`, and `npm run build` all passed. Browser verification was not run in the sandbox.
 
 No new env requirement, schema/data migration, storage key rename, deploy, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - R4c Files Backend-Owned Eligibility Truth
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: ship the remaining Files backend-owned-truth slice so the Files count badge and visible list use one eligibility ruleset built on the R3 FileRef contract.
+
+Fix shipped: added `api/_lib/filesTruth.js` as the server-owned Files snapshot over mirror rows, chat uploads, and Review waiting rows. Added additive `/api/dashboard/files?type=organize&client=<tenant>`, gated by `verifyTenant`, which fetches mirror/upload/Review sources server-side, decorates visible rows with FileRef, and returns `files_truth` with by-project counts plus ghost review rows for waiting files no longer present in the mirror. `useOrganize` now prefers that combined response and uses backend `needs_review` stamps plus `files_truth.ghosts` for both count and list truth, with the previous split mirror/uploads fallback preserved. Touched Files reads no longer fall back to a literal tenant when `client` is missing.
+
+Tests added: `tests/api/_lib/filesTruth.test.js` covers mirror review joins, review ghosts, and upload counts from the same visible-row snapshot.
+
+Verification: `node --check api/_lib/filesTruth.js api/dashboard/files.js api/dashboard/review-queue.js src/dashboard/cv6next/data/useOrganize.js`, `node --test tests/api/_lib/filesTruth.test.js tests/api/_lib/fileRef.test.js tests/api/_lib/reviewTruth.test.js tests/api/_lib/commandTruth.test.js`, `npm run test:tenant-context`, `git diff --check`, and `npm run build` all passed. Browser verification was not run in the sandbox.
+
+Deferred: campaign setup server truth remains the next backend-owned-truth round to stop Email/Campaign screens independently inferring setup state.
+
+No new env requirement, schema/data migration, storage key rename, deploy, secret rotation, external message send, or stored login/world/data mutation.
