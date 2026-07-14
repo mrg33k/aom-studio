@@ -133,4 +133,19 @@ test.describe('CV6 shared message renderer', () => {
     await page.getByTitle('Send').click()
     await expect.poll(() => getSent()?.text).toBe('Looks good from Catch Up')
   })
+
+  test('Home quick thread renders text, attachments, and link cards through the shared renderer', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 950 })
+    await page.goto(`${BASE}/dashboard?cv6=1&demo=home-quick-thread`, { waitUntil: 'domcontentloaded' })
+    await page.locator('[data-screen="home-desktop"]').waitFor({ timeout: 15_000 })
+
+    await page.getByText('Renderer Room').first().click()
+    const homeThread = page.locator('[data-cv6-message-thread][data-variant="homeQuick"]')
+    await homeThread.waitFor({ timeout: 15_000 })
+
+    await expect(homeThread.getByText('Home quick thread has a fresh seeded reply.')).toBeVisible()
+    await expect(homeThread.getByText('renderer-audit.pdf')).toBeVisible()
+    await expect(homeThread.getByRole('button', { name: /^Review$/ })).toBeVisible()
+    await expect(homeThread.getByRole('link', { name: /example\.test/ })).toBeVisible()
+  })
 })

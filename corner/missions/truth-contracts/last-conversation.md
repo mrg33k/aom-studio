@@ -174,3 +174,25 @@ Verification: `npm run build`, `npm run test:tenant-context`, and `git diff --ch
 No SupportThread, ChatDesktop, ChatLifecycle, or Cv6QuickThread migration. No schema/data migration, deploy, push, secret rotation, external message send, or stored login/world/data mutation.
 
 Follow-up from Claude's external Playwright run: both new renderer specs initially failed. Fixed the demo blocks test by targeting the exact `.cmail-tag` Email label instead of broad `getByText('Email')`. Diagnosed the Catch Up modal failure as test seeding, not renderer output: no-Supabase local `useDataPipe` does not create Catch Up cards from stubbed `supabase-status.messages`, so the previous `cv6_catchup_modal=1` Home opener stayed in the caught-up state and never mounted the modal thread. Replaced that with `?demo=catchup-modal`, a no-auth renderer fixture that renders the real `CatchUpModal` and `useRoomThread` path directly. Re-verified `npm run build`, `npm run test:tenant-context`, and `git diff --check` in the sandbox; browser rerun still needs an external Vite server.
+
+## 2026-07-14 - R5b Home Quick Thread Shared Renderer
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: implement exactly slice 2 of the renderer consolidation proposal: migrate Home's `Cv6QuickThread` to the shared `Cv6MessageThread` renderer without touching `ChatDesktop`, `ChatLifecycle`, or `SupportThread`.
+
+Fix shipped: replaced Home `Cv6QuickThread`'s private grouped message loop with `Cv6MessageThread variant="homeQuick"`. The Home portal host tracking, MutationObserver host selection, and sticky-scroll wrapper remain outside the renderer. Attachments stay enabled via `allowAttachments`, blocks/link cards remain enabled, chips remain disabled for current Home parity, live work still flows through shared `WorkingTurn`, and review/send callbacks stay host-owned.
+
+Tests added: extended `tests/cv6-message-renderer.spec.mjs` with a seeded Home quick thread case using `?demo=home-quick-thread`. It opens a seeded project room in the Home column, waits for `[data-cv6-message-thread][data-variant="homeQuick"]`, and asserts seeded plain text, the `renderer-audit.pdf` attachment with `Review`, and the result link card render through the shared renderer. The `supabase-messages` intercept still uses the bare-path wildcard pattern.
+
+Verification run in sandbox: `node --check tests/cv6-message-renderer.spec.mjs`, `git diff --check`, `npm run test:tenant-context`, and `npm run build` all passed. Build printed the existing prebuild notices about missing sibling registry sources and the existing Vite chunk-size warning. Browser specs were not run in this sandbox per handoff; Claude should rerun externally.
+
+External commands to run: `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line` and `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line`.
+
+No schema/data migration, deploy, push, secret rotation, external message send, stored tenant/world/login/data mutation, or commit. Pre-existing dirty `test-results/.last-run.json` was left untouched.
+
+Follow-up from Claude's external Playwright run: demo blocks, Catch Up modal, and practical audit passed, but the new Home quick thread test failed waiting for `Renderer Room`. The page mounted the Home shell, but the stubbed `supabase-status.projects` room did not reach Home's rooms column under `?demo=home-quick-thread`, matching the earlier Catch Up fixture-data failure class.
+
+Fix-forward: changed `?demo=home-quick-thread` from a data-pipe-dependent route into a direct fixture component. `DemoHomeQuickThread` renders the real desktop Home template and the real migrated `Cv6QuickThread`, but supplies a seeded `Renderer Room` recent row and seeded normalized messages directly in-process. The test now clicks that visible Home row and asserts text, attachment review affordance, and link card inside `[data-variant="homeQuick"]`; it no longer depends on `supabase-status` or `supabase-messages` route seeding for the Home demo.
+
+Re-verification run in sandbox: `node --check tests/cv6-message-renderer.spec.mjs`, `git diff --check`, `npm run test:tenant-context`, and `npm run build` passed. Attempted a focused browser rerun by starting `npm run dev -- --host 127.0.0.1 --port 5200`, but this sandbox still cannot bind Vite (`listen EPERM: operation not permitted 127.0.0.1:5200`). External browser rerun still needed with `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright test tests/cv6-message-renderer.spec.mjs --reporter=line`.
