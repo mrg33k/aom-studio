@@ -62,6 +62,11 @@ test.describe('CV6 practical product audit', () => {
         await expect(page.getByText("We couldn't reach your inbox")).toHaveCount(0)
         await expect(page.getByText("You're all caught up")).toHaveCount(1)
         await expect(page.getByText("You're all caught up")).toBeVisible()
+        await page.getByRole('button', { name: 'Campaign' }).click()
+        await expect(page.getByText("Campaigns didn’t load")).toHaveCount(0)
+        await expect(page.getByText('No campaigns yet')).toBeVisible()
+        await expect(page.getByText('Create your first campaign')).toHaveCount(0)
+        await page.getByRole('button', { name: 'Inbox' }).click()
       }
       if (tool === 'Tracker') {
         await expect(page.getByText('Loading the tracker…')).toHaveCount(0)
@@ -106,6 +111,11 @@ test.describe('CV6 practical product audit', () => {
         await expect(page.getByText("We couldn't reach your inbox")).toHaveCount(0)
         await expect(page.getByText("You're all caught up")).toHaveCount(1)
         await expect(page.getByText("You're all caught up")).toBeVisible()
+        await page.getByRole('button', { name: 'Campaign' }).click()
+        await expect(page.getByText("Campaigns didn’t load")).toHaveCount(0)
+        await expect(page.getByText('No campaigns yet')).toBeVisible()
+        await expect(page.getByText('Create your first campaign')).toHaveCount(0)
+        await page.getByRole('button', { name: 'Inbox' }).click()
       }
       if (tool === 'Tracker') {
         await expect(page.getByText('Loading the tracker…')).toHaveCount(0)

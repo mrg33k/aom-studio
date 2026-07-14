@@ -838,7 +838,7 @@ function MessageCard({ campaign, worldId, onSaved }) {
 // ------------------------------------------------------------------ main ---
 
 export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
-  const { campaigns, error: listError, reload: reloadList } = useCampaignList(worldId);
+  const { campaigns, error: listError, reload: reloadList, localMode } = useCampaignList(worldId);
   const [selectedId, setSelectedId] = useState(null);
   const [cityId, setCityId] = useState(null);
   const [stage, setStage] = useState(null);
@@ -879,12 +879,15 @@ export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
         <div style={{ ...card, textAlign: 'center', padding: 32 }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--fg)' }}>No campaigns yet</div>
           <div style={{ fontSize: 13.5, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>
-            A campaign sends a personal email to a list, a batch a day, tracks every reply,
-            and shows you exactly where each contact stands.
+            {localMode
+              ? 'Campaigns appear here once your workspace is connected. Nothing is queued locally.'
+              : 'A campaign sends a personal email to a list, a batch a day, tracks every reply, and shows you exactly where each contact stands.'}
           </div>
-          <button style={{ ...btnPrimary(false), marginTop: 18 }} onClick={() => setWizard(true)}>
-            Create your first campaign
-          </button>
+          {!localMode && (
+            <button style={{ ...btnPrimary(false), marginTop: 18 }} onClick={() => setWizard(true)}>
+              Create your first campaign
+            </button>
+          )}
         </div>
       </div>
     );

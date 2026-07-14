@@ -4,6 +4,7 @@
 // product; detail polls at 20s. Nothing here touches the chat bridge.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
+import { supabase } from '../../lib/supabase';
 
 async function getJson(url) {
   const r = await authFetch(url, { credentials: 'include' });
@@ -16,6 +17,11 @@ export function useCampaignList(worldId) {
   const [error, setError] = useState(null);
   const load = useCallback(() => {
     if (!worldId) return;
+    if (!supabase) {
+      setCampaigns([]);
+      setError(null);
+      return;
+    }
     getJson(`/api/dashboard/campaigns?world=${encodeURIComponent(worldId)}`)
       .then((d) => { setCampaigns(d.campaigns || []); setError(null); })
       .catch((e) => setError(String(e.message || e)));
@@ -25,7 +31,7 @@ export function useCampaignList(worldId) {
     const t = setInterval(load, 20000);
     return () => clearInterval(t);
   }, [load]);
-  return { campaigns, error, reload: load };
+  return { campaigns, error, reload: load, localMode: !supabase };
 }
 
 export function useCampaignDetail(campaignId, worldId) {

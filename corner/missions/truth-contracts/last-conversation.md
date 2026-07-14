@@ -105,3 +105,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/data/useSupportInbox.js` now treats absent Supabase as explicit read-only local empty data. `src/dashboard/cv6next/CornerCV6.jsx` can drop embedded state branches before injecting shared states, and mobile Email uses that path to avoid duplicate empty copy. `src/dashboard/cv6next/templates/support-inbox.html` now shows the visible title "Email."
 
 Verification: desktop/mobile Playwright probes completed Email with one caught-up state and no dropped-connection banner; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests with Email assertions); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Campaign local workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Email, switch to Campaign, understand whether campaigns are empty or unavailable, and return to sibling tools without misleading retry errors or dead local write controls.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Desktop and mobile Campaign both showed "Campaigns didn't load. Retrying automatically." in safe no-Supabase local mode. That is a core Email sub-workflow and it read as a live failure rather than honest local emptiness.
+2. P1: The configured empty-state action would open campaign creation, but campaign writes cannot work in local no-Supabase mode, so showing the create action there would be a dead path.
+3. P2: Sibling navigation stayed usable and Campaign produced only the already-filtered generic local 404 resource console entries.
+
+Fix shipped: `src/dashboard/cv6next/data/useCampaign.js` now treats absent Supabase as explicit local empty data. `src/dashboard/cv6next/Campaign.jsx` shows a calm local empty message and hides "Create your first campaign" in local mode while preserving the configured-session creation flow.
+
+Verification: desktop/mobile Playwright probes completed Campaign with "No campaigns yet" and no retry error; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests with Campaign assertions); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.

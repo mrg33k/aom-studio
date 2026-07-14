@@ -111,3 +111,13 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: local Vite still reports generic missing-resource 404 console entries that the practical audit filters as non-product noise. No stored login/world/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and verified for the delegated email-local-workflow audit.
+
+- 2026-07-14 delegated campaign-local-workflow slice:
+  - User goal: from desktop and mobile CV6, open Email, switch to Campaign, understand whether campaigns are empty/unavailable, and return to sibling tools without a stuck loading state or misleading error.
+  - Audit: desktop and mobile Campaign both showed "Campaigns didn't load. Retrying automatically." in safe no-Supabase mode. The tab stayed navigable, but the message implied an active failure/retry loop instead of the honest local empty state.
+  - Ranked finding: P1 high-frequency Email sub-workflow confusion. Campaign sits behind a primary Email tab; a local user checking it sees a broken/retrying state and no clear answer about whether any campaign exists.
+  - Fixed this round: `useCampaignList` now treats absent Supabase as explicit local empty data, and Campaign shows a calm local empty message with no dead "Create your first campaign" action when writes cannot work locally.
+  - Verification: desktop/mobile Playwright probes completed the Campaign tab with "No campaigns yet" and no retry error; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed with Campaign assertions; `npm run build` passed.
+  - Remaining notes: local Vite still reports generic missing-resource 404 console entries that the practical audit filters as non-product noise. No stored login/world/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
+
+**Status:** shipped and verified for the delegated campaign-local-workflow audit.
