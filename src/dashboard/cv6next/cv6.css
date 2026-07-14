@@ -470,11 +470,16 @@
    visible at the top of the scroll range, gone by the bottom. Browsers without
    scroll-timeline simply never show it (same as before the cue existed). */
 [data-cv6][data-screen^="command"] .gd-more {
-  position:sticky; bottom:6px; align-self:center; flex:none;
-  display:flex; align-items:center; gap:6px; padding:5px 12px; margin-top:4px;
+  position:sticky; bottom:0; align-self:stretch; flex:none;
+  display:flex; justify-content:center; padding:22px 0 8px; margin-top:-10px;
+  background:linear-gradient(180deg, transparent, var(--ground, #0A0A0B) 78%);
+  pointer-events:none; opacity:0;
+}
+[data-cv6][data-screen^="command"] .gd-more-pill {
+  display:flex; align-items:center; gap:6px; padding:5px 12px;
   border-radius:999px; background:var(--surface-2); border:1px solid var(--hair);
   color:var(--muted); font-size:11px; font-weight:600; font-family:var(--font-sans);
-  pointer-events:none; opacity:0; box-shadow:0 6px 18px -8px rgba(0,0,0,.45);
+  box-shadow:0 6px 18px -8px rgba(0,0,0,.45);
 }
 @supports (animation-timeline: scroll()) {
   [data-cv6][data-screen^="command"] .gd-more {

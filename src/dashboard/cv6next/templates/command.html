@@ -174,9 +174,11 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg>Open room
       </button>
       <!-- Scroll cue: a tall question card pushes Loops/watch below the fold with no
-           affordance. Sticky pill, fades out as you scroll (CSS scroll-driven animation
-           in cv6.css); hidden entirely when nothing overflows. Decorative only. -->
-      <div class="gd-more" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>More below</div>
+           affordance. Sticky scrim + pill, fades out as you scroll (CSS scroll-driven
+           animation in cv6.css); hidden entirely when nothing overflows. The scrim
+           gradient makes the pill's overlap with the controls beneath read designed,
+           never like a pill dropped on a button. Decorative only. -->
+      <div class="gd-more" aria-hidden="true"><span class="gd-more-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>More below</span></div>
     </div>
   </div>
 </div>
