@@ -31,6 +31,7 @@ import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import NewComposer from './NewComposer.jsx';
+import { supabase } from '../lib/supabase.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useReviewWaitingCount } from './data/useReview.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -269,7 +270,7 @@ function groupChatMessages(list) {
   return groups;
 }
 
-function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awaiting, liveSteps, room }) {
+function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awaiting, liveSteps, room, localReadOnly = false }) {
   // FIX G: scroll-to-bottom on load and new messages; guard against yanking the user
   // back when they've scrolled up (>100px from the bottom). Hooks must come before the
   // early return so React's rules-of-hooks are satisfied.
@@ -304,7 +305,7 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awai
   return createPortal(
     (list.length === 0 && !live && !awaiting) ? (
       <div className="convo-empty" style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 13, maxWidth: 240, lineHeight: 1.5 }}>
-        No messages in this room yet. Send the first one below.
+        {localReadOnly ? 'No messages in this room yet. Connect a workspace to send messages.' : 'No messages in this room yet. Send the first one below.'}
       </div>
     ) : (
       <SendCtx.Provider value={onSend || (() => {})}>
@@ -1274,11 +1275,14 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     toggleFiles: () => setFilesOpen((o) => !o),
     // Send a quick reply from the col3 room panel: read the uncontrolled input and post into the
     // opened room via the same thread the full Chat uses (Patrik: the quick reply room should work).
-    sendMessage: (_arg, e) => {
+    sendMessage: async (_arg, e) => {
       const root = e?.currentTarget?.closest('.composer') || document.querySelector('[data-screen="convo"] .composer');
       const inp = root && root.querySelector('.convo-input');
       const v = inp && inp.value;
-      if (v && v.trim() && quickSend) { quickSend(v.trim()); if (inp) inp.value = ''; }
+      if (v && v.trim() && quickSend) {
+        const ok = await quickSend(v.trim());
+        if (inp && ok !== false) inp.value = '';
+      }
     },
     // Open the project's own conversation (the general chat above the mission list).
     openProjectChat: (id) => {
@@ -1554,6 +1558,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         awaiting={quickThread && quickThread.awaiting}
         liveSteps={quickThread && quickThread.liveSteps}
         room={displayedRoom}
+        localReadOnly={!supabase}
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, needsReview: true } : null); }}
       />
       <Cv6FullComposer

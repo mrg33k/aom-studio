@@ -169,3 +169,20 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/NewComposer.jsx` now detects absent Supabase and binds the composer hint/primary CTA to `Creation needs a connected workspace. Local mode is read-only.` and `Read-only locally`. The CTA is styled inactive, and submit returns the same read-only truth before any create API runs. Configured sessions keep the normal Start/Create labels and backend path.
 
 Verification: desktop/mobile Playwright probe confirmed mission and project tabs show the read-only local state and no failing create attempt. `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across Home/New and sibling CV6 tools). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Chat room core workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open the actual chat room, understand the room context, type/send or recover from read-only state, use obvious room controls, and return to sibling tools without stale data, dead actions, or misleading working states.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Chat is the core product loop. In safe local/no-Supabase mode, mobile accepted a typed room message, cleared the input, rendered a `You` message, and showed `Getting started / Working` even though no connected workspace could receive it.
+2. P1: Desktop's practical chat entry is the Home third-column quick room. It still promised `Send the first one below` and had an old quick-send handler that cleared text without waiting for a successful send.
+3. P2: Mobile chat Back/Menu/Files controls were visually clear but lacked complete button semantics in the chat lifecycle itself.
+4. P2: Live production verification is still pending. A fresh read-only check of `https://aheadofmarket.com/dashboard` redirected to `https://www.aheadofmarket.com/login`; the in-app browser control setup failed with `Cannot redefine property: process`, so an authenticated production room could not be exercised in this run.
+
+Fix shipped locally: `src/dashboard/cv6next/data/useRoomThread.js` now refuses local read-only sends before optimistic UI and removes optimistic rows on failed POSTs. `src/dashboard/cv6next/Cv6FullComposer.jsx`, `src/dashboard/cv6next/ChatLifecycle.jsx`, and the desktop `Cv6QuickThread` path in `src/dashboard/cv6next/CornerCV6.jsx` show a connected-workspace read-only state locally instead of accepting text. Home quick-send only clears after a successful send, and mobile chat Back/Menu/Files controls now have explicit role/label/keyboard activation.
+
+Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop Home quick-chat, mobile chat room, and sibling CV6 surfaces). `npm run build` passed. Production check was read-only and stopped at login; no deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.

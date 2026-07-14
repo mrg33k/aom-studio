@@ -50,18 +50,13 @@ test.describe('CV6 practical product audit', () => {
     await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
     await page.getByRole('button', { name: 'Cancel' }).click()
 
-    const firstRecent = page.locator('[data-action="openRecent"]:visible').first()
-    if (await firstRecent.count()) {
-      await firstRecent.click()
-    } else if (await page.locator('[data-action="toggleAgents"]:visible').count()) {
-      await page.locator('[data-action="toggleAgents"]:visible').first().click()
-      await page.locator('[data-action="openRoom"]:visible').first().click()
-    } else if (await page.locator('[data-action="toggleProjectMissions"]:visible').count()) {
-      const firstProject = page.locator('[data-action="toggleProjectMissions"]:visible').first()
-      await firstProject.click()
-    } else {
-      await expect(page.getByText('No active goal')).toBeVisible()
-    }
+    await page.locator('[data-action="toggleAgents"]:visible').first().click()
+    await expect(page.locator('[data-action="openRoom"]:visible').first()).toBeVisible()
+    await page.locator('[data-action="openRoom"]:visible').first().click()
+    await expect(page.getByText('No messages in this room yet. Connect a workspace to send messages.')).toBeVisible()
+    await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
+    await expect(page.getByTestId('cv6-chat-input')).toBeDisabled()
+    await expect(page.getByText('Getting started')).toHaveCount(0)
     await expectNoCrash(page)
 
     for (const tool of ['Files', 'Email', 'Tracker', 'Command', 'Scribe', 'Home']) {
@@ -123,8 +118,17 @@ test.describe('CV6 practical product audit', () => {
     await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
     await page.getByRole('button', { name: 'Cancel' }).click()
 
+    await page.locator('[data-action="toggleAgents"]:visible').first().click()
+    await expect(page.locator('[data-action="openRoom"]:visible').first()).toBeVisible()
+    await page.locator('[data-action="openRoom"]:visible').first().click()
+    await expect(page.getByText('No messages with Web yet')).toBeVisible()
+    await expect(page.getByText('Connect a workspace to send messages.')).toBeVisible()
+    await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
+    await expect(page.getByTestId('cv6-chat-input')).toBeDisabled()
+    await expect(page.getByText('Getting started')).toHaveCount(0)
     await page.getByRole('button', { name: 'Menu' }).first().click()
     await expect(page.locator('.navdrawer')).toBeVisible()
+
     const drawerLabels = await page.locator('.navdrawer .nl').allTextContents()
     expect(drawerLabels).toEqual(['Home', 'Files', 'Email', 'Tracker', 'Command', 'Live Scribe'])
 

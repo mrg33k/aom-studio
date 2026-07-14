@@ -163,3 +163,18 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: no stored login/world/member/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and verified for the delegated new-composer-local-workflow audit.
+
+- 2026-07-14 delegated chat-room-core-workflow slice:
+  - User goal: from desktop and mobile CV6, open the actual chat room, read the current room context, type/send or recover from local read-only state, use obvious room controls, and return to sibling CV6 surfaces without stale data, dead actions, or misleading states.
+  - Screen/tool inventory for this slice: desktop Home quick-room is the highest-frequency chat entry; mobile agent room is the dedicated chat surface; shared `useRoomThread` is the send/source-of-truth path; Files/Email/Tracker/Command/Scribe remain sibling surfaces.
+  - Audit: opened Agents, opened the Web room on desktop and mobile, typed a local test message, and watched the send outcome. Mobile accepted the text, cleared it, rendered a `You` message, and showed `Getting started / Working` even though safe local/no-Supabase mode could not deliver a real message. Desktop quick-chat also exposed a writable composer and cleared text in old quick-send paths.
+  - Ranked findings:
+    1. P1 highest-frequency/highest-impact trust break: chat is the product loop, and local read-only mode could fake a successful send plus agent-working state.
+    2. P1 desktop parity: the Home third-column quick chat is the practical desktop room, and its empty copy still said to send below even when the composer could not write.
+    3. P2 mobile controls: room Back/Menu/Files controls needed explicit button labels/keyboard activation to keep the actual chat path obvious.
+    4. P2 production verification: unauthenticated `https://aheadofmarket.com/dashboard` redirects to `/login`; browser-control setup hit `Cannot redefine property: process`, so live authenticated chat verification remains pending user/browser access.
+  - Fixed this round: `useRoomThread.send` now returns `false` before optimistic UI when Supabase is absent and removes optimistic messages on failed POSTs; `Cv6FullComposer`, its fallback composer, mobile `ChatLifecycle`, and desktop `Cv6QuickThread` show/read as connected-workspace read-only locally instead of sending; Home quick-send now only clears after a successful send; mobile chat Back/Menu/Files controls have explicit button semantics.
+  - Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed desktop/mobile with explicit chat-room assertions plus sibling CV6 surfaces; `npm run build` passed. A read-only production reachability check landed on `https://www.aheadofmarket.com/login` and did not mutate data.
+  - Remaining notes: live production chat workflow still needs an authenticated `aheadofmarket.com/dashboard` browser session; no stored login/world/member/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
+
+**Status:** shipped and locally verified for the delegated chat-room-core-workflow audit; production-auth verification blocked.

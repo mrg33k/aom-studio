@@ -135,10 +135,12 @@ export function useRoomThread(worldId, room) {
   const send = useCallback(async (text) => {
     const body = String(text || '').trim();
     if (!worldId || !room?.id || !body) return false;
+    if (!supabase) return false;
     // Show it immediately as your turn (reconciled away when the real row arrives).
     const now = new Date();
+    const optId = `${now.getTime()}-${Math.random().toString(36).slice(2)}`;
     setPending((p) => [...p, {
-      _opt: true, optId: `${now.getTime()}-${p.length}`,
+      _opt: true, optId,
       agentInitials: initials('You'), agentName: 'You', agentTint: 'accent', isUser: true,
       text: body, time: hhmm(now.toISOString()), ts: now.toISOString(),
       isFile: false, fileName: '', attachmentUrl: '', fileMime: '', fileSize: 0, blocks: null,
@@ -156,11 +158,16 @@ export function useRoomThread(worldId, room) {
       const r = await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
+      if (!r || !r.ok) {
+        setPending((p) => p.filter((m) => m.optId !== optId));
+        setAwaiting(false);
+        return false;
+      }
       // The created row id is the parent the bridge keys its step heartbeats to.
       try { const j = await r.clone().json(); const id = j?.message?.id; if (id) setLastSentId(String(id)); } catch { /* non-JSON */ }
       setReloadKey((k) => k + 1);
-      return !!(r && r.ok);
-    } catch { setAwaiting(false); return false; }
+      return true;
+    } catch { setPending((p) => p.filter((m) => m.optId !== optId)); setAwaiting(false); return false; }
   }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug]);
 
   // Poll the live step heartbeats for the message you just sent (events table via

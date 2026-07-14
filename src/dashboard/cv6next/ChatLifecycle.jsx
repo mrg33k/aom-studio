@@ -15,6 +15,7 @@ import { useDictation } from './data/useDictation.js';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { FilesShelf, useRoomLibrary } from './ChatDesktop.jsx';
+import { supabase } from '../lib/supabase.js';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -317,6 +318,7 @@ function RoomFilesSheet({ projectSlug, messages, uploadScope, onClose, onReview 
 
 export default function ChatLifecycle({ room, fullRoom, worldId, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
   const [draft, setDraft] = useState('');
+  const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   // Files-from-chat + the rich composer bridge (chat-surface WD40 R1). The rich
   // CV4-functionality/CV6-look composer needs the room's full identity (project /
@@ -354,7 +356,12 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
     return ask ? { ...(goal || {}), title: ask } : goal;
   }, [goal, messages]);
 
-  const submit = () => { const t = draft.trim(); if (!t) return; onSend?.(t); setDraft(''); };
+  const submit = async () => {
+    const t = draft.trim();
+    if (!t || localReadOnly) return;
+    const ok = await onSend?.(t);
+    if (ok !== false) setDraft('');
+  };
 
   // Send behavior (design contract, drop 7): a fresh message is NOT bottom-stuck. We pin
   // the just-sent user message to the TOP of the view and let the agent's reply grow
@@ -433,7 +440,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
   return (
     <div data-cv6 data-theme="dark" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="mhdr">
-        <div className="mback" onClick={onBack}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></div>
+        <div className="mback" role="button" aria-label="Back" tabIndex={0} onClick={onBack} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBack?.(); } }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></div>
         <div className={`mh-av is-${avRing(room.status)}`} style={avTint(room.status)}>
           {room.initials || '·'}
           <span className="mh-ring" />
@@ -449,8 +456,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
         <div className="mhactions">
-          <div className="ib" role="button" title="Files in this room" data-testid="chat-files-button" style={{ width: 36, height: 36, borderRadius: 10, cursor: 'pointer' }} onClick={() => setFilesSheetOpen(true)}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg></div>
-          <div className="ib" style={{ width: 36, height: 36, borderRadius: 10 }} onClick={onOpenNav}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></div>
+          <div className="ib" role="button" aria-label="Files in this room" title="Files in this room" tabIndex={0} data-testid="chat-files-button" style={{ width: 36, height: 36, borderRadius: 10, cursor: 'pointer' }} onClick={() => setFilesSheetOpen(true)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFilesSheetOpen(true); } }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg></div>
+          <div className="ib" role="button" aria-label="Menu" tabIndex={0} style={{ width: 36, height: 36, borderRadius: 10 }} onClick={onOpenNav} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenNav?.(); } }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></div>
         </div>
       </div>
 
@@ -464,10 +471,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
         <ReviewCtx.Provider value={(file) => { if (file) reviewHandoff([file]); }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           {empty ? (
-            <div className="empty" style={{ marginTop: 40 }}>
-              <div className="e-t">No messages with {room.name} yet</div>
-              <div className="e-s">Start the conversation below.</div>
-            </div>
+              <div className="empty" style={{ marginTop: 40 }}>
+                <div className="e-t">No messages with {room.name} yet</div>
+              <div className="e-s">{localReadOnly ? 'Connect a workspace to send messages.' : 'Start the conversation below.'}</div>
+              </div>
           ) : (
             <>
               {/* No divider above folded days — the DayCard header already carries the same
@@ -534,10 +541,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
           </button>
         )}
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-          placeholder={dictate.listening ? 'Listening…' : `Message ${room.name}…`}
-          style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', fontSize: 14, color: 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none' }} />
-        <button onClick={submit} style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+        <input value={draft} disabled={localReadOnly} readOnly={localReadOnly} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+          placeholder={localReadOnly ? 'Chat needs a connected workspace.' : (dictate.listening ? 'Listening…' : `Message ${room.name}…`)}
+          style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', fontSize: 14, color: localReadOnly ? 'var(--muted)' : 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none', opacity: 1 }} />
+        <button onClick={submit} disabled={localReadOnly} title={localReadOnly ? 'Local mode is read-only' : 'Send'} style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', opacity: localReadOnly ? .55 : 1 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" /></svg>
         </button>
       </div>

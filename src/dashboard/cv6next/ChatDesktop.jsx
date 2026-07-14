@@ -553,8 +553,8 @@ function DesktopDayCard({ group, onSend }) {
 // WorkingTurn now lives in ChatGoalThread.jsx (shared by every chat surface — the bulletproof
 // single source of the "agent is working" strip). Imported above.
 
-function PlainThread({ messages, onSend }) {
-  if (!messages?.length) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>No messages in this room yet. Start the conversation below.</div>;
+function PlainThread({ messages, onSend, localReadOnly = false }) {
+  if (!messages?.length) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{localReadOnly ? 'No messages in this room yet. Connect a workspace to send messages.' : 'No messages in this room yet. Start the conversation below.'}</div>;
   const groups = groupByDayD(messages);
   const older = groups.slice(0, -1);
   const latest = groups[groups.length - 1] || null;
@@ -864,7 +864,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         they land and each finished turn shows its step thread inline; while the
                         agent works, its LIVE step thread builds right under the just-sent message,
                         ticking pending → working → done like the step-thread kit animation. */}
-                    <PlainThread messages={messages} onSend={handleThreadAction} />
+                    <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />
                     {awaiting ? <WorkingTurn room={selected} liveSteps={liveSteps} goal={askGoal} /> : null}
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
