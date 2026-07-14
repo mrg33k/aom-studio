@@ -121,3 +121,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped: `src/dashboard/cv6next/data/useCampaign.js` now treats absent Supabase as explicit local empty data. `src/dashboard/cv6next/Campaign.jsx` shows a calm local empty message and hides "Create your first campaign" in local mode while preserving the configured-session creation flow.
 
 Verification: desktop/mobile Playwright probes completed Campaign with "No campaigns yet" and no retry error; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests with Campaign assertions); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Live Scribe capture-state audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Live Scribe, understand the empty note state, try Start capture, and return to sibling tools without a misleading mic/error state or dead action.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Live Scribe looked active before consent. On both desktop and mobile, the idle screen showed recording affordances (red dot, waveform, mobile speaker/live bar) before the user pressed Start, which is a trust break for a mic-capture workflow.
+2. P2: Empty "Save & copy summary" remains reachable before transcript exists. It does visibly report "Nothing captured yet — record something first.", so it is not dead, but it is still an extra pre-capture control.
+3. P2: Starting capture with no microphone produces the expected `NotFoundError` in console plus generic local 404 entries; the visible product state is correct and recoverable with the mic-specific message.
+
+Fix shipped: `src/dashboard/cv6next/templates/livescribe.html` now binds the record dot, waveform, mobile status bar, and speaker indicator to `session.capturing`. `src/dashboard/cv6next/cv6.css` makes the off state muted/static and keeps the red pulsing recording look only for `is-on`. The practical audit spec now asserts Scribe's desktop and mobile idle state during the sibling workflow.
+
+Verification: a focused fake-microphone Playwright probe confirmed idle `rec/wave is-off` with no animation and Start flips to `Stop & save` plus active recording classes. `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop/mobile sibling tools with Scribe assertions). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.

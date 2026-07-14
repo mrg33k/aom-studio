@@ -121,3 +121,17 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: local Vite still reports generic missing-resource 404 console entries that the practical audit filters as non-product noise. No stored login/world/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and verified for the delegated campaign-local-workflow audit.
+
+- 2026-07-14 delegated scribe-capture-workflow slice:
+  - User goal: from desktop and mobile CV6, open Live Scribe, understand the empty note state, try Start capture, and return to sibling tools without a misleading mic/error state or dead action.
+  - Screen/tool inventory for this slice: Scribe captures meeting audio into transcript/action/decision summaries; Home or drawer gets the user there; Files, Email, Tracker, and Command are sibling surfaces that must remain reachable after the Scribe visit.
+  - Audit: opened Scribe from desktop Home and mobile drawer, pressed empty "Save & copy summary", pressed Start capture with no microphone, then verified Start with a fake microphone. Empty save produced visible status copy, no microphone produced the correct mic-specific recovery copy, and sibling navigation remained available.
+  - Ranked findings:
+    1. P1 high-frequency/high-impact trust issue: idle Scribe looked like it was already recording. The desktop header and mobile status bar showed the red record dot/wave/speaker affordances before the user pressed Start, which is misleading in a mic-capture workflow.
+    2. P2 lower severity: "Save & copy summary" is still reachable before any transcript; it now reports "Nothing captured yet" visibly, so it is not dead, but it remains an extra pre-capture action.
+    3. P2 local/test noise: no-mic Start logs the expected `NotFoundError` plus generic local 404 resource entries; the visible UI gives the right mic-specific recovery state.
+  - Fixed this round: bound Scribe's record dot, waveform, mobile status bar, and speaker indicator to the existing `session.capturing` truth so idle is muted/static and only an actual capture shows active red recording affordances.
+  - Verification: fake-microphone Playwright probe confirmed idle `rec/wave is-off` with no animation and Start flips to `Stop & save` plus active recording classes; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed desktop/mobile sibling workflow with Scribe assertions; `npm run build` passed.
+  - Remaining notes: no stored login/world/member/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
+
+**Status:** shipped and verified for the delegated scribe-capture-workflow audit.

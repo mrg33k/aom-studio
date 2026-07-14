@@ -627,9 +627,14 @@
 /* ---- Live Scribe tool (transcript · meeting helper · extracted · record dock) ---- */
 @keyframes scWave { 0%,100%{transform:scaleY(.4);} 50%{transform:scaleY(1);} }
 @keyframes scCaret { 0%,100%{opacity:1;} 50%{opacity:0;} }
-[data-cv6][data-screen^="livescribe"] .rec { width:10px; height:10px; border-radius:50%; background:#F87171; animation:recPulse 1.4s infinite; flex:none; }
+[data-cv6][data-screen^="livescribe"] .rec { width:10px; height:10px; border-radius:50%; background:var(--faint); flex:none; opacity:.55; }
+[data-cv6][data-screen^="livescribe"] .rec.is-on { background:#F87171; opacity:1; animation:recPulse 1.4s infinite; }
 [data-cv6][data-screen^="livescribe"] .wave { display:flex; align-items:center; gap:3px; }
 [data-cv6][data-screen^="livescribe"] .wave span { width:3px; border-radius:2px; background:var(--accent); display:inline-block; transform-origin:center; }
+[data-cv6][data-screen^="livescribe"] .wave.is-off span { background:var(--faint); opacity:.45; animation:none !important; transform:scaleY(.35); }
+[data-cv6][data-screen^="livescribe"] .sc-statusbar.is-off { background:var(--surface-2) !important; }
+[data-cv6][data-screen^="livescribe"] .speakerlive.is-off { color:var(--muted) !important; }
+[data-cv6][data-screen^="livescribe"] .speakerlive.is-off > span:first-child { background:var(--faint) !important; box-shadow:none !important; opacity:.55; }
 [data-cv6][data-screen^="livescribe"] .turn-name { font-size:14px; font-weight:600; color:var(--accent); }
 [data-cv6][data-screen^="livescribe"] .turn-name.is-success { color:var(--success); }
 [data-cv6][data-screen^="livescribe"] .turn-name.is-violet { color:var(--violet-400); }

@@ -31,8 +31,8 @@
   </style>
   <!-- Header with timer + waveform + Stop button -->
   <div style="display:flex;align-items:center;gap:14px;padding:18px 24px;border-bottom:1px solid var(--divider);">
-    <span style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:14px;color:var(--fg);"><span class="rec"></span><span data-bind="session.elapsed">00:00</span></span>
-    <span class="wave" style="display:flex;align-items:center;gap:3px;height:22px;">
+    <span style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:14px;color:var(--fg);"><span class="rec" data-mod="is-:session.capturing"></span><span data-bind="session.elapsed">00:00</span></span>
+    <span class="wave" data-mod="is-:session.capturing" style="display:flex;align-items:center;gap:3px;height:22px;">
       <span style="height:50%;animation:wave 1s ease-in-out infinite;"></span>
       <span style="height:90%;animation:wave 1s ease-in-out infinite .1s;"></span>
       <span style="height:65%;animation:wave 1s ease-in-out infinite .2s;"></span>
@@ -145,9 +145,9 @@
     <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
   <!-- Recording status bar with timer, waveform, speaker count -->
-  <div style="display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--divider);background:rgba(248,113,113,.06);">
-    <span style="display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:12.5px;color:var(--fg);flex:none;"><span class="rec"></span><span data-bind="session.elapsed">00:00</span></span>
-    <span class="wave" style="height:20px;flex:1;display:flex;align-items:center;gap:2.5px;">
+  <div class="sc-statusbar" data-mod="is-:session.capturing" style="display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--divider);background:rgba(248,113,113,.06);">
+    <span style="display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:12.5px;color:var(--fg);flex:none;"><span class="rec" data-mod="is-:session.capturing"></span><span data-bind="session.elapsed">00:00</span></span>
+    <span class="wave" data-mod="is-:session.capturing" style="height:20px;flex:1;display:flex;align-items:center;gap:2.5px;">
       <span style="height:50%;animation:wave 1s ease-in-out infinite 0s;"></span>
       <span style="height:90%;animation:wave 1s ease-in-out infinite .1s;"></span>
       <span style="height:65%;animation:wave 1s ease-in-out infinite .2s;"></span>
@@ -155,7 +155,7 @@
       <span style="height:45%;animation:wave 1s ease-in-out infinite .25s;"></span>
       <span style="height:80%;animation:wave 1s ease-in-out infinite .05s;"></span>
     </span>
-    <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--success);flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:var(--glow-online);"></span><span data-bind="session.speakerCount">—</span> speakers</span>
+    <span class="speakerlive" data-mod="is-:session.capturing" style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--success);flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:var(--glow-online);"></span><span data-bind="session.speakerCount">—</span> speakers</span>
   </div>
   <!-- Transcript scroll area -->
   <div style="position:absolute;left:0;right:0;top:132px;bottom:148px;overflow-y:auto;padding:16px 16px 0;display:flex;flex-direction:column;gap:16px;">

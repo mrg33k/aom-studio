@@ -75,6 +75,13 @@ test.describe('CV6 practical product audit', () => {
       if (tool === 'Command') {
         await expect(page.getByText('No rooms yet')).toBeVisible()
       }
+      if (tool === 'Scribe') {
+        await expect(page.getByText('Ready to capture. Press Start and speak.')).toBeVisible()
+        await expect(page.getByRole('button', { name: 'Start capture' })).toBeVisible()
+        await expect(page.locator('[data-screen="livescribe-desktop"] [data-state="error"]')).toBeHidden()
+        await expect(page.locator('[data-screen="livescribe-desktop"] .rec')).toHaveClass(/is-off/)
+        await expect(page.locator('[data-screen="livescribe-desktop"] .wave')).toHaveClass(/is-off/)
+      }
     }
 
     expect(productConsoleErrors(errors)).toEqual([])
@@ -123,6 +130,13 @@ test.describe('CV6 practical product audit', () => {
       }
       if (tool === 'Command') {
         await expect(page.getByText('No rooms yet')).toBeVisible()
+      }
+      if (tool === 'Live Scribe') {
+        await expect(page.getByText('Ready to capture. Press Start and speak.')).toBeVisible()
+        await expect(page.getByRole('button', { name: 'Start capture' })).toBeVisible()
+        await expect(page.locator('[data-screen="livescribe-mobile"] [data-state="error"]')).toBeHidden()
+        await expect(page.locator('[data-screen="livescribe-mobile"] .rec')).toHaveClass(/is-off/)
+        await expect(page.locator('[data-screen="livescribe-mobile"] .wave')).toHaveClass(/is-off/)
       }
       if (tool !== 'Home') {
         await expect(page.getByRole('button', { name: 'Menu' }).first()).toBeVisible()
