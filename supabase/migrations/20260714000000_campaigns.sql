@@ -78,6 +78,7 @@ create table if not exists campaign_batches (
   status         text not null default 'pending'
                  check (status in ('pending','awaiting_approval','approved','sending','completed','failed','cancelled')),
   contact_count  int not null default 0,
+  contact_ids    jsonb not null default '[]'::jsonb,  -- batch membership
   sent_count     int not null default 0,
   failed_count   int not null default 0,
   held_count     int not null default 0,        -- hygiene holds

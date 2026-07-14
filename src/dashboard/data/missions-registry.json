@@ -1,6 +1,34 @@
 {
-  "generated_at": "2026-07-13T22:49:17.304Z",
+  "generated_at": "2026-07-14T04:19:13.056Z",
   "missions": [
+    {
+      "slug": "corner:aztc-post-behind-the-scene-storytelling",
+      "raw_slug": "aztc-post-behind-the-scene-storytelling",
+      "folder_name": "aztc-post-behind-the-scene-storytelling",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Aztc Post Behind The Scene Storytelling",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/aztc-post-behind-the-scene-storytelling"
+    },
+    {
+      "slug": "corner:bridge",
+      "raw_slug": "bridge",
+      "folder_name": "bridge",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Bridge",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/bridge"
+    },
     {
       "slug": "corner:business-ops",
       "raw_slug": "business-ops",
@@ -3589,8 +3617,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 110,
-      "in_flight": 110,
+      "total": 112,
+      "in_flight": 112,
       "done": 0
     },
     {
