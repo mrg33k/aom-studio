@@ -26,6 +26,7 @@ export function normalizeLinks(str) {
 }
 
 const SUPPORT_TRACKER_NAME = 'Support follow-ups';
+const SUPPORT_AGENT = 'elon';
 
 function Star({ size = 14 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>;
@@ -63,6 +64,93 @@ const chipStyle = (primary) => ({
   fontWeight: primary ? 600 : 500,
   fontFamily: 'var(--font-sans)', cursor: 'pointer',
 });
+
+function useSupportActivity(selected, isWish) {
+  const [state, setState] = useState('idle');
+  const [activity, setActivity] = useState(null);
+  useEffect(() => {
+    setActivity(null);
+    if (!isWish || !selected?.wishId) { setState('idle'); return undefined; }
+    let dead = false;
+    const ctl = new AbortController();
+    const load = () => {
+      setState((s) => (s === 'ready' ? s : 'loading'));
+      const q = new URLSearchParams({
+        wish_id: selected.wishId,
+        access_code: selected.accessCode || '',
+        agent: SUPPORT_AGENT,
+      });
+      authFetch(`/api/support/activity?${q.toString()}`, { credentials: 'include', signal: ctl.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (dead) return;
+          if (d?.ok) { setActivity(d); setState('ready'); }
+          else setState('error');
+        })
+        .catch(() => { if (!dead) setState('error'); });
+    };
+    load();
+    const t = setInterval(load, 10000);
+    return () => { dead = true; ctl.abort(); clearInterval(t); };
+  }, [isWish, selected?.wishId, selected?.accessCode]);
+  return { state, activity };
+}
+
+function trimAgentText(text) {
+  return normalizeLinks(String(text || '')
+    .replace(/^\[SUPPORT WISH[^\]]+\][\s\S]*?\n\n/, '')
+    .trim());
+}
+
+function AgentWorkPanel({ state, activity }) {
+  const [open, setOpen] = useState(true);
+  const steps = activity?.steps || [];
+  const updates = (activity?.updates || []).filter((u) => ['worker_note', 'change_request', 'status_change', 'response'].includes(u.kind) && (u.body || u.status));
+  const replies = (activity?.messages || []).filter((m) => m.id !== activity?.trigger?.id && m.role !== 'user' && trimAgentText(m.text));
+  const count = steps.length + updates.length + replies.length;
+  if (state === 'idle') return null;
+  return (
+    <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 16, overflow: 'hidden' }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open ? 'true' : 'false'}
+        style={{ width: '100%', minHeight: 46, padding: '0 16px', border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+      >
+        <Star size={13} />
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)' }}>Agent work</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--muted)', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {state === 'loading' ? 'checking current work…' : state === 'error' ? "couldn't load work status" : count ? `${count} update${count === 1 ? '' : 's'} on this thread` : 'no agent-room updates found yet'}
+        </span>
+        <span style={{ fontSize: 13, color: 'var(--faint)' }}>{open ? 'Hide' : 'Show'}</span>
+      </button>
+      {open && (
+        <div style={{ borderTop: '1px solid var(--divider)', padding: '12px 16px 15px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {state === 'loading' && <div style={{ fontSize: 13, color: 'var(--muted)' }}>Checking the agent room and work-step ledger…</div>}
+          {state === 'error' && <div style={{ fontSize: 13, color: 'var(--warn)' }}>Work status did not load. The email conversation below is still the Gmail truth.</div>}
+          {state === 'ready' && count === 0 && <div style={{ fontSize: 13, color: 'var(--muted)' }}>No work steps or agent replies are attached to this support wish yet.</div>}
+          {steps.map((s) => (
+            <div key={s.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span style={{ width: 18, height: 18, borderRadius: 9, marginTop: 1, background: s.status === 'done' ? 'var(--accent)' : 'var(--accent-weak)', color: s.status === 'done' ? '#fff' : 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, flex: 'none' }}>✓</span>
+              <div style={{ fontSize: 13.5, lineHeight: 1.45, color: 'var(--fg)' }}>{s.text}</div>
+            </div>
+          ))}
+          {updates.map((u, i) => (
+            <div key={`${u.kind}-${u.created_at}-${i}`} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span style={{ width: 18, height: 18, borderRadius: 6, marginTop: 1, background: 'var(--surface-2)', color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, flex: 'none' }}>•</span>
+              <div style={{ fontSize: 13.5, lineHeight: 1.45, color: 'var(--fg)' }}>{normalizeLinks(u.body || u.status)}</div>
+            </div>
+          ))}
+          {replies.map((m) => (
+            <div key={m.id} style={{ borderLeft: '3px solid var(--accent)', paddingLeft: 11 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4 }}>Agent reply</div>
+              <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--fg)', whiteSpace: 'pre-wrap' }}>{trimAgentText(m.text)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldId }) {
   const { state, data, reload } = useSupportInbox(worldId);
@@ -122,6 +210,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
   const recommendation = (suggest?.recommendation?.length ? suggest.recommendation : selected?.recommendation) || [];
   // The worker's actual read wins over the ingest paraphrase (M27 Stage 3).
   const agentRead = suggest?.agent_read || selected?.agentRead || null;
+  const supportActivity = useSupportActivity(selected, isWish);
 
   // Scheduled auto-send state (timer policy): countdown + a Hold-it cancel.
   const [scheduleState, setScheduleState] = useState('idle'); // idle | clearing | cleared
@@ -333,6 +422,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
                       body: suggest?.original || selected.body || 'No message body.',
                     }}
                   />
+                  {isWish && <AgentWorkPanel state={supportActivity.state} activity={supportActivity.activity} />}
                 </div>
               </div>
 
@@ -365,7 +455,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
                     <Star />
-                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested actions</span>
                     {options.length === 0 && suggestState === 'loading' && <span style={{ fontSize: 12, color: 'var(--muted)' }}>drafting…</span>}
                     {options.length === 0 && (suggestState === 'error' || suggestState === 'ready') && <span style={{ fontSize: 12, color: 'var(--muted)' }}>No suggestions came back — write your reply below.</span>}
                     {options.filter(o => o.text).map((o, i) => (
@@ -405,9 +495,18 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
                   {sendState === 'error' && <div style={{ fontSize: 12.5, color: 'var(--warn)' }}>Send failed: {sendError}. Nothing went out — try again.</div>}
                 </div>
               ) : (
-                <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" /></svg>
-                  <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)' }}>This landed straight from your mailbox scan. Assign it to your agent and it becomes an ask you can reply to from here.</div>
+                <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+                  <Star />
+                  <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested actions</span>
+                  <button onClick={() => onAssignEmail?.(selected.id, selected)} style={chipStyle(true)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+                    Assign to agent
+                  </button>
+                  <button onClick={addToTracker} style={chipStyle(false)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+                    {trackerState === 'added' ? 'Added ✓' : trackerState === 'adding' ? 'Adding…' : 'Add to Tracker'}
+                  </button>
+                  <div style={{ flexBasis: '100%', fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)' }}>This landed straight from your mailbox scan. Assign it to your agent and it becomes a tracked ask with a reply workflow.</div>
                 </div>
               )}
             </>
