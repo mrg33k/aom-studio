@@ -178,3 +178,17 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: live production chat workflow still needs an authenticated `aheadofmarket.com/dashboard` browser session; no stored login/world/member/data mutation, deploy, push, schema/data migration, secret rotation, or external message.
 
 **Status:** shipped and locally verified for the delegated chat-room-core-workflow audit; production-auth verification blocked.
+
+- 2026-07-14 delegated chat-room-files-workflow slice:
+  - User goal: from an open CV6 chat room on desktop and mobile, open Files in this room, understand whether anything has been shared, return to the room, and continue to sibling CV6 surfaces without dead controls, stale data, misleading loading, or extra navigation.
+  - Screen/tool inventory for this slice: desktop Home quick-room is the high-frequency desktop chat entry with its in-place files overlay; mobile chat uses `Files in this room` as a bottom sheet; Files/Email/Tracker/Command/Scribe are sibling CV6 surfaces that must still work after returning from the sheet.
+  - Audit: opened Agents, opened the Web room on desktop and mobile in safe local/no-Supabase mode, opened the room file shelf, checked the empty-file state, closed it, returned to chat, and continued across sibling CV6 tools. The shelf itself stayed honest (`No files here yet.`), but both close paths were fragile as controls: mobile's icon close had no accessible name or keyboard return path, and desktop's in-place close lacked keyboard activation.
+  - Ranked findings:
+    1. P1 high-frequency/high-impact chat return path: Files is attached to the core chat loop, and a user who opens it must be able to get back to the room cleanly on desktop/mobile without relying on pointer-only or unnamed controls.
+    2. P2 empty-state clarity: the no-file copy was honest and stable locally, so the main issue was the return control rather than stale data.
+    3. P2 production verification: `https://aheadofmarket.com/dashboard` was opened in desktop Chrome for login, but the browser plugin setup still fails with `Cannot redefine property: process`; the debuggable Chrome session visible to automation only exposed a local file and `/cv4`, so authenticated production chat-files testing remains pending browser access.
+  - Fixed this round: `RoomFilesSheet` now gives the mobile close icon an explicit `Close files` label, title, focus target, and Enter/Space handling. `HomeFilesPanel` now gives the desktop in-place close control the same `Close files` semantics and keyboard activation. The practical audit spec now opens room files and closes them on desktop/mobile before continuing to sibling CV6 surfaces.
+  - Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop Home quick-chat, mobile chat room-files, and sibling CV6 surfaces); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/member/data mutation.
+  - Remaining notes: production-auth verification is still blocked on an inspectable logged-in browser session; the dashboard was opened for the user to log in, but this verified unit is local-safe and committed without touching live data.
+
+**Status:** shipped and locally verified for the delegated chat-room-files-workflow audit; production-auth verification blocked.

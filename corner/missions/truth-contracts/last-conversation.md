@@ -186,3 +186,19 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped locally: `src/dashboard/cv6next/data/useRoomThread.js` now refuses local read-only sends before optimistic UI and removes optimistic rows on failed POSTs. `src/dashboard/cv6next/Cv6FullComposer.jsx`, `src/dashboard/cv6next/ChatLifecycle.jsx`, and the desktop `Cv6QuickThread` path in `src/dashboard/cv6next/CornerCV6.jsx` show a connected-workspace read-only state locally instead of accepting text. Home quick-send only clears after a successful send, and mobile chat Back/Menu/Files controls now have explicit role/label/keyboard activation.
 
 Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop Home quick-chat, mobile chat room, and sibling CV6 surfaces). `npm run build` passed. Production check was read-only and stopped at login; no deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Chat room files workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from an open CV6 chat room on desktop and mobile, open Files in this room, understand whether anything has been shared, return to the room, and continue through sibling CV6 tools without dead controls, stale data, misleading loading, extra navigation, or live-data mutation.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Files is part of the core chat loop. The empty shelf was honest (`No files here yet.`), but the return controls were weaker than the workflow deserved: mobile's close icon had no accessible name or keyboard path, and the desktop in-place close was pointer-only.
+2. P2: Empty-state clarity was otherwise clean locally; no stale file count, fake loading, or extra jump appeared in the no-Supabase room-files path.
+3. P2: Authenticated production verification remains blocked. `https://aheadofmarket.com/dashboard` was opened in desktop Chrome for login, but the browser-control runtime fails with `Cannot redefine property: process`, and the debuggable Chrome profile visible to automation was only on a local file and `/cv4`.
+
+Fix shipped locally: `src/dashboard/cv6next/ChatLifecycle.jsx` gives the mobile Room Files sheet close control an explicit `Close files` label, title, focus target, and Enter/Space activation. `src/dashboard/cv6next/CornerCV6.jsx` gives the desktop Home Files overlay close control the same label and keyboard return path. `tests/cv6-practical-audit.spec.mjs` now opens the room file shelf on desktop and mobile, verifies the empty state, closes via `Close files`, and then continues through sibling CV6 surfaces.
+
+Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop Home quick-chat, mobile chat room-files, and sibling CV6 tools). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/member/data mutation.

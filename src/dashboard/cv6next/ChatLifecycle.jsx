@@ -304,7 +304,10 @@ function RoomFilesSheet({ projectSlug, messages, uploadScope, onClose, onReview 
         <div style={{ width: 38, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '6px auto 12px', flex: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flex: 'none' }}>
           <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Files in this room</span>
-          <div className="ib" role="button" onClick={onClose} style={{ width: 32, height: 32, borderRadius: 9, cursor: 'pointer' }}>
+          <div className="ib" role="button" aria-label="Close files" title="Close files" tabIndex={0}
+            onClick={onClose}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose?.(); } }}
+            style={{ width: 32, height: 32, borderRadius: 9, cursor: 'pointer' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </div>
         </div>

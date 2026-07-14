@@ -57,6 +57,12 @@ test.describe('CV6 practical product audit', () => {
     await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await expect(page.getByTestId('cv6-chat-input')).toBeDisabled()
     await expect(page.getByText('Getting started')).toHaveCount(0)
+    await page.locator('[data-screen="home-desktop"] [data-action="toggleFiles"]:visible').click()
+    await expect(page.getByText('No files here yet.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible()
+    await page.getByRole('button', { name: 'Close files' }).press('Enter')
+    await expect(page.getByRole('button', { name: 'Close files' })).toHaveCount(0)
+    await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await expectNoCrash(page)
 
     for (const tool of ['Files', 'Email', 'Tracker', 'Command', 'Scribe', 'Home']) {
@@ -126,6 +132,13 @@ test.describe('CV6 practical product audit', () => {
     await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await expect(page.getByTestId('cv6-chat-input')).toBeDisabled()
     await expect(page.getByText('Getting started')).toHaveCount(0)
+    await page.getByTestId('chat-files-button').click()
+    await expect(page.getByText('Files in this room')).toBeVisible()
+    await expect(page.getByText('No files here yet.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible()
+    await page.getByRole('button', { name: 'Close files' }).press('Enter')
+    await expect(page.getByRole('button', { name: 'Close files' })).toHaveCount(0)
+    await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await page.getByRole('button', { name: 'Menu' }).first().click()
     await expect(page.locator('.navdrawer')).toBeVisible()
 

@@ -505,7 +505,9 @@ function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>Files</div>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{room?.name || ''}</div>
         </div>
-        <div className="filesbtn" onClick={onClose} role="button" title="Close files" style={{ cursor: 'pointer' }}>
+        <div className="filesbtn" onClick={onClose} role="button" aria-label="Close files" title="Close files" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose?.(); } }}
+          style={{ cursor: 'pointer' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           Close
         </div>
