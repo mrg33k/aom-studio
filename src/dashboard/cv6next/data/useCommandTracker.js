@@ -12,6 +12,7 @@ import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
 import { titleForAgent, AGENT_TITLES } from './agentTitles.js';
+import { classifyCommandRoomStatus, isCommandBookkeepingStamp } from '../../../../api/_lib/commandTruth.js';
 export { useWorldId } from '../../lib/tenantContext.jsx';
 
 function initials(name) {
@@ -349,20 +350,23 @@ function shapeCommand({
     const last = findLast(key);
     const { name, tag } = roomNameFor(key, projectNames, tags);
 
-    // Last activity = the freshest of message / board stamp. NOT the loop's
-    // last_reviewed: the goal-notetaker sweeps rooms in batches, and counting its
-    // stamp as activity made untouched rooms read WORKING for 30 minutes after
-    // every sweep (the "6 working, all with a dash in LIVE NOW" lie). Only a real
-    // message or an agent-stamped board line counts as the room doing something.
-    // The notetaker's own board_latest goal PATCH is the same lie through another
-    // door — its updated_at is bookkeeping, never the room working.
-    const boardIsAgentStamped = board && board.updated_at
-      && String(board.updated_by || '') !== 'goal-notetaker';
-    const times = [
-      last && last.t,
-      boardIsAgentStamped ? new Date(board.updated_at).getTime() : 0,
-    ].filter((t) => t && !Number.isNaN(t));
-    const lastActivity = times.length ? Math.max(...times) : 0;
+    const workEvents = [];
+    if (last && last.t) {
+      workEvents.push({
+        source: last.role || 'message',
+        t: last.t,
+        text: last.text || '',
+        agent: last.agent || '',
+      });
+    }
+    if (board && board.updated_at) {
+      workEvents.push({
+        source: board.updated_by || 'state_board',
+        updated_at: board.updated_at,
+        state_line: board.state_line || '',
+        event_type: board.event_type || '',
+      });
+    }
 
     // STATUS: blocked (waiting on you) > working (live session or fresh activity) > idle.
     // C2 closure (2026-07-06): a BLOCKED claim must have a REAL, still-open question
@@ -374,14 +378,16 @@ function shapeCommand({
     //      the question means the room already moved past it (the exact C2 mismatch:
     //      Command said BLOCKED + waiting-on-you, the opened room showed a ready agent,
     //      empty of any pending question). Only an untended, still-current question blocks.
-    const liveSession = Boolean(session);
-    const freshActivity = Boolean(lastActivity && (now - lastActivity) <= WORKING_WINDOW_MS);
-    const questionAsked = gr.last_reviewed ? new Date(gr.last_reviewed).getTime() : 0;
-    const spokenSinceQuestion = Boolean(last && last.t && questionAsked && last.t > questionAsked);
-    const questionLive = hasOpenQuestion(gr) && !liveSession && !spokenSinceQuestion;
-    let status = 'idle';
-    if (questionLive) status = 'blocked';
-    else if (liveSession || freshActivity) status = 'working';
+    const statusTruth = classifyCommandRoomStatus({
+      liveSession: Boolean(session),
+      workEvents,
+      openQuestion: hasOpenQuestion(gr),
+      questionAskedAt: gr.last_reviewed || null,
+      now,
+      workingWindowMs: WORKING_WINDOW_MS,
+    });
+    const { status, questionLive } = statusTruth;
+    const lastActivity = statusTruth.lastActivity || 0;
 
     // GOAL NOW (wd40 R5 — "actual goals, not just last activity"): a goal Patrik
     // STATED always wins; then the state board (agent-stamped); then the loop's
@@ -409,10 +415,14 @@ function shapeCommand({
     // through to the real latest chat line (or an honest dash) keeps the two columns
     // distinct without restructuring the ledger.
     const boardState = board && board.state_line ? String(board.state_line) : '';
-    const boardStateEchoesGoal = /^\s*goal set:/i.test(boardState);
+    const boardStateIsBookkeeping = isCommandBookkeepingStamp({
+      updated_by: board && board.updated_by,
+      state_line: boardState,
+      event_type: board && board.event_type,
+    });
     const liveNow = cleanCell(firstLine(
       (session && session.task_text)
-      || (boardStateEchoesGoal ? '' : boardState)
+      || (boardStateIsBookkeeping ? '' : boardState)
       || (last && last.text) || ''
     )).slice(0, 110) || '—';
 
@@ -438,7 +448,9 @@ function shapeCommand({
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
       goalSource, goalFull,
       liveNow, age: lastActivity ? relTime(lastActivity) : '—', lastActivity,
-      status, statusLabel: status.toUpperCase(),
+      status, statusLabel: statusTruth.statusLabel,
+      statusSource: statusTruth.source,
+      statusReason: statusTruth.reason,
       loop: loopsFailing.length ? 'error' : (loopsRunning.length ? 'on' : 'off'),
       loopRunningIds: loopsRunning.map((l) => String(l.id)),
       loopResumableIds: loopsResumable.map((l) => String(l.id)),
