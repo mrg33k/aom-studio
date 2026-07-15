@@ -232,3 +232,17 @@ External commands to run: `CV6_AUDIT_BASE=http://127.0.0.1:<port> npx playwright
 No `SupportThread`, schema/data migration, deploy, push, secret rotation, external message send, stored tenant/world/login/data mutation, or commit. Pre-existing dirty `test-results/.last-run.json` was left untouched.
 
 Follow-up from Claude's external Playwright run: the four existing renderer tests and `cv6-practical-audit` passed, but the new mobile test timed out waiting for `Renderer Room` under `?view=chat`. Root cause matched R5b's first fixture failure: seeded `supabase-status` data did not reliably flow through the mobile chat list data pipe. Fix-forward: added `?demo=mobile-chat-lifecycle`, a direct no-auth fixture that mounts the real `ChatLifecycle` in a 100dvh mobile host with seeded normalized messages, file row, and live steps. Updated the mobile spec to load that fixture directly and removed its data-pipe seeding/click through ChatList. Re-verified `npm run build`, `npm run test:tenant-context`, and `git diff --check` in the sandbox. Browser rerun still needs an external Vite server because this sandbox cannot bind localhost (`listen EPERM: operation not permitted 127.0.0.1:5173`).
+
+## 2026-07-14 - R7 Reviewable File Previews
+
+Mission path: `corner:truth-contracts`.
+
+Goal: stop HTML/web pages, PDFs, images, and videos from falling into broken or download-only states in Corner Files/Review, and keep the visible artifact connected to point comments.
+
+Shipped: added the shared `sitefile` FileRef/viewer type and a sandboxed saved-HTML reader that rewrites local assets through the RAG raw tunnel. Corrected stale broad queue types from concrete extensions/MIME, mounted HTML/PDF/DOCX hydrators across active and compatibility viewers, added image/video loading and retry cleanup, and repaired out-of-tree shared-file identities so desktop and mobile comments persist. Mobile direct targets now enter the read view instead of remaining on the empty picker.
+
+Browser coverage: added `?demo=file-previews` and `tests/cv6-file-previews.spec.mjs`. The API fixture deliberately marks every artifact as `copy`; desktop and 390px mobile still render saved HTML (including a relative image), PDF canvases, a real PNG, and a real MP4 with the review scrubber. Point comments save and reopen. Result: 2/2 Playwright tests passed.
+
+Other verification: live RAG delivery checks passed for PNG/PDF/HTML inline responses and MP4 Range streaming; focused FileRef/files-truth/review-truth tests passed 10/10; tenant-context guards passed; production build passed with the existing chunk-size warning; changed non-JSX modules passed `node --check`; `git diff --check` passed.
+
+No deploy, commit, push, schema/data mutation, external message, or secret change. Unrelated pre-existing dirty files were left untouched; the build regenerated the already-dirty missions registry and Playwright updated the already-dirty last-run record.

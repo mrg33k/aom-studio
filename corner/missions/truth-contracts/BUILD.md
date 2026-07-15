@@ -359,3 +359,32 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
 **Status:** implemented; browser verification pending outside this sandbox.
 
 **Follow-up:** Claude's external browser run showed the new mobile spec timing out before entering the room: seeded `supabase-status` data did not reach the mobile chat list under `?view=chat`, same failure class as R5b's first Home quick thread fixture. Fixed by replacing the data-pipe-dependent mobile browser test with `?demo=mobile-chat-lifecycle`, a direct fixture that mounts the real `ChatLifecycle` with seeded normalized messages. EA then fixed the gallery filename assertion (thumbnail exposes the name as the button's accessible name, not visible text) and ran the browser specs externally: renderer spec 5/5, practical audit 2/2. Status upgraded to shipped; all four room renderers now share Cv6MessageThread.
+
+## R7 - Reviewable file previews
+
+**Date:** 2026-07-14
+
+**User goal:** Open HTML/web pages, PDFs, videos, and images inside Corner Review, inspect the real artifact without downloading it first, and attach comments to what is visible.
+
+**Scope:** Trace and repair the shared file delivery and Review viewer contracts, preserve safe handling for active HTML, and add focused regression coverage for the supported reviewable media families on desktop and mobile.
+
+**Implementation:**
+
+- Added a first-class `sitefile` identity for `.html` / `.htm` and HTML MIME types across the shared FileRef, queue, Files, and Review contracts. Stale broad queue stamps are now corrected from the filename/MIME for browser-rendered media and documents.
+- Added `htmlDocView.js`: saved HTML is fetched and rendered inside an isolated `srcdoc` iframe, with sibling images/styles/scripts/media rewritten to the canonical RAG raw tunnel. Production CSP meta tags are removed inside the sandbox so original-host policy does not blank the stored artifact; Corner remains protected by the iframe sandbox.
+- Mounted HTML, PDF, and DOCX hydrators in the active Files desktop/mobile viewers and the compatibility Review screens. Added honest media loading states and retry cleanup for images/video.
+- Repaired direct shared/chat targets that live outside the mirrored Files tree. Desktop now keys pins from the live deliverable identity; mobile now enters the read view directly and uses the same identity, so point comments save and reopen instead of submitting against a null file.
+- Added the `?demo=file-previews` no-auth fixture and `tests/cv6-file-previews.spec.mjs`. The spec feeds stale `copy` queue types and proves that HTML, PDF, PNG, and MP4 still choose their concrete viewer on both desktop and 390px mobile, including relative HTML assets, PDF canvas rendering, video metadata + scrubber, and point-comment persistence/reopen.
+
+**Delivery verification:** the RAG raw tunnel returned inline 200 responses with correct MIME/CORS for a real Corner PNG, PDF, and HTML file, plus a 206 Range response for a real MP4. This confirmed the byte-delivery path was healthy and the broken behavior was in client classification/hydration.
+
+**Verification:**
+
+- `CV6_AUDIT_BASE=http://127.0.0.1:5173 npx playwright test tests/cv6-file-previews.spec.mjs --reporter=line --workers=1` — 2/2 passed.
+- Focused FileRef/files-truth/review-truth Node suite — 10/10 passed.
+- `npm run test:tenant-context` passed.
+- `npm run build` passed (2,468 modules; existing chunk-size warning only).
+- `node --check` on the changed non-JSX API/data modules passed.
+- `git diff --check` passed.
+
+**Status:** shipped and browser-verified on desktop and mobile. No deploy or commit was performed.
