@@ -55,6 +55,7 @@ const shuffleReel = () => {
 
 // Helper to get randomized interval (900-1800ms)
 const randomInterval = () => 900 + Math.random() * 900;
+const HERO_CROSSFADE_MS = 225;
 
 // hear-hero scroll program, in viewport-heights: hold, zoom through the mark,
 // then one viewport where the full-bleed stage scrolls away into the reel.
@@ -162,6 +163,139 @@ function InViewVideo({ src, className = '', style, posterSrc, preload = 'metadat
       style={style}
       aria-hidden="true"
     />
+  );
+}
+
+// Two persistent video slots let the next clip load and begin playing under the
+// current one. The random cadence controls when the ready slot crossfades in;
+// the outgoing source is held until the fade is complete.
+function HeroReel() {
+  const rootRef = useRef(null);
+  const playingRef = useRef(() => {});
+  const [sources, setSources] = useState([REEL_VIDEOS[0], undefined]);
+  const [activeSlot, setActiveSlot] = useState(0);
+  const [hasPlayed, setHasPlayed] = useState(false);
+
+  useEffect(() => {
+    const heroVideo = rootRef.current;
+    if (!heroVideo || typeof IntersectionObserver === 'undefined') return;
+
+    let cadenceTimer;
+    let loadTimer;
+    let inView = false;
+    let currentSlot = 0;
+    let currentSrc = REEL_VIDEOS[0];
+    let cycle;
+    let reelQueue = shuffleReel();
+    let reelIdx = 0;
+
+    const nextSource = () => {
+      let nextSrc;
+      do {
+        if (reelIdx >= reelQueue.length) {
+          reelQueue = shuffleReel();
+          reelIdx = 0;
+        }
+        nextSrc = reelQueue[reelIdx];
+        reelIdx++;
+      } while (nextSrc === currentSrc);
+      return nextSrc;
+    };
+
+    const clearCycleTimers = () => {
+      clearTimeout(cadenceTimer);
+      clearTimeout(loadTimer);
+    };
+
+    const prepareCycle = (loadDelay = 0) => {
+      if (!inView) return;
+      clearCycleTimers();
+
+      const pending = {
+        slot: currentSlot === 0 ? 1 : 0,
+        src: nextSource(),
+        due: false,
+        playing: false,
+        committed: false,
+      };
+      cycle = pending;
+
+      const commitIfReady = () => {
+        if (!inView || cycle !== pending || pending.committed || !pending.due || !pending.playing) return;
+        pending.committed = true;
+        currentSlot = pending.slot;
+        currentSrc = pending.src;
+        setActiveSlot(pending.slot);
+
+        // Start the next cadence clock now, but preserve the outgoing source
+        // until its opacity transition has fully finished.
+        prepareCycle(HERO_CROSSFADE_MS);
+      };
+
+      playingRef.current = (slot, playedSrc) => {
+        if (cycle !== pending || slot !== pending.slot || playedSrc !== pending.src) return;
+        pending.playing = true;
+        commitIfReady();
+      };
+
+      const loadIncoming = () => {
+        if (!inView || cycle !== pending) return;
+        setSources(prev => prev.map((src, i) => (i === pending.slot ? pending.src : src)));
+      };
+
+      if (loadDelay > 0) loadTimer = setTimeout(loadIncoming, loadDelay);
+      else loadIncoming();
+
+      cadenceTimer = setTimeout(() => {
+        if (cycle !== pending) return;
+        pending.due = true;
+        commitIfReady();
+      }, randomInterval());
+    };
+
+    const obs = new IntersectionObserver(
+      entries => {
+        const nextInView = Boolean(entries[0]?.isIntersecting);
+        if (nextInView && !inView) {
+          inView = true;
+          prepareCycle();
+        } else if (!nextInView && inView) {
+          inView = false;
+          cycle = undefined;
+          clearCycleTimers();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    obs.observe(heroVideo);
+    return () => {
+      inView = false;
+      cycle = undefined;
+      playingRef.current = () => {};
+      obs.disconnect();
+      clearCycleTimers();
+    };
+  }, []);
+
+  return (
+    <div className="hz-video" ref={rootRef}>
+      {sources.map((src, slot) => (
+        <InViewVideo
+          key={slot}
+          className={`vid hero-reel-buffer ${slot === activeSlot ? 'is-active' : ''}`}
+          src={src}
+          preload="auto"
+          desktopOnly
+          onPlaying={event => {
+            setHasPlayed(true);
+            playingRef.current(slot, event.currentTarget.getAttribute('src'));
+          }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ))}
+      <img className={`pstr ${hasPlayed ? 'is-hidden' : ''}`} src="/videos/hero-poster.jpg" alt="" />
+    </div>
   );
 }
 
@@ -403,9 +537,18 @@ const CSS = `
 .r17 .chrome .brand .sq { width:.5em; height:.5em; margin-left:.45em; vertical-align:baseline; }
 .r17 .chrome-link { pointer-events:auto; font-size:.72rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; text-shadow:0 1px 14px rgba(0,0,0,.75); color:var(--paper); transition:color .15s; padding:0; display:inline-flex; align-items:center; gap:.55rem; font-family:var(--fbrut); }
 .r17 .chrome-link:hover { color:var(--gold); }
+.r17 .chrome-link.contact-pill {
+  border:1px solid var(--gold); border-radius:999px; padding:.42rem .78rem .38rem;
+  color:var(--paper); background:transparent;
+  transition:color .18s ease, background-color .18s ease;
+}
+.r17 .chrome-link.contact-pill:hover { color:var(--ink); background-color:var(--gold); }
 .r17 .mburg { display:inline-flex; flex-direction:column; justify-content:center; gap:4px; width:18px; }
 .r17 .mburg i { display:block; height:1.5px; width:100%; background:currentColor; transition:transform .2s, background .15s; }
 .r17 .chrome-link:hover .mburg i:first-child { transform:translateX(2px); }
+@media(max-width:640px){
+  .r17 .chrome-link.contact-pill { padding:.34rem .56rem .31rem; font-size:.65rem; letter-spacing:.14em; }
+}
 
 /* ─── WORK overlay: the full site map ─── */
 .r17 .hz-menu { position:fixed; inset:0; z-index:400; background:rgba(6,6,6,.985); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); opacity:0; visibility:hidden; transition:opacity .3s ease, visibility .3s ease; display:flex; align-items:center; justify-content:center; padding:clamp(1.5rem,6vh,5rem) var(--pad); }
@@ -520,11 +663,16 @@ const CSS = `
 .r17 .hz-stage { position:sticky; top:0; height:var(--vph,100svh); overflow:hidden; background:var(--ink); isolation:isolate; transform:translateZ(0); }
 .r17 .hz-video { position:absolute; inset:0; }
 .r17 .hz-video .pstr {
-  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:2;
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:3;
   opacity:1; pointer-events:none; transition:opacity 250ms ease;
 }
 .r17 .hz-video .pstr.is-hidden { opacity:0; }
 .r17 .hz-video .vid { position:absolute; inset:0; z-index:1; }
+.r17 .hz-video .hero-reel-buffer {
+  opacity:0; transform:translateZ(0); will-change:opacity;
+  transition:opacity ${HERO_CROSSFADE_MS}ms ease;
+}
+.r17 .hz-video .hero-reel-buffer.is-active { z-index:2; opacity:1; }
 @media(max-width:640px){
   .r17 .hz-video .vid { display:none; }
   .r17 .hz-video .pstr.is-hidden { opacity:1; }
@@ -935,8 +1083,6 @@ export default function HomeR6Baby() {
   const [briefModalOpen, setBriefModalOpen] = useState(false);
   const [filmCyclePosterIndex, setFilmCyclePosterIndex] = useState(0);
   const [ghostWordIndices, setGhostWordIndices] = useState({ neither: 0, voices: 0 });
-  const [heroReelSrc, setHeroReelSrc] = useState(REEL_VIDEOS[0]);
-  const [heroHasPlayed, setHeroHasPlayed] = useState(false);
   const [storyReelSrc, setStoryReelSrc] = useState(REEL_VIDEOS[0]);
 
   const ghostWordSets = {
@@ -1089,95 +1235,6 @@ export default function HomeR6Baby() {
     return () => stage.removeEventListener('mousemove', onMouseMove);
   }, []);
 
-  // R28: Preload each next hero clip before the random-timed, in-view swap.
-  useEffect(() => {
-    const heroSection = document.querySelector('.r17 .hz');
-    if (!heroSection || typeof IntersectionObserver === 'undefined') return;
-    let timer;
-    let preloader;
-    let active = false;
-    let reelQueue = shuffleReel();
-    let reelIdx = 0;
-    let currentSrc = REEL_VIDEOS[0];
-
-    const releasePreloader = () => {
-      if (!preloader) return;
-      preloader.oncanplay = null;
-      preloader.onerror = null;
-      preloader.removeAttribute('src');
-      preloader.load();
-      preloader = null;
-    };
-
-    const schedule = () => {
-      if (!active) return;
-      let nextSrc;
-      do {
-        if (reelIdx >= reelQueue.length) {
-          reelQueue = shuffleReel();
-          reelIdx = 0;
-        }
-        nextSrc = reelQueue[reelIdx];
-        reelIdx++;
-      } while (nextSrc === currentSrc);
-      let ready = false;
-      let due = false;
-      let committed = false;
-
-      const commit = () => {
-        if (!active || committed) return;
-        committed = true;
-        currentSrc = nextSrc;
-        setHeroReelSrc(nextSrc);
-        releasePreloader();
-        schedule();
-      };
-
-      preloader = document.createElement('video');
-      preloader.preload = 'auto';
-      preloader.muted = true;
-      preloader.loop = true;
-      preloader.playsInline = true;
-      preloader.oncanplay = () => {
-        ready = true;
-        if (due) commit();
-      };
-      preloader.onerror = () => {
-        ready = true;
-        if (due) commit();
-      };
-      preloader.src = nextSrc;
-      preloader.load();
-
-      timer = setTimeout(() => {
-        due = true;
-        if (ready) commit();
-      }, randomInterval());
-    };
-
-    const obs = new IntersectionObserver(
-      es => {
-        const isInView = es[0]?.isIntersecting;
-        if (isInView && !active) {
-          active = true;
-          schedule();
-        } else if (!isInView && active) {
-          active = false;
-          clearTimeout(timer);
-          releasePreloader();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    obs.observe(heroSection);
-    return () => {
-      active = false;
-      obs.disconnect();
-      clearTimeout(timer);
-      releasePreloader();
-    };
-  }, []);
-
   // R23: Story reel — random-timed cycling through reel-01..14.mp4, inView-gated
   useEffect(() => {
     const storySlide = document.getElementById('story');
@@ -1301,7 +1358,7 @@ export default function HomeR6Baby() {
           Menu
         </button>
         <a className="mid" href="#story" onClick={e => { e.preventDefault(); jump('story'); }}>Story</a>
-        <button className="chrome-link" onClick={() => setBriefModalOpen(true)} style={{ fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', textShadow: 'inherit' }}>Contact us</button>
+        <button className="chrome-link contact-pill" onClick={() => setBriefModalOpen(true)}>Contact us</button>
       </div>
 
       {/* the WORK overlay — the R4 nav brought to life */}
@@ -1360,17 +1417,7 @@ export default function HomeR6Baby() {
           reel of newer work (MALPAI, NGOTS, AISIY) instead of single Gumlet. */}
       <section className="hz" aria-label="Ahead of Market">
         <div className="hz-stage">
-          <div className="hz-video">
-            <InViewVideo
-              className="vid"
-              src={heroReelSrc}
-              preload="auto"
-              desktopOnly
-              onPlaying={() => setHeroHasPlayed(true)}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-            <img className={`pstr ${heroHasPlayed ? 'is-hidden' : ''}`} src="/videos/hero-poster.jpg" alt="" />
-          </div>
+          <HeroReel />
           <div className="hz-mask" ref={maskL}>
             <div className="wm" ref={wmA}><BrandMark kind="mono" /></div>
           </div>
