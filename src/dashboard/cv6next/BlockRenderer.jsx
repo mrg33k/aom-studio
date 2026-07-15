@@ -375,7 +375,7 @@ function ChoiceBlock({ block, onAction }) {
           <button
             key={c.id}
             className={`chip-btn ${c.style === 'alt' ? '' : 'is-primary'}`}
-            onClick={() => onAction?.(c.title || c.label || c.id)}
+            onClick={() => onAction?.(c.title || c.label)}
           >
             {c.title || c.label}
           </button>
