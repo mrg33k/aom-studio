@@ -42,7 +42,7 @@ function composeSettingsDesktop(raw, screenName) {
 
 const DESKTOP_HTML = composeSettingsDesktop(template, 'settings-desktop');
 
-export default function SettingsDesktop({ onNav, onOpenNav }) {
+export default function SettingsDesktop({ onNav, onOpenNav, onSearch }) {
   const worldId = useWorldId();
   const { state, data } = useSettings(worldId);
   const [activeSection, setActiveSection] = useState(
@@ -60,9 +60,9 @@ export default function SettingsDesktop({ onNav, onOpenNav }) {
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
     openNav: () => onOpenNav?.(),
-    openCommandK: () => {},
+    openCommandK: () => onSearch?.(),
     openProfile: () => {},
-    search: () => {},
+    search: () => onSearch?.(),
     openSection: (id) => setActiveSection(id),
     setTheme: (id) => {
       if (typeof window !== 'undefined') {

@@ -74,7 +74,7 @@ export function buildDecidedMap(decidedRaw) {
   return buildFileRefIdentityMap(decidedRaw, (it) => ({ verdict: it.verdict, decisionId: it.decision_id || '', itemId: it.path }));
 }
 
-export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target }) {
+export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFile, target }) {
   const worldId = useWorldId();
 
   // ── review machinery (the rehomed Review tool) ──
@@ -349,9 +349,9 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
     openNav: () => onOpenNav?.(),
-    openCommandK: () => {},
+    openCommandK: () => onSearch?.(),
     openProfile: () => {},
-    search: () => {},
+    search: () => onSearch?.(),
     openFile: (id) => openFile(id),
     openTreeNode: (id) => {
       const s = String(id || '');

@@ -1163,6 +1163,176 @@
   }
 }
 
+/* ---- R2 shared top-bar contract. Desktop tool changes keep one shell-owned
+   80px bar; every mobile tool/detail screen gets one 60px header below the
+   shell safe-area inset. Inline specimen dimensions are intentionally
+   overridden here so raw templates and React headers cannot drift apart. */
+[data-cv6] {
+  --cv6-topbar-height:80px;
+  --cv6-mobile-header-height:60px;
+  --cv6-bar-control-size:44px;
+}
+[data-cv6] .topbar {
+  flex:0 0 var(--cv6-topbar-height);
+  width:100%;
+  height:var(--cv6-topbar-height);
+  min-height:var(--cv6-topbar-height);
+  box-sizing:border-box;
+  padding:0 24px;
+  gap:22px;
+  background:var(--ground);
+  border-bottom:1px solid var(--divider);
+}
+[data-cv6] .topbar .tgreet { flex:0 0 auto; }
+[data-cv6] .topbar .toolnav { min-width:0; }
+[data-cv6] .topbar .topbar-actions {
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+[data-cv6] .topbar :where(button, .ctile, .ib, .av) {
+  min-block-size:var(--cv6-bar-control-size);
+  box-sizing:border-box;
+  font-family:var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .topbar :where(.ib, .av) {
+  width:var(--cv6-bar-control-size);
+  height:var(--cv6-bar-control-size);
+  flex:none;
+  padding:0;
+}
+[data-cv6] .topbar .av { border:0; }
+
+[data-cv6] .mhdr {
+  flex:0 0 var(--cv6-mobile-header-height) !important;
+  width:100%;
+  height:var(--cv6-mobile-header-height) !important;
+  min-height:var(--cv6-mobile-header-height) !important;
+  max-height:var(--cv6-mobile-header-height);
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 12px !important;
+  background:var(--ground) !important;
+  border-bottom:1px solid var(--divider) !important;
+}
+[data-cv6] .mhdr .mhtitle {
+  flex:1 1 0%;
+  width:0;
+  min-width:0;
+  max-width:none;
+}
+[data-cv6] .mhdr .mhactions {
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+[data-cv6] .mhdr :where(.mback, .mhactions .ib),
+[data-cv6] .mhdr > .ib {
+  width:var(--cv6-bar-control-size) !important;
+  height:var(--cv6-bar-control-size) !important;
+  min-width:var(--cv6-bar-control-size);
+  min-height:var(--cv6-bar-control-size);
+  flex:0 0 var(--cv6-bar-control-size);
+  box-sizing:border-box;
+  padding:0;
+  border-radius:11px !important;
+}
+[data-cv6] .mhdr .mhcta {
+  height:var(--cv6-bar-control-size);
+  min-height:var(--cv6-bar-control-size);
+  box-sizing:border-box;
+}
+[data-cv6] .mhsubactions {
+  flex:0 0 53px;
+  min-height:53px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  padding:4px 12px;
+  border-bottom:1px solid var(--divider);
+  background:var(--ground);
+}
+[data-cv6] .mhsubactions .mhcta {
+  min-height:var(--cv6-bar-control-size);
+  box-sizing:border-box;
+}
+[data-cv6] .mhdr .mttl,
+[data-cv6] .mhdr .msub {
+  display:block;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+[data-cv6] .mhdr .mhname { width:100%; min-width:0; }
+[data-cv6] .mhdr .mhname .mttl { flex:1 1 auto; width:auto; }
+[data-cv6] .mhdr :where([aria-label="Back"], .mback) svg { width:17px; height:17px; }
+[data-cv6] .mhdr [aria-label="Search"] svg { width:16px; height:16px; }
+[data-cv6] .mhdr [aria-label="Menu"] svg { width:18px; height:18px; }
+
+/* The status is already repeated in the subtitle; at phone width, let the real
+   room name own that space before ellipsis instead of preserving a duplicate pill. */
+@media (max-width:480px) {
+  [data-cv6] .mhdr .mhname > .astat { display:none; }
+}
+
+/* Room/rail names and drawer labels yield only after consuming their flex slot.
+   This fixes short early ellipses without changing row geometry. */
+[data-cv6] :where(.room, .navrow) :where(.rn, .nl),
+[data-cv6] :where(.crow, .prow, .selrow) :where(.cname, .pname) {
+  flex:1 1 auto;
+  min-width:0;
+  max-width:none;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* One visible keyboard ring for every bar implementation, including div-based
+   template actions normalized by templateEngine. */
+[data-cv6] :where(.topbar, .mhdr) :where(
+  button, a[href], [role="button"], [role="switch"], [data-action]
+):focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+  box-shadow:0 0 0 4px var(--accent-weak);
+}
+[data-cv6] .mhdr input:focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:4px;
+}
+
+/* Email's Inbox/Campaign switch is subordinate navigation, never a competing
+   top bar. On phones it sits immediately below the canonical 60px header; the
+   content reserves its fixed slot so neither the header nor the first row jumps. */
+@media (max-width:899px) {
+  [data-cv6] .cv6-email-shell { --cv6-email-tabs-height:53px; }
+  [data-cv6] .cv6-email-tabs {
+    position:absolute;
+    z-index:4;
+    top:var(--cv6-mobile-header-height);
+    left:0;
+    right:0;
+    height:var(--cv6-email-tabs-height);
+    box-sizing:border-box;
+  }
+  [data-cv6] .cv6-email-shell[data-email-tab="campaign"] .cv6-email-body {
+    padding-top:var(--cv6-email-tabs-height);
+  }
+  [data-cv6] .cv6-email-shell[data-email-tab="inbox"] .cv6-email-body [data-screen^="support"] .mhdr {
+    margin-bottom:var(--cv6-email-tabs-height);
+  }
+}
+
 /* ---- Desktop Home convo column: show the honest "No active goal" rest state when
    there is no real goal (goal.has='none' => .convo-ready.is-none), instead of a goal
    panel with blank checklist counts. Default (goal present) shows the goal body. */

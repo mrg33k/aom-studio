@@ -37,7 +37,7 @@ function composeSettingsMobile(raw, screenName) {
 
 const MOBILE_HTML = composeSettingsMobile(template, 'settings-mobile');
 
-export default function SettingsMobile({ onNav, onOpenNav }) {
+export default function SettingsMobile({ onNav, onOpenNav, onSearch }) {
   const worldId = useWorldId();
   const { state, data } = useSettings(worldId);
   const [view, setView] = useState('list'); // 'list' | 'detail'
@@ -59,14 +59,18 @@ export default function SettingsMobile({ onNav, onOpenNav }) {
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
     openNav: () => onOpenNav?.(),
-    openCommandK: () => {},
+    openCommandK: () => onSearch?.(),
     openProfile: () => {},
-    search: () => {},
+    search: () => onSearch?.(),
     openSection: (id) => {
       setSelectedSection(id);
       setView('detail');
     },
     backToSectionList: () => {
+      setView('list');
+      setSelectedSection(null);
+    },
+    backToList: () => {
       setView('list');
       setSelectedSection(null);
     },

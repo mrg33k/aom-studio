@@ -99,8 +99,9 @@
     <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
     <!-- tappable title opens the tracker switcher -->
     <div class="mhtitle" data-action="openSwitcher" style="cursor:pointer;"><div style="display:flex;align-items:center;gap:6px;min-width:0;"><div class="mttl" data-bind="activeTracker.name">CV6 Bugs</div><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;color:var(--muted);"><path d="m6 9 6 6 6-6"/></svg></div><div class="msub"><span data-bind="activeTracker.openCount">12</span> open</div></div>
-    <div class="mhactions"><button class="mhcta" data-action="newBug" data-arg="activeTracker.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New issue</button><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
+  <div class="mhsubactions"><button class="mhcta" data-action="newBug" data-arg="activeTracker.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New issue</button></div>
   <div class="scrbody" data-state="ready" style="padding:14px 16px 0;display:flex;flex-direction:column;gap:12px;">
     <!-- ONE compact card per other bug -->
     <div style="border:1px solid var(--hair);background:var(--surface);border-radius:15px;padding:13px 14px;" data-each="bugs" data-action="openBug" data-arg="bug.id">
@@ -109,7 +110,7 @@
       <div style="display:flex;align-items:center;gap:7px;margin-top:9px;"><span class="ava is-lime" data-mod="is-:bug.assigneeTint" style="width:20px;height:20px;" data-bind="bug.assigneeInitials">RX</span><span style="font-size:12px;color:var(--muted);"><span data-bind="bug.assignee">Rex</span> · <span data-bind="bug.updated">5h</span></span></div>
     </div>
   </div>
-  <!-- New-issue action now lives in the header CTA (.mhcta) per the mobile-header design; the floating + was removed to avoid two controls firing the same newBug action. -->
+  <!-- New issue stays a single action, immediately below the canonical header; the floating duplicate remains removed. -->
 </div>
 
 <!-- ============ MOBILE A2 · tracker switcher sheet ============ -->

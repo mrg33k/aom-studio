@@ -52,7 +52,7 @@ function composeLiveScribe(raw, screenName) {
 const HTML_DESKTOP = composeLiveScribe(template, 'livescribe-desktop');
 const HTML_MOBILE = composeLiveScribe(template, 'livescribe-mobile');
 
-export default function LiveScribe({ onNav, onOpenNav }) {
+export default function LiveScribe({ onNav, onOpenNav, onSearch }) {
   const worldId = useWorldId();
   const { state, recording, data, controls } = useLiveScribe(worldId);
   const isMobile = useMediaQuery('(max-width: 899px)'); // app-wide tablet rule: below 900 = mobile layout (loop R15)
@@ -63,8 +63,8 @@ export default function LiveScribe({ onNav, onOpenNav }) {
     // Header controls do what they do on every other screen (closure sweep
     // 2026-07-06: the profile bubble was DEAD here — census scribe-1440 #11 —
     // and search/cmdK were unwired no-ops; all open the nav overlay like Command).
-    openCommandK: () => onOpenNav?.(),
-    search: () => onOpenNav?.(),
+    openCommandK: () => onSearch?.(),
+    search: () => onSearch?.(),
     openProfile: () => onOpenNav?.(),
     // The one capture button: idle starts the mic, recording stops + saves.
     // Nothing records without this tap (no surprise microphone).

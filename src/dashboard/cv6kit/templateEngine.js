@@ -91,8 +91,7 @@ function isNativeInteractive(el) {
   return ['BUTTON', 'A', 'INPUT', 'TEXTAREA', 'SELECT', 'SUMMARY'].includes(el.tagName);
 }
 
-function actionLabel(action, el) {
-  const target = el.getAttribute('data-target');
+export function actionLabelFor(action, target = '') {
   if (action === 'search' || action === 'openCommandK') return 'Search';
   if (action === 'openNav') return 'Menu';
   if (action === 'openProfile') return 'Profile';
@@ -100,6 +99,7 @@ function actionLabel(action, el) {
   if (action === 'openNotifications') return 'Notifications';
   if (action === 'download') return 'Download';
   if (action === 'nav' && target === 'back') return 'Back';
+  if (action === 'closeThread' || /^back/i.test(action)) return 'Back';
   if (/^(close|cancel)/i.test(action)) return 'Close';
   return '';
 }
@@ -119,9 +119,15 @@ function prepareActionControl(el, action) {
     if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
   }
-  if (!el.hasAttribute('aria-label') && !el.textContent.trim()) {
-    const label = actionLabel(action, el);
-    if (label) el.setAttribute('aria-label', label);
+  if (!el.hasAttribute('aria-label')) {
+    // Icon-only controls get a stamped name. A control with visible text already
+    // HAS its accessible name; overriding it breaks label-in-name (a button that
+    // reads "Cancel" must never be announced as "Close").
+    const hasVisibleText = (el.textContent || '').trim().length > 0;
+    if (!hasVisibleText) {
+      const label = actionLabelFor(action, el.getAttribute('data-target') || '');
+      if (label) el.setAttribute('aria-label', label);
+    }
   }
 }
 

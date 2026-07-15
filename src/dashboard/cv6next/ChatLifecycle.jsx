@@ -336,7 +336,7 @@ function RoomFilesSheet({ projectSlug, messages, uploadScope, onClose, onReview 
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, messages, status, onBack, onOpenNav, onSearch, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -476,8 +476,9 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
         <div className="mhactions">
-          <div className="ib" role="button" aria-label="Files in this room" title="Files in this room" tabIndex={0} data-testid="chat-files-button" style={{ width: 36, height: 36, borderRadius: 10, cursor: 'pointer' }} onClick={() => setFilesSheetOpen(true)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFilesSheetOpen(true); } }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg></div>
-          <div className="ib" role="button" aria-label="Menu" tabIndex={0} style={{ width: 36, height: 36, borderRadius: 10 }} onClick={onOpenNav} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenNav?.(); } }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></div>
+          <button type="button" className="ib" aria-label="Files in this room" title="Files in this room" data-testid="chat-files-button" onClick={() => setFilesSheetOpen(true)}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg></button>
+          <button type="button" className="ib" aria-label="Search" onClick={onSearch}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button>
+          <button type="button" className="ib" aria-label="Menu" onClick={onOpenNav}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></button>
         </div>
       </div>
 

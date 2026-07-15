@@ -117,7 +117,83 @@ Scribe, Settings, Search: same height, same left/right affordance order (back, t
 search, menu, profile), same accessible labels, desktop and mobile. Kill per-screen
 drift in `.topbar`/`.mhdr` usage.
 
-**Status:** queued.
+Implementation started 2026-07-15. The active CV6 shell already owns one desktop
+`.topbar`; mobile tool headers are template-local `.mhdr` instances plus the React
+Chat/Search variants. R2 is centralizing their dimensions, focus/touch contract, and
+accessible control names without changing data or truth semantics.
+
+Design gate: font stays the CV6 system (`--font-sans`, with the existing mono token
+only where the product already uses it); brand is Corner. This design is unmistakably
+Corner because every tool now enters through the same fixed ink-ground rhythm: the
+Corner brand and centered tool rail at desktop, and one compact title rail with the
+single accent reserved for state/focus at mobile.
+
+Implementation notes (2026-07-15):
+
+- Added one shared bar geometry contract in `cv6.css`: 80px desktop, 60px mobile,
+  44px controls, uniform padding/background/divider treatment, normalized icon sizes,
+  and one accent `:focus-visible` ring. Existing R1 pointer-held feedback and touch
+  minimums remain the interaction source of truth.
+- Converted the shell desktop tool/search/profile actions to native buttons while
+  preserving the existing brand-left, tool-nav-center, theme/search/avatar-right
+  furniture. `templateEngine` now assigns the same Search/Menu/Back/Profile accessible
+  names even when a glyph control contains visible initials or other text.
+- Converged the active mobile templates and React headers on left Back/Menu, flexible
+  title/subtitle, then Search/Menu. Existing Chat/Tracker creation actions moved to a
+  stable subordinate row instead of competing for title width; Email's existing
+  Inbox/Campaign switch is likewise subordinate to the canonical header.
+- Wired the formerly inert per-tool Search actions to the real shared search overlay
+  in Files/Review, Email, Tracker, Command, Scribe, and Settings. Search itself now
+  uses Back + search field + Menu at phone width.
+- Relaxed room, rail, drawer, and header-name flex constraints so labels consume the
+  available width before ellipsis; redundant phone-width room-status pills yield to
+  the real room name without changing row geometry.
+- Added `tests/cv6-topbar.spec.mjs` covering five sibling tools at desktop and four at
+  390px mobile: equal bar heights, shared accessible names/order, 44px targets,
+  visible keyboard focus, available title width, and R1 held-press state. Added node
+  coverage for the action-name and CSS geometry contracts.
+
+Verification run in the sandbox:
+
+- `node --test tests/cv6-topbar.test.mjs tests/cv6-global-motion.test.mjs` — pass
+  (4/4).
+- `npm run test:tenant-context` — pass.
+- `node --check tests/cv6-topbar.spec.mjs` — pass.
+- Focused esbuild bundle of `src/dashboard/cv6next/CornerCV6.jsx` — pass (used only as
+  a syntax/import fallback after the full build was terminated).
+- `git diff --check` — pass.
+- `npm run build` — attempted repeatedly; Vite reached `transforming` but the sandbox
+  terminated the process without a compiler diagnostic (exit 143 on the captured
+  run; a 768MB capped retry exited 1 at the same phase). This is not recorded as a
+  pass; the EA must rerun the exact command externally before landing.
+- Browsers were not run in this sandbox. External Playwright remains required for
+  `tests/cv6-topbar.spec.mjs` and `tests/cv6-practical-audit.spec.mjs`.
+
+Repository note: `corner/missions/cv6-polish/RESEARCH.md`, named in the R2 brief, is
+still absent from this worktree. VISION and BUILD were read; no research content was
+invented to stand in for the missing file.
+
+**Status:** implemented; browser verification pending external run.
+
+- 2026-07-15 EA external verification + critic pass:
+  - EA fixed a real accessibility defect Codex introduced: templateEngine stamped
+    aria-label="Close" onto any close/cancel action even when the control carries
+    visible text, so a button reading "Cancel" was announced as "Close" and specs
+    querying by name broke. Stamped names now apply to icon-only controls.
+  - EA spec repairs: practical-audit New-project locator made exact (R2's properly
+    named tab collided with the title text match), topbar 44px assert allows
+    device-pixel float noise, focus-visible test establishes keyboard modality first.
+  - External battery: 14 passed, 1 flake (desktop previews image decode under heavy
+    machine load; passed on retry and passed clean 13/13 earlier today). Build passed
+    externally after the vite-health janitor root fix (see AOM-EA commit: the 30s
+    health tick pkill'd every vite on the machine, killing builds all day).
+  - Steffen critic: SEND BACK on exactly one straggler (mobile Files header still
+    said "Organize"; renamed to Files, re-shot, contract confirmed), chevron flag
+    overruled with verified rationale (Notion/Linear title-switcher pattern, carries
+    all shared treatments). Queue: openSwitcher aria-label ("Switch board" action
+    naming), optional caret rest-presence. Then clean PASS.
+
+**Status:** shipped after external verification + critic pass; landing to main 2026-07-15.
 
 ### R3 - Chat feel (Patrik's number one)
 
