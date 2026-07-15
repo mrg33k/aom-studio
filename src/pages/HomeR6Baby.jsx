@@ -214,35 +214,77 @@ function LivingSitePanel({ tallSrc, fallbackSrc, label }) {
 
 // ─── BRIEF MODAL STATE & LOGIC ────────────────────────────────────────────
 
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xbdalqvg';
+const INITIAL_BRIEF_FORM = { name: '', email: '', making: '', goal: '', budget: '' };
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function BriefModal({ open, onClose }) {
   const [step, setStep] = useState(0); // 0=name+email, 1=making, 2=goal
-  const [formData, setFormData] = useState({ name: '', email: '', making: '', goal: '', budget: '' });
+  const [formData, setFormData] = useState(INITIAL_BRIEF_FORM);
+  const [status, setStatus] = useState('idle');
   const makingOptions = ['Brand film', 'Website', 'Strategy', 'Documentary', 'Not sure'];
   const totalSteps = 3;
   const progressWidth = ((step + 1) / totalSteps) * 100;
+  const isContactValid = formData.name.trim() !== '' && EMAIL_PATTERN.test(formData.email.trim());
 
   const updateForm = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const next = () => {
+    if (step === 0 && !isContactValid) return;
     if (step < totalSteps - 1) setStep(step + 1);
   };
 
-  const submit = () => {
-    const body = `Name: ${formData.name}\nEmail: ${formData.email}\nWhat are you making: ${formData.making}\nGoal: ${formData.goal}\nBudget/Timeline: ${formData.budget || '(not specified)'}`;
-    window.location.href = `mailto:hello@aheadofmarket.com?subject=Brief from ${encodeURIComponent(formData.name)}&body=${encodeURIComponent(body)}`;
+  const handleClose = () => {
+    if (status === 'sent') {
+      setStep(0);
+      setFormData(INITIAL_BRIEF_FORM);
+      setStatus('idle');
+    }
     onClose();
+  };
+
+  const submit = async () => {
+    if (status === 'sending') return;
+    if (!isContactValid) {
+      setStep(0);
+      return;
+    }
+
+    setStatus('sending');
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          making: formData.making,
+          goal: formData.goal,
+          budget: formData.budget,
+          source: 'r6-brief',
+        }),
+      });
+      setStatus(res.ok ? 'sent' : 'error');
+    } catch {
+      setStatus('error');
+    }
   };
 
   if (!open) return null;
 
   return (
-    <div className="brief-modal" onClick={onClose} role="dialog" aria-label="Creative brief">
+    <div className="brief-modal" onClick={handleClose} role="dialog" aria-label="Creative brief">
       <div className="brief-modal-inner" onClick={e => e.stopPropagation()} style={{ '--progress-width': `${progressWidth}%` }}>
-        <button className="brief-modal-x" onClick={onClose} aria-label="Close">✕</button>
+        <button className="brief-modal-x" onClick={handleClose} aria-label="Close">✕</button>
 
-        {step === 0 && (
+        {status === 'sent' ? (
+          <div className="brief-confirmation" role="status">
+            <h3>WE GOT IT.</h3>
+            <p>We'll be in touch within 24 hours.</p>
+          </div>
+        ) : step === 0 ? (
           <div className="brief-step">
             <h3>Let's start with the basics</h3>
             <input
@@ -250,6 +292,7 @@ function BriefModal({ open, onClose }) {
               placeholder="Your name"
               value={formData.name}
               onChange={e => updateForm('name', e.target.value)}
+              required
               autoFocus
             />
             <input
@@ -257,12 +300,14 @@ function BriefModal({ open, onClose }) {
               placeholder="you@company.com"
               value={formData.email}
               onChange={e => updateForm('email', e.target.value)}
+              required
             />
-            <button onClick={next} className="brief-next" disabled={!formData.name.trim() || !formData.email.trim()}>Next</button>
+            {formData.email.trim() !== '' && !EMAIL_PATTERN.test(formData.email.trim()) && (
+              <p className="brief-error" role="alert">Enter a valid email address.</p>
+            )}
+            <button onClick={next} className="brief-next" disabled={!isContactValid}>Next</button>
           </div>
-        )}
-
-        {step === 1 && (
+        ) : step === 1 ? (
           <div className="brief-step">
             <h3>What are you making?</h3>
             <div className="brief-chips">
@@ -279,10 +324,9 @@ function BriefModal({ open, onClose }) {
                 </button>
               ))}
             </div>
+            <button onClick={next} className="brief-next">Next</button>
           </div>
-        )}
-
-        {step === 2 && (
+        ) : (
           <div className="brief-step">
             <h3>What's the goal?</h3>
             <textarea
@@ -300,7 +344,12 @@ function BriefModal({ open, onClose }) {
                 onChange={e => updateForm('budget', e.target.value)}
               />
             </div>
-            <button onClick={submit} className="brief-next brief-submit" disabled={!formData.goal.trim()}>Send</button>
+            <button onClick={submit} className="brief-next brief-submit" disabled={status === 'sending'}>
+              {status === 'sending' ? 'Sending...' : 'Send'}
+            </button>
+            {status === 'error' && (
+              <p className="brief-error" role="alert">Something went wrong. Try again or email us directly.</p>
+            )}
           </div>
         )}
       </div>
@@ -491,8 +540,6 @@ const CSS = `
 @media(max-width:640px){ .r17 .hz .wm svg { height:min(40vh,74vw); } }
 .r17 .hz-gold .wm { color:#F6F6F4; }
 .r17 .hz-gold .wm svg { opacity:.09; }
-.r17 .hz .wm .dot { display:inline-block; width:clamp(1.4rem,4vw,3.4rem); height:clamp(1.4rem,4vw,3.4rem); margin-left:clamp(.8rem,2vw,1.8rem); background:#fff; }
-.r17 .hz-gold .wm .dot { display:none; }
 .r17 .hz-chrome { position:absolute; inset:0; z-index:5; pointer-events:none; }
 .r17 .hz-intro {
   position:absolute; left:50%; transform:translateX(-50%);
@@ -724,6 +771,9 @@ const CSS = `
 .r17 .brief-modal-x:hover { color:var(--gold); }
 .r17 .brief-step h3 { font-family:var(--fd); font-size:1.8rem; font-weight:800; text-transform:uppercase; color:var(--paper); margin-bottom:1.6rem; line-height:1.1; letter-spacing:-.01em; }
 .r17 .brief-step { animation:brief-fade-in .2s ease; }
+.r17 .brief-confirmation { animation:brief-fade-in .2s ease; text-align:center; padding:2rem 0; }
+.r17 .brief-confirmation h3 { font-family:var(--fd); font-size:1.8rem; font-weight:800; color:var(--paper); line-height:1.1; letter-spacing:-.01em; margin-bottom:.8rem; }
+.r17 .brief-confirmation p { font-family:var(--fbrut); font-size:.95rem; color:var(--mut); }
 @keyframes brief-fade-in { from { opacity:0; } to { opacity:1; } }
 .r17 .brief-step input, .r17 .brief-step textarea { width:100%; padding:.65rem 1rem; background:var(--ink-2); border:1px solid rgba(196,164,106,.24); border-radius:8px; font-family:var(--fbrut); font-size:.95rem; color:var(--paper); transition:border-color .2s; margin-bottom:.8rem; }
 .r17 .brief-step textarea { margin-bottom:.8rem; }
@@ -739,6 +789,7 @@ const CSS = `
 .r17 .brief-next:hover:not(:disabled) { background:var(--gold-deep); }
 .r17 .brief-next:disabled { opacity:.5; cursor:not-allowed; }
 .r17 .brief-submit { background:var(--gold); }
+.r17 .brief-error { margin-top:.8rem; color:#E99A8F; font-family:var(--fbrut); font-size:.82rem; line-height:1.4; }
 @media(max-width:640px){
   .r17 .brief-modal-inner { width:100%; padding:1.6rem 1.2rem; }
   .r17 .brief-step h3 { font-size:1.4rem; margin-bottom:1.2rem; }
@@ -1321,10 +1372,10 @@ export default function HomeR6Baby() {
             <img className={`pstr ${heroHasPlayed ? 'is-hidden' : ''}`} src="/videos/hero-poster.jpg" alt="" />
           </div>
           <div className="hz-mask" ref={maskL}>
-            <div className="wm" ref={wmA}><BrandMark kind="mono" /><span className="dot" /></div>
+            <div className="wm" ref={wmA}><BrandMark kind="mono" /></div>
           </div>
           <div className="hz-gold" ref={goldL} aria-hidden="true">
-            <div className="wm" ref={wmB}><BrandMark kind="mono" /><span className="dot" /></div>
+            <div className="wm" ref={wmB}><BrandMark kind="mono" /></div>
           </div>
           {/* R24: Richer sparkle constellation — ambient + interactive stars scattered in side areas */}
           {/* Ambient sparkles (4): always faintly visible with twinkle */}
