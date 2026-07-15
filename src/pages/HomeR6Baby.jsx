@@ -23,8 +23,14 @@ const PORTFOLIO = [
   { t: 'Virtu Hospitality', id: '698a5ef5fc23d3d76fa87ef4', tag: 'Brand' },
   { t: 'United Food Bank', id: '698a5fcdfc23d3d76fa893b8', tag: 'Nonprofit' },
 ];
-// bottom mosaic row: rotated so the two rows show a different sequence
-const PORTFOLIO_B = [...PORTFOLIO.slice(4), ...PORTFOLIO.slice(0, 4)];
+// Keep the two work-wall rows disjoint so a title can never repeat across them.
+const PORTFOLIO_A = PORTFOLIO.filter((_, i) => i % 2 === 0);
+const PORTFOLIO_B = PORTFOLIO.filter((_, i) => i % 2 === 1);
+const TILE_VIDEO_BY_ID = {
+  [PORTFOLIO[0].id]: '/videos/collage-01.mp4',
+  [PORTFOLIO[3].id]: '/videos/collage-02.mp4',
+  [PORTFOLIO[4].id]: '/videos/collage-03.mp4',
+};
 
 const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee — strongest doc footage
 const FILM_REEL = '698a5ef5fc23d3d76fa87ef4'; // Virtu Hospitality
@@ -95,6 +101,114 @@ function CaseVideo({ src, posterSrc, caseIndex }) {
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
       aria-hidden="true"
     />
+  );
+}
+
+// Local video wrapper used by the reels, collage, and work wall. Playback is
+// gated to the visible section and disabled for reduced motion and phone layouts.
+function InViewVideo({ src, className = '', style, posterSrc, preload = 'metadata', onPlaying, desktopOnly = false }) {
+  const vidRef = useRef(null);
+
+  useEffect(() => {
+    const video = vidRef.current;
+    if (!video) return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const desktop = window.matchMedia('(min-width:641px)');
+    let isInView = false;
+
+    const syncPlayback = () => {
+      const motionAllowed = !reduced.matches && (!desktopOnly || desktop.matches);
+      if (isInView && motionAllowed) video.play().catch(() => {});
+      else video.pause();
+    };
+
+    if (typeof IntersectionObserver === 'undefined') {
+      isInView = true;
+      syncPlayback();
+      return undefined;
+    }
+
+    const obs = new IntersectionObserver(
+      entries => {
+        isInView = Boolean(entries[0]?.isIntersecting);
+        syncPlayback();
+      },
+      { threshold: 0.12 }
+    );
+    obs.observe(video);
+    reduced.addEventListener?.('change', syncPlayback);
+    desktop.addEventListener?.('change', syncPlayback);
+
+    return () => {
+      obs.disconnect();
+      reduced.removeEventListener?.('change', syncPlayback);
+      desktop.removeEventListener?.('change', syncPlayback);
+      video.pause();
+    };
+  }, [src, desktopOnly]);
+
+  return (
+    <video
+      ref={vidRef}
+      className={className}
+      src={src}
+      muted
+      loop
+      playsInline
+      preload={preload}
+      poster={posterSrc}
+      onPlaying={onPlaying}
+      style={style}
+      aria-hidden="true"
+    />
+  );
+}
+
+function LivingSitePanel({ tallSrc, fallbackSrc, label }) {
+  const frameRef = useRef(null);
+  const imageRef = useRef(null);
+  const [source, setSource] = useState(tallSrc);
+  const [isFallback, setIsFallback] = useState(false);
+  const [panDistance, setPanDistance] = useState(0);
+
+  const measure = useCallback(() => {
+    const frame = frameRef.current;
+    const image = imageRef.current;
+    if (!frame || !image || isFallback) {
+      setPanDistance(0);
+      return;
+    }
+    setPanDistance(Math.max(0, image.scrollHeight - frame.clientHeight));
+  }, [isFallback]);
+
+  useEffect(() => {
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure]);
+
+  const handleError = () => {
+    if (isFallback) return;
+    setIsFallback(true);
+    setSource(fallbackSrc);
+  };
+
+  return (
+    <div className={`site-browser ${isFallback ? 'is-fallback' : 'is-tall'}`} aria-label={`${label} website preview`}>
+      <div className="site-browser-bar" aria-hidden="true"><i /><i /><i /></div>
+      <div className="site-browser-window" ref={frameRef}>
+        <img
+          ref={imageRef}
+          className="site-page"
+          src={source}
+          alt=""
+          loading="lazy"
+          onLoad={measure}
+          onError={handleError}
+          style={{ '--site-pan': `${-panDistance}px` }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -291,6 +405,46 @@ const CSS = `
 .r17 .bk-panel .vid { position:absolute; inset:0; z-index:1; }
 @media(max-width:640px){ .r17 .bk-panel .vid { display:none; } }
 
+/* Living-site panels: tall captures pan through their full page. If the tall
+   capture is unavailable, the landscape capture gets a restrained drift. */
+.r17 .site-browser {
+  position:absolute; inset:clamp(1rem,2.2vw,2rem); overflow:hidden;
+  border:1px solid rgba(246,246,244,.32); border-radius:8px;
+  background:var(--ink-2); box-shadow:0 20px 60px rgba(0,0,0,.42);
+}
+.r17 .site-browser-bar {
+  position:absolute; z-index:3; left:0; right:0; top:0; height:30px;
+  display:flex; align-items:center; gap:6px; padding:0 11px;
+  background:rgba(6,6,6,.94); border-bottom:1px solid rgba(246,246,244,.18);
+}
+.r17 .site-browser-bar i { width:6px; height:6px; border-radius:50%; background:rgba(246,246,244,.48); }
+.r17 .site-browser-bar i:first-child { background:var(--gold); }
+.r17 .site-browser-window { position:absolute; inset:30px 0 0; overflow:hidden; background:var(--ink-2); }
+.r17 .site-page { position:absolute; left:0; top:0; display:block; width:100%; max-width:none; will-change:transform; }
+.r17 .site-browser.is-tall .site-page {
+  height:auto; min-height:100%;
+  animation:site-page-pan 22s cubic-bezier(.45,.05,.55,.95) infinite;
+}
+.r17 .site-browser.is-fallback .site-page {
+  width:100%; height:100%; object-fit:cover;
+  animation:site-page-drift 22s ease-in-out infinite alternate;
+}
+@keyframes site-page-pan {
+  0%, 8% { transform:translate3d(0,0,0); }
+  47%, 58% { transform:translate3d(0,var(--site-pan),0); }
+  100% { transform:translate3d(0,0,0); }
+}
+@keyframes site-page-drift {
+  0% { transform:translate3d(-1.5%,0,0) scale(1.06); }
+  50% { transform:translate3d(1.5%,-1.5%,0) scale(1.1); }
+  100% { transform:translate3d(-1%,1.5%,0) scale(1.14); }
+}
+@media(max-width:640px){
+  .r17 .site-browser { inset:.65rem; }
+  .r17 .site-browser.is-tall .site-page,
+  .r17 .site-browser.is-fallback .site-page { animation:none; transform:none; }
+}
+
 /* ghost-type texture panel (solid panel, outlined repeating line) */
 .r17 .ghostpanel { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; gap:.4em; overflow:hidden; }
 .r17 .ghostpanel span {
@@ -316,9 +470,16 @@ const CSS = `
    mark flashes solid (Patrik's scroll-back-to-top bug) */
 .r17 .hz-stage { position:sticky; top:0; height:var(--vph,100svh); overflow:hidden; background:var(--ink); isolation:isolate; transform:translateZ(0); }
 .r17 .hz-video { position:absolute; inset:0; }
-.r17 .hz-video .pstr { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.r17 .hz-video .pstr {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:2;
+  opacity:1; pointer-events:none; transition:opacity 250ms ease;
+}
+.r17 .hz-video .pstr.is-hidden { opacity:0; }
 .r17 .hz-video .vid { position:absolute; inset:0; z-index:1; }
-@media(max-width:640px){ .r17 .hz-video .vid { display:none; } }
+@media(max-width:640px){
+  .r17 .hz-video .vid { display:none; }
+  .r17 .hz-video .pstr.is-hidden { opacity:1; }
+}
 .r17 .hz-mask {
   position:absolute; inset:0; z-index:3; background:#000; mix-blend-mode:multiply;
   display:flex; align-items:center; justify-content:center;
@@ -331,14 +492,16 @@ const CSS = `
 .r17 .hz-gold .wm { color:#F6F6F4; }
 .r17 .hz-gold .wm svg { opacity:.09; }
 .r17 .hz .wm .dot { display:inline-block; width:clamp(1.4rem,4vw,3.4rem); height:clamp(1.4rem,4vw,3.4rem); margin-left:clamp(.8rem,2vw,1.8rem); background:#fff; }
-.r17 .hz-gold .wm .dot { background:var(--gold); opacity:1; }
+.r17 .hz-gold .wm .dot { display:none; }
 .r17 .hz-chrome { position:absolute; inset:0; z-index:5; pointer-events:none; }
 .r17 .hz-intro {
   position:absolute; left:50%; transform:translateX(-50%);
   bottom:calc(clamp(4.5rem,10vh,7rem) + env(safe-area-inset-bottom));
-  width:min(34rem,84vw); text-align:center;
-  font-size:clamp(1rem,1.4vw,1.25rem); color:var(--paper); line-height:1.65;
-  font-family:var(--fbrut); font-weight:700; letter-spacing:-.01em;
+  width:min(48rem,88vw); text-align:center; padding:1rem clamp(1rem,3vw,2.4rem);
+  font-size:clamp(1.5rem,2.6vw,2.4rem); color:var(--paper); line-height:1.06;
+  font-family:var(--fbrut); font-weight:800; letter-spacing:-.035em;
+  text-shadow:0 3px 24px rgba(0,0,0,.96), 0 1px 4px rgba(0,0,0,1);
+  background:radial-gradient(ellipse at center, rgba(4,4,4,.74) 0%, rgba(4,4,4,.38) 52%, transparent 76%);
 }
 .r17 .hz-cue {
   position:absolute; left:50%; bottom:calc(clamp(2rem,5vh,3.4rem) + env(safe-area-inset-bottom));
@@ -351,6 +514,9 @@ const CSS = `
   70%,100%{transform:translateX(-50%) scaleY(1) translateY(14px);opacity:0}
 }
 @media (prefers-reduced-motion:reduce){ .r17 .hz-cue { animation:none; opacity:.6; transform:translateX(-50%); } }
+@media(max-width:640px){
+  .r17 .hz-intro { width:min(90vw,30rem); font-size:clamp(1.25rem,6vw,1.65rem); line-height:1.08; padding:.8rem 1rem; }
+}
 
 /* branded sparkle star reveals on mouse move + ambient twinkle (R24: richer constellation) */
 .r17 .sparkle { position:absolute; z-index:2; color:var(--gold); opacity:0; transition:opacity .4s ease; pointer-events:none; display:flex; align-items:center; justify-content:center; }
@@ -376,6 +542,17 @@ const CSS = `
 /* center stack */
 .r17 .stack { position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 var(--pad); max-width:100%; }
 .r17 .stack::before { content:''; position:absolute; inset:0; z-index:-1; background:radial-gradient(ellipse at center, rgba(4,4,4,.55), transparent 70%); pointer-events:none; }
+.r17 .story-reel { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.62; pointer-events:none; z-index:0; }
+.r17 .story-poster { display:none; position:absolute; inset:0; width:100%; height:100%; max-width:none; object-fit:cover; opacity:.58; z-index:0; }
+.r17 .story-slide::after,
+.r17 .billboard-slide::after {
+  content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:radial-gradient(ellipse at center, rgba(4,4,4,.16) 0%, rgba(4,4,4,.48) 72%), linear-gradient(to top, rgba(4,4,4,.68), transparent 62%);
+}
+@media(max-width:640px){
+  .r17 .story-reel { display:none; }
+  .r17 .story-poster { display:block; }
+}
 .r17 .tags { display:flex; flex-direction:column; gap:.28rem; margin-bottom:1.1rem; }
 .r17 .tags span { font-size:.9rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--paper); text-shadow:0 1px 14px rgba(0,0,0,.9); font-family:var(--fbrut); }
 .r17 .tags .idx { font-size:.95rem; font-weight:700; letter-spacing:.3em; margin-bottom:.3rem; font-family:var(--fd); }
@@ -454,13 +631,36 @@ const CSS = `
   .r17 .ghost-mark { color:rgba(196,164,106,.16); }
 }
 
-/* billboard montage — rich moving collage mixing videos, stills, and portfolio posters */
-.r17 .slide:has(> .stack:has(> .title:has(> .row:contains("A billboard")))) { position:relative; }
-.r17 .billboard-montage { position:absolute; inset:0; display:grid; grid-template-columns:repeat(6, 1fr); grid-template-rows:repeat(4, 1fr); gap:0.6rem; padding:1.6rem; opacity:0.3; z-index:0; pointer-events:none; }
-@media(max-width:640px) { .r17 .billboard-montage { grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr); gap:0.4rem; padding:0.8rem; } }
-.r17 .billboard-item { position:relative; overflow:hidden; border-radius:1px; background:var(--ink-2); }
+/* Billboard montage: one cohesive wall with staggered, transform-only life. */
+.r17 .billboard-montage { position:absolute; inset:0; display:grid; grid-template-columns:repeat(6, 1fr); grid-template-rows:repeat(4, 1fr); gap:0.6rem; padding:1.6rem; opacity:.68; z-index:0; pointer-events:none; }
+@media(max-width:640px) {
+  .r17 .billboard-montage { grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr); gap:0.4rem; padding:0.8rem; }
+  .r17 .billboard-item { animation:none; transform:none; }
+  .r17 .billboard-item video { display:none; }
+}
+.r17 .billboard-item {
+  position:relative; overflow:hidden; border-radius:2px; background:var(--ink-2); opacity:.76;
+  animation:billboard-life 15s ease-in-out infinite alternate; will-change:transform,opacity;
+}
+.r17 .billboard-item.is-video { grid-row:span 2; opacity:1; animation-name:billboard-video-life; }
+.r17 .billboard-item:nth-child(3n+1) { animation-delay:-3s; }
+.r17 .billboard-item:nth-child(3n+2) { animation-delay:-8s; animation-direction:alternate-reverse; }
+.r17 .billboard-item:nth-child(3n) { animation-delay:-12s; }
 .r17 .billboard-item img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .r17 .billboard-item video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+@keyframes billboard-life {
+  0% { transform:scale(1.02) translate3d(-.6%,0,0); opacity:.68; }
+  52% { transform:scale(1.08) translate3d(.7%,-.5%,0); opacity:.92; }
+  100% { transform:scale(1.04) translate3d(0,.6%,0); opacity:.76; }
+}
+@keyframes billboard-video-life {
+  0% { transform:scale(1.015) translate3d(-.4%,0,0); }
+  52% { transform:scale(1.055) translate3d(.5%,-.4%,0); }
+  100% { transform:scale(1.025) translate3d(0,.4%,0); }
+}
+@media(max-width:640px) {
+  .r17 .billboard-item { animation:none; transform:none; }
+}
 
 /* work mosaic — endless dual-row scroll. R25: rows are width:max-content so the
    marquee translates by a full copy (was -66% of the 768px viewport, which only
@@ -479,15 +679,18 @@ const CSS = `
   0% { transform:translateX(-33.333%); }
   100% { transform:translateX(0); }
 }
-.r17 .tile { position:relative; overflow:hidden; background:var(--ink-2); border:none; padding:0; flex-shrink:0; height:100%; width:clamp(215px,28vw,340px); cursor:pointer; }
+.r17 .tile { position:relative; overflow:hidden; background:var(--ink-2); border:none; padding:0; flex-shrink:0; height:100%; width:34vw; min-width:215px; cursor:pointer; }
 .r17 .tile img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.62; transform:scale(1.04); transition:opacity .4s, transform .6s cubic-bezier(.16,1,.3,1); }
+.r17 .tile .tile-video { position:absolute; inset:0; z-index:1; width:100%; height:100%; object-fit:cover; opacity:.78; transform:scale(1.04); transition:opacity .4s, transform .6s cubic-bezier(.16,1,.3,1); }
 .r17 .tile:hover img { opacity:1; transform:scale(1.01); }
+.r17 .tile:hover .tile-video { opacity:1; transform:scale(1.01); }
 .r17 .tile .tl { position:absolute; left:.9rem; bottom:.8rem; z-index:2; font-size:.62rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--paper); text-shadow:0 1px 10px rgba(0,0,0,.8); opacity:0; transition:opacity .3s; }
 .r17 .tile:hover .tl { opacity:1; }
 .r17 .tile .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; font-size:2.4rem; color:var(--paper); text-shadow:0 2px 12px rgba(0,0,0,.8); opacity:0; transition:opacity .3s; }
 .r17 .tile:hover .play { opacity:1; }
 @media(max-width:640px){
-  .r17 .tile { width:clamp(150px,44vw,240px); }
+  .r17 .tile { width:44vw; min-width:150px; }
+  .r17 .tile .tile-video { display:none; }
 }
 .r17 .mosaic-stack { pointer-events:none; }
 .r17 .mosaic-stack .view { pointer-events:auto; }
@@ -551,6 +754,10 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) {
   .r17 { scroll-behavior:auto; }
   .r17 .rv, .r17 .strike i, .r17 .tile img { transition:none !important; transform:none !important; opacity:1 !important; }
+  .r17 .hz-video .vid, .r17 .story-reel, .r17 .tile .tile-video, .r17 .billboard-item video { display:none; }
+  .r17 .story-poster { display:block; }
+  .r17 .hz-video .pstr.is-hidden { opacity:1; }
+  .r17 .site-page, .r17 .billboard-item, .r17 .mosaic-row { animation:none !important; transform:none !important; }
 }
 `;
 
@@ -595,16 +802,16 @@ const makePanels = () => {
       <div className="vid"><LazyGumlet id={HERO_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
       <img className="pstr" src={poster(HERO_REEL)} alt="" />
     </>,
-    <img src={poster(PALA_REEL)} alt="" loading="lazy" />,
-    <img src="/hero-sites/ambition.jpg" alt="" loading="lazy" />,
+    null,
+    <LivingSitePanel tallSrc="/hero-sites/ambition-tall.jpg" fallbackSrc="/hero-sites/ambition.jpg" label="Ambition Mechanical" />,
     null,
     null,
     <CaseVideo src="/videos/isa-brand.mp4" posterSrc="/videos/isa-brand.jpg" caseIndex={0} />,
     <CaseVideo src="/videos/spacerising-render.mp4" posterSrc="/videos/spacerising-render.jpg" caseIndex={1} />,
     <CaseVideo src="/videos/ih-culture.mp4" posterSrc="/videos/ih-culture.jpg" caseIndex={2} />,
-    <img src="/hero-sites/ambition.jpg" alt="" loading="lazy" />,
+    <LivingSitePanel tallSrc="/hero-sites/ambition-tall.jpg" fallbackSrc="/hero-sites/ambition.jpg" label="Ambition Mechanical" />,
     null,
-    <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
+    null,
     null,
     null,
     null,
@@ -615,8 +822,8 @@ const makePanels = () => {
       <div className="vid"><LazyGumlet id={FILM_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
       <img className="pstr" src={poster(NOOK_REEL)} alt="" />
     </>,
-    <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
-    <img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" />,
+    null,
+    <LivingSitePanel tallSrc="/hero-sites/space-rising-tall.jpg" fallbackSrc="/hero-sites/space-rising.jpg" label="Space Rising" />,
     null,
     null,
     <CaseVideo src="/videos/isa-demo.mp4" posterSrc="/videos/isa-demo.jpg" caseIndex={0} />,
@@ -624,7 +831,7 @@ const makePanels = () => {
     <CaseVideo src="/videos/ih-life.mp4" posterSrc="/videos/ih-life.jpg" caseIndex={2} />,
     <CaseVideo src="/videos/ambition-vertical.mp4" posterSrc="/videos/ambition-vertical.jpg" caseIndex={3} />,
     null,
-    <img src={poster(HERO_REEL)} alt="" loading="lazy" />,
+    null,
     null,
     null,
     null,
@@ -678,6 +885,7 @@ export default function HomeR6Baby() {
   const [filmCyclePosterIndex, setFilmCyclePosterIndex] = useState(0);
   const [ghostWordIndices, setGhostWordIndices] = useState({ neither: 0, voices: 0 });
   const [heroReelSrc, setHeroReelSrc] = useState(REEL_VIDEOS[0]);
+  const [heroHasPlayed, setHeroHasPlayed] = useState(false);
   const [storyReelSrc, setStoryReelSrc] = useState(REEL_VIDEOS[0]);
 
   const ghostWordSets = {
@@ -830,37 +1038,92 @@ export default function HomeR6Baby() {
     return () => stage.removeEventListener('mousemove', onMouseMove);
   }, []);
 
-  // R23: Hero reel — random-timed cycling through reel-01..14.mp4, inView-gated
+  // R28: Preload each next hero clip before the random-timed, in-view swap.
   useEffect(() => {
     const heroSection = document.querySelector('.r17 .hz');
     if (!heroSection || typeof IntersectionObserver === 'undefined') return;
-    let raf;
+    let timer;
+    let preloader;
+    let active = false;
     let reelQueue = shuffleReel();
     let reelIdx = 0;
+    let currentSrc = REEL_VIDEOS[0];
+
+    const releasePreloader = () => {
+      if (!preloader) return;
+      preloader.oncanplay = null;
+      preloader.onerror = null;
+      preloader.removeAttribute('src');
+      preloader.load();
+      preloader = null;
+    };
+
+    const schedule = () => {
+      if (!active) return;
+      let nextSrc;
+      do {
+        if (reelIdx >= reelQueue.length) {
+          reelQueue = shuffleReel();
+          reelIdx = 0;
+        }
+        nextSrc = reelQueue[reelIdx];
+        reelIdx++;
+      } while (nextSrc === currentSrc);
+      let ready = false;
+      let due = false;
+      let committed = false;
+
+      const commit = () => {
+        if (!active || committed) return;
+        committed = true;
+        currentSrc = nextSrc;
+        setHeroReelSrc(nextSrc);
+        releasePreloader();
+        schedule();
+      };
+
+      preloader = document.createElement('video');
+      preloader.preload = 'auto';
+      preloader.muted = true;
+      preloader.loop = true;
+      preloader.playsInline = true;
+      preloader.oncanplay = () => {
+        ready = true;
+        if (due) commit();
+      };
+      preloader.onerror = () => {
+        ready = true;
+        if (due) commit();
+      };
+      preloader.src = nextSrc;
+      preloader.load();
+
+      timer = setTimeout(() => {
+        due = true;
+        if (ready) commit();
+      }, randomInterval());
+    };
+
     const obs = new IntersectionObserver(
       es => {
         const isInView = es[0]?.isIntersecting;
-        if (isInView) {
-          const cycle = () => {
-            if (reelIdx >= reelQueue.length) {
-              reelQueue = shuffleReel();
-              reelIdx = 0;
-            }
-            setHeroReelSrc(reelQueue[reelIdx]);
-            reelIdx++;
-            raf = setTimeout(() => cycle(), randomInterval());
-          };
-          raf = setTimeout(() => cycle(), randomInterval());
-        } else {
-          if (typeof raf !== 'undefined') clearTimeout(raf);
+        if (isInView && !active) {
+          active = true;
+          schedule();
+        } else if (!isInView && active) {
+          active = false;
+          clearTimeout(timer);
+          releasePreloader();
         }
       },
       { threshold: 0.1 }
     );
     obs.observe(heroSection);
     return () => {
+      active = false;
       obs.disconnect();
-      if (typeof raf !== 'undefined') clearTimeout(raf);
+      clearTimeout(timer);
+      releasePreloader();
     };
   }, []);
 
@@ -1047,18 +1310,15 @@ export default function HomeR6Baby() {
       <section className="hz" aria-label="Ahead of Market">
         <div className="hz-stage">
           <div className="hz-video">
-            <video
+            <InViewVideo
+              className="vid"
               src={heroReelSrc}
-              muted
-              playsInline
-              autoPlay
-              loop
-              preload="metadata"
-              poster="/videos/hero-poster.jpg"
+              preload="auto"
+              desktopOnly
+              onPlaying={() => setHeroHasPlayed(true)}
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-              aria-hidden="true"
             />
-            <img className="pstr" src="/videos/hero-poster.jpg" alt="" />
+            <img className={`pstr ${heroHasPlayed ? 'is-hidden' : ''}`} src="/videos/hero-poster.jpg" alt="" />
           </div>
           <div className="hz-mask" ref={maskL}>
             <div className="wm" ref={wmA}><BrandMark kind="mono" /><span className="dot" /></div>
@@ -1145,27 +1405,14 @@ export default function HomeR6Baby() {
       </Slide>
 
       {/* 01 — STORY BEAT: the video company — R23: backdrop now cycles through random reel of newer work */}
-      <Slide id="story">
-        <video
-          key={storyReelSrc}
+      <Slide id="story" className="story-slide">
+        <InViewVideo
+          className="story-reel"
           src={storyReelSrc}
-          muted
-          playsInline
-          autoPlay
-          loop
           preload="metadata"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0.08,
-            pointerEvents: 'none',
-            zIndex: 0
-          }}
-          aria-hidden="true"
+          desktopOnly
         />
+        <img className="story-poster" src="/videos/hero-poster.jpg" alt="" aria-hidden="true" />
         <div className="stack">
           <div className="tags rv"><span>So, who are we, exactly?</span><span>Many companies around Phoenix know us as</span></div>
           <h2 className="title">
@@ -1301,18 +1548,16 @@ export default function HomeR6Baby() {
 
       {/* 10 — THE BILLBOARD TEST */}
       {/* R23: Upgraded to moving collage mixing collage videos (01-03), newer-work stills (04-08), and portfolio posters */}
-      <Slide>
+      <Slide className="billboard-slide">
         <div className="billboard-montage" aria-hidden="true">
           {/* Collage videos (loops) */}
           {[1, 2, 3].map(i => (
-            <div key={`collage-vid-${i}`} className="billboard-item">
-              <video
+            <div key={`collage-vid-${i}`} className="billboard-item is-video">
+              <img src={poster(PORTFOLIO[i - 1].id, 500)} alt="" loading="lazy" />
+              <InViewVideo
                 src={`/videos/collage-0${i}.mp4`}
-                muted
-                playsInline
-                loop
                 preload="metadata"
-                autoPlay
+                desktopOnly
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </div>
@@ -1352,23 +1597,31 @@ export default function HomeR6Baby() {
         <div className="mosaic">
           {/* Top row: scrolls left */}
           <div className="mosaic-row top">
-            {[...PORTFOLIO, ...PORTFOLIO, ...PORTFOLIO].map((v, i) => (
-              <button key={`top-${i}`} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
-                <img src={poster(v.id, 400)} alt="" loading="lazy" />
-                <span className="play">▶</span>
-                <span className="tl">{v.t}</span>
-              </button>
-            ))}
+            {[...PORTFOLIO_A, ...PORTFOLIO_A, ...PORTFOLIO_A].map((v, i) => {
+              const localVideo = TILE_VIDEO_BY_ID[v.id];
+              return (
+                <button key={`top-${i}`} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
+                  <img src={poster(v.id, 400)} alt="" loading="lazy" />
+                  {localVideo && <InViewVideo className="tile-video" src={localVideo} preload="metadata" desktopOnly />}
+                  <span className="play">▶</span>
+                  <span className="tl">{v.t}</span>
+                </button>
+              );
+            })}
           </div>
           {/* Bottom row: scrolls right, different sequence */}
           <div className="mosaic-row bottom">
-            {[...PORTFOLIO_B, ...PORTFOLIO_B, ...PORTFOLIO_B].map((v, i) => (
-              <button key={`bot-${i}`} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
-                <img src={poster(v.id, 400)} alt="" loading="lazy" />
-                <span className="play">▶</span>
-                <span className="tl">{v.t}</span>
-              </button>
-            ))}
+            {[...PORTFOLIO_B, ...PORTFOLIO_B, ...PORTFOLIO_B].map((v, i) => {
+              const localVideo = TILE_VIDEO_BY_ID[v.id];
+              return (
+                <button key={`bot-${i}`} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
+                  <img src={poster(v.id, 400)} alt="" loading="lazy" />
+                  {localVideo && <InViewVideo className="tile-video" src={localVideo} preload="metadata" desktopOnly />}
+                  <span className="play">▶</span>
+                  <span className="tl">{v.t}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="stack mosaic-stack">
