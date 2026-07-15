@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import JsonLd from '../components/JsonLd';
 
 // Work hub page: featured cinematic work plus the complete case-study index
@@ -19,6 +20,7 @@ const CSS = `
 }
 .wkx *, .wkx *::before, .wkx *::after { box-sizing:border-box; margin:0; padding:0; }
 .wkx a { color:inherit; text-decoration:none; }
+.wkx button { font:inherit; color:inherit; background:none; cursor:pointer; }
 .wkx img, .wkx video { display:block; width:100%; }
 .wkx a:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
 .wkx .sq { display:inline-block; width:.13em; height:.13em; margin-left:.07em; background:var(--gold); }
@@ -30,7 +32,7 @@ const CSS = `
   padding:1.1rem var(--pad); pointer-events:none;
   background:linear-gradient(180deg,rgba(5,5,5,.72),transparent);
 }
-.wkx .chrome-top a { pointer-events:auto; }
+.wkx .chrome-top a, .wkx .chrome-top button { pointer-events:auto; }
 .wkx .logo { display:flex; align-items:center; }
 .wkx .logo svg { width:auto; height:clamp(24px,4vw,32px); }
 .wkx .top-cta, .wkx .cta-btn {
@@ -236,6 +238,7 @@ function useInViewPlayback() {
 }
 
 export default function WorkIndex() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     document.title = 'Our Work | Ahead of Market';
     const meta = document.querySelector('meta[name="description"]');
@@ -246,20 +249,21 @@ export default function WorkIndex() {
   useInViewPlayback();
 
   return (
+    <>
     <div className="wkx">
       <style>{CSS}</style>
 
       <div className="chrome-top">
         <a className="logo" href="/r6" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
-        <a className="top-cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="top-cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       <header className="hero">
         <div className="hero-media" aria-hidden="true">
-          <video muted loop playsInline data-autoplay preload="auto" poster="/videos/collage-01.jpg">
+          <video muted loop playsInline data-autoplay preload="auto" poster="/videos/hero-poster.jpg">
             <source src="/videos/collage-01.mp4" type="video/mp4" />
           </video>
-          <img className="motion-still" src="/videos/collage-01.jpg" alt="" />
+          <img className="motion-still" src="/videos/hero-poster.jpg" alt="" />
         </div>
         <div className="hero-scrim" />
         <div className="hero-copy">
@@ -335,10 +339,10 @@ export default function WorkIndex() {
 
         <section className="story-cta">
           <div className="hero-media" aria-hidden="true">
-            <video muted loop playsInline data-autoplay preload="metadata" poster="/videos/collage-02.jpg">
+            <video muted loop playsInline data-autoplay preload="metadata" poster="/videos/ih-culture.jpg">
               <source src="/videos/collage-02.mp4" type="video/mp4" />
             </video>
-            <img className="motion-still" src="/videos/collage-02.jpg" alt="" />
+            <img className="motion-still" src="/videos/ih-culture.jpg" alt="" />
           </div>
           <div className="hero-scrim" />
           <div className="cta-copy">
@@ -346,7 +350,7 @@ export default function WorkIndex() {
             <h2 className="cta-title">Ready to tell your story<span className="sq" /></h2>
             <div className="cta-row">
               <p>Bring us the company, category, or moment that needs to become impossible to ignore.</p>
-              <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+              <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
             </div>
           </div>
         </section>
@@ -362,7 +366,7 @@ export default function WorkIndex() {
           <a className="footer-a" href="/services/documentary">Documentary ↗</a>
         </div>
         <div className="footer-info">
-          <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span>We reply within 24 hours</span>
           <span className="cr">© 2026 Ahead of Market</span>
@@ -395,5 +399,7 @@ export default function WorkIndex() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

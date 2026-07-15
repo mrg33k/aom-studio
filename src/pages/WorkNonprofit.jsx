@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
+import { R31_PAGE_CSS, R31Video, useR31InViewPlayback } from './ServiceBrandFilm';
 
 // Work filter page: Nonprofit Industry
-// Mission: aheadofmarket.com:home (R20.8 — work filter pages, same design system as services)
+// Mission: aheadofmarket.com:home (R31, nav completion)
 // Design gate: r6 system, same ink/ivory/gold + Inter/Inter Tight, gold square period on H1,
 // AOM monogram chrome top, minimal layout, real client proof points.
 
@@ -228,6 +230,7 @@ const CSS = `
 const poster = (id, w = 1200) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
 
 export default function WorkNonprofit() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     const originalTitle = document.title;
     const originalMeta = document.querySelector('meta[name="description"]');
@@ -248,30 +251,44 @@ export default function WorkNonprofit() {
       if (originalMeta) originalMeta.content = originalMeta.content;
     };
   }, []);
+  useR31InViewPlayback();
+
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
 
   return (
-    <div className="wkn">
-      <style>{CSS}</style>
+    <>
+    <div className="wkn r31-page" onClick={openBriefFromMailLink}>
+      <style>{CSS}{R31_PAGE_CSS}</style>
 
       {/* Top Chrome */}
       <div className="chrome-top">
         <a href="/r6" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
-        <a href="mailto:hello@aheadofmarket.com" className="cta">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       {/* Hero */}
       <section className="section hero">
-        <h1>
-          Your Mission Needs Video<i className="sq" />
-        </h1>
-        <p className="tagline">
-          Mission-driven organizations have one problem: nobody outside your circle knows what you do or why it matters. Video changes that. We've positioned nonprofits and foundations in a way that opens wallets and builds momentum.
-        </p>
-        <a href="mailto:hello@aheadofmarket.com" className="cta-btn">
-          Start a conversation
-        </a>
+        <div className="hero-media" aria-hidden="true"><img className="hero-static ken-burns" src={poster('698a5fcdfc23d3d76fa893b8', 1800)} alt="" /></div>
+        <div className="hero-scrim" />
+        <div className="hero-copy">
+          <span className="kicker">Ahead of Market / Nonprofit</span>
+          <h1>Your Mission<br />Needs Video<i className="sq" /></h1>
+          <p className="tagline">Mission-driven organizations have one problem: nobody outside your circle knows what you do or why it matters. Video changes that. We've positioned nonprofits and foundations in a way that opens wallets and builds momentum.</p>
+          <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        </div>
+      </section>
+
+      <section className="motion-strip" aria-label="Mission-led work in motion">
+        <div className="motion-frame"><R31Video src="/videos/ih-life.mp4" posterSrc="/videos/ih-life.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/ih-culture.mp4" posterSrc="/videos/ih-culture.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/spacerising-event.mp4" posterSrc="/videos/spacerising-event.jpg" /></div>
       </section>
 
       {/* Who This Is For */}
@@ -296,7 +313,7 @@ export default function WorkNonprofit() {
                 The Conrad Foundation honors astronaut Pete Conrad's legacy by building the next generation of innovators and entrepreneurs. Nancy Conrad is the Founding Chairman. The Foundation runs the Conrad Spirit of Innovation Challenge, a STEM entrepreneurship competition for students 13-18 across the country.
               </p>
               <p>
-                The Foundation saw an opportunity: a new initiative called Mission Water—master classes on water security, efficiency, and purity. No format. No platform. No way to teach it at scale. We positioned it as an interactive platform, not a classroom. Three-chapter storyline. Games. Video. Interactive content.
+                The Foundation saw an opportunity: a new initiative called Mission Water, with master classes on water security, efficiency, and purity. No format. No platform. No way to teach it at scale. We positioned it as an interactive platform, not a classroom. Three-chapter storyline. Games. Video. Interactive content.
               </p>
               <p>
                 We pitched a partnership model where AOM designs and delivers the platform, handles the marketing and activation, and helps Nancy take Mission Water from an idea to something thousands of students can use. Your mission is everything. The video, the platform, the experience we build around it all serve the mission.
@@ -382,12 +399,12 @@ export default function WorkNonprofit() {
       </section>
 
       <section className="section closing-cta">
+        <div className="hero-media" aria-hidden="true"><img className="hero-static ken-burns" src={poster('698a5fcdfc23d3d76fa893b8', 1800)} alt="" /></div>
+        <div className="hero-scrim" />
         <h2>Move your mission forward<i className="sq" /></h2>
-        <a href="mailto:hello@aheadofmarket.com" className="btn-contact">
-          Send us a message
-        </a>
+        <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
         <div className="closing-contact-info">
-          <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span className="closing-note">We reply within 24 hours</span>
         </div>
@@ -410,5 +427,7 @@ export default function WorkNonprofit() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

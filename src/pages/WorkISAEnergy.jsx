@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
 
@@ -20,6 +21,7 @@ const CSS = `
 }
 .wk-isa *, .wk-isa *::before, .wk-isa *::after { box-sizing:border-box; margin:0; padding:0; }
 .wk-isa a { color:inherit; text-decoration:none; }
+.wk-isa button { font:inherit; color:inherit; background:none; cursor:pointer; }
 .wk-isa img, .wk-isa video { display:block; width:100%; }
 .wk-isa a:focus-visible, .wk-isa video:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
 .wk-isa .sq { display:inline-block; width:.13em; height:.13em; margin-left:.07em; background:var(--gold); }
@@ -31,7 +33,7 @@ const CSS = `
   padding:1.1rem var(--pad); pointer-events:none;
   background:linear-gradient(180deg,rgba(5,5,5,.72),transparent);
 }
-.wk-isa .chrome-top a { pointer-events:auto; }
+.wk-isa .chrome-top a, .wk-isa .chrome-top button { pointer-events:auto; }
 .wk-isa .logo { display:flex; align-items:center; }
 .wk-isa .logo svg { width:auto; height:clamp(24px,4vw,32px); }
 .wk-isa .top-cta, .wk-isa .cta-btn {
@@ -180,6 +182,7 @@ function useInViewPlayback() {
 }
 
 export default function WorkISAEnergy() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     document.title = 'ISA Energy Investor Video | Ahead of Market';
     const meta = document.querySelector('meta[name="description"]');
@@ -189,13 +192,21 @@ export default function WorkISAEnergy() {
   }, []);
   useInViewPlayback();
 
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
+
   return (
-    <div className="wk-isa">
+    <>
+    <div className="wk-isa" onClick={openBriefFromMailLink}>
       <style>{CSS}</style>
 
       <div className="chrome-top">
         <a className="logo" href="/r6" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
-        <a className="top-cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="top-cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       <header className="hero">
@@ -324,7 +335,7 @@ export default function WorkISAEnergy() {
             <h2 className="cta-title">Ready to tell your story<span className="sq" /></h2>
             <div className="cta-row">
               <p>We build investor-grade films and brand narratives that position technology companies for market impact.</p>
-              <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+              <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
             </div>
           </div>
         </section>
@@ -366,5 +377,7 @@ export default function WorkISAEnergy() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

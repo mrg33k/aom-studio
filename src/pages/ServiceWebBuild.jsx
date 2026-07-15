@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
+import { R31_PAGE_CSS, R31Video, useR31InViewPlayback } from './ServiceBrandFilm';
 
 // Service page: Website Design & Build
-// Mission: aheadofmarket.com:home (R4 — second service page, same design system as brand-film)
+// Mission: aheadofmarket.com:home (R31, nav completion)
 // Design gate: r6 system, same ink/ivory/gold + Inter/Inter Tight, gold square period on H1,
 // AOM monogram chrome top, minimal layout, real client media (ambition.jpg, space-rising.jpg).
 
@@ -211,6 +213,7 @@ const CSS = `
 `;
 
 export default function ServiceWebBuild() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     // Set document title and meta description for SEO
     const originalTitle = document.title;
@@ -232,30 +235,43 @@ export default function ServiceWebBuild() {
       if (originalMeta) originalMeta.content = originalMeta.content;
     };
   }, []);
+  useR31InViewPlayback();
+
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
 
   return (
-    <div className="svw">
-      <style>{CSS}</style>
+    <>
+    <div className="svw r31-page" onClick={openBriefFromMailLink}>
+      <style>{CSS}{R31_PAGE_CSS}</style>
 
       {/* Top Chrome */}
       <div className="chrome-top">
         <a href="/" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
-        <a href="mailto:hello@aheadofmarket.com" className="cta">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       {/* Hero */}
-      <section className="section hero">
-        <h1>
-          Website Design<br />& Build<i className="sq" />
-        </h1>
-        <p className="tagline">
-          A good website tells the truth about your business. It converts. And you don't need a six-month project to get it. Build or rebuild in 7 days. Full-featured or platform-grade. Your call.
-        </p>
-        <a href="mailto:hello@aheadofmarket.com" className="cta-btn">
-          Start a conversation
-        </a>
+      <section className="section hero site-hero">
+        <div className="hero-media" aria-hidden="true">
+          <div className="site-browser-hero">
+            <div className="site-browser-bar"><span>ambitionac.com</span><span>Live site / Scroll study</span></div>
+            <div className="site-browser-view"><img src="/hero-sites/ambition-tall.jpg" alt="" /></div>
+          </div>
+        </div>
+        <div className="hero-scrim" />
+        <div className="hero-copy">
+          <span className="kicker">Ahead of Market / Website design and build</span>
+          <h1>Website Design<br />&amp; Build<i className="sq" /></h1>
+          <p className="tagline">A good website tells the truth about your business. It converts. And you don't need a six-month project to get it. Build or rebuild in 7 days. Full-featured or platform-grade. Your call.</p>
+          <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        </div>
       </section>
 
       {/* The Offer */}
@@ -270,6 +286,12 @@ export default function ServiceWebBuild() {
         <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--mut)', fontSize: 'clamp(.95rem,1.2vw,1.05rem)' }}>
           We build homepages. We build campaign sites. We build member directories. We build SaaS platforms with databases, APIs, and user dashboards. Same rigor, different scale.
         </p>
+      </section>
+
+      <section className="motion-strip" aria-label="Selected digital and production work">
+        <div className="motion-frame"><R31Video src="/videos/spacerising-render.mp4" posterSrc="/videos/spacerising-render.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/ambition-vertical.mp4" posterSrc="/videos/ambition-vertical.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/isa-demo.mp4" posterSrc="/videos/isa-demo.jpg" /></div>
       </section>
 
       {/* Proof Blocks */}
@@ -394,12 +416,12 @@ export default function ServiceWebBuild() {
 
       {/* Closing CTA */}
       <section className="section closing-cta">
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-01.mp4" posterSrc="/videos/spacerising-render.jpg" /></div>
+        <div className="hero-scrim" />
         <h2>Let's talk about your next website<i className="sq" /></h2>
-        <a href="mailto:hello@aheadofmarket.com" className="btn-contact">
-          Start a conversation
-        </a>
+        <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
         <div className="closing-contact-info">
-          <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span className="closing-note">We reply within 24 hours</span>
         </div>
@@ -408,5 +430,7 @@ export default function ServiceWebBuild() {
       {/* Footer */}
       <ServiceFooter current="/services/web-build" />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

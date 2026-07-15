@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
 
@@ -20,6 +21,7 @@ const CSS = `
 }
 .wk-amb *, .wk-amb *::before, .wk-amb *::after { box-sizing:border-box; margin:0; padding:0; }
 .wk-amb a { color:inherit; text-decoration:none; }
+.wk-amb button { font:inherit; color:inherit; background:none; cursor:pointer; }
 .wk-amb img, .wk-amb video { display:block; width:100%; }
 .wk-amb a:focus-visible, .wk-amb video:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
 .wk-amb .sq { display:inline-block; width:.13em; height:.13em; margin-left:.07em; background:var(--gold); }
@@ -31,7 +33,7 @@ const CSS = `
   padding:1.1rem var(--pad); pointer-events:none;
   background:linear-gradient(180deg,rgba(5,5,5,.72),transparent);
 }
-.wk-amb .chrome-top a { pointer-events:auto; }
+.wk-amb .chrome-top a, .wk-amb .chrome-top button { pointer-events:auto; }
 .wk-amb .logo { display:flex; align-items:center; }
 .wk-amb .logo svg { width:auto; height:clamp(24px,4vw,32px); }
 .wk-amb .top-cta, .wk-amb .cta-btn, .wk-amb .site-link {
@@ -203,6 +205,7 @@ function useInViewPlayback() {
 }
 
 export default function WorkAmbitionMechanical() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     document.title = 'Ambition Mechanical HVAC Marketing | Ahead of Market';
     const meta = document.querySelector('meta[name="description"]');
@@ -212,13 +215,21 @@ export default function WorkAmbitionMechanical() {
   }, []);
   useInViewPlayback();
 
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
+
   return (
-    <div className="wk-amb">
+    <>
+    <div className="wk-amb" onClick={openBriefFromMailLink}>
       <style>{CSS}</style>
 
       <div className="chrome-top">
         <a className="logo" href="/r6" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
-        <a className="top-cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="top-cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       <header className="hero">
@@ -341,7 +352,7 @@ export default function WorkAmbitionMechanical() {
             <h2 className="cta-title">Ready to tell your story<span className="sq" /></h2>
             <div className="cta-row">
               <p>We build digital platforms that capture leads, build trust, and modernize contractor and service businesses.</p>
-              <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+              <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
             </div>
           </div>
         </section>
@@ -369,5 +380,7 @@ export default function WorkAmbitionMechanical() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

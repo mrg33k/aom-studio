@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
+import { R31_PAGE_CSS, R31Video, useR31InViewPlayback } from './ServiceBrandFilm';
 
 // About page: Our Story
-// Mission: aheadofmarket.com:home (R20.9 — three /about pages, same design system as services)
+// Mission: aheadofmarket.com:home (R31, nav completion)
 // Design gate: r6 system, same ink/ivory/gold + Inter/Inter Tight, gold square period on H1,
 // AOM monogram chrome top, minimal layout, real client proof points.
 
@@ -141,6 +143,7 @@ const CSS = `
 `;
 
 export default function AboutOurStory() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     const originalTitle = document.title;
     const originalMeta = document.querySelector('meta[name="description"]');
@@ -161,30 +164,44 @@ export default function AboutOurStory() {
       if (originalMeta) originalMeta.content = originalMeta.content;
     };
   }, []);
+  useR31InViewPlayback();
+
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
 
   return (
-    <div className="abo">
-      <style>{CSS}</style>
+    <>
+    <div className="abo r31-page" onClick={openBriefFromMailLink}>
+      <style>{CSS}{R31_PAGE_CSS}</style>
 
       {/* Top Chrome */}
       <div className="chrome-top">
         <a href="/r6" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
-        <a href="mailto:hello@aheadofmarket.com" className="cta">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       {/* Hero */}
       <section className="section hero">
-        <h1>
-          Since 2020. 100+ Projects<i className="sq" />
-        </h1>
-        <p className="tagline">
-          We've been making work for companies since 2020. Not the talk about it. The actual work. Web platforms. Brand films. Documentaries. Social content. Things that ship.
-        </p>
-        <a href="mailto:hello@aheadofmarket.com" className="cta-btn">
-          Start a conversation
-        </a>
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/reel-06.mp4" posterSrc="/videos/hero-poster.jpg" preload="auto" /></div>
+        <div className="hero-scrim" />
+        <div className="hero-copy">
+          <span className="kicker">Ahead of Market / Our story</span>
+          <h1>Since 2020.<br />100+ Projects<i className="sq" /></h1>
+          <p className="tagline">We've been making work for companies since 2020. Not the talk about it. The actual work. Web platforms. Brand films. Documentaries. Social content. Things that ship.</p>
+          <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        </div>
+      </section>
+
+      <section className="motion-strip" aria-label="Selected work in motion">
+        <div className="motion-frame"><R31Video src="/videos/ambition-vertical.mp4" posterSrc="/videos/ambition-vertical.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/spacerising-event.mp4" posterSrc="/videos/spacerising-event.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/ih-life.mp4" posterSrc="/videos/ih-life.jpg" /></div>
       </section>
 
       {/* The Work Came First */}
@@ -259,15 +276,15 @@ export default function AboutOurStory() {
 
       {/* Closing CTA */}
       <section className="section closing-cta">
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-01.mp4" posterSrc="/videos/isa-brand.jpg" /></div>
+        <div className="hero-scrim" />
         <h2>Let's Talk<i className="sq" /></h2>
         <p style={{ marginTop: '1.6rem', maxWidth: '52ch', fontSize: 'clamp(.95rem,1.2vw,1.05rem)', color: 'var(--mut)', lineHeight: 1.7, marginBottom: '2rem' }}>
           If you're building something that matters and you need a team that knows how to ship it, that's us.
         </p>
-        <a href="mailto:hello@aheadofmarket.com" className="btn-contact">
-          Send us a message
-        </a>
+        <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
         <div className="closing-contact-info">
-          <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span className="closing-note">We reply within 24 hours</span>
         </div>
@@ -276,5 +293,7 @@ export default function AboutOurStory() {
       {/* Footer */}
       <ServiceFooter current="/about/our-story" />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

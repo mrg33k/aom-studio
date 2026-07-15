@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
+import { R31_PAGE_CSS, R31Video, useR31InViewPlayback } from './ServiceBrandFilm';
 
 // Service page: Brand Strategy & Story Direction
-// Mission: aheadofmarket.com:home (R20.6 — third service page, same design system)
+// Mission: aheadofmarket.com:home (R31, nav completion)
 // Design gate: r6 system, same ink/ivory/gold + Inter/Inter Tight, gold square period on H1,
 // AOM monogram chrome top, minimal layout, real client proof points.
 
@@ -204,6 +206,7 @@ const CSS = `
 `;
 
 export default function ServiceStrategy() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     const originalTitle = document.title;
     const originalMeta = document.querySelector('meta[name="description"]');
@@ -224,30 +227,38 @@ export default function ServiceStrategy() {
       if (originalMeta) originalMeta.content = originalMeta.content;
     };
   }, []);
+  useR31InViewPlayback();
+
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
 
   return (
-    <div className="svs">
-      <style>{CSS}</style>
+    <>
+    <div className="svs r31-page" onClick={openBriefFromMailLink}>
+      <style>{CSS}{R31_PAGE_CSS}</style>
 
       {/* Top Chrome */}
       <div className="chrome-top">
         <a href="/" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
-        <a href="mailto:hello@aheadofmarket.com" className="cta">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       {/* Hero */}
       <section className="section hero">
-        <h1>
-          Brand Strategy<br />& Story<br />Direction<i className="sq" />
-        </h1>
-        <p className="tagline">
-          Build a clear story. Own a unique position. Stop explaining what you do.
-        </p>
-        <a href="mailto:hello@aheadofmarket.com" className="cta-btn">
-          Start a conversation
-        </a>
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-03.mp4" posterSrc="/videos/isa-validation.jpg" preload="auto" /></div>
+        <div className="hero-scrim" />
+        <div className="hero-copy">
+          <span className="kicker">Ahead of Market / Strategy and story</span>
+          <h1>Brand Strategy<br />&amp; Story<br />Direction<i className="sq" /></h1>
+          <p className="tagline">Build a clear story. Own a unique position. Stop explaining what you do.</p>
+          <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        </div>
       </section>
 
       {/* The Offer */}
@@ -262,6 +273,12 @@ export default function ServiceStrategy() {
         <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--mut)', fontSize: 'clamp(.95rem,1.2vw,1.05rem)' }}>
           This is not a 50-slide consulting deck. It's a working document.
         </p>
+      </section>
+
+      <section className="motion-strip" aria-label="Selected strategy-led work">
+        <div className="motion-frame"><R31Video src="/videos/isa-brand.mp4" posterSrc="/videos/isa-brand.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/spacerising-event.mp4" posterSrc="/videos/spacerising-event.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/ambition-vertical.mp4" posterSrc="/videos/ambition-vertical.jpg" /></div>
       </section>
 
       {/* Proof Blocks */}
@@ -380,12 +397,12 @@ export default function ServiceStrategy() {
 
       {/* Closing CTA */}
       <section className="section closing-cta">
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-03.mp4" posterSrc="/videos/isa-validation.jpg" /></div>
+        <div className="hero-scrim" />
         <h2>Let's clarify what you actually do<i className="sq" /></h2>
-        <a href="mailto:hello@aheadofmarket.com" className="btn-contact">
-          Start a conversation
-        </a>
+        <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
         <div className="closing-contact-info">
-          <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span className="closing-note">We reply within 24 hours</span>
         </div>
@@ -394,5 +411,7 @@ export default function ServiceStrategy() {
       {/* Footer */}
       <ServiceFooter current="/services/strategy" />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

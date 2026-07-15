@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
+import { R31_PAGE_CSS, R31Video, useR31InViewPlayback } from './ServiceBrandFilm';
 
 // Work filter page: Tech & SaaS Industry
-// Mission: aheadofmarket.com:home (R20.8 — work filter pages, same design system as services)
+// Mission: aheadofmarket.com:home (R31, nav completion)
 // Design gate: r6 system, same ink/ivory/gold + Inter/Inter Tight, gold square period on H1,
 // AOM monogram chrome top, minimal layout, real client proof points.
 
@@ -228,6 +230,7 @@ const CSS = `
 const poster = (id, w = 1200) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
 
 export default function WorkTechSaas() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     const originalTitle = document.title;
     const originalMeta = document.querySelector('meta[name="description"]');
@@ -248,30 +251,44 @@ export default function WorkTechSaas() {
       if (originalMeta) originalMeta.content = originalMeta.content;
     };
   }, []);
+  useR31InViewPlayback();
+
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
 
   return (
-    <div className="wkt">
-      <style>{CSS}</style>
+    <>
+    <div className="wkt r31-page" onClick={openBriefFromMailLink}>
+      <style>{CSS}{R31_PAGE_CSS}</style>
 
       {/* Top Chrome */}
       <div className="chrome-top">
         <a href="/r6" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
-        <a href="mailto:hello@aheadofmarket.com" className="cta">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       {/* Hero */}
       <section className="section hero">
-        <h1>
-          Position Yourself as Category-Defining<i className="sq" />
-        </h1>
-        <p className="tagline">
-          Tech founders have one shot to explain what you've built. Words fail. Video lands. We've positioned quantum tech, space industry platforms, and hardware startups as category-defining. Video is how investors and customers decide to follow you.
-        </p>
-        <a href="mailto:hello@aheadofmarket.com" className="cta-btn">
-          Start a conversation
-        </a>
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/spacerising-render.mp4" posterSrc="/videos/spacerising-render.jpg" preload="auto" /></div>
+        <div className="hero-scrim" />
+        <div className="hero-copy">
+          <span className="kicker">Ahead of Market / Tech and SaaS</span>
+          <h1>Position Yourself<br />as Category-Defining<i className="sq" /></h1>
+          <p className="tagline">Tech founders have one shot to explain what you've built. Words fail. Video lands. We've positioned quantum tech, space industry platforms, and hardware startups as category-defining. Video is how investors and customers decide to follow you.</p>
+          <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        </div>
+      </section>
+
+      <section className="motion-strip" aria-label="Technology work in motion">
+        <div className="motion-frame"><R31Video src="/videos/isa-brand.mp4" posterSrc="/videos/isa-brand.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/isa-demo.mp4" posterSrc="/videos/isa-demo.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/spacerising-event.mp4" posterSrc="/videos/spacerising-event.jpg" /></div>
       </section>
 
       {/* Who This Is For */}
@@ -388,12 +405,12 @@ export default function WorkTechSaas() {
       </section>
 
       <section className="section closing-cta">
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/spacerising-render.mp4" posterSrc="/videos/spacerising-render.jpg" /></div>
+        <div className="hero-scrim" />
         <h2>Map your story<i className="sq" /></h2>
-        <a href="mailto:hello@aheadofmarket.com" className="btn-contact">
-          Send us a message
-        </a>
+        <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
         <div className="closing-contact-info">
-          <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span className="closing-note">We reply within 24 hours</span>
         </div>
@@ -416,5 +433,7 @@ export default function WorkTechSaas() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

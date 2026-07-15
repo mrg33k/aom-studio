@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 
 // Service page: Brand Films
-// Mission: aheadofmarket.com:home (R2 — first service page child of /r6 design system)
+// Mission: aheadofmarket.com:home (R31, nav completion)
 // Design gate: r6 system, same ink/ivory/gold + Inter/Inter Tight, gold square period on H1,
 // AOM monogram chrome top, minimal layout, real client media via Gumlet posters.
 
@@ -212,7 +213,151 @@ const CSS = `
 }
 `;
 
+export const R31_PAGE_CSS = `
+.r31-page { --paper:#f4f0e8; --mut:rgba(244,240,232,.72); --line:rgba(244,240,232,.18); --gold:#c4a46a; }
+.r31-page .chrome-top { padding:1.1rem var(--pad); background:linear-gradient(180deg,rgba(5,5,5,.72),transparent); }
+.r31-page .chrome-top a, .r31-page .chrome-top button { pointer-events:auto; }
+.r31-page .chrome-top .cta, .r31-page .hero .cta-btn, .r31-page .closing-cta .btn-contact {
+  display:inline-flex; align-items:center; justify-content:center; min-height:44px;
+  padding:.8rem 1.25rem; border:1px solid rgba(244,240,232,.55); border-radius:0;
+  color:var(--paper); background:transparent; font-size:.68rem; font-weight:800;
+  letter-spacing:.18em; text-transform:uppercase; transition:background .18s,color .18s;
+}
+.r31-page .chrome-top .cta:hover, .r31-page .hero .cta-btn:hover, .r31-page .closing-cta .btn-contact:hover { color:var(--ink); background:var(--paper); }
+.r31-page .hero.section {
+  position:relative; min-height:85svh; display:flex; align-items:flex-end; justify-content:flex-start;
+  overflow:hidden; isolation:isolate; padding:clamp(8rem,18vh,13rem) var(--pad) clamp(3rem,7vh,5rem);
+  border:0; text-align:left;
+}
+.r31-page .hero-media, .r31-page .hero-scrim { position:absolute; inset:0; }
+.r31-page .hero-media { z-index:-2; background:#0b0b0a; }
+.r31-page .hero-media video, .r31-page .hero-media > img { display:block; width:100%; height:100%; object-fit:cover; }
+.r31-page .hero-scrim { z-index:-1; background:linear-gradient(180deg,rgba(5,5,5,.2),rgba(5,5,5,.08) 36%,rgba(5,5,5,.94)),linear-gradient(90deg,rgba(5,5,5,.48),transparent 76%); }
+.r31-page .hero-copy { position:relative; z-index:2; width:min(100%,1500px); margin:0 auto; }
+.r31-page .kicker { display:block; margin-bottom:1.35rem; color:var(--paper); font-size:.67rem; font-weight:800; letter-spacing:.23em; text-transform:uppercase; }
+.r31-page .hero h1 {
+  max-width:12ch; margin:0; color:var(--paper); font-family:var(--fd); font-size:clamp(3.7rem,10.5vw,10.5rem);
+  font-weight:800; line-height:.78; letter-spacing:-.055em; text-align:left; text-transform:uppercase;
+}
+.r31-page .hero .tagline { max-width:54ch; margin:clamp(1.8rem,4vh,3rem) 0 0; color:var(--paper); font-size:clamp(1rem,1.45vw,1.25rem); line-height:1.5; opacity:1; }
+.r31-page .hero .cta-btn { margin-top:1.8rem; }
+.r31-page .motion-still { display:none; }
+.r31-page .site-hero .hero-media { display:flex; align-items:center; justify-content:flex-end; padding:7vh 4vw 4vh; }
+.r31-page .site-browser-hero { width:min(76vw,1050px); height:72vh; overflow:hidden; border:1px solid rgba(244,240,232,.28); background:#d8d4ca; box-shadow:0 2rem 8rem rgba(0,0,0,.55); transform:rotate(1.2deg); opacity:.78; }
+.r31-page .site-browser-bar { height:2.8rem; display:flex; align-items:center; justify-content:space-between; padding:0 1rem; color:#050505; background:#ece8df; border-bottom:1px solid rgba(5,5,5,.22); font-size:.6rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+.r31-page .site-browser-view { height:calc(100% - 2.8rem); overflow:hidden; }
+.r31-page .site-browser-view img { display:block; width:100%; height:auto; animation:r31-site-pan 24s ease-in-out infinite alternate; will-change:transform; }
+.r31-page .hero-static.ken-burns { animation:r31-ken-burns 18s ease-in-out infinite alternate; will-change:transform; }
+@keyframes r31-site-pan { from { transform:translateY(0); } to { transform:translateY(calc(-100% + 72vh - 2.8rem)); } }
+@keyframes r31-ken-burns { from { transform:scale(1.01); } to { transform:scale(1.09) translate3d(-1.5%, -1%, 0); } }
+.r31-page .section:not(.hero):not(.closing-cta) { padding:clamp(6rem,12vw,11rem) var(--pad); border-top:1px solid var(--line); }
+.r31-page .offer-header, .r31-page .content-header {
+  max-width:13ch; margin:0 0 clamp(3rem,7vw,6rem); color:var(--paper); font-family:var(--fd);
+  font-size:clamp(3rem,7vw,7.2rem); font-weight:800; line-height:.84; letter-spacing:-.055em; text-transform:uppercase;
+}
+.r31-page .offer-list, .r31-page .faq-list, .r31-page .proof-grid, .r31-page .steps-container, .r31-page .content-block, .r31-page .case-studies-list { width:min(100%,1500px); max-width:none; margin-left:auto; margin-right:auto; }
+.r31-page .offer-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; border-top:1px solid var(--line); }
+.r31-page .offer-list li { min-height:9rem; padding:1.5rem 1.5rem 1.5rem 0; border-top:0; border-bottom:1px solid var(--line); color:var(--mut); font-size:clamp(1rem,1.3vw,1.18rem); }
+.r31-page .offer-list li:nth-child(odd) { border-right:1px solid var(--line); }
+.r31-page .offer-list li:nth-child(even) { padding-left:1.5rem; }
+.r31-page .proof-grid { display:grid; grid-template-columns:1fr; gap:clamp(6rem,12vw,12rem); }
+.r31-page .proof-block { display:grid; grid-template-columns:minmax(0,.8fr) minmax(20rem,1.2fr); gap:clamp(2rem,7vw,8rem); align-items:center; }
+.r31-page .proof-block:nth-child(even) .proof-img { order:2; }
+.r31-page .proof-title { max-width:13ch; font-size:clamp(2.4rem,5.2vw,5.8rem); line-height:.86; letter-spacing:-.045em; }
+.r31-page .proof-label { color:var(--gold); }
+.r31-page .proof-text p { max-width:62ch; color:var(--mut); font-size:clamp(1rem,1.25vw,1.16rem); }
+.r31-page .proof-img, .r31-page .proof-image { overflow:hidden; border-radius:0; }
+.r31-page .steps-container { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; border-top:1px solid var(--line); }
+.r31-page .step { min-height:17rem; padding:clamp(1.5rem,3vw,3rem); border:0; border-right:1px solid var(--line); border-bottom:1px solid var(--line); border-radius:0; background:transparent; }
+.r31-page .step:nth-child(even) { border-right:0; }
+.r31-page .step-title { max-width:17ch; font-size:clamp(1.5rem,2.8vw,3rem); line-height:.92; letter-spacing:-.03em; }
+.r31-page .faq-item { display:grid; grid-template-columns:minmax(15rem,.8fr) minmax(20rem,1.2fr); gap:clamp(2rem,6vw,7rem); padding:2rem 0; border-top:1px solid var(--line); }
+.r31-page .faq-q { font-size:clamp(1.25rem,2.2vw,2.3rem); line-height:1; }
+.r31-page .content-block { gap:0; }
+.r31-page .content-item { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:clamp(1.5rem,3vw,3rem); padding:clamp(2rem,4vw,4rem) 0; border-top:1px solid var(--line); }
+.r31-page .content-item > h3 { grid-column:1 / span 4; margin:0 !important; font-size:clamp(1.5rem,2.6vw,2.8rem) !important; line-height:.95; }
+.r31-page .content-item > p { grid-column:5 / -1; max-width:62ch; margin:0; color:var(--mut); font-size:clamp(1rem,1.3vw,1.18rem); }
+.r31-page .case-study-link { border-radius:0; }
+.r31-page .motion-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(.4rem,1vw,1rem); padding:clamp(.4rem,1vw,1rem); border-top:1px solid var(--line); background:#0b0b0a; }
+.r31-page .motion-frame { position:relative; aspect-ratio:16/10; overflow:hidden; background:#111; }
+.r31-page .motion-frame video, .r31-page .motion-frame img { display:block; width:100%; height:100%; object-fit:cover; }
+.r31-page .closing-cta.section { position:relative; min-height:72svh; display:flex; align-items:flex-start; justify-content:flex-end; overflow:hidden; isolation:isolate; padding:clamp(6rem,13vw,11rem) var(--pad) clamp(3rem,7vw,6rem); border-top:1px solid var(--line); text-align:left; }
+.r31-page .closing-cta .hero-media { z-index:-2; }
+.r31-page .closing-cta .hero-scrim { z-index:-1; background:linear-gradient(180deg,rgba(5,5,5,.28),rgba(5,5,5,.96)); }
+.r31-page .closing-cta > *:not(.hero-media):not(.hero-scrim) { position:relative; z-index:2; width:min(100%,1500px); margin-left:auto; margin-right:auto; }
+.r31-page .closing-cta h2 { max-width:12ch; margin:0 auto 2rem; font-size:clamp(3rem,8.5vw,9rem); line-height:.82; letter-spacing:-.055em; text-align:left; }
+.r31-page .closing-cta > p { max-width:54ch !important; margin:0 auto 2rem !important; }
+.r31-page .closing-cta .btn-contact { width:auto; margin:0 auto 1.8rem; align-self:flex-start; }
+.r31-page .closing-contact-info { width:min(100%,1500px); align-items:center; justify-content:flex-start; flex-direction:row; gap:1rem 2rem; color:var(--mut); }
+.r31-page .closing-contact-info button { color:var(--gold); }
+@media(max-width:800px) {
+  .r31-page .chrome-top .cta { padding:.7rem .85rem; font-size:.58rem; letter-spacing:.12em; }
+  .r31-page .hero.section { min-height:88svh; }
+  .r31-page .hero h1 { max-width:11ch; font-size:clamp(3.2rem,17vw,6rem); }
+  .r31-page .site-browser-hero { width:94vw; height:65vh; transform:translateX(18%) rotate(1deg); opacity:.58; }
+  .r31-page .offer-list, .r31-page .steps-container, .r31-page .proof-block, .r31-page .faq-item, .r31-page .motion-strip { grid-template-columns:1fr; }
+  .r31-page .offer-list li, .r31-page .offer-list li:nth-child(odd), .r31-page .step { min-height:0; padding:1.35rem 0; border-right:0; }
+  .r31-page .content-item { grid-template-columns:1fr; }
+  .r31-page .content-item > h3, .r31-page .content-item > p { grid-column:1; }
+  .r31-page .proof-block:nth-child(even) .proof-img { order:0; }
+  .r31-page .motion-frame { aspect-ratio:16/10; }
+  .r31-page .closing-cta.section { min-height:76svh; }
+  .r31-page .closing-contact-info { align-items:flex-start; flex-direction:column; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .r31-page { scroll-behavior:auto; }
+  .r31-page video[data-autoplay] { display:none; }
+  .r31-page .motion-still { display:block; }
+  .r31-page .hero-static.ken-burns, .r31-page .site-browser-view img { animation:none; transform:none; }
+}
+`;
+
+export function useR31InViewPlayback() {
+  useEffect(() => {
+    const root = document.querySelector('.r31-page');
+    if (!root) return undefined;
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const videos = Array.from(root.querySelectorAll('video[data-autoplay]'));
+    let observer;
+    const sync = () => {
+      if (observer) observer.disconnect();
+      videos.forEach((video) => video.pause());
+      if (media.matches || typeof IntersectionObserver === 'undefined') return;
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach(({ isIntersecting, target }) => {
+          if (isIntersecting) {
+            const playPromise = target.play();
+            if (playPromise) playPromise.catch(() => {});
+          } else {
+            target.pause();
+          }
+        });
+      }, { threshold:0.18 });
+      videos.forEach((video) => observer.observe(video));
+    };
+    sync();
+    media.addEventListener('change', sync);
+    return () => {
+      if (observer) observer.disconnect();
+      media.removeEventListener('change', sync);
+      videos.forEach((video) => video.pause());
+    };
+  }, []);
+}
+
+export function R31Video({ src, posterSrc, preload = 'metadata' }) {
+  return (
+    <>
+      <video muted loop playsInline data-autoplay preload={preload} poster={posterSrc}>
+        <source src={src} type="video/mp4" />
+      </video>
+      <img className="motion-still" src={posterSrc} alt="" aria-hidden="true" />
+    </>
+  );
+}
+
 export default function ServiceBrandFilm() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     // Set document title and meta description for SEO
     const originalTitle = document.title;
@@ -234,30 +379,38 @@ export default function ServiceBrandFilm() {
       if (originalMeta) originalMeta.content = originalMeta.content;
     };
   }, []);
+  useR31InViewPlayback();
+
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
 
   return (
-    <div className="svc">
-      <style>{CSS}</style>
+    <>
+    <div className="svc r31-page" onClick={openBriefFromMailLink}>
+      <style>{CSS}{R31_PAGE_CSS}</style>
 
       {/* Top Chrome */}
       <div className="chrome-top">
         <a href="/" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
-        <a href="mailto:hello@aheadofmarket.com" className="cta">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       {/* Hero */}
       <section className="section hero">
-        <h1>
-          Brand Films<br />for Growing<br />Companies<i className="sq" />
-        </h1>
-        <p className="tagline">
-          A brand film is not a commercial. It's the story of why you exist. Build authority. Attract your right customers. Most land in about two weeks.
-        </p>
-        <a href="mailto:hello@aheadofmarket.com" className="cta-btn">
-          Start a conversation
-        </a>
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-01.mp4" posterSrc="/videos/hero-poster.jpg" preload="auto" /></div>
+        <div className="hero-scrim" />
+        <div className="hero-copy">
+          <span className="kicker">Ahead of Market / Brand film</span>
+          <h1>Brand Films<br />for Growing<br />Companies<i className="sq" /></h1>
+          <p className="tagline">A brand film is not a commercial. It's the story of why you exist. Build authority. Attract your right customers. Most land in about two weeks.</p>
+          <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        </div>
       </section>
 
       {/* The Offer */}
@@ -274,13 +427,19 @@ export default function ServiceBrandFilm() {
         </p>
       </section>
 
+      <section className="motion-strip" aria-label="Selected production footage">
+        <div className="motion-frame"><R31Video src="/videos/reel-01.mp4" posterSrc="/videos/isa-brand.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/reel-06.mp4" posterSrc="/videos/ih-life.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/reel-12.mp4" posterSrc="/videos/ambition-vertical.jpg" /></div>
+      </section>
+
       {/* Proof Blocks */}
       <section className="section">
         <div className="proof-grid">
           {/* Proof 1: Ambition Mechanical */}
           <div className="proof-block">
             <div className="proof-img">
-              <img src={poster('698a6296fc23d3d76fa8d992')} alt="Ambition Mechanical — HVAC crew on location" loading="lazy" />
+              <img src={poster('698a6296fc23d3d76fa8d992')} alt="Ambition Mechanical, HVAC crew on location" loading="lazy" />
             </div>
             <div className="proof-text">
               <div className="proof-label">HVAC Turnaround</div>
@@ -300,7 +459,7 @@ export default function ServiceBrandFilm() {
           {/* Proof 2: ISA Energy */}
           <div className="proof-block">
             <div className="proof-img">
-              <img src={poster('698a5ef5fc23d3d76fa87ef4')} alt="ISA Energy — Investor-grade brand narrative" loading="lazy" />
+              <img src={poster('698a5ef5fc23d3d76fa87ef4')} alt="ISA Energy, investor-grade brand narrative" loading="lazy" />
             </div>
             <div className="proof-text">
               <div className="proof-label">Investor Pitch Film</div>
@@ -317,7 +476,7 @@ export default function ServiceBrandFilm() {
           {/* Proof 3: Space Rising */}
           <div className="proof-block">
             <div className="proof-img">
-              <img src={poster('698a5391fc23d3d76fa7306c')} alt="Space Rising — Platform launch film" loading="lazy" />
+              <img src={poster('698a5391fc23d3d76fa7306c')} alt="Space Rising, platform launch film" loading="lazy" />
             </div>
             <div className="proof-text">
               <div className="proof-label">Platform Launch</div>
@@ -389,12 +548,12 @@ export default function ServiceBrandFilm() {
 
       {/* Closing CTA */}
       <section className="section closing-cta">
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-02.mp4" posterSrc="/videos/ih-culture.jpg" /></div>
+        <div className="hero-scrim" />
         <h2>Ready to tell your story<i className="sq" /></h2>
-        <a href="mailto:hello@aheadofmarket.com" className="btn-contact">
-          Start a conversation
-        </a>
+        <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
         <div className="closing-contact-info">
-          <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span className="closing-note">We reply within 24 hours</span>
         </div>
@@ -403,5 +562,7 @@ export default function ServiceBrandFilm() {
       {/* Footer */}
       <ServiceFooter current="/services/brand-film" />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

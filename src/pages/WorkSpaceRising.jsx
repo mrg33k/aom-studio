@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
 
@@ -20,6 +21,7 @@ const CSS = `
 }
 .wk-sr *, .wk-sr *::before, .wk-sr *::after { box-sizing:border-box; margin:0; padding:0; }
 .wk-sr a { color:inherit; text-decoration:none; }
+.wk-sr button { font:inherit; color:inherit; background:none; cursor:pointer; }
 .wk-sr img, .wk-sr video { display:block; width:100%; }
 .wk-sr a:focus-visible, .wk-sr video:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
 .wk-sr .sq { display:inline-block; width:.13em; height:.13em; margin-left:.07em; background:var(--gold); }
@@ -31,7 +33,7 @@ const CSS = `
   padding:1.1rem var(--pad); pointer-events:none;
   background:linear-gradient(180deg,rgba(5,5,5,.72),transparent);
 }
-.wk-sr .chrome-top a { pointer-events:auto; }
+.wk-sr .chrome-top a, .wk-sr .chrome-top button { pointer-events:auto; }
 .wk-sr .logo { display:flex; align-items:center; }
 .wk-sr .logo svg { width:auto; height:clamp(24px,4vw,32px); }
 .wk-sr .top-cta, .wk-sr .cta-btn, .wk-sr .site-link {
@@ -201,6 +203,7 @@ function useInViewPlayback() {
 }
 
 export default function WorkSpaceRising() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     document.title = 'Space Rising Directory Platform | Ahead of Market';
     const meta = document.querySelector('meta[name="description"]');
@@ -210,13 +213,21 @@ export default function WorkSpaceRising() {
   }, []);
   useInViewPlayback();
 
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
+
   return (
-    <div className="wk-sr">
+    <>
+    <div className="wk-sr" onClick={openBriefFromMailLink}>
       <style>{CSS}</style>
 
       <div className="chrome-top">
         <a className="logo" href="/r6" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
-        <a className="top-cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="top-cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       <header className="hero">
@@ -350,7 +361,7 @@ export default function WorkSpaceRising() {
             <h2 className="cta-title">Ready to tell your story<span className="sq" /></h2>
             <div className="cta-row">
               <p>We build platforms and coordination layers for fragmented industries and emerging markets.</p>
-              <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+              <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
             </div>
           </div>
         </section>
@@ -385,5 +396,7 @@ export default function WorkSpaceRising() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

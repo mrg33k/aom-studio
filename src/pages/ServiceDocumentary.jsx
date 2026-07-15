@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
+import { R31_PAGE_CSS, R31Video, useR31InViewPlayback } from './ServiceBrandFilm';
 
 // Service page: Documentary & Long-Form Video
-// Mission: aheadofmarket.com:home (R20.6 — fourth service page, same design system)
+// Mission: aheadofmarket.com:home (R31, nav completion)
 // Design gate: r6 system, same ink/ivory/gold + Inter/Inter Tight, gold square period on H1,
 // AOM monogram chrome top, minimal layout, real client proof points.
 
@@ -204,6 +206,7 @@ const CSS = `
 `;
 
 export default function ServiceDocumentary() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     const originalTitle = document.title;
     const originalMeta = document.querySelector('meta[name="description"]');
@@ -224,30 +227,38 @@ export default function ServiceDocumentary() {
       if (originalMeta) originalMeta.content = originalMeta.content;
     };
   }, []);
+  useR31InViewPlayback();
+
+  const openBriefFromMailLink = (event) => {
+    if (event.target.closest?.('a[href^="mail"]')) {
+      event.preventDefault();
+      setBriefModalOpen(true);
+    }
+  };
 
   return (
-    <div className="svd">
-      <style>{CSS}</style>
+    <>
+    <div className="svd r31-page" onClick={openBriefFromMailLink}>
+      <style>{CSS}{R31_PAGE_CSS}</style>
 
       {/* Top Chrome */}
       <div className="chrome-top">
         <a href="/" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
-        <a href="mailto:hello@aheadofmarket.com" className="cta">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       {/* Hero */}
       <section className="section hero">
-        <h1>
-          Documentary<br />& Long-Form<br />Video<i className="sq" />
-        </h1>
-        <p className="tagline">
-          Build credibility. Tell the truth. Own the narrative. It takes months. It's worth it.
-        </p>
-        <a href="mailto:hello@aheadofmarket.com" className="cta-btn">
-          Start a conversation
-        </a>
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-02.mp4" posterSrc="/videos/ih-culture.jpg" preload="auto" /></div>
+        <div className="hero-scrim" />
+        <div className="hero-copy">
+          <span className="kicker">Ahead of Market / Documentary</span>
+          <h1>Documentary<br />&amp; Long-Form<br />Video<i className="sq" /></h1>
+          <p className="tagline">Build credibility. Tell the truth. Own the narrative. It takes months. It's worth it.</p>
+          <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        </div>
       </section>
 
       {/* The Offer */}
@@ -262,6 +273,12 @@ export default function ServiceDocumentary() {
         <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--mut)', fontSize: 'clamp(.95rem,1.2vw,1.05rem)' }}>
           This is for founders with a story. For companies launching a new category. For change-makers who need credibility that a 60-second film can't carry.
         </p>
+      </section>
+
+      <section className="motion-strip" aria-label="Selected documentary footage">
+        <div className="motion-frame"><R31Video src="/videos/reel-08.mp4" posterSrc="/videos/hero-poster.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/ih-life.mp4" posterSrc="/videos/ih-life.jpg" /></div>
+        <div className="motion-frame"><R31Video src="/videos/reel-13.mp4" posterSrc="/videos/hero-poster.jpg" /></div>
       </section>
 
       {/* Proof Blocks */}
@@ -385,12 +402,12 @@ export default function ServiceDocumentary() {
 
       {/* Closing CTA */}
       <section className="section closing-cta">
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-02.mp4" posterSrc="/videos/ih-culture.jpg" /></div>
+        <div className="hero-scrim" />
         <h2>Ready to tell the full story<i className="sq" /></h2>
-        <a href="mailto:hello@aheadofmarket.com" className="btn-contact">
-          Start a conversation
-        </a>
+        <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
         <div className="closing-contact-info">
-          <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span className="closing-note">We reply within 24 hours</span>
         </div>
@@ -399,5 +416,7 @@ export default function ServiceDocumentary() {
       {/* Footer */}
       <ServiceFooter current="/services/documentary" />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }
