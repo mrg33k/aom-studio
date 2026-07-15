@@ -18,6 +18,11 @@ import { Component, useCallback, useEffect, useMemo, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { CornerNavProvider } from '../CornerContext.jsx';
 import { supabase } from '../lib/supabase.js';
+import { demoFixtureActive } from '../lib/fixtureClient.js';
+
+// Real local no-Supabase mode is read-only; explicit ?demo= fixtures keep the live
+// composer so the send path stays browser-testable (Playwright owns the POSTs).
+const composerLive = () => !!supabase || demoFixtureActive();
 import { authFetch } from '../lib/authFetch.js';
 import {
   ChatCoreProvider,
@@ -115,34 +120,49 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
 
   // ── Send: image-gen branch when a tool is pinned, else plain text via the
   // thread's own send (keeps the col3 optimistic bubble). ──
+  // R3 send-feel contract: the input clears the instant you send (restored only on
+  // an explicit failure), and repeat Enter during the in-flight window is a no-op
+  // so a fast double-tap can never post twice.
+  const sendingRef = useRef(false);
   const handleSend = useCallback(async () => {
     const base = input.trim();
     const chipsSuffix = pasteChips.length ? '\n\n' + pasteChips.map(c => c.text).join('\n\n') : '';
     const text = base + chipsSuffix;
     if (!text) return;
-    if (!supabase) return;
-    if (selectedImageTool) {
+    if (!composerLive()) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    try {
+      if (selectedImageTool) {
+        setInput('');
+        setPasteChips([]);
+        const tool = selectedImageTool;
+        setSelectedImageTool(null);
+        try {
+          const resp = await authFetch('/api/dashboard/image-gen', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tool, prompt: text, agent: selectedAgent?.slug || 'corner', project: selectedProject?.slug, client_id: worldId }),
+          });
+          const url = resp?.url || (resp?.b64 ? `data:image/png;base64,${resp.b64}` : null);
+          if (url) {
+            const att = { url, mime: 'image/png', name: `${tool}-image.png` };
+            await postToRoom(`Generated image (${tool}): ${text}\n${url}`, 'user', { attachment: att, image_tool: tool });
+          }
+        } catch (_) { /* surfaced by the thread poll / toast */ }
+        return;
+      }
       setInput('');
       setPasteChips([]);
-      const tool = selectedImageTool;
-      setSelectedImageTool(null);
-      try {
-        const resp = await authFetch('/api/dashboard/image-gen', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tool, prompt: text, agent: selectedAgent?.slug || 'corner', project: selectedProject?.slug, client_id: worldId }),
-        });
-        const url = resp?.url || (resp?.b64 ? `data:image/png;base64,${resp.b64}` : null);
-        if (url) {
-          const att = { url, mime: 'image/png', name: `${tool}-image.png` };
-          await postToRoom(`Generated image (${tool}): ${text}\n${url}`, 'user', { attachment: att, image_tool: tool });
-        }
-      } catch (_) { /* surfaced by the thread poll / toast */ }
-      return;
-    }
-    const ok = typeof quickSend === 'function' ? await quickSend(text) : false;
-    if (ok !== false) {
-      setInput('');
-      setPasteChips([]);
+      // Keep the caret in the box: sending is a conversation beat, not an exit.
+      try { inputRef.current?.focus?.(); } catch { /* portal not mounted yet */ }
+      const ok = typeof quickSend === 'function' ? await quickSend(text) : false;
+      if (ok === false) {
+        // Honest failure: put the words back so nothing typed is ever lost.
+        setInput(base);
+        if (chipsSuffix) setPasteChips(pasteChips);
+      }
+    } finally {
+      sendingRef.current = false;
     }
   }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom]);
 
@@ -201,7 +221,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const navValue = useMemo(() => ({ activeTool: 'chat', selectedMail: null, setSelectedMail: () => {} }), []);
 
   if (!target || !room) return null;
-  if (!supabase) return <ReadOnlyComposer target={target} room={room} />;
+  if (!composerLive()) return <ReadOnlyComposer target={target} room={room} />;
 
   return createPortal(
     <CornerNavProvider value={navValue}>
@@ -273,12 +293,15 @@ function ReadOnlyComposer({ target, room }) {
 function MiniComposer({ target, room, quickSend }) {
   const [val, setVal] = useState('');
   if (!target || !room) return null;
-  if (!supabase) return <ReadOnlyComposer target={target} room={room} />;
+  if (!composerLive()) return <ReadOnlyComposer target={target} room={room} />;
   const send = async () => {
     const t = val.trim();
     if (t && typeof quickSend === 'function') {
+      // Same R3 send-feel contract as the full composer: clear instantly, restore
+      // only on explicit failure. Clearing first also makes repeat Enter a no-op.
+      setVal('');
       const ok = await quickSend(t);
-      if (ok !== false) setVal('');
+      if (ok === false) setVal(t);
     }
   };
   const placeholderText = `Nudge ${room.name || 'them'}, or jump in…`;

@@ -201,7 +201,32 @@ Composer and send feel instant (optimistic echo already exists; make focus, key
 handling, and scroll-to-new never stutter), room switching fast, day folds smooth,
 chips and attachments comfortably tappable, no dead taps. Desktop and mobile.
 
-**Status:** queued.
+Builder note: Codex hit its weekly ChatGPT usage cap launching this round (resets
+Jul 21; card on Patrik's deck for the buy-credits call). The EA built R3 directly;
+the round protocol (external battery + Steffen gate + live verify) is unchanged.
+
+Implementation (2026-07-15, EA):
+
+- Send feel (all three chat surfaces share Cv6FullComposer): the input clears the
+  instant a send fires and the caret stays in the box; text is restored only on an
+  explicit send failure so nothing typed is ever lost; an in-flight guard makes a
+  fast double Enter a no-op (was: input sat full through the POST round-trip and a
+  repeat Enter could post twice). Same contract applied to the fallback mini
+  composer. Real local no-Supabase mode stays read-only; explicit ?demo= fixtures
+  keep the live composer so the send path is browser-testable.
+- Room switching: session render cache in useRoomThread — revisiting a room paints
+  its last rendered thread instantly (status settles from cache, no loader flash)
+  while the normal fetch still runs and the signature guard reconciles any real
+  change on top. Render-only, page-scoped; the server thread stays the record.
+  'empty' now counts as a settled state so a known-empty room never re-loads.
+- Tap comfort: chips and day-fold headers acknowledge presses with the shared
+  press vocabulary; on touch, chips extend their hit area to ~44px via an inset
+  pseudo-element without changing the 34px visual; reduced-motion guarded.
+- Added tests/cv6-chat-feel.spec.mjs: instant-clear + focus retention + exactly
+  one POST on fast double Enter (response held open 600ms to expose a missing
+  guard), and pressed-state acknowledgment on day-fold headers.
+
+**Status:** implemented; battery + critic pass in flight.
 
 ### R4 - Home + Search polish.
 

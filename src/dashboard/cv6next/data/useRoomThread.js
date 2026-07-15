@@ -111,6 +111,13 @@ function injectWorkSteps(list, stepsByParent, awaiting, awaitingId) {
   });
 }
 
+// Session render cache (corner:cv6-polish R3): switching BACK to a room paints its
+// last rendered thread instantly instead of a loader flash, while the normal fetch
+// still runs and reconciles fresh rows. Render-only and page-scoped; the server
+// thread stays the source of record.
+const threadCache = new Map();
+const threadCacheKey = (worldId, room) => (room?.id ? `${worldId}|${room.isMission ? 'm' : room.isProject ? 'p' : 'a'}|${room.id}` : '');
+
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.
 export function useRoomThread(worldId, room) {
   const [messages, setMessages] = useState([]);
@@ -149,7 +156,21 @@ export function useRoomThread(worldId, room) {
   // old room's messages would linger and an empty room would show the last room's
   // content. Clear the rendered thread on switch and use a null sentinel so the very
   // first load (even an empty one) always commits.
-  useEffect(() => { sigRef.current = null; setMessages([]); setBlocks(null); }, [room?.id]);
+  useEffect(() => {
+    const cached = threadCache.get(threadCacheKey(worldId, room));
+    if (cached) {
+      // Revisit: paint the cached render immediately; the load effect below still
+      // fetches and the signature guard commits any real change on top.
+      sigRef.current = cached.sig;
+      setMessages(cached.messages);
+      setBlocks(cached.blocks);
+      setStatus(cached.messages.length ? 'ready' : 'empty');
+    } else {
+      sigRef.current = null;
+      setMessages([]);
+      setBlocks(null);
+    }
+  }, [worldId, room?.id]);
   // Switching rooms drops any in-flight "working" state too.
   useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); setStepsByParent({}); lastSentTsRef.current = 0; baselineRef.current = false; }, [room?.id]);
 
@@ -272,7 +293,9 @@ export function useRoomThread(worldId, room) {
   useEffect(() => {
     if (!worldId || !room?.id) { setMessages([]); setStatus('loading'); return undefined; }
     let alive = true;
-    setStatus((s) => (s === 'ready' ? s : 'loading'));
+    // 'empty' is a settled state from a previous real load (or the cache); only a
+    // genuinely unknown thread shows the loader.
+    setStatus((s) => (s === 'ready' || s === 'empty' ? s : 'loading'));
     const params = new URLSearchParams();
     params.set('client', worldId);
     // Mission rooms key on the mission slug; project rooms on the project slug;
@@ -456,6 +479,8 @@ export function useRoomThread(worldId, room) {
           setAwaiting(false);
         }
         setStatus(msgs.length ? 'ready' : 'empty');
+        // Refresh the session render cache with what this room actually shows now.
+        threadCache.set(threadCacheKey(worldId, room), { messages: msgs, blocks: liveBlocks, sig });
       })
       .catch(() => { if (alive) setStatus('error'); });
     load();
