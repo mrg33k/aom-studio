@@ -41,7 +41,7 @@ export default function ServiceFooter({ current }) {
       <style>{CSS}</style>
       <div className="svf-kick">More from AOM</div>
       <div className="svf-row">
-        <a className="svf-a home" href="/r6">
+        <a className="svf-a home" href="/">
           <BrandMark kind="mono" className="mk" /> Home
         </a>
         {others.map(s => (

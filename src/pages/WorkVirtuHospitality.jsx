@@ -127,7 +127,7 @@ export default function WorkVirtuHospitality() {
       <style>{CSS}</style>
 
       <div className="chrome-top">
-        <a className="logo" href="/r6">
+        <a className="logo" href="/">
           <BrandMark kind="mono" />
         </a>
         <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>

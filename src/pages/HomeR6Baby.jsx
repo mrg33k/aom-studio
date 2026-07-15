@@ -741,10 +741,10 @@ const CSS = `
 }
 .r17 .hz-mark { display:flex; align-items:center; justify-content:flex-start; width:100%; color:var(--ink); white-space:nowrap; transform-origin:48% 50%; will-change:transform; }
 .r17 .hz-mark svg { display:block; width:min(42vw,34rem); height:auto; }
-.r17 .hz-mark::after { content:''; flex:none; width:clamp(.7rem,1.4vw,1.25rem); aspect-ratio:1; margin:0 0 7% clamp(.55rem,1.2vw,1rem); align-self:flex-end; background:var(--gold-display); }
+.r17 .hz-mark::after { content:''; flex:none; width:clamp(.7rem,1.4vw,1.25rem); aspect-ratio:1; margin:0 0 7% clamp(-.9rem,-1.6vw,-.5rem); align-self:flex-end; background:var(--gold-display); }
 .r17 .hz-copy { position:relative; z-index:2; max-width:58rem; text-align:left; will-change:opacity; }
 .r17 .hz-kicker { display:block; margin-bottom:clamp(1rem,2vh,1.5rem); color:var(--ink); font-family:var(--fbrut); font-size:clamp(.68rem,.8vw,.82rem); font-weight:800; letter-spacing:.2em; text-transform:uppercase; }
-.r17 .hz-headline { color:var(--gold-display); font-family:var(--fd); font-size:clamp(2.9rem,4.4vw,5.5rem); font-weight:800; letter-spacing:-.06em; line-height:.84; text-transform:uppercase; }
+.r17 .hz-headline { color:var(--gold-display); font-family:var(--fd); font-size:clamp(2.8rem,4.25vw,5.3rem); font-weight:800; letter-spacing:-.03em; line-height:.84; text-transform:uppercase; }
 .r17 .hz-headline span { display:block; }
 .r17 .hz-headline span:last-child { white-space:nowrap; }
 .r17 .hz-support { margin-top:clamp(1.4rem,3vh,2.4rem); max-width:38ch; color:var(--ink); font-family:var(--fbrut); font-size:clamp(1rem,1.45vw,1.35rem); font-weight:700; line-height:1.35; }

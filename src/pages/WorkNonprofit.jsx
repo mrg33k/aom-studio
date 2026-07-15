@@ -267,7 +267,7 @@ export default function WorkNonprofit() {
 
       {/* Top Chrome */}
       <div className="chrome-top">
-        <a href="/r6" className="logo" aria-label="Ahead of Market home">
+        <a href="/" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
         <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>

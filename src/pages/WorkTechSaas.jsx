@@ -267,7 +267,7 @@ export default function WorkTechSaas() {
 
       {/* Top Chrome */}
       <div className="chrome-top">
-        <a href="/r6" className="logo" aria-label="Ahead of Market home">
+        <a href="/" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
         <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
@@ -275,7 +275,7 @@ export default function WorkTechSaas() {
 
       {/* Hero */}
       <section className="section hero">
-        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/spacerising-render.mp4" posterSrc="/videos/spacerising-render.jpg" preload="auto" /></div>
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/spacerising-event.mp4" posterSrc="/videos/spacerising-event.jpg" preload="auto" /></div>
         <div className="hero-scrim" />
         <div className="hero-copy">
           <span className="kicker">Ahead of Market / Tech and SaaS</span>
@@ -405,7 +405,7 @@ export default function WorkTechSaas() {
       </section>
 
       <section className="section closing-cta">
-        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/spacerising-render.mp4" posterSrc="/videos/spacerising-render.jpg" /></div>
+        <div className="hero-media" aria-hidden="true"><R31Video src="/videos/spacerising-event.mp4" posterSrc="/videos/spacerising-event.jpg" /></div>
         <div className="hero-scrim" />
         <h2>Map your story<i className="sq" /></h2>
         <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>

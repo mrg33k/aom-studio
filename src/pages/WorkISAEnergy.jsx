@@ -205,7 +205,7 @@ export default function WorkISAEnergy() {
       <style>{CSS}</style>
 
       <div className="chrome-top">
-        <a className="logo" href="/r6" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
+        <a className="logo" href="/" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
         <button type="button" className="top-cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 

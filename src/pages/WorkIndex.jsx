@@ -254,7 +254,7 @@ export default function WorkIndex() {
       <style>{CSS}</style>
 
       <div className="chrome-top">
-        <a className="logo" href="/r6" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
+        <a className="logo" href="/" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
         <button type="button" className="top-cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
@@ -359,7 +359,7 @@ export default function WorkIndex() {
       <footer className="footer">
         <div className="footer-kick">More from AOM</div>
         <div className="footer-row">
-          <a className="footer-a" href="/r6"><BrandMark kind="mono" className="mk" /> Home</a>
+          <a className="footer-a" href="/"><BrandMark kind="mono" className="mk" /> Home</a>
           <a className="footer-a" href="/services/brand-film">Brand film ↗</a>
           <a className="footer-a" href="/services/web-build">Website design &amp; build ↗</a>
           <a className="footer-a" href="/services/strategy">Strategy &amp; story ↗</a>

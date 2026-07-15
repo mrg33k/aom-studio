@@ -232,7 +232,7 @@ export const R31_PAGE_CSS = `
 .r31-page .hero-media, .r31-page .hero-scrim { position:absolute; inset:0; }
 .r31-page .hero-media { z-index:-2; background:#0b0b0a; }
 .r31-page .hero-media video, .r31-page .hero-media > img { display:block; width:100%; height:100%; object-fit:cover; }
-.r31-page .hero-scrim { z-index:-1; background:linear-gradient(180deg,rgba(5,5,5,.2),rgba(5,5,5,.08) 36%,rgba(5,5,5,.94)),linear-gradient(90deg,rgba(5,5,5,.48),transparent 76%); }
+.r31-page .hero-scrim { z-index:-1; background:linear-gradient(180deg,rgba(5,5,5,.3),rgba(5,5,5,.22) 36%,rgba(5,5,5,.94)),linear-gradient(90deg,rgba(5,5,5,.55),rgba(5,5,5,.26) 60%,rgba(5,5,5,.12)); }
 .r31-page .hero-copy { position:relative; z-index:2; width:min(100%,1500px); margin:0 auto; }
 .r31-page .kicker { display:block; margin-bottom:1.35rem; color:var(--paper); font-size:.67rem; font-weight:800; letter-spacing:.23em; text-transform:uppercase; }
 .r31-page .hero h1 {
