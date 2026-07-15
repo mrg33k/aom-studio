@@ -3,13 +3,16 @@
 // nothing; a role does. Two things live here:
 //   1. AGENT_TITLES — the FULL slug -> title map, so a name never leaks ANYWHERE (roster,
 //      Catch Up feed, conversation headers).
-//   2. DASHBOARD_AGENTS — the CURATED set (with order) shown in Home's "Agents" accordion.
+//   2. DASHBOARD_AGENTS — the ordered set shown in Home's "Agents" accordion.
 //
-// `aomOnly`-style agents (Systems) only exist as agents in the AOM internal world, so curating
-// to agents actually present in this world's list keeps them out of external worlds naturally.
+// R1 corner:agent-direct-chats: the old dashboard set was a hard-coded six-agent subset,
+// while assignment flows loaded the broader agent roster. Keep the title/privacy doctrine,
+// but make every known or live agent discoverable from the agent list too.
+
+import agentProfiles from '../../../data/agent-profiles.js';
 
 // Every agent we run -> its role title. Keep this complete so no persona name is ever shown.
-export const AGENT_TITLES = {
+const TITLE_OVERRIDES = {
   gary: 'Operations',
   rex: 'Assistant',
   elon: 'Systems',
@@ -19,21 +22,32 @@ export const AGENT_TITLES = {
   bobby: 'Web',
   cleo: 'Content',
   tony: 'Social',
-  steve: 'QA',
+  steve: 'Advisory',
+  elmo: 'QA',
+  pixel: 'Media',
   studio: 'Studio',
 };
 
-// The curated set shown in the Home Agents accordion, in display order. The roster is the
-// FULL set every time (you reach them at different moments, so they show even when quiet);
-// `aomOnly` agents (Systems) appear only when they actually exist in this world's live list,
-// which keeps them out of external/client worlds.
+export const AGENT_TITLES = {
+  ...Object.fromEntries((agentProfiles || []).map((a) => [a.slug, TITLE_OVERRIDES[a.slug] || a.role || a.slug])),
+  ...TITLE_OVERRIDES,
+};
+
+// Full dashboard roster, in a practical working order. Live agent rows not in this list are
+// appended by curateTitledAgents(), so tenant-created agents are not hidden either.
 export const DASHBOARD_AGENTS = [
   { slug: 'bobby', order: 1 },
   { slug: 'cleo', order: 2 },
   { slug: 'steffen', order: 3 },
   { slug: 'gary', order: 4 },
-  { slug: 'elon', order: 5, aomOnly: true },
-  { slug: 'steve', order: 6 },
+  { slug: 'elon', order: 5 },
+  { slug: 'rex', order: 6 },
+  { slug: 'jacob', order: 7 },
+  { slug: 'tony', order: 8 },
+  { slug: 'alex', order: 9 },
+  { slug: 'steve', order: 10 },
+  { slug: 'elmo', order: 11 },
+  { slug: 'pixel', order: 12 },
 ];
 
 function agentKey(a) {
@@ -59,7 +73,6 @@ export function curateTitledAgents(agents = []) {
   const out = [];
   for (const d of DASHBOARD_AGENTS) {
     const live = bySlug[d.slug];
-    if (d.aomOnly && !live) continue; // Systems only where it exists (the AOM world)
     out.push({
       ...(live || {}),
       slug: d.slug,
@@ -67,6 +80,17 @@ export function curateTitledAgents(agents = []) {
       status: live?.status || 'ready',
       unread: live?.unread || 0,
       _order: d.order,
+    });
+  }
+  for (const [slug, live] of Object.entries(bySlug)) {
+    if (!slug || out.some((a) => a.slug === slug)) continue;
+    out.push({
+      ...(live || {}),
+      slug,
+      title: AGENT_TITLES[slug] || cap(slug),
+      status: live?.status || 'ready',
+      unread: live?.unread || 0,
+      _order: 1000 + out.length,
     });
   }
   return out.sort((x, y) => x._order - y._order);

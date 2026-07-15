@@ -623,6 +623,10 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     flashNote(ok ? note : 'Could not reach the agent. Try again.');
   };
   const handoffAgent = () => sendControl('Please hand this off to another agent. Tell me who you are handing it to and why.', 'Asked for a hand off.');
+  const promoteToMission = () => sendControl(
+    'Before continuing, please move this work into a project mission structure. Identify the right project and mission slug, create or request the mission scaffold if it does not exist, put any files or deliverables under that mission, and reply with the exact mission path and file paths so I can resume this later.',
+    'Asked the agent to promote this into a mission.',
+  );
   const pauseAgent = () => sendControl('Please pause here and wait for my next message before continuing.', 'Asked the agent to pause.');
   const retaskAgent = () => {
     // Re-tasking is freeform, so focus the composer for the new instruction.
@@ -873,6 +877,14 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     </span>
                     Hand off
                   </button>
+                  {!selected.isProject && !selected.isMission ? (
+                    <button onClick={promoteToMission} disabled={controlBusy} aria-label="Ask this agent to move the work into a mission" style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Ask this agent to move the work into a project mission structure">
+                      <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h5l2 2h11v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M12 13h6M15 10v6"/></svg>
+                      </span>
+                      Promote to mission
+                    </button>
+                  ) : null}
                   <button onClick={onPickFile} disabled={controlBusy} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Upload a file into this room">
                     <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>

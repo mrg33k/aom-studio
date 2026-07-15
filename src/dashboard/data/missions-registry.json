@@ -1,6 +1,20 @@
 {
-  "generated_at": "2026-07-14T04:36:10.295Z",
+  "generated_at": "2026-07-15T13:12:21.328Z",
   "missions": [
+    {
+      "slug": "corner:agent-direct-chats",
+      "raw_slug": "agent-direct-chats",
+      "folder_name": "agent-direct-chats",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Agent Direct Chats",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/agent-direct-chats"
+    },
     {
       "slug": "corner:aztc-post-behind-the-scene-storytelling",
       "raw_slug": "aztc-post-behind-the-scene-storytelling",
@@ -1556,6 +1570,20 @@
       "path": "corner/missions/tracker/missions/trackers-panel"
     },
     {
+      "slug": "corner:truth-contracts",
+      "raw_slug": "truth-contracts",
+      "folder_name": "truth-contracts",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Truth Contracts",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/truth-contracts"
+    },
+    {
       "slug": "corner:turn-events",
       "raw_slug": "turn-events",
       "folder_name": "turn-events",
@@ -1568,6 +1596,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/turn-events"
+    },
+    {
+      "slug": "corner:world-integrity",
+      "raw_slug": "world-integrity",
+      "folder_name": "world-integrity",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "World Integrity",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/world-integrity"
     },
     {
       "slug": "agent-hooks:coding-hook",
@@ -3631,8 +3673,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 112,
-      "in_flight": 112,
+      "total": 115,
+      "in_flight": 115,
       "done": 0
     },
     {
