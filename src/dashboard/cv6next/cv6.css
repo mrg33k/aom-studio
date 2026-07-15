@@ -1661,3 +1661,30 @@
    "waiting on you" and "problem" are visible at a glance on a phone. */
 @keyframes campaignPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 .campaign-light-pulse { animation: campaignPulse 1.6s ease-in-out infinite; }
+
+/* ── corner:cv6-polish R3: chat tap feedback ─────────────────────────────────
+   Chips and day-fold headers acknowledge the press with the shared press
+   vocabulary. On touch, chips extend their hit area to ~44px via an inset
+   pseudo-element (::before — ::after is taken by .is-rec) without changing
+   the 34px visual. */
+[data-cv6] .chip-btn, [data-cv6kit] .chip-btn {
+  transition: transform var(--dur-press, .12s) var(--ease-out, ease-out), opacity var(--dur-press, .12s);
+}
+[data-cv6] .chip-btn:active, [data-cv6kit] .chip-btn:active {
+  transform: scale(var(--press-scale, .94));
+  opacity: .82;
+}
+[data-cv6] .goalcard .gc-head { transition: opacity var(--dur-press, .12s); }
+[data-cv6] .goalcard .gc-head:active { opacity: .68; }
+@media (max-width: 899px), (pointer: coarse) {
+  [data-cv6] .chip-btn, [data-cv6kit] .chip-btn { position: relative; }
+  [data-cv6] .chip-btn::before, [data-cv6kit] .chip-btn::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] .chip-btn, [data-cv6kit] .chip-btn, [data-cv6] .goalcard .gc-head { transition: none; }
+  [data-cv6] .chip-btn:active, [data-cv6kit] .chip-btn:active { transform: none; }
+}
