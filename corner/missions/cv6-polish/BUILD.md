@@ -71,7 +71,24 @@ chips and attachments comfortably tappable, no dead taps. Desktop and mobile.
 **Status:** queued.
 
 ### R4 - Home + Search polish.
+
+Critic queue (Steffen pass, 2026-07-15, Catch Up modal): give "Go to room" real
+button chrome to match its role as the escape hatch; right-size the modal to short
+threads or seed trigger context at the top so the empty space carries meaning.
+
 ### R5 - Files + Review polish.
+
+Critic queue (Steffen pass, 2026-07-15, preview viewers; item 1 is the "fix before
+elite" priority):
+1. File-type kicker (Web page / Video / Image) on the dark shell sits at the ~3:1
+   `--faint` level; lift to 12px `--muted` (>=4.5:1) or drop it (dark-shell branches
+   only; the PDF/docx eyebrow rides the light `.doc` paper and is fine).
+2. Saved-HTML reader prints the filename twice (fake URL bar + pane header); kill the
+   `.burl` text, keep the traffic-light frame.
+3. Review's custom video scrubber has no mute/volume; add a mute toggle.
+4. "Pin mode: off" pill floats orphaned over page content; icon + clearer label,
+   nudge clear of content.
+5. Mobile image preview floats in a black void; vertically center it in the media area.
 ### R6 - Email + Campaign polish.
 ### R7 - Tracker + Command polish.
 ### R8 - Scribe + Settings polish.
