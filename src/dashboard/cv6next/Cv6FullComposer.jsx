@@ -36,6 +36,8 @@ import VoiceModeBar from '../components/cv3/thread/VoiceModeBar.jsx';
 import Cv6InputBar from './Cv6InputBar.jsx';
 import VoiceChat from '../components/VoiceChat.jsx';
 
+const READ_ONLY_COPY = 'Chat needs a connected workspace. Local mode is read-only.';
+
 // Map a CV6 quick-room object -> the { selectedAgent, selectedProject } shape the
 // CV4 hooks expect. Project + mission rooms talk to the EA agent ('corner') but
 // carry project/mission scope; agent rooms map straight to the agent slug.
@@ -118,6 +120,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     const chipsSuffix = pasteChips.length ? '\n\n' + pasteChips.map(c => c.text).join('\n\n') : '';
     const text = base + chipsSuffix;
     if (!text) return;
+    if (!supabase) return;
     if (selectedImageTool) {
       setInput('');
       setPasteChips([]);
@@ -136,9 +139,11 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       } catch (_) { /* surfaced by the thread poll / toast */ }
       return;
     }
-    setInput('');
-    setPasteChips([]);
-    if (typeof quickSend === 'function') quickSend(text);
+    const ok = typeof quickSend === 'function' ? await quickSend(text) : false;
+    if (ok !== false) {
+      setInput('');
+      setPasteChips([]);
+    }
   }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom]);
 
   const handleKeyDown = useCallback((e) => {
@@ -196,6 +201,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const navValue = useMemo(() => ({ activeTool: 'chat', selectedMail: null, setSelectedMail: () => {} }), []);
 
   if (!target || !room) return null;
+  if (!supabase) return <ReadOnlyComposer target={target} room={room} />;
 
   return createPortal(
     <CornerNavProvider value={navValue}>
@@ -242,13 +248,39 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   );
 }
 
+function ReadOnlyComposer({ target, room }) {
+  if (!target || !room) return null;
+  return createPortal(
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)' }}>
+      <input
+        data-testid="cv6-chat-input"
+        value=""
+        disabled
+        readOnly
+        aria-label={READ_ONLY_COPY}
+        placeholder="Chat needs a connected workspace."
+        style={{ flex: 1, minWidth: 0, height: 40, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 13px', color: 'var(--muted)', fontFamily: 'var(--font-sans)', fontSize: 14, outline: 'none', opacity: 1 }}
+      />
+      <span style={{ fontSize: 11.5, lineHeight: 1.3, color: 'var(--faint)', maxWidth: 148 }}>{READ_ONLY_COPY}</span>
+    </div>,
+    target,
+  );
+}
+
 // Minimal always-works composer: the boundary's fallback so the quick-reply box
 // NEVER vanishes, even if the full CV4 bridge throws. Plain text input + send,
 // posting through the same useRoomThread send the col3 thread uses.
 function MiniComposer({ target, room, quickSend }) {
   const [val, setVal] = useState('');
   if (!target || !room) return null;
-  const send = () => { const t = val.trim(); if (t && typeof quickSend === 'function') { quickSend(t); setVal(''); } };
+  if (!supabase) return <ReadOnlyComposer target={target} room={room} />;
+  const send = async () => {
+    const t = val.trim();
+    if (t && typeof quickSend === 'function') {
+      const ok = await quickSend(t);
+      if (ok !== false) setVal('');
+    }
+  };
   const placeholderText = `Nudge ${room.name || 'them'}, or jump in…`;
   return createPortal(
     <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)' }}>

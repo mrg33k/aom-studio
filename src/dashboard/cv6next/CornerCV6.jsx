@@ -29,6 +29,7 @@ import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import NewComposer from './NewComposer.jsx';
+import { supabase } from '../lib/supabase.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useReviewWaitingCount } from './data/useReview.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -99,7 +100,7 @@ function useIsDesktop() {
 // design files also write the Scribe target as 'live-scribe'; accept both spellings.
 const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'onboarding', 'livescribe', 'live-scribe', 'back']);
 
-function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}) {
+function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false, dropEmbeddedStates = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const nodes = doc.querySelectorAll('[data-cv6]');
   const screen = nodes[pick] || nodes[0];
@@ -127,6 +128,9 @@ function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}
   // append shared states next to this screen's ready region
   const ready = screen.querySelector('[data-state="ready"]');
   const host = ready?.parentNode || screen;
+  if (dropEmbeddedStates && host) {
+    host.querySelectorAll(':scope > [data-state="loading"], :scope > [data-state="error"], :scope > [data-state="empty"]').forEach((node) => node.remove());
+  }
   // The design body is overflow:hidden (fine for a fixed mockup, wrong for the live app
   // with many rooms). On mobile make the scroll body actually scroll, and pad the bottom
   // so the last row clears the home indicator. Desktop columns scroll on their own.
@@ -252,7 +256,7 @@ async function postTrackerApi(body) {
 // into the template's empty .convo-thread host) so attachments draw as real cards
 // (image thumbs, galleries, file cards, collections) with Review affordances — same
 // MessageAttachments the main Chat tool uses — instead of plain "Attached file:" text.
-function Cv6QuickThread({ target, messages, goal, onReview, onSend, awaiting, liveSteps, room }) {
+function Cv6QuickThread({ target, messages, goal, onReview, onSend, awaiting, liveSteps, room, localReadOnly = false }) {
   // FIX G: scroll-to-bottom on load and new messages; guard against yanking the user
   // back when they've scrolled up (>100px from the bottom). Hooks must come before the
   // early return so React's rules-of-hooks are satisfied.
@@ -288,7 +292,7 @@ function Cv6QuickThread({ target, messages, goal, onReview, onSend, awaiting, li
       allowChips={false}
       onAction={onSend}
       onReviewAttachment={onReview}
-      empty="No messages in this room yet. Send the first one below."
+      empty={localReadOnly ? 'No messages in this room yet. Connect a workspace to send messages.' : 'No messages in this room yet. Send the first one below.'}
     />,
     target,
   );
@@ -416,7 +420,9 @@ function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>Files</div>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{room?.name || ''}</div>
         </div>
-        <div className="filesbtn" onClick={onClose} role="button" title="Close files" style={{ cursor: 'pointer' }}>
+        <div className="filesbtn" onClick={onClose} role="button" aria-label="Close files" title="Close files" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose?.(); } }}
+          style={{ cursor: 'pointer' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           Close
         </div>
@@ -1186,11 +1192,14 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     toggleFiles: () => setFilesOpen((o) => !o),
     // Send a quick reply from the col3 room panel: read the uncontrolled input and post into the
     // opened room via the same thread the full Chat uses (Patrik: the quick reply room should work).
-    sendMessage: (_arg, e) => {
+    sendMessage: async (_arg, e) => {
       const root = e?.currentTarget?.closest('.composer') || document.querySelector('[data-screen="convo"] .composer');
       const inp = root && root.querySelector('.convo-input');
       const v = inp && inp.value;
-      if (v && v.trim() && quickSend) { quickSend(v.trim()); if (inp) inp.value = ''; }
+      if (v && v.trim() && quickSend) {
+        const ok = await quickSend(v.trim());
+        if (inp && ok !== false) inp.value = '';
+      }
     },
     // Open the project's own conversation (the general chat above the mission list).
     openProjectChat: (id) => {
@@ -1408,6 +1417,12 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     moreCount: pn.more,
     moreState: pn.more > 0 ? 'has' : 'none',
   }));
+  // Arrays double as binding hosts for header/show-more counts. Mapping creates a
+  // fresh array, so copy the scalar props from projShown or the template falls back
+  // to its baked "Projects · 84 / Show 78 more" sample when there are zero projects.
+  projectsWithNav.count = projShown.count;
+  projectsWithNav.moreCount = projShown.moreCount;
+  projectsWithNav.moreState = projShown.moreState;
 
   // When a room is opened (click or keyboard), col3 shows that room's real conversation.
   const baseRoom = knavOpenedRoom || data.room || { name: '', initials: '', statusText: '', status: 'ready' };
@@ -1459,6 +1474,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         awaiting={quickThread && quickThread.awaiting}
         liveSteps={quickThread && quickThread.liveSteps}
         room={displayedRoom}
+        localReadOnly={!supabase}
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, needsReview: true } : null); }}
       />
       <Cv6FullComposer
@@ -1553,7 +1569,7 @@ const SUPPORT_THREAD_ALIASES = { 'thread.summary': 'pt' };
 const EARLIER_CUT = /^\s*>|^-{2,}\s*Forwarded message|^Begin forwarded message:|^On .{5,80} wrote:/m;
 function SupportInbox({ onNav, onOpenNav, onAssignEmail, worldId }) {
   const { state, data, reload } = useSupportInbox(worldId);
-  const html = useMemo(() => composeScreen(inboxRaw, { mobile: true }), []);
+  const html = useMemo(() => composeScreen(inboxRaw, { mobile: true, dropEmbeddedStates: true }), []);
   const threadHtml = useMemo(() => composeScreen(supportThreadRaw, { mobile: true }), []);
   // The "Draft reply" screen the design ships next to the inbox (pick=1). Tone and
   // Redo have no live mechanism yet, so they're stripped at compose time — same

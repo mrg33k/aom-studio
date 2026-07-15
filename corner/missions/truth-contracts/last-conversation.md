@@ -246,3 +246,132 @@ Browser coverage: added `?demo=file-previews` and `tests/cv6-file-previews.spec.
 Other verification: live RAG delivery checks passed for PNG/PDF/HTML inline responses and MP4 Range streaming; focused FileRef/files-truth/review-truth tests passed 10/10; tenant-context guards passed; production build passed with the existing chunk-size warning; changed non-JSX modules passed `node --check`; `git diff --check` passed.
 
 No deploy, commit, push, schema/data mutation, external message, or secret change. Unrelated pre-existing dirty files were left untouched; the build regenerated the already-dirty missions registry and Playwright updated the already-dirty last-run record.
+
+## 2026-07-14 - Review JSON normalization audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Files/Review-backed panels plus sibling tools and keep the workflow understandable when local Vite serves API source/non-JSON bodies instead of real JSON.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Review-backed data reads logged repeated `Unexpected token '/' ... is not valid JSON` errors for projects, missions-tree, and review-queue. Files still looked usable, but the console made the product appear broken and hid real regressions in noise.
+2. P2: The visible desktop and mobile sibling journeys completed through Files, Tracker, Command, Scribe, and Home; the issue was misleading/error-noisy state rather than navigation breakage.
+3. P2: Generic local missing-resource 404 console entries remain filtered as non-product noise in the practical audit test.
+
+Fix shipped: `src/dashboard/cv6next/data/useReview.js` now guards read-only Review JSON parsing. Non-JSON successful read responses become empty/unavailable local data instead of thrown parse errors; Review mutation responses remain strict. The CV6 practical audit spec no longer ignores the old `Unexpected token '/'` JSON parse failure.
+
+Verification: desktop and mobile Playwright probes completed the sibling journey without Review parse errors; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Email local workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Email, understand the inbox/campaign state, and return to sibling tools without misleading local errors, stale labels, duplicate empty copy, or broken navigation.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Mobile Email showed "We couldn't reach your inbox / Your connection dropped" in safe no-Supabase local mode, while desktop Email showed the honest caught-up inbox. Same product state, contradictory meaning.
+2. P1: Once the local state settled empty, mobile rendered the caught-up empty block twice because the support inbox template carried its own empty branch and the shared composer injected another.
+3. P2: Mobile Email still titled the inbox "Support" even though the shared nav and Email shell present this as Email.
+
+Fix shipped: `src/dashboard/cv6next/data/useSupportInbox.js` now treats absent Supabase as explicit read-only local empty data. `src/dashboard/cv6next/CornerCV6.jsx` can drop embedded state branches before injecting shared states, and mobile Email uses that path to avoid duplicate empty copy. `src/dashboard/cv6next/templates/support-inbox.html` now shows the visible title "Email."
+
+Verification: desktop/mobile Playwright probes completed Email with one caught-up state and no dropped-connection banner; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests with Email assertions); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Campaign local workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Email, switch to Campaign, understand whether campaigns are empty or unavailable, and return to sibling tools without misleading retry errors or dead local write controls.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Desktop and mobile Campaign both showed "Campaigns didn't load. Retrying automatically." in safe no-Supabase local mode. That is a core Email sub-workflow and it read as a live failure rather than honest local emptiness.
+2. P1: The configured empty-state action would open campaign creation, but campaign writes cannot work in local no-Supabase mode, so showing the create action there would be a dead path.
+3. P2: Sibling navigation stayed usable and Campaign produced only the already-filtered generic local 404 resource console entries.
+
+Fix shipped: `src/dashboard/cv6next/data/useCampaign.js` now treats absent Supabase as explicit local empty data. `src/dashboard/cv6next/Campaign.jsx` shows a calm local empty message and hides "Create your first campaign" in local mode while preserving the configured-session creation flow.
+
+Verification: desktop/mobile Playwright probes completed Campaign with "No campaigns yet" and no retry error; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests with Campaign assertions); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Live Scribe capture-state audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Live Scribe, understand the empty note state, try Start capture, and return to sibling tools without a misleading mic/error state or dead action.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Live Scribe looked active before consent. On both desktop and mobile, the idle screen showed recording affordances (red dot, waveform, mobile speaker/live bar) before the user pressed Start, which is a trust break for a mic-capture workflow.
+2. P2: Empty "Save & copy summary" remains reachable before transcript exists. It does visibly report "Nothing captured yet — record something first.", so it is not dead, but it is still an extra pre-capture control.
+3. P2: Starting capture with no microphone produces the expected `NotFoundError` in console plus generic local 404 entries; the visible product state is correct and recoverable with the mic-specific message.
+
+Fix shipped: `src/dashboard/cv6next/templates/livescribe.html` now binds the record dot, waveform, mobile status bar, and speaker indicator to `session.capturing`. `src/dashboard/cv6next/cv6.css` makes the off state muted/static and keeps the red pulsing recording look only for `is-on`. The practical audit spec now asserts Scribe's desktop and mobile idle state during the sibling workflow.
+
+Verification: a focused fake-microphone Playwright probe confirmed idle `rec/wave is-off` with no animation and Start flips to `Stop & save` plus active recording classes. `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop/mobile sibling tools with Scribe assertions). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Home/Search consistency audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open Search, find visible work by name, open it or recover from no results, and return to sibling tools without misleading empty states.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Home leaked stale design sample data in safe local/no-Supabase mode. Desktop showed `PROJECTS · 84` and `Show 78 more projects`; mobile showed `Show 78 more rooms`. Search then said `Nothing matches "space"`, which was correct for local data but contradicted the fake Home project counts.
+2. P2: `useChatList` still blocked its state on `!worldId` even when Supabase was absent, unlike Home's local render contract. That made Search/Chat-list semantics easier to drift from Home.
+3. P2: Generic local missing-resource 404 console entries remain filtered as non-product noise.
+
+Fix shipped: `src/dashboard/cv6next/CornerCV6.jsx` now copies the project array binding props (`count`, `moreCount`, `moreState`) after mapping project rows, so empty project lists bind as `0/none` instead of leaving template fallback text visible. `src/dashboard/cv6next/data/useHomeData.js` aligns `useChatList` loading with Home in no-Supabase local mode. The practical audit spec now opens Search on desktop/mobile, checks the `space` no-result recovery, and asserts the stale `84/78` Home copy is gone.
+
+Verification: desktop/mobile Playwright probe showed `PROJECTS · 0`, no stale `Show 78 more`, and Search `space` recovery; `npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across Home/Search and sibling tools); `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - New composer local workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6 Home, press New, understand whether a mission or project can be started, recover from missing fields, and avoid dead local write controls.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: In safe local/no-Supabase mode, New Composer offered active `Start mission` and `Create project` actions even though writes could not succeed. A filled project submit ended with `Could not create the project. Please try again.`, which implied a retryable product failure instead of the true read-only local workspace.
+2. P2: Blank validation was clear and recoverable: mission submit asked for the work to get done, project submit asked for a project name, and mission-with-goal in an empty local workspace asked for a project.
+3. P2: Generic local missing-resource 404 console entries remain filtered as non-product noise.
+
+Fix shipped: `src/dashboard/cv6next/NewComposer.jsx` now detects absent Supabase and binds the composer hint/primary CTA to `Creation needs a connected workspace. Local mode is read-only.` and `Read-only locally`. The CTA is styled inactive, and submit returns the same read-only truth before any create API runs. Configured sessions keep the normal Start/Create labels and backend path.
+
+Verification: desktop/mobile Playwright probe confirmed mission and project tabs show the read-only local state and no failing create attempt. `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across Home/New and sibling CV6 tools). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Chat room core workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from desktop and mobile CV6, open the actual chat room, understand the room context, type/send or recover from read-only state, use obvious room controls, and return to sibling tools without stale data, dead actions, or misleading working states.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Chat is the core product loop. In safe local/no-Supabase mode, mobile accepted a typed room message, cleared the input, rendered a `You` message, and showed `Getting started / Working` even though no connected workspace could receive it.
+2. P1: Desktop's practical chat entry is the Home third-column quick room. It still promised `Send the first one below` and had an old quick-send handler that cleared text without waiting for a successful send.
+3. P2: Mobile chat Back/Menu/Files controls were visually clear but lacked complete button semantics in the chat lifecycle itself.
+4. P2: Live production verification is still pending. A fresh read-only check of `https://aheadofmarket.com/dashboard` redirected to `https://www.aheadofmarket.com/login`; the in-app browser control setup failed with `Cannot redefine property: process`, so an authenticated production room could not be exercised in this run.
+
+Fix shipped locally: `src/dashboard/cv6next/data/useRoomThread.js` now refuses local read-only sends before optimistic UI and removes optimistic rows on failed POSTs. `src/dashboard/cv6next/Cv6FullComposer.jsx`, `src/dashboard/cv6next/ChatLifecycle.jsx`, and the desktop `Cv6QuickThread` path in `src/dashboard/cv6next/CornerCV6.jsx` show a connected-workspace read-only state locally instead of accepting text. Home quick-send only clears after a successful send, and mobile chat Back/Menu/Files controls now have explicit role/label/keyboard activation.
+
+Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop Home quick-chat, mobile chat room, and sibling CV6 surfaces). `npm run build` passed. Production check was read-only and stopped at login; no deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/data mutation.
+
+## 2026-07-14 - Chat room files workflow audit
+
+Mission path: `corner:truth-contracts`.
+
+Goal attempted: from an open CV6 chat room on desktop and mobile, open Files in this room, understand whether anything has been shared, return to the room, and continue through sibling CV6 tools without dead controls, stale data, misleading loading, extra navigation, or live-data mutation.
+
+Audit findings ranked by frequency x severity x impact:
+
+1. P1: Files is part of the core chat loop. The empty shelf was honest (`No files here yet.`), but the return controls were weaker than the workflow deserved: mobile's close icon had no accessible name or keyboard path, and the desktop in-place close was pointer-only.
+2. P2: Empty-state clarity was otherwise clean locally; no stale file count, fake loading, or extra jump appeared in the no-Supabase room-files path.
+3. P2: Authenticated production verification remains blocked. `https://aheadofmarket.com/dashboard` was opened in desktop Chrome for login, but the browser-control runtime fails with `Cannot redefine property: process`, and the debuggable Chrome profile visible to automation was only on a local file and `/cv4`.
+
+Fix shipped locally: `src/dashboard/cv6next/ChatLifecycle.jsx` gives the mobile Room Files sheet close control an explicit `Close files` label, title, focus target, and Enter/Space activation. `src/dashboard/cv6next/CornerCV6.jsx` gives the desktop Home Files overlay close control the same label and keyboard return path. `tests/cv6-practical-audit.spec.mjs` now opens the room file shelf on desktop and mobile, verifies the empty state, closes via `Close files`, and then continues through sibling CV6 surfaces.
+
+Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop Home quick-chat, mobile chat room-files, and sibling CV6 tools). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/member/data mutation.

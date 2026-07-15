@@ -35,6 +35,14 @@ async function authFetchT(url, ms = 12000) {
   finally { clearTimeout(t); }
 }
 
+async function readJsonOrNull(response) {
+  if (!response?.ok) return null;
+  const type = String(response.headers?.get?.('content-type') || '').toLowerCase();
+  if (type && !type.includes('application/json')) return null;
+  try { return await response.json(); }
+  catch { return null; }
+}
+
 // Download a deliverable's real bytes with its true filename, for ANY type.
 // A plain cross-origin `<a download href>` is IGNORED by browsers (they navigate/
 // open the file instead of saving it), so we fetch the bytes ourselves and hand the
@@ -564,8 +572,8 @@ export function useReview(worldId = null, injected = null) {
       try {
         const r = await authFetch(`/api/dashboard/review-history?world=${encodeURIComponent(worldId)}&project=${encodeURIComponent(projSel)}&limit=30`, { credentials: 'include' });
         if (!dead && r?.ok) {
-          const d = await r.json();
-          setHistory(Array.isArray(d.items) ? d.items : []);
+          const d = await readJsonOrNull(r);
+          setHistory(Array.isArray(d?.items) ? d.items : []);
         }
       } catch (e) { console.error('[Review history]', e); }
     })();
@@ -585,12 +593,12 @@ export function useReview(worldId = null, injected = null) {
       }
       try {
         const r = await authFetch('/api/dashboard/projects', { credentials: 'include' });
-        const d = await r.json();
+        const d = await readJsonOrNull(r);
         if (!dead && d?.ok && Array.isArray(d.projects)) setProjects(d.projects);
       } catch (e) { console.error('[Review projects]', e); }
       try {
         const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}${treeReload > 0 ? '&bust=1' : ''}`, { credentials: 'include' });
-        const d = r?.ok ? await r.json() : null;
+        const d = await readJsonOrNull(r);
         if (!dead && d && Array.isArray(d.projects)) {
           const next = {};
           for (const p of d.projects) { if (p?.slug) next[p.slug] = p.tree || []; }
@@ -621,16 +629,25 @@ export function useReview(worldId = null, injected = null) {
     try {
       const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}&limit=${fetchLimit}&offset=0`);
       if (r?.ok) {
-        const d = await r.json();
-        const items = (d.items || []).map((it) => mapQueueItem(it, openDelIdRef.current));
-        const next = { items, readyCount: items.length };
-        queueRef.current = next;
-        setQueue(next);
-        const total = d.total || items.length;
-        queueServerTotalRef.current = total;
-        setQueueServerTotal(total);
-        if (d.newest_ts) setNewestTs(d.newest_ts);
-        ok = true;
+        const d = await readJsonOrNull(r);
+        if (!d) {
+          const next = { items: [], readyCount: 0 };
+          queueRef.current = next;
+          setQueue(next);
+          queueServerTotalRef.current = 0;
+          setQueueServerTotal(0);
+          ok = true;
+        } else {
+          const items = (d.items || []).map((it) => mapQueueItem(it, openDelIdRef.current));
+          const next = { items, readyCount: items.length };
+          queueRef.current = next;
+          setQueue(next);
+          const total = d.total || items.length;
+          queueServerTotalRef.current = total;
+          setQueueServerTotal(total);
+          if (d.newest_ts) setNewestTs(d.newest_ts);
+          ok = true;
+        }
       }
     } catch (e) {
       console.error('[Review load]', e);
@@ -652,7 +669,8 @@ export function useReview(worldId = null, injected = null) {
     try {
       const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}&limit=${PAGE_SIZE}&offset=${offset}`);
       if (r?.ok) {
-        const d = await r.json();
+        const d = await readJsonOrNull(r);
+        if (!d) return;
         const newItems = (d.items || []).map((it) => mapQueueItem(it, openDelIdRef.current));
         if (newItems.length > 0) {
           const merged = [...(queueRef.current?.items || []), ...newItems];
@@ -1178,7 +1196,7 @@ export function useReviewWaitingCount(worldId = null) {
       try {
         const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}&limit=1`);
         if (r?.ok) {
-          const d = await r.json();
+          const d = await readJsonOrNull(r);
           const n = Number(d?.counts?.waiting ?? d?.total);
           if (!dead && Number.isFinite(n)) setCount(n);
         }

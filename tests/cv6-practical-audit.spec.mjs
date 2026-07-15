@@ -20,8 +20,7 @@ async function expectNoCrash(page) {
 
 function productConsoleErrors(errors) {
   return errors.filter((line) => (
-    !/Failed to load resource/.test(line) &&
-    !/Unexpected token '\/'.*is not valid JSON/.test(line)
+    !/Failed to load resource/.test(line)
   ))
 }
 
@@ -32,22 +31,38 @@ test.describe('CV6 practical product audit', () => {
 
     await expect(page.locator('.ctile', { hasText: 'Home' })).toBeVisible()
     await expect(page.getByText('All rooms').first()).toBeVisible()
+    await expect(page.getByText('PROJECTS · 84')).toHaveCount(0)
+    await expect(page.getByText('Show 78 more projects')).toHaveCount(0)
 
     const navLabels = await page.locator('.ctile .clab').allTextContents()
     expect(navLabels).toEqual(['Home', 'Files', 'Email', 'Tracker', 'Command', 'Scribe'])
 
-    const firstRecent = page.locator('[data-action="openRecent"]:visible').first()
-    if (await firstRecent.count()) {
-      await firstRecent.click()
-    } else if (await page.locator('[data-action="toggleAgents"]:visible').count()) {
-      await page.locator('[data-action="toggleAgents"]:visible').first().click()
-      await page.locator('[data-action="openRoom"]:visible').first().click()
-    } else if (await page.locator('[data-action="toggleProjectMissions"]:visible').count()) {
-      const firstProject = page.locator('[data-action="toggleProjectMissions"]:visible').first()
-      await firstProject.click()
-    } else {
-      await expect(page.getByText('No active goal')).toBeVisible()
-    }
+    await page.getByRole('button', { name: 'Search' }).first().click()
+    await page.getByPlaceholder('Search rooms and missions…').fill('space')
+    await expect(page.getByText('Nothing matches “space”.')).toBeVisible()
+    await page.keyboard.press('Escape')
+
+    await page.getByRole('button', { name: 'New' }).click()
+    await expect(page.getByText('Creation needs a connected workspace. Local mode is read-only.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
+    await page.locator('[data-action="setComposerMode"][data-target="project"]').click()
+    await expect(page.getByText('New project')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel' }).click()
+
+    await page.locator('[data-action="toggleAgents"]:visible').first().click()
+    await expect(page.locator('[data-action="openRoom"]:visible').first()).toBeVisible()
+    await page.locator('[data-action="openRoom"]:visible').first().click()
+    await expect(page.getByText('No messages in this room yet. Connect a workspace to send messages.')).toBeVisible()
+    await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
+    await expect(page.getByTestId('cv6-chat-input')).toBeDisabled()
+    await expect(page.getByText('Getting started')).toHaveCount(0)
+    await page.locator('[data-screen="home-desktop"] [data-action="toggleFiles"]:visible').click()
+    await expect(page.getByText('No files here yet.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible()
+    await page.getByRole('button', { name: 'Close files' }).press('Enter')
+    await expect(page.getByRole('button', { name: 'Close files' })).toHaveCount(0)
+    await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await expectNoCrash(page)
 
     for (const tool of ['Files', 'Email', 'Tracker', 'Command', 'Scribe', 'Home']) {
@@ -59,12 +74,29 @@ test.describe('CV6 practical product audit', () => {
         await expect(page.getByText("We couldn't load your files")).toHaveCount(0)
         await expect(page.getByText('Nothing personal yet')).toBeVisible()
       }
+      if (tool === 'Email') {
+        await expect(page.getByText("We couldn't reach your inbox")).toHaveCount(0)
+        await expect(page.getByText("You're all caught up")).toHaveCount(1)
+        await expect(page.getByText("You're all caught up")).toBeVisible()
+        await page.getByRole('button', { name: 'Campaign' }).click()
+        await expect(page.getByText("Campaigns didn’t load")).toHaveCount(0)
+        await expect(page.getByText('No campaigns yet')).toBeVisible()
+        await expect(page.getByText('Create your first campaign')).toHaveCount(0)
+        await page.getByRole('button', { name: 'Inbox' }).click()
+      }
       if (tool === 'Tracker') {
         await expect(page.getByText('Loading the tracker…')).toHaveCount(0)
         await expect(page.getByText('No bugs in this tracker')).toBeVisible()
       }
       if (tool === 'Command') {
         await expect(page.getByText('No rooms yet')).toBeVisible()
+      }
+      if (tool === 'Scribe') {
+        await expect(page.getByText('Ready to capture. Press Start and speak.')).toBeVisible()
+        await expect(page.getByRole('button', { name: 'Start capture' })).toBeVisible()
+        await expect(page.locator('[data-screen="livescribe-desktop"] [data-state="error"]')).toBeHidden()
+        await expect(page.locator('[data-screen="livescribe-desktop"] .rec')).toHaveClass(/is-off/)
+        await expect(page.locator('[data-screen="livescribe-desktop"] .wave')).toHaveClass(/is-off/)
       }
     }
 
@@ -76,13 +108,40 @@ test.describe('CV6 practical product audit', () => {
     const errors = await openCv6(page)
 
     await expect(page.getByRole('button', { name: 'Search' }).first()).toBeVisible()
+    await expect(page.getByText('Show 78 more rooms')).toHaveCount(0)
     await page.getByRole('button', { name: 'Search' }).first().click()
     await page.waitForTimeout(350)
     await expect(page.getByPlaceholder('Search rooms and missions…')).toBeVisible()
+    await page.getByPlaceholder('Search rooms and missions…').fill('space')
+    await expect(page.getByText('Nothing matches “space”.')).toBeVisible()
     await page.keyboard.press('Escape')
 
+    await page.getByRole('button', { name: 'New' }).click()
+    await expect(page.getByText('Creation needs a connected workspace. Local mode is read-only.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
+    await page.locator('[data-action="setComposerMode"][data-target="project"]').click()
+    await expect(page.getByText('New project')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel' }).click()
+
+    await page.locator('[data-action="toggleAgents"]:visible').first().click()
+    await expect(page.locator('[data-action="openRoom"]:visible').first()).toBeVisible()
+    await page.locator('[data-action="openRoom"]:visible').first().click()
+    await expect(page.getByText('No messages with Web yet')).toBeVisible()
+    await expect(page.getByText('Connect a workspace to send messages.')).toBeVisible()
+    await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
+    await expect(page.getByTestId('cv6-chat-input')).toBeDisabled()
+    await expect(page.getByText('Getting started')).toHaveCount(0)
+    await page.getByTestId('chat-files-button').click()
+    await expect(page.getByText('Files in this room')).toBeVisible()
+    await expect(page.getByText('No files here yet.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible()
+    await page.getByRole('button', { name: 'Close files' }).press('Enter')
+    await expect(page.getByRole('button', { name: 'Close files' })).toHaveCount(0)
+    await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await page.getByRole('button', { name: 'Menu' }).first().click()
     await expect(page.locator('.navdrawer')).toBeVisible()
+
     const drawerLabels = await page.locator('.navdrawer .nl').allTextContents()
     expect(drawerLabels).toEqual(['Home', 'Files', 'Email', 'Tracker', 'Command', 'Live Scribe'])
 
@@ -96,12 +155,31 @@ test.describe('CV6 practical product audit', () => {
         await page.getByRole('button', { name: /Personal 0 files/ }).click()
         await expect(page.getByText('Nothing personal yet')).toBeVisible()
       }
+      if (tool === 'Email') {
+        await expect(page.getByText('Email').first()).toBeVisible()
+        await expect(page.getByText('Support', { exact: true })).toHaveCount(0)
+        await expect(page.getByText("We couldn't reach your inbox")).toHaveCount(0)
+        await expect(page.getByText("You're all caught up")).toHaveCount(1)
+        await expect(page.getByText("You're all caught up")).toBeVisible()
+        await page.getByRole('button', { name: 'Campaign' }).click()
+        await expect(page.getByText("Campaigns didn’t load")).toHaveCount(0)
+        await expect(page.getByText('No campaigns yet')).toBeVisible()
+        await expect(page.getByText('Create your first campaign')).toHaveCount(0)
+        await page.getByRole('button', { name: 'Inbox' }).click()
+      }
       if (tool === 'Tracker') {
         await expect(page.getByText('Loading the tracker…')).toHaveCount(0)
         await expect(page.getByText('No bugs in this tracker')).toBeVisible()
       }
       if (tool === 'Command') {
         await expect(page.getByText('No rooms yet')).toBeVisible()
+      }
+      if (tool === 'Live Scribe') {
+        await expect(page.getByText('Ready to capture. Press Start and speak.')).toBeVisible()
+        await expect(page.getByRole('button', { name: 'Start capture' })).toBeVisible()
+        await expect(page.locator('[data-screen="livescribe-mobile"] [data-state="error"]')).toBeHidden()
+        await expect(page.locator('[data-screen="livescribe-mobile"] .rec')).toHaveClass(/is-off/)
+        await expect(page.locator('[data-screen="livescribe-mobile"] .wave')).toHaveClass(/is-off/)
       }
       if (tool !== 'Home') {
         await expect(page.getByRole('button', { name: 'Menu' }).first()).toBeVisible()

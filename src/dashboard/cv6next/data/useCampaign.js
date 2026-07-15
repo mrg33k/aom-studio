@@ -44,7 +44,7 @@ export function useCampaignList(worldId) {
     const t = setInterval(load, 20000);
     return () => clearInterval(t);
   }, [load]);
-  return { campaigns, campaignSetup, error, reload: load };
+  return { campaigns, campaignSetup, error, reload: load, localMode: !supabase };
 }
 
 export function useCampaignDetail(campaignId, worldId) {

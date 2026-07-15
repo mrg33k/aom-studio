@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
+import { supabase } from '../../lib/supabase';
 
 const NOREPLY = /(no-?reply|do-?not-?reply|mailer-daemon|postmaster|bounce[@+]|notifications?@|newsletter@|marketing@|mailchimp|sendgrid|klaviyo|hubspot|salesforce)/i;
 const TINTS = ['is-pink', 'is-violet', 'is-green', 'is-neutral'];
@@ -82,6 +83,13 @@ export function useSupportInbox(worldId) {
   const hasDataRef = useRef(false);
   const load = useCallback(async () => {
     if (!worldId) return;
+    if (!supabase) {
+      setWishes([]);
+      setMailboxes([]);
+      setStatus('loaded');
+      hasDataRef.current = true;
+      return;
+    }
     let ok = false;
     try {
       const r = await authFetch(`/api/support/wishes?world=${encodeURIComponent(worldId)}`, { credentials: 'include' });
