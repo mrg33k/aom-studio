@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
 
@@ -106,6 +107,7 @@ const CSS = `
 `;
 
 export default function WorkBrandonWiley() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     document.title = 'Brandon Wiley Documentary | Ahead of Market';
     const meta = document.querySelector('meta[name="description"]');
@@ -115,6 +117,7 @@ export default function WorkBrandonWiley() {
   }, []);
 
   return (
+    <>
     <div className="wk-bw">
       <style>{CSS}</style>
 
@@ -122,7 +125,7 @@ export default function WorkBrandonWiley() {
         <a className="logo" href="/r6">
           <BrandMark kind="mono" />
         </a>
-        <a className="cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       <section className="section hero">
@@ -188,7 +191,7 @@ export default function WorkBrandonWiley() {
         <p style={{ fontSize: 'clamp(1rem, 1.4vw, 1.2rem)', marginBottom: '2rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto', color: 'var(--mut)' }}>
           We commit months to long-form documentaries that capture vision, execution, and the human stories behind major ventures.
         </p>
-        <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </section>
 
       <ServiceFooter current="/work/brandon-wiley" />
@@ -207,5 +210,7 @@ export default function WorkBrandonWiley() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

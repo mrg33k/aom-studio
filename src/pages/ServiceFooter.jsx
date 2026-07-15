@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 
 // Shared "More from AOM" footer for the /services/* family. One source of truth
 // so the four pages stay consistent. Mission: aheadofmarket.com:home (R20.7).
@@ -24,15 +26,17 @@ const CSS = `
 .svf-a.home { color:#C4A46A; }
 .svf-a.home .mk { width:20px; height:20px; display:inline-block; color:#C4A46A; }
 .svf-foot { display:flex; flex-wrap:wrap; gap:1.4rem; align-items:baseline; margin-top:2.2rem; padding-top:1.6rem; border-top:1px solid rgba(255,255,255,.1); font-size:.8rem; color:rgba(246,246,244,.66); }
-.svf-foot a { color:rgba(246,246,244,.66); text-decoration:none; transition:color .15s; }
-.svf-foot a:hover { color:#C4A46A; }
+.svf-foot a, .svf-foot button { padding:0; border:0; color:rgba(246,246,244,.66); background:none; font:inherit; text-decoration:none; cursor:pointer; transition:color .15s; }
+.svf-foot a:hover, .svf-foot button:hover { color:#C4A46A; }
 .svf-foot .cr { margin-left:auto; font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; color:rgba(246,246,244,.44); }
 @media(max-width:560px){ .svf-foot .cr { margin-left:0; width:100%; } }
 `;
 
 export default function ServiceFooter({ current }) {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   const others = ALL.filter(s => s.href !== current);
   return (
+    <>
     <footer className="svf">
       <style>{CSS}</style>
       <div className="svf-kick">More from AOM</div>
@@ -47,11 +51,16 @@ export default function ServiceFooter({ current }) {
         ))}
       </div>
       <div className="svf-foot">
-        <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+        <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
         <a href="tel:+16023732164">602 373 2164</a>
         <span>We reply within 24 hours</span>
         <span className="cr">© 2026 Ahead of Market</span>
       </div>
     </footer>
+    {typeof document !== 'undefined' && createPortal(
+      <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />,
+      document.body
+    )}
+    </>
   );
 }

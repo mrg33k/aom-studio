@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
 
@@ -133,6 +134,7 @@ const CSS = `
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
 
 export default function WorkPala() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     document.title = 'PA\'LA Restaurant Brand Film | Ahead of Market';
     const meta = document.querySelector('meta[name="description"]');
@@ -142,6 +144,7 @@ export default function WorkPala() {
   }, []);
 
   return (
+    <>
     <div className="wk-pala">
       <style>{CSS}</style>
 
@@ -149,7 +152,7 @@ export default function WorkPala() {
         <a className="logo" href="/r6">
           <BrandMark kind="mono" />
         </a>
-        <a className="cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       <section className="section hero">
@@ -221,7 +224,7 @@ export default function WorkPala() {
         <p style={{ fontSize: 'clamp(1rem, 1.4vw, 1.2rem)', marginBottom: '2rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto', color: 'var(--mut)' }}>
           We create brand stories and social content that position hospitality businesses for real impact.
         </p>
-        <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </section>
 
       <ServiceFooter current="/work/pala" />
@@ -240,5 +243,7 @@ export default function WorkPala() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

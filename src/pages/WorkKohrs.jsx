@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
 
@@ -115,6 +116,7 @@ const CSS = `
 `;
 
 export default function WorkKohrs() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     document.title = 'Kohrs Construction Social Content | Ahead of Market';
     const meta = document.querySelector('meta[name="description"]');
@@ -124,6 +126,7 @@ export default function WorkKohrs() {
   }, []);
 
   return (
+    <>
     <div className="wk-kohrs">
       <style>{CSS}</style>
 
@@ -131,7 +134,7 @@ export default function WorkKohrs() {
         <a className="logo" href="/r6">
           <BrandMark kind="mono" />
         </a>
-        <a className="cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       <section className="section hero">
@@ -197,7 +200,7 @@ export default function WorkKohrs() {
         <p style={{ fontSize: 'clamp(1rem, 1.4vw, 1.2rem)', marginBottom: '2rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto', color: 'var(--mut)' }}>
           We build social content strategies that position construction and renovation expertise for real client impact.
         </p>
-        <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </section>
 
       <ServiceFooter current="/work/kohrs" />
@@ -216,5 +219,7 @@ export default function WorkKohrs() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }

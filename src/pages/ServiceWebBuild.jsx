@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
@@ -214,6 +214,7 @@ const CSS = `
 
 export default function ServiceWebBuild() {
   const [briefModalOpen, setBriefModalOpen] = useState(false);
+  const openBrief = useCallback(() => setBriefModalOpen(true), []);
   useEffect(() => {
     // Set document title and meta description for SEO
     const originalTitle = document.title;
@@ -237,16 +238,9 @@ export default function ServiceWebBuild() {
   }, []);
   useR31InViewPlayback();
 
-  const openBriefFromMailLink = (event) => {
-    if (event.target.closest?.('a[href^="mail"]')) {
-      event.preventDefault();
-      setBriefModalOpen(true);
-    }
-  };
-
   return (
     <>
-    <div className="svw r31-page" onClick={openBriefFromMailLink}>
+    <div className="svw r31-page">
       <style>{CSS}{R31_PAGE_CSS}</style>
 
       {/* Top Chrome */}
@@ -254,7 +248,7 @@ export default function ServiceWebBuild() {
         <a href="/" className="logo" aria-label="Ahead of Market home">
           <BrandMark kind="mono" />
         </a>
-        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        <button type="button" className="cta" onClick={openBrief}>Start a conversation</button>
       </div>
 
       {/* Hero */}
@@ -270,7 +264,7 @@ export default function ServiceWebBuild() {
           <span className="kicker">Ahead of Market / Website design and build</span>
           <h1>Website Design<br />&amp; Build<i className="sq" /></h1>
           <p className="tagline">A good website tells the truth about your business. It converts. And you don't need a six-month project to get it. Build or rebuild in 7 days. Full-featured or platform-grade. Your call.</p>
-          <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+          <button type="button" className="cta-btn" onClick={openBrief}>Start a conversation</button>
         </div>
       </section>
 
@@ -419,9 +413,9 @@ export default function ServiceWebBuild() {
         <div className="hero-media" aria-hidden="true"><R31Video src="/videos/collage-01.mp4" posterSrc="/videos/spacerising-render.jpg" /></div>
         <div className="hero-scrim" />
         <h2>Let's talk about your next website<i className="sq" /></h2>
-        <button type="button" className="btn-contact" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
+        <button type="button" className="btn-contact" onClick={openBrief}>Start a conversation</button>
         <div className="closing-contact-info">
-          <button type="button" onClick={() => setBriefModalOpen(true)}>hello@aheadofmarket.com</button>
+          <button type="button" onClick={openBrief}>hello@aheadofmarket.com</button>
           <a href="tel:+16023732164">602 373 2164</a>
           <span className="closing-note">We reply within 24 hours</span>
         </div>

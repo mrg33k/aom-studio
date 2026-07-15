@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import LazyGumlet from '../components/home/LazyGumlet';
+import BriefModal from '../components/BriefModal';
 import ServiceFooter from './ServiceFooter';
 import JsonLd from '../components/JsonLd';
 
@@ -111,6 +112,7 @@ const CSS = `
 `;
 
 export default function WorkVirtuHospitality() {
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
   useEffect(() => {
     document.title = 'Virtu Hospitality Brand Film | Ahead of Market';
     const meta = document.querySelector('meta[name="description"]');
@@ -120,6 +122,7 @@ export default function WorkVirtuHospitality() {
   }, []);
 
   return (
+    <>
     <div className="wk-vh">
       <style>{CSS}</style>
 
@@ -127,7 +130,7 @@ export default function WorkVirtuHospitality() {
         <a className="logo" href="/r6">
           <BrandMark kind="mono" />
         </a>
-        <a className="cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="cta" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </div>
 
       <section className="section hero">
@@ -194,7 +197,7 @@ export default function WorkVirtuHospitality() {
         <p style={{ fontSize: 'clamp(1rem, 1.4vw, 1.2rem)', marginBottom: '2rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto', color: 'var(--mut)' }}>
           We make brand films that show who you are, not just what you do, creating resonance with partners, guests, and markets.
         </p>
-        <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <button type="button" className="cta-btn" onClick={() => setBriefModalOpen(true)}>Start a conversation</button>
       </section>
 
       <ServiceFooter current="/work/virtu-hospitality" />
@@ -213,5 +216,7 @@ export default function WorkVirtuHospitality() {
         }}
       />
     </div>
+    <BriefModal isOpen={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
+    </>
   );
 }
