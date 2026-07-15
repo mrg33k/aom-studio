@@ -30,6 +30,7 @@ import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import NewComposer from './NewComposer.jsx';
 import { supabase } from '../lib/supabase.js';
+import { demoFixtureActive } from '../lib/fixtureClient.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useReviewWaitingCount } from './data/useReview.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -350,7 +351,11 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
         <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '6px 18px 14px' }}>
           {caughtUp ? <div style={{ color: 'var(--muted)', fontSize: 13.5, textAlign: 'center', padding: '40px 0' }}>You're all caught up. New things that need you will show here.</div> : <InlineBubbleThread messages={messages} />}
         </div>
-        {!caughtUp ? (
+        {!caughtUp && !supabase && !demoFixtureActive() ? (
+          /* Real local no-Supabase mode: sends are read-only, so no live-looking input. */
+          <div style={{ padding: '14px 16px', borderTop: '1px solid var(--divider)', color: 'var(--muted)', fontSize: 12.5, textAlign: 'center' }}>Read-only here. Connect a workspace to reply.</div>
+        ) : null}
+        {!caughtUp && (supabase || demoFixtureActive()) ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)' }}>
             {total > 1 ? <div className="ib" onClick={onPrev} style={{ cursor: 'pointer', width: 38, height: 38 }} title="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg></div> : null}
             <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={`Reply to ${card.from || 'this room'}…`} style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', color: 'var(--fg)', fontSize: 14, outline: 'none' }} />

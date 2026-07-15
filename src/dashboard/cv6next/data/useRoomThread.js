@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase.js';
+import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { titleForAgent } from './agentTitles.js';
 import { extractLinkCards, stripTrailingCardUrl } from './resultLinks.js';
 
@@ -158,7 +159,9 @@ export function useRoomThread(worldId, room) {
   const send = useCallback(async (text) => {
     const body = String(text || '').trim();
     if (!worldId || !room?.id || !body) return false;
-    if (!supabase) return false;
+    // Real local no-Supabase mode is read-only (no phantom sends); explicit ?demo=
+    // fixtures keep the send path live because Playwright intercepts own the POST.
+    if (!supabase && !demoFixtureActive()) return false;
     // Show it immediately as your turn (reconciled away when the real row arrives).
     const now = new Date();
     const optId = `${now.getTime()}-${Math.random().toString(36).slice(2)}`;

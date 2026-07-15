@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { marked } from 'marked';
 import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase';
+import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { titleForAgent } from './agentTitles';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
@@ -564,9 +565,13 @@ export function useReview(worldId = null, injected = null) {
   // WD40-R4: past decisions for the selected project, shown in the queue panel as a
   // dimmed "Past decisions (N)" section. Only fetched when a project is in scope —
   // showing all-world history when browsing the full queue adds no value and noise.
+  // Real local no-Supabase mode never fires tenant-gated Review reads (they can only
+  // error against a Vite-only server); explicit ?demo= fixtures keep fetching because
+  // their network is owned by Playwright intercepts.
+  const localRenderOnly = !supabase && !demoFixtureActive();
   const [history, setHistory] = useState([]);
   useEffect(() => {
-    if (!projSel || !worldId) { setHistory([]); return; }
+    if (!projSel || !worldId || localRenderOnly) { setHistory([]); return; }
     let dead = false;
     (async () => {
       try {
@@ -586,7 +591,7 @@ export function useReview(worldId = null, injected = null) {
   useEffect(() => {
     let dead = false;
     (async () => {
-      if (!worldId) {
+      if (!worldId || localRenderOnly) {
         setProjects([]);
         setMissionTree({});
         return;
@@ -610,7 +615,7 @@ export function useReview(worldId = null, injected = null) {
   }, [worldId, treeReload]);
 
   const load = useCallback(async () => {
-    if (!worldId) {
+    if (!worldId || localRenderOnly) {
       const next = { items: [], readyCount: 0 };
       queueRef.current = next;
       setQueue(next);

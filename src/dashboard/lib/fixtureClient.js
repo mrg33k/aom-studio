@@ -173,3 +173,11 @@ export const fixtureClient = {
 export function fixtureSummary() {
   return Object.fromEntries(Object.entries(fixtures).map(([t, rows]) => [t, rows.length]))
 }
+
+// True when an explicit ?demo=<fixture> browser-test surface is mounted. Demo fixtures
+// route their network through Playwright intercepts, so data hooks may keep fetching and
+// sends stay exercisable there; real local no-Supabase mode must stay read-only instead.
+export function demoFixtureActive() {
+  try { return !!new URLSearchParams(window.location.search).get('demo') }
+  catch { return false }
+}
