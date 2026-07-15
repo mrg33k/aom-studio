@@ -2,244 +2,238 @@ import React, { useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import JsonLd from '../components/JsonLd';
 
-// Work hub page: browse all case studies and industry pages
-// Mission: aheadofmarket.com:home (R27 — /work navigation hub for SEO + user discovery)
-// Pattern: WorkISAEnergy.jsx + ServiceFooter.jsx + BrandsHub card-grid style
-// Design: dark ink #060606 / ivory #F6F6F4 / gold #C4A46A, Inter Tight 800 + Space Grotesk
+// Work hub page: featured cinematic work plus the complete case-study index
+// Mission: aheadofmarket.com:home (R30, cinematic featured-client case studies)
 
 const CSS = `
 .wkx {
-  --ink:#060606; --ink-2:#0B0B0A; --paper:#F6F6F4;
-  --mut:rgba(246,246,244,.8); --dim:rgba(246,246,244,.55);
-  --line:rgba(255,255,255,.14); --gold:#C4A46A; --gold-deep:#A8884C;
+  --ink:#050505; --ink-2:#0b0b0a; --paper:#f4f0e8;
+  --mut:rgba(244,240,232,.72); --line:rgba(244,240,232,.18); --gold:#c4a46a;
   --fx:'Inter',system-ui,Helvetica,Arial,sans-serif;
   --fd:'Inter Tight','Inter',system-ui,Helvetica,Arial,sans-serif;
-  --fbrut:'Space Grotesk','Space Grotesk Variable',system-ui,sans-serif;
-  --pad:clamp(1.25rem,4vw,3.5rem);
+  --pad:clamp(1.25rem,4vw,4.5rem);
   position:fixed; inset:0; overflow-y:auto; overflow-x:hidden;
-  scroll-behavior:smooth;
-  font-family:var(--fx); color:var(--paper); background:var(--ink);
-  font-size:16px; line-height:1.6;
+  scroll-behavior:smooth; color:var(--paper); background:var(--ink);
+  font-family:var(--fx); font-size:16px; line-height:1.6;
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
 }
 .wkx *, .wkx *::before, .wkx *::after { box-sizing:border-box; margin:0; padding:0; }
 .wkx a { color:inherit; text-decoration:none; }
-.wkx button { font:inherit; cursor:pointer; border:none; background:none; color:inherit; }
-.wkx img, .wkx video { display:block; max-width:100%; }
-.wkx a:focus-visible, .wkx button:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+.wkx img, .wkx video { display:block; width:100%; }
+.wkx a:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
+.wkx .sq { display:inline-block; width:.13em; height:.13em; margin-left:.07em; background:var(--gold); }
+.wkx .motion-still { display:none; }
 
-/* signature gold square period */
-.wkx .sq { display:inline-block; width:.13em; height:.13em; background:var(--gold); margin-left:.07em; }
-
-/* top chrome: monogram + CTA button */
 .wkx .chrome-top {
-  position:fixed; top:1.1rem; left:0; right:0; z-index:220;
-  display:flex; justify-content:space-between; align-items:center;
-  padding:0 var(--pad); pointer-events:none;
+  position:fixed; z-index:40; top:0; left:0; right:0;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1.1rem var(--pad); pointer-events:none;
+  background:linear-gradient(180deg,rgba(5,5,5,.72),transparent);
 }
-.wkx .chrome-top a { pointer-events:auto; transition:color .15s; }
-.wkx .chrome-top .logo { pointer-events:auto; display:flex; align-items:center; }
-.wkx .chrome-top .logo svg { display:block; height:clamp(24px,5vh,32px); width:auto; }
-.wkx .chrome-top .cta {
-  font-size:.72rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase;
-  background:var(--gold); color:var(--ink);
-  padding:.9rem 2.1rem; border-radius:10px;
-  transition:background .18s;
+.wkx .chrome-top a { pointer-events:auto; }
+.wkx .logo { display:flex; align-items:center; }
+.wkx .logo svg { width:auto; height:clamp(24px,4vw,32px); }
+.wkx .top-cta, .wkx .cta-btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:44px; padding:.8rem 1.25rem; border:1px solid rgba(244,240,232,.55);
+  font-size:.68rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase;
+  transition:background .18s,color .18s;
 }
-.wkx .chrome-top .cta:hover { background:var(--gold-deep); }
+.wkx .top-cta:hover, .wkx .cta-btn:hover { color:var(--ink); background:var(--paper); }
 
-/* sections */
-.wkx .section {
-  position:relative; padding:clamp(6rem,14vh,12rem) var(--pad);
-  border-top:1px solid rgba(196,164,106,.12);
+.wkx .hero {
+  position:relative; min-height:100svh; display:flex; align-items:flex-end; overflow:hidden;
+  padding:clamp(8rem,18vh,13rem) var(--pad) clamp(3rem,7vh,5rem);
 }
-.wkx .section:first-child { border-top:none; padding-top:clamp(8rem,20vh,14rem); }
+.wkx .hero-media, .wkx .hero-scrim { position:absolute; inset:0; }
+.wkx .hero-media video, .wkx .hero-media img { height:100%; object-fit:cover; }
+.wkx .hero-scrim {
+  background:linear-gradient(180deg,rgba(5,5,5,.18) 0%,rgba(5,5,5,.18) 40%,rgba(5,5,5,.94) 100%),
+    linear-gradient(90deg,rgba(5,5,5,.38),transparent 72%);
+}
+.wkx .hero-copy { position:relative; z-index:2; width:min(100%,1500px); margin:0 auto; }
+.wkx .kicker {
+  display:block; margin-bottom:1.35rem; color:var(--paper);
+  font-size:.67rem; font-weight:800; letter-spacing:.23em; text-transform:uppercase;
+}
+.wkx .hero h1, .wkx .section-title, .wkx .card-name, .wkx .cta-title, .wkx .small-name {
+  font-family:var(--fd); font-weight:800; text-transform:uppercase; letter-spacing:-.055em;
+}
+.wkx .hero h1 { max-width:10ch; font-size:clamp(3.7rem,11vw,10.8rem); line-height:.78; }
+.wkx .hero-bottom {
+  display:grid; grid-template-columns:1fr minmax(18rem,36rem); gap:3rem;
+  align-items:end; margin-top:clamp(2rem,5vh,4rem); padding-top:1.25rem; border-top:1px solid var(--line);
+}
+.wkx .hero-bottom span { font-size:.66rem; font-weight:800; letter-spacing:.2em; text-transform:uppercase; }
+.wkx .hero-bottom p { font-size:clamp(1rem,1.5vw,1.3rem); line-height:1.45; }
 
-/* hero */
-.wkx .hero { display:flex; flex-direction:column; align-items:center; text-align:center; }
-.wkx .hero h1 {
-  font-family:var(--fd); font-weight:800; text-transform:uppercase;
-  font-size:clamp(2.8rem,8vw,5rem); line-height:.95; letter-spacing:-.01em;
-  margin:0; text-shadow:0 2px 30px rgba(0,0,0,.4);
+.wkx .featured, .wkx .archive, .wkx .industries {
+  padding:clamp(6rem,12vw,11rem) var(--pad); border-top:1px solid var(--line);
 }
-.wkx .hero .tagline {
-  margin-top:1.8rem; font-size:clamp(1.1rem,1.6vw,1.3rem);
-  color:var(--paper); opacity:.85; max-width:56ch;
-  line-height:1.6; text-shadow:0 1px 16px rgba(0,0,0,.6);
-}
+.wkx .section-inner { width:min(100%,1500px); margin:0 auto; }
+.wkx .section-head { display:flex; justify-content:space-between; align-items:end; gap:2rem; margin-bottom:clamp(3rem,7vw,6rem); }
+.wkx .section-head .kicker { margin:0; }
+.wkx .section-title { max-width:10ch; font-size:clamp(2.8rem,7vw,7.2rem); line-height:.84; }
+.wkx .section-note { max-width:35ch; color:var(--mut); font-size:clamp(.95rem,1.2vw,1.1rem); }
 
-/* section kickers */
-.wkx .section-kick {
-  font-size:.75rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase;
-  color:var(--gold); margin-bottom:2.4rem; display:block;
+.wkx .featured { background:var(--ink-2); }
+.wkx .featured-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(1rem,2.4vw,2.5rem); }
+.wkx .featured-card {
+  position:relative; min-height:clamp(32rem,66vw,48rem); display:flex; align-items:flex-end; overflow:hidden;
+  border:1px solid var(--line); isolation:isolate;
 }
+.wkx .featured-card:nth-child(2), .wkx .featured-card:nth-child(4) { transform:translateY(clamp(3rem,7vw,7rem)); }
+.wkx .card-media, .wkx .card-scrim { position:absolute; inset:0; z-index:-2; }
+.wkx .card-media video, .wkx .card-media img { height:100%; object-fit:cover; transition:transform .7s cubic-bezier(.2,.75,.2,1); }
+.wkx .featured-card[data-slug="ambition-mechanical"] .card-media video,
+.wkx .featured-card[data-slug="ambition-mechanical"] .card-media img { object-position:center 36%; }
+.wkx .card-scrim { z-index:-1; background:linear-gradient(180deg,rgba(5,5,5,.06),rgba(5,5,5,.9)); }
+.wkx .card-copy { width:100%; padding:clamp(1.5rem,3.5vw,3.5rem); }
+.wkx .card-meta { display:flex; justify-content:space-between; gap:1rem; margin-bottom:1rem; font-size:.62rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+.wkx .card-name { font-size:clamp(2.4rem,5.8vw,6rem); line-height:.82; }
+.wkx .card-desc { max-width:34rem; margin-top:1.25rem; color:rgba(244,240,232,.8); font-size:clamp(.95rem,1.2vw,1.1rem); }
+.wkx .featured-card:hover .card-media video, .wkx .featured-card:hover .card-media img { transform:scale(1.035); }
+.wkx .featured-card:hover .card-arrow { transform:translate(3px,-3px); }
+.wkx .card-arrow { display:inline-block; transition:transform .18s; }
 
-/* card grid */
-.wkx .card-grid {
-  display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));
-  gap:2rem; margin:3rem 0;
-  max-width:1400px; margin-left:auto; margin-right:auto;
-}
-@media(max-width:600px) {
-  .wkx .card-grid {
-    grid-template-columns:1fr;
-    gap:1.6rem;
-  }
-}
+.wkx .archive { padding-top:clamp(10rem,18vw,17rem); }
+.wkx .small-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line); }
+.wkx .small-card { min-height:18rem; display:flex; flex-direction:column; justify-content:space-between; padding:clamp(1.3rem,2.5vw,2.5rem); border-right:1px solid var(--line); border-bottom:1px solid var(--line); transition:background .18s,color .18s; }
+.wkx .small-card:hover { color:var(--ink); background:var(--paper); }
+.wkx .small-no { font-size:.66rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+.wkx .small-name { font-size:clamp(1.7rem,3.3vw,3.5rem); line-height:.88; }
+.wkx .small-desc { max-width:30ch; margin-top:1rem; color:var(--mut); font-size:.92rem; }
+.wkx .small-card:hover .small-desc { color:rgba(5,5,5,.68); }
 
-.wkx .work-card {
-  position:relative; display:flex; flex-direction:column;
-  background:rgba(255,255,255,.02); border:1px solid rgba(196,164,106,.16);
-  border-radius:8px; overflow:hidden;
-  transition:transform .2s, box-shadow .2s;
-  text-decoration:none; color:inherit;
-}
-.wkx .work-card:hover {
-  transform:translateY(-8px);
-  box-shadow:0 20px 60px rgba(196,164,106,.15);
-}
+.wkx .industries { background:var(--paper); color:var(--ink); }
+.wkx .industries .kicker { color:var(--ink); }
+.wkx .industry-row { border-top:1px solid rgba(5,5,5,.25); }
+.wkx .industry-link { display:grid; grid-template-columns:5rem 1fr 1fr 2rem; gap:2rem; align-items:center; padding:1.5rem 0; border-bottom:1px solid rgba(5,5,5,.25); }
+.wkx .industry-link span:first-child { font-size:.68rem; font-weight:800; letter-spacing:.15em; }
+.wkx .industry-link b { font-family:var(--fd); font-size:clamp(1.6rem,3.4vw,3.8rem); line-height:.9; text-transform:uppercase; }
+.wkx .industry-link span:nth-child(3) { color:rgba(5,5,5,.64); }
+.wkx .industry-link span:last-child { transition:transform .18s; }
+.wkx .industry-link:hover span:last-child { transform:translate(3px,-3px); }
 
-.wkx .work-card-image {
-  width:100%; height:240px; object-fit:cover; background:rgba(0,0,0,.3);
-  display:block;
+.wkx .story-cta {
+  position:relative; min-height:78svh; display:flex; align-items:flex-end; overflow:hidden;
+  padding:clamp(6rem,13vw,11rem) var(--pad) clamp(3rem,7vw,6rem); border-top:1px solid var(--line);
 }
+.wkx .story-cta .hero-media, .wkx .story-cta .hero-scrim { position:absolute; inset:0; }
+.wkx .story-cta .hero-media video, .wkx .story-cta .hero-media img { height:100%; object-fit:cover; }
+.wkx .story-cta .hero-scrim { background:linear-gradient(180deg,rgba(5,5,5,.3),rgba(5,5,5,.95)); }
+.wkx .cta-copy { position:relative; z-index:2; width:min(100%,1500px); margin:0 auto; }
+.wkx .cta-title { max-width:12ch; font-size:clamp(3rem,8.5vw,9rem); line-height:.82; }
+.wkx .cta-row { display:flex; justify-content:space-between; align-items:end; gap:2rem; margin-top:2.5rem; }
+.wkx .cta-row p { max-width:46ch; color:var(--mut); font-size:clamp(1rem,1.35vw,1.2rem); }
 
-.wkx .work-card-body {
-  flex:1; display:flex; flex-direction:column; padding:2rem 1.8rem;
-}
-
-.wkx .work-card-name {
-  font-family:var(--fd); font-weight:800; text-transform:uppercase;
-  font-size:clamp(1.3rem,2.4vw,1.8rem); line-height:.95;
-  color:var(--paper); margin-bottom:0.8rem;
-}
-
-.wkx .work-card-desc {
-  font-family:var(--fbrut); font-size:clamp(.95rem,1.2vw,1.05rem);
-  font-weight:500; color:var(--mut); line-height:1.6;
-  flex-grow:1; margin-bottom:1.2rem;
-}
-
-.wkx .work-card-link {
-  display:inline-flex; align-items:center; gap:.4rem;
-  font-size:.78rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
-  color:var(--gold); transition:color .15s;
-  margin-top:auto;
-}
-.wkx .work-card:hover .work-card-link {
-  color:var(--paper);
-}
-.wkx .work-card-link .arw { font-size:.8em; opacity:.7; }
-
-/* footer */
 .wkx .footer {
-  background:#060606; color:#F6F6F4; border-top:1px solid rgba(196,164,106,.16);
-  padding:clamp(2.5rem,6vw,4.5rem) clamp(1.25rem,4vw,3.5rem) clamp(3rem,7vw,5rem);
-  font-family:var(--fx);
+  padding:clamp(3rem,6vw,5rem) var(--pad); color:var(--paper); background:var(--ink);
+  border-top:1px solid var(--line);
 }
-.wkx .footer-kick { font-size:.66rem; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin-bottom:1.4rem; }
-.wkx .footer-row { display:flex; flex-wrap:wrap; gap:0; }
-.wkx .footer-a { display:flex; align-items:center; gap:.5rem; padding:.85rem 0; margin-right:2.4rem; font-family:var(--fd); font-weight:800; text-transform:uppercase; font-size:clamp(1.1rem,2.4vw,1.6rem); letter-spacing:-.01em; color:#F6F6F4; text-decoration:none; transition:color .15s; }
-.wkx .footer-a:hover { color:var(--gold); }
-.wkx .footer-a .arw { font-size:.7em; opacity:.7; }
-.wkx .footer-a.home { color:var(--gold); }
-.wkx .footer-a.home .mk { width:20px; height:20px; display:inline-block; color:var(--gold); }
-.wkx .footer-info { display:flex; flex-wrap:wrap; gap:1.4rem; align-items:baseline; margin-top:2.2rem; padding-top:1.6rem; border-top:1px solid rgba(255,255,255,.1); font-size:.8rem; color:rgba(246,244,244,.66); }
-.wkx .footer-info a { color:rgba(246,244,244,.66); text-decoration:none; transition:color .15s; }
-.wkx .footer-info a:hover { color:var(--gold); }
-.wkx .footer-info .cr { margin-left:auto; font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; color:rgba(246,244,244,.44); }
-@media(max-width:560px){ .wkx .footer-info .cr { margin-left:0; width:100%; } }
+.wkx .footer-kick { margin-bottom:1.4rem; font-size:.66rem; font-weight:800; letter-spacing:.22em; text-transform:uppercase; }
+.wkx .footer-row { display:flex; flex-wrap:wrap; gap:.4rem 2.4rem; }
+.wkx .footer-a { display:flex; align-items:center; gap:.5rem; padding:.8rem 0; font-family:var(--fd); font-size:clamp(1.1rem,2.4vw,1.6rem); font-weight:800; text-transform:uppercase; }
+.wkx .footer-a .mk { width:20px; height:20px; }
+.wkx .footer-info { display:flex; flex-wrap:wrap; gap:1rem 1.5rem; align-items:baseline; margin-top:2.2rem; padding-top:1.5rem; border-top:1px solid var(--line); color:var(--mut); font-size:.8rem; }
+.wkx .footer-info .cr { margin-left:auto; font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; }
+
+@media(max-width:800px) {
+  .wkx .top-cta { padding:.7rem .85rem; font-size:.58rem; letter-spacing:.12em; }
+  .wkx .hero { min-height:92svh; }
+  .wkx .hero h1 { font-size:clamp(3.3rem,19vw,6rem); }
+  .wkx .hero-bottom { grid-template-columns:1fr; gap:1.25rem; margin-top:2.25rem; }
+  .wkx .section-head { align-items:flex-start; flex-direction:column; }
+  .wkx .section-title { font-size:clamp(2.8rem,14vw,5rem); }
+  .wkx .featured-grid { grid-template-columns:1fr; }
+  .wkx .featured-card { min-height:68svh; }
+  .wkx .featured-card:nth-child(2), .wkx .featured-card:nth-child(4) { transform:none; }
+  .wkx .card-name { font-size:clamp(2.8rem,14vw,5rem); }
+  .wkx .archive { padding-top:clamp(6rem,12vw,9rem); }
+  .wkx .small-grid { grid-template-columns:1fr; }
+  .wkx .small-card { min-height:14rem; }
+  .wkx .industry-link { grid-template-columns:3rem 1fr 1.5rem; gap:1rem; }
+  .wkx .industry-link span:nth-child(3) { grid-column:2; }
+  .wkx .industry-link span:last-child { grid-column:3; grid-row:1; }
+  .wkx .story-cta { min-height:72svh; }
+  .wkx .cta-row { align-items:flex-start; flex-direction:column; }
+  .wkx .footer-info .cr { width:100%; margin-left:0; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .wkx { scroll-behavior:auto; }
+  .wkx video[data-autoplay] { display:none; }
+  .wkx .motion-still { display:block; }
+  .wkx .featured-card:hover .card-media img { transform:none; }
+}
 `;
 
-// Project data: 9 case studies + 3 industry pages
-const PROJECTS = [
-  // CASE STUDIES
+const FEATURED = [
   {
-    name: 'ISA Energy',
-    slug: 'isa-energy',
-    desc: '3-film investor-grade video series for renewable energy company',
-    poster: '/videos/isa-brand.jpg',
-    section: 'Case Studies',
+    name: 'ISA Energy', slug: 'isa-energy', type: 'Energy / Film system',
+    desc: 'Three investor-grade films that move a breakthrough technology from technical pitch to category narrative.',
+    video: '/videos/isa-brand.mp4', poster: '/videos/isa-brand.jpg',
   },
   {
-    name: 'Included Health',
-    slug: 'included-health',
-    desc: 'Film series for Client Summit and ongoing thought leadership content',
-    poster: '/videos/ih-culture.jpg',
-    section: 'Case Studies',
+    name: 'Included Health', slug: 'included-health', type: 'Healthcare / Film series',
+    desc: 'A three-day summit captured and shaped into culture, event, and thought leadership films.',
+    video: '/videos/ih-life.mp4', poster: '/videos/ih-life.jpg',
   },
   {
-    name: 'Ambition Mechanical',
-    slug: 'ambition-mechanical',
-    desc: 'HVAC brand refresh and digital platform for Phoenix leader',
-    poster: '/videos/ambition-vertical.jpg',
-    section: 'Case Studies',
+    name: 'Space Rising', slug: 'space-rising', type: 'Space / Brand + platform',
+    desc: 'Identity, website, launch film, and a live coordination platform for the space economy.',
+    video: '/videos/spacerising-render.mp4', poster: '/videos/spacerising-render.jpg',
   },
   {
-    name: 'Space Rising',
-    slug: 'space-rising',
-    desc: 'Platform and launch campaign for a space-industry network',
-    poster: '/videos/spacerising-render.jpg',
-    section: 'Case Studies',
-  },
-  {
-    name: 'Brandon Wiley',
-    slug: 'brandon-wiley',
-    desc: 'Long-form founder-story documentary',
-    poster: null,
-    section: 'Case Studies',
-  },
-  {
-    name: 'Virtu Hospitality',
-    slug: 'virtu-hospitality',
-    desc: 'Brand film for a hospitality group',
-    poster: null,
-    section: 'Case Studies',
-  },
-  {
-    name: 'PA\'LA',
-    slug: 'pala',
-    desc: 'Brand film and social content for a wood-fired restaurant',
-    poster: null,
-    section: 'Case Studies',
-  },
-  {
-    name: 'Kohrs',
-    slug: 'kohrs',
-    desc: 'Jobsite social content for a demolition and renovation crew',
-    poster: null,
-    section: 'Case Studies',
-  },
-  {
-    name: 'Intelliplay',
-    slug: 'intelliplay',
-    desc: 'Product demo film for an interactive tech platform',
-    poster: null,
-    section: 'Case Studies',
-  },
-  // INDUSTRIES
-  {
-    name: 'Construction',
-    slug: 'construction',
-    desc: 'Digital marketing and brand leadership for construction firms',
-    poster: null,
-    section: 'By Industry',
-  },
-  {
-    name: 'Tech & SaaS',
-    slug: 'tech-saas',
-    desc: 'Go-to-market strategy and product positioning for tech companies',
-    poster: null,
-    section: 'By Industry',
-  },
-  {
-    name: 'Nonprofit',
-    slug: 'nonprofit',
-    desc: 'Mission-driven storytelling and fundraising narratives',
-    poster: null,
-    section: 'By Industry',
+    name: 'Ambition Mechanical', slug: 'ambition-mechanical', type: 'Commercial services / Growth',
+    desc: 'A trusted HVAC operator rebuilt as a modern brand, website, search presence, and film system.',
+    video: '/videos/ambition-vertical.mp4', poster: '/videos/ambition-vertical.jpg',
   },
 ];
+
+const REMAINING = [
+  { name: 'Brandon Wiley', slug: 'brandon-wiley', desc: 'Long-form founder-story documentary' },
+  { name: 'Virtu Hospitality', slug: 'virtu-hospitality', desc: 'Brand film for a hospitality group' },
+  { name: 'PA\'LA', slug: 'pala', desc: 'Brand film and social content for a wood-fired restaurant' },
+  { name: 'Kohrs', slug: 'kohrs', desc: 'Jobsite social content for a demolition and renovation crew' },
+  { name: 'Intelliplay', slug: 'intelliplay', desc: 'Product demo film for an interactive tech platform' },
+];
+
+const INDUSTRIES = [
+  { name: 'Construction', slug: 'construction', desc: 'Digital marketing and brand leadership for construction firms' },
+  { name: 'Tech & SaaS', slug: 'tech-saas', desc: 'Go-to-market strategy and product positioning for tech companies' },
+  { name: 'Nonprofit', slug: 'nonprofit', desc: 'Mission-driven storytelling and fundraising narratives' },
+];
+
+function useInViewPlayback() {
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const videos = Array.from(document.querySelectorAll('.wkx video[data-autoplay]'));
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(({ isIntersecting, target }) => {
+        if (isIntersecting && !media.matches) {
+          const playPromise = target.play();
+          if (playPromise) playPromise.catch(() => {});
+        } else {
+          target.pause();
+        }
+      });
+    }, { threshold:0.18 });
+    const sync = () => {
+      observer.disconnect();
+      videos.forEach((video) => {
+        video.pause();
+        if (!media.matches) observer.observe(video);
+      });
+    };
+    sync();
+    media.addEventListener('change', sync);
+    return () => {
+      observer.disconnect();
+      media.removeEventListener('change', sync);
+      videos.forEach((video) => video.pause());
+    };
+  }, []);
+}
 
 export default function WorkIndex() {
   useEffect(() => {
@@ -249,88 +243,123 @@ export default function WorkIndex() {
       meta.setAttribute('content', 'Explore Ahead of Market work: case studies in renewable energy, healthcare, construction, tech and more. See how we position growth brands.');
     }
   }, []);
-
-  // Group projects by section
-  const caseStudies = PROJECTS.filter(p => p.section === 'Case Studies');
-  const industries = PROJECTS.filter(p => p.section === 'By Industry');
+  useInViewPlayback();
 
   return (
     <div className="wkx">
       <style>{CSS}</style>
 
       <div className="chrome-top">
-        <a className="logo" href="/r6">
-          <BrandMark kind="mono" />
-        </a>
-        <a className="cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+        <a className="logo" href="/r6" aria-label="Ahead of Market home"><BrandMark kind="mono" /></a>
+        <a className="top-cta" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
       </div>
 
-      <section className="section hero">
-        <h1>The work<span className="sq"></span></h1>
-        <p className="tagline">A collection of recent projects across industries — how we position growth brands through strategy, storytelling, and design.</p>
-      </section>
-
-      {/* Case Studies Section */}
-      <section className="section">
-        <span className="section-kick">Case Studies</span>
-        <div className="card-grid">
-          {caseStudies.map((project) => (
-            <a key={project.slug} href={`/work/${project.slug}`} className="work-card">
-              {project.poster && (
-                <img src={project.poster} alt={project.name} className="work-card-image" />
-              )}
-              <div className="work-card-body">
-                <div className="work-card-name">{project.name}</div>
-                <div className="work-card-desc">{project.desc}</div>
-                <div className="work-card-link">
-                  View case study <span className="arw">↗</span>
-                </div>
-              </div>
-            </a>
-          ))}
+      <header className="hero">
+        <div className="hero-media" aria-hidden="true">
+          <video muted loop playsInline data-autoplay preload="auto" poster="/videos/collage-01.jpg">
+            <source src="/videos/collage-01.mp4" type="video/mp4" />
+          </video>
+          <img className="motion-still" src="/videos/collage-01.jpg" alt="" />
         </div>
-      </section>
-
-      {/* Industries Section */}
-      <section className="section">
-        <span className="section-kick">By Industry</span>
-        <div className="card-grid">
-          {industries.map((project) => (
-            <a key={project.slug} href={`/work/${project.slug}`} className="work-card">
-              {project.poster && (
-                <img src={project.poster} alt={project.name} className="work-card-image" />
-              )}
-              <div className="work-card-body">
-                <div className="work-card-name">{project.name}</div>
-                <div className="work-card-desc">{project.desc}</div>
-                <div className="work-card-link">
-                  Explore industry <span className="arw">↗</span>
-                </div>
-              </div>
-            </a>
-          ))}
+        <div className="hero-scrim" />
+        <div className="hero-copy">
+          <span className="kicker">Ahead of Market / Selected work</span>
+          <h1>Work that moves<span className="sq" /></h1>
+          <div className="hero-bottom">
+            <span>Strategy / Story / Design / Build</span>
+            <p>Real companies, real footage, and creative systems built to move people and markets.</p>
+          </div>
         </div>
-      </section>
+      </header>
 
-      {/* Footer */}
+      <main>
+        <section className="featured">
+          <div className="section-inner">
+            <div className="section-head">
+              <div><span className="kicker">Featured clients / 01</span><h2 className="section-title">The work, full frame<span className="sq" /></h2></div>
+              <p className="section-note">Four partnerships spanning film, identity, digital platforms, and sustained market growth.</p>
+            </div>
+            <div className="featured-grid">
+              {FEATURED.map((project, index) => (
+                <a key={project.slug} href={`/work/${project.slug}`} className="featured-card" data-slug={project.slug}>
+                  <div className="card-media" aria-hidden="true">
+                    <video muted loop playsInline data-autoplay preload="metadata" poster={project.poster}>
+                      <source src={project.video} type="video/mp4" />
+                    </video>
+                    <img className="motion-still" src={project.poster} alt="" />
+                  </div>
+                  <div className="card-scrim" />
+                  <div className="card-copy">
+                    <div className="card-meta"><span>0{index + 1} / {project.type}</span><span className="card-arrow">↗</span></div>
+                    <h3 className="card-name">{project.name}<span className="sq" /></h3>
+                    <p className="card-desc">{project.desc}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="archive">
+          <div className="section-inner">
+            <div className="section-head">
+              <div><span className="kicker">More case studies / 02</span><h2 className="section-title">Keep looking<span className="sq" /></h2></div>
+              <p className="section-note">Documentary, hospitality, food, construction, and product storytelling.</p>
+            </div>
+            <div className="small-grid">
+              {REMAINING.map((project, index) => (
+                <a key={project.slug} href={`/work/${project.slug}`} className="small-card">
+                  <span className="small-no">0{index + 5} / Case study ↗</span>
+                  <div><h3 className="small-name">{project.name}</h3><p className="small-desc">{project.desc}</p></div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="industries">
+          <div className="section-inner">
+            <div className="section-head">
+              <div><span className="kicker">By industry / 03</span><h2 className="section-title">Go deeper<span className="sq" /></h2></div>
+              <p className="section-note">Focused expertise for sectors where trust, clarity, and proof drive the decision.</p>
+            </div>
+            <div className="industry-row">
+              {INDUSTRIES.map((project, index) => (
+                <a key={project.slug} href={`/work/${project.slug}`} className="industry-link">
+                  <span>0{index + 1}</span><b>{project.name}</b><span>{project.desc}</span><span>↗</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="story-cta">
+          <div className="hero-media" aria-hidden="true">
+            <video muted loop playsInline data-autoplay preload="metadata" poster="/videos/collage-02.jpg">
+              <source src="/videos/collage-02.mp4" type="video/mp4" />
+            </video>
+            <img className="motion-still" src="/videos/collage-02.jpg" alt="" />
+          </div>
+          <div className="hero-scrim" />
+          <div className="cta-copy">
+            <span className="kicker">Your story, next</span>
+            <h2 className="cta-title">Ready to tell your story<span className="sq" /></h2>
+            <div className="cta-row">
+              <p>Bring us the company, category, or moment that needs to become impossible to ignore.</p>
+              <a className="cta-btn" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+            </div>
+          </div>
+        </section>
+      </main>
+
       <footer className="footer">
         <div className="footer-kick">More from AOM</div>
         <div className="footer-row">
-          <a className="footer-a home" href="/r6">
-            <BrandMark kind="mono" className="mk" /> Home
-          </a>
-          <a className="footer-a" href="/services/brand-film">
-            Brand film <span className="arw">↗</span>
-          </a>
-          <a className="footer-a" href="/services/web-build">
-            Website design & build <span className="arw">↗</span>
-          </a>
-          <a className="footer-a" href="/services/strategy">
-            Strategy & story <span className="arw">↗</span>
-          </a>
-          <a className="footer-a" href="/services/documentary">
-            Documentary <span className="arw">↗</span>
-          </a>
+          <a className="footer-a" href="/r6"><BrandMark kind="mono" className="mk" /> Home</a>
+          <a className="footer-a" href="/services/brand-film">Brand film ↗</a>
+          <a className="footer-a" href="/services/web-build">Website design &amp; build ↗</a>
+          <a className="footer-a" href="/services/strategy">Strategy &amp; story ↗</a>
+          <a className="footer-a" href="/services/documentary">Documentary ↗</a>
         </div>
         <div className="footer-info">
           <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
