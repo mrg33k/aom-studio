@@ -13,6 +13,7 @@ import {
   useCityDetail, useCampaignActivity, useCampaignActions,
 } from './data/useCampaign.js';
 import { authFetch } from '../lib/authFetch';
+import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
 
 const STAGE_LABELS = {
   to_contact: 'To contact', contacted: 'Contacted', replied: 'Replied',
@@ -262,7 +263,7 @@ function PipelineBar({ pipeline, active, onStage }) {
 
 function StageList({ campaignId, worldId, stage, flagged, onOpenCity }) {
   const { rows, total, hasMore, more } = useCampaignContacts(campaignId, worldId, { stage, flagged });
-  if (!rows) return <div style={{ fontSize: 13, color: 'var(--faint)', padding: 12 }}>Loading…</div>;
+  if (!rows) return <CornerLogoLoader inline compact label="Loading…" />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ fontSize: 12, color: 'var(--faint)' }}>
@@ -319,7 +320,7 @@ function CityDetail({ campaignId, worldId, contactId, onClose, onOpenInbox, act,
         )}
       </div>
       {!ct ? (
-        <div style={{ fontSize: 13, color: 'var(--faint)' }}>Loading…</div>
+        <CornerLogoLoader inline compact label="Loading…" />
       ) : (
         <>
           <div style={card}>
@@ -380,7 +381,7 @@ function ActivityFeed({ campaignId, worldId }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--faint)' }}>RECENT</div>
-      {!feed && <div style={{ fontSize: 12.5, color: 'var(--faint)' }}>Loading…</div>}
+      {!feed && <CornerLogoLoader inline compact label="Loading…" />}
       {feed && feed.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--faint)' }}>No activity yet.</div>}
       {(feed || []).slice(0, 20).map((e) => (
         <div key={e.id} style={{ display: 'flex', gap: 10, fontSize: 12.5, padding: '4px 0' }}>
@@ -865,9 +866,9 @@ export default function Campaign({ isDesktop, worldId, onOpenInbox }) {
     return (
       <div style={{ padding: 24, maxWidth: 480, margin: '0 auto' }}>
         <div style={{ ...card, textAlign: 'center', padding: 32 }}>
-          <div style={{ fontSize: 13.5, color: 'var(--muted)' }}>
-            {listError ? 'Campaigns didn’t load. Retrying automatically.' : 'Loading campaigns…'}
-          </div>
+          {listError
+            ? <div style={{ fontSize: 13.5, color: 'var(--muted)' }}>Campaigns didn’t load. Retrying automatically.</div>
+            : <CornerLogoLoader inline compact label="Loading campaigns…" />}
         </div>
       </div>
     );

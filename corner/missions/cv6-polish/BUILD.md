@@ -51,7 +51,58 @@ loader IS the Corner mark itself filling with the theme accent (#3B82F6 family v
 `--accent`) on the CV6 ground token, using the same easing vocabulary as the existing
 `statPulse`/`spin` motion, and no surface anywhere shows a generic spinner.
 
-**Status:** queued.
+Implementation notes (2026-07-15):
+
+- Reworked the shared `FullscreenLoading` / `CornerLogoLoader` primitive around the
+  real Corner SVG mask. The base mark uses fixed ink/white per theme and fills upward
+  from the baseline in `--accent`; the app-root `data-app-theme` observer keeps live
+  dark/light/glass flips correct, and readers retain fixed paper ink/blue.
+- Replaced CV6 shared state, Files viewer, media, PDF, DOCX, HTML, Campaign, upload,
+  auth-gate, and pre-React boot loading visuals without changing their honest state
+  conditions or product language. Agent-work progress indicators remain work status,
+  not fake data-load indicators.
+- Added one keyed `.cv6-screen-stage` around tool content plus shared drawer entrance
+  motion. The stage holds the theme ground and layout slot across desktop and mobile
+  tool switches; reduced-motion removes the animation.
+- Centralized action press feedback and the mobile 44px minimum target in `cv6.css`.
+  `templateEngine.js` now normalizes template actions with `data-cv6-pressed` and an
+  `is-pressed` class for the duration of a pointer hold.
+- Added the public, tenant-data-free `?demo=global-motion` fixture and
+  `tests/cv6-global-motion.spec.mjs` for desktop/mobile loader presence, spinner
+  absence, and template pointerdown feedback. Added node coverage for the shared
+  static loader markup and press-state helper.
+
+Verification run in the sandbox:
+
+- `node --test tests/cv6-global-motion.test.mjs` — pass (2/2).
+- `npm run test:tenant-context` — pass.
+- `npm run build` — pass; existing Rollup large-chunk advisory only.
+- `git diff --check` — pass.
+- Browsers were not run in this sandbox. External Playwright remains required for
+  `tests/cv6-global-motion.spec.mjs` and `tests/cv6-practical-audit.spec.mjs`.
+
+Repository note: the brief required `corner/missions/cv6-polish/RESEARCH.md`, but that
+file is absent from this worktree; no replacement research content was fabricated.
+
+**Status:** implemented; browser verification pending external run.
+
+- 2026-07-15 EA external verification + critic pass:
+  - EA fixed a CSS cascade defect before verification: the fill rule at (0,2,0) lost to
+    the base rule's (0,3,0) variant when the loader root carries [data-cv6kit], painting
+    the fill --fg instead of the theme accent. Fill selector list now mirrors the base
+    list. Also created the missing `src/data/briefs/` dir (cold vite dep-scan fails
+    without it in fresh worktrees).
+  - External Playwright: cv6-global-motion 4/4 (incl per-theme accent+mask), practical
+    audit 2/2, renderer 5/5, previews 2/2. node 2/2, tenant guard, build all green.
+  - Steffen design-gate critic pass: PASS ("a real boot moment, not a dressed-up
+    spinner"; judged vs Linear/Stripe/Arc/Figma/Vercel boot moments). Applied his top
+    queue item same-round: delayed-state detail line lifted --faint to --muted in both
+    sheets. Remaining queue (fold into later rounds): audit non-Home mounts to pass
+    `compact`; optional wrap-frame cross-fade; optional icon-only fill restraint
+    (Patrik taste call); wordmark period question (Patrik brand call: prior boot
+    wordmark carried "Corner." with the period; lockup SVGs render "Corner").
+
+**Status:** shipped after external verification + critic pass; landing to main 2026-07-15.
 
 ### R2 - Top bar consistency
 

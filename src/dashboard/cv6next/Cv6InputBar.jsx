@@ -20,6 +20,7 @@ import SlashCommandAutocomplete from '../components/cv3/SlashCommandAutocomplete
 import IntegrationsModal from '../components/cv3/IntegrationsModal.jsx';
 import { PasteChipBar, shouldChipPaste } from '../components/cv3/shared/PasteChip.jsx';
 import { IMAGE_TOOLS } from '../components/cv3/shared/ImageGenPicker.jsx';
+import { CornerLoaderMark } from '../cv6kit/FullscreenLoading.jsx';
 import {
   useChatCore,
   useChatComposerCtx,
@@ -210,7 +211,7 @@ export default function Cv6InputBar({ onOpenFiles }) {
             <button type="button" title="Attach a file" aria-label="Attach and upload a file" onClick={() => fileInputRef.current?.click()} disabled={uploading}
               style={{ width: 38, height: 38, borderRadius: 10, background: 'none', border: 'none', color: uploading ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
               {uploading
-                ? <span style={{ width: 14, height: 14, border: '2px solid var(--hair)', borderTopColor: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
+                ? <CornerLoaderMark compact className="cv6-upload-loader" />
                 : I.attach}
             </button>
           </div>

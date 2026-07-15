@@ -13,14 +13,16 @@ import { pdfShellHtml } from './pdfDocView';
 import { docxShellHtml, isDocxName } from './docxDocView';
 import { htmlShellHtml, isHtmlName } from './htmlDocView';
 import { createFileRef } from '../../../../api/_lib/fileRef.js';
+import { cornerLogoLoaderMarkup } from '../../cv6kit/cornerLogoLoaderMarkup.js';
 
 marked.setOptions({ gfm: true, breaks: false });
 
 const TINTS = ['green', 'lime', 'amber', 'violet'];
-const MEDIA_WAIT_HTML =
-  '<div data-media-wait style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;min-height:180px;color:#9a9a9a;pointer-events:none;">'
-  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
-  + '<span style="font-size:13px;font-weight:500;">Loading media…</span></div>';
+const MEDIA_WAIT_HTML = cornerLogoLoaderMarkup('Loading media…', {
+  compact: true,
+  mediaWait: true,
+  minHeight: 180,
+});
 const HIDE_MEDIA_WAIT = "var w=this.parentElement&&this.parentElement.querySelector('[data-media-wait]');if(w)w.style.display='none';";
 
 function escapeHtml(s) {

@@ -11,6 +11,7 @@
 // Clicks land on plain markup and bubble to the pin listener, same as PDF.
 
 import { useEffect } from 'react';
+import { cornerLogoLoaderMarkup } from '../../cv6kit/cornerLogoLoaderMarkup.js';
 
 // The reader renders on the .doc paper, which is FORCED LIGHT in every app
 // theme — ink must be paper-locked constants, never theme tokens (M7 standing
@@ -19,10 +20,12 @@ const INK = '#1a1a1a';
 const INK_MID = '#6a6a72';
 const PAPER_HAIR = 'rgba(0,0,0,.12)';
 
-const WAIT_HTML =
-  `<div data-docx-wait style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:180px;color:${INK_MID};">`
-  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
-  + '<span style="font-size:13px;font-weight:500;">Loading document…</span></div>';
+const WAIT_HTML = cornerLogoLoaderMarkup('Loading document…', {
+  paper: true,
+  compact: true,
+  minHeight: 180,
+  waitAttribute: 'data-docx-wait',
+});
 
 function escAttr(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');

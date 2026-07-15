@@ -12,6 +12,7 @@ import { pdfShellHtml } from './pdfDocView';
 import { docxShellHtml, isDocxName } from './docxDocView';
 import { htmlShellHtml, isHtmlName } from './htmlDocView';
 import { fileRefFromProjectFileRow, fileRefFromUploadRow } from '../../../../api/_lib/fileRef.js';
+import { cornerLogoLoaderMarkup } from '../../cv6kit/cornerLogoLoaderMarkup.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'success'];
 
@@ -204,18 +205,12 @@ function dataFilePreview(content) {
 // Loading state while a file's content lazy-loads. Centered and sized to hold the pane,
 // readable on BOTH grounds (paper card and the dark media ground) — the census caught
 // the preview sitting black for seconds with no affordance (O2).
-const LOADING_HTML =
-  '<div style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:180px;color:#9a9a9a;">'
-  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
-  + '<span style="font-size:13px;font-weight:500;">Loading file…</span></div>';
+const LOADING_HTML = cornerLogoLoaderMarkup('Loading file…', { compact: true, minHeight: 180 });
 
 // Media (video/image) still shows a black box after fetch while bytes stream off the
 // tunnel — put a spinner UNDER the media and let the element hide it when real pixels
 // arrive (onloadeddata / onload), mirroring the img onerror swap pattern.
-const MEDIA_WAIT_HTML =
-  '<div data-media-wait style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;color:#9a9a9a;pointer-events:none;">'
-  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
-  + '<span style="font-size:13px;font-weight:500;">Loading media…</span></div>';
+const MEDIA_WAIT_HTML = cornerLogoLoaderMarkup('Loading media…', { compact: true, mediaWait: true });
 const HIDE_WAIT = "var w=this.parentElement&&this.parentElement.querySelector('[data-media-wait]');if(w)w.style.display='none';";
 
 // Honest, VISUALLY MARKED placeholder for files whose bytes we don't mirror

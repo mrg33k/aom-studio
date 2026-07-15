@@ -17,6 +17,7 @@ import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
+import { cornerLogoLoaderMarkup } from '../cv6kit/cornerLogoLoaderMarkup.js';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import NewComposer from './NewComposer.jsx';
 import { authFetch } from '../lib/authFetch';
@@ -34,11 +35,7 @@ const ORG_ALIASES = {
 };
 
 // Loading placeholder for the review viewer body while a file's bytes are in flight.
-const VIEWER_LOADING_HTML =
-  '<div class="cv6-loading is-inline" role="status" aria-live="polite" style="min-height:220px;">'
-  + '<div class="cv6-loading__inner"><div class="cv6-loading__mark" aria-hidden="true">Corner.</div>'
-  + '<div class="cv6-loading__rail" aria-hidden="true"><span class="cv6-loading__bar"></span></div>'
-  + '<div class="cv6-loading__label">Preparing the file</div><div class="cv6-loading__detail" hidden></div></div></div>';
+const VIEWER_LOADING_HTML = cornerLogoLoaderMarkup('Preparing the file', { minHeight: 220 });
 const VIEWER_NONE_HTML = '<div style="padding:14px 0;color:#888;font-size:13.5px;">No file selected — pick one from the list.</div>';
 
 function composeOrganize(raw, screenName) {
