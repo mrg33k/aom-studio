@@ -30,7 +30,13 @@ Gmail stays the verification source. Manual paths (`api/support/reply.js`,
 `api/support/send-staged.js`) already do this; the agent/worker paths do not.
 Also correct the stale needs-patrik card that called this already built.
 
-**Status:** queued.
+- 2026-07-15 shipped by the EA in the AOM-EA repo: the M27 auto-send timer lane in
+  `scripts/support-worker-dispatch.py` was the one remaining path recording a generic
+  line; it now reads the staged draft's exact text (action=get, text/plain walk)
+  before sending and records that on send-success. Verified via py_compile plus a
+  synthetic multipart decode test. needs-patrik card corrected the same pass.
+
+**Status:** shipped (AOM-EA commit, pushed 2026-07-15).
 
 ### R1 - Global motion: logo loader, screen transitions, touch feedback
 
