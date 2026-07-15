@@ -2315,6 +2315,10 @@ function demoMobileChatLifecycleRequested() {
   try { return new URLSearchParams(window.location.search).get('demo') === 'mobile-chat-lifecycle'; }
   catch { return false; }
 }
+function demoFilePreviewsRequested() {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'file-previews'; }
+  catch { return false; }
+}
 const DEMO_GOAL = { title: 'Show every chat element', step: 4, doneCount: 2, total: 11, pct: 18, checklist: [] };
 const DEMO_BLOCKS = [
   { type: 'step', stepIndex: 0, title: 'Read the brief and pull the repo', state: 'done', detail: 'Scanned 28 missions and the task runner.' },
@@ -2616,6 +2620,35 @@ function DemoMobileChatLifecycle() {
   );
 }
 
+// No-auth browser fixture for the active Files screen, whose detail pane is the
+// shared Review renderer. The browser spec supplies the deliberately stale queue
+// type so this fixture exercises the real API-to-viewer correction path.
+function DemoFilePreviews() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const files = useMemo(() => [
+    { url: 'https://fixture.local/review-page.html', name: 'review-page.html', mime: 'text/html' },
+    { url: `${origin}/artlink/Artlink_Brand_Standards.pdf`, name: 'Artlink_Brand_Standards.pdf', mime: 'application/pdf' },
+    { url: `${origin}/corner-og.png`, name: 'corner-og.png', mime: 'image/png' },
+    { url: `${origin}/ConradFoundation/nancy-sample-tile-v1.mp4`, name: 'nancy-sample-tile-v1.mp4', mime: 'video/mp4' },
+  ], [origin]);
+  const selected = useMemo(() => {
+    let kind = 'html';
+    try { kind = new URLSearchParams(window.location.search).get('preview') || kind; } catch { /* SSR */ }
+    const index = { html: 0, pdf: 1, image: 2, video: 3 }[kind] ?? 0;
+    return files[index];
+  }, [files]);
+  return (
+    <div data-cv6 data-theme="dark" style={{ width: '100vw', height: '100dvh', background: 'var(--ground, #05080b)' }}>
+      <Organize
+        target={{ files: [selected], project: '' }}
+        onNav={() => {}}
+        onOpenNav={() => {}}
+        onAssignFile={() => {}}
+      />
+    </div>
+  );
+}
+
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
@@ -2714,9 +2747,11 @@ export default function CornerCV6() {
   const demoCatchUpModal = useMemo(() => demoCatchUpModalRequested(), []);
   const demoHomeQuickThread = useMemo(() => demoHomeQuickThreadRequested(), []);
   const demoMobileChatLifecycle = useMemo(() => demoMobileChatLifecycleRequested(), []);
+  const demoFilePreviews = useMemo(() => demoFilePreviewsRequested(), []);
   if (demoCatchUpModal) return <DemoCatchUpModal worldId={worldId} />;
   if (demoHomeQuickThread) return <DemoHomeQuickThread />;
   if (demoMobileChatLifecycle) return <DemoMobileChatLifecycle />;
+  if (demoFilePreviews) return <DemoFilePreviews />;
   if (demoBlocks) {
     // Auto-height (no 100dvh cap, no overflow:hidden) so the whole thread is one tall page
     // the browser scrolls — a full-page capture then reaches every element end to end.

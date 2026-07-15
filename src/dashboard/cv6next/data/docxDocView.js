@@ -120,8 +120,9 @@ async function hydrateOne(node, registry) {
 }
 
 // Host-side hydrator — mount once per screen next to usePdfDocs.
-export function useDocxDocs(wrapRef) {
+export function useDocxDocs(wrapRef, enabled = true) {
   useEffect(() => {
+    if (!enabled) return undefined;
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
     const registry = new Map();
@@ -144,5 +145,5 @@ export function useDocxDocs(wrapRef) {
       for (const [, entry] of registry) entry.dead = true;
       registry.clear();
     };
-  }, [wrapRef]);
+  }, [wrapRef, enabled]);
 }

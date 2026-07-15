@@ -37,6 +37,29 @@ function hhmm(ts) {
   return `${date}, ${time}`;
 }
 
+function cleanFileRef(raw) {
+  return String(raw || '')
+    .trim()
+    .replace(/^`+|`+$/g, '')
+    .replace(/^["']+|["']+$/g, '');
+}
+
+function cornerPathFromText(raw) {
+  const value = cleanFileRef(raw);
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  const match = value.match(/(?:^|\/)(corner\/users\/[^)\s"'`]+)$/i);
+  if (match) return match[1];
+  return /^corner\/users\/[^)\s"'`]+$/i.test(value) ? value : '';
+}
+
+function displayNameFromFileRef(raw) {
+  const value = cleanFileRef(raw);
+  if (!value) return 'File';
+  const noQuery = value.split(/[?#]/)[0];
+  return noQuery.split('/').filter(Boolean).pop() || value;
+}
+
 // Persisted real-activity steps for a FINISHED turn → step blocks, every row done (no
 // spinner). The live steps the agent ticked while working are stored server-side (events,
 // keyed to the user message); turning them into the turn's blocks keeps them in the
@@ -301,8 +324,8 @@ export function useRoomThread(worldId, room) {
           // object {url, mime, name, size}) — the announcement text is just "Attached file: NAME"
           // with NO URL line. This is the most common Corner-room file shape, so check it first.
           const metaAttach = (m.metadata && m.metadata.attachment && (m.metadata.attachment.url || m.metadata.attachment.name)) ? m.metadata.attachment : null;
-          const isFile = !!m.attachment_url || !!metaAttach || !!single || !!multi;
-          const fileName = m.attachment_name || (metaAttach && metaAttach.name) || (single ? single[1] : '');
+          const isFile = !!m.attachment_url || !!metaAttach || !!single || !!multi || !!m.metadata?.attachments?.length;
+          const fileName = m.attachment_name || (metaAttach && metaAttach.name) || (single ? displayNameFromFileRef(single[1]) : '');
           // Live Goal Thread: a structured reply carries its blocks on metadata.blocks.
           // We attach them to THIS message so the thread renders inline as that agent
           // turn (history stays above it), instead of taking over the whole screen.
@@ -334,10 +357,20 @@ export function useRoomThread(worldId, room) {
             }];
           } else if (multi) {
             const names = multi[1].split(',').map((s) => s.trim()).filter(Boolean);
-            attachments = names.map((n, i) => ({ name: n, url: textUrls[i] || textUrls[0] || '', mime: '', size: 0 }));
+            attachments = names.map((n, i) => ({
+              name: displayNameFromFileRef(n),
+              url: textUrls[i] || cornerPathFromText(n) || textUrls[0] || '',
+              mime: '',
+              size: 0,
+            }));
             displayText = ''; // pure attachment announcement → show cards, not the note
           } else if (single) {
-            attachments = [{ name: single[1], url: textUrls[0] || '', mime: '', size: 0 }];
+            attachments = [{
+              name: displayNameFromFileRef(single[1]),
+              url: textUrls[0] || cornerPathFromText(single[1]) || '',
+              mime: '',
+              size: 0,
+            }];
             displayText = '';
           }
           // Completed web work lands as a tappable link card, never a bare URL buried in

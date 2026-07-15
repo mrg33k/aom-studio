@@ -55,6 +55,7 @@ const TYPE_MAP = {
   doc: { key: 'doc', label: 'Document', color: '#0066FF' },
   copy: { key: 'copy', label: 'Copy', color: '#F59E0B' },
   code: { key: 'code', label: 'Code', color: '#10B981' },
+  sitefile: { key: 'sitefile', label: 'Web page', color: '#38BDF8' },
 };
 const EXTENSIONS = {
   image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'],
@@ -62,6 +63,7 @@ const EXTENSIONS = {
   doc: ['.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx'],
   copy: ['.md', '.txt'],
   code: ['.js', '.jsx', '.ts', '.tsx', '.py', '.go', '.rs', '.java'],
+  sitefile: ['.html', '.htm'],
 };
 
 // Type a chat-boundary file permissively: it already crossed the boundary as a
@@ -77,6 +79,7 @@ function typeForChatFile(name, mime, url = '') {
   if (m.startsWith('image/')) return TYPE_MAP.image;
   if (m.startsWith('video/')) return TYPE_MAP.video;
   if (m === 'application/pdf') return TYPE_MAP.doc;
+  if (m === 'text/html' || m === 'application/xhtml+xml') return TYPE_MAP.sitefile;
   // A bare http(s) address with no known file extension is a live-site link — still
   // reviewable; the viewer renders it in the sitelive frame. Fall back to doc.
   return TYPE_MAP.doc;

@@ -7,6 +7,7 @@ const TYPE_MAP = {
   code: { key: 'code', label: 'Code', color: '#10B981' },
   sheet: { key: 'sheet', label: 'Spreadsheet', color: '#22C55E' },
   link: { key: 'link', label: 'Link', color: '#38BDF8' },
+  sitefile: { key: 'sitefile', label: 'Web page', color: '#38BDF8' },
   sitelive: { key: 'sitelive', label: 'Live site', color: '#38BDF8' },
 }
 
@@ -18,6 +19,7 @@ const EXT_KIND = {
   sheet: ['.csv', '.xlsx', '.xls', '.tsv'],
   copy: ['.md', '.txt', '.json', '.jsonl', '.ndjson', '.yaml', '.yml', '.toml', '.xml', '.ini', '.log'],
   code: ['.js', '.jsx', '.ts', '.tsx', '.py', '.go', '.rs', '.java'],
+  sitefile: ['.html', '.htm'],
 }
 
 function clean(value) {
@@ -44,6 +46,7 @@ export function fileKindFromNameMime(name, mime, url = '') {
   if (m.startsWith('video/')) return 'video'
   if (m.startsWith('audio/')) return 'audio'
   if (m === 'application/pdf') return 'doc'
+  if (m === 'text/html' || m === 'application/xhtml+xml') return 'sitefile'
   if (/^https?:\/\//i.test(clean(url || name)) && !ext) return 'sitelive'
   return 'doc'
 }

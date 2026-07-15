@@ -27,6 +27,8 @@ function installMediaErr() {
     const box = el.parentElement;
     const wait = box && box.querySelector('[data-media-wait]');
     if (wait) wait.style.display = 'none';
+    const scrub = box && box.querySelector('[data-vscrub]');
+    if (scrub) scrub.remove();
 
     const card = document.createElement('div');
     card.setAttribute('data-media-err', '1');

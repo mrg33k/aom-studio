@@ -1295,7 +1295,7 @@
 
 /* ── Review R6 — viewer switches by deliverable.type (wired/tools/review.json viewerRule).
    Browser chrome ported verbatim from the design system (ui_kits/tools/review.html);
-   media types (image/photo/video/siteshot/sitelive) render full-bleed on the dark stage
+   media types (image/photo/video/siteshot/sitefile/sitelive) render full-bleed on the dark stage
    instead of inside the white document paper — !important because the .doc width/padding
    ride the template's inline style. */
 [data-cv6][data-screen^="review"] .browser { width:100%; max-width:100%; border-radius:10px; overflow:hidden; box-shadow:0 18px 54px rgba(0,0,0,.55); background:#fff; position:relative; }
@@ -1306,16 +1306,19 @@
 [data-cv6][data-screen^="review"] .doc.is-photo,
 [data-cv6][data-screen^="review"] .doc.is-video,
 [data-cv6][data-screen^="review"] .doc.is-siteshot,
+[data-cv6][data-screen^="review"] .doc.is-sitefile,
 [data-cv6][data-screen^="review"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:min(760px, 100%) !important; }
 [data-cv6][data-screen^="review"] .doc.is-image [data-bind="deliverable.file"],
 [data-cv6][data-screen^="review"] .doc.is-photo [data-bind="deliverable.file"],
 [data-cv6][data-screen^="review"] .doc.is-video [data-bind="deliverable.file"],
 [data-cv6][data-screen^="review"] .doc.is-siteshot [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-sitefile [data-bind="deliverable.file"],
 [data-cv6][data-screen^="review"] .doc.is-sitelive [data-bind="deliverable.file"] { color:#7a7a82 !important; }
 [data-cv6][data-screen^="review"] .doc.is-image h1,
 [data-cv6][data-screen^="review"] .doc.is-photo h1,
 [data-cv6][data-screen^="review"] .doc.is-video h1,
 [data-cv6][data-screen^="review"] .doc.is-siteshot h1,
+[data-cv6][data-screen^="review"] .doc.is-sitefile h1,
 [data-cv6][data-screen^="review"] .doc.is-sitelive h1 { color:#e6e8ea !important; font-size:16px !important; margin:0 0 12px !important; }
 
 @media (max-width:560px){
@@ -1360,18 +1363,21 @@
 [data-cv6][data-screen^="organize"] .doc.is-video,
 [data-cv6][data-screen^="organize"] .doc.is-audio,
 [data-cv6][data-screen^="organize"] .doc.is-siteshot,
+[data-cv6][data-screen^="organize"] .doc.is-sitefile,
 [data-cv6][data-screen^="organize"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:min(760px, 100%) !important; }
 [data-cv6][data-screen^="organize"] .doc.is-image [data-bind="deliverable.file"],
 [data-cv6][data-screen^="organize"] .doc.is-photo [data-bind="deliverable.file"],
 [data-cv6][data-screen^="organize"] .doc.is-video [data-bind="deliverable.file"],
 [data-cv6][data-screen^="organize"] .doc.is-audio [data-bind="deliverable.file"],
 [data-cv6][data-screen^="organize"] .doc.is-siteshot [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-sitefile [data-bind="deliverable.file"],
 [data-cv6][data-screen^="organize"] .doc.is-sitelive [data-bind="deliverable.file"] { color:#7a7a82 !important; }
 [data-cv6][data-screen^="organize"] .doc.is-image h1,
 [data-cv6][data-screen^="organize"] .doc.is-photo h1,
 [data-cv6][data-screen^="organize"] .doc.is-video h1,
 [data-cv6][data-screen^="organize"] .doc.is-audio h1,
 [data-cv6][data-screen^="organize"] .doc.is-siteshot h1,
+[data-cv6][data-screen^="organize"] .doc.is-sitefile h1,
 [data-cv6][data-screen^="organize"] .doc.is-sitelive h1 { color:#e6e8ea !important; font-size:16px !important; margin:0 0 12px !important; }
 /* The audio viewer keeps the paper card readable width but the file-line/title colors
    above flip for the dark ground — the <audio> element carries its own chrome. */

@@ -14,6 +14,7 @@ import { usePins } from './data/usePins.js';
 import { useReviewPinUI } from './ReviewPins.jsx';
 import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
+import { useHtmlDocs } from './data/htmlDocView.js';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
@@ -112,7 +113,11 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target
 
   // ── open file → review viewer (the detail pane IS review now) ──
   const openedRow = useMemo(() => (data.files || []).find((f) => f.id === data.openedId) || null, [data.files, data.openedId]);
-  const openReviewId = openedRow?.reviewId || null;
+  // A chat/shared target can live outside the mirrored Files tree. It still opens
+  // through useReview.openFileItem, but there is no `openedRow` to supply the pin
+  // key. Fall back to the live deliverable identity so comments persist on those
+  // previews too instead of silently submitting against a null deliverable.
+  const openReviewId = openedRow?.reviewId || review.data.deliverable?.id || null;
   const reviewActionsRef = useRef(review.actions);
   reviewActionsRef.current = review.actions;
   useEffect(() => {
@@ -132,6 +137,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile, target
   const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef, pins, addPin, deletePin });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
   useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)
+  useHtmlDocs(wrapRef); // hydrate sandboxed HTML/web-page shells
 
   // Changes overlay (typed notes + pins → tracked task via the assign path).
   const [changesOpen, setChangesOpen] = useState(false);

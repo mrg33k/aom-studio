@@ -159,8 +159,9 @@ function disposeEntry(entry) {
 // Host-side hydrator. Mount once per screen next to useReviewPinUI; it watches
 // the wrapper for [data-pdf-doc] shells appearing (file opened / switched) and
 // disposes pdf.js state when a shell leaves the DOM.
-export function usePdfDocs(wrapRef) {
+export function usePdfDocs(wrapRef, enabled = true) {
   useEffect(() => {
+    if (!enabled) return undefined;
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
     const registry = new Map(); // node -> { io, doc, dead }
@@ -183,5 +184,5 @@ export function usePdfDocs(wrapRef) {
       for (const [, entry] of registry) disposeEntry(entry);
       registry.clear();
     };
-  }, [wrapRef]);
+  }, [wrapRef, enabled]);
 }

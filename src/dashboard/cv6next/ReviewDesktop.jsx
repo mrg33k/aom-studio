@@ -10,6 +10,9 @@ import { useReviewPinUI } from './ReviewPins.jsx';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import { authFetch } from '../lib/authFetch';
+import { usePdfDocs } from './data/pdfDocView.js';
+import { useDocxDocs } from './data/docxDocView.js';
+import { useHtmlDocs } from './data/htmlDocView.js';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -109,6 +112,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // tick) + the design popover composer/viewer rendered outside the template DOM.
   const viewerRef = useRef(null);
   const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef: viewerRef, pins, addPin, deletePin });
+  usePdfDocs(viewerRef);
+  useDocxDocs(viewerRef);
+  useHtmlDocs(viewerRef);
   // ── WD40-R1: keyboard nav — ref holds live state, single listener never re-registers ──
   const kbNavRef = useRef({});
 

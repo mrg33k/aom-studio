@@ -2,10 +2,16 @@ import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 import {
   buildFileRefIdentityMap,
+  fileKindFromNameMime,
   fileRefFromChatAttachment,
   fileRefFromProjectFileRow,
   fileRefToReviewQueueItem,
 } from '../../../api/_lib/fileRef.js'
+
+test('reviewable HTML files keep a web-page identity instead of becoming downloads', () => {
+  assert.equal(fileKindFromNameMime('campaign-preview.html', ''), 'sitefile')
+  assert.equal(fileKindFromNameMime('preview', 'text/html'), 'sitefile')
+})
 
 test('project file rows produce stable corner storage and review identity', () => {
   const ref = fileRefFromProjectFileRow({

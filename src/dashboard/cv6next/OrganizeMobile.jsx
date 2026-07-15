@@ -14,6 +14,7 @@ import { usePins } from './data/usePins.js';
 import { useReviewPinUI } from './ReviewPins.jsx';
 import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
+import { useHtmlDocs } from './data/htmlDocView.js';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import NewComposer from './NewComposer.jsx';
@@ -171,7 +172,9 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
 
   // ── open file → review viewer ──
   const openedRow = useMemo(() => (data.files || []).find((f) => f.id === pickedFileId) || null, [data.files, pickedFileId]);
-  const openReviewId = openedRow?.reviewId || null;
+  // Shared/chat files may not have a mirror row. Once useReview opens that direct
+  // target, its deliverable id is the stable key for pins and verdicts.
+  const openReviewId = openedRow?.reviewId || review.data.deliverable?.id || null;
   const reviewActionsRef = useRef(review.actions);
   reviewActionsRef.current = review.actions;
   useEffect(() => {
@@ -191,6 +194,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
   });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
   useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)
+  useHtmlDocs(wrapRef, !!pickedFileId); // hydrate sandboxed HTML/web-page shells
 
   const [changesOpen, setChangesOpen] = useState(false);
   useEffect(() => { setChangesOpen(false); }, [openReviewId]);
@@ -238,7 +242,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
     }
     const rid = item ? item.id : rawPath;
     if (rid || rawName) {
-      pendingOpenRef.current = { rid, name: rawName };
+      pendingOpenRef.current = { rid, name: rawName, project: target.project || (item && item.whoRaw) || '' };
       enteredViaTargetRef.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -247,9 +251,17 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
     const pend = pendingOpenRef.current;
     if (!pend) return;
     const row = (data.files || []).find((f) => (pend.rid && f.reviewId === pend.rid) || (!pend.rid && pend.name && f.name === pend.name));
-    if (row) { pendingOpenRef.current = null; tapFile(row.id); }
+    if (row) { pendingOpenRef.current = null; tapFile(row.id); return; }
+    // Match desktop: a file outside the mirrored tree is still a complete review
+    // target. Open it directly and enter the read screen so mobile never strands
+    // chat attachments on the empty picker.
+    if (state === 'ready' && pend.rid) {
+      pendingOpenRef.current = null;
+      setPickedFileId(pend.rid);
+      reviewActionsRef.current.openFileItem({ id: pend.rid, name: pend.name, project: pend.project });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.files]);
+  }, [data.files, state]);
 
   // viewFile comes from the hook (content fetched lazily, keyed by openedId === pickedFileId).
   const del = review.data.deliverable || {};

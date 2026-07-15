@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
 import { docxShellHtml, isDocxName } from './docxDocView';
+import { htmlShellHtml, isHtmlName } from './htmlDocView';
 import { fileRefFromProjectFileRow, fileRefFromUploadRow } from '../../../../api/_lib/fileRef.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'success'];
@@ -78,6 +79,7 @@ function fileKind(name) {
   if (['wav', 'mp3', 'aac', 'm4a', 'ogg', 'flac', 'aiff', 'opus'].includes(ext)) return 'audio';
   if (ext === 'pdf') return 'pdf';
   if (['url', 'webloc'].includes(ext)) return 'link';
+  if (['html', 'htm'].includes(ext)) return 'sitefile';
   if (['csv', 'xlsx', 'xls'].includes(ext)) return 'sheet';
   if (['md', 'txt', 'json', 'js', 'jsx', 'py'].includes(ext)) return 'doc';
   return 'doc';
@@ -93,6 +95,7 @@ function uploadKind(name, mime) {
   if (m.startsWith('video/')) return 'video';
   if (m.startsWith('audio/')) return 'audio';
   if (m === 'application/pdf') return 'pdf';
+  if (m === 'text/html' || m === 'application/xhtml+xml') return 'sitefile';
   return byExt;
 }
 
@@ -219,7 +222,7 @@ const HIDE_WAIT = "var w=this.parentElement&&this.parentElement.querySelector('[
 // (images, PDFs, sheets) — a tinted banner + kind glyph so it reads as intentional,
 // never as an error or empty file.
 function nonTextPreview(name, kind) {
-  const label = kind === 'image' ? 'Image file' : kind === 'pdf' ? 'PDF file' : kind === 'sheet' ? 'Spreadsheet' : kind === 'video' ? 'Video file' : kind === 'audio' ? 'Audio file' : 'File';
+  const label = kind === 'image' ? 'Image file' : kind === 'pdf' ? 'PDF file' : kind === 'sheet' ? 'Spreadsheet' : kind === 'video' ? 'Video file' : kind === 'audio' ? 'Audio file' : kind === 'sitefile' ? 'Web page' : 'File';
   const lower = label.toLowerCase();
   // Paper-locked ink (M7/M9): this card renders on the forced-light .doc paper,
   // where theme tokens (--fg/--muted/--accent-weak) resolve near-white in
@@ -482,6 +485,8 @@ export function useOrganize(worldId = null, opts = {}) {
       } else if (isDocxName(up.name)) {
         // Word docs read inline (M9) — useDocxDocs hydrates the shell.
         bodyHtml = docxShellHtml(up.url, up.name);
+      } else if (isHtmlName(up.name) || kind === 'sitefile') {
+        bodyHtml = htmlShellHtml(up.url, up.name, up.url);
       } else {
         bodyHtml = nonTextPreview(up.name, kind);
       }
@@ -501,9 +506,10 @@ export function useOrganize(worldId = null, opts = {}) {
     // URL; there is no mirror row to fetch, so don't fire a doomed lookup.
     if (/^https?:\/\//i.test(id)) {
       const leaf = String(id).split('/').pop() || 'File';
+      const kind = fileKind(leaf);
       setContentCache((cache) => ({
         ...cache,
-        [id]: { title: leaf, bodyHtml: nonTextPreview(leaf, 'doc'), editor: 'Agent', editorInitials: 'AG' },
+        [id]: { title: leaf, bodyHtml: kind === 'sitefile' ? htmlShellHtml(id, leaf, id) : nonTextPreview(leaf, kind), editor: 'Agent', editorInitials: 'AG' },
       }));
       return;
     }
@@ -557,6 +563,12 @@ export function useOrganize(worldId = null, opts = {}) {
         bodyHtml = cornerPath
           ? docxShellHtml(`${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}`, f.name)
           : nonTextPreview(f.name, 'doc');
+        title = f.name || 'Untitled';
+      } else if (kind === 'sitefile' || isHtmlName(f.name)) {
+        const cornerPath = cornerPathOf(f, worldId);
+        bodyHtml = cornerPath
+          ? htmlShellHtml(`${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}`, f.name, cornerPath)
+          : nonTextPreview(f.name, 'sitefile');
         title = f.name || 'Untitled';
       } else if (f.content && DATA_EXT.test(f.name || '')) {
         // Structured-data files: monospace verbatim, titled by their real filename (O2).

@@ -8,6 +8,9 @@ import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useReviewPinUI } from './ReviewPins.jsx';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
+import { usePdfDocs } from './data/pdfDocView.js';
+import { useDocxDocs } from './data/docxDocView.js';
+import { useHtmlDocs } from './data/htmlDocView.js';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -133,6 +136,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   const { overlay: pinOverlay, openPinById } = useReviewPinUI({
     wrapRef: readRef, pins, addPin, deletePin, enabled: screen === 'read',
   });
+  usePdfDocs(readRef, screen === 'read');
+  useDocxDocs(readRef, screen === 'read');
+  useHtmlDocs(readRef, screen === 'read');
 
   const pickListAliases = { 'queue.items': 'item', 'queue.tree': 'node', 'queue.filters': 'filter', 'item': 'item', 'node': 'node', 'filter': 'filter' };
 

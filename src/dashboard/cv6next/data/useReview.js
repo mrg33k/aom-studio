@@ -10,11 +10,17 @@ import { titleForAgent } from './agentTitles';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
 import { docxShellHtml, isDocxName } from './docxDocView';
+import { htmlShellHtml, isHtmlName } from './htmlDocView';
 import { createFileRef } from '../../../../api/_lib/fileRef.js';
 
 marked.setOptions({ gfm: true, breaks: false });
 
 const TINTS = ['green', 'lime', 'amber', 'violet'];
+const MEDIA_WAIT_HTML =
+  '<div data-media-wait style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;min-height:180px;color:#9a9a9a;pointer-events:none;">'
+  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
+  + '<span style="font-size:13px;font-weight:500;">Loading media…</span></div>';
+const HIDE_MEDIA_WAIT = "var w=this.parentElement&&this.parentElement.querySelector('[data-media-wait]');if(w)w.style.display='none';";
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
@@ -76,7 +82,7 @@ async function downloadDeliverable(item) {
 // So we fetch EVERY file through authFetch (which attaches the token) and hand the
 // element a blob: URL for binaries. Text renders markdown / preformatted inline.
 // `path` is the relative corner/users/... path the review queue already carries (item.id).
-async function buildDeliverableBody(item) {
+export async function buildDeliverableBody(item) {
   const path = item?.id || '';
   if (!path) return '';
   const enc = encodeURIComponent(path);
@@ -119,7 +125,7 @@ async function buildDeliverableBody(item) {
       // Streams off the tunnel like video — the blob-through-proxy path 404'd
       // assets/ files and dies on big screenshots (lambda response cap).
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
-      return `<img src="${src}" ${mediaAttrs(src, 'image')} alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
+      return `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<img src="${src}" ${mediaAttrs(src, 'image')} onload="${HIDE_MEDIA_WAIT}" alt="${escapeHtml(item.title)}" style="position:relative;max-width:100%;height:auto;display:block;border-radius:10px;" /></div>`;
     }
     if (type === 'video') {
       // Corner-path videos stream straight off the rag tunnel (Range-capable, CORS *).
@@ -133,7 +139,7 @@ async function buildDeliverableBody(item) {
       // native controls) below the fold. Read as "videos never load." 52vh (not
       // 62) so video + caption + title + 46px bar ALSO fit the mobile read window
       // (~100dvh-250px) without scrolling; margin:auto centers the portrait.
-      return `<video src="${src}" ${mediaAttrs(src, 'video')} preload="metadata" playsinline style="max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video>`;
+      return `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${src}" ${mediaAttrs(src, 'video')} onloadeddata="${HIDE_MEDIA_WAIT}" preload="metadata" playsinline style="position:relative;max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video></div>`;
     }
     if (type === 'audio') {
       // Streams off the tunnel like video (Range-capable, CORS *). Native controls are
@@ -144,6 +150,13 @@ async function buildDeliverableBody(item) {
     if (type === 'siteshot') {
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
       return browserChrome(item.title, `<img src="${src}" alt="${escapeHtml(item.title)}" style="width:100%;height:auto;display:block;" />`);
+    }
+    if (type === 'sitefile' || isHtmlName(item.title || path)) {
+      // A saved HTML artifact is not a live URL and must not be sent to the generic
+      // document/download branch. Hydrate it into an isolated srcdoc iframe; the
+      // shell includes Review's pin-shield so comments land on the visible page.
+      const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
+      return htmlShellHtml(src, item.title, path);
     }
     if (type === 'sitelive') {
       // A live site delivered by link: browser-chrome canvas + sandboxed iframe with
@@ -299,6 +312,7 @@ function typeLabel(type) {
     copy: 'Copy',
     code: 'Code',
     siteshot: 'Screenshot',
+    sitefile: 'Web page',
     sitelive: 'Live site',
   };
   return map[type] || 'Document';
@@ -313,6 +327,7 @@ function typeGlyph(type) {
     copy: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z|M14 2v6h6|M9 13h6M9 17h4',
     code: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z|M14 2v6h6|M9 13h6M9 17h4',
     siteshot: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z',
+    sitefile: 'M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z|M12 9a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
     sitelive: 'M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z|M12 9a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
     audio: 'M9 18V5l12-2v13|M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z|M18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   };
@@ -337,6 +352,9 @@ function looksBinary(s) {
 // from a chat message (not the queue endpoint, which already typed them).
 // `url` disambiguates a live site: an http(s) address with no recognizable file
 // extension is a deployed page, not a document — review it in the sitelive viewer.
+const REVIEW_VIEWER_TYPES = new Set(['image', 'photo', 'video', 'audio', 'doc', 'copy', 'code', 'sheet', 'siteshot', 'sitefile', 'sitelive']);
+const BROAD_REVIEW_TYPES = new Set(['doc', 'copy', 'code', 'sheet']);
+
 function typeKeyOf(name, mime, url = '') {
   const ext = String(name || '').toLowerCase().split('.').pop();
   const m = String(mime || '').toLowerCase();
@@ -346,6 +364,7 @@ function typeKeyOf(name, mime, url = '') {
   // branch's "no preview, download" card would be a regression vs Organize's player).
   if (m.startsWith('audio/') || ['wav', 'mp3', 'aac', 'm4a', 'ogg', 'flac', 'aiff', 'opus'].includes(ext)) return 'audio';
   if (['pdf', 'docx', 'doc', 'pptx', 'ppt'].includes(ext)) return 'doc';
+  if (m === 'text/html' || m === 'application/xhtml+xml' || ['html', 'htm'].includes(ext)) return 'sitefile';
   // Structured-data + plain-text files read inline as text (monospace via the copy
   // branch) — same set Organize's dataFilePreview covered.
   if (['md', 'txt', 'json', 'jsonl', 'ndjson', 'yaml', 'yml', 'toml', 'csv', 'tsv', 'xml', 'ini', 'log'].includes(ext)) return 'copy';
@@ -372,8 +391,15 @@ export function reviewItemsFromFiles(files, project = '') {
       // (file-vs-link, NOT a viewer key) — treating that as the viewer type sent every
       // uploaded image/pdf down the text branch and rendered "Preview is not available."
       // Fall through to extension/mime detection for those.
-      const explicit = f.type && f.type !== 'file' && f.type !== 'link' ? f.type : '';
-      const key = explicit || typeKeyOf(name, f.mime || f.fileMime, rawUrl);
+      const explicit = REVIEW_VIEWER_TYPES.has(f.type) ? f.type : '';
+      const detected = typeKeyOf(name, f.mime || f.fileMime, rawUrl);
+      // Extension/MIME wins for concrete file media. Chat and mirror rows are often
+      // stamped with broad `doc`/`copy` kinds; honoring those over a real .png/.mp4/
+      // .html/.pdf extension is what produced binary symbols and download-only cards.
+      // Specialized explicit renderers (siteshot/sitelive/photo) remain intentional.
+      const concrete = ['image', 'video', 'audio', 'sitefile'].includes(detected)
+        || (detected === 'doc' && /\.(?:pdf|docx?|pptx?)$/i.test(name));
+      const key = concrete && (!explicit || BROAD_REVIEW_TYPES.has(explicit)) ? detected : (explicit || detected);
       const fileRef = createFileRef({
         id: path,
         url: /^https?:\/\//i.test(path) ? path : '',
@@ -424,16 +450,19 @@ function mapQueueItem(it, openId) {
     updatedAt: it.last_modified,
     healthStatus: it.health_status,
   });
-  const apiKey = (it.type && typeof it.type === 'object') ? it.type.key : (it.type || 'doc');
+  const rawApiKey = (it.type && typeof it.type === 'object') ? it.type.key : (it.type || 'doc');
+  const apiKey = REVIEW_VIEWER_TYPES.has(rawApiKey) ? rawApiKey : '';
   // A deliverable's stored type can be mis-stamped (e.g. a .png filed as 'doc'/'copy'/a
   // deliverable kind), which sends real media down the text branch of renderBody and
   // dumps its raw bytes as symbols — the "loads as a Document, all symbols" bug. The
-  // filename extension is authoritative for image/video (the types that break
-  // catastrophically as text); honor it over the stored type, keep the stored type for
-  // everything else.
+  // filename extension is authoritative for concrete browser-rendered files
+  // (media, HTML, PDF/Word/PowerPoint) when the stored type is only a broad text/doc
+  // bucket. Specialized renderers such as siteshot and sitelive remain intentional.
   const nameForType = it.name || String(it.id || it.path || '').split('/').pop() || '';
   const extKey = typeKeyOf(nameForType, it.mime || '', it.id || it.path || '');
-  const typeKey = (extKey === 'image' || extKey === 'video' || extKey === 'audio') ? extKey : apiKey;
+  const concrete = ['image', 'video', 'audio', 'sitefile'].includes(extKey)
+    || (extKey === 'doc' && /\.(?:pdf|docx?|pptx?)$/i.test(nameForType));
+  const typeKey = concrete && (!apiKey || BROAD_REVIEW_TYPES.has(apiKey)) ? extKey : (apiKey || extKey);
   return {
     id: it.id || it.path,
     title: it.name || 'Untitled',
@@ -926,7 +955,7 @@ export function useReview(worldId = null, injected = null) {
   // from the media types ACTUALLY present in the scoped set, each with its own
   // true count over the FULL set (not the page window). Copy and Code stand on
   // their own — folding them into "Doc" hid what the queue really held.
-  const TYPE_GROUP = { doc: 'doc', copy: 'copy', code: 'code', sitelive: 'web', siteshot: 'web', image: 'image', photo: 'image', video: 'video' };
+  const TYPE_GROUP = { doc: 'doc', copy: 'copy', code: 'code', sitelive: 'web', sitefile: 'web', siteshot: 'web', image: 'image', photo: 'image', video: 'video' };
   const groupOf = (t) => TYPE_GROUP[t] || 'doc';
   const scoped = allItems
     .filter((i) => !activeProj || i.whoRaw === activeProj)
