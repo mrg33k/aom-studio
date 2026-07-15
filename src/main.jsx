@@ -488,7 +488,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <SystemToastProvider>
       <Suspense fallback={<FullscreenLoading label="Preparing your workspace" />}>
         <Routes>
-          <Route path="/" element={<App />} />
+          <Route path="/" element={<HomeR6Baby />} />
+          <Route path="/home-v1" element={<App />} />
           <Route path="/about" element={<App />} />
           <Route path="/home-v2" element={<V2Home />} />
           <Route path="/r4" element={<HomeR4Preview />} />
