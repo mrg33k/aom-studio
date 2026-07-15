@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import LazyGumlet from '../components/home/LazyGumlet';
+
+const CLAIM_REEL_L = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee
+const CLAIM_REEL_R = '698a5ef5fc23d3d76fa87ef4'; // Virtu Hospitality
 
 // Mounted at /r6 for review. Mission: aheadofmarket.com:home (R19).
 // "The clean baby." Patrik: "I want this design to have a clean baby with the hear design."
@@ -734,7 +738,7 @@ const CSS = `
   .r17 .hz-video .vid { display:none; }
   .r17 .hz-video .pstr.is-hidden { opacity:1; }
 }
-.r17 .hz-paper { position:absolute; inset:0; z-index:4; overflow:hidden; background:var(--paper); color:var(--ink); will-change:opacity; }
+.r17 .hz-paper { position:absolute; inset:0; z-index:4; overflow:hidden; background:rgba(246,246,244,.93); color:var(--ink); will-change:opacity; }
 .r17 .hz-layout {
   position:absolute; inset:0; display:grid; grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);
   align-items:center; gap:clamp(1rem,4vw,5rem); padding:clamp(5.5rem,10vh,8rem) var(--pad) clamp(4.5rem,8vh,6rem);
@@ -1050,9 +1054,12 @@ function Slide({ id, className = '', first = false, children, ...attrs }) {
 // Helper to build panels with CaseVideo components (must be inside component to get refs/effects right)
 const makePanels = () => {
   const LEFT_PANELS = [
+    <>
+      <div className="vid"><LazyGumlet id={CLAIM_REEL_L} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
+      <img className="pstr" src={poster(CLAIM_REEL_L)} alt="" />
+    </>,
     null,
-    null,
-    <LivingSitePanel tallSrc="/hero-sites/valor.jpg" fallbackSrc="/hero-sites/valor.jpg" label="Valor" />,
+    <LivingSitePanel tallSrc="/hero-sites/ambition-tall.jpg" fallbackSrc="/hero-sites/ambition.jpg" label="Ambition Mechanical" />,
     null,
     null,
     <CaseVideo src="/videos/isa-brand.mp4" posterSrc="/videos/isa-brand.jpg" caseIndex={0} />,
@@ -1067,9 +1074,12 @@ const makePanels = () => {
   ];
 
   const RIGHT_PANELS = [
+    <>
+      <div className="vid"><LazyGumlet id={CLAIM_REEL_R} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
+      <img className="pstr" src={poster(CLAIM_REEL_R)} alt="" />
+    </>,
     null,
-    null,
-    <LivingSitePanel tallSrc="/hero-sites/space-rising.jpg" fallbackSrc="/hero-sites/space-rising.jpg" label="Space Rising" />,
+    <LivingSitePanel tallSrc="/hero-sites/space-rising-tall.jpg" fallbackSrc="/hero-sites/space-rising.jpg" label="Space Rising" />,
     null,
     null,
     <CaseVideo src="/videos/isa-demo.mp4" posterSrc="/videos/isa-demo.jpg" caseIndex={0} />,
