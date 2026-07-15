@@ -157,9 +157,11 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       try { inputRef.current?.focus?.(); } catch { /* portal not mounted yet */ }
       const ok = typeof quickSend === 'function' ? await quickSend(text) : false;
       if (ok === false) {
-        // Honest failure: put the words back so nothing typed is ever lost.
-        setInput(base);
-        if (chipsSuffix) setPasteChips(pasteChips);
+        // Honest failure: put the words back so nothing typed is ever lost — but
+        // never clobber something newly typed during the in-flight window
+        // (Steffen R3 queue item 1: restore only into an empty box).
+        setInput((current) => (current ? current : base));
+        if (chipsSuffix) setPasteChips((current) => (current.length ? current : pasteChips));
       }
     } finally {
       sendingRef.current = false;
@@ -294,14 +296,18 @@ function MiniComposer({ target, room, quickSend }) {
   const [val, setVal] = useState('');
   if (!target || !room) return null;
   if (!composerLive()) return <ReadOnlyComposer target={target} room={room} />;
+  const sendingRef = useRef(false);
   const send = async () => {
     const t = val.trim();
-    if (t && typeof quickSend === 'function') {
-      // Same R3 send-feel contract as the full composer: clear instantly, restore
-      // only on explicit failure. Clearing first also makes repeat Enter a no-op.
+    if (t && typeof quickSend === 'function' && !sendingRef.current) {
+      // Same R3 send-feel contract as the full composer: clear instantly, in-flight
+      // guard, restore on explicit failure only into a still-empty box.
+      sendingRef.current = true;
       setVal('');
-      const ok = await quickSend(t);
-      if (ok === false) setVal(t);
+      try {
+        const ok = await quickSend(t);
+        if (ok === false) setVal((current) => (current ? current : t));
+      } finally { sendingRef.current = false; }
     }
   };
   const placeholderText = `Nudge ${room.name || 'them'}, or jump in…`;

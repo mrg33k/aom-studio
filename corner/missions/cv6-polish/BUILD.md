@@ -226,7 +226,25 @@ Implementation (2026-07-15, EA):
   one POST on fast double Enter (response held open 600ms to expose a missing
   guard), and pressed-state acknowledgment on day-fold headers.
 
-**Status:** implemented; battery + critic pass in flight.
+- 2026-07-15 EA external verification + critic pass:
+  - Browser proof: fixture now mounts the real rich composer (fullRoom + awaitable
+    interceptable send); spec asserts instant clear, focus retention, and exactly
+    one POST on fast double Enter with the response held open 600ms. 9/9 with
+    renderer + audit suites; press rules asserted at the stylesheet layer (headless
+    :active polling is unreliable), behavior checked live after deploy.
+  - Steffen critic: PASS ("dead-center on chat feels clunky"; the useRef guard
+    called the correct mechanism vs React state). Applied his three quick fixes
+    same-round: failure-restore only into a still-empty box (never clobbers new
+    keystrokes), the fallback mini composer got the same in-flight guard, chip
+    hit-area inset trimmed to -4px so neighbors never overlap at the gap midline.
+  - Steffen queue for the next chat iteration: small send queue for rapid distinct
+    messages; LRU cap (~20) on the thread cache; aria-expanded/role parity on the
+    mobile fold header; scroll anchoring (pin-to-bottom only when at bottom);
+    iPhone keyboard-open composer pinning (visualViewport); day-fold height
+    animation with scroll preservation; sending/delivered cue on the optimistic
+    echo; send/mic button in-flight cue.
+
+**Status:** shipped after external verification + critic pass; landing to main 2026-07-15.
 
 ### R4 - Home + Search polish.
 

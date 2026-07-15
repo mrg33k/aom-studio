@@ -2636,7 +2636,7 @@ function DemoMobileChatLifecycle() {
     <div data-cv6 data-theme="dark" style={{ width: '100vw', height: '100dvh', background: 'var(--ground, #05080b)' }}>
       <ChatLifecycle
         room={room}
-        fullRoom={null}
+        fullRoom={room}
         worldId="local-render"
         messages={messages}
         status="ready"
@@ -2645,7 +2645,14 @@ function DemoMobileChatLifecycle() {
         awaiting
         onBack={() => {}}
         onOpenNav={() => {}}
-        onSend={() => {}}
+        onSend={async (text) => {
+          // Demo fixture: the send must be awaitable + interceptable so specs can
+          // assert the composer contract; Playwright owns this POST.
+          try {
+            const r = await fetch('/api/dashboard/supabase-messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: 'local-render', agent: 'renderer-room', text, role: 'user', source: 'demo-fixture' }) });
+            return r.ok;
+          } catch { return false; }
+        }}
         onOpenReview={() => {}}
       />
     </div>

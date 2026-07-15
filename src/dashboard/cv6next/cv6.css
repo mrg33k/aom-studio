@@ -1681,7 +1681,8 @@
   [data-cv6] .chip-btn::before, [data-cv6kit] .chip-btn::before {
     content: "";
     position: absolute;
-    inset: -6px;
+    /* -4px keeps ~42px targets without overlapping the 8px chip gap midline. */
+    inset: -4px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
