@@ -104,7 +104,17 @@ function actionLabel(action, el) {
   return '';
 }
 
+export function setActionPressed(el, pressed) {
+  if (!el || !el.classList || typeof el.setAttribute !== 'function') return;
+  const active = !!pressed;
+  el.classList.toggle('is-pressed', active);
+  el.setAttribute('data-cv6-pressed', active ? 'true' : 'false');
+}
+
 function prepareActionControl(el, action) {
+  el.classList.add('cv6-action-control');
+  el.setAttribute('data-cv6-action-control', action);
+  el.setAttribute('data-cv6-pressed', 'false');
   if (!isNativeInteractive(el)) {
     if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
@@ -258,6 +268,16 @@ function applyBindings(el, scopes, ctx) {
       fn(arg, e);
     };
     el.addEventListener('click', handler);
+    const press = () => {
+      if (el.disabled || el.getAttribute('aria-disabled') === 'true') return;
+      setActionPressed(el, true);
+    };
+    const release = () => setActionPressed(el, false);
+    el.addEventListener('pointerdown', press);
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointercancel', release);
+    el.addEventListener('pointerleave', release);
+    el.addEventListener('blur', release);
     const keyHandler = (e) => {
       if (isNativeInteractive(el)) return;
       if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -268,6 +288,11 @@ function applyBindings(el, scopes, ctx) {
     ctx.cleanups.push(() => {
       el.removeEventListener('click', handler);
       el.removeEventListener('keydown', keyHandler);
+      el.removeEventListener('pointerdown', press);
+      el.removeEventListener('pointerup', release);
+      el.removeEventListener('pointercancel', release);
+      el.removeEventListener('pointerleave', release);
+      el.removeEventListener('blur', release);
     });
   }
 

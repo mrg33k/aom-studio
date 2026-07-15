@@ -239,7 +239,9 @@ function AuthGuard({ children }) {
 
   // Public routes that render without auth (design POCs, public demos, etc.)
   const PUBLIC_ROUTES = ['/corner/hero-poc']
-  const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname)
+  const publicCv6Fixture = window.location.pathname === '/dashboard'
+    && new URLSearchParams(window.location.search).get('demo') === 'global-motion'
+  const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname) || publicCv6Fixture
 
   useEffect(() => {
     // If this is a public route, skip auth entirely and render.

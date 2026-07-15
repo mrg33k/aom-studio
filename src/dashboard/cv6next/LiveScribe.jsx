@@ -32,6 +32,10 @@ function composeLiveScribe(raw, screenName) {
   // Strip any baked topbar (the shell provides the shared nav)
   screen.querySelector('.topbar')?.remove();
   screen.setAttribute('style', 'width:100%;height:100%');
+  // The design file carries two text-only loading branches (transcript + screen).
+  // Replace both with the shared Corner loader so a single real `starting` state
+  // never renders competing loading visuals.
+  screen.querySelectorAll('[data-state="loading"]').forEach((node) => node.remove());
   // Inject the shared loading skeleton only. The shared ERROR card is NOT appended:
   // scribe's only error source is the microphone, the template carries its own
   // truthful inline error branch, and the shared card's unbound sample copy ("We

@@ -27,6 +27,7 @@ import Onboarding from './Onboarding.jsx';
 import LiveScribe from './LiveScribe.jsx';
 import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
+import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import NewComposer from './NewComposer.jsx';
 import { supabase } from '../lib/supabase.js';
@@ -2340,6 +2341,16 @@ function demoFilePreviewsRequested() {
   try { return new URLSearchParams(window.location.search).get('demo') === 'file-previews'; }
   catch { return false; }
 }
+function demoGlobalMotionRequested() {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'global-motion'; }
+  catch { return false; }
+}
+function globalMotionTheme() {
+  try {
+    const requested = new URLSearchParams(window.location.search).get('theme');
+    return ['dark', 'light', 'glass'].includes(requested) ? requested : 'dark';
+  } catch { return 'dark'; }
+}
 const DEMO_GOAL = { title: 'Show every chat element', step: 4, doneCount: 2, total: 11, pct: 18, checklist: [] };
 const DEMO_BLOCKS = [
   { type: 'step', stepIndex: 0, title: 'Read the brief and pull the repo', state: 'done', detail: 'Scanned 28 missions and the task runner.' },
@@ -2670,6 +2681,38 @@ function DemoFilePreviews() {
   );
 }
 
+const GLOBAL_MOTION_ACTION_HTML = `
+  <div data-cv6 data-theme="dark" class="cv6-screen" data-screen="global-motion-action" style="height:auto;min-height:96px;padding:20px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
+    <button class="assign" data-action="acknowledgeLoading">Acknowledge loading</button>
+  </div>`;
+
+function DemoGlobalMotion() {
+  // This fixture intentionally holds a declared request in flight. It is public,
+  // deterministic, and mounts the real loader + template binder without tenant data.
+  const inFlight = true;
+  const theme = globalMotionTheme();
+  return (
+    <div
+      data-cv6
+      data-theme={theme}
+      data-app-theme={theme}
+      data-load-in-flight={inFlight ? 'true' : 'false'}
+      style={{ minHeight: '100dvh', background: 'var(--ground)', color: 'var(--fg)', display: 'grid', placeItems: 'center', padding: 20, boxSizing: 'border-box' }}
+    >
+      <div style={{ width: 'min(560px, 100%)', minHeight: 360, display: 'grid', gridTemplateRows: '1fr auto', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden', background: 'var(--ground)' }}>
+        {inFlight && <CornerLogoLoader inline label="Gathering your rooms" />}
+        <TemplateScreen
+          html={GLOBAL_MOTION_ACTION_HTML}
+          data={{}}
+          actions={{ acknowledgeLoading: () => {} }}
+          state="ready"
+          style={{ width: '100%' }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
@@ -2769,10 +2812,12 @@ export default function CornerCV6() {
   const demoHomeQuickThread = useMemo(() => demoHomeQuickThreadRequested(), []);
   const demoMobileChatLifecycle = useMemo(() => demoMobileChatLifecycleRequested(), []);
   const demoFilePreviews = useMemo(() => demoFilePreviewsRequested(), []);
+  const demoGlobalMotion = useMemo(() => demoGlobalMotionRequested(), []);
   if (demoCatchUpModal) return <DemoCatchUpModal worldId={worldId} />;
   if (demoHomeQuickThread) return <DemoHomeQuickThread />;
   if (demoMobileChatLifecycle) return <DemoMobileChatLifecycle />;
   if (demoFilePreviews) return <DemoFilePreviews />;
+  if (demoGlobalMotion) return <DemoGlobalMotion />;
   if (demoBlocks) {
     // Auto-height (no 100dvh cap, no overflow:hidden) so the whole thread is one tall page
     // the browser scrolls — a full-page capture then reaches every element end to end.
@@ -2822,7 +2867,7 @@ export default function CornerCV6() {
       {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={() => setSearchOpen(true)} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(jobId) => onNav?.('command')} />
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
+      <div key={viewKey} className="cv6-screen-stage" data-cv6-view={viewKey}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
       <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} badges={navBadges} />

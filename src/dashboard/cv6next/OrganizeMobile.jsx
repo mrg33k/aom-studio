@@ -17,6 +17,7 @@ import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
+import { cornerLogoLoaderMarkup } from '../cv6kit/cornerLogoLoaderMarkup.js';
 import NewComposer from './NewComposer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { buildWaitingMap, buildDecidedMap } from './OrganizeDesktop.jsx';
@@ -33,11 +34,7 @@ const ORG_ALIASES = {
 
 const SCREEN_BG = 'var(--ground, #05080b)';
 
-const VIEWER_LOADING_HTML =
-  '<div class="cv6-loading is-inline" role="status" aria-live="polite" style="min-height:220px;">'
-  + '<div class="cv6-loading__inner"><div class="cv6-loading__mark" aria-hidden="true">Corner.</div>'
-  + '<div class="cv6-loading__rail" aria-hidden="true"><span class="cv6-loading__bar"></span></div>'
-  + '<div class="cv6-loading__label">Preparing the file</div><div class="cv6-loading__detail" hidden></div></div></div>';
+const VIEWER_LOADING_HTML = cornerLogoLoaderMarkup('Preparing the file', { minHeight: 220 });
 
 function screenByLabel(doc, label) {
   return [...doc.querySelectorAll('[data-cv6][data-screen]')].find((n) => n.getAttribute('data-screen-label') === label) || null;

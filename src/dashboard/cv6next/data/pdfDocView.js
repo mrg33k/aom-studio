@@ -16,6 +16,7 @@
 // bound STRING (el.__cv6Html), never the live DOM (see templateEngine.js).
 
 import { useEffect } from 'react';
+import { cornerLogoLoaderMarkup } from '../../cv6kit/cornerLogoLoaderMarkup.js';
 
 // The reader renders on the .doc paper, which is FORCED LIGHT in every app theme
 // (cv6.css .doc background:#fbfbfa, no theme qualifier). Theme-reactive tokens
@@ -26,11 +27,12 @@ const INK = '#1a1a1a';        // titles on paper
 const INK_MID = '#6a6a72';    // captions / labels / loading on paper (AA on #fbfbfa)
 const PAPER_HAIR = 'rgba(0,0,0,.12)';
 
-// Spinner matches the O2 loading affordance used by the media viewers.
-const WAIT_HTML =
-  `<div data-pdf-wait style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:180px;color:${INK_MID};">`
-  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
-  + '<span style="font-size:13px;font-weight:500;">Loading PDF…</span></div>';
+const WAIT_HTML = cornerLogoLoaderMarkup('Loading PDF…', {
+  paper: true,
+  compact: true,
+  minHeight: 180,
+  waitAttribute: 'data-pdf-wait',
+});
 
 function escAttr(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');

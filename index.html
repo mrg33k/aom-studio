@@ -51,6 +51,7 @@ document.head.appendChild(o)}initApollo();</script>
         --cv6-boot-hair: rgba(255,255,255,.09);
         --cv6-boot-chip: rgba(255,255,255,.06);
         --cv6-boot-accent: #3B82F6;
+        --cv6-boot-mask: url('/cv6/assets/corner-logo-white.svg');
       }
       html[data-app-theme="light"] {
         --cv6-boot-ground: #F6F6F7;
@@ -60,6 +61,7 @@ document.head.appendChild(o)}initApollo();</script>
         --cv6-boot-hair: rgba(0,0,0,.08);
         --cv6-boot-chip: rgba(0,0,0,.04);
         --cv6-boot-accent: #0066FF;
+        --cv6-boot-mask: url('/cv6/assets/corner-logo.svg');
       }
       html[data-app-theme="glass"] {
         --cv6-boot-ground:
@@ -73,6 +75,7 @@ document.head.appendChild(o)}initApollo();</script>
         --cv6-boot-hair: rgba(255,255,255,.16);
         --cv6-boot-chip: rgba(255,255,255,.1);
         --cv6-boot-accent: #5B9BFF;
+        --cv6-boot-mask: url('/cv6/assets/corner-logo-white.svg');
       }
       html[data-cv6-boot="on"],
       html[data-cv6-boot="on"] body {
@@ -101,45 +104,46 @@ document.head.appendChild(o)}initApollo();</script>
         font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
       }
       .cv6-boot-card {
-        width: min(320px, 100%);
+        width: min(280px, 100%);
         display: grid;
-        justify-items: start;
+        justify-items: center;
         gap: 14px;
         padding: 20px;
-        border: 1px solid var(--cv6-boot-hair);
-        border-radius: 16px;
-        background: var(--cv6-boot-surface);
-        box-shadow: 0 14px 36px -14px rgba(0,0,0,.5);
-      }
-      html[data-app-theme="glass"] .cv6-boot-card {
-        backdrop-filter: blur(22px) saturate(1.3);
-        -webkit-backdrop-filter: blur(22px) saturate(1.3);
+        text-align: center;
       }
       .cv6-boot-mark {
-        font-size: clamp(30px, 8vw, 46px);
-        line-height: 1;
-        font-weight: 700;
-        letter-spacing: 0;
-        color: var(--cv6-boot-fg);
-      }
-      .cv6-boot-rail {
-        width: 100%;
-        height: 3px;
-        border-radius: 10px;
-        background: var(--cv6-boot-chip);
-        overflow: hidden;
-      }
-      .cv6-boot-bar {
+        position: relative;
         display: block;
-        width: 72%;
-        height: 100%;
-        border-radius: inherit;
+        width: clamp(138px, 30vw, 184px);
+        aspect-ratio: 110.72 / 24;
+      }
+      .cv6-boot-base,
+      .cv6-boot-fill {
+        position: absolute;
+        inset: 0;
+        display: block;
+        background: var(--cv6-boot-fg);
+        -webkit-mask: var(--cv6-boot-mask) center / contain no-repeat;
+        mask: var(--cv6-boot-mask) center / contain no-repeat;
+      }
+      .cv6-boot-base { opacity: .24; }
+      .cv6-boot-fill {
         background: var(--cv6-boot-accent);
+        clip-path: inset(100% 0 0 0);
+        animation: cv6BootFill 2.2s cubic-bezier(.22, 1, .36, 1) infinite;
       }
       .cv6-boot-label {
         font-size: 13px;
         line-height: 1.4;
         color: var(--cv6-boot-muted);
+      }
+      @keyframes cv6BootFill {
+        0% { clip-path: inset(100% 0 0 0); opacity:.72; }
+        72%, 88% { clip-path: inset(0); opacity:1; }
+        100% { clip-path: inset(0); opacity:.3; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .cv6-boot-fill { animation:none; clip-path:inset(0); }
       }
       #cv6-rotate-lock { display: none; }
       @media only screen and (max-width: 1023px) and (orientation: landscape) {
@@ -199,10 +203,9 @@ document.head.appendChild(o)}initApollo();</script>
 </noscript>
 
     <div id="root"></div>
-    <div id="cv6-boot-loader" role="status" aria-live="polite" aria-label="Preparing your workspace">
+    <div id="cv6-boot-loader" data-cv6-logo-loader role="status" aria-live="polite" aria-label="Preparing your workspace">
       <div class="cv6-boot-card">
-        <div class="cv6-boot-mark" aria-hidden="true">Corner.</div>
-        <div class="cv6-boot-rail" aria-hidden="true"><span class="cv6-boot-bar"></span></div>
+        <span class="cv6-boot-mark" aria-hidden="true"><span class="cv6-boot-base"></span><span class="cv6-boot-fill"></span></span>
         <div class="cv6-boot-label">Preparing your workspace</div>
       </div>
     </div>

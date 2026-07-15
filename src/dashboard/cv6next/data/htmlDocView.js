@@ -7,6 +7,7 @@
 // pin-shield gives Review's existing comment system a click surface.
 
 import { useEffect } from 'react';
+import { cornerLogoLoaderMarkup } from '../../cv6kit/cornerLogoLoaderMarkup.js';
 
 const TUNNEL_BASE = 'https://rag.aheadofmarket.com';
 const INK = '#1a1a1a';
@@ -20,10 +21,12 @@ function escAttr(value) {
     .replace(/>/g, '&gt;');
 }
 
-const WAIT_HTML =
-  `<div data-html-wait style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:320px;background:#fff;color:${INK_MID};">`
-  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
-  + '<span style="font-size:13px;font-weight:500;">Loading web page…</span></div>';
+const WAIT_HTML = cornerLogoLoaderMarkup('Loading web page…', {
+  paper: true,
+  compact: true,
+  minHeight: 320,
+  waitAttribute: 'data-html-wait',
+});
 
 function pinControls() {
   return '<div class="pinshield" style="position:absolute;inset:0;display:none;cursor:crosshair;z-index:4;"></div>'

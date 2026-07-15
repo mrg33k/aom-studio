@@ -359,6 +359,7 @@ export function useLiveScribe(worldId = null) {
       : (turns.length ? 'ready' : 'empty');
 
   const data = {
+    loading: { label: 'Connecting to the meeting…' },
     // The error branch binds the REAL cause (never the sample "check your connection").
     errorNote: notice || 'Recording not available.',
     error: {
