@@ -113,8 +113,9 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, use
       </div>
       <div className="toolnav">
         {VISIBLE_TOOLS.map((t) => (
-          <div key={t.id} className={`ctile${t.id === current ? ' on' : ''}`}
-            onClick={() => onPick?.(t.route)} role="button" aria-label={t.label}
+          <button key={t.id} type="button" className={`ctile${t.id === current ? ' on' : ''}`}
+            onClick={() => onPick?.(t.route)} aria-label={t.label}
+            aria-current={t.id === current ? 'page' : undefined}
             style={{ position: 'relative' }}>
             <Icon id={t.id} />
             <span className="clab">{t.label}</span>
@@ -123,13 +124,13 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, use
             {badges[t.id]?.count ? (
               <span style={{ position: 'absolute', top: -6, right: -8 }}><Badge badge={badges[t.id]} /></span>
             ) : null}
-          </div>
+          </button>
         ))}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="topbar-actions">
         <ThemeSeg theme={theme} onTheme={onTheme} compact />
-        <div className="ib" onClick={() => onOpenCommandK?.()} role="button" aria-label="Search"><SearchGlyph /></div>
-        <div className="av" onClick={() => onOpenProfile?.()} role="button" aria-label="Profile">{userInitials}</div>
+        <button type="button" className="ib" onClick={() => onOpenCommandK?.()} aria-label="Search"><SearchGlyph /></button>
+        <button type="button" className="av" onClick={() => onOpenProfile?.()} aria-label="Profile">{userInitials}</button>
       </div>
     </div>
   );

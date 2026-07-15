@@ -46,7 +46,7 @@ test.describe('CV6 practical product audit', () => {
     await expect(page.getByText('Creation needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
     await page.locator('[data-action="setComposerMode"][data-target="project"]').click()
-    await expect(page.getByText('New project')).toBeVisible()
+    await expect(page.locator('[data-bind="composer.title"]', { hasText: 'New project' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
     await page.getByRole('button', { name: 'Cancel' }).click()
 
@@ -120,7 +120,7 @@ test.describe('CV6 practical product audit', () => {
     await expect(page.getByText('Creation needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
     await page.locator('[data-action="setComposerMode"][data-target="project"]').click()
-    await expect(page.getByText('New project')).toBeVisible()
+    await expect(page.locator('[data-bind="composer.title"]', { hasText: 'New project' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Read-only locally' })).toBeVisible()
     await page.getByRole('button', { name: 'Cancel' }).click()
 

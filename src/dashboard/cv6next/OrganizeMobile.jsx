@@ -111,7 +111,7 @@ const PICKER_HTML = composePicker(template);
 const BROWSE_HTML = composeBrowse(template);
 const VIEW_HTML = composeView(template);
 
-export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target }) {
+export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFile, target }) {
   const worldId = useWorldId();
 
   // ── review machinery (the rehomed Review tool) ──
@@ -329,8 +329,8 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile, target 
     nav: (targetId) => (targetId === 'back' ? handleBack() : onNav?.(targetId)),
     openNav: () => onOpenNav?.(),
     openProfile: () => {},
-    openCommandK: () => {},
-    search: () => {},
+    openCommandK: () => onSearch?.(),
+    search: () => onSearch?.(),
     openProject: (id) => enterProject(id),
     openTreeNode: (id) => enterProject(id),
     openCrumb: (id) => (id === 'root' ? backToPicker() : enterProject(id)),

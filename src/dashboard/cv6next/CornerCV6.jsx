@@ -1573,7 +1573,7 @@ const SUPPORT_THREAD_ALIASES = { 'thread.summary': 'pt' };
 // Where the quoted "earlier in this thread" part of an email body starts. Same split
 // the desktop reading pane uses — one truth for what counts as history.
 const EARLIER_CUT = /^\s*>|^-{2,}\s*Forwarded message|^Begin forwarded message:|^On .{5,80} wrote:/m;
-function SupportInbox({ onNav, onOpenNav, onAssignEmail, worldId }) {
+function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
   const { state, data, reload } = useSupportInbox(worldId);
   const html = useMemo(() => composeScreen(inboxRaw, { mobile: true, dropEmbeddedStates: true }), []);
   const threadHtml = useMemo(() => composeScreen(supportThreadRaw, { mobile: true }), []);
@@ -1631,7 +1631,7 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail, worldId }) {
     setOpenedEmail(e); setShowEarlier(false); setHeldNote(''); setSentNote(''); setDraftOpen(false);
   }, [data.needsYou, data.watching]);
   const actions = useMemo(() => ({
-    openThread, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    openThread, search: () => onSearch?.(), openNav: () => onOpenNav?.(),
     nav: (t) => onNav?.(t), browseWatching: () => setFilter('watching'), emptyAction: () => {},
     // DEF-14: guard against same-filter no-op so census tools see a live handler;
     // the active chip also picks up cursor:default from .mhchip.is-on in cv6.css.
@@ -1643,7 +1643,7 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail, worldId }) {
       const item = [...(data.needsYou || []), ...(data.watching || [])].find((e) => String(e.id) === String(emailId)) || null;
       onAssignEmail?.(emailId, item);
     },
-  }), [openThread, onNav, onOpenNav, reload, onAssignEmail, data.needsYou, data.watching]);
+  }), [openThread, onNav, onOpenNav, onSearch, reload, onAssignEmail, data.needsYou, data.watching]);
 
   // Reply-pane intelligence for asks (wishes): staged draft + summary + options via
   // /api/support/suggest, bounded by a timeout so "Summarizing…" can never run forever —
@@ -1771,15 +1771,15 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail, worldId }) {
   const threadActions = useMemo(() => ({
     closeThread: () => { setOpenedEmail(null); setDraftOpen(false); },
     nav: (t) => { setOpenedEmail(null); setDraftOpen(false); onNav?.(t); },
-    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    search: () => onSearch?.(), openNav: () => onOpenNav?.(),
     toggleEarlier: () => setShowEarlier((v) => !v),
     replyViaElon: () => openDraft(),
-  }), [onNav, onOpenNav, openDraft]);
+  }), [onNav, onOpenNav, onSearch, openDraft]);
   const draftActions = useMemo(() => ({
     nav: () => { setDraftOpen(false); },
-    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    search: () => onSearch?.(), openNav: () => onOpenNav?.(),
     sendDraft,
-  }), [onOpenNav, sendDraft]);
+  }), [onOpenNav, onSearch, sendDraft]);
 
   if (openedEmail && draftOpen && draftData) {
     return <TemplateScreen html={draftHtml} data={draftData} actions={draftActions} state="ready"
@@ -1797,7 +1797,7 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail, worldId }) {
 // (the live Goal Thread: steps, decision cards, data tables) we render the rich thread
 // from that real output. Otherwise we show the real messages honestly. ──
 const CHAT_ALIASES = { 'goal.checklist': 'item' };
-function Chat({ room, worldId, onNav, onOpenNav }) {
+function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
   // Demo mode: check for ?demo=blocks query param
   const demoFeed = useDemoBlocksFeed();
   const isDemo = !!demoFeed;
@@ -1840,7 +1840,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
       fullRoom={isDemo ? null : room} worldId={worldId}
       messages={messages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
-      onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
+      onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSearch={() => onSearch?.()} onSend={(t) => send?.(t)}
       onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), needsReview: true } : null)}
     />
   );
@@ -1855,7 +1855,7 @@ const COMMAND_ALIASES = {
   'activity.jobs': 'job', 'goal.checklist': 'step', 'goal.loops': 'loop',
   'ledger.others': 'room', 'ledger.rooms': 'room', 'room.checklist': 'step',
 };
-function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
+function Command({ worldId, onNav, onOpenNav, onSearch, onOpenRoom }) {
   // Get command data from context instead of calling useCommand directly.
   // This prevents redundant hook instantiation on screen navigation.
   const { command, selectedKey, setSelectedKey, statusFilter, setStatusFilter, goalEdit, setGoalEdit } = useCommandContext();
@@ -1888,8 +1888,8 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
       }
     };
     return {
-      nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
-      openCommandK: () => onOpenNav?.(), openProfile: () => onOpenNav?.(),
+      nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onSearch?.(), openNav: () => onOpenNav?.(),
+      openCommandK: () => onSearch?.(), openProfile: () => onOpenNav?.(),
       // Step in: select/expand the row (second tap steps back out). Changing rooms
       // closes an open set-goal row so it never carries across rooms.
       openGoal: (id) => { setGoalEdit(false); setSelectedKey((cur) => (cur === String(id) ? '' : String(id))); },
@@ -2005,7 +2005,7 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
       // A dock card is a live agent session — tapping it opens that agent's room.
       openJob: (id) => openRoomById('agent:' + String(id || '')),
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept, answerRoomQuestion, handNextStep, setRoomGoal, setRoomStatus, loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle, setSelectedKey, setGoalEdit]);
+  }, [onNav, onOpenNav, onSearch, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept, answerRoomQuestion, handNextStep, setRoomGoal, setRoomStatus, loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle, setSelectedKey, setGoalEdit]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
@@ -2032,7 +2032,7 @@ const TRACKER_ALIASES = {
   projectTrackers: 'tracker', missionTrackers: 'tracker',
   assignableAgents: 'agent',
 };
-function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
+function Tracker({ worldId, onNav, onOpenNav, onSearch, onAssignBug }) {
   // Get tracker data from context instead of calling useTrackerBugs directly.
   const { tracker } = useCommandContext();
   const { state, data, switchTracker, createTracker, createBug, updateBug, canCreate } = tracker;
@@ -2107,13 +2107,13 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
   const openNew = () => { draftKindRef.current = 'project'; setSheet('new'); };
 
   const listActions = useMemo(() => ({
-    nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onSearch?.(), openNav: () => onOpenNav?.(),
     openSwitcher: () => setSheet('switch'),
     openBug: (id) => openBug(id),
     newBug: () => openNewBug(), assignAgent: (bugId) => assignBug(bugId), pauseAgent: () => {},
     openAttachment: () => {}, retry: () => {},
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenNav, data.bugs, data.assignableAgents, data.activeTracker, canCreate, onAssignBug]);
+  }), [onNav, onOpenNav, onSearch, data.bugs, data.assignableAgents, data.activeTracker, canCreate, onAssignBug]);
 
   const detailActions = useMemo(() => ({
     nav: () => setSheet(null),
@@ -2202,7 +2202,7 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
     const dbug = selectedBug || (data.bugs || [])[0] || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '', description: '', doneCount: '', stepCount: '', checklist: [] };
     const ddata = { ...data, bug: withBugTruth(dbug) };
     const dActions = {
-      nav: (t) => onNav(t === 'back' ? 'home' : t), openCommandK: () => {}, openProfile: () => onOpenNav?.(),
+      nav: (t) => onNav(t === 'back' ? 'home' : t), openCommandK: () => onSearch?.(), openProfile: () => onOpenNav?.(),
       openTracker: (id) => switchTracker(id),
       openBug: (id) => { const b = (data.bugs || []).find((x) => String(x.id) === String(id)); if (b) setSelectedBug(b); },
       newBug: () => openNewBug(),
@@ -2802,6 +2802,7 @@ export default function CornerCV6() {
     goTo('home', null);
   }, [goTo]);
   const onOpenNav = useCallback(() => setNavOpen(true), []);
+  const onSearch = useCallback(() => setSearchOpen(true), []);
   const closeNav = useCallback(() => setNavOpen(false), []);
   const goHome = useCallback(() => { setHistory([]); setOpenedRoom(null); setView('home'); }, []);
 
@@ -2838,16 +2839,16 @@ export default function CornerCV6() {
       onReviewFile={(f, proj) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', needsReview: true } : null); }} />;
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
-  else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} onOpenNav={onOpenNav} />; viewKey = 'support'; }
-  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
-  else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
+  else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = `chat:${openedRoom.room?.id}`; }
+  else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={onAssignEmail} worldId={worldId} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} onBack={() => onNav('back')} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'support'; }
+  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
+  else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }
-  else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'livescribe'; }
-  else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
-  else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
-  else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
+  else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'livescribe'; }
+  else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
+  else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
+  else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={onSearch} />; viewKey = 'chatlist'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
   // Needs-review count rides the Files nav entry (desktop tile + mobile drawer row) —
@@ -2864,7 +2865,7 @@ export default function CornerCV6() {
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
-      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={() => setSearchOpen(true)} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(jobId) => onNav?.('command')} />
       <div key={viewKey} className="cv6-screen-stage" data-cv6-view={viewKey}>
@@ -2875,6 +2876,7 @@ export default function CornerCV6() {
       {searchOpen && (
         <Search
           onClose={() => setSearchOpen(false)}
+          onOpenMenu={() => { setSearchOpen(false); setNavOpen(true); }}
           onOpenRoom={(room, wid) => { setSearchOpen(false); onOpenRoom(room, wid); }}
         />
       )}

@@ -46,7 +46,7 @@ function Glyph({ type, initials, status }) {
   );
 }
 
-export default function Search({ onClose, onOpenRoom }) {
+export default function Search({ onClose, onOpenMenu, onOpenRoom }) {
   const isDesktop = useIsDesktop();
   const { data, worldId } = useChatList();
   const byProject = useProjectMissions(worldId);
@@ -78,15 +78,27 @@ export default function Search({ onClose, onOpenRoom }) {
   const total = groups.reduce((n, g) => n + g.results.length, 0);
   const pick = (r) => { onOpenRoom?.(r.room, worldId); onClose?.(); };
 
+  const searchInput = (
+    <input autoFocus type="search" aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search rooms and missions…"
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose?.(); if (e.key === 'Enter' && total) { const first = groups[0].results[0]; pick(first); } }}
+      style={{ flex: 1, minWidth: 0, width: '100%', border: 'none', background: 'transparent', outline: 'none', color: 'var(--fg)', fontSize: 16, fontFamily: 'var(--font-sans)' }} />
+  );
+
   const palette = (
     <div data-cv6 data-theme="dark" style={{ width: '100%', maxWidth: isDesktop ? 640 : '100%', height: isDesktop ? 'auto' : '100%', maxHeight: isDesktop ? '70vh' : '100%', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: isDesktop ? 16 : 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: isDesktop ? '0 30px 80px -20px rgba(0,0,0,.6)' : 'none' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', borderBottom: '1px solid var(--divider)', paddingTop: isDesktop ? 14 : 'max(14px, env(safe-area-inset-top, 0px))' }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" style={{ flex: 'none' }}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search rooms and missions…"
-          onKeyDown={(e) => { if (e.key === 'Escape') onClose?.(); if (e.key === 'Enter' && total) { const first = groups[0].results[0]; pick(first); } }}
-          style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--fg)', fontSize: 16, fontFamily: 'var(--font-sans)' }} />
-        <button onClick={() => onClose?.()} style={{ border: 'none', background: 'var(--surface-2)', color: 'var(--muted)', borderRadius: 8, padding: '6px 11px', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>{isDesktop ? 'esc' : 'Cancel'}</button>
-      </div>
+      {isDesktop ? (
+        <div className="cv6-searchbar" style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', borderBottom: '1px solid var(--divider)' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" style={{ flex: 'none' }}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          {searchInput}
+          <button type="button" aria-label="Close search" onClick={() => onClose?.()} style={{ border: 'none', background: 'var(--surface-2)', color: 'var(--muted)', borderRadius: 8, padding: '6px 11px', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>esc</button>
+        </div>
+      ) : (
+        <div className="mhdr cv6-searchbar">
+          <button type="button" className="mback" aria-label="Back" onClick={() => onClose?.()}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></button>
+          <div className="mhtitle">{searchInput}</div>
+          <button type="button" className="ib" aria-label="Menu" onClick={() => onOpenMenu?.()}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></button>
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px max(12px, env(safe-area-inset-bottom, 0px))' }}>
         {total === 0 ? (
           <div style={{ color: 'var(--muted)', fontSize: 13.5, textAlign: 'center', padding: '32px 20px' }}>{q.trim() ? `Nothing matches “${q.trim()}”.` : 'Type to search your rooms and missions.'}</div>
