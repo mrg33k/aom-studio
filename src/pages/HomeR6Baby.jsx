@@ -77,9 +77,11 @@ const shuffleReel = videos => {
   return arr;
 };
 
-// Helper to get randomized interval (900-1800ms)
-const randomInterval = () => 900 + Math.random() * 900;
-const HERO_CROSSFADE_MS = 225;
+// Helper to get randomized interval. R36: tightened from 900-1800ms — the wide
+// jitter plus the 1.5s clip length meant visible mid-loop restarts and a
+// frantic rhythm Patrik read as jumpy cuts.
+const randomInterval = () => 1100 + Math.random() * 300;
+const HERO_CROSSFADE_MS = 500;
 
 // hear-hero scroll program, in viewport-heights: hold, zoom through the mark,
 // then one viewport where the full-bleed stage scrolls away into the reel.
@@ -131,7 +133,7 @@ function CaseVideo({ src, posterSrc, caseIndex }) {
 
 // Local video wrapper used by the reels, collage, and work wall. Playback is
 // gated to the visible section and disabled for reduced motion and phone layouts.
-function InViewVideo({ src, className = '', style, posterSrc, preload = 'metadata', onPlaying, onError, desktopOnly = false }) {
+function InViewVideo({ src, className = '', style, posterSrc, preload = 'metadata', onPlaying, onError, desktopOnly = false, loop = true }) {
   const vidRef = useRef(null);
 
   useEffect(() => {
@@ -179,7 +181,7 @@ function InViewVideo({ src, className = '', style, posterSrc, preload = 'metadat
       className={className}
       src={src}
       muted
-      loop
+      loop={loop}
       playsInline
       preload={preload}
       poster={posterSrc}
@@ -254,6 +256,16 @@ function BufferedReel({ videos, className = 'hz-video', videoClassName = 'vid', 
         pending.committed = true;
         currentSlot = pending.slot;
         currentSrc = pending.src;
+
+        // The incoming clip has been playing hidden since it loaded, so by
+        // commit time it is mid-clip (the files run ~1.5s). Rewind to frame 0
+        // as it fades in so viewers always see the clip's natural opening.
+        const incoming = heroVideo.querySelectorAll('video')[pending.slot];
+        if (incoming) {
+          try { incoming.currentTime = 0; } catch { /* not seekable yet */ }
+          incoming.play().catch(() => {});
+        }
+
         setActiveSlot(pending.slot);
 
         // Start the next cadence clock now, but preserve the outgoing source
@@ -325,6 +337,7 @@ function BufferedReel({ videos, className = 'hz-video', videoClassName = 'vid', 
           src={src}
           preload="auto"
           desktopOnly
+          loop={false}
           onPlaying={event => {
             setHasPlayed(true);
             playingRef.current(slot, event.currentTarget.getAttribute('src'));
@@ -730,10 +743,13 @@ const CSS = `
 .r17 .hz-video .pstr.is-hidden { opacity:0; }
 .r17 .hz-video .vid { position:absolute; inset:0; z-index:1; }
 .r17 .buffered-reel .buffer-reel-video {
-  opacity:0; transform:translateZ(0); will-change:opacity;
+  opacity:0; z-index:1; transform:translateZ(0); will-change:opacity;
+  transition:opacity 0s linear ${HERO_CROSSFADE_MS}ms;
+}
+.r17 .buffered-reel .buffer-reel-video.is-active {
+  z-index:2; opacity:1;
   transition:opacity ${HERO_CROSSFADE_MS}ms ease;
 }
-.r17 .buffered-reel .buffer-reel-video.is-active { z-index:2; opacity:1; }
 @media(max-width:640px){
   .r17 .hz-video .vid { display:none; }
   .r17 .hz-video .pstr.is-hidden { opacity:1; }
