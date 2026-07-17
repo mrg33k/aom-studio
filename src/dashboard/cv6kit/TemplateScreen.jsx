@@ -125,6 +125,17 @@ export function TemplateScreen({ html, data, actions, state = 'ready', aliases, 
       const k = n.getAttribute('data-cv6-keep');
       if (k) kept.set(k, n);
     });
+    // SCROLL-KEEP FIX (corner:corner-ui-cv6 2026-07-17): Chrome resets scrollTop to 0
+    // when an element is detached from the DOM — even if the JS object is saved in a
+    // variable. The data-cv6-keep graft preserves the DOM node but the scroll position
+    // is lost the moment root.innerHTML wipes the parent chain. Snapshot it here (before
+    // innerHTML) and restore it after grafting so .convo-thread never jumps to scrollTop 0.
+    const keptScroll = new Map();
+    for (const [k, node] of kept) {
+      if (node.scrollTop > 0 || node.scrollLeft > 0) {
+        keptScroll.set(k, { top: node.scrollTop, left: node.scrollLeft });
+      }
+    }
     let focusRestore = null;
     if (kept.size) {
       const active = document.activeElement;
@@ -145,6 +156,13 @@ export function TemplateScreen({ html, data, actions, state = 'ready', aliases, 
       let placeholder = null;
       try { placeholder = root.querySelector(`[data-cv6-keep="${CSS.escape(k)}"]`); } catch { placeholder = null; }
       if (placeholder && placeholder !== node) placeholder.replaceWith(node);
+    }
+    // Restore scroll of kept nodes after graft (scrollTop was reset to 0 during detach).
+    for (const [k, pos] of keptScroll) {
+      const node = kept.get(k);
+      if (!node) continue;
+      if (pos.top > 0) node.scrollTop = pos.top;
+      if (pos.left > 0) node.scrollLeft = pos.left;
     }
 
     // Handlers forward to the current actions ref, so the latest handler always runs
