@@ -5,6 +5,7 @@
 // Caller must pass Authorization: Bearer <jwt>; verifyTenant gates by tenant.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { classifyCommandWorkBucket } from '../_lib/commandWorkStatus.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -125,6 +126,12 @@ export default async function handler(req, res) {
         if (typeof out[f] === 'string' && out[f].length > TASK_TEXT_MAX) out[f] = out[f].slice(0, TASK_TEXT_MAX);
       }
       if (out.metadata && typeof out.metadata === 'object') out.metadata = slimMeta(out.metadata);
+      // corner:corner-ui-cv6 R-CMD-BUCKETS (2026-07-18): stamp the normalized
+      // work bucket (proposed | inprogress | done | blocked | failed | null)
+      // right here so every consumer renders the SAME three-buckets truth —
+      // Patrik's "Command center doesn't know what's in progress vs proposed
+      // vs done" was every task reaching the surface status-blind.
+      out.bucket = classifyCommandWorkBucket(out.status);
       return out;
     };
     const tasks = [...activeTasks, ...recentDone].map(slimTask);
