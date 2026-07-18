@@ -19,6 +19,7 @@ import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { cornerLogoLoaderMarkup } from '../cv6kit/cornerLogoLoaderMarkup.js';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
+import { resolveFilesTarget, filesTargetKey } from './data/reviewTargetResolve.js';
 import NewComposer from './NewComposer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { useWorldId } from '../lib/tenantContext.jsx';
@@ -160,26 +161,16 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
   const pendingOpenRef = useRef(null);
   useEffect(() => {
     if (!target) return;
-    const key = JSON.stringify([target.name || '', target.project || '', (target.files || []).map((f) => f?.url || f?.path || f?.name || ''), !!target.needsReview]);
+    const key = filesTargetKey(target);
     if (targetKeyRef.current === key) return;
-    const wantsFile = !!(target.name || (target.files && target.files.length));
+    // Shape-blind resolution (Patrik 2026-07-18 "comment lands on the projects
+    // panel"): the resolver reads EVERY producer shape — {url,name} attachments
+    // AND {attachmentUrl,fileName} message rows from the mobile galleries /
+    // "Comment in Review" — so a chat hand-off can never resolve to an empty
+    // identity and strand the user on the tree with no document open.
+    const { wantsFile, item, proj, pending } = resolveFilesTarget(target, itemsAll);
     if ((wantsFile || target.needsReview) && !itemsAll.length && review.state === 'loading') return; // queue still landing
     targetKeyRef.current = key;
-    const base = (p) => String(p || '').split('/').pop();
-    let item = null;
-    let rawPath = '';
-    let rawName = target.name || '';
-    if (target.files && target.files.length) {
-      const f = target.files[0] || {};
-      rawPath = String(f.url || f.path || '').replace(/^\/+/, '');
-      rawName = f.name || rawName || base(rawPath);
-      item = (rawPath && itemsAll.find((i) => i.id === rawPath))
-        || (rawName ? itemsAll.find((i) => base(i.id) === rawName) : null) || null;
-    } else if (target.name) {
-      item = itemsAll.find((i) => base(i.id) === target.name && (!target.project || i.whoRaw === target.project))
-        || itemsAll.find((i) => base(i.id) === target.name) || null;
-    }
-    const proj = (item && (item.whoRaw || '__personal')) || target.project || null;
     if (proj) selectProject(proj);
     // The needs-review filter goes on for triage entries; a target that is NOT in
     // the waiting set opens in plain browse (the filter would hide it). A bare
@@ -192,8 +183,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
         setFilter('needs');
       }
     }
-    const rid = item ? item.id : rawPath;
-    if (rid || rawName) pendingOpenRef.current = { rid, name: rawName, project: target.project || (item && item.whoRaw) || '' };
+    if (pending) pendingOpenRef.current = pending;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, itemsAll, review.state]);
   // Resolve the pending target to a real row once the list shows it; if no row ever
