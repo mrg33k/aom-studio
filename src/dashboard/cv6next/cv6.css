@@ -1161,6 +1161,15 @@
     min-block-size:44px;
     box-sizing:border-box;
   }
+  /* The 44px floor above REPLACES flexbox's automatic min-content minimum
+     (spec: an explicit min-height wins over the auto minimum), so in an
+     overflowing .scrbody flex column every tappable row was free to
+     flex-shrink to exactly 44px — Tracker's mobile bug list crushed ~107
+     cards into the viewport, titles painting under the next card
+     (corner:corner-ui-cv6, 2026-07-18). A scrollable list must scroll,
+     never crush its rows. Stylesheet-level so an intentional inline
+     flex:1 filler still wins (inline beats sheet). */
+  [data-cv6] .scrbody > * { flex-shrink:0; }
 }
 
 /* ---- R2 shared top-bar contract. Desktop tool changes keep one shell-owned
