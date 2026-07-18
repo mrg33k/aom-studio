@@ -21,6 +21,7 @@ import { cornerLogoLoaderMarkup } from '../cv6kit/cornerLogoLoaderMarkup.js';
 import NewComposer from './NewComposer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { buildWaitingMap, buildDecidedMap } from './OrganizeDesktop.jsx';
+import { resolveFilesTarget, filesTargetKey } from './data/reviewTargetResolve.js';
 import { useWorldId } from '../lib/tenantContext.jsx';
 import template from './templates/organize.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -207,26 +208,16 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
   const enteredViaTargetRef = useRef(false);
   useEffect(() => {
     if (!target) return;
-    const key = JSON.stringify([target.name || '', target.project || '', (target.files || []).map((f) => f?.url || f?.path || f?.name || ''), !!target.needsReview]);
+    const key = filesTargetKey(target);
     if (targetKeyRef.current === key) return;
-    const wantsFile = !!(target.name || (target.files && target.files.length));
+    // Shape-blind resolution (Patrik 2026-07-18 "comment lands on the projects
+    // panel"): the shared resolver reads EVERY producer shape — {url,name}
+    // attachments AND {attachmentUrl,fileName} message rows from the mobile
+    // galleries / "Comment in Review" — so a chat hand-off can never resolve to
+    // an empty identity and strand the user on the project picker.
+    const { wantsFile, item, proj, pending } = resolveFilesTarget(target, itemsAll);
     if ((wantsFile || target.needsReview) && !itemsAll.length && review.state === 'loading') return;
     targetKeyRef.current = key;
-    const base = (p) => String(p || '').split('/').pop();
-    let item = null;
-    let rawPath = '';
-    let rawName = target.name || '';
-    if (target.files && target.files.length) {
-      const f = target.files[0] || {};
-      rawPath = String(f.url || f.path || '').replace(/^\/+/, '');
-      rawName = f.name || rawName || base(rawPath);
-      item = (rawPath && itemsAll.find((i) => i.id === rawPath))
-        || (rawName ? itemsAll.find((i) => base(i.id) === rawName) : null) || null;
-    } else if (target.name) {
-      item = itemsAll.find((i) => base(i.id) === target.name && (!target.project || i.whoRaw === target.project))
-        || itemsAll.find((i) => base(i.id) === target.name) || null;
-    }
-    const proj = (item && (item.whoRaw || '__personal')) || target.project || null;
     if (proj) enterProject(proj);
     // A bare ?view=review (no file) lands IN triage: newest waiting room, filter on.
     if (target.needsReview) {
@@ -237,9 +228,8 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
         setFilterBoth('needs');
       }
     }
-    const rid = item ? item.id : rawPath;
-    if (rid || rawName) {
-      pendingOpenRef.current = { rid, name: rawName, project: target.project || (item && item.whoRaw) || '' };
+    if (pending) {
+      pendingOpenRef.current = pending;
       enteredViaTargetRef.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
