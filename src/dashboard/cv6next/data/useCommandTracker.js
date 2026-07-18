@@ -11,6 +11,7 @@ import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
+import { humanizeUrls } from './previewText.js';
 import { titleForAgent, AGENT_TITLES } from './agentTitles.js';
 import { classifyCommandRoomStatus, isCommandBookkeepingStamp } from '../../../../api/_lib/commandTruth.js';
 export { useWorldId } from '../../lib/tenantContext.jsx';
@@ -97,7 +98,10 @@ function normalizeRoomKey(key) {
 // guard the /cvg CommandTracker uses).
 function cleanCell(s) {
   if (typeof s !== 'string') return '';
-  return s
+  // qa-sweep 2026-07-17 RC6: humanize URLs to a file name / hostname BEFORE the
+  // guard strips, so a ledger line reads "Deliverable approved: aztc-prize-website.pdf"
+  // instead of the stripped-to-nothing "Deliverable approved:".
+  return humanizeUrls(s)
     .replace(/(?:[A-Za-z]:)?[\\/](?:Users|home)[\\/][^\s]+/gi, '')
     .replace(/https?:\/\/\S+/gi, '')
     .replace(/\s+/g, ' ')
