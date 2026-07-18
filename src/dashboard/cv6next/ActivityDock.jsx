@@ -8,11 +8,15 @@ import { useCommandContext } from './providers/DataContext.jsx';
 import { titleForAgent } from './data/agentTitles.js';
 
 // Per-job tint mapping (kind -> CSS class for ad-ico background + text color).
+// R-CMD-BUCKETS (2026-07-18): job.kind is now the work bucket; the float dock
+// only ever shows live in-progress work, but map every bucket for safety.
 const KIND_TINTS = {
-  recording: 'is-rec',    // red: rgba(248,113,113,.16)
-  agent: 'is-agent',      // accent: var(--accent-weak)
-  secondary: 'is-build',  // violet: rgba(139,124,246,.16)
-  drafting: 'is-review',  // green: rgba(52,211,153,.18)
+  inprogress: 'is-inprogress',
+  proposed: 'is-proposed',
+  done: 'is-done',
+  blocked: 'is-blocked',
+  failed: 'is-failed',
+  agent: 'is-agent', // legacy demo kind
 };
 
 // Demo job (shown when no real agents running) — clearly labelled SAMPLE.
@@ -36,10 +40,12 @@ function ActivityDock({ worldId, onOpenJob }) {
   const [hoveredJobId, setHoveredJobId] = useState(null);
   const dockRef = useRef(null);
 
-  // Real jobs from active agents, or fallback to demo.
-  const jobs = (commandData?.activity?.jobs && commandData.activity.jobs.length > 0)
-    ? commandData.activity.jobs
-    : [DEMO_JOB];
+  // Real jobs from active agents, or fallback to demo. The activity feed now
+  // carries the full bucketed work list (proposed/done/failed included —
+  // R-CMD-BUCKETS); the FLOAT dock pins only heartbeat-live work, never a
+  // finished or queued card, so filter to job.live here.
+  const liveJobs = (commandData?.activity?.jobs || []).filter((j) => j.live);
+  const jobs = liveJobs.length > 0 ? liveJobs : [DEMO_JOB];
 
   // Pick the first job to show in the float dock (only one visible at a time).
   const currentJob = jobs[0] || DEMO_JOB;
