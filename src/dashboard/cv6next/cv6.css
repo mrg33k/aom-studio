@@ -1184,8 +1184,9 @@
    (the mobile header's bright seam + flat-strip clash, Patrik 2026-07-18). Every
    ground-painted band goes translucent glass instead: the page paints the
    gradient once, the band blurs what's behind it. The [style*=] arms catch the
-   templates' inline-styled bars (bottom decision bars, pin bars, composers) —
-   all height-constrained bands, no full-screen surfaces paint ground inline. */
+   templates' inline-styled bars (bottom decision bars, pin bars, composers);
+   the modal exception right below re-opaques the reading surfaces it would
+   otherwise catch. */
 [data-app-theme="glass"] [data-cv6] :where(.mhdr, .mhsubactions, .mcomposer, .mpinbar),
 [data-cv6][data-app-theme="glass"] :where(.mhdr, .mhsubactions, .mcomposer, .mpinbar),
 [data-app-theme="glass"] [data-cv6] [style*="background:var(--ground)"],
@@ -1193,6 +1194,18 @@
   background: rgba(10, 14, 20, .44) !important;
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+/* ...except MODALS the [style*=] arm also catches (review 2026-07-18 defect 3):
+   the create-mission card and the injected bottom sheets (their inline literal
+   `border-top-left-radius:22px` is the sheet signature). A primary reading or
+   input surface at 44% alpha over a busy page is not legible — these go
+   near-opaque glass instead. Higher specificity than the band rule above, so
+   it wins at equal importance. */
+[data-app-theme="glass"] [data-cv6] :is(.cmp-card, [style*="border-top-left-radius:22px"][style*="background:var(--ground)"]),
+[data-cv6][data-app-theme="glass"] :is(.cmp-card, [style*="border-top-left-radius:22px"][style*="background:var(--ground)"]) {
+  background: rgba(13, 17, 23, .93) !important;
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
 }
 
 /* ---- Global action feedback + touch target baseline. The independent `scale`

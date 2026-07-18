@@ -169,3 +169,15 @@ export async function verifyTenant(requestedTenant, req) {
     403
   );
 }
+
+// The caller's OWN world from the JWT (user_metadata.world), lowercased, or
+// null when the request carries no valid session. Used by endpoints that must
+// SCOPE a lookup to the caller before any tenant gate runs (e.g. resolving a
+// bare mission slug to a world) — never as an authorization decision by itself.
+export async function callerWorld(req) {
+  const jwt = extractJwt(req);
+  if (!jwt) return null;
+  const user = await getUserFromJwt(jwt);
+  if (!user) return null;
+  return String(user.user_metadata?.world || '').toLowerCase() || null;
+}

@@ -32,7 +32,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { verifyTenant, TenantAuthError, callerWorld } from '../_lib/verifyTenant.js';
 
 // ── AOM-EA root resolution (matches api/local/file.js pattern) ────────────────
 const AOM_EA_ENV = process.env.AOM_EA_ROOT;
@@ -245,8 +245,16 @@ function collectMissions(projectAbsPath, stats, dirLimit) {
 // (Patrik, 2026-07-18). This resolver is the local-disk arm of the fix: find
 // which world's missions/ tree owns the slug. Prod uses the rag-server walk
 // (which reports `world` for mission homes) — see the fallback in the handler.
-function resolveLocalMissionDir(slug) {
+function resolveLocalMissionDir(slug, worldHint = null) {
   const usersRoot = path.join(AOM_EA_ROOT, 'corner', 'users');
+  // Caller-world first (review 2026-07-18 defect 2): with two worlds owning the
+  // same mission slug, an alphabetical scan resolved the WRONG world and the
+  // tenant gate then locked the caller out of their own room. The caller's
+  // world always wins; the scan below is only the no-session/admin fallback.
+  if (worldHint && /^[a-z0-9][a-z0-9-]*$/.test(worldHint)) {
+    const hinted = path.join(usersRoot, worldHint, 'missions', slug);
+    try { if (fs.statSync(hinted).isDirectory()) return { world: worldHint, dir: hinted }; } catch { /* fall through */ }
+  }
   let entries = [];
   try { entries = fs.readdirSync(usersRoot, { withFileTypes: true }); } catch { return null; }
   for (const ent of entries) {
@@ -319,9 +327,16 @@ export default async function handler(req, res) {
     // "disappear" as chat scrolls past the message window (2026-07-18).
     // Prod path: the rag-server walk reports `world` when it resolved a
     // mission home; we tenant-gate on that world BEFORE returning any data.
+    // Resolution is SCOPED to the caller's own world first (review 2026-07-18
+    // defect 2): without the hint, first-world-wins slug collisions resolved
+    // another world's mission and the gate locked the caller out of their own
+    // room. The hint is a scoping aid, never an authorization input — the
+    // verifyTenant gate below still decides access.
+    const hintW = await callerWorld(req);
     try {
       const ragUrl = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`
-        + (dirLimit ? `&dir_limit=${dirLimit}` : '');
+        + (dirLimit ? `&dir_limit=${dirLimit}` : '')
+        + (hintW ? `&world=${encodeURIComponent(hintW)}` : '');
       const ragRes = await fetch(ragUrl, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
       if (ragRes.ok) {
         const body = await ragRes.json();
@@ -340,7 +355,7 @@ export default async function handler(req, res) {
       // tunnel unreachable -> try local disk.
     }
     // Local-disk arm (vercel dev / on-box runtime).
-    const local = resolveLocalMissionDir(slug);
+    const local = resolveLocalMissionDir(slug, hintW);
     if (local) {
       try {
         await verifyTenant(local.world, req);
@@ -383,15 +398,26 @@ export default async function handler(req, res) {
 
   try {
     const ragUrl = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`
-      + (dirLimit ? `&dir_limit=${dirLimit}` : '');
+      + (dirLimit ? `&dir_limit=${dirLimit}` : '')
+      + `&world=${encodeURIComponent(world)}`;
     const ragRes = await fetch(ragUrl, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
     if (ragRes.ok) {
       const body = await ragRes.json();
-      // The rag-server payload doesn't include `world` (it's derived from the
-      // tenant gate above). Stitch it in so consumers don't have to look it up.
-      // The rag-server also carries truncated/truncated_dirs (FILE-CON R3);
-      // the spread forwards them untouched.
-      return res.status(200).json({ ...body, world });
+      // LEAK GUARD (review 2026-07-18 defect 1): the walk's mission-room
+      // fallback stamps `world` when it resolved a user-mission home. If that
+      // world is NOT the world this projects row was verified for, the walk
+      // found ANOTHER tenant's mission tree behind a colliding slug — spreading
+      // it (and overwriting `world`) would hand tenant A's file listing to
+      // tenant B with the mismatch masked. Treat as a miss, never forward.
+      if (body && body.world && typeof body.world === 'string'
+          && String(body.world).toLowerCase() !== String(world).toLowerCase()) {
+        console.warn(`[project-files] walk resolved world "${body.world}" for row-backed slug "${slug}" (verified "${world}") — dropped`);
+      } else if (body) {
+        // The plain project walk carries no `world` (derived from the tenant
+        // gate above) — stitch it in so consumers don't have to look it up.
+        // truncated/truncated_dirs (FILE-CON R3) ride the spread untouched.
+        return res.status(200).json({ ...body, world });
+      }
     }
     // Fall through to local-disk fallback when tunnel is unreachable.
   } catch (err) {

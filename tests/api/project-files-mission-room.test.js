@@ -31,10 +31,10 @@ const { default: handler } = await import('../../api/dashboard/project-files.js'
 // Switchable fetch stub. `ragMode`: 'down' (network error), 'empty' (200, no
 // world — unfixed rag), 'mission' (200 with world+files — fixed rag).
 // `callerWorld` drives the JWT identity verifyTenant sees.
-const state = { ragMode: 'down', callerWorld: 'aom' }
+const state = { ragMode: 'down', callerWorld: 'aom', projectsRow: null }
 globalThis.fetch = async (url) => {
   const u = String(url)
-  if (u.includes('/rest/v1/projects')) return { ok: true, json: async () => [] } // no projects row
+  if (u.includes('/rest/v1/projects')) return { ok: true, json: async () => (state.projectsRow ? [state.projectsRow] : []) }
   if (u.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'user-1', user_metadata: { world: state.callerWorld } }) }
   if (u.includes('/rest/v1/rpc/is_world_admin_for_tenant')) return { ok: true, json: async () => false }
   if (u.includes('/project-files-walk')) {
@@ -100,4 +100,36 @@ test('unknown slug still 404s', async () => {
   state.ragMode = 'down'; state.callerWorld = 'aom'
   const res = await run('no-such-room-anywhere')
   assert.equal(res.statusCode, 404)
+})
+
+// ── Review 2026-07-18 defects 1 + 2 (pre-deploy HOLD) ────────────────────────
+
+test('LEAK GUARD: row-backed slug never forwards another world\'s mission walk', async () => {
+  // Tenant ben owns a projects ROW named "outreach" (no disk dir). The rag
+  // walk's mission fallback resolves world AOM's missions/outreach and stamps
+  // world:"aom". Forwarding that spread would hand aom's file listing to ben
+  // with the world overwritten — the guard must drop it instead.
+  state.ragMode = 'mission'; state.callerWorld = 'ben'
+  state.projectsRow = { client_id: 'ben', repo_path: '' }
+  const res = await run('outreach')
+  state.projectsRow = null
+  assert.equal(res.statusCode, 200, JSON.stringify(res.payload))
+  assert.equal(res.payload.world, 'ben')
+  const paths = (res.payload.files || []).map((f) => f.path || '')
+  assert.ok(!paths.some((p) => p.includes('users/aom/')), `aom paths leaked to ben: ${paths}`)
+  assert.equal((res.payload.files || []).length, 0, 'colliding-slug walk must be dropped, not forwarded')
+})
+
+test('COLLISION: caller\'s own world wins mission resolution over an alphabetically-earlier world', async () => {
+  // World "aaa" also has missions/outreach. Pre-fix, the local scan resolved
+  // aaa first and the tenant gate 403'd the aom caller out of their OWN room.
+  fs.mkdirSync(path.join(tmpRoot, 'corner', 'users', 'aaa', 'missions', 'outreach'), { recursive: true })
+  fs.writeFileSync(path.join(tmpRoot, 'corner', 'users', 'aaa', 'missions', 'outreach', 'OTHER.md'), '# aaa world')
+  state.ragMode = 'down'; state.callerWorld = 'aom'
+  const res = await run('outreach')
+  assert.equal(res.statusCode, 200, JSON.stringify(res.payload))
+  assert.equal(res.payload.world, 'aom', 'caller world must win the collision')
+  const names = res.payload.files.map((f) => f.name)
+  assert.ok(names.includes('VISION.md'), `aom's own canon missing: ${names}`)
+  assert.ok(!names.includes('OTHER.md'), 'the other world\'s files must not appear')
 })
