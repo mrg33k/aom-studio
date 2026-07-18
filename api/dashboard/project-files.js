@@ -272,8 +272,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'slug required' });
   }
 
-  // Validate slug format: lowercase alphanumeric + hyphens only.
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug) || slug.length > 80) {
+  // Validate slug format: lowercase alphanumeric + hyphens + single dots.
+  // Dots are legal in real project slugs (aheadofmarket.com — its room Files
+  // panel 400'd forever until qa-watch tick 33 caught it). Path traversal
+  // stays blocked: no "..", no leading/trailing dot.
+  if (!/^[a-z0-9][a-z0-9.-]*$/.test(slug) || slug.includes('..') || slug.endsWith('.') || slug.length > 80) {
     return res.status(400).json({ error: 'invalid slug' });
   }
 
