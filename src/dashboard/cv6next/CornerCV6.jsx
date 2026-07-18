@@ -2006,7 +2006,9 @@ function Command({ worldId, onNav, onOpenNav, onSearch, onOpenRoom }) {
       // Absorbs taps on the add-step/answer rows so they don't bubble to the card's open action.
       noop: () => {},
       // A dock card is a live agent session — tapping it opens that agent's room.
-      openJob: (id) => openRoomById('agent:' + String(id || '')),
+      // job.id is the worker's agent slug; a task card with no known agent
+      // carries '' and must no-op (an 'agent:' key would open a broken room).
+      openJob: (id) => { const slug = String(id || '').trim(); if (slug) openRoomById('agent:' + slug); },
     };
   }, [onNav, onOpenNav, onSearch, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, stepAccept, answerRoomQuestion, handNextStep, setRoomGoal, setRoomStatus, loopCreate, loopToggle, loopRunNow, loopDelete, roomLoopsToggle, setSelectedKey, setGoalEdit]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
@@ -2564,6 +2566,10 @@ function DemoHomeQuickThread() {
 function DemoMobileChatLifecycle() {
   const nowMs = Date.now();
   const at = (minutesAgo) => new Date(nowMs - minutesAgo * 60_000).toISOString();
+  // Real same-origin public assets (same set DemoFilePreviews uses) so the file
+  // modal's preview actually renders in the no-auth fixture — the 20/20 chat
+  // file-modal loop clicks these and asserts painted content (R-CHAT-FILE-MODAL).
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const room = { id: 'renderer-room', name: 'Renderer Room', initials: 'RR', status: 'working', statusText: 'mobile fixture' };
   const messages = [
     {
@@ -2614,11 +2620,62 @@ function DemoMobileChatLifecycle() {
       time: '11:32 AM',
       ts: at(28),
       isFile: true,
+      // Name stays 'mobile-gallery-proof.png' (cv6-message-renderer.spec asserts
+      // the tile by this accessible name); the URL now points at a real public
+      // asset so the modal preview actually paints.
       fileName: 'mobile-gallery-proof.png',
-      attachmentUrl: '/demo/mobile-gallery-proof.png',
+      attachmentUrl: `${origin}/corner-og.png`,
       fileMime: 'image/png',
       fileSize: 18500,
-      attachments: [{ url: '/demo/mobile-gallery-proof.png', name: 'mobile-gallery-proof.png', mime: 'image/png', size: 18500 }],
+      attachments: [{ url: `${origin}/corner-og.png`, name: 'mobile-gallery-proof.png', mime: 'image/png', size: 18500 }],
+    },
+    // A text turn between the image and the docs keeps them as SEPARATE gallery
+    // runs (consecutive isFile messages merge), preserving the renderer spec's
+    // "sent 1 file" assertion on the image gallery.
+    {
+      id: 'mobile-doc-intro',
+      agentInitials: 'RR',
+      agentName: 'Renderer Room',
+      agentTint: 'violet',
+      isUser: false,
+      text: 'Two documents follow for the file modal proof.',
+      time: '11:33 AM',
+      ts: at(27),
+    },
+    // Two consecutive DOC files → the Documents collection card, whose rows open
+    // the chat file modal (FileCollectionViewer). One pdf + one md so the loop
+    // exercises both the pdf.js shell path and the inline-text path.
+    {
+      id: 'mobile-doc-pdf',
+      agentInitials: 'RR',
+      agentName: 'Renderer Room',
+      agentTint: 'violet',
+      isUser: false,
+      text: '',
+      time: '11:34 AM',
+      ts: at(26),
+      isFile: true,
+      fileName: 'Artlink_Brand_Standards.pdf',
+      attachmentUrl: `${origin}/artlink/Artlink_Brand_Standards.pdf`,
+      fileMime: 'application/pdf',
+      fileSize: 0,
+      attachments: [{ url: `${origin}/artlink/Artlink_Brand_Standards.pdf`, name: 'Artlink_Brand_Standards.pdf', mime: 'application/pdf', size: 0 }],
+    },
+    {
+      id: 'mobile-doc-txt',
+      agentInitials: 'RR',
+      agentName: 'Renderer Room',
+      agentTint: 'violet',
+      isUser: false,
+      text: '',
+      time: '11:35 AM',
+      ts: at(25),
+      isFile: true,
+      fileName: 'DESIGN.md',
+      attachmentUrl: `${origin}/cv4-static/DESIGN.md`,
+      fileMime: 'text/markdown',
+      fileSize: 0,
+      attachments: [{ url: `${origin}/cv4-static/DESIGN.md`, name: 'DESIGN.md', mime: 'text/markdown', size: 0 }],
     },
     {
       id: 'mobile-live-user',
