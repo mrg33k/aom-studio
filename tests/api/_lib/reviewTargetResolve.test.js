@@ -93,3 +93,40 @@ test('two different message-row targets produce different keys (both serialized 
   const b = filesTargetKey({ files: [{ attachmentUrl: 'https://x/b.png', fileName: 'b.png' }], needsReview: true })
   assert.notEqual(a, b)
 })
+
+// Regression guard — 2026-07-18 post-deploy: the FileCollectionViewer's
+// "Comment in Review" button was wired `onClick={onReview}`, handing the click
+// EVENT to reviewHandoff. The old guard `Array.isArray(files) ? files : null`
+// dropped it to null, so Review opened with no injected file and stranded the
+// user on the projects panel — the exact symptom Patrik reported, reproduced
+// 20/20 live. normalizeReviewHandoff makes the hand-off shape-proof.
+import { normalizeReviewHandoff } from '../../../src/dashboard/cv6next/data/reviewTargetResolve.js'
+
+test('a DOM click event hands off as null (the projects-panel strand)', () => {
+  const fakeEvent = { nativeEvent: {}, currentTarget: {}, target: {}, type: 'click' }
+  assert.equal(normalizeReviewHandoff(fakeEvent), null)
+})
+
+test('a single message-row file object becomes a one-item list', () => {
+  const row = { attachmentUrl: 'https://rag.aheadofmarket.com/files/aom/x-brief.md', fileName: 'brief.md', fileMime: 'text/markdown' }
+  const out = normalizeReviewHandoff(row)
+  assert.ok(Array.isArray(out) && out.length === 1)
+  assert.equal(out[0].fileName, 'brief.md')
+})
+
+test('a single attachment-shape file object also becomes a one-item list', () => {
+  const att = { url: 'https://rag.aheadofmarket.com/files/aom/y.png', name: 'y.png', mime: 'image/png' }
+  const out = normalizeReviewHandoff(att)
+  assert.ok(Array.isArray(out) && out.length === 1 && out[0].name === 'y.png')
+})
+
+test('an array passes straight through', () => {
+  const arr = [{ name: 'a.md' }, { name: 'b.md' }]
+  assert.equal(normalizeReviewHandoff(arr), arr)
+})
+
+test('null / undefined / addressless object all hand off as null', () => {
+  assert.equal(normalizeReviewHandoff(null), null)
+  assert.equal(normalizeReviewHandoff(undefined), null)
+  assert.equal(normalizeReviewHandoff({ foo: 'bar' }), null)
+})

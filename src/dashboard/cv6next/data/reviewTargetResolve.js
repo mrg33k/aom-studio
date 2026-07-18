@@ -69,3 +69,21 @@ export function resolveFilesTarget(target, itemsAll) {
     : null;
   return { wantsFile, item, proj, rid, name: rawName, pending };
 }
+
+// Normalize whatever a "Comment in Review" / "Review" click hands off into the
+// payload onOpenReview expects: an array of file objects, or null. Callers have
+// historically wired both `onClick={() => onReview(files)}` (correct: an array)
+// and `onClick={onReview}` (wrong: hands over the DOM click event) — the latter
+// dropped to null and stranded the user on the projects panel with no file to
+// resolve (2026-07-18). This makes the hand-off shape-proof: an array passes
+// through, a lone file object with any usable address becomes a one-item list,
+// and a bare event / addressless value becomes null (Review shows its queue).
+export function normalizeReviewHandoff(input) {
+  if (Array.isArray(input)) return input;
+  if (input && typeof input === 'object'
+      && !(input.nativeEvent || input.currentTarget || input.target)
+      && (input.attachmentUrl || input.url || input.path || input.fileName || input.name)) {
+    return [input];
+  }
+  return null;
+}

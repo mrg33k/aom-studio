@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase.js';
 // stage HTML for any type; the doc hooks hydrate pdf/docx/html shells in place.
 import { buildDeliverableBody } from './data/useReview.js';
 import { chatFileToReviewTarget } from './data/previewResolve.js';
+import { normalizeReviewHandoff } from './data/reviewTargetResolve.js';
 import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
@@ -276,7 +277,7 @@ function FileCollectionViewer({ files, startIndex = 0, onClose, onReview }) {
             <span style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>Reading view.</span>
           )}
           <span style={{ flex: 1 }} />
-          <button className="fc-rev" onClick={onReview}>
+          <button className="fc-rev" onClick={() => onReview([f])}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /></svg>
             Comment in Review
           </button>
@@ -505,7 +506,15 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
   const openFile = useCallback((files, index) => setCollection({ files, index: index || 0 }), []);
   // Hand the actual files to the Review tool so it shows THESE files (live), not the
   // global queue. The file objects carry attachmentUrl/fileName/fileMime.
-  const reviewHandoff = useCallback((files) => { setCollection(null); onOpenReview?.(Array.isArray(files) ? files : null); }, [onOpenReview]);
+  // Accept an array of files, a single file object, or nothing. An earlier
+  // caller wired `onClick={onReview}` and handed this a CLICK EVENT, which is
+  // neither array nor a file with an address, so Review opened empty and
+  // stranded on the projects panel (2026-07-18). normalizeReviewHandoff makes
+  // the hand-off shape-proof (see reviewTargetResolve.js).
+  const reviewHandoff = useCallback((files) => {
+    setCollection(null);
+    onOpenReview?.(normalizeReviewHandoff(files));
+  }, [onOpenReview]);
 
   return (
     <div data-cv6 data-theme="dark" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
