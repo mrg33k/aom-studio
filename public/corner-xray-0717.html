@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Corner Backend X-Ray</title>
+</head>
+<body>
+<style>
+  :root{
+    --ground:#0e1216; --panel:#161c23; --panel-2:#1b232b; --line:#232c35;
+    --ink:#dce4ec; --muted:#8a97a3; --faint:#5c6772;
+    --accent:#f5a524; --accent-ink:#0e1216;
+    --crit:#e5484d; --warn:#f5a524; --ok:#3fb27f;
+    --heat-0:#2b4a5a; --heat-1:#3f6f6a; --heat-2:#8a8a3f; --heat-3:#d68a2b; --heat-4:#e5484d;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --shadow:0 1px 0 rgba(255,255,255,.02),0 8px 30px rgba(0,0,0,.35);
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --ground:#eef1f4; --panel:#ffffff; --panel-2:#f5f7f9; --line:#dde3e9;
+      --ink:#1a2027; --muted:#5c6772; --faint:#93a0ab;
+      --accent:#c9791a; --accent-ink:#ffffff;
+      --heat-0:#7fa6b3; --heat-1:#6ba58c; --heat-2:#c2a53a; --heat-3:#d68a2b; --heat-4:#d64550;
+      --shadow:0 1px 2px rgba(20,30,40,.05),0 10px 30px rgba(20,30,40,.08);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0e1216; --panel:#161c23; --panel-2:#1b232b; --line:#232c35;
+    --ink:#dce4ec; --muted:#8a97a3; --faint:#5c6772; --accent:#f5a524; --accent-ink:#0e1216;
+    --heat-0:#2b4a5a; --heat-1:#3f6f6a; --heat-2:#8a8a3f; --heat-3:#d68a2b; --heat-4:#e5484d;
+    --shadow:0 1px 0 rgba(255,255,255,.02),0 8px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --ground:#eef1f4; --panel:#ffffff; --panel-2:#f5f7f9; --line:#dde3e9;
+    --ink:#1a2027; --muted:#5c6772; --faint:#93a0ab; --accent:#c9791a; --accent-ink:#ffffff;
+    --heat-0:#7fa6b3; --heat-1:#6ba58c; --heat-2:#c2a53a; --heat-3:#d68a2b; --heat-4:#d64550;
+    --shadow:0 1px 2px rgba(20,30,40,.05),0 10px 30px rgba(20,30,40,.08);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0}
+  .wrap{
+    background:var(--ground); color:var(--ink); font-family:var(--sans);
+    min-height:100vh; padding:clamp(20px,4vw,56px) clamp(16px,4vw,40px) 72px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1080px; margin:0 auto}
+  .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .eyebrow{font-family:var(--mono); font-size:11.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted)}
+
+  /* ---- header ---- */
+  header.hero{position:relative; overflow:hidden; border:1px solid var(--line); border-radius:16px;
+    background:
+      radial-gradient(1200px 300px at 15% -40%, color-mix(in oklab,var(--accent) 12%,transparent), transparent 70%),
+      linear-gradient(180deg,var(--panel),var(--panel-2));
+    padding:clamp(22px,3.4vw,38px); box-shadow:var(--shadow); margin-bottom:26px}
+  header.hero::after{content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:26px 26px; -webkit-mask-image:linear-gradient(180deg,transparent,#000 60%,transparent);
+            mask-image:linear-gradient(180deg,transparent,#000 60%,transparent)}
+  .hero-top{display:flex; justify-content:space-between; align-items:center; gap:16px; position:relative; z-index:1}
+  h1{font-size:clamp(28px,4.6vw,46px); line-height:1.02; letter-spacing:-.02em; margin:16px 0 8px;
+    font-weight:800; text-wrap:balance; position:relative; z-index:1}
+  h1 .amp{color:var(--accent)}
+  .sub{color:var(--muted); font-size:clamp(14px,1.5vw,16px); max-width:60ch; line-height:1.5; position:relative; z-index:1}
+  .toggle{font-family:var(--mono); font-size:12px; color:var(--muted); background:transparent;
+    border:1px solid var(--line); border-radius:999px; padding:7px 13px; cursor:pointer; white-space:nowrap}
+  .toggle:hover{color:var(--ink); border-color:var(--accent)}
+  .toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  /* ---- vitals ---- */
+  .vitals{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:30px}
+  @media (max-width:760px){.vitals{grid-template-columns:repeat(2,1fr)}}
+  .vital{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:15px 16px}
+  .vital .num{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:clamp(21px,2.6vw,27px);
+    font-weight:600; letter-spacing:-.01em; line-height:1}
+  .vital .lbl{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:9px}
+  .vital.hot .num{color:var(--accent)}
+
+  section{margin-bottom:34px}
+  .sec-head{display:flex; align-items:baseline; gap:12px; margin:0 2px 15px}
+  .sec-head h2{font-size:16px; font-weight:700; letter-spacing:-.01em; margin:0}
+  .sec-head .tag{font-family:var(--mono); font-size:11px; color:var(--faint); letter-spacing:.04em}
+
+  /* ---- thesis cards ---- */
+  .thesis{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media (max-width:760px){.thesis{grid-template-columns:1fr}}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; position:relative;
+    box-shadow:var(--shadow)}
+  .card .stripe{position:absolute; left:0; top:14px; bottom:14px; width:3px; border-radius:3px; background:var(--crit)}
+  .card h3{margin:0 0 6px; font-size:15px; font-weight:700}
+  .card .big{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:34px; font-weight:600;
+    letter-spacing:-.02em; color:var(--accent); line-height:1; margin:10px 0 4px}
+  .card .big small{font-size:14px; color:var(--muted); font-weight:400; letter-spacing:0}
+  .card p{margin:8px 0 0; color:var(--muted); font-size:13.5px; line-height:1.5}
+  .card p b{color:var(--ink); font-weight:600}
+
+  /* ---- bar rows ---- */
+  .rows{display:flex; flex-direction:column; gap:7px}
+  .row{display:grid; grid-template-columns:210px 1fr 120px; align-items:center; gap:14px}
+  @media (max-width:680px){.row{grid-template-columns:130px 1fr; }.row .row-meta{display:none}}
+  .row .name{font-family:var(--mono); font-size:12.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .row .name .fdim{color:var(--faint)}
+  .track{position:relative; height:26px; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; overflow:hidden}
+  .bar{position:absolute; left:0; top:0; bottom:0; border-radius:5px 0 0 5px; width:0; transition:width .9s cubic-bezier(.2,.7,.2,1)}
+  .bar .val{position:absolute; right:8px; top:50%; transform:translateY(-50%); font-family:var(--mono); font-size:11.5px;
+    font-variant-numeric:tabular-nums; color:var(--accent-ink); font-weight:600; mix-blend-mode:normal}
+  .row-meta{font-family:var(--mono); font-size:11.5px; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums}
+  .row-meta b{color:var(--ink); font-weight:600}
+
+  .panel-wrap{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow)}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:16px; font-family:var(--mono); font-size:11px; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .sw{width:11px; height:11px; border-radius:3px; display:inline-block}
+
+  /* ---- reuse ---- */
+  .reuse-note{color:var(--muted); font-size:13.5px; line-height:1.5; max-width:64ch; margin:0 0 16px}
+  .reuse-note b{color:var(--ink)}
+
+  /* ---- takeaways ---- */
+  .takeaways{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  @media (max-width:760px){.takeaways{grid-template-columns:1fr}}
+  .take{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px}
+  .take .n{font-family:var(--mono); font-size:11px; color:var(--accent); letter-spacing:.1em}
+  .take h4{margin:10px 0 7px; font-size:14.5px; font-weight:700}
+  .take p{margin:0; color:var(--muted); font-size:13px; line-height:1.5}
+  footer{color:var(--faint); font-family:var(--mono); font-size:11.5px; text-align:center; margin-top:40px; line-height:1.7}
+  footer b{color:var(--muted)}
+
+  @media (prefers-reduced-motion:reduce){.bar{transition:none}}
+</style>
+
+<div class="wrap">
+ <div class="page">
+
+  <header class="hero">
+    <div class="hero-top">
+      <div class="eyebrow">Corner · backend x-ray · structural scan</div>
+      <button class="toggle" id="themeBtn" type="button" aria-label="Toggle light and dark theme">◑ theme</button>
+    </div>
+    <h1>167,763 lines <span class="amp">/</span> 651 files <span class="amp">/</span> zero boundaries</h1>
+    <p class="sub">Every script that runs the Corner platform — bridges, daemons, loops, listeners, email, goals, memory — read structurally in one pass. No file left out. Two failure modes fall out of the shape of the code itself.</p>
+  </header>
+
+  <!-- VITALS -->
+  <div class="vitals" id="vitals">
+    <div class="vital"><div class="num">167,763</div><div class="lbl">lines of code</div></div>
+    <div class="vital"><div class="num">651</div><div class="lbl">files scanned</div></div>
+    <div class="vital"><div class="num">3,689</div><div class="lbl">functions</div></div>
+    <div class="vital hot"><div class="num">44</div><div class="lbl">classes total</div></div>
+    <div class="vital hot"><div class="num">21</div><div class="lbl">files over 1,000 lines</div></div>
+  </div>
+
+  <!-- THESIS -->
+  <section>
+    <div class="sec-head"><h2>Where it fails</h2><span class="tag">two structural faults</span></div>
+    <div class="thesis">
+      <div class="card">
+        <span class="stripe"></span>
+        <h3>Monolith bridges carry the live system</h3>
+        <div class="big">4,143<small> lines · 90 functions · 0 classes</small></div>
+        <p>The live chat bridge (<span class="mono">sse-room-bridge</span>) is one flat procedural file. Six of the top eight files are the bridge/relay layer. <b>Any change is high blast-radius</b> — which is exactly why bridge incidents recur.</p>
+      </div>
+      <div class="card">
+        <span class="stripe"></span>
+        <h3>No shared library — everything is copy-pasted</h3>
+        <div class="big">10<small> = the most any module is reused</small></div>
+        <p>Across 651 files, the most-imported internal module is used by just 10. There is no library layer, so logic gets duplicated. <b>That is the mechanical cause</b> of "three copies of the same prompt / four renderers drifted apart."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOMAINS -->
+  <section>
+    <div class="sec-head"><h2>Where the code lives</h2><span class="tag">by line volume · heat = size</span></div>
+    <div class="panel-wrap">
+      <div class="rows" id="domainRows"></div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--heat-4)"></i>largest</span>
+        <span><i class="sw" style="background:var(--heat-3)"></i></span>
+        <span><i class="sw" style="background:var(--heat-2)"></i></span>
+        <span><i class="sw" style="background:var(--heat-1)"></i></span>
+        <span><i class="sw" style="background:var(--heat-0)"></i>smallest</span>
+        <span style="margin-left:auto">40% of the backend is uncategorized one-offs in a flat folder</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- GOD FILES -->
+  <section>
+    <div class="sec-head"><h2>Blast-radius ranking</h2><span class="tag">largest files · lines / functions / internal calls</span></div>
+    <div class="panel-wrap">
+      <div class="rows" id="godRows"></div>
+    </div>
+  </section>
+
+  <!-- REUSE -->
+  <section>
+    <div class="sec-head"><h2>The reuse floor</h2><span class="tag">fan-in · how many files import each shared module</span></div>
+    <div class="panel-wrap">
+      <p class="reuse-note">A healthy backend has a few modules imported by dozens of callers. Here the ceiling is <b>10</b>. Compare that to a single god-file holding <b>90 functions</b>: the code that <i>should</i> be shared lives inline, copied, in hundreds of scripts.</p>
+      <div class="rows" id="reuseRows"></div>
+    </div>
+  </section>
+
+  <!-- TAKEAWAYS -->
+  <section>
+    <div class="sec-head"><h2>What this means</h2><span class="tag">plain terms</span></div>
+    <div class="takeaways">
+      <div class="take"><div class="n">01</div><h4>The bridge is one big room</h4><p>The part that talks to users is a single 4,000-line file. Fixing anything there risks everything there. Splitting it into named, testable pieces is the highest-leverage safety move.</p></div>
+      <div class="take"><div class="n">02</div><h4>Rules live in many copies</h4><p>Because nothing is shared, the same rule (a prompt, a gate, a format) is pasted in several files. Change one, miss the others, they drift. A shared-logic layer stops the drift at the source.</p></div>
+      <div class="take"><div class="n">03</div><h4>The junk drawer hides coupling</h4><p>640+ scripts in one flat folder with no boundaries means anything can reach anything. Grouping by domain into folders makes what-touches-what visible — the first step to trusting a change.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    structural scan · tree-sitter over 651 files · <b>0 LLM cost, 2.3s</b><br>
+    this is the map, not the bug list — it shows the tangle, the runtime break needs the debug lanes
+  </footer>
+
+ </div>
+</div>
+
+<script>
+(function(){
+  // theme toggle
+  var btn=document.getElementById('themeBtn');
+  btn.addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+    document.documentElement.setAttribute('data-theme', cur==='dark'?'light':'dark');
+  });
+
+  var HEAT=['var(--heat-0)','var(--heat-1)','var(--heat-2)','var(--heat-3)','var(--heat-4)'];
+  function heatFor(v,max){var t=v/max; if(t>=.8)return HEAT[4]; if(t>=.55)return HEAT[3]; if(t>=.32)return HEAT[2]; if(t>=.14)return HEAT[1]; return HEAT[0];}
+  function fmt(n){return n.toLocaleString('en-US');}
+
+  var domains=[
+    {n:'misc · one-offs',        L:66673, f:348},
+    {n:'bridge · daemon · relay',L:26040, f:46},
+    {n:'chat · room · message',  L:14684, f:47},
+    {n:'goal · mission · loop',  L:10406, f:30},
+    {n:'video · resolve',        L:9999,  f:31},
+    {n:'rag · context · memory', L:9905,  f:29},
+    {n:'task · dispatch · queue',L:7147,  f:28},
+    {n:'email · support',        L:7065,  f:23},
+    {n:'world · room-gen',       L:5596,  f:5},
+    {n:'tests · verify · qa',    L:5348,  f:32},
+    {n:'outreach · leads',       L:2578,  f:9},
+    {n:'hooks · guards',         L:2322,  f:23}
+  ];
+  var god=[
+    {n:'sse-room-bridge.py',     L:4143, fn:90, c:1410},
+    {n:'rag-server.py',          L:3609, fn:28, c:1538},
+    {n:'bridge-daemon.py',       L:3027, fn:22, c:684},
+    {n:'bridge-supervisor.py',   L:2299, fn:47, c:639},
+    {n:'relay-keepalive.py',     L:2242, fn:54, c:576},
+    {n:'supabase-listener.py',   L:2017, fn:46, c:683},
+    {n:'foreman-orchestrate.py', L:1792, fn:26, c:474},
+    {n:'support-triage.py',      L:1660, fn:43, c:587},
+    {n:'bridge.py',              L:1630, fn:36, c:395},
+    {n:'relay-respond.py',       L:1513, fn:23, c:365}
+  ];
+  var reuse=[
+    {n:'agent_registry', c:10},{n:'resolve_ipc', c:10},{n:'comms_deslop', c:7},
+    {n:'hook_log', c:7},{n:'agent_context', c:5},{n:'research_gate', c:4},
+    {n:'chips', c:3},{n:'goal_thread', c:3}
+  ];
+
+  function bar(pct,color,label){
+    return '<div class="track"><div class="bar" data-w="'+pct+'" style="background:'+color+'"><span class="val">'+label+'</span></div></div>';
+  }
+  function rowHTML(cols){return '<div class="row">'+cols+'</div>';}
+
+  // domains
+  var dmax=Math.max.apply(null,domains.map(function(d){return d.L;}));
+  var dtot=domains.reduce(function(a,d){return a+d.L;},0);
+  document.getElementById('domainRows').innerHTML=domains.map(function(d){
+    var pct=Math.round(d.L/dmax*100);
+    return rowHTML(
+      '<div class="name">'+d.n+'</div>'+
+      bar(pct,heatFor(d.L,dmax),fmt(d.L))+
+      '<div class="row-meta"><b>'+Math.round(d.L/dtot*100)+'%</b> · '+d.f+' files</div>'
+    );
+  }).join('');
+
+  // god files
+  var gmax=Math.max.apply(null,god.map(function(d){return d.L;}));
+  document.getElementById('godRows').innerHTML=god.map(function(g){
+    var pct=Math.round(g.L/gmax*100);
+    return rowHTML(
+      '<div class="name">'+g.n+'</div>'+
+      bar(pct,heatFor(g.L,gmax),fmt(g.L)+' L')+
+      '<div class="row-meta"><b>'+g.fn+'</b> fn · '+fmt(g.c)+' calls</div>'
+    );
+  }).join('');
+
+  // reuse (scale bars against the 90-function god-file to make the gap visceral)
+  var SCALE=90;
+  document.getElementById('reuseRows').innerHTML=reuse.map(function(r){
+    var pct=Math.round(r.c/SCALE*100);
+    return rowHTML(
+      '<div class="name mono">'+r.n+'</div>'+
+      bar(pct,'var(--heat-1)',String(r.c))+
+      '<div class="row-meta">imports</div>'
+    );
+  }).join('')+
+  rowHTML('<div class="name" style="color:var(--accent)">▲ one god-file</div>'+
+    bar(100,'var(--accent)','90 functions inline')+
+    '<div class="row-meta">for scale</div>');
+
+  // animate
+  function reveal(){document.querySelectorAll('.bar').forEach(function(b){b.style.width=b.getAttribute('data-w')+'%';});}
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){reveal();}
+  else{requestAnimationFrame(function(){requestAnimationFrame(reveal);});}
+})();
+</script>
+
+</body>
+</html>
