@@ -14,6 +14,7 @@ import { useDataPipe } from '../../hooks/useDataPipe';
 import { humanizeUrls } from './previewText.js';
 import { titleForAgent, AGENT_TITLES } from './agentTitles.js';
 import { classifyCommandRoomStatus, isCommandBookkeepingStamp } from '../../../../api/_lib/commandTruth.js';
+import { shapeCommandWorkItems, commandWorkSubLine } from '../../../../api/_lib/commandWorkStatus.js';
 export { useWorldId } from '../../lib/tenantContext.jsx';
 
 function initials(name) {
@@ -221,19 +222,44 @@ function shapeLoopRow(rt, now, last) {
 
 function shapeCommand({
   sessions = [], projectRooms = [], lastByRoom = {}, goalRooms = {},
-  boardRows = [], stepsByRoom = {}, routines = [], selectedKey = '', handed = {}, filter = '',
+  boardRows = [], stepsByRoom = {}, routines = [], workTasks = [], selectedKey = '', handed = {}, filter = '',
   editingGoal = false,
 }) {
   const now = Date.now();
 
-  // Activity dock = live agent sessions. Each is one running Claude session.
-  const jobs = (sessions || []).map((s) => {
+  // ── Activity dock (R-CMD-BUCKETS 2026-07-18) ── the work feed, bucketed.
+  // Before: only heartbeat-live sessions, every card stamped LIVE — Patrik:
+  // "Command center doesn't know what's in progress vs proposed vs done."
+  // Now: live sessions (heartbeat truth, always in-progress) PLUS the tasks
+  // table's real lifecycle from the supabase-status feed, classified by the
+  // ONE shared status map (api/_lib/commandWorkStatus.js — the API stamps
+  // `bucket`, this shape renders it). job.kind = the bucket, driving the
+  // is-<bucket> chip on .ad-ico/.ad-badge; job.live marks heartbeat-backed
+  // cards (the float dock shows only those).
+  const liveJobs = (sessions || []).map((s) => {
     const name = titleForAgent(s.agent);
     return {
-      id: s.agent, kind: 'agent', title: name, shortTitle: name,
+      id: s.agent, kind: 'inprogress', live: true, title: name, shortTitle: name,
       sub: cleanCell(firstLine(s.task_text)) || 'Active session', badge: 'LIVE',
     };
   });
+  const workItems = shapeCommandWorkItems({ tasks: workTasks, sessions, now });
+  const taskJobs = workItems.map((w) => {
+    const agentTitle = w.agent ? titleForAgent(w.agent) : '';
+    const detail = w.summary || w.error || '';
+    const sub = [agentTitle || (w.project ? titleCase(w.project) : ''), relTime(w.t), cleanCell(firstLine(detail))]
+      .filter(Boolean).join(' · ');
+    const title = cleanCell(firstLine(w.title)) || 'Task';
+    return {
+      // openJob routes by agent slug — a task card opens its worker's room.
+      id: w.agent || '', kind: w.bucket, live: false,
+      title, shortTitle: title.length > 26 ? title.slice(0, 25).trimEnd() + '…' : title,
+      sub: sub || '—', badge: w.label,
+    };
+  });
+  const jobs = [...liveJobs, ...taskJobs];
+  const bucketCounts = { proposed: 0, inprogress: liveJobs.length, done: 0, blocked: 0, failed: 0 };
+  for (const w of workItems) bucketCounts[w.bucket] += 1;
 
   // State board rows indexed by their canonical roomKey.
   const boardByKey = {};
@@ -607,7 +633,7 @@ function shapeCommand({
       subLine, workingChip, blockedChip,
       rooms: visible, others: visible,
     },
-    activity: { count: jobs.length, jobs },
+    activity: { count: jobs.length, jobs, subLine: commandWorkSubLine(bucketCounts), buckets: bucketCounts },
     goal,
   };
 }
@@ -620,6 +646,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [worldId, setWorldId] = useState(worldIdArg || null);
   const [sessions, setSessions] = useState([]);
   const [lastByRoom, setLastByRoom] = useState({});
+  const [workTasks, setWorkTasks] = useState([]);
   // corner:corner-ui-cv6 (2026-06-24): bail out of setState when a poll returns
   // byte-identical data (the common case). Without this, every 5s/15s tick creates
   // a fresh array/object reference and re-renders the whole command surface even
@@ -627,6 +654,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // last serialized snapshot per poll and skip the setter when it matches.
   const sessionsSig = useRef('');
   const lastByRoomSig = useRef('');
+  const workTasksSig = useRef('');
 
   // Resolve the viewer + world the same way Home does so we ride the auth-derived world.
   useEffect(() => {
@@ -670,7 +698,22 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
     const load = () => authFetch('/api/dashboard/supabase-status?client=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
       .then((d) => {
-        if (!alive || !d || !Array.isArray(d.messages)) return;
+        if (!alive || !d) return;
+        // R-CMD-BUCKETS (2026-07-18): keep the task lifecycle rows this feed
+        // already carries (bucket-stamped by supabase-status) — they are the
+        // activity dock's proposed / in-progress / done truth. Slimmed to the
+        // fields the shape reads so the change-detection sig stays cheap.
+        const rawWork = [...(Array.isArray(d.tasksV2) ? d.tasksV2 : []), ...(Array.isArray(d.tasks) ? d.tasks : [])];
+        const work = rawWork.map((t) => (t && typeof t === 'object' ? {
+          id: t.id, status: t.status, bucket: t.bucket, title: t.title, text: t.text,
+          agent_identity: t.agent_identity, agent: t.agent, project: t.project,
+          metadata: (t.metadata && typeof t.metadata === 'object') ? { project: t.metadata.project } : undefined,
+          created_at: t.created_at, updated_at: t.updated_at, completed_at: t.completed_at,
+          result: t.result, error: t.error,
+        } : t));
+        const wsig = JSON.stringify(work);
+        if (wsig !== workTasksSig.current) { workTasksSig.current = wsig; setWorkTasks(work); }
+        if (!Array.isArray(d.messages)) return;
         const map = {};
         for (const m of d.messages) {
           if (!m.timestamp) continue;
@@ -1091,8 +1134,8 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   }, [worldId, goalRooms]);
 
   const data = useMemo(
-    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, routines, selectedKey, handed, filter, editingGoal }),
-    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, routines, selectedKey, handed, filter, editingGoal],
+    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, routines, workTasks, selectedKey, handed, filter, editingGoal }),
+    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, routines, workTasks, selectedKey, handed, filter, editingGoal],
   );
   const state = worldId ? 'ready' : 'loading';
   return {
