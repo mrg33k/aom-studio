@@ -210,18 +210,19 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.files, state]);
 
-  // ── keyboard triage: j/k move through the CURRENT filtered list, a approves + advances ──
+  // ── keyboard triage: j/k move through the CURRENT filtered list ──
+  // (the 'a' approve shortcut left with the Approve button — review simplified
+  // 2026-07-18: the only verdicts are send-changes and download.)
   const kbRef = useRef({});
   kbRef.current = {
     files: data.files || [],
     openedId: data.openedId,
     open: (id) => openFile(id),
-    approve: (rid) => review.actions.approve(rid),
     changesOpen,
   };
   useEffect(() => {
     const handler = (e) => {
-      const { files, openedId, open, approve, changesOpen: co } = kbRef.current;
+      const { files, openedId, open, changesOpen: co } = kbRef.current;
       if (co) return;
       const el = document.activeElement;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
@@ -234,13 +235,6 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
       } else if (e.key === 'k' || e.key === 'ArrowUp') {
         e.preventDefault();
         if (idx > 0) open(files[idx - 1].id);
-      } else if (e.key === 'a') {
-        e.preventDefault();
-        const cur = idx >= 0 ? files[idx] : null;
-        if (!cur || !cur.reviewId) return;
-        const next = files[idx + 1];
-        approve(cur.reviewId);
-        if (next) open(next.id);
       }
     };
     window.addEventListener('keydown', handler);
@@ -370,12 +364,16 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
     setFilter: (id) => setFilter(id || 'recent'),
     toggleSelect: () => {},
     toggleSelectMode: () => {},
-    // ── the rehomed review actions ──
-    approve: (id) => review.actions.approve(id),
-    dismiss: (id) => review.actions.dismiss(id),
+    // ── the rehomed review actions (simplified 2026-07-18: send-changes and
+    // download are the only verdicts; Approve/Dismiss buttons are gone) ──
     requestChanges: () => setChangesOpen(true),
     sendChecklist: (id) => review.actions.sendChecklist(id),
-    download: (id) => review.actions.download(id),
+    // Download IS "reviewed, moving on": a waiting item silently records its
+    // approve decision so the NEEDS REVIEW badge drains instead of nagging.
+    download: (id) => {
+      review.actions.download(id);
+      if ((review.data.queue.itemsAll || []).some((i) => i.id === id)) review.actions.approve(id);
+    },
     openPin: (id) => openPinById(id),
     openComments: () => {},
     toggleReviewed: () => setReviewedOn((v) => !v),
@@ -440,7 +438,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
           color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--font-mono,ui-monospace,monospace)',
           zIndex: 40, letterSpacing: 0.3, whiteSpace: 'nowrap', userSelect: 'none',
         }}>
-          {[['j', 'next'], ['k', 'prev'], ['a', 'approve']].map(([key, label]) => (
+          {[['j', 'next'], ['k', 'prev']].map(([key, label]) => (
             <span key={key}>
               <span style={{ color: 'rgba(255,255,255,0.62)', fontWeight: 700 }}>{key}</span>
               {' '}{label}

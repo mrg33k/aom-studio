@@ -338,12 +338,16 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
     setFilter: (id) => setFilterBoth(id || 'recent'),
     setMission: (id) => selectMission(id || '__all'),
     setSort: (id) => setSort(id === 'az' ? 'az' : 'newest'),
-    // ── the rehomed review actions ──
-    approve: (id) => { review.actions.approve(id); afterVerdict(); },
-    dismiss: (id) => { review.actions.dismiss(id); afterVerdict(); },
+    // ── the rehomed review actions (simplified 2026-07-18: send-changes and
+    // download are the only verdicts; Approve/Dismiss buttons are gone) ──
     requestChanges: () => setChangesOpen(true),
     sendChecklist: (id) => review.actions.sendChecklist(id),
-    download: (id) => review.actions.download(id),
+    // Download IS "reviewed, moving on": a waiting item silently records its
+    // approve decision so the NEEDS REVIEW badge drains instead of nagging.
+    download: (id) => {
+      review.actions.download(id);
+      if ((review.data.queue.itemsAll || []).some((i) => i.id === id)) { review.actions.approve(id); afterVerdict(); }
+    },
     openPin: (id) => openPinById(id),
     openComments: () => {},
     toggleReviewed: () => setReviewedOn((v) => !v),
