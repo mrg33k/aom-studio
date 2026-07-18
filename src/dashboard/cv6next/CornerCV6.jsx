@@ -30,6 +30,7 @@ import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { roomProjectSlug } from './data/roomKeys.js';
+import { mergeRoomShelf } from './data/shelfMerge.js';
 import NewComposer from './NewComposer.jsx';
 import { supabase } from '../lib/supabase.js';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
@@ -414,8 +415,9 @@ function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
       type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
       ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
     }));
-    const links = convo.filter((i) => i.type === 'link');
-    const merged = [...lib, ...links];
+    // qa-files matrix 2026-07-18: keep conversation FILE attachments (uploads +
+    // agent shares live outside the library walk's tree) — mergeRoomShelf dedupes.
+    const merged = mergeRoomShelf(lib, convo);
     merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
     return merged;
   }, [messages, roomFiles, libProjectSlug]);
