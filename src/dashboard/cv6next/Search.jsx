@@ -128,5 +128,8 @@ export default function Search({ onClose, onOpenMenu, onOpenRoom }) {
       </div>
     );
   }
+  // Mobile: full-screen takeover. Anchors to the shell's inner positioning
+  // context, which already sits below the iPhone status bar (safe-area fix in
+  // CornerCV6 — overlays must NOT re-apply the inset or they double-pad).
   return <div style={{ position: 'absolute', inset: 0, zIndex: 40, background: 'var(--ground)' }}>{palette}</div>;
 }

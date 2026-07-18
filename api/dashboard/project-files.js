@@ -42,6 +42,7 @@ const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARD
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
 // ── Hidden-file list: the ONE shared module (api/_lib/hideList.js) ───────────
 // corner:one-corner M7 replaced the old content-shaped list (PHONEBOOK.md /
@@ -235,6 +236,27 @@ function collectMissions(projectAbsPath, stats, dirLimit) {
   return missions;
 }
 
+// Top-level mission rooms (corner/users/<world>/missions/<slug>) have NO
+// projects row, so resolveProjectWorld can't place them — and before 2026-07-18
+// this endpoint 404'd them ("Project not found"). That killed the room's ONLY
+// durable Files source: the outreach room's PDFs lived on disk in the mission's
+// deliverables/ but the panel could show them only while their share rows sat
+// inside the last-40 message window — 20 harness rows later they "vanished"
+// (Patrik, 2026-07-18). This resolver is the local-disk arm of the fix: find
+// which world's missions/ tree owns the slug. Prod uses the rag-server walk
+// (which reports `world` for mission homes) — see the fallback in the handler.
+function resolveLocalMissionDir(slug) {
+  const usersRoot = path.join(AOM_EA_ROOT, 'corner', 'users');
+  let entries = [];
+  try { entries = fs.readdirSync(usersRoot, { withFileTypes: true }); } catch { return null; }
+  for (const ent of entries) {
+    if (!ent.isDirectory() || ent.name.startsWith('.')) continue;
+    const cand = path.join(usersRoot, ent.name, 'missions', slug);
+    try { if (fs.statSync(cand).isDirectory()) return { world: ent.name, dir: cand }; } catch { /* keep scanning */ }
+  }
+  return null;
+}
+
 // Look up the world (client_id) for a project slug from Supabase.
 // Returns null if not found or DB is unavailable.
 async function resolveProjectWorld(slug) {
@@ -291,6 +313,50 @@ export default async function handler(req, res) {
   // Resolve world from DB.
   const world = await resolveProjectWorld(slug);
   if (!world) {
+    // No projects row — the slug may be a TOP-LEVEL MISSION room
+    // (corner/users/<world>/missions/<slug>): outreach-class rooms. Without
+    // this arm the room's Files panel has no durable source at all and files
+    // "disappear" as chat scrolls past the message window (2026-07-18).
+    // Prod path: the rag-server walk reports `world` when it resolved a
+    // mission home; we tenant-gate on that world BEFORE returning any data.
+    try {
+      const ragUrl = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`
+        + (dirLimit ? `&dir_limit=${dirLimit}` : '');
+      const ragRes = await fetch(ragUrl, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
+      if (ragRes.ok) {
+        const body = await ragRes.json();
+        if (body && body.world && typeof body.world === 'string') {
+          try {
+            await verifyTenant(body.world, req);
+          } catch (err) {
+            if (err instanceof TenantAuthError) return res.status(err.status || 403).json({ error: err.message });
+            throw err;
+          }
+          return res.status(200).json(body);
+        }
+      }
+      // rag reachable but didn't resolve a mission home -> try local disk.
+    } catch {
+      // tunnel unreachable -> try local disk.
+    }
+    // Local-disk arm (vercel dev / on-box runtime).
+    const local = resolveLocalMissionDir(slug);
+    if (local) {
+      try {
+        await verifyTenant(local.world, req);
+      } catch (err) {
+        if (err instanceof TenantAuthError) return res.status(err.status || 403).json({ error: err.message });
+        throw err;
+      }
+      const missionTrunc = [];
+      const mFiles    = collectFiles(local.dir, missionTrunc, dirLimit);
+      const mMissions = collectMissions(local.dir, missionTrunc, dirLimit);
+      return res.status(200).json({
+        project: slug, world: local.world, room_kind: 'mission',
+        files: mFiles, missions: mMissions,
+        truncated: missionTrunc.length > 0, truncated_dirs: missionTrunc,
+      });
+    }
     return res.status(404).json({ error: 'Project not found' });
   }
 
@@ -312,7 +378,8 @@ export default async function handler(req, res) {
   // kept for local dev (vercel dev with AOM_EA_ROOT pointing at the real
   // checkout) — they fire when RAG_TUNNEL_URL is unset OR the tunnel call
   // errors out. In prod the tunnel call is the canonical path.
-  const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
+  // (RAG_TUNNEL_URL is module-scope now — the mission-room fallback above
+  // needs it before this point.)
 
   try {
     const ragUrl = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`

@@ -2923,11 +2923,16 @@ export default function CornerCV6() {
   const navBadges = reviewWaiting > 0 ? { organize: { kind: 'needs', count: reviewWaiting } } : {};
   return (
     <div data-cv6 data-theme="dark" data-app-theme={theme} style={{
-      position: 'relative',
       minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
       paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
+      {/* The positioning context lives INSIDE the safe-area padding: every
+          absolutely-positioned overlay (search, viewers, forms) anchors below the
+          iPhone status bar instead of sliding under the clock in the saved-to-home
+          app (Patrik 2026-07-18). The root has no position on purpose — do not
+          anchor overlays to it. */}
+      <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {/* One shared desktop bar (design item 7), mounted once for every desktop
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
@@ -2967,6 +2972,7 @@ export default function CornerCV6() {
           onError={() => setAssignConfig(null)}
         />
       )}
+      </div>
     </div>
   );
 }
