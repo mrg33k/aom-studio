@@ -15,6 +15,7 @@ import { useTenantContext } from '../../lib/tenantContext.jsx';
 import { useDataContext } from '../providers/DataContext.jsx';
 import { curateTitledAgents, titleForAgent } from './agentTitles.js';
 import { normalizePreview } from './previewText.js';
+import { missionRecencyKey } from './roomKeys.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -169,7 +170,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (it.missionSlug) {
       const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
       const nm = missionLabel(it.missionSlug) || it.missionSlug;
-      bump('m:' + it.missionSlug, { key: 'm:' + it.missionSlug, id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: nm, sub: missionSub(pn, nm), ts, preview });
+      bump('m:' + missionRecencyKey(it.missionSlug), { key: 'm:' + missionRecencyKey(it.missionSlug), id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: nm, sub: missionSub(pn, nm), ts, preview });
     } else if (it.project) {
       bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts, preview });
     } else if (it.agent) {
@@ -187,7 +188,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (!mr.last_message_at || !mr.slug) continue;
     const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
     const nm = missionLabel(mr.slug) || mr.slug;
-    bump('m:' + mr.slug, { key: 'm:' + mr.slug, id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: normalizePreview(mr.last_message_text) });
+    bump('m:' + missionRecencyKey(mr.slug), { key: 'm:' + missionRecencyKey(mr.slug), id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: normalizePreview(mr.last_message_text) });
   }
   const recent = Object.values(recentMap)
     // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).

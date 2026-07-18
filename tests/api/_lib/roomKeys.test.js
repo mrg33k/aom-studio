@@ -24,3 +24,11 @@ test('agent 1:1 room resolves to empty (no project to select)', () => {
   assert.equal(roomProjectSlug({ kind: 'agent', agent: 'rex', id: 'rex' }), '')
   assert.equal(roomProjectSlug(null), '')
 })
+
+test('mission recency key merges bare and composite slug forms (Home dup fix)', async () => {
+  const { missionRecencyKey } = await import('../../../src/dashboard/cv6next/data/roomKeys.js')
+  assert.equal(missionRecencyKey('summerschool'), 'summerschool')
+  assert.equal(missionRecencyKey('aheadofmarket.com:summerschool'), 'summerschool')
+  assert.equal(missionRecencyKey('corner:backend-hardening'), 'backend-hardening')
+  assert.equal(missionRecencyKey(''), '')
+})

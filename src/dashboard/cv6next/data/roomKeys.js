@@ -12,3 +12,14 @@ export function roomProjectSlug(room) {
   if (room.isProject || room.kind === 'project') return room.id || room.slug || room.project || '';
   return room.projectSlug || room.project || '';
 }
+
+// One Home entry per mission room regardless of which slug form a writer lane
+// stamped (bare "summerschool" vs composite "aheadofmarket.com:summerschool" —
+// qa-sweep WATCH tick 10 caught the same room twice in the recent rail). Key
+// recency maps by the bare tail so both forms merge; display fields keep the
+// original slug.
+export function missionRecencyKey(slug) {
+  const s = String(slug || '').trim();
+  if (!s) return '';
+  return s.includes(':') ? s.split(':').pop() : s;
+}
