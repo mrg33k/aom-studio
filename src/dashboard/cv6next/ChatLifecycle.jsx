@@ -17,6 +17,14 @@ import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { FilesShelf, useRoomLibrary } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { supabase } from '../lib/supabase.js';
+// The chat file modal renders REAL previews through the same machinery the
+// Review/Files viewer uses (R-CHAT-FILE-MODAL): buildDeliverableBody makes the
+// stage HTML for any type; the doc hooks hydrate pdf/docx/html shells in place.
+import { buildDeliverableBody } from './data/useReview.js';
+import { chatFileToReviewTarget } from './data/previewResolve.js';
+import { usePdfDocs } from './data/pdfDocView.js';
+import { useDocxDocs } from './data/docxDocView.js';
+import { useHtmlDocs } from './data/htmlDocView.js';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -196,36 +204,78 @@ function FileGallery({ files, sender, onOpen, onReview }) {
     </div>
   );
 }
-// The look-only viewer: flip through the collection (swipe / arrows), no comment layer.
-// "Comment in Review" hands off to the Review tool where pins + comments live.
+// The chat file viewer: a real reading surface (R-CHAT-FILE-MODAL, Patrik
+// 2026-07-18: "brings up a small modal but never loads the preview"). The stage
+// HTML comes from buildDeliverableBody — the SAME renderer Review/Files uses —
+// so every type actually renders: image/video/audio stream, pdf/docx/html
+// hydrate via the doc hooks below, md/txt/code read inline. Flip through the
+// collection with the arrows; "Comment in Review" hands off to the Review tool
+// where pins + comments live.
 function FileCollectionViewer({ files, startIndex = 0, onClose, onReview }) {
   const [idx, setIdx] = useState(Math.max(0, Math.min(startIndex, files.length - 1)));
   const f = files[idx] || files[0];
   const kind = fileKind(f.fileName, f.fileMime);
-  const isImg = kind === 'image' && f.attachmentUrl;
   const go = (d) => setIdx((i) => (i + d + files.length) % files.length);
+  const stageRef = useRef(null);
+  const [body, setBody] = useState(null); // null = loading; { html, type } when built
+  // Hydrate any pdf/docx/html shells the injected body carries.
+  usePdfDocs(stageRef);
+  useDocxDocs(stageRef);
+  useHtmlDocs(stageRef);
+  const fileSig = `${f?.attachmentUrl || f?.url || ''}|${f?.fileName || f?.name || ''}`;
+  useEffect(() => {
+    let alive = true;
+    setBody(null);
+    const target = chatFileToReviewTarget(f);
+    if (!target) {
+      // Announcement-only file post (no URL anywhere): honest empty state; the
+      // Review hand-off below still reaches the queue's copy of the file.
+      setBody({ html: '<div style="padding:22px 4px;font-size:13px;line-height:1.5;">This file did not include a readable address. Open it from the Review tab instead.</div>', type: 'copy' });
+      return undefined;
+    }
+    buildDeliverableBody({ id: target.path, title: target.title, type: target.type })
+      .then((html) => { if (alive) setBody({ html: html || '', type: target.type }); })
+      .catch(() => { if (alive) setBody({ html: '<div style="padding:22px 4px;font-size:13px;">This file could not be loaded right now.</div>', type: 'copy' }); });
+    return () => { alive = false; };
+  }, [fileSig]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The chat modal has no Review pin layer or scrub bar: injected video gets
+  // native controls, and the inert pin-shield chrome is dropped.
+  useEffect(() => {
+    const wrap = stageRef.current;
+    if (!wrap || body == null) return;
+    wrap.querySelectorAll('video').forEach((v) => { v.controls = true; });
+    wrap.querySelectorAll('.pinshield,.pinmode-toggle').forEach((n) => n.remove());
+  }, [body]);
   return (
     <div className="fcviewer" onClick={onClose}>
       <div className="fcviewer-card" onClick={(e) => e.stopPropagation()}>
         <div className="fcv-top">
-          <div className="mback" style={{ width: 32, height: 32 }} onClick={onClose} role="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg></div>
+          <div className="mback" style={{ width: 32, height: 32 }} onClick={onClose} role="button" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg></div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.fileName || 'file'}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.fileName || f.name || 'file'}</div>
             <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{kind}{f.fileSize ? ` · ${fmtSize(f.fileSize)}` : ''}</div>
           </div>
         </div>
-        <div className={`fcv-stage${isImg ? '' : ' is-dark'}`}>
-          {isImg ? <img src={f.attachmentUrl} alt={f.fileName} /> : <FileGlyph kind={kind} size={40} />}
-          {files.length > 1 && (
-            <>
-              <div className="fcv-arrow" style={{ left: 11 }} onClick={() => go(-1)} role="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></div>
-              <div className="fcv-arrow" style={{ right: 11 }} onClick={() => go(1)} role="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg></div>
-              <div className="fcv-count">{idx + 1} / {files.length}</div>
-            </>
-          )}
+        {/* The reading stage. The injected body rides the .doc paper (same reading
+            surface as Review/Files): light paper + dark ink for documents/text,
+            transparent for media so images/video sit directly on the ground.
+            Prev/next moved to the footer — floating arrows sat ON the copy. */}
+        <div ref={stageRef} className="fcv-stage is-read" data-testid="chat-file-preview" data-preview-state={body == null ? 'loading' : 'ready'}>
+          {body == null
+            ? <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '22px 4px', color: 'var(--muted)', fontSize: 13 }}>Loading preview…</div>
+            : <div className={`doc is-${body.type}`} dangerouslySetInnerHTML={{ __html: body.html }} />}
         </div>
         <div className="fcv-foot">
-          <span style={{ flex: 1, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>Look only here. Swipe or tap the arrows.</span>
+          {files.length > 1 ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <button type="button" className="fcv-step" aria-label="Previous file" onClick={() => go(-1)}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></button>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', minWidth: 38, textAlign: 'center' }}>{idx + 1} / {files.length}</span>
+              <button type="button" className="fcv-step" aria-label="Next file" onClick={() => go(1)}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg></button>
+            </span>
+          ) : (
+            <span style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>Reading view.</span>
+          )}
+          <span style={{ flex: 1 }} />
           <button className="fc-rev" onClick={onReview}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /></svg>
             Comment in Review

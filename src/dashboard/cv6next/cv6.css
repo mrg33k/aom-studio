@@ -1050,7 +1050,8 @@
 [data-cv6] .mfile-dl { transition:background .12s ease, color .12s ease, border-color .12s ease; }
 [data-cv6] .mfile-dl:hover { background:var(--chip); color:var(--fg); border-color:var(--muted); }
 [data-cv6] .fc-foot { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--divider); }
-[data-cv6] .fc-foot .fc-rev { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:10px; border:none; background:var(--accent); color:#fff; font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6] .fc-foot .fc-rev,
+[data-cv6] .fcv-foot .fc-rev { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:10px; border:none; background:var(--accent); color:#fff; font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
 [data-cv6] .fcviewer { position:absolute; inset:0; z-index:30; display:flex; flex-direction:column; justify-content:center; background:rgba(4,6,9,.82); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
 /* R-CHAT-FILE-MODAL (2026-07-18): the chat file viewer is a READING surface,
    not a thumbnail box. Patrik: "small modal, never loads the preview" — the old
@@ -1067,7 +1068,40 @@
    size inside the column instead of being letterboxed. */
 [data-cv6] .fcv-stage.is-read { aspect-ratio:auto; flex:1; min-height:0; display:block; overflow:auto; -webkit-overflow-scrolling:touch; padding:14px 16px; background:var(--surface); }
 [data-cv6] .fcv-stage.is-read img { width:auto; max-width:100%; height:auto; }
+/* Documents/text read on the same light .doc paper as Review/Files — paper-locked
+   ink (#1a1a1a / #6a6a72), NEVER theme tokens (the paper stays light in every
+   theme; var(--fg) resolves near-white there = invisible ink). Media types flip
+   the paper transparent so images/video/pages sit directly on the ground. */
+[data-cv6] .fcv-stage.is-read .doc { background:#fbfbfa; border-radius:8px; color:#1a1a1a; padding:20px 22px; max-width:860px; margin:0 auto; box-shadow:0 14px 44px rgba(0,0,0,.4); }
+[data-cv6] .fcv-stage.is-read .doc code { background:rgba(0,0,0,.06); padding:1px 6px; border-radius:5px; font-family:var(--font-mono); font-size:.85em; }
+[data-cv6] .fcv-stage.is-read .doc h1, [data-cv6] .fcv-stage.is-read .doc h2, [data-cv6] .fcv-stage.is-read .doc h3 { color:#1a1a1a; line-height:1.3; margin:0 0 10px; }
+[data-cv6] .fcv-stage.is-read .doc h1 { font-size:19px; }
+[data-cv6] .fcv-stage.is-read .doc h2 { font-size:16px; margin-top:18px; }
+[data-cv6] .fcv-stage.is-read .doc h3 { font-size:14px; margin-top:14px; }
+[data-cv6] .fcv-stage.is-read .doc p, [data-cv6] .fcv-stage.is-read .doc li { font-size:13.5px; line-height:1.65; color:#2a2a2e; }
+[data-cv6] .fcv-stage.is-read .doc pre { color:#1a1a1a; }
+[data-cv6] .fcv-stage.is-read .doc a { color:#0066FF; }
+[data-cv6] .fcv-stage.is-read .doc.is-image,
+[data-cv6] .fcv-stage.is-read .doc.is-photo,
+[data-cv6] .fcv-stage.is-read .doc.is-video,
+[data-cv6] .fcv-stage.is-read .doc.is-audio,
+[data-cv6] .fcv-stage.is-read .doc.is-siteshot,
+[data-cv6] .fcv-stage.is-read .doc.is-sitefile,
+[data-cv6] .fcv-stage.is-read .doc.is-sitelive { background:transparent; box-shadow:none; padding:0; color:var(--fg); max-width:960px; }
+/* Short media centers in the frame instead of hugging the top-left with a slab
+   of dead ground under it (min-height:100% resolves against the stage's
+   content box, so the padding stays honest — no phantom scroll). */
+[data-cv6] .fcv-stage.is-read .doc.is-image,
+[data-cv6] .fcv-stage.is-read .doc.is-photo,
+[data-cv6] .fcv-stage.is-read .doc.is-video { display:flex; flex-direction:column; justify-content:center; min-height:100%; box-sizing:border-box; }
+[data-cv6] .fcv-stage.is-read .doc.is-image img,
+[data-cv6] .fcv-stage.is-read .doc.is-photo img,
+[data-cv6] .fcv-stage.is-read .doc.is-video video { margin-left:auto; margin-right:auto; }
+/* Footer flip controls (prev / count / next) — the old floating .fcv-arrow
+   circles sat ON TOP of the reading copy. */
 [data-cv6] .fcv-foot { flex:none; }
+[data-cv6] .fcv-foot .fcv-step { width:30px; height:30px; border-radius:9px; border:1px solid var(--hair); background:var(--surface-2); color:var(--muted); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+[data-cv6] .fcv-foot .fcv-step:hover { color:var(--fg); border-color:var(--muted); }
 [data-cv6] .fcv-arrow { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(13,17,23,.7); border:1px solid rgba(255,255,255,.16); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
 [data-cv6] .fcv-count { position:absolute; bottom:11px; left:50%; transform:translateX(-50%); font-family:var(--font-mono); font-size:10.5px; color:#fff; background:rgba(4,6,9,.6); padding:3px 9px; border-radius:11px; }
 [data-cv6] .fcv-foot { display:flex; align-items:center; gap:10px; padding:12px 14px; border-top:1px solid var(--divider); }

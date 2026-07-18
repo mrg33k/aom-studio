@@ -311,7 +311,10 @@ test.describe('CV6 shared message renderer', () => {
 
     await expect(latestThread.getByText('sent 1 file')).toBeVisible()
     await expect(latestThread.getByRole('button', { name: 'mobile-gallery-proof.png' })).toBeVisible()
-    await expect(latestThread.getByRole('button', { name: 'Review all' })).toBeVisible()
+    // R-CHAT-FILE-MODAL: the fixture now carries a second, docs-only gallery
+    // (pdf + md) feeding the chat file modal, so 'Review all' appears twice.
+    await expect(latestThread.getByText('sent 2 files')).toBeVisible()
+    await expect(latestThread.getByRole('button', { name: 'Review all' }).first()).toBeVisible()
     await expect(latestThread.getByText('Checking mobile renderer output')).toBeVisible()
   })
 })
