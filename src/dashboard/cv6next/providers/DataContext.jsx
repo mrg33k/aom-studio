@@ -48,8 +48,12 @@ export function CommandProvider({ children }) {
   // This prevents the 40+ requests on navigation and ensures live data updates
   // are received by the entire dashboard instead of being split across
   // multiple hook instances.
-  const commandResult = useCommand(worldId, selectedKey, statusFilter, goalEdit)
-  const trackerResult = useTrackerBugs(worldId)
+  // qa-sweep 2026-07-17: hand them the DataProvider pipe so neither spins up
+  // its own useDataPipe (was 3 pipes from this provider chain alone — every
+  // realtime INSERT and poll ran in triplicate).
+  const sharedPipe = useContext(DataContext)
+  const commandResult = useCommand(worldId, selectedKey, statusFilter, goalEdit, sharedPipe)
+  const trackerResult = useTrackerBugs(worldId, sharedPipe)
 
   const value = {
     command: commandResult,

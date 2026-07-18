@@ -6,10 +6,13 @@
 // carries no structured payload, so the text lift is what makes it "every time".
 
 const MEDIA_RE = /\.(png|jpe?g|gif|webp|svg|heic|bmp|mp4|mov|webm|m4v|avi|mp3|wav|m4a|aac|ogg)(\?[^\s]*)?$/i;
-const URL_RE = /https?:\/\/[^\s<>"'()[\]]+/g;
+// Backticks excluded (qa-sweep 2026-07-17): agents wrap URLs in markdown code
+// spans, and a captured trailing ` made the href a broken address (a live Drive
+// link rendered as …LMWi2eG%60 — dead for the user).
+const URL_RE = /https?:\/\/[^\s<>"'()[\]`]+/g;
 
 function cleanUrl(u) {
-  return String(u || '').replace(/[.,;:!?]+$/, '');
+  return String(u || '').replace(/[.,;:!?`*_]+$/, '');
 }
 
 function isCardable(url) {
@@ -54,9 +57,9 @@ export function stripTrailingCardUrl(text, cards) {
   if (!cards || !cards.length) return out;
   const urls = new Set(cards.map((c) => c.url));
   for (;;) {
-    const m = out.match(/(^|\s)(https?:\/\/[^\s<>"'()[\]]+)[\s.,;:!?]*$/);
+    const m = out.match(/(^|[\s`])(https?:\/\/[^\s<>"'()[\]`]+)[\s.,;:!?`]*$/);
     if (!m || !urls.has(cleanUrl(m[2]))) break;
-    out = out.slice(0, m.index).replace(/[\s:—–-]+$/, '').trimEnd();
+    out = out.slice(0, m.index).replace(/[\s:—–`-]+$/, '').trimEnd();
   }
   return out;
 }

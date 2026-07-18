@@ -178,7 +178,14 @@ function deriveProjectProgress(punchData) {
 // Returns: { rightNow, completedFeed, yourTodos, finishThese, schedule, projectProgress,
 //            pillCounts, isAutoChecked, punchData, punchLoading, lastUpdated, refetch }
 // =============================================================================
-export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
+// options.enabled=false renders the hook inert (no fetch, no poll, no realtime
+// channels) while keeping the hook call unconditional for the rules of hooks.
+// Used by consumers that receive the shared DataContext pipe instead of owning
+// one — qa-sweep 2026-07-17 found FOUR live pipes on one /dashboard load
+// (DataProvider + useCommand + useTrackerBugs + ActivityDock's useCommand),
+// quadrupling every poll and realtime INSERT handler.
+export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, options = {}) {
+  const enabled = options.enabled !== false
   const [rightNow, setRightNow] = useState([])
   const [completedFeed, setCompletedFeed] = useState([])
   const [inboxItems, setInboxItems] = useState([])
@@ -726,15 +733,18 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
   // correct agents/rooms appear without waiting for the next poll interval.
   const prevWorldRef = useRef(worldId)
   useEffect(() => {
+    if (!enabled) return
     if (worldId && worldId !== prevWorldRef.current) {
       prevWorldRef.current = worldId
       setSupabaseAgents([])
       setSupabaseProjectRooms([])
       fetchAll()
     }
-  }, [worldId, fetchAll])
+  }, [worldId, fetchAll, enabled])
 
   useEffect(() => {
+    // Inert instance (shared-pipe consumer) — no fetch, no poll, no channels.
+    if (!enabled) return
     // ISOLATION FIX 2026-05-24: Only fetch after worldId is known.
     // If worldId is null (auth still resolving), skip fetch to prevent
     // cross-tenant data leak (Ben/Karen/Tim seeing AOM world).
@@ -829,7 +839,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
       if (projectsChannel) supabase.removeChannel(projectsChannel)
       if (typeof window !== 'undefined') window.removeEventListener('cv6:data-refresh', onExternalRefresh)
     }
-  }, [worldId, fetchAll])
+  }, [worldId, fetchAll, enabled])
 
   // Stable isAutoChecked function -- reads from ref, never causes re-renders
   const isAutoChecked = useCallback((taskText) => {

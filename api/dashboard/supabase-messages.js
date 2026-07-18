@@ -130,7 +130,16 @@ export default async function handler(req, res) {
       if (projectOnly) {
         // Project CHAT: exactly the project-level thread (mission rows have
         // mission room_ids). Legacy arm: project + no mission metadata.
-        projectFilter = `&or=(room_id.eq.${rid},and(project.eq.${encodeURIComponent(p)},metadata->>mission_slug.is.null))`
+        // Drift-rescue arms (qa-sweep 2026-07-17): some writer lanes stamp a
+        // project room as if it were a mission named after the project
+        // (mission_slug="corner" / room_id aom:mission:corner, even the
+        // canonicalized aom:mission:corner:corner). Those rows are the
+        // project conversation — without these arms they render NOWHERE and
+        // the room shows a stale tail while Home previews the missing rows.
+        const pEnc = encodeURIComponent(p)
+        const bogusMissionRid = encodeURIComponent(`${clientId}:mission:${p}`)
+        const bogusCanonRid = encodeURIComponent(`${clientId}:mission:${p}:${p}`)
+        projectFilter = `&or=(room_id.eq.${rid},room_id.eq.${bogusMissionRid},room_id.eq.${bogusCanonRid},and(project.eq.${pEnc},metadata->>mission_slug.is.null),and(project.eq.${pEnc},metadata->>mission_slug.eq.${pEnc}))`
       } else {
         // Project + its missions: project room, any of its mission rooms
         // (canonical mission slugs are "<project>:<slug>"), or legacy
@@ -145,7 +154,18 @@ export default async function handler(req, res) {
       if (!req.query.mission_slug) return ''
       const raw = req.query.mission_slug
       const canon = canonicalizeMissionSlug(raw, MISSION_SLUG_LOOKUP) || raw
-      return `&or=(room_id.eq.${encodeURIComponent(`${clientId}:mission:${canon}`)},metadata->>mission_slug.eq.${encodeURIComponent(raw)},metadata->>mission_slug.eq.${encodeURIComponent(canon)})`
+      // Drift-rescue arm (qa-sweep 2026-07-17): writer lanes also stamp the
+      // BARE mission slug into room_id (aom:mission:backend-hardening next to
+      // the canonical aom:mission:corner:backend-hardening) — match both so a
+      // mission room shows its whole conversation regardless of which lane wrote it.
+      const bare = raw.includes(':') ? raw.split(':').pop() : raw
+      const arms = [
+        `room_id.eq.${encodeURIComponent(`${clientId}:mission:${canon}`)}`,
+        `room_id.eq.${encodeURIComponent(`${clientId}:mission:${bare}`)}`,
+        `metadata->>mission_slug.eq.${encodeURIComponent(raw)}`,
+        `metadata->>mission_slug.eq.${encodeURIComponent(canon)}`,
+      ]
+      return `&or=(${[...new Set(arms)].join(',')})`
     })()
     const beforeFilter = req.query.before ? `&timestamp=lt.${encodeURIComponent(req.query.before)}` : ''
     const searchLimit = searchQuery ? 500 : limit  // search returns more results

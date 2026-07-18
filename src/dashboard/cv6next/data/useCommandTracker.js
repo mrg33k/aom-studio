@@ -608,7 +608,10 @@ function shapeCommand({
   };
 }
 
-export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoal = false) {
+// sharedPipe (qa-sweep 2026-07-17): when the caller already owns a useDataPipe
+// result (DataProvider passes its own down through CommandProvider), hand it in
+// so this hook doesn't spin up a SECOND polling loop + realtime channel set.
+export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoal = false, sharedPipe = null) {
   const [currentUser, setCurrentUser] = useState(null);
   const [worldId, setWorldId] = useState(worldIdArg || null);
   const [sessions, setSessions] = useState([]);
@@ -634,7 +637,8 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   }, [worldIdArg]);
 
   const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
-  const { projectRooms } = useDataPipe(null, worldId, currentUserSlug);
+  const ownPipe = useDataPipe(null, worldId, currentUserSlug, { enabled: !sharedPipe });
+  const { projectRooms } = sharedPipe || ownPipe;
 
   // Live agent sessions — poll the heartbeat-backed active-processes endpoint.
   useEffect(() => {
@@ -1125,7 +1129,9 @@ function trackerShape(t, activeId) {
   };
 }
 
-export function useTrackerBugs(worldId) {
+// sharedPipe: same contract as useCommand — pass the DataProvider pipe to keep
+// this hook from owning a duplicate one.
+export function useTrackerBugs(worldId, sharedPipe = null) {
   const [bugs, setBugs] = useState([]);
   const [status, setStatus] = useState(() => (supabase ? 'loading' : 'empty'));
   const [spaceTickets, setSpaceTickets] = useState([]);
@@ -1145,7 +1151,8 @@ export function useTrackerBugs(worldId) {
     return () => { alive = false; };
   }, []);
   const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
-  const { agents } = useDataPipe(null, worldId, currentUserSlug);
+  const ownPipe = useDataPipe(null, worldId, currentUserSlug, { enabled: !sharedPipe });
+  const { agents } = sharedPipe || ownPipe;
 
   // CV6 bug board.
   useEffect(() => {

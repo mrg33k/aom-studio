@@ -29,6 +29,7 @@ import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
+import { roomProjectSlug } from './data/roomKeys.js';
 import NewComposer from './NewComposer.jsx';
 import { supabase } from '../lib/supabase.js';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
@@ -1481,7 +1482,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         liveSteps={quickThread && quickThread.liveSteps}
         room={displayedRoom}
         localReadOnly={!supabase}
-        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, needsReview: true } : null); }}
+        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(displayedRoom), needsReview: true } : null); }}
       />
       <Cv6FullComposer
         target={knavOpenedRoom ? composerHost : null}
@@ -1496,7 +1497,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         room={knavOpenedRoom}
         messages={quickThread && quickThread.messages}
         onClose={() => setFilesOpen(false)}
-        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, needsReview: true } : null); }}
+        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(knavOpenedRoom), needsReview: true } : null); }}
       />
       {trackerOverlay}
       {composerOverlay}

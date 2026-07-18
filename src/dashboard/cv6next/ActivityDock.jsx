@@ -4,7 +4,7 @@
 // Held-C controls: Pause / Back / Finish buttons disabled until backend wires them.
 
 import { useState, useEffect, useRef } from 'react';
-import { useCommand } from './data/useCommandTracker.js';
+import { useCommandContext } from './providers/DataContext.jsx';
 import { titleForAgent } from './data/agentTitles.js';
 
 // Per-job tint mapping (kind -> CSS class for ad-ico background + text color).
@@ -27,7 +27,11 @@ const DEMO_JOB = {
 };
 
 function ActivityDock({ worldId, onOpenJob }) {
-  const { data: commandData } = useCommand(worldId);
+  // qa-sweep 2026-07-17: consume the CommandProvider result instead of calling
+  // useCommand directly — a direct call here was the 4th live data pipe on one
+  // page load (its own useDataPipe + a full duplicate goal-ledger polling set).
+  const { command } = useCommandContext();
+  const commandData = command?.data;
   const [expandedJobId, setExpandedJobId] = useState(null);
   const [hoveredJobId, setHoveredJobId] = useState(null);
   const dockRef = useRef(null);

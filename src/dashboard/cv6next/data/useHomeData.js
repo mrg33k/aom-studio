@@ -14,6 +14,7 @@ import { authFetch } from '../../lib/authFetch';
 import { useTenantContext } from '../../lib/tenantContext.jsx';
 import { useDataContext } from '../providers/DataContext.jsx';
 import { curateTitledAgents, titleForAgent } from './agentTitles.js';
+import { normalizePreview } from './previewText.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -59,16 +60,9 @@ function detectAttachment(text) {
   const m = String(text || '').match(/(?:attached file|attachment)\s*[:\-]?\s*([^\s|,]+\.[a-z0-9]{2,5})/i);
   return m ? { id: m[1], name: m[1], size: '' } : null;
 }
-// FIX F: Convert "Attached file: path/to/name.md" → "Shared a file: name.md".
-// Strips the full path so only the filename appears. Falls through unchanged for
-// normal text messages that happen to mention a filename inline.
-function normalizePreview(text) {
-  const t = String(text || '').replace(/\s+/g, ' ').trim();
-  const m = t.match(/^(?:attached file|attachment)\s*[:\-]?\s*([^\s|,]+\.[a-z0-9]{2,5})/i);
-  if (!m) return t;
-  const filename = m[1].replace(/^.*[/\\]/, '');
-  return `Shared a file: ${filename}`;
-}
+// FIX F + qa-sweep 2026-07-17: preview derivation lives in previewText.js (pure,
+// unit-tested) — "Attached file: …" → "Shared a file: name.md", raw URLs → human
+// file names / hostnames.
 function relTime(ts) {
   if (!ts) return '';
   const ms = Date.now() - new Date(ts).getTime();
