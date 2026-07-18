@@ -14,6 +14,10 @@ import { docxShellHtml, isDocxName } from './docxDocView';
 import { htmlShellHtml, isHtmlName } from './htmlDocView';
 import { createFileRef } from '../../../../api/_lib/fileRef.js';
 import { cornerLogoLoaderMarkup } from '../../cv6kit/cornerLogoLoaderMarkup.js';
+// Viewer-type + identity resolution: previewResolve delegates identity to
+// reviewTargetResolve's fileTargetIdentity, so this is the same contract the
+// Organize deep-link resolvers use (R-CHAT-FILE-MODAL + files-target rounds).
+import { REVIEW_VIEWER_TYPES, BROAD_REVIEW_TYPES, typeKeyOf, chatFileToReviewTarget } from './previewResolve.js';
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -359,30 +363,9 @@ function looksBinary(s) {
   return ctrl / head.length > 0.05;
 }
 
-// Detect the viewer type key from a filename / mime, for files handed straight in
-// from a chat message (not the queue endpoint, which already typed them).
-// `url` disambiguates a live site: an http(s) address with no recognizable file
-// extension is a deployed page, not a document — review it in the sitelive viewer.
-const REVIEW_VIEWER_TYPES = new Set(['image', 'photo', 'video', 'audio', 'doc', 'copy', 'code', 'sheet', 'siteshot', 'sitefile', 'sitelive']);
-const BROAD_REVIEW_TYPES = new Set(['doc', 'copy', 'code', 'sheet']);
-
-function typeKeyOf(name, mime, url = '') {
-  const ext = String(name || '').toLowerCase().split('.').pop();
-  const m = String(mime || '').toLowerCase();
-  if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'heic', 'tiff', 'bmp'].includes(ext)) return 'image';
-  if (m.startsWith('video/') || ['mp4', 'mov', 'webm', 'mkv', 'm4v', 'avi'].includes(ext)) return 'video';
-  // Audio gets its own viewer (files-tool merge: Files browses audio too — the doc
-  // branch's "no preview, download" card would be a regression vs Organize's player).
-  if (m.startsWith('audio/') || ['wav', 'mp3', 'aac', 'm4a', 'ogg', 'flac', 'aiff', 'opus'].includes(ext)) return 'audio';
-  if (['pdf', 'docx', 'doc', 'pptx', 'ppt'].includes(ext)) return 'doc';
-  if (m === 'text/html' || m === 'application/xhtml+xml' || ['html', 'htm'].includes(ext)) return 'sitefile';
-  // Structured-data + plain-text files read inline as text (monospace via the copy
-  // branch) — same set Organize's dataFilePreview covered.
-  if (['md', 'txt', 'json', 'jsonl', 'ndjson', 'yaml', 'yml', 'toml', 'csv', 'tsv', 'xml', 'ini', 'log'].includes(ext)) return 'copy';
-  if (['js', 'jsx', 'ts', 'tsx', 'py', 'go', 'rs', 'java'].includes(ext)) return 'code';
-  if (/^https?:\/\//i.test(String(url || name || ''))) return 'sitelive';
-  return 'doc';
-}
+// Viewer type detection + chat-file resolution live in previewResolve.js (pure,
+// node:test-covered, shared with the chat file modal — R-CHAT-FILE-MODAL).
+// typeKeyOf / the type sets are re-imported here so queue mapping keeps working.
 
 // Map chat attachments ({ url, name, mime }) to review queue items so the Review tool
 // can show EXACTLY the files a user tapped "Review"/"Review all" on, live from the
@@ -391,26 +374,13 @@ function typeKeyOf(name, mime, url = '') {
 export function reviewItemsFromFiles(files, project = '') {
   return (files || [])
     .map((f) => {
-      const rawUrl = String(f.url || f.path || f.attachmentUrl || '');
-      // A live-site hand-in (goal-thread artifact) keeps its absolute URL intact;
-      // a corner path sheds leading slashes to match queue item ids.
-      const path = /^https?:\/\//i.test(rawUrl) ? rawUrl : rawUrl.replace(/^\/+/, '');
-      if (!path) return null;
-      const name = f.name || f.fileName || path.split('/').pop() || 'File';
-      // An explicit VIEWER type (e.g. 'sitelive' from an artifact card) wins over
-      // detection. But shelf items carry a generic discriminator `type:'file'`/'link'
-      // (file-vs-link, NOT a viewer key) — treating that as the viewer type sent every
-      // uploaded image/pdf down the text branch and rendered "Preview is not available."
-      // Fall through to extension/mime detection for those.
-      const explicit = REVIEW_VIEWER_TYPES.has(f.type) ? f.type : '';
-      const detected = typeKeyOf(name, f.mime || f.fileMime, rawUrl);
-      // Extension/MIME wins for concrete file media. Chat and mirror rows are often
-      // stamped with broad `doc`/`copy` kinds; honoring those over a real .png/.mp4/
-      // .html/.pdf extension is what produced binary symbols and download-only cards.
-      // Specialized explicit renderers (siteshot/sitelive/photo) remain intentional.
-      const concrete = ['image', 'video', 'audio', 'sitefile'].includes(detected)
-        || (detected === 'doc' && /\.(?:pdf|docx?|pptx?)$/i.test(name));
-      const key = concrete && (!explicit || BROAD_REVIEW_TYPES.has(explicit)) ? detected : (explicit || detected);
+      // ONE resolution contract for every producer shape ({url,name} attachments,
+      // {attachmentUrl,fileName} message rows, {path} refs) — identity + viewer
+      // type both come from previewResolve/reviewTargetResolve, shared with the
+      // chat file modal and the Organize deep-link resolvers.
+      const target = chatFileToReviewTarget(f);
+      if (!target) return null;
+      const { path, title: name, type: key } = target;
       const fileRef = createFileRef({
         id: path,
         url: /^https?:\/\//i.test(path) ? path : '',
