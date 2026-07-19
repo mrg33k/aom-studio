@@ -2824,6 +2824,22 @@ export default function CornerCV6() {
     setTheme(t);
     try { localStorage.setItem('cv6-theme', t); } catch { /* private mode */ }
   }, []);
+  // Two stale-surface syncs on every theme change:
+  // 1. index.html's boot script stamps data-app-theme on <html> pre-paint (anti-flash)
+  //    and nothing ever updated it after — and the glass token block is last in cv6.css,
+  //    so a stale html[data-app-theme="glass"] outranked any later in-app pick on every
+  //    nested [data-cv6] node. Net effect: switching INTO glass worked, switching away
+  //    did nothing until a full reload. Desktop tabs get reloaded; the saved-to-home
+  //    app doesn't — "themes work on desktop but not mobile" (Patrik 2026-07-19).
+  // 2. The static <meta name="theme-color"> shipped dark-navy, so the phone's app
+  //    chrome (status bar / task switcher) stayed dark even in light mode.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-app-theme', theme);
+    const ground = { dark: '#0A0A0B', light: '#F6F6F7', glass: '#0c1218' }[theme] || '#0A0A0B';
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) { meta = document.createElement('meta'); meta.setAttribute('name', 'theme-color'); document.head.appendChild(meta); }
+    meta.setAttribute('content', ground);
+  }, [theme]);
 
   // Go to a new location, remembering where we were so Back is a real page-undo.
   const goTo = useCallback((nextView, nextRoom = null) => {

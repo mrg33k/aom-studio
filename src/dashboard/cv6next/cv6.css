@@ -1187,13 +1187,35 @@
    templates' inline-styled bars (bottom decision bars, pin bars, composers);
    the modal exception right below re-opaques the reading surfaces it would
    otherwise catch. */
-[data-app-theme="glass"] [data-cv6] :where(.mhdr, .mhsubactions, .mcomposer, .mpinbar),
-[data-cv6][data-app-theme="glass"] :where(.mhdr, .mhsubactions, .mcomposer, .mpinbar),
+[data-app-theme="glass"] [data-cv6] :is(.topbar, .mhdr, .mhsubactions, .mcomposer, .mpinbar),
+[data-cv6][data-app-theme="glass"] :is(.topbar, .mhdr, .mhsubactions, .mcomposer, .mpinbar),
 [data-app-theme="glass"] [data-cv6] [style*="background:var(--ground)"],
 [data-cv6][data-app-theme="glass"] [style*="background:var(--ground)"] {
   background: rgba(10, 14, 20, .44) !important;
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+/* :is (not :where) on the band list is load-bearing: the R2 top-bar contract
+   below re-grounds .mhdr with !important at (0,2,0) — :where left this rule at
+   the same weight and later-in-file won, so glass headers silently painted the
+   whole wallpaper squished into a 60/80px bar (Patrik 2026-07-19). :is lifts
+   the band arms to (0,3,0) so translucent glass wins; the near-opaque modal
+   exception below still outranks it at (0,4,0). .topbar joins the list — the
+   desktop bar had the same squished-wallpaper defect. */
+
+/* On glass the wallpaper must paint ONCE (the shell root) and show through
+   everything above it. The stage + screen roots each repaint var(--ground) —
+   correct on flat dark/light, but on glass the desktop stage sits 80px below
+   the shell so its copy of the gradient lands offset: a visible seam at the
+   top-bar edge. Transparent here lets the one shell-painted wallpaper run
+   continuously behind the blurred bars. !important because composeScreen
+   writes background inline on mobile screen roots. */
+[data-app-theme="glass"] [data-cv6] .cv6-screen-stage,
+[data-cv6][data-app-theme="glass"] .cv6-screen-stage,
+[data-app-theme="glass"] [data-cv6].cv6-screen,
+[data-app-theme="glass"] [data-cv6] .cv6-screen,
+[data-app-theme="glass"] [data-cv6] .scr {
+  background: transparent !important;
 }
 /* ...except MODALS the [style*=] arm also catches (review 2026-07-18 defect 3):
    the create-mission card and the injected bottom sheets (their inline literal
