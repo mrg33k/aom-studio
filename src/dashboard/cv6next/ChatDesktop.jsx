@@ -203,7 +203,7 @@ export function useRoomCrossings(worldId, room) {
         // Same file announced twice (re-share, retry) → keep the newest card only.
         const seen = new Set();
         const deduped = out.filter((it) => {
-          const key = `${it.isUser ? 'u' : 'a'}|${it.url || it.name}`;
+          const key = `${it.isUser ? 'u' : 'a'}|${it.url || ''}|${it.name}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
@@ -462,7 +462,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   }, [send, onReviewFile, reviewProject, reviewMission]);
 
   // Right column: Goals view (the agent's goal/steps) or Files view (this conversation's files + links).
-  const [drawerView, setDrawerView] = useState('goals');
+  const [drawerView, setDrawerView] = useState('files'); // Files default — Patrik's must-have order put files third and goals nowhere (plan item 23)
 
   // "Following along" is real, user-owned state: which rooms surface on Home + notify you.
   // Persisted locally per room so the toggle sticks across visits without a new backend.
@@ -597,6 +597,14 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // opens the one shared creation flow; per-room amber badges ride the same
   // needs-you feed that used to power the catch-up strip (now cut, Patrik 7-20).
   const [centerMode, setCenterMode] = useState('thread'); // 'thread' | 'email'
+  // Returning from Email remounts the thread scroller at the top with your
+  // just-sent message far below the fold (adv2 finding 2) — re-pin to the tail.
+  useEffect(() => {
+    if (centerMode !== 'thread') return;
+    prevLenRef.current = 0;
+    const t = setTimeout(() => bottomRef.current?.scrollIntoView(), 60);
+    return () => clearTimeout(t);
+  }, [centerMode]);
   const [composerOpen, setComposerOpen] = useState(false);
   const { inboxItems = [] } = useDataContext() || {};
   // Files waiting on review are attention too (xhigh review finding 4): the

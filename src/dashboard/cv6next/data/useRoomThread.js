@@ -147,7 +147,9 @@ export function rowAttachments(m) {
   if (multi) {
     const names = multi[1].split(',').map((s) => s.trim()).filter(Boolean);
     return {
-      attachments: names.map((n, i) => ({ name: displayNameFromFileRef(n), url: textUrls[i] || cornerPathFromText(n) || textUrls[0] || '', mime: '', size: 0 })),
+      // No matching URL = no invented link: pointing extra names at file 1's
+      // bytes lied and then dedup swallowed the extra file (adv2 finding 4).
+      attachments: names.map((n, i) => ({ name: displayNameFromFileRef(n), url: textUrls[i] || cornerPathFromText(n) || '', mime: '', size: 0 })),
       pure: true, fileName,
     };
   }
@@ -418,7 +420,9 @@ export function useRoomThread(worldId, room) {
           // A trailing bare URL the card already carries leaves the bubble text.
           const resultPayload = (m.metadata && typeof m.metadata.result_payload === 'object') ? m.metadata.result_payload : null;
           let linkCards = [];
-          if (!isUser) {
+          // Review-decision echoes are receipts, not shipped-work links — lifting
+          // their store URLs made dead Open cards (adv2 finding 1).
+          if (!isUser && m.source !== 'review-decision') {
             linkCards = extractLinkCards({ text: displayText, resultPayload, attachments });
             if (linkCards.length) displayText = stripTrailingCardUrl(displayText, linkCards);
           }

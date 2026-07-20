@@ -90,7 +90,10 @@ function DashboardSurface() {
   try {
     if (cv4) sessionStorage.setItem('cv4Dashboard', '1')
     else if (sessionStorage.getItem('cv4Dashboard') === '1') cv4 = true
-    if (params.get('cv6') === '1') { sessionStorage.removeItem('cv4Dashboard'); cv4 = false }
+    // An EXPLICIT CV6 ask always outranks the sticky legacy flag: ?cv6=1 or any
+    // ?view= deep link clears the tab's CV4 stickiness (adv2 finding: one
+    // ?cv4=1 visit used to hijack every later deep link for the whole tab).
+    if (params.get('cv6') === '1' || (params.has('view') && !params.get('cv4'))) { sessionStorage.removeItem('cv4Dashboard'); cv4 = false }
   } catch { /* private mode: query string only */ }
   // corner:corner-ui-cv6 R-CLEANUP — fresh start. /dashboard serves CornerCV6 (Claude
   // Design templates wired to real data). ?cv4=1 escapes to the old CornerV4 surface,

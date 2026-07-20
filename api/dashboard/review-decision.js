@@ -215,19 +215,23 @@ export default async function handler(req, res) {
   let message = '';
   let messageType = 'review_decision';
 
+  // The room-facing echo speaks the FILE'S NAME, never the raw store URL —
+  // a URL with spaces (every multi-word filename) broke the chat's link-card
+  // lift into a dead Open card and read as plumbing (adv2 finding 1).
+  const displayName = (clean(req.body.title, 200) || decodeURIComponent(String(did).split('/').pop() || '').trim() || 'the file');
   if (act === 'approve') {
     messageType = 'review_approved';
-    message = `Deliverable approved: ${did}`;
+    message = `Approved "${displayName}".`;
   } else if (act === 'request-changes') {
     const notesText = clean(notes, 1000);
     messageType = 'review_request_changes';
-    message = notesText ? `Changes requested: ${notesText}` : `Changes requested for: ${did}`;
+    message = notesText ? `Changes requested on "${displayName}": ${notesText}` : `Changes requested on "${displayName}".`;
   } else if (act === 'dismiss') {
     messageType = 'review_dismissed';
-    message = `Deliverable dismissed from review: ${did}`;
+    message = `Dismissed "${displayName}" from review.`;
   } else if (act === 'send-checklist') {
     messageType = 'review_checklist_sent';
-    message = checklist ? clean(checklist, 2000) : `Checklist sent for: ${did}`;
+    message = checklist ? clean(checklist, 2000) : `Checklist sent for "${displayName}".`;
   }
 
   try {
