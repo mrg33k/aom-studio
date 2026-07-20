@@ -27,7 +27,7 @@
     --danger:#E5341F; --success:#1C9A6B;
     /* semantic */
     --bg:var(--paper); --text:var(--ink-900);
-    --text-muted:var(--ink-500); --text-faint:var(--ink-400);
+    --text-muted:var(--ink-500); --text-faint:var(--ink-500); /* faint lifted to AA (critic pass R6): ink-400 on paper was 3.08:1 */
     --border:var(--ink-900); --border-soft:var(--ink-200); --divider:var(--ink-200);
     --surface-card:var(--paper-pure);
     /* rules / radii / motion */
@@ -99,7 +99,7 @@
   .hstat{text-align:right}
   .hstat .n{font-family:var(--font-display);font-weight:800;font-size:1.05rem;line-height:1.15}
   .hstat .n.gold{color:var(--gold-deep)}
-  .hstat .l{font-size:9px;text-transform:uppercase;letter-spacing:var(--tracking-label);color:var(--text-faint);font-weight:500}
+  .hstat .l{font-size:11px;text-transform:uppercase;letter-spacing:var(--tracking-label);color:var(--text-faint);font-weight:500}
 
   .wrap{max-width:var(--container);margin:0 auto;padding:32px 24px 96px}
 
@@ -129,6 +129,49 @@
   .pick-quote{
     border-left:var(--rule-heavy) solid var(--gold);padding:4px 0 4px 16px;
     color:var(--ink-100);font-style:italic;margin-bottom:22px;font-size:1rem;
+  }
+  .pick-body{display:flex;flex-direction:column;min-height:100%}
+  .pick-foot{
+    margin-top:auto;padding-top:18px;border-top:1px solid rgba(246,246,244,.16);
+    display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+    font-size:.78rem;color:var(--stone);
+  }
+  .pick-foot .pf-cue{
+    font-family:var(--font-display);font-weight:700;font-size:11px;
+    letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold);
+    cursor:pointer;white-space:nowrap;
+  }
+  @media(max-width:760px){.pick-foot{margin-top:22px}}
+
+  /* ---------- Custom video player (system chrome: flat, hairline, gold) ---------- */
+  .vplayer video{cursor:pointer}
+  .vp-big{
+    position:absolute;inset:0;margin:auto;width:64px;height:64px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(11,11,11,.62);border:1px solid rgba(246,246,244,.45);
+    color:var(--paper);cursor:pointer;padding:0;
+  }
+  .vp-big svg{width:20px;height:20px;display:block;margin-left:2px}
+  .vplayer.playing .vp-big{display:none}
+  .vp-bar{
+    position:absolute;left:0;right:0;bottom:0;z-index:2;
+    display:flex;align-items:center;gap:10px;padding:8px 12px;
+    background:rgba(11,11,11,.78);
+  }
+  .vp-btn{
+    display:flex;align-items:center;justify-content:center;
+    width:32px;height:32px;flex:0 0 auto;
+    background:none;border:0;color:var(--paper);cursor:pointer;padding:0;
+  }
+  .vp-btn:hover{color:var(--gold)}
+  .vp-btn svg{width:14px;height:14px;display:block}
+  .vp-track{flex:1;height:24px;display:flex;align-items:center;cursor:pointer}
+  .vp-rail{width:100%;height:2px;background:rgba(246,246,244,.28);position:relative}
+  .vp-fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:var(--gold)}
+  .vp-time{
+    font-family:var(--font-display);font-weight:600;font-size:10px;
+    letter-spacing:.08em;color:var(--paper);white-space:nowrap;
+    font-variant-numeric:tabular-nums;flex:0 0 auto;
   }
 
   /* ---------- Buttons (Button.jsx idiom) ---------- */
@@ -1022,13 +1065,19 @@ function renderPick(){
   if(!ad){ $("#todaysPick").innerHTML = `<div class="empty" style="grid-column:1/-1">Nothing published yet.</div>`; return; }
   $("#todaysPick").innerHTML = `
     <div onclick="openModal(${ad.id})">${thumbHTML(ad)}</div>
-    <div>
+    <div class="pick-body">
       <div class="pick-kicker"><span class="live"></span> [ Today's Pick ] — ${esc(ad.date)}</div>
       <div class="pick-title">${esc(ad.brand)}</div>
       <div class="pick-sub">${esc(ad.industry)} · ${esc(ad.format)} · has run <b>${ad.runLabel} straight</b> — somebody's paying for this because it works.</div>
       <div class="pick-quote">${esc(ad.hook)}</div>
-      <button class="btn gold" onclick="openModal(${ad.id})">Read the breakdown</button>
-      <button class="btn outline-inverse" onclick="toggleSave(${ad.id});renderAll()">${state.saved.has(ad.id) ? "✓ Saved" : "+ Save to swipe file"}</button>
+      <div>
+        <button class="btn gold" onclick="openModal(${ad.id})">Read the breakdown</button>
+        <button class="btn outline-inverse" onclick="toggleSave(${ad.id});renderAll()">${state.saved.has(ad.id) ? "✓ Saved" : "+ Save to swipe file"}</button>
+      </div>
+      <div class="pick-foot">
+        <span>Verified in the Meta Ad Library — started ${esc(ad.started)} · ${ad.days} days of continuous spend</span>
+        <span class="pf-cue" onclick="document.querySelector('.toolbar').scrollIntoView({behavior:'smooth'})">The archive ↓</span>
+      </div>
     </div>`;
 }
 
@@ -1131,18 +1180,67 @@ function toggleSave(id){ state.saved.has(id) ? state.saved.delete(id) : state.sa
 /* Resolve media/ against the page's directory so it works at /inspiration
    (no trailing slash, as Vercel serves it), /inspiration/, and local root. */
 const MEDIA_BASE = location.pathname.replace(/\/index\.html$/, "").replace(/\/$/, "") + "/media/";
+
+/* Custom player chrome — native controls are off-system (rounded scrubber, kebab). */
+const VP_PLAY  = `<svg viewBox="0 0 14 14" fill="currentColor"><path d="M2 1l11 6-11 6z"/></svg>`;
+const VP_PAUSE = `<svg viewBox="0 0 14 14" fill="currentColor"><path d="M2 1h3.6v12H2zM8.4 1H12v12H8.4z"/></svg>`;
+const VP_VOL   = `<svg viewBox="0 0 14 14"><path d="M1 5h3l4-3v10L4 9H1z" fill="currentColor"/><path d="M10 4.2c1.3 1.7 1.3 3.9 0 5.6" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>`;
+const VP_MUTED = `<svg viewBox="0 0 14 14"><path d="M1 5h3l4-3v10L4 9H1z" fill="currentColor"/><path d="M9.5 5.2l3.6 3.6M13.1 5.2L9.5 8.8" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>`;
+const VP_FS    = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9"/></svg>`;
+function vpEl(el){ return el.closest(".vplayer"); }
+function vpVideo(el){ return vpEl(el).querySelector("video"); }
+function vpToggle(el){ const v = vpVideo(el); v.paused ? v.play() : v.pause(); }
+function vpSync(v){
+  const p = vpEl(v);
+  p.classList.toggle("playing", !v.paused);
+  p.querySelector(".vp-play").innerHTML = v.paused ? VP_PLAY : VP_PAUSE;
+}
+function vpTime(v){
+  const p = vpEl(v);
+  if(v.duration) p.querySelector(".vp-fill").style.width = (v.currentTime / v.duration * 100) + "%";
+  p.querySelector(".vp-time").textContent = vpFmt(v.currentTime) + " / " + vpFmt(v.duration);
+}
+function vpSeek(e, track){
+  const v = vpVideo(track);
+  const r = track.getBoundingClientRect();
+  if(v.duration) v.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * v.duration;
+}
+function vpMute(el){
+  const v = vpVideo(el);
+  v.muted = !v.muted;
+  vpEl(el).querySelector(".vp-mute").innerHTML = v.muted ? VP_MUTED : VP_VOL;
+}
+function vpFs(el){
+  const p = vpEl(el), v = vpVideo(el);
+  if(document.fullscreenElement){ document.exitFullscreen(); }
+  else if(p.requestFullscreen){ p.requestFullscreen(); }
+  else if(v.webkitEnterFullscreen){ v.webkitEnterFullscreen(); }
+}
+function vpFmt(s){ s = Math.floor(s || 0); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); }
+function vpDropChrome(el){ const p = vpEl(el); if(p) p.querySelectorAll(".vp-bar,.vp-big").forEach(n => n.remove()); }
+
 function mediaHTML(ad){
   /* Plays ./media/<id>.mp4 when present (fetched by scripts/fetch-ad-videos.mjs);
      falls back to the captured still if the file is missing. */
   const still = (typeof STILLS !== "undefined") && STILLS[ad.id];
   if(!still) return thumbHTML(ad);
-  return `<div class="thumb" style="background:#0B0B0B;aspect-ratio:auto;min-height:340px;cursor:default">
-    <video controls playsinline preload="metadata" poster="${still}"
+  return `<div class="thumb vplayer" style="background:#0B0B0B;aspect-ratio:auto;min-height:340px;cursor:default">
+    <video playsinline preload="metadata" poster="${still}"
       style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#0B0B0B"
-      onerror="this.outerHTML=decodeURIComponent(this.dataset.fb)"
+      onclick="vpToggle(this)" onplay="vpSync(this)" onpause="vpSync(this)" onended="vpSync(this)"
+      ontimeupdate="vpTime(this)" onloadedmetadata="vpTime(this)"
+      onerror="vpDropChrome(this); this.outerHTML=decodeURIComponent(this.dataset.fb)"
       data-fb="${encodeURIComponent(`<img src='${still}' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover'>`)}">
-      <source src="${MEDIA_BASE}${ad.id}.mp4" type="video/mp4" onerror="const v=this.parentNode; v.outerHTML=decodeURIComponent(v.dataset.fb)">
+      <source src="${MEDIA_BASE}${ad.id}.mp4" type="video/mp4" onerror="const v=this.parentNode; vpDropChrome(v); v.outerHTML=decodeURIComponent(v.dataset.fb)">
     </video>
+    <button class="vp-big" onclick="vpToggle(this)" aria-label="Play">${VP_PLAY}</button>
+    <div class="vp-bar">
+      <button class="vp-btn vp-play" onclick="vpToggle(this)" aria-label="Play / pause">${VP_PLAY}</button>
+      <div class="vp-track" onclick="vpSeek(event, this)"><div class="vp-rail"><div class="vp-fill"></div></div></div>
+      <span class="vp-time">0:00 / 0:00</span>
+      <button class="vp-btn vp-mute" onclick="vpMute(this)" aria-label="Mute">${VP_VOL}</button>
+      <button class="vp-btn vp-fs" onclick="vpFs(this)" aria-label="Fullscreen">${VP_FS}</button>
+    </div>
     <span class="platform">${esc(ad.platform)}</span>
     <span class="runtime">Running ${ad.runLabel}</span>
   </div>`;
