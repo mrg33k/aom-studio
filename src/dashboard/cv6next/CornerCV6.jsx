@@ -1,4 +1,4 @@
-// CornerCV6 — the fresh CV6 surface. /dashboard renders THIS now (B: fresh start).
+// CornerCV6 — the fresh CV6 surface. /dashboard renders THIS now (B: fresh start). [build:2026-07-20]
 // Every visible screen is a Claude Design fill-in template, mounted through the engine
 // and fed real data. Nothing is hand-drawn; nothing is faked. Screens fill in as
 // Claude Design labels them. CV4 stays reachable at ?cv4=1 as the fallback.
