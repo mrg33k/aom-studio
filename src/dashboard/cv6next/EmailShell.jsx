@@ -31,7 +31,7 @@ function AutoReplyStrip({ isDesktop }) {
   if (state === null) return null;
   if (state === 'error') {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isDesktop ? '7px 24px' : '7px 14px', borderBottom: '1px solid var(--divider)', fontSize: 12, color: 'var(--faint)' }}>
+      <div className="cv6-autoreply-strip" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isDesktop ? '7px 24px' : '7px 14px', borderBottom: '1px solid var(--divider)', fontSize: 12, color: 'var(--faint)' }}>
         Auto reply status unavailable right now.
       </div>
     );
@@ -61,7 +61,7 @@ function AutoReplyStrip({ isDesktop }) {
       ? `Auto reply is ON${fs.mode === 'test' ? ' (test senders only)' : ''}: ${answering ? 'easy mail is answered automatically' : 'replies are drafted, never sent'}${fs.threshold_min ? `, holding note after ${fs.threshold_min} min` : ''}.`
       : 'Auto reply is OFF: nothing sends without you.';
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: isDesktop ? '7px 24px' : '7px 14px', borderBottom: '1px solid var(--divider)', flexShrink: 0 }}>
+    <div className="cv6-autoreply-strip" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: isDesktop ? '7px 24px' : '7px 14px', borderBottom: '1px solid var(--divider)', flexShrink: 0 }}>
       <span style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none', background: on ? 'var(--success)' : 'var(--faint)' }} />
       <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {label}{pending ? ' Applying your change…' : ''}
@@ -107,8 +107,9 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
     </button>
   );
 
+  const stripOn = tab === 'inbox' && worldId === 'aom';
   return (
-    <div className="cv6-email-shell" data-email-tab={tab} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', flex: 1, position: 'relative' }}>
+    <div className="cv6-email-shell" data-email-tab={tab} data-autoreply={stripOn ? '1' : undefined} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', flex: 1, position: 'relative' }}>
       {!isDesktop && tab === 'campaign' && (
         <div className="mhdr">
           <button type="button" className="mback" aria-label="Back" onClick={onBack}>
@@ -137,7 +138,7 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
           {seg('campaign', 'Campaign')}
         </div>
       </div>
-      {tab === 'inbox' && worldId === 'aom' ? <AutoReplyStrip isDesktop={isDesktop} /> : null}
+      {stripOn ? <AutoReplyStrip isDesktop={isDesktop} /> : null}
       <div className="cv6-email-body" style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'inbox'
           ? inbox

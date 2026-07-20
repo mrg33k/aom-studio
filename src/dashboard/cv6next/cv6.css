@@ -1485,6 +1485,28 @@
   [data-cv6] .cv6-email-shell[data-email-tab="inbox"] .cv6-email-body [data-screen^="support"] .mhdr {
     margin-bottom:var(--cv6-email-tabs-height);
   }
+  /* One Page: the auto-reply strip joins the mobile header geometry. It gets its
+     own absolute slot UNDER the tabs (fixed height, single truncating line) and
+     the inbox header's reserved margin grows to match — without this the strip
+     pushed the template header down into the absolutely-positioned tab pill
+     (found on the iOS simulator, 2026-07-20). */
+  /* Mobile: these header rows are absolute overlays above scrolling content —
+     they need a backing here (desktop keeps the seamless transparent header). */
+  [data-cv6] .cv6-email-tabs { background:var(--ground); }
+  [data-cv6] .cv6-email-shell { --cv6-autoreply-strip-height:40px; }
+  [data-cv6] .cv6-email-shell[data-autoreply="1"] .cv6-autoreply-strip {
+    position:absolute;
+    z-index:4;
+    top:calc(var(--cv6-mobile-header-height) + var(--cv6-email-tabs-height));
+    left:0;
+    right:0;
+    height:var(--cv6-autoreply-strip-height);
+    box-sizing:border-box;
+    background:var(--ground);
+  }
+  [data-cv6] .cv6-email-shell[data-autoreply="1"][data-email-tab="inbox"] .cv6-email-body [data-screen^="support"] .mhdr {
+    margin-bottom:calc(var(--cv6-email-tabs-height) + var(--cv6-autoreply-strip-height));
+  }
 }
 
 /* ---- Desktop Home convo column: show the honest "No active goal" rest state when
