@@ -594,7 +594,7 @@
     </div>
     <div class="vision">One vision. Many worlds ahead.</div>
     The Library — a daily, hand-curated archive of advertising that actually works. Construction edition, day one.<br>
-    All ads are real, sourced from the public Meta Ad Library on Jul 16, 2026. Running durations come from each ad's "Started running on" date, active at curation. Breakdowns are Ahead of Market's own commentary on the ad copy and offer. Thumbnails are still frames captured from each advertiser's active Ad Library listings, shown for commentary — open any entry's source listing to view the full creative.
+    All ads are real, sourced from the public Meta Ad Library on Jul 16, 2026. Running durations come from each ad's "Started running on" date, active at curation. Breakdowns are Ahead of Market's own commentary on the ad copy and offer. Every ad belongs to the business that made it — we feature work to celebrate it and break down why it works. Stills and clips appear with full credit and a link to the source listing. Your ad here and want it removed, or want the full video embedded? hello@aom-inhouse.com — we'll do either, fast.
   </div>
 </footer>
 
@@ -1128,10 +1128,26 @@ function renderGrid(){
 function toggleSave(id){ state.saved.has(id) ? state.saved.delete(id) : state.saved.add(id); }
 
 /* ================= MODAL ================= */
+function mediaHTML(ad){
+  /* Plays ./media/<id>.mp4 when present (fetched by scripts/fetch-ad-videos.mjs);
+     falls back to the captured still if the file is missing. */
+  const still = (typeof STILLS !== "undefined") && STILLS[ad.id];
+  if(!still) return thumbHTML(ad);
+  return `<div class="thumb" style="background:#0B0B0B;aspect-ratio:auto;min-height:340px;cursor:default">
+    <video controls playsinline preload="metadata" poster="${still}"
+      style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#0B0B0B"
+      onerror="this.outerHTML=decodeURIComponent(this.dataset.fb)"
+      data-fb="${encodeURIComponent(`<img src='${still}' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover'>`)}">
+      <source src="media/${ad.id}.mp4" type="video/mp4" onerror="const v=this.parentNode; v.outerHTML=decodeURIComponent(v.dataset.fb)">
+    </video>
+    <span class="platform">${esc(ad.platform)}</span>
+    <span class="runtime">Running ${ad.runLabel}</span>
+  </div>`;
+}
 function openModal(id){
   const ad = byId(id);
   $("#modal").innerHTML = `
-    ${thumbHTML(ad)}
+    ${mediaHTML(ad)}
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()">✕</button>
       <div class="m-brand">${esc(ad.brand)}</div>
