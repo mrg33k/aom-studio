@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AOM Post 01 — production v5 (13 slides)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-900:#0B0B0B; --ink-700:#2A2A28; --ink-500:#6E6E66; --ink-400:#8E8D84;
+    --ink-300:#B6B2AB; --ink-200:#D8D5CE; --ink-100:#ECEAE4;
+    --paper:#F6F6F4; --paper-pure:#FFFFFF; --paper-alt:#EEEDE8;
+    --gold:#C4A46A; --gold-deep:#A8884C; --gold-dim:#EFE6D3;
+    --danger:#E5341F;
+    --font-display:'Bricolage Grotesque',system-ui,Helvetica,Arial,sans-serif;
+    --font-text:'Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;
+    --mx:84px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+  body{background:#333;font-family:var(--font-text)}
+  .slide{width:1080px;height:1350px;position:relative;overflow:hidden;background:var(--paper);color:var(--ink-900);display:flex;flex-direction:column}
+  .slide.inverse{background:var(--ink-900);color:var(--paper)}
+  .slide.goldbg{background:var(--gold);color:var(--ink-900)}
+
+  .zone{padding:60px var(--mx) 0 var(--mx);display:flex;flex-direction:column;flex:1}
+
+  .platebar{display:flex;align-items:center;margin-bottom:44px}
+  .plate-idx{font-family:var(--font-display);font-weight:800;font-size:32px;background:var(--gold);color:var(--ink-900);padding:14px 22px}
+  .plate-idx.red{background:var(--danger);color:#fff}
+  .plate-label{font-family:var(--font-display);font-weight:800;font-size:28px;letter-spacing:.05em;background:var(--ink-900);color:var(--paper);padding:16px 28px;text-transform:uppercase}
+  .inverse .plate-label{background:var(--paper);color:var(--ink-900)}
+  .goldbg .plate-idx{background:var(--ink-900);color:var(--gold)}
+
+  .display{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:-.01em;line-height:.96}
+  .h1{font-size:84px;margin-bottom:40px}
+  .body{font-size:34px;line-height:1.5;color:var(--ink-700)}
+  .inverse .body{color:var(--ink-300)}
+  .goldbg .body{color:var(--ink-900)}
+  .muted{color:var(--ink-500)}
+  .goldword{color:var(--gold);display:inline-block;line-height:.74;padding-bottom:0;border-bottom:12px solid var(--gold)}
+  .strike{position:relative;display:inline-block}
+  .strike::after{content:'';position:absolute;left:-2%;right:-2%;top:52%;height:8px;background:var(--danger)}
+
+  .foot{position:relative;z-index:5;margin-top:auto;height:118px;flex:0 0 118px;padding:0 var(--mx);border-top:2px solid var(--ink-200);display:flex;justify-content:space-between;align-items:center;font-weight:500;font-size:23px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-500);background:inherit}
+  .inverse .foot{border-top-color:var(--ink-700);color:var(--ink-400)}
+  .goldbg .foot{border-top-color:rgba(11,11,11,.35);color:var(--ink-900)}
+  .mark{display:flex;align-items:center;gap:16px;color:currentColor}
+  .mark svg{height:52px;width:auto;display:block}
+  .mark b{font-family:var(--font-display);font-weight:800;font-size:26px}
+
+  /* single verdict panel (one per slide now) */
+  .panel{margin-bottom:56px;padding:44px 48px}
+  .panel.red{background:var(--paper-pure);border:3px solid var(--danger)}
+  .panel.goldp{background:transparent;border:3px solid var(--gold)}
+  .chip{display:inline-flex;gap:12px;font-family:var(--font-display);font-weight:800;font-size:25px;letter-spacing:.08em;text-transform:uppercase;padding:9px 20px;margin-bottom:20px}
+  .chip.x{background:var(--danger);color:#fff}
+  .chip.v{background:var(--gold);color:var(--ink-900)}
+  .panel .t{font-size:37px;line-height:1.55;color:var(--ink-700)}
+  .inverse .panel .t{color:var(--ink-100)}
+
+  .band{display:grid;gap:6px}
+  .band .cell{aspect-ratio:1;background-size:cover;background-position:center;position:relative}
+  .band .cell.flag{outline:10px solid var(--danger);outline-offset:-10px}
+  .band .cell .tag{position:absolute;left:0;bottom:0;background:var(--ink-900);color:var(--paper);font-weight:500;font-size:21px;letter-spacing:.1em;text-transform:uppercase;padding:10px 18px}
+  .band .cell.flag .tag{background:var(--danger)}
+  .band .cell .tag.goldtag{background:var(--gold);color:var(--ink-900);font-weight:700}
+  .band .logo-cell{aspect-ratio:1;background:var(--paper-alt);display:flex;align-items:center;justify-content:center}
+  .band .logo-cell svg{height:96px;width:auto;color:var(--ink-900)}
+  .band .cell.dim{filter:grayscale(.4) brightness(.75)}
+
+  .profcard{background:var(--paper-pure);border:2px solid var(--ink-200);padding:64px 56px;display:flex;gap:36px;align-items:center}
+  .inverse .profcard{background:var(--ink-800,#161615);border-color:var(--ink-700)}
+  .avatar{width:126px;height:126px;border-radius:50%;background:var(--ink-900);display:flex;align-items:center;justify-content:center;flex:0 0 126px}
+  .inverse .avatar{background:var(--gold)}
+  .avatar svg{height:74px;width:auto;color:var(--gold)}
+  .inverse .avatar svg{color:var(--ink-900)}
+  .pname{font-weight:800;font-size:35px}
+  .pstats{font-size:25px;color:var(--ink-500);margin-top:4px}
+  .inverse .pstats{color:var(--ink-400)}
+  .bioline{font-size:37px;line-height:1.5;margin-top:30px}
+
+  .links{display:flex;flex-direction:column;gap:16px}
+  .linkbtn{background:var(--paper-pure);border:2px solid var(--ink-200);padding:34px;font-size:32px;color:var(--ink-500);text-align:center;position:relative}
+  .linkbtn.dead::after{content:'';position:absolute;left:5%;right:5%;top:50%;height:8px;background:var(--danger)}
+  .linkbtn.hero{background:var(--gold);border-color:var(--gold);color:var(--ink-900);font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:34px;padding:36px}
+
+  .his{display:flex;justify-content:space-between}
+  .hi{display:flex;flex-direction:column;align-items:center;gap:16px;font-size:24px;color:var(--ink-500)}
+  .inverse .hi{color:var(--ink-300)}
+  .hicircle{width:206px;height:206px;border-radius:50%;border:4px solid var(--ink-900);background-size:cover;background-position:center}
+  .inverse .hicircle{border-color:var(--gold)}
+  .hi.dead .hicircle{border:4px dashed var(--danger);background:var(--paper-pure)}
+  .hi.dead{color:var(--danger)}
+
+  .checklist{display:flex;flex-direction:column;gap:34px}
+  .check{display:flex;gap:26px;font-size:38px;line-height:1.45;align-items:flex-start}
+  .check .n{font-family:var(--font-display);font-weight:800;background:var(--gold);color:var(--ink-900);min-width:62px;height:62px;display:flex;align-items:center;justify-content:center;font-size:33px}
+  .inverse .check{color:var(--ink-300)}
+
+  .flow{font-family:var(--fd,var(--font-display));font-weight:800;font-size:118px;line-height:1;color:var(--gold);margin:auto 0;padding:8px 0;align-self:center}
+  .flow.red{color:var(--danger)}
+  .recap{display:flex;flex-direction:column;gap:24px;margin-top:20px}
+  .rrow{display:flex;align-items:center;gap:20px}
+  .rrow .rx{flex:0 0 310px;font-family:var(--font-display);font-weight:800;font-size:24px;text-transform:uppercase;letter-spacing:.02em;background:var(--danger);color:#fff;padding:24px 14px;text-align:center;white-space:nowrap}
+  .rrow .arr{font-family:var(--font-display);font-weight:800;font-size:34px;color:var(--gold)}
+  .rrow .rv{flex:1;font-family:var(--font-display);font-weight:800;background:var(--gold);color:var(--ink-900);padding:24px 26px;font-size:28px;text-transform:uppercase;letter-spacing:.01em}
+  .marquee{font-weight:500;font-size:25px;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap;overflow:hidden;color:var(--ink-900)}
+</style>
+<style>.slide{height:auto;min-height:1350px}.panel .t{font-size:29px}.ed-anno{min-height:100%}</style>
+<style id="ed-css">
+  #ed-bar{position:fixed;top:0;left:0;right:0;z-index:99999;background:#0B0B0B;color:#F6F6F4;font:600 13px/1.3 'Schibsted Grotesk',sans-serif;display:flex;align-items:center;gap:10px;padding:10px 16px;box-shadow:0 4px 20px rgba(0,0,0,.4);flex-wrap:wrap}
+  #ed-bar b{color:#C4A46A;font-weight:800;font-size:14px}
+  #ed-bar button{background:transparent;color:#B6B2AB;border:1px solid #44443F;font:800 12px 'Schibsted Grotesk',sans-serif;padding:8px 12px;cursor:pointer;letter-spacing:.04em;text-transform:uppercase}
+  #ed-bar button.on{background:#C4A46A;color:#0B0B0B;border-color:#C4A46A}
+  #ed-bar button.save{background:#1C9A6B;color:#fff;border-color:#1C9A6B}
+  #ed-bar button.savec{background:#C4A46A;color:#0B0B0B;border-color:#C4A46A}
+  #ed-sel{color:#8E8D84;flex:1;min-width:160px}
+  #ed-help{width:100%;color:#6E6E66;font-weight:500;font-size:12px}
+  body.editing{padding-top:92px;background:#26262b}
+  body.editing .slide{margin:30px auto;box-shadow:0 10px 60px rgba(0,0,0,.5)}
+  .ed-selected{outline:3px dashed #C4A46A !important;outline-offset:3px}
+  .ed-guide{position:absolute;background:rgba(229,52,31,.35);z-index:9999;pointer-events:none;display:none}
+  body.guides .ed-guide{display:block}
+  .ed-anno{position:absolute;inset:0;width:100%;height:100%;z-index:9998;pointer-events:none}
+  body.mode-redline .ed-anno, body.mode-comment .ed-anno{pointer-events:auto;cursor:crosshair}
+  .ed-pin{position:absolute;width:34px;height:34px;border-radius:50%;background:#E5341F;color:#fff;font:800 16px/34px 'Schibsted Grotesk',sans-serif;text-align:center;z-index:9999;transform:translate(-50%,-50%);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+  .ed-pin .tip{display:none;position:absolute;left:44px;top:-8px;background:#0B0B0B;color:#F6F6F4;font:500 15px/1.5 'Schibsted Grotesk',sans-serif;padding:12px 14px;width:300px;text-align:left;box-shadow:0 6px 24px rgba(0,0,0,.5);z-index:10000}
+  .ed-pin:hover .tip{display:block}
+  #ed-cbox{position:absolute;z-index:100000;display:none;background:#0B0B0B;padding:10px;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+  #ed-cbox textarea{width:320px;height:90px;background:#161615;color:#F6F6F4;border:1px solid #44443F;font:500 15px 'Schibsted Grotesk',sans-serif;padding:10px}
+  #ed-cbox button{margin-top:8px;background:#C4A46A;border:0;font:800 12px 'Schibsted Grotesk',sans-serif;padding:8px 14px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="ed-bar">
+  <b>AOM PAIRED DESIGN TOOL</b>
+  <button id="m-move" class="on" onclick="edMode('move')">Move</button>
+  <button id="m-redline" onclick="edMode('redline')">✏ Redline</button>
+  <button id="m-comment" onclick="edMode('comment')">💬 Comment</button>
+  <button onclick="edUndoStroke()">Undo line</button>
+  <button onclick="document.body.classList.toggle('guides')">Guides</button>
+  <button class="ghost" onclick="edResetAll()">Reset moves</button>
+  <span id="ed-sel">nothing selected</span>
+  <button class="savec" onclick="edSave(true)">Save for Claude</button>
+  <button class="save" onclick="edSave(false)">Save clean HTML</button>
+  <div id="ed-help">MOVE: drag elements · arrows nudge (shift=10px) · [ ] text size · dblclick to edit text · R reset element — REDLINE: draw on slides (shift = straight line) — COMMENT: click to pin a note. "Save for Claude" keeps your marks + a machine-readable change log for me; "Save clean" bakes only the layout/text edits.</div>
+</div>
+<div id="ed-cbox"><textarea id="ed-ctext" placeholder="What should change here?"></textarea><br><button onclick="edCommitComment()">Add note</button></div>
+
+<!-- 1 — HOOK -->
+
+<!-- 1 — HOOK -->
+
+<div class="slide inverse" id="s1">
+  <div class="zone">
+    <div class="platebar"><span class="plate-idx">1</span><span class="plate-label">Day 1 — Mon · Carousel · The Fix</span></div>
+    <div class="display" style="font-size:84px">The 2026<br>playbook.</div>
+    <p class="body" style="margin-top:28px">9-slide mixed-media carousel (slides 4 + 7 are 5-8s video clips).<br>LinkedIn: same deck as a PDF document post.</p>
+    <div class="panel goldp" style="margin-top:44px"><span class="chip v">Slide 1 — hook</span><div class="t">Social media changed more in the last 12 months<br>than in the 5 years before it.<br><b>Here's the 2026 playbook. (9 slides, save it)</b></div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">Slide 2</span><div class="t">Likes stopped mattering. Platforms rank you on watch time<br>and how often people SEND your post to a friend.<br>Sends count 3-5x more than likes.</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">Slide 3</span><div class="t">Original content gets boosted. Reposts and watermarked<br>videos can cost you most of your reach.<br>If you didn't make it, don't post it.</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">Slide 4 — video 5-8s</span><div class="t">Screen-recorded: a boring static post vs a designed,<br>motion-touched post. Overlay: "Feeds are crowded.<br>Craft is the filter."</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">Slides 5-8</span><div class="t">3-minute reels reach strangers · carousels get a second lap ·<br>the save is the new like · profiles are landing pages.<br>One shift per slide, each with the counter-move.</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">Slide 9 — ask</span><div class="t">Save this playbook. Send it to a business owner<br>still optimizing for likes.</div></div>
+    <div class="panel goldp" style="margin-top:44px"><span class="chip v">Caption</span><div class="t">The rules changed while everyone was busy posting.<br>9 shifts, 9 counter-moves — save it for your next planning hour.<br>Which shift surprised you? #phoenixbusiness #socialstrategy</div></div>
+    <p class="body muted" style="margin-top:36px;margin-bottom:40px">Production: /social-carousels skill, v8.2 canon. Video slides from AOM reel archive.</p>
+  </div>
+  <div class="foot"><span class="mark"><span data-mark></span><b>AHEADOFMARKET.COM</b></span><span>Content review · 1/4</span></div>
+</div>
+
+<div class="slide" id="s2">
+  <div class="zone">
+    <div class="platebar"><span class="plate-idx red">2</span><span class="plate-label">Day 2 — Tue · Animated reel · The Shift</span></div>
+    <div class="display" style="font-size:84px">Three numbers<br>decide your reach.</div>
+    <p class="body" style="margin-top:28px">60-75s animated reel, kinetic type, AOM motion design.<br>Must work muted — 70%+ watch with captions on.<br>LinkedIn: text-post version, no links.</p>
+    <div class="panel red" style="margin-top:44px"><span class="chip x">0-3s — hook</span><div class="t">"Nobody's seeing your posts.<br>Here's the actual reason."</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">3-25s</span><div class="t">Instagram ranks every post on three numbers. Not followers.<br>Not likes. One: watch time — scroll past in a second? Buried.<br>(Three empty slots animate in; timer fills slot one.)</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">25-52s</span><div class="t">Two: sends per reach — counts 3-5x more than a like.<br>(Paper-plane multiplies.) Three: likes per reach.<br>Still counted. Just last, and least. (Small heart.)</div></div>
+    <div class="panel goldp" style="margin-top:20px"><span class="chip v">52-75s — payoff + closer</span><div class="t">"Before you post, ask one question: would anyone SEND<br>this to someone? If no — that's why nobody's seeing it."<br>Closer: "We break down a shift like this every week. Follow."</div></div>
+    <div class="panel goldp" style="margin-top:44px"><span class="chip v">Caption</span><div class="t">Three numbers decide your reach in 2026. Most businesses<br>optimize for the one that matters least.<br>Save this. Send it to someone still buying likes.</div></div>
+    <p class="body muted" style="margin-top:36px;margin-bottom:40px">Test hook variant first: "Your posts aren't bad. Your metrics are outdated."</p>
+  </div>
+  <div class="foot"><span class="mark"><span data-mark></span><b>AHEADOFMARKET.COM</b></span><span>Content review · 2/4</span></div>
+</div>
+
+<div class="slide inverse" id="s3">
+  <div class="zone">
+    <div class="platebar"><span class="plate-idx">3</span><span class="plate-label">Day 3 — Thu · Animated reel · The Shift</span></div>
+    <div class="display" style="font-size:84px">The carousel<br>formula.</div>
+    <p class="body" style="margin-top:28px">90s animated reel — a carousel builds itself slide-by-slide<br>as the VO runs. The reel practices its own advice.<br>LinkedIn: text post with the formula spelled out.</p>
+    <div class="panel goldp" style="margin-top:44px"><span class="chip v">0-3s — hook</span><div class="t">"Carousels still have the highest engagement rate<br>on Instagram. Here's the formula the winners use."</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">3-30s</span><div class="t">Slide one has ONE job: stop the scroll. A specific promise,<br>not your logo. Then: one idea per slide — if it needs two<br>sentences, it's two slides. People swipe on rhythm.</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">30-60s</span><div class="t">Mix media: a 5s video mid-carousel resets attention.<br>Second-to-last slide is the payoff — the checklist that gets<br>SAVED. Saves tell the algorithm you're worth showing strangers.</div></div>
+    <div class="panel goldp" style="margin-top:20px"><span class="chip v">60-90s — the ask + closer</span><div class="t">"Last slide: ONE ask. 'Send this to someone who needs it'<br>beats like-comment-share-follow combined."<br>Closer: "That's the formula. Watch us run it every week."</div></div>
+    <div class="panel goldp" style="margin-top:44px"><span class="chip v">Caption</span><div class="t">The carousel formula, in 90 seconds: 1 promise, 1 idea per<br>slide, motion in the middle, a save-worthy payoff, a single ask.<br>Try it on your next post and watch the saves column.</div></div>
+    <p class="body muted" style="margin-top:36px;margin-bottom:40px">Production: meta-visual — animate our own Post 01 deck assembling.</p>
+  </div>
+  <div class="foot"><span class="mark"><span data-mark></span><b>AHEADOFMARKET.COM</b></span><span>Content review · 3/4</span></div>
+</div>
+
+<div class="slide" id="s4">
+  <div class="zone">
+    <div class="platebar"><span class="plate-idx red">4</span><span class="plate-label">Day 4 — Fri · Proof breakdown · The Work</span></div>
+    <div class="display" style="font-size:84px">Rebuilt<br>in a day.</div>
+    <p class="body" style="margin-top:28px">8-slide mixed-media carousel. One real AOM before/after —<br>strongest shippable proof (holistic-health rebuild is the bar).<br>Client name only with consent; else anonymize to industry.<br>LinkedIn: native video, screen-recorded scroll with captions.</p>
+    <div class="panel red" style="margin-top:44px"><span class="chip x">Slides 1-2 — hook + before</span><div class="t">"We rebuilt this business's entire web presence in a day.<br>Swipe: before vs after, and why every choice was made."<br>Then the before, full-bleed: no hierarchy, no motion, no next step.</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">Slide 3 — video 6-10s</span><div class="t">The after, in motion. Logo reveal, living hero background,<br>one clear action. Must be silky — 60fps capture.</div></div>
+    <div class="panel" style="margin-top:20px"><span class="chip v">Slides 4-6 — three choices</span><div class="t">The hero moves (first second decides everything) ·<br>one button, one job (every option costs conversions) ·<br>type does the talking (reads expensive before it's read).</div></div>
+    <div class="panel goldp" style="margin-top:20px"><span class="chip v">Slides 7-8 — lesson + ask</span><div class="t">The pattern: reduce, then polish what's left. Works on a website,<br>a profile, or a single post. Closer: "Real work every Friday.<br>Send this to a business whose site still looks like slide 2."</div></div>
+    <div class="panel goldp" style="margin-top:44px"><span class="chip v">Caption</span><div class="t">Before and after, one day apart. Fridays are proof days:<br>real decisions, explained so you can steal the thinking.<br>What would you have changed first?</div></div>
+    <p class="body muted" style="margin-top:36px;margin-bottom:40px">Verify consent before shipping. The craft is the CTA — no selling in copy.</p>
+  </div>
+  <div class="foot"><span class="mark"><span data-mark></span><b>AHEADOFMARKET.COM</b></span><span>Content review · 4/4</span></div>
+</div>
+
+<template id="aom-monogram">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+<mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
+<g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0
+-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30
+-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59
+-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41
+-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575
+47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350
+39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295
+-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13
+-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357
+156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124
+335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0
+-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52
+-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59
+-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66
+-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15
+61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52
+52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64
+175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186
+199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57
+153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151
+462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98
+9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235
+563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31
+-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464
+-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31
+81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278
+130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97
+-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1
+30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9
+123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32
+104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18
+121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325
+-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66
+-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1
+-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128
+-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38
+471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134
+-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path>
+<path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25
+-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129
+-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81
+-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39
+-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66
+-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145
+-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415
+-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360
+-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17
+-35 -3z"></path>
+<path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25
+-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6
+-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path>
+<path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20
+-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715
+516 -90 41 -123 48 -123 25z"></path>
+<path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149
+22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10
+-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153
+-152 122z"></path>
+<path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8
+-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15
+258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292
+112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12
+-396 5 -408 5 -425 -14z"></path>
+</g></mask>
+<rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
+</svg>
+</template>
+<script>
+(function(){
+  var tpl = document.getElementById('aom-monogram');
+  document.querySelectorAll('[data-mark]').forEach(function(el, i){
+    var clone = tpl.content.firstElementChild.cloneNode(true);
+    var mask = clone.querySelector('mask');
+    var rect = clone.querySelector('rect[mask]');
+    var id = 'aom_m_' + i;
+    mask.setAttribute('id', id);
+    rect.setAttribute('mask', 'url(#' + id + ')');
+    el.appendChild(clone);
+  });
+})();
+</script>
+<script id="ed-js">
+(function(){
+  document.body.classList.add('editing');
+  var MODE='move', strokes=[], pins=[], textEdits=[], pinN=0, pendingPin=null;
+  window.edMode=function(m){MODE=m;document.body.className=document.body.className.replace(/mode-\S+/g,'').trim();document.body.classList.add('editing','mode-'+m);
+    ['move','redline','comment'].forEach(function(x){document.getElementById('m-'+x).classList.toggle('on',x===m);});};
+  document.body.classList.add('mode-move');
+
+  document.querySelectorAll('.slide').forEach(function(s,si){
+    [['left','84px'],['right','84px']].forEach(function(g){var d=document.createElement('div');d.className='ed-guide';d.style.cssText='top:0;height:100%;width:2px;'+g[0]+':'+g[1];s.appendChild(d);});
+    var f=document.createElement('div');f.className='ed-guide';f.style.cssText='left:0;right:0;height:2px;bottom:118px';s.appendChild(f);
+    var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('class','ed-anno');svg.dataset.slide=si+1;s.appendChild(svg);
+  });
+
+  var TARGETS='.platebar,.display,.body,.profcard,.links,.band,.grid3,.his,.checklist,.panel,.flow,.marquee,.recap,.foot,.bgimg';
+  function path(el){
+    var s=el.closest('.slide');var cls=(el.className||'').split(' ').filter(function(c){return c&&c!=='ed-selected';}).slice(0,2).join('.');
+    var sibs=s.querySelectorAll(cls?('.'+cls.replace('.','.')):el.tagName);var idx=Array.prototype.indexOf.call(sibs,el);
+    return '#'+s.id+' '+(cls?'.'+cls:el.tagName.toLowerCase())+(sibs.length>1?('['+idx+']'):'');
+  }
+  var sel=null;
+  function setSel(t){if(sel)sel.classList.remove('ed-selected');sel=t;
+    document.getElementById('ed-sel').textContent=sel?(path(sel)+' · dx '+(sel.dataset.dx||0)+' dy '+(sel.dataset.dy||0)):'nothing selected';
+    if(sel)sel.classList.add('ed-selected');}
+  function move(t,dx,dy){t.dataset.dx=(parseFloat(t.dataset.dx||0)+dx);t.dataset.dy=(parseFloat(t.dataset.dy||0)+dy);
+    t.style.transform='translate('+t.dataset.dx+'px,'+t.dataset.dy+'px)';
+    document.getElementById('ed-sel').textContent=path(t)+' · dx '+t.dataset.dx+' dy '+t.dataset.dy;}
+
+  var drag=null, drawing=null;
+  document.addEventListener('pointerdown',function(e){
+    if(e.target.closest('#ed-bar')||e.target.closest('#ed-cbox')||e.target.closest('.ed-pin'))return;
+    if(MODE==='redline'){
+      var svg=e.target.closest('.ed-anno');if(!svg)return;
+      var r=svg.getBoundingClientRect();var x=e.clientX-r.left,y=e.clientY-r.top;
+      var pl=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+      pl.setAttribute('fill','none');pl.setAttribute('stroke','#E5341F');pl.setAttribute('stroke-width','5');pl.setAttribute('stroke-linecap','round');pl.setAttribute('stroke-linejoin','round');
+      pl.setAttribute('points',x+','+y);svg.appendChild(pl);
+      drawing={svg:svg,pl:pl,pts:[[x,y]],straight:e.shiftKey};
+      strokes.push({slide:+svg.dataset.slide,points:drawing.pts});
+      e.preventDefault();return;
+    }
+    if(MODE==='comment'){
+      var svg2=e.target.closest('.ed-anno');if(!svg2)return;
+      var r2=svg2.getBoundingClientRect();
+      pendingPin={slide:+svg2.dataset.slide,x:e.clientX-r2.left,y:e.clientY-r2.top,parent:svg2.parentElement};
+      var box=document.getElementById('ed-cbox');
+      box.style.display='block';box.style.left=(e.pageX+12)+'px';box.style.top=(e.pageY-10)+'px';
+      document.getElementById('ed-ctext').value='';document.getElementById('ed-ctext').focus();
+      e.preventDefault();return;
+    }
+    var t=e.target.closest(TARGETS);
+    if(!t||!e.target.closest('.slide'))return;
+    setSel(t);if(t.isContentEditable)return;
+    drag={t:t,x:e.clientX,y:e.clientY};e.preventDefault();
+  });
+  document.addEventListener('pointermove',function(e){
+    if(drawing){var r=drawing.svg.getBoundingClientRect();var x=e.clientX-r.left,y=e.clientY-r.top;
+      if(drawing.straight){drawing.pts.length=1;}
+      drawing.pts.push([x,y]);
+      drawing.pl.setAttribute('points',drawing.pts.map(function(p){return p[0]+','+p[1];}).join(' '));return;}
+    if(!drag)return;move(drag.t,e.clientX-drag.x,e.clientY-drag.y);drag.x=e.clientX;drag.y=e.clientY;
+  });
+  document.addEventListener('pointerup',function(){drag=null;drawing=null;});
+
+  window.edCommitComment=function(){
+    var txt=document.getElementById('ed-ctext').value.trim();
+    document.getElementById('ed-cbox').style.display='none';
+    if(!txt||!pendingPin)return;
+    pinN++;var p=pendingPin;pins.push({slide:p.slide,n:pinN,x:Math.round(p.x),y:Math.round(p.y),text:txt});
+    var d=document.createElement('div');d.className='ed-pin';d.style.left=p.x+'px';d.style.top=p.y+'px';d.textContent=pinN;
+    var tip=document.createElement('span');tip.className='tip';tip.textContent=txt;d.appendChild(tip);
+    p.parent.appendChild(d);pendingPin=null;
+  };
+  window.edUndoStroke=function(){
+    var last=strokes.pop();if(!last)return;
+    var svg=document.querySelectorAll('.ed-anno')[last.slide-1];
+    var pls=svg.querySelectorAll('polyline');if(pls.length)pls[pls.length-1].remove();
+  };
+  document.addEventListener('dblclick',function(e){
+    if(MODE!=='move')return;var t=e.target.closest(TARGETS);if(!t)return;
+    t.dataset.orig=t.dataset.orig||t.innerText;
+    t.setAttribute('contenteditable','true');t.focus();
+  });
+  document.addEventListener('blur',function(e){
+    if(e.target.removeAttribute&&e.target.isContentEditable){
+      e.target.removeAttribute('contenteditable');
+      if(e.target.dataset.orig&&e.target.dataset.orig!==e.target.innerText)
+        textEdits.push({target:path(e.target),before:e.target.dataset.orig,after:e.target.innerText});
+    }},true);
+  document.addEventListener('keydown',function(e){
+    if(e.target.isContentEditable||e.target.tagName==='TEXTAREA')return;
+    if(e.key==='g'||e.key==='G'){document.body.classList.toggle('guides');return;}
+    if(!sel)return;var st=e.shiftKey?10:1;
+    if(e.key==='ArrowLeft'){move(sel,-st,0);e.preventDefault();}
+    if(e.key==='ArrowRight'){move(sel,st,0);e.preventDefault();}
+    if(e.key==='ArrowUp'){move(sel,0,-st);e.preventDefault();}
+    if(e.key==='ArrowDown'){move(sel,0,st);e.preventDefault();}
+    if(e.key===']'){var f=parseFloat(getComputedStyle(sel).fontSize);sel.style.fontSize=(f+2)+'px';}
+    if(e.key==='['){var f2=parseFloat(getComputedStyle(sel).fontSize);sel.style.fontSize=(f2-2)+'px';}
+    if(e.key==='r'||e.key==='R'){sel.style.transform='';sel.style.fontSize='';delete sel.dataset.dx;delete sel.dataset.dy;setSel(sel);}
+    if(e.key==='Escape'){setSel(null);}
+  });
+  window.edResetAll=function(){document.querySelectorAll('[data-dx],[data-dy]').forEach(function(t){t.style.transform='';t.style.fontSize='';delete t.dataset.dx;delete t.dataset.dy;});setSel(null);};
+
+  function feedback(){
+    var moves=[];document.querySelectorAll('[data-dx],[data-dy]').forEach(function(t){
+      moves.push({target:path(t),dx:+(t.dataset.dx||0),dy:+(t.dataset.dy||0),fontSize:t.style.fontSize||null});});
+    return {version:'content-days-editor',edits:{moves:moves,textEdits:textEdits},annotations:{comments:pins,strokeCount:strokes.length,strokes:strokes.map(function(s){return{slide:s.slide,points:s.points.map(function(p){return [Math.round(p[0]),Math.round(p[1])];})};})}};
+  }
+  window.edSave=function(forClaude){
+    var clone=document.documentElement.cloneNode(true);
+    ['#ed-bar','#ed-js','#ed-css','#ed-cbox'].forEach(function(s){var el=clone.querySelector(s);el&&el.remove();});
+    clone.querySelectorAll('.ed-guide').forEach(function(el){el.remove();});
+    clone.querySelectorAll('.ed-selected').forEach(function(el){el.classList.remove('ed-selected');});
+    clone.querySelectorAll('[contenteditable]').forEach(function(el){el.removeAttribute('contenteditable');});
+    var b=clone.querySelector('body');b.className='';
+    if(forClaude){
+      var meta=document.createElement('script');meta.type='application/json';meta.id='claude-feedback';
+      meta.textContent=JSON.stringify(feedback(),null,1);
+      clone.querySelector('body').appendChild(meta);
+      clone.querySelectorAll('.ed-anno').forEach(function(el){el.style.pointerEvents='none';});
+    } else {
+      clone.querySelectorAll('.ed-anno').forEach(function(el){el.remove();});
+      clone.querySelectorAll('.ed-pin').forEach(function(el){el.remove();});
+    }
+    var blob=new Blob(['<!DOCTYPE html>\n'+clone.outerHTML],{type:'text/html'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=forClaude?'content-days-for-claude.html':'content-days-edited.html';a.click();
+  };
+})();
+</script>
+</body>
+</html>
