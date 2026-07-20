@@ -12,29 +12,33 @@ import React, { useEffect } from 'react';
 // surface exists live yet -- the full list is the design's source of truth (all 8),
 // but we render only wired tools so there are no dead taps. Flip `wired` to true as
 // each screen (organize/review/livescribe) lands.
+// One Page collapse (corner:one-corner drop 4, Patrik 2026-07-20: "nothing in the
+// top bar, we are leaning more towards making space"): EVERY tool left the bar.
+// parked:true = the surface stays fully alive at its ?view= deep link and inside
+// the room screen (Email lives pinned in the rooms rail; review lives on every
+// file), it just no longer owns bar real estate. Un-park by flipping the flag.
 export const NAV_TOOLS = [
-  { id: 'home',       label: 'Home',     route: 'home',       wired: true },
-  // Chat tab retired (Patrik 2026-06-30): the standalone conversations list was redundant
-  // with Home's All Rooms + col3 quick chat. The full Chat tool is still reachable by opening
-  // any room from Home (→ again on a row). Deep link ?view=chat still resolves for safety.
-  // Review tool retired (corner:one-corner files-tool merge, 2026-07-13): review is now a
-  // verdict rail on any open file inside Files (the renamed Organize). ?view=review and every
-  // in-app onNav('review') land in Files with the needs-review filter on. The internal id/route
-  // stays 'organize' so nothing downstream re-keys — only the label reads "Files".
-  { id: 'organize',   label: 'Files',    route: 'organize',   wired: true },
-  // Support renamed Email (corner:campaign-tool, 2026-07-13): the tool now holds
-  // an Inbox|Campaign toggle (EmailShell). Internal id/route stay 'support' so
-  // deep links and downstream keys never re-key — only the label reads "Email".
-  { id: 'support',    label: 'Email',    route: 'support',    wired: true },
-  { id: 'tracker',    label: 'Tracker',  route: 'tracker',    wired: true },
-  { id: 'command',    label: 'Command',  route: 'command',    wired: true },
-  // Wired 2026-07-01: real capture v1 (mic → Gemini transcription → extracted
-  // action items/decisions, sessions persisted via livescribe-sessions).
-  { id: 'livescribe', label: 'Scribe',   route: 'livescribe', wired: true, mobileLabel: 'Live Scribe' },
+  { id: 'home',       label: 'Home',     route: 'home',       wired: true, parked: true },
+  // Chat tab retired (Patrik 2026-06-30); Review folded into Files (2026-07-13);
+  // Support renamed Email (2026-07-13) — full history in git, ids never re-key.
+  { id: 'organize',   label: 'Files',    route: 'organize',   wired: true, parked: true },
+  { id: 'support',    label: 'Email',    route: 'support',    wired: true, parked: true },
+  { id: 'tracker',    label: 'Tracker',  route: 'tracker',    wired: true, parked: true },
+  { id: 'command',    label: 'Command',  route: 'command',    wired: true, parked: true },
+  { id: 'livescribe', label: 'Scribe',   route: 'livescribe', wired: true, parked: true, mobileLabel: 'Live Scribe' },
 ];
 
-// What the nav actually renders today: the wired tools, in the design's order.
-const VISIBLE_TOOLS = NAV_TOOLS.filter((t) => t.wired);
+// What the nav actually renders today: wired, un-parked tools (none since drop 4).
+const VISIBLE_TOOLS = NAV_TOOLS.filter((t) => t.wired && !t.parked);
+
+// The mobile drawer is the LEFT-side menu of the one-page world: rooms first,
+// Email, Settings. (Rooms opens the room directory; the full in-drawer rooms
+// list is the next polish pass.)
+const MOBILE_MENU = [
+  { id: 'home',     label: 'Rooms',    route: 'home' },
+  { id: 'support',  label: 'Email',    route: 'support' },
+  { id: 'settings', label: 'Settings', route: 'settings' },
+];
 
 // Shared glyphs -- identical desktop + mobile (the contract requires same icons).
 const S = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -49,6 +53,7 @@ function Icon({ id, size = 19 }) {
     case 'tracker':    return <svg {...p}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>;
     case 'command':    return <svg {...p}><path d="M7 4H4v16h3M17 4h3v16h-3" /></svg>;
     case 'livescribe': return <svg {...p}><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>;
+    case 'settings':   return <svg {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z" /></svg>;
     default:           return null;
   }
 }
@@ -159,11 +164,11 @@ export function MobileNav({ open, current, onPick, onClose, badges = {}, theme, 
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
           </div>
         </div>
-        {VISIBLE_TOOLS.map((t) => (
+        {MOBILE_MENU.map((t) => (
           <div key={t.id} className={`navrow${t.id === current ? ' on' : ''}`}
             onClick={() => { onPick?.(t.route); onClose?.(); }} role="button">
             <span className="ni"><Icon id={t.id} /></span>
-            <span className="nl">{t.mobileLabel || t.label}</span>
+            <span className="nl">{t.label}</span>
             <Badge badge={badges[t.id]} />
           </div>
         ))}

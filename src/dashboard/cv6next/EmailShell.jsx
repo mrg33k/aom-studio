@@ -116,7 +116,9 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
         display: 'flex', alignItems: 'center', gap: 10,
         padding: isDesktop ? '10px 24px 8px' : '7px 14px',
         borderBottom: '1px solid var(--divider)', flexShrink: 0,
-        background: 'var(--ground)',
+        // Headers are fully transparent in every theme (Patrik 2026-07-20): the
+        // one fixed wallpaper shows through — never a locally repainted ground.
+        background: 'transparent',
       }}>
         <div style={{
           display: 'inline-flex', gap: 2, padding: 3, borderRadius: 19,

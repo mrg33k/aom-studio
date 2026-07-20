@@ -36,7 +36,6 @@ import NewComposer from './NewComposer.jsx';
 import { supabase } from '../lib/supabase.js';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
-import { useReviewWaitingCount } from './data/useReview.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useCommand, useTrackerBugs } from './data/useCommandTracker.js';
 import { useWorldId } from '../lib/tenantContext.jsx';
@@ -2749,8 +2748,6 @@ function DemoGlobalMotion() {
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
-  // Live waiting-review count for the Files nav badge (light poll + realtime nudge).
-  const reviewWaiting = useReviewWaitingCount(worldId);
   // Cold start lands in the last-open room (drop 3): Home stops being the front
   // door. An explicit ?view= deep link still wins; Back still reaches Home.
   const [view, setView] = useState(() => {
@@ -2930,9 +2927,9 @@ export default function CornerCV6() {
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
-  // Needs-review count rides the Files nav entry (desktop tile + mobile drawer row) —
-  // the at-a-glance signal that replaced the retired Review tool.
-  const navBadges = reviewWaiting > 0 ? { organize: { kind: 'needs', count: reviewWaiting } } : {};
+  // Nav badges retired with the bar (drop 4): "waiting on you" now lives as amber
+  // badges on the room rows themselves — the signal sits where the work is.
+  const navBadges = {};
   return (
     <div data-cv6 data-theme="dark" data-app-theme={theme} style={{
       // The wallpaper is painted ONCE as a viewport-fixed layer behind everything
