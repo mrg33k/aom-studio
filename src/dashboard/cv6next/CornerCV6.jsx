@@ -2939,7 +2939,14 @@ export default function CornerCV6() {
   const navBadges = reviewWaiting > 0 ? { organize: { kind: 'needs', count: reviewWaiting } } : {};
   return (
     <div data-cv6 data-theme="dark" data-app-theme={theme} style={{
-      minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)',
+      // The wallpaper is painted ONCE as a viewport-fixed layer behind everything
+      // (index.html body::before), so the frame itself stays transparent. Painting
+      // the ground here instead sized the gradient to this box — and with the
+      // safe-area padding that box overflows the viewport, shifting the gradient so
+      // the notch strip + home-indicator strip fell on the dark edge and read as
+      // flat borders that didn't blend (Patrik 2026-07-19). Transparent frame +
+      // one fixed wallpaper = the strips share the exact same ground as the body.
+      minHeight: '100dvh', height: '100dvh', background: 'transparent',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
       paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>

@@ -82,20 +82,26 @@ document.head.appendChild(o)}initApollo();</script>
         min-height: 100%;
         background: var(--cv6-boot-ground);
       }
-      /* Keep the ground on the page canvas AFTER boot too. FullscreenLoading
-         removes data-cv6-boot once the app mounts, which dropped html/body to a
-         flat canvas — so the strips behind the app (the notch safe-area above the
-         header, the home-indicator area below the content, and any iOS overscroll)
-         flashed a flat dark band instead of the wallpaper. On glass that read as a
-         "border" on the top and bottom that didn't blend with the body (Patrik
-         2026-07-19). Painting the same per-theme ground here means the canvas
-         behind the app always matches the shell, so those strips blend seamlessly.
-         --cv6-boot-ground is defined per data-app-theme (always set), so it tracks
+      /* ONE wallpaper, fixed to the whole visual viewport, behind everything.
+         The app frame used to own the ground (a gradient sized to its own box);
+         with the notch + home-indicator safe-area padding, that gradient shifted
+         so the very top and bottom edges landed on the dark part and read as flat
+         borders that didn't blend with the body — and it survived reloads (Patrik
+         2026-07-19, saw it clearly top and bottom after several reloads). A single
+         position:fixed inset:0 layer covers the full screen INCLUDING the safe
+         areas, independent of the frame's box-sizing / padding / dvh, so the notch
+         strip and the home-indicator strip render the exact same ground pixels as
+         the body. The app frame is made transparent (below) so this shows through.
+         --cv6-boot-ground is defined per data-app-theme (always set) so it tracks
          dark/light/glass. */
-      html,
-      html body {
-        min-height: 100%;
+      html { min-height: 100%; background: var(--cv6-boot-ground); }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
         background: var(--cv6-boot-ground);
+        pointer-events: none;
       }
       #cv6-boot-loader {
         display: none;
