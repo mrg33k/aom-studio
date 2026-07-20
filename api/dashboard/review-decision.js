@@ -116,7 +116,11 @@ async function createReviewTask(supabase, {
     priority: 1,
     created_at: new Date().toISOString(),
     metadata: {
-      repo: project || null,
+      // Fall back to 'AOM-EA' when the deliverable has no /projects/<slug>/ path
+      // (ad-hoc shared files served from rag.aheadofmarket.com/files/<world>/<id>).
+      // task-runner.sh immediately hard-fails any task with an empty repo; 'AOM-EA'
+      // resolves via resolve_repo_path() to the AOM-EA root so the task dispatches.
+      repo: project || 'AOM-EA',
       created_via: 'review-decision.js',
       model: 'opus',
       ...(mission ? { mission_slug: `${project}:${mission}` } : {}),
