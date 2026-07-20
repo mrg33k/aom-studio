@@ -33,7 +33,11 @@ const ORG_ALIASES = {
   sorts: 'sort', 'deliverable.pins': 'pin', 'deliverable.comments': 'comment',
 };
 
-const SCREEN_BG = 'var(--ground, #05080b)';
+// Transparent: the Files screen shares the one viewport-fixed wallpaper
+// (index.html body::before) instead of painting its own --ground box, which
+// double-painted over the fixed layer and read as a boxed-in page with a
+// mismatched top strip on glass (Patrik 2026-07-20).
+const SCREEN_BG = 'transparent';
 
 const VIEWER_LOADING_HTML = cornerLogoLoaderMarkup('Preparing the file', { minHeight: 220 });
 

@@ -126,8 +126,15 @@ function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false, dropE
   // design's fixed-px mockup never needed it, so it was missing and the body clipped
   // instead of scrolling. Add it whenever the screen has a scroll body.
   const hasScrollBody = !!screen.querySelector('.scrbody');
+  // Mobile screens paint NO ground of their own — the wallpaper is one
+  // viewport-fixed layer behind the whole app (index.html body::before), and the
+  // frame + this screen are transparent so that single layer shows through
+  // unbroken. Painting --ground here sized a second gradient to this screen's box
+  // (below the header), which double-painted over the fixed layer and read as a
+  // page "boxed in vertically" with a mismatched top strip on Chat/Files (Patrik
+  // 2026-07-20). Transparent = every page shares the exact same seamless wallpaper.
   screen.setAttribute('style', mobile
-    ? `position:relative;width:100%;height:100%;background:var(--ground, #05080b);overflow:hidden${hasScrollBody ? ';display:flex;flex-direction:column' : ''}`
+    ? `position:relative;width:100%;height:100%;background:transparent;overflow:hidden${hasScrollBody ? ';display:flex;flex-direction:column' : ''}`
     : 'width:100%;height:100%');
   // append shared states next to this screen's ready region
   const ready = screen.querySelector('[data-state="ready"]');
@@ -176,7 +183,8 @@ function composeChatMobile(withGoal) {
   const doc = new DOMParser().parseFromString(chatRaw, 'text/html');
   const screen = [...doc.querySelectorAll('[data-cv6]')].find((n) => n.getAttribute('data-screen') === 'chat-mobile');
   if (!screen) return '';
-  screen.setAttribute('style', 'position:relative;width:100%;height:100%;background:var(--ground, #05080b);overflow:hidden');
+  // Transparent: chat shares the one viewport-fixed wallpaper (see composeScreen note).
+  screen.setAttribute('style', 'position:relative;width:100%;height:100%;background:transparent;overflow:hidden');
   const body = screen.querySelector('.scrbody');
   const kitDoc = new DOMParser().parseFromString(kitRaw, 'text/html');
   const turn = kitDoc.querySelector('.turn[data-each="messages"]');
