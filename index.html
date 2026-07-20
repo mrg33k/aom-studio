@@ -82,19 +82,25 @@ document.head.appendChild(o)}initApollo();</script>
         min-height: 100%;
         background: var(--cv6-boot-ground);
       }
-      /* ONE wallpaper, fixed to the whole visual viewport, behind everything.
-         The app frame used to own the ground (a gradient sized to its own box);
-         with the notch + home-indicator safe-area padding, that gradient shifted
-         so the very top and bottom edges landed on the dark part and read as flat
-         borders that didn't blend with the body — and it survived reloads (Patrik
-         2026-07-19, saw it clearly top and bottom after several reloads). A single
-         position:fixed inset:0 layer covers the full screen INCLUDING the safe
-         areas, independent of the frame's box-sizing / padding / dvh, so the notch
-         strip and the home-indicator strip render the exact same ground pixels as
-         the body. The app frame is made transparent (below) so this shows through.
-         --cv6-boot-ground is defined per data-app-theme (always set) so it tracks
-         dark/light/glass. */
-      html { min-height: 100%; background: var(--cv6-boot-ground); }
+      /* The theme wallpaper is painted on THREE layers so every strip of the
+         screen carries it, top to bottom:
+           - html + body direct background: the ONLY thing that reliably paints
+             the iOS notch / status-bar strip in a saved-to-home (standalone) app.
+             Dropping body's background here (2026-07-19) left that strip with no
+             paint, so it fell back to the app's black base and read as a black bar
+             above the header on EVERY theme, even light (Patrik 2026-07-20).
+           - body::before, position:fixed inset:0: covers elastic overscroll and
+             the home-indicator strip below the content, independent of any frame
+             box-sizing / padding / dvh.
+         All three use --cv6-boot-ground (defined per data-app-theme, always set),
+         so the whole screen is one seamless theme surface: white in light, the dark
+         color in dark, the wallpaper in glass — and the transparent header just lays
+         on top of it. */
+      html,
+      html body {
+        min-height: 100%;
+        background: var(--cv6-boot-ground);
+      }
       body::before {
         content: "";
         position: fixed;
