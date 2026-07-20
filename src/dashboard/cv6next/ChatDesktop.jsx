@@ -115,7 +115,7 @@ function fileGlyph(kind) {
 // The room's files panel: everything that crossed this chat, nothing else.
 // Two plain chron sections — From <agent> / You sent (Patrik ruling 2026-07-20).
 // Each row: open the file, or review it. No pills, no filters, no cabinet merge.
-export function FilesShelf({ fromAgent = [], youSent = [], onReview, status }) {
+export function FilesShelf({ fromAgent = [], youSent = [], onReview, status, windowFull = false }) {
   const CAP = 80; // newest per section; a busy room can carry hundreds
   const row = (it, i) => (
     <div key={`${it.url || it.name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--divider)' }}>
@@ -139,6 +139,9 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, status }) {
     );
   };
   if (!fromAgent.length && !youSent.length) {
+    if (status === 'error') {
+      return <div style={{ color: 'var(--muted)', fontSize: 12.5 }}>Couldn't load this chat's files right now. They're safe — it retries automatically.</div>;
+    }
     return <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>{status === 'loading' ? 'Loading files…' : 'No files have crossed this chat yet.'}</div>;
   }
   // Section label: the single sender's title when one agent speaks here, else the plural.
@@ -149,6 +152,11 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, status }) {
       <div style={{ fontSize: 11.5, color: 'var(--muted)', margin: '0 4px 10px' }}>Everything that crossed this chat. Nothing else.</div>
       {fromAgent.length ? section(fromLabel, fromAgent) : null}
       {youSent.length ? section('You sent', youSent) : null}
+      {windowFull ? (
+        <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', padding: '6px 4px' }}>
+          Showing the newest crossings — older files exist. Ask the agent for one by name, or open All files.
+        </div>
+      ) : null}
     </>
   );
 }
@@ -164,6 +172,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, status }) {
 export function useRoomCrossings(worldId, room) {
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState('loading');
+  const [windowFull, setWindowFull] = useState(false);
   useEffect(() => {
     if (!worldId || !room?.id) { setItems([]); setStatus('empty'); return undefined; }
     let alive = true;
@@ -200,16 +209,17 @@ export function useRoomCrossings(worldId, room) {
           return true;
         });
         setItems(deduped);
+        setWindowFull(rows.length >= 400);
         setStatus(deduped.length ? 'ready' : 'empty');
       })
-      .catch(() => { if (alive) setStatus((s) => (s === 'ready' ? s : 'empty')); });
+      .catch(() => { if (alive) setStatus((s) => (s === 'ready' ? s : 'error')); });
     load();
     const t = setInterval(load, 25000);
     return () => { alive = false; clearInterval(t); };
   }, [worldId, room?.id, room?.isMission, room?.isProject, room?.missionSlug]); // eslint-disable-line react-hooks/exhaustive-deps
   const fromAgent = useMemo(() => items.filter((i) => !i.isUser), [items]);
   const youSent = useMemo(() => items.filter((i) => i.isUser), [items]);
-  return { fromAgent, youSent, status };
+  return { fromAgent, youSent, status, windowFull };
 }
 
 // A project in the rail is a folder that fans open to its missions. The row itself opens the
@@ -438,15 +448,18 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // those exact files (live), not post a chat message. handleReview hands us a single
   // file or an array; everything else (Result block actions, text) flows to send.
   const reviewProject = selected?.projectSlug || (selected?.isProject ? selected.id : '');
+  // Bare mission slug rides with every review so the decision routes back to the
+  // MISSION thread the user is watching (xhigh review finding 3).
+  const reviewMission = selected?.isMission ? String(selected.missionSlug || selected.id || '').split(':').pop() : '';
   const handleThreadAction = useCallback((a) => {
     if (a && typeof a === 'object' && a.type === 'review') {
       const att = a.attachment;
       const files = Array.isArray(att) ? att : (att ? [att] : null);
-      if (files && files.length) onReviewFile?.(files, reviewProject);
+      if (files && files.length) onReviewFile?.(files, reviewProject, reviewMission);
       return undefined;
     }
     return send?.(a);
-  }, [send, onReviewFile, reviewProject]);
+  }, [send, onReviewFile, reviewProject, reviewMission]);
 
   // Right column: Goals view (the agent's goal/steps) or Files view (this conversation's files + links).
   const [drawerView, setDrawerView] = useState('goals');
@@ -586,22 +599,54 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const [centerMode, setCenterMode] = useState('thread'); // 'thread' | 'email'
   const [composerOpen, setComposerOpen] = useState(false);
   const { inboxItems = [] } = useDataContext() || {};
+  // Files waiting on review are attention too (xhigh review finding 4): the
+  // waiting queue, grouped per room, joins the same amber badges the needs-you
+  // feed drives — a handed-off deliverable pulls the eye to ITS room.
+  const [reviewWaiting, setReviewWaiting] = useState({ byProject: {}, byMission: {} });
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    const load = () => authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}&limit=500`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        const byProject = {}; const byMission = {};
+        for (const it of (d.items || [])) {
+          const proj = it.whoRaw || it.project || '';
+          const mission = it.missionRaw || it.mission || '';
+          if (mission) byMission[mission] = (byMission[mission] || 0) + 1;
+          if (proj) byProject[proj] = (byProject[proj] || 0) + 1;
+        }
+        setReviewWaiting({ byProject, byMission });
+      })
+      .catch(() => {});
+    load();
+    const t = setInterval(load, 60000);
+    return () => { alive = false; clearInterval(t); };
+  }, [worldId]);
+  // Mission-level needs ROLL UP to the project row (finding 8): a collapsed
+  // project must still show amber when only its missions are waiting.
   const needsByProject = useMemo(() => {
     const m = {};
-    for (const it of inboxItems) if (it.project && !it.missionSlug) m[it.project] = (m[it.project] || 0) + 1;
+    for (const it of inboxItems) if (it.project) m[it.project] = (m[it.project] || 0) + 1;
+    for (const [k, v] of Object.entries(reviewWaiting.byProject)) if (k) m[k] = (m[k] || 0) + v;
     return m;
-  }, [inboxItems]);
+  }, [inboxItems, reviewWaiting]);
   const needsByMission = useMemo(() => {
     const m = {};
     for (const it of inboxItems) if (it.missionSlug) m[it.missionSlug] = (m[it.missionSlug] || 0) + 1;
+    for (const [k, v] of Object.entries(reviewWaiting.byMission)) if (k) m[k] = (m[k] || 0) + v;
     return m;
-  }, [inboxItems]);
+  }, [inboxItems, reviewWaiting]);
   // Cold start lands on the last-open room (drop 3): remember every pick; the
   // shell seeds its initial room from this key when the app opens plain.
+  // Persist only rooms the user actually PICKED (or arrived in) — `selected`
+  // auto-pins the first agent when nothing is chosen, and persisting that
+  // overwrote the real last room with a default (xhigh review finding 7).
   useEffect(() => {
-    if (!selected?.id) return;
-    try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room: selected, worldId })); } catch { /* private mode */ }
-  }, [selected, worldId]);
+    if (!picked?.id) return;
+    try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room: picked, worldId })); } catch { /* private mode */ }
+  }, [picked, worldId]);
   const [expanded, setExpanded] = useState(() => new Set());
   const toggleProject = (slug) => setExpanded((prev) => { const n = new Set(prev); if (n.has(slug)) n.delete(slug); else n.add(slug); return n; });
   // Fan open ONLY the project we arrive on (from Home) — keyed on initialRoom, not on every
@@ -615,7 +660,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   return (
     <SendCtx.Provider value={send || (() => {})}>
-    <ReviewCtx.Provider value={(file) => { if (file) onReviewFile?.(file, reviewProject); }}>
+    <ReviewCtx.Provider value={(file) => { if (file) onReviewFile?.(file, reviewProject, reviewMission); }}>
       <div data-cv6 data-theme="dark" className="cv6-screen" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* topbar now mounted once in the shell (SharedNav DesktopNav) */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -729,7 +774,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   ))}
                 </div>
                 {drawerView === 'files' ? (
-                  <FilesShelf fromAgent={crossings.fromAgent} youSent={crossings.youSent} status={crossings.status} onReview={(it) => onReviewFile?.(it, reviewProject)} />
+                  <FilesShelf fromAgent={crossings.fromAgent} youSent={crossings.youSent} status={crossings.status} windowFull={crossings.windowFull} onReview={(it) => onReviewFile?.(it, reviewProject, reviewMission)} />
                 ) : (
                 <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}

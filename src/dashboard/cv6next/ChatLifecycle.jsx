@@ -363,7 +363,7 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
 // reachable from the chat header and from the composer's command menu. Mounted
 // only while open, so the fetch happens on first open, not on every room visit.
 function RoomFilesSheet({ worldId, room, onClose, onReview }) {
-  const { fromAgent, youSent, status } = useRoomCrossings(worldId, room);
+  const { fromAgent, youSent, status, windowFull } = useRoomCrossings(worldId, room);
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
@@ -381,7 +381,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
           </div>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} onReview={onReview} />
+          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} />
         </div>
       </div>
     </div>

@@ -54,7 +54,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   // Files handed in from a chat "Review"/"Review all" ARE the queue — show exactly
   // those, live from the message. Otherwise the global review queue loads.
   const injected = useMemo(
-    () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project) : null),
+    () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project, target.missionSlug || '') : null),
     [target],
   );
   // A file parsed from message text can carry a name but NO url; reviewItemsFromFiles

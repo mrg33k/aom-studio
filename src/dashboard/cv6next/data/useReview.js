@@ -371,7 +371,7 @@ function looksBinary(s) {
 // can show EXACTLY the files a user tapped "Review"/"Review all" on, live from the
 // message — no dependency on the pre-built queue. `url` is the corner path the viewer
 // loads through project-file (same as queue item.id).
-export function reviewItemsFromFiles(files, project = '') {
+export function reviewItemsFromFiles(files, project = '', mission = '') {
   return (files || [])
     .map((f) => {
       // ONE resolution contract for every producer shape ({url,name} attachments,
@@ -398,7 +398,9 @@ export function reviewItemsFromFiles(files, project = '') {
         who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),
         type: key, typeLabel: typeLabel(key), typeGlyph: typeGlyph(key),
         ...thumbFor(path, key),
-        count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '', missionLabel: '', missionRaw: '',
+        // missionRaw rides into decisionBody so an in-room review decision routes
+        // back to the MISSION thread the user is watching (xhigh review finding 3).
+        count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '', missionLabel: mission || '', missionRaw: mission || '',
         location: project || '', queueState: 'ready', file: typeLabel(key),
         bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
         fileRef,

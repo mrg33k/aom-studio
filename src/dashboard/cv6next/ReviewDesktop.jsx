@@ -61,7 +61,7 @@ function composeDesktopReview(raw) {
 export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliverable, target }) {
   // Files from a chat "Review all" ARE the queue — show exactly those, live.
   const injected = useMemo(
-    () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project) : null),
+    () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project, target.missionSlug || '') : null),
     [target],
   );
   // A file parsed from message text can carry a name but NO url (useRoomThread's

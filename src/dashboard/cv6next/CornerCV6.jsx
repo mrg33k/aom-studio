@@ -386,7 +386,7 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
 // Conversation column (a data-cv6-keep node that survives re-binds); the panel is
 // position:absolute over the .convo column. null host = closed.
 function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
-  const { fromAgent, youSent, status } = useRoomCrossings(host ? worldId : null, room);
+  const { fromAgent, youSent, status, windowFull } = useRoomCrossings(host ? worldId : null, room);
   if (!host) return null;
   return createPortal(
     <div style={{ position: 'absolute', inset: 0, zIndex: 12, background: 'var(--ground)', display: 'flex', flexDirection: 'column' }}>
@@ -403,7 +403,7 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 18px 20px' }}>
-        <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} onReview={onReview} />
+        <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} />
       </div>
     </div>,
     host,
@@ -1449,7 +1449,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         liveSteps={quickThread && quickThread.liveSteps}
         room={displayedRoom}
         localReadOnly={!supabase}
-        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(displayedRoom), needsReview: true } : null); }}
+        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(displayedRoom), missionSlug: roomMissionSlug(displayedRoom), needsReview: true } : null); }}
       />
       <Cv6FullComposer
         target={knavOpenedRoom ? composerHost : null}
@@ -1464,7 +1464,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         worldId={worldId}
         room={knavOpenedRoom}
         onClose={() => setFilesOpen(false)}
-        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(knavOpenedRoom), needsReview: true } : null); }}
+        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(knavOpenedRoom), missionSlug: roomMissionSlug(knavOpenedRoom), needsReview: true } : null); }}
       />
       {trackerOverlay}
       {composerOverlay}
@@ -1809,7 +1809,7 @@ function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
       messages={messages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSearch={() => onSearch?.()} onSend={(t) => send?.(t)}
-      onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), needsReview: true } : null)}
+      onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), missionSlug: roomMissionSlug(room), needsReview: true } : null)}
     />
   );
 }
@@ -2745,23 +2745,32 @@ function DemoGlobalMotion() {
   );
 }
 
+// Bare mission slug for a room (review routing needs it; xhigh finding 3).
+const roomMissionSlug = (r) => (r?.isMission ? String(r.missionSlug || r.id || '').split(':').pop() : '');
+
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
   // Cold start lands in the last-open room (drop 3): Home stops being the front
   // door. An explicit ?view= deep link still wins; Back still reaches Home.
+  // An EXPLICIT ?view= (any value, home included) always wins over the seed —
+  // and a seed saved under another tenant never replays here (xhigh findings 5+6).
+  const explicitView = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('view');
+  const coldSeed = (() => {
+    if (explicitView) return null;
+    try {
+      const saved = JSON.parse(localStorage.getItem('cv6.lastRoom') || 'null');
+      if (!saved || !saved.room || !saved.room.id) return null;
+      if (saved.worldId && worldId && saved.worldId !== worldId) return null;
+      return saved;
+    } catch { return null; }
+  })();
   const [view, setView] = useState(() => {
     const v = initialViewFromUrl();
-    if (v !== 'home') return v;
-    try { return localStorage.getItem('cv6.lastRoom') ? 'chatlist' : 'home'; } catch { return 'home'; }
+    if (v !== 'home' || explicitView) return v;
+    return coldSeed ? 'chatlist' : 'home';
   }); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
-  const [openedRoom, setOpenedRoom] = useState(() => {
-    try {
-      if (initialViewFromUrl() !== 'home') return null;
-      const saved = JSON.parse(localStorage.getItem('cv6.lastRoom') || 'null');
-      return saved && saved.room && saved.room.id ? { room: saved.room, worldId: saved.worldId } : null;
-    } catch { return null; }
-  }); // { room, worldId } -> Chat
+  const [openedRoom, setOpenedRoom] = useState(() => (coldSeed ? { room: coldSeed.room, worldId: coldSeed.worldId } : null)); // { room, worldId } -> Chat
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
@@ -2912,7 +2921,7 @@ export default function CornerCV6() {
       initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, isMission: openedRoom.room?.isMission, missionSlug: openedRoom.room?.missionSlug, projectSlug: openedRoom.room?.projectSlug, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText } : null}
       onNav={onNav} onOpenNav={onOpenNav}
       onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })}
-      onReviewFile={(f, proj) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', needsReview: true } : null); }} />;
+      onReviewFile={(f, proj, mission) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', missionSlug: mission || '', needsReview: true } : null); }} />;
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId || worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = `chat:${openedRoom.room?.id}`; }
@@ -2994,7 +3003,7 @@ export default function CornerCV6() {
           verdicts, pins, request-changes and the send-back task all ride the existing
           machinery; only the LOCATION changed (never leaves the room). */}
       {roomReview && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 60, background: 'var(--ground)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 35, background: 'var(--ground)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--divider)' }}>
             <div onClick={() => setRoomReview(null)} role="button" tabIndex={0} aria-label="Back to chat"
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); setRoomReview(null); } }}
@@ -3008,11 +3017,11 @@ export default function CornerCV6() {
           <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
             {isDesktop ? (
               <ReviewDesktop worldId={worldId} target={roomReview}
-                onNav={(t, p) => { setRoomReview(null); onNav?.(t, p); }} onOpenNav={onOpenNav}
+                onNav={(t, p) => { setRoomReview(null); if (t !== 'back') onNav?.(t, p); }} onOpenNav={onOpenNav}
                 onAssignDeliverable={(id, extra) => setAssignConfig({ type: 'file', id, title: 'Assign file to agent', artifactTitle: String(id || '').split('/').pop() || '', ...(extra || {}) })} />
             ) : (
               <Review worldId={worldId} target={roomReview}
-                onNav={(t, p) => { setRoomReview(null); onNav?.(t, p); }} onOpenNav={onOpenNav}
+                onNav={(t, p) => { setRoomReview(null); if (t !== 'back') onNav?.(t, p); }} onOpenNav={onOpenNav}
                 onAssignDeliverable={(id, extra) => setAssignConfig({ type: 'file', id, title: 'Assign file to agent', artifactTitle: String(id || '').split('/').pop() || '', ...(extra || {}) })} />
             )}
           </div>

@@ -40,17 +40,21 @@ function AutoReplyStrip({ isDesktop }) {
   const on = fs.mode === 'live' || fs.mode === 'test';
   const answering = fs.answer_mode === 'send';
   const pending = !!state.control;
-  const flip = async () => {
+  // Never invent a configuration from this screen (xhigh finding 1): 'off' only
+  // requests mode off (remembering what was on); 'restore' brings back exactly
+  // the remembered state. A pending request is cancellable, not a lock (finding 2).
+  const post = async (action) => {
     if (busy) return;
     setBusy(true);
     try {
-      const body = on ? { mode: 'off', answer_mode: 'draft' } : { mode: 'live', answer_mode: 'send' };
       const r = await authFetch('/api/dashboard/support-autoreply?world=aom', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ world: 'aom', ...body }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }),
       });
       if (r && r.ok) setState(await r.json());
     } finally { setBusy(false); }
   };
+  const flip = () => post(on ? 'off' : 'restore');
+  const cancel = () => post('clear');
   const label = !fs.mode
     ? 'Auto reply state not reported yet — it syncs within a minute.'
     : on
@@ -62,10 +66,15 @@ function AutoReplyStrip({ isDesktop }) {
       <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {label}{pending ? ' Applying your change…' : ''}
       </span>
-      {fs.mode ? (
-        <button onClick={flip} disabled={busy || pending}
-          style={{ height: 26, padding: '0 12px', borderRadius: 13, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: on ? 'var(--error)' : 'var(--success)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: (busy || pending) ? 'default' : 'pointer', opacity: (busy || pending) ? 0.6 : 1, flex: 'none' }}>
-          {on ? 'Turn off' : 'Turn on'}
+      {pending ? (
+        <button onClick={cancel} disabled={busy}
+          style={{ height: 26, padding: '0 12px', borderRadius: 13, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1, flex: 'none' }}>
+          Cancel change
+        </button>
+      ) : fs.mode ? (
+        <button onClick={flip} disabled={busy}
+          style={{ height: 26, padding: '0 12px', borderRadius: 13, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: on ? 'var(--error)' : 'var(--success)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1, flex: 'none' }}>
+          {on ? 'Turn off' : 'Turn back on'}
         </button>
       ) : null}
     </div>
@@ -128,7 +137,7 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
           {seg('campaign', 'Campaign')}
         </div>
       </div>
-      {tab === 'inbox' ? <AutoReplyStrip isDesktop={isDesktop} /> : null}
+      {tab === 'inbox' && worldId === 'aom' ? <AutoReplyStrip isDesktop={isDesktop} /> : null}
       <div className="cv6-email-body" style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'inbox'
           ? inbox
