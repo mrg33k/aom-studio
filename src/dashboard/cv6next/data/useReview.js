@@ -670,7 +670,13 @@ export function useReview(worldId = null, injected = null) {
     // Injected files (from a chat "Review all") ARE the queue — show exactly those,
     // live from the message, and skip the endpoint entirely.
     if (hasInjected) {
-      setQueue({ items: injected, readyCount: injected.length });
+      const injectedQueue = { items: injected, readyCount: injected.length };
+      // decisionBody reads queueRef (not queue state) — without this line every
+      // in-room review decision loses its identity (project / mission /
+      // source_path all undefined), the card routes to the wrong room, and the
+      // fix task dies at the runner with no repo (live battle test 2026-07-20).
+      queueRef.current = injectedQueue;
+      setQueue(injectedQueue);
       setStatus('loaded');
       return undefined;
     }
