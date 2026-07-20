@@ -3,6 +3,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 const calls = []
+const gmailRequiredScopes = [
+  'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.googleapis.com/auth/gmail.send',
+]
+
 globalThis.fetch = async (url, init) => {
   calls.push({ url, init })
   if (url.includes('tenant_users?user_id=eq.user-1')) {
@@ -13,9 +18,9 @@ globalThis.fetch = async (url, init) => {
       ok: true,
       json: async () => [
         { id: 'c-personal', user_id: 'user-1', workspace_id: null, integration_slug: 'gmail',
-          status: 'connected', connected_at: '2026-05-10', config: { account_email: 'p@x.com', connector_user_id: 'user-1' } },
+          status: 'connected', connected_at: '2026-05-10', config: { account_email: 'p@x.com', connector_user_id: 'user-1', granted_scopes: gmailRequiredScopes } },
         { id: 'c-team-aom', user_id: null, workspace_id: 'aom', integration_slug: 'gmail',
-          status: 'connected', connected_at: '2026-05-12', config: { account_email: 'hello@aom-inhouse.com', connector_user_id: 'user-1' } },
+          status: 'connected', connected_at: '2026-05-12', config: { account_email: 'hello@aom-inhouse.com', connector_user_id: 'user-1', granted_scopes: gmailRequiredScopes } },
       ],
     }
   }
@@ -35,6 +40,26 @@ test('listConnectionsForUser returns personal + workspace rows with scope tag', 
   assert.equal(personal.scope, 'personal')
   assert.equal(team.scope, 'team')
   assert.equal(team.workspace_id, 'aom')
+})
+
+test('listConnectionsForUser hides a Gmail row missing required OAuth scopes', async () => {
+  globalThis.fetch = async (url) => {
+    if (url.includes('tenant_users?user_id=eq.user-1')) {
+      return { ok: true, json: async () => [] }
+    }
+    if (url.includes('account_integrations?or=')) {
+      return {
+        ok: true,
+        json: async () => [
+          { id: 'c-under-scoped', user_id: 'user-1', workspace_id: null, integration_slug: 'gmail',
+            status: 'connected', connected_at: '2026-05-10', config: { granted_scopes: [gmailRequiredScopes[0]] } },
+        ],
+      }
+    }
+    return { ok: false, status: 404, json: async () => ({}) }
+  }
+
+  assert.deepEqual(await listConnectionsForUser('user-1'), [])
 })
 
 test('assertCanUseConnection allows owner of personal row', async () => {

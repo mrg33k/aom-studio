@@ -31,9 +31,9 @@ export const NAV_TOOLS = [
 // What the nav actually renders today: wired, un-parked tools (none since drop 4).
 const VISIBLE_TOOLS = NAV_TOOLS.filter((t) => t.wired && !t.parked);
 
-// The mobile drawer is the LEFT-side menu of the one-page world: rooms first,
-// Email, Settings. (Rooms opens the room directory; the full in-drawer rooms
-// list is the next polish pass.)
+// The mobile drawer enters from the same RIGHT edge as the header trigger:
+// Rooms first, then Email and Settings. Keeping trigger and motion on one edge
+// makes the spatial model predictable.
 const MOBILE_MENU = [
   { id: 'home',     label: 'Rooms',    route: 'home' },
   { id: 'support',  label: 'Email',    route: 'support' },
@@ -97,7 +97,7 @@ function ThemeSeg({ theme, onTheme, compact }) {
       {THEMES.map((t) => {
         const on = t.id === theme;
         return (
-          <button key={t.id} onClick={() => onTheme(t.id)} aria-pressed={on} role="button"
+          <button key={t.id} type="button" onClick={() => onTheme(t.id)} aria-pressed={on}
             style={{ height: compact ? 28 : 34, padding: compact ? '0 11px' : '0 14px', borderRadius: 9, border: 'none', cursor: 'pointer',
               fontSize: compact ? 12 : 13, fontWeight: 600, fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
               background: on ? 'var(--accent)' : 'transparent', color: on ? '#fff' : 'var(--muted)' }}>
@@ -114,7 +114,14 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, use
   return (
     <div className="topbar">
       <div className="tgreet" style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-        <img src={LOGO} alt="Corner" style={{ height: 20 }} />
+        <button type="button" onClick={() => onPick?.('home')} aria-label="Open Rooms home"
+          style={{ display: 'flex', alignItems: 'center', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}>
+          <img src={LOGO} alt="Corner" style={{ height: 20 }} />
+        </button>
+        <button type="button" onClick={() => onPick?.('home')} aria-current={current === 'home' ? 'page' : undefined}
+          style={{ height: 30, padding: '0 10px', borderRadius: 9, border: '1px solid var(--hair)', background: current === 'home' ? 'var(--accent-weak)' : 'transparent', color: current === 'home' ? 'var(--accent)' : 'var(--muted)', font: '600 12.5px var(--font-sans)', cursor: 'pointer' }}>
+          Rooms
+        </button>
       </div>
       <div className="toolnav">
         {VISIBLE_TOOLS.map((t) => (
@@ -159,18 +166,19 @@ export function MobileNav({ open, current, onPick, onClose, badges = {}, theme, 
         style={{ paddingTop: 'max(16px, env(safe-area-inset-top, 0px))', paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 14px 12px', borderBottom: '1px solid var(--divider)', marginBottom: 8 }}>
           <img src={LOGO} alt="Corner" style={{ height: 19 }} />
-          <div className="ib" onClick={onClose} role="button" aria-label="Close"
-            style={{ width: 30, height: 30, borderRadius: 9 }}>
+          <button type="button" className="ib" onClick={onClose} aria-label="Close menu"
+            style={{ width: 30, height: 30, borderRadius: 9, cursor: 'pointer' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
-          </div>
+          </button>
         </div>
         {MOBILE_MENU.map((t) => (
-          <div key={t.id} className={`navrow${t.id === current ? ' on' : ''}`}
-            onClick={() => { onPick?.(t.route); onClose?.(); }} role="button">
+          <button type="button" key={t.id} className={`navrow${t.id === current ? ' on' : ''}`}
+            onClick={() => { onPick?.(t.route); onClose?.(); }} aria-current={t.id === current ? 'page' : undefined}
+            style={{ width: '100%', border: 'none', background: t.id === current ? 'var(--accent-weak)' : 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)' }}>
             <span className="ni"><Icon id={t.id} /></span>
             <span className="nl">{t.label}</span>
             <Badge badge={badges[t.id]} />
-          </div>
+          </button>
         ))}
         {onTheme && (
           <div style={{ padding: '14px 14px 4px', borderTop: '1px solid var(--divider)', marginTop: 8 }}>

@@ -14,7 +14,7 @@ function initials(name) {
   return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
 }
 
-export function useSettings(worldId = null) {
+export function useSettings(worldId = null, externalTheme = null) {
   const [currentUser, setCurrentUser] = useState(null);
   const [projects, setProjects] = useState(null);
   const [theme, setTheme] = useState(() => {
@@ -24,6 +24,22 @@ export function useSettings(worldId = null) {
     return 'dark';
   });
   const [state, setState] = useState('loading');
+
+  const activeTheme = externalTheme || theme;
+
+  // Prime from the current session as well as listening for future auth changes.
+  // Relying only on onAuthStateChange left Settings loading indefinitely in
+  // clients that mounted after the initial SIGNED_IN event.
+  useEffect(() => {
+    if (!supabase) { setProjects([]); setState('ready'); return undefined; }
+    let alive = true;
+    supabase.auth.getSession().then(({ data: sessionData }) => {
+      if (!alive || !sessionData?.session?.user) return;
+      setClientIdFromUser(sessionData.session.user);
+      setCurrentUser(sessionData.session.user);
+    }).catch(() => { if (alive) setState('error'); });
+    return () => { alive = false; };
+  }, []);
 
   // Watch auth state
   useEffect(() => {
@@ -126,9 +142,9 @@ export function useSettings(worldId = null) {
 
     // Themes (REAL: read from localStorage and setTheme action wires back)
     const themes = [
-      { id: 'dark', label: 'Dark', selected: theme === 'dark' ? 'on' : false },
-      { id: 'light', label: 'Light', selected: theme === 'light' ? 'on' : false },
-      { id: 'glass', label: 'Glass', selected: theme === 'glass' ? 'on' : false },
+      { id: 'dark', label: 'Dark', selected: activeTheme === 'dark' ? 'on' : false },
+      { id: 'light', label: 'Light', selected: activeTheme === 'light' ? 'on' : false },
+      { id: 'glass', label: 'Glass', selected: activeTheme === 'glass' ? 'on' : false },
     ];
 
     return {
@@ -136,7 +152,7 @@ export function useSettings(worldId = null) {
       connections, rooms, secrets,
       agents, notifications, themes,
     };
-  }, [currentUser, projects, theme]);
+  }, [currentUser, projects, activeTheme]);
 
   return { state, data };
 }

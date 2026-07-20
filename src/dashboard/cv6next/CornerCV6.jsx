@@ -25,12 +25,12 @@ import Organize from './Organize.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
 import Settings from './Settings.jsx';
-import Onboarding from './Onboarding.jsx';
 import LiveScribe from './LiveScribe.jsx';
 import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
+import { savedRoomExists, missionTreesFromResponse } from './data/lastRoomValidation.js';
 import { roomProjectSlug } from './data/roomKeys.js';
 import NewComposer from './NewComposer.jsx';
 import { supabase } from '../lib/supabase.js';
@@ -102,7 +102,7 @@ function useIsDesktop() {
 // longer exists as a destination — any design-chrome tile still pointing at it is
 // re-pointed to 'organize' (Files) below, so it routes instead of dead-ending. The
 // design files also write the Scribe target as 'live-scribe'; accept both spellings.
-const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'onboarding', 'livescribe', 'live-scribe', 'back']);
+const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'livescribe', 'live-scribe', 'back']);
 
 function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false, dropEmbeddedStates = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -2273,7 +2273,11 @@ function initialViewFromUrl() {
     // Review folded into Files (corner:one-corner, 2026-07-13): ?view=review lands in
     // Files with the needs-review filter on (see initialFilesTargetFromUrl). Never a 404.
     if (v === 'review') return 'organize';
-    if (['home', 'support', 'organize', 'command', 'tracker', 'settings', 'onboarding', 'livescribe'].includes(v)) return v;
+    // The old CV6 onboarding specimen contained deliberately unbacked OAuth,
+    // permissions, and goal controls. Route that legacy deep link to the honest
+    // Settings surface; the real account onboarding remains /onboarding/voice.
+    if (v === 'onboarding') return 'settings';
+    if (['home', 'support', 'organize', 'command', 'tracker', 'settings', 'livescribe'].includes(v)) return v;
   } catch { /* no window */ }
   return 'home';
 }
@@ -2313,6 +2317,11 @@ function demoFilePreviewsRequested() {
 }
 function demoGlobalMotionRequested() {
   try { return new URLSearchParams(window.location.search).get('demo') === 'global-motion'; }
+  catch { return false; }
+}
+
+function demoEmailAutoReplyRequested() {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'email-autoreply'; }
   catch { return false; }
 }
 function globalMotionTheme() {
@@ -2751,6 +2760,7 @@ const roomMissionSlug = (r) => (r?.isMission ? String(r.missionSlug || r.id || '
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
+  const roomRegistry = useChatList();
   // Cold start lands in the last-open room (drop 3): Home stops being the front
   // door. An explicit ?view= deep link still wins; Back still reaches Home.
   // An EXPLICIT ?view= (any value, home included) always wins over the seed —
@@ -2771,6 +2781,8 @@ export default function CornerCV6() {
     return coldSeed ? 'chatlist' : 'home';
   }); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
   const [openedRoom, setOpenedRoom] = useState(() => (coldSeed ? { room: coldSeed.room, worldId: coldSeed.worldId } : null)); // { room, worldId } -> Chat
+  const [restoredRoomPending, setRestoredRoomPending] = useState(() => Boolean(coldSeed));
+  const [roomNotice, setRoomNotice] = useState('');
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
@@ -2792,6 +2804,39 @@ export default function CornerCV6() {
   // navigating away; closing it lands on the exact room state beneath. A plain
   // Files navigation (no needsReview payload) still routes to the Files tool.
   const [roomReview, setRoomReview] = useState(null);
+
+  // A saved room is a convenience, not authority. Validate it against the live
+  // agent/project registry and, for missions, the mission tree. Archived rooms
+  // now fall back to Rooms with an honest notice instead of opening a phantom.
+  useEffect(() => {
+    if (!restoredRoomPending || !openedRoom?.room || roomRegistry.state === 'loading') return undefined;
+    let alive = true;
+    const room = openedRoom.room;
+    const base = { agents: roomRegistry.data?.agents || [], projects: roomRegistry.data?.projects || [] };
+    const invalidate = () => {
+      if (!alive) return;
+      try { localStorage.removeItem('cv6.lastRoom'); } catch { /* private mode */ }
+      setOpenedRoom(null);
+      setView('home');
+      setHistory([]);
+      setRoomNotice('That saved room is no longer active. Showing all rooms instead.');
+      setRestoredRoomPending(false);
+    };
+    const initial = savedRoomExists(room, base);
+    if (initial === false) { invalidate(); return () => { alive = false; }; }
+    if (initial === true) { setRestoredRoomPending(false); return () => { alive = false; }; }
+
+    authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (!alive) return;
+        if (!payload) { setRestoredRoomPending(false); return; }
+        if (!savedRoomExists(room, { ...base, missionTrees: missionTreesFromResponse(payload) })) invalidate();
+        else setRestoredRoomPending(false);
+      })
+      .catch(() => { if (alive) setRestoredRoomPending(false); });
+    return () => { alive = false; };
+  }, [restoredRoomPending, openedRoom, roomRegistry.state, roomRegistry.data, worldId]);
 
   // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
   // nav's search icon opens it too (onOpenCommandK below). Escape closes inside Search.
@@ -2875,6 +2920,8 @@ export default function CornerCV6() {
   // Opening a room keeps the current view underneath so Back returns to where you tapped from.
   // Every open also remembers the room (cv6.lastRoom) so the next cold start lands here.
   const onOpenRoom = useCallback((room, wid) => {
+    setRestoredRoomPending(false);
+    setRoomNotice('');
     try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
     goTo(view, { room, worldId: wid || worldId });
   }, [goTo, view, worldId]);
@@ -2898,11 +2945,20 @@ export default function CornerCV6() {
   const demoMobileChatLifecycle = useMemo(() => demoMobileChatLifecycleRequested(), []);
   const demoFilePreviews = useMemo(() => demoFilePreviewsRequested(), []);
   const demoGlobalMotion = useMemo(() => demoGlobalMotionRequested(), []);
+  const demoEmailAutoReply = useMemo(() => demoEmailAutoReplyRequested(), []);
   if (demoCatchUpModal) return <DemoCatchUpModal worldId={worldId} />;
   if (demoHomeQuickThread) return <DemoHomeQuickThread />;
   if (demoMobileChatLifecycle) return <DemoMobileChatLifecycle />;
   if (demoFilePreviews) return <DemoFilePreviews />;
   if (demoGlobalMotion) return <DemoGlobalMotion />;
+  if (demoEmailAutoReply) {
+    return (
+      <div data-cv6 data-app-theme={theme} style={{ width: '100%', height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ground)' }}>
+        <EmailShell isDesktop={isDesktop} forceAutoReply
+          inbox={<div style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: 13 }}>Inbox fixture</div>} />
+      </div>
+    );
+  }
   if (demoBlocks) {
     // Auto-height (no 100dvh cap, no overflow:hidden) so the whole thread is one tall page
     // the browser scrolls — a full-page capture then reaches every element end to end.
@@ -2927,8 +2983,7 @@ export default function CornerCV6() {
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId || worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = `chat:${openedRoom.room?.id}`; }
   else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={onAssignEmail} worldId={worldId} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} onBack={() => onNav('back')} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'support'; }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
-  else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'settings'; }
-  else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }
+  else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} theme={theme} onTheme={changeTheme} />; viewKey = 'settings'; }
   else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'livescribe'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
@@ -2936,6 +2991,7 @@ export default function CornerCV6() {
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
+  const parkedLabel = { organize: 'Files', command: 'Command', tracker: 'Tracker', livescribe: 'Scribe' }[view] || '';
   // Nav badges retired with the bar (drop 4): "waiting on you" now lives as amber
   // badges on the room rows themselves — the signal sits where the work is.
   const navBadges = {};
@@ -2964,9 +3020,32 @@ export default function CornerCV6() {
           settings view which already exists and is reached via onNav('settings'). */}
       {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
-      <ActivityDock worldId={worldId} onOpenJob={(jobId) => onNav?.('command')} />
+      <ActivityDock worldId={worldId} onOpenJob={(job) => {
+        if (job?.live && job?.id) {
+          const name = job.shortTitle || job.title || titleForAgent(job.id);
+          onOpenRoom({ id: job.id, name, initials: name.slice(0, 2).toUpperCase(), status: 'active', statusText: 'working' }, worldId);
+        } else onNav?.('command');
+      }} />
+      {roomNotice ? (
+        <div role="status" style={{ position: 'absolute', zIndex: 34, top: isDesktop ? 68 : 10, left: '50%', transform: 'translateX(-50%)', maxWidth: 'calc(100% - 28px)', padding: '9px 13px', borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', boxShadow: '0 12px 30px -12px rgba(0,0,0,.55)', fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span>{roomNotice}</span><button type="button" aria-label="Dismiss notice" onClick={() => setRoomNotice('')} style={{ border: 'none', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', padding: 2 }}>×</button>
+        </div>
+      ) : null}
       <div key={viewKey} className="cv6-screen-stage" data-cv6-view={viewKey}>
-        <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
+        <ScreenBoundary viewKey={viewKey} onHome={goHome}>
+          {isDesktop && parkedLabel ? (
+            <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ height: 38, flex: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', borderBottom: '1px solid var(--divider)', background: 'var(--surface)', color: 'var(--muted)', fontSize: 11.5 }}>
+                <span style={{ fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--faint)' }}>Advanced tool</span>
+                <span aria-hidden="true">·</span><span style={{ color: 'var(--fg)', fontWeight: 600 }}>{parkedLabel}</span>
+                <span style={{ flex: 1 }} />
+                {history.length ? <button type="button" onClick={back} style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>Back</button> : null}
+                <button type="button" onClick={goHome} style={{ height: 28, padding: '0 10px', borderRadius: 8, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>All rooms</button>
+              </div>
+              <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>{body}</div>
+            </div>
+          ) : body}
+        </ScreenBoundary>
       </div>
       <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} badges={navBadges} />
       {/* ⌘K command palette — jump to any room or mission. Opens its own data. */}

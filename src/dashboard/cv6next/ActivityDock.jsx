@@ -5,7 +5,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useCommandContext } from './providers/DataContext.jsx';
-import { titleForAgent } from './data/agentTitles.js';
 
 // Per-job tint mapping (kind -> CSS class for ad-ico background + text color).
 // R-CMD-BUCKETS (2026-07-18): job.kind is now the work bucket; the float dock
@@ -37,7 +36,6 @@ function ActivityDock({ worldId, onOpenJob }) {
   const { command } = useCommandContext();
   const commandData = command?.data;
   const [expandedJobId, setExpandedJobId] = useState(null);
-  const [hoveredJobId, setHoveredJobId] = useState(null);
   const dockRef = useRef(null);
 
   // Real jobs from active agents, or fallback to demo. The activity feed now
@@ -65,8 +63,9 @@ function ActivityDock({ worldId, onOpenJob }) {
   }, [expandedJobId]);
 
   const handleJobTap = () => {
-    // Tap the dock body returns to that job's home screen (held-c: route not yet wired).
-    onOpenJob?.(currentJob.id);
+    // Heartbeat-backed jobs carry the worker slug, so the shell can return to
+    // that agent room instead of dropping the user into the parked Command tool.
+    onOpenJob?.(currentJob);
   };
 
   const handleChevron = (e) => {
@@ -148,7 +147,7 @@ function ActivityDock({ worldId, onOpenJob }) {
         {currentJob.badge || 'LIVE'}
       </span>
 
-      {/* Chevron to expand controls (held-c) */}
+      {/* Chevron opens context; no decorative job controls are shown. */}
       <button
         onClick={handleChevron}
         style={{
@@ -182,7 +181,7 @@ function ActivityDock({ worldId, onOpenJob }) {
         </svg>
       </button>
 
-      {/* Expand sheet: quick controls (Pause / Back / Finish) — all held-c */}
+      {/* Expand sheet: honest context + one real destination. */}
       {expandedJobId === currentJob.id && (
         <div
           style={{
@@ -211,78 +210,13 @@ function ActivityDock({ worldId, onOpenJob }) {
             <div style={{ fontSize: '11px', lineHeight: 1.4 }}>{currentJob.sub}</div>
           </div>
 
-          {/* Held-C control buttons */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              disabled
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '10px',
-                border: '1px solid var(--hair)',
-                background: 'var(--surface-2)',
-                color: 'var(--muted)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'not-allowed',
-                opacity: 0.6,
-              }}
-              title="Pause: live job controls turn on when the running-job feed is wired"
-            >
-              Pause
-            </button>
-            <button
-              disabled
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '10px',
-                border: '1px solid var(--hair)',
-                background: 'var(--surface-2)',
-                color: 'var(--muted)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'not-allowed',
-                opacity: 0.6,
-              }}
-              title="Back: live job controls turn on when the running-job feed is wired"
-            >
-              Back
-            </button>
-            <button
-              disabled
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '10px',
-                border: '1px solid var(--hair)',
-                background: 'var(--surface-2)',
-                color: 'var(--muted)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'not-allowed',
-                opacity: 0.6,
-              }}
-              title="Finish: live job controls turn on when the running-job feed is wired"
-            >
-              Finish
-            </button>
+          <button type="button" onClick={() => onOpenJob?.(currentJob)}
+            style={{ width: '100%', height: 36, borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 650, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+            Open agent room
+          </button>
+          <div style={{ fontSize: 11, color: 'var(--faint)', lineHeight: 1.4 }}>
+            Pause, retask, and hand-off controls live in the room so the job always keeps its conversation context.
           </div>
-
-          {/* Label explaining held-c status */}
-          {isDemonstration && (
-            <div
-              style={{
-                fontSize: '10px',
-                color: 'var(--faint)',
-                fontStyle: 'italic',
-                paddingTop: '8px',
-                borderTop: '1px solid var(--hair)',
-              }}
-            >
-              Sample job (demo mode) — live job controls turn on when an agent is actually running
-            </div>
-          )}
         </div>
       )}
     </div>

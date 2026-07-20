@@ -26,6 +26,10 @@ const ALLOWLIST = new Set([
   'api/dashboard/create-project-from-chat.js',
   'api/dashboard/project-files.js',
   'api/dashboard/review-queue.js',
+  // Intentional AOM operator boundary: this endpoint controls the single local
+  // support watcher, not a tenant-selectable dashboard resource. The UI is
+  // likewise gated to the AOM world and the endpoint still verifies AOM auth.
+  'api/dashboard/support-autoreply.js',
   'api/dashboard/set-supabase-client-context.js',
   'api/dashboard/supabase-messages.js',
   'api/dashboard/supabase-status.js',

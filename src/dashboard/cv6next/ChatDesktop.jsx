@@ -113,21 +113,34 @@ function fileGlyph(kind) {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 }
 // The room's files panel: everything that crossed this chat, nothing else.
-// Two plain chron sections — From <agent> / You sent (Patrik ruling 2026-07-20).
-// Each row: open the file, or review it. No pills, no filters, no cabinet merge.
-export function FilesShelf({ fromAgent = [], youSent = [], onReview, status, windowFull = false }) {
+// The whole row is the primary open action. Amber is reserved for an item that
+// is still in the waiting-review queue; ordinary files keep a quiet chevron.
+export function FilesShelf({ fromAgent = [], youSent = [], onReview, needsReview, status, windowFull = false }) {
   const CAP = 80; // newest per section; a busy room can carry hundreds
-  const row = (it, i) => (
-    <div key={`${it.url || it.name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--divider)' }}>
+  const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
+  const openItem = (it) => {
+    if (onReview) { onReview(it); return; }
+    if (it.url && typeof window !== 'undefined') window.open(fileHref(it.url), '_blank', 'noopener,noreferrer');
+  };
+  const row = (it, i) => {
+    const waiting = needsAttention(it);
+    return (
+    <button type="button" key={`${it.url || it.name}-${i}`} onClick={() => openItem(it)}
+      aria-label={`${waiting ? 'Review' : 'Open'} ${it.name}`}
+      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 5px', border: 'none', borderBottom: '1px solid var(--divider)', background: 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)', cursor: 'pointer', borderRadius: 8 }}>
       <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
-        <div className="mono" style={{ fontSize: 10, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{itemMeta(it)}</div>
+        <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>{itemMeta(it)}</div>
       </div>
-      <a href={fileHref(it.url)} target="_blank" rel="noopener noreferrer" title="Open the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
-      <button onClick={() => onReview?.(it)} title="Review this file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
-    </div>
-  );
+      {waiting ? (
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--warn)', background: 'var(--warn-weak)', border: '1px solid rgba(251,191,36,.3)', padding: '5px 8px', borderRadius: 8, flex: 'none', whiteSpace: 'nowrap' }}>Review</span>
+      ) : (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="m9 18 6-6-6-6" /></svg>
+      )}
+    </button>
+    );
+  };
   const section = (label, list) => {
     const shown = list.slice(0, CAP);
     return (
@@ -610,7 +623,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // Files waiting on review are attention too (xhigh review finding 4): the
   // waiting queue, grouped per room, joins the same amber badges the needs-you
   // feed drives — a handed-off deliverable pulls the eye to ITS room.
-  const [reviewWaiting, setReviewWaiting] = useState({ byProject: {}, byMission: {} });
+  const [reviewWaiting, setReviewWaiting] = useState({ byProject: {}, byMission: {}, fileKeys: [] });
   useEffect(() => {
     if (!worldId) return undefined;
     let alive = true;
@@ -618,14 +631,15 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!alive || !d) return;
-        const byProject = {}; const byMission = {};
+        const byProject = {}; const byMission = {}; const fileKeys = new Set();
         for (const it of (d.items || [])) {
           const proj = it.whoRaw || it.project || '';
           const mission = it.missionRaw || it.mission || '';
           if (mission) byMission[mission] = (byMission[mission] || 0) + 1;
           if (proj) byProject[proj] = (byProject[proj] || 0) + 1;
+          for (const key of [it.id, it.path, it.name]) if (key) fileKeys.add(String(key));
         }
-        setReviewWaiting({ byProject, byMission });
+        setReviewWaiting({ byProject, byMission, fileKeys: [...fileKeys] });
       })
       .catch(() => {});
     load();
@@ -646,6 +660,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     for (const [k, v] of Object.entries(reviewWaiting.byMission)) if (k) m[k] = (m[k] || 0) + v;
     return m;
   }, [inboxItems, reviewWaiting]);
+  const waitingFileKeys = useMemo(() => new Set(reviewWaiting.fileKeys || []), [reviewWaiting.fileKeys]);
+  const fileNeedsReview = useCallback((it) => waitingFileKeys.has(String(it?.url || '')) || waitingFileKeys.has(String(it?.name || '')), [waitingFileKeys]);
+  const nextReviewFile = useMemo(() => crossings.fromAgent.find(fileNeedsReview) || null, [crossings.fromAgent, fileNeedsReview]);
   // Cold start lands on the last-open room (drop 3): remember every pick; the
   // shell seeds its initial room from this key when the app opens plain.
   // Persist only rooms the user actually PICKED (or arrived in) — `selected`
@@ -676,6 +693,11 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
               Email pinned OUTSIDE the scroll so it is always one click away. */}
           <div style={{ width: 220, flex: 'none', borderRight: '1px solid var(--divider)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div style={{ flex: 'none', padding: '14px 12px 10px' }}>
+              <button type="button" onClick={() => onNav?.('home')}
+                style={{ width: '100%', height: 32, marginBottom: 8, padding: '0 10px', borderRadius: 9, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg>
+                All rooms
+              </button>
               <button onClick={() => setComposerOpen(true)}
                 style={{ width: '100%', height: 36, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -730,7 +752,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <span className={`sdot is-${selected.status || 'ready'}`} style={{ position: 'absolute', bottom: -1, right: -1, width: 12, height: 12, border: '2.5px solid var(--ground)' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)' }}>{selected.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, marginBottom: 2, fontSize: 11.5, color: 'var(--muted)' }}>
+                      <button type="button" onClick={() => onNav?.('home')} style={{ border: 'none', background: 'transparent', color: 'var(--muted)', padding: 0, font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>Rooms</button>
+                      {selected.isProject || selected.isMission ? <span aria-hidden="true">/</span> : null}
+                      {selected.isMission ? <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{projects.find((p) => p.slug === selected.projectSlug || p.id === selected.projectSlug)?.name || selected.statusText || selected.projectSlug}</span> : null}
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation')}</div>
                   </div>
                   <button
@@ -782,7 +809,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   ))}
                 </div>
                 {drawerView === 'files' ? (
-                  <FilesShelf fromAgent={crossings.fromAgent} youSent={crossings.youSent} status={crossings.status} windowFull={crossings.windowFull} onReview={(it) => onReviewFile?.(it, reviewProject, reviewMission)} />
+                  <FilesShelf fromAgent={crossings.fromAgent} youSent={crossings.youSent} status={crossings.status} windowFull={crossings.windowFull} needsReview={fileNeedsReview} onReview={(it) => onReviewFile?.(it, reviewProject, reviewMission)} />
                 ) : (
                 <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}
@@ -807,7 +834,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       <div style={{ position: 'absolute', top: 46, right: 14, zIndex: 21, minWidth: 184, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 12, boxShadow: '0 16px 40px -12px rgba(0,0,0,.45)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {[
                           { label: 'View files', onClick: () => { setDrawerView('files'); setAgentMenuOpen(false); } },
-                          { label: 'Open in Review', onClick: () => { onReviewFile?.(); setAgentMenuOpen(false); } },
+                          ...(nextReviewFile ? [{ label: 'Review next waiting file', onClick: () => { onReviewFile?.(nextReviewFile, reviewProject, reviewMission); setAgentMenuOpen(false); } }] : []),
                           { label: following ? 'Mute updates' : 'Follow along', onClick: () => { toggleFollow(); setAgentMenuOpen(false); } },
                         ].map((mi) => (
                           <button key={mi.label} onClick={mi.onClick} style={{ display: 'flex', alignItems: 'center', height: 36, padding: '0 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--fg)', fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)', textAlign: 'left', cursor: 'pointer' }}

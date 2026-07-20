@@ -379,9 +379,16 @@
   to { opacity:1; transform:translateX(0); }
 }
 [data-cv6] .navscrim { animation:cv6NavScrimIn var(--dur-press) ease-out both; }
-[data-cv6] .navdrawer { animation:cv6NavDrawerIn var(--dur-move) var(--ease-out) both; }
+[data-cv6] .navdrawer {
+  left:auto;
+  right:0;
+  border-right:none;
+  border-left:1px solid var(--hair);
+  box-shadow:-26px 0 64px -16px rgba(0,0,0,.72);
+  animation:cv6NavDrawerIn var(--dur-move) var(--ease-out) both;
+}
 @keyframes cv6NavScrimIn { from { opacity:0; } to { opacity:1; } }
-@keyframes cv6NavDrawerIn { from { transform:translateX(-18px); } to { transform:translateX(0); } }
+@keyframes cv6NavDrawerIn { from { transform:translateX(18px); } to { transform:translateX(0); } }
 @media (prefers-reduced-motion: reduce) {
   [data-cv6] .cv6-screen-stage,
   [data-cv6] .navscrim,
@@ -1463,6 +1470,13 @@
 [data-cv6] .mhdr input:focus-visible {
   outline:2px solid var(--accent);
   outline-offset:4px;
+}
+
+/* Keyboard focus must remain visible beyond the global bars too: file rows,
+   settings sections, review actions, and drawer entries are all real controls. */
+[data-cv6] :where(button, a[href], [role="button"]):focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:2px;
 }
 
 /* Email's Inbox/Campaign switch is subordinate navigation, never a competing

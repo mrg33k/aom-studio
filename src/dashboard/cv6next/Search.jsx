@@ -7,6 +7,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
+import { buildSearchGroups } from './data/searchResults.js';
 
 function useIsDesktop() {
   const [d, setD] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(min-width: 900px)').matches : true));
@@ -54,26 +55,7 @@ export default function Search({ onClose, onOpenMenu, onOpenRoom }) {
   const projects = data?.projects || [];
   const [q, setQ] = useState('');
 
-  const groups = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    const match = (s) => !needle || String(s || '').toLowerCase().includes(needle);
-    const roomResults = [
-      ...agents.filter((a) => match(a.name)).map((a) => ({ id: a.id, kind: 'agent', type: 'room', initials: a.initials, title: a.name, meta: a.statusLabel ? a.statusLabel.toLowerCase() : 'agent', status: a.status, room: { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel } })),
-      ...projects.filter((p) => match(p.name)).map((p) => ({ id: p.id, kind: 'project', type: 'project', initials: (p.name || '?').slice(0, 2).toUpperCase(), title: p.name, meta: 'project', room: { id: p.id, name: p.name, isProject: true, status: p.status } })),
-    ];
-    const missionResults = [];
-    for (const p of projects) {
-      const ms = byProject[p.id] || byProject[p.slug] || [];
-      for (const m of ms) {
-        if (!match(m.name)) continue;
-        missionResults.push({ id: `${p.id}:${m.slug}`, kind: 'mission', type: 'mission', title: m.name, meta: `${p.name}${m.status ? ` · ${m.status}` : ''}`, room: { id: p.id, name: p.name, isProject: true } });
-      }
-    }
-    const out = [];
-    if (roomResults.length) out.push({ label: 'Rooms', count: roomResults.length, results: roomResults });
-    if (missionResults.length) out.push({ label: 'Missions', count: missionResults.length, results: missionResults });
-    return out;
-  }, [q, agents, projects, byProject]);
+  const groups = useMemo(() => buildSearchGroups({ query: q, agents, projects, byProject }), [q, agents, projects, byProject]);
 
   const total = groups.reduce((n, g) => n + g.results.length, 0);
   const pick = (r) => { onOpenRoom?.(r.room, worldId); onClose?.(); };

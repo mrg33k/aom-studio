@@ -18,9 +18,9 @@
 //
 // Escalation safety (finding 1): the user lane never invents a configuration.
 // 'off' remembers what was on (last_on) and requests mode:'off' ONLY; 'restore'
-// re-requests exactly what was on before, or bare mode:'live' with answer_mode
-// untouched when nothing was remembered. answer_mode can therefore never be
-// escalated from this screen — only restored.
+// re-requests exactly what was on before. If nothing was remembered, restore is
+// refused rather than inventing a live policy. answer_mode can therefore never
+// be escalated from this screen — only restored.
 // Staleness safety (finding 2): the watcher refuses controls older than 15
 // minutes (it consumes them unapplied), and the user lane can 'clear' a pending
 // control at any time.
@@ -69,7 +69,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ control: ctl.control || null });
     }
     const [ctl, st] = await Promise.all([loadRow(CONTROL_KIND), loadRow(STATE_KIND)]);
-    return res.status(200).json({ control: ctl.control || null, file_state: st.file_state || null });
+    const canRestore = !!(ctl.last_on && ON_MODES.has(ctl.last_on.mode));
+    return res.status(200).json({ control: ctl.control || null, file_state: st.file_state || null, can_restore: canRestore });
   }
 
   if (req.method === 'POST') {
@@ -112,16 +113,25 @@ export default async function handler(req, res) {
       ctl.control = { mode: 'off', requested_at: new Date().toISOString() };
     } else { // restore
       const prev = ctl.last_on && ON_MODES.has(ctl.last_on.mode) ? ctl.last_on : null;
+      if (!prev) {
+        return res.status(409).json({
+          error: 'No previous auto-reply mode is available to restore.',
+          control: ctl.control || null,
+          file_state: (await loadRow(STATE_KIND)).file_state || null,
+          can_restore: false,
+        });
+      }
       ctl.control = {
-        mode: prev ? prev.mode : 'live',
-        ...(prev && prev.answer_mode ? { answer_mode: prev.answer_mode } : {}),
+        mode: prev.mode,
+        ...(prev.answer_mode ? { answer_mode: prev.answer_mode } : {}),
         requested_at: new Date().toISOString(),
       };
     }
     const ok = await stateSet(CONTROL_KIND, 'all', WORLD, ctl);
     if (!ok) return res.status(502).json({ error: 'state store write failed' });
     const st = await loadRow(STATE_KIND);
-    return res.status(200).json({ ok: true, control: ctl.control || null, file_state: st.file_state || null });
+    const canRestore = !!(ctl.last_on && ON_MODES.has(ctl.last_on.mode));
+    return res.status(200).json({ ok: true, control: ctl.control || null, file_state: st.file_state || null, can_restore: canRestore });
   }
 
   return res.status(405).json({ error: 'method not allowed' });
