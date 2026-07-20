@@ -285,6 +285,11 @@ export default async function handler(req, res) {
         source_path: sourcePath,
         sha256,
         mission,
+        // mission_slug routes this decision card into the MISSION room's thread
+        // (the thread's mission arms match metadata->>mission_slug; without it the
+        // card lands only in the project room while the user sits in the mission
+        // room watching nothing happen — corner:one-corner drop 2).
+        ...(mission ? { mission_slug: mission } : {}),
         title,
         ...(taskId ? { task_id: taskId } : {}),
       },

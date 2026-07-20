@@ -22,6 +22,8 @@ import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
 import Organize from './Organize.jsx';
+import Review from './Review.jsx';
+import ReviewDesktop from './ReviewDesktop.jsx';
 import Settings from './Settings.jsx';
 import Onboarding from './Onboarding.jsx';
 import LiveScribe from './LiveScribe.jsx';
@@ -2765,6 +2767,13 @@ export default function CornerCV6() {
   // its missions list + the "step into general project chat" button — instead of jumping
   // straight into a chat. Home consumes this and opens its (proven) project-detail screen.
   const [pendingProjectId, setPendingProjectId] = useState(null);
+  // Review in place (corner:one-corner drop 2): reviewing a file never leaves the
+  // room. Every review affordance in the app already funnels through
+  // onNav('organize', { needsReview, files|name, ... }) — the router intercepts
+  // that payload and mounts the review overlay OVER the current screen instead of
+  // navigating away; closing it lands on the exact room state beneath. A plain
+  // Files navigation (no needsReview payload) still routes to the Files tool.
+  const [roomReview, setRoomReview] = useState(null);
 
   // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
   // nav's search icon opens it too (onOpenCommandK below). Escape closes inside Search.
@@ -2826,6 +2835,12 @@ export default function CornerCV6() {
     if (target === 'review') {
       target = 'organize';
       arg = arg && typeof arg === 'object' ? { ...arg, needsReview: true } : { needsReview: true };
+    }
+    // Review in place (drop 2): a needs-review payload with a concrete file opens
+    // the in-room overlay; you never leave the screen you are on.
+    if (target === 'organize' && arg && typeof arg === 'object' && arg.needsReview && ((arg.files && arg.files.length) || arg.name)) {
+      setRoomReview(arg);
+      return;
     }
     if (['home', 'support', 'command', 'tracker', 'organize', 'settings', 'livescribe'].includes(target)) {
       // Carry a "Review this file" target into Files; a plain toolbar nav('organize')
@@ -2958,6 +2973,36 @@ export default function CornerCV6() {
           onSuccess={() => setAssignConfig(null)}
           onError={() => setAssignConfig(null)}
         />
+      )}
+      {/* Review in place (drop 2): the review viewer mounted OVER the current screen.
+          The room (or Home) stays alive beneath; "Back to chat" closes the overlay and
+          you are exactly where you were. Composes the proven Review tools wholesale —
+          verdicts, pins, request-changes and the send-back task all ride the existing
+          machinery; only the LOCATION changed (never leaves the room). */}
+      {roomReview && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 60, background: 'var(--ground)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--divider)' }}>
+            <div onClick={() => setRoomReview(null)} role="button" tabIndex={0} aria-label="Back to chat"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); setRoomReview(null); } }}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--muted)', cursor: 'pointer', padding: '6px 10px', borderRadius: 9 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+              Back to chat
+            </div>
+            <div style={{ flex: 1 }} />
+            <span style={{ fontSize: 12, color: 'var(--faint)' }}>Your decision goes back to the agent in this chat.</span>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+            {isDesktop ? (
+              <ReviewDesktop worldId={worldId} target={roomReview}
+                onNav={(t, p) => { setRoomReview(null); onNav?.(t, p); }} onOpenNav={onOpenNav}
+                onAssignDeliverable={(id, extra) => setAssignConfig({ type: 'file', id, title: 'Assign file to agent', artifactTitle: String(id || '').split('/').pop() || '', ...(extra || {}) })} />
+            ) : (
+              <Review worldId={worldId} target={roomReview}
+                onNav={(t, p) => { setRoomReview(null); onNav?.(t, p); }} onOpenNav={onOpenNav}
+                onAssignDeliverable={(id, extra) => setAssignConfig({ type: 'file', id, title: 'Assign file to agent', artifactTitle: String(id || '').split('/').pop() || '', ...(extra || {}) })} />
+            )}
+          </div>
+        </div>
       )}
       </div>
     </div>

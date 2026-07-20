@@ -47,6 +47,10 @@ const HARD_CAP = 5000;        // ceiling on the total set served
 // Each row also carries source_kind ('handoff' | 'upload') so the UI can split the
 // Review and Uploads filters. Forward-only cutoff = the day the clean signal began.
 const HANDOFF_CUTOFF = '2026-07-12';
+// Watcher auto-shares became review-eligible with the One Page build (Patrik's
+// file rule: any file the agent sent across the chat is reviewable). Forward-only
+// from its own cutoff so historical auto-dump spam never floods the waiting set.
+const AUTOSHARE_CUTOFF = '2026-07-20';
 const MSG_FETCH_CAP = 2000;   // rows pulled per side before merge/sort (well past the real volume)
 
 const TYPE_MAP = {
@@ -168,11 +172,16 @@ export async function collectFromMessages(world) {
   const [singleF, multiF] = UPLOADS_PRESENCE_FILTERS;
   const uploadQ = `${common}&${UPLOADS_ROLE_FILTER}&${singleF}${worldFilter}`;
   const uploadMultiQ = `${common}&${UPLOADS_ROLE_FILTER}&${multiF}${worldFilter}`;
-  const [handoffs, uploads, uploadsMulti] = await Promise.all([
-    fetchMessages(handoffQ), fetchMessages(uploadQ), fetchMessages(uploadMultiQ),
+  // Watcher auto-shares ARE agent hand-offs (corner:one-corner drop 2): any file
+  // the agent sent across the chat is reviewable, forward-only from AUTOSHARE_CUTOFF.
+  const autoShareQ = `${common}&role=eq.assistant&timestamp=gte.${AUTOSHARE_CUTOFF}`
+    + `&source=eq.auto-share&metadata->attachment.not.is.null${worldFilter}`;
+  const [handoffs, uploads, uploadsMulti, autoShares] = await Promise.all([
+    fetchMessages(handoffQ), fetchMessages(uploadQ), fetchMessages(uploadMultiQ), fetchMessages(autoShareQ),
   ]);
   const items = [];
   for (const m of handoffs) items.push(...rowsFromMessage(m, 'handoff'));
+  for (const m of autoShares) items.push(...rowsFromMessage(m, 'handoff'));
   for (const m of uploads) items.push(...rowsFromMessage(m, 'upload'));
   for (const m of uploadsMulti) items.push(...rowsFromMessage(m, 'upload'));
   // Dedupe by file path (an agent may re-share the same deliverable across versions —
