@@ -2751,8 +2751,20 @@ export default function CornerCV6() {
   const isDesktop = useIsDesktop();
   // Live waiting-review count for the Files nav badge (light poll + realtime nudge).
   const reviewWaiting = useReviewWaitingCount(worldId);
-  const [view, setView] = useState(initialViewFromUrl); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
-  const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
+  // Cold start lands in the last-open room (drop 3): Home stops being the front
+  // door. An explicit ?view= deep link still wins; Back still reaches Home.
+  const [view, setView] = useState(() => {
+    const v = initialViewFromUrl();
+    if (v !== 'home') return v;
+    try { return localStorage.getItem('cv6.lastRoom') ? 'chatlist' : 'home'; } catch { return 'home'; }
+  }); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
+  const [openedRoom, setOpenedRoom] = useState(() => {
+    try {
+      if (initialViewFromUrl() !== 'home') return null;
+      const saved = JSON.parse(localStorage.getItem('cv6.lastRoom') || 'null');
+      return saved && saved.room && saved.room.id ? { room: saved.room, worldId: saved.worldId } : null;
+    } catch { return null; }
+  }); // { room, worldId } -> Chat
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
@@ -2855,7 +2867,11 @@ export default function CornerCV6() {
     else if (target === 'chat' || target === 'rooms') goTo('chatlist', null);
   }, [back, goTo]);
   // Opening a room keeps the current view underneath so Back returns to where you tapped from.
-  const onOpenRoom = useCallback((room, wid) => goTo(view, { room, worldId: wid || worldId }), [goTo, view, worldId]);
+  // Every open also remembers the room (cv6.lastRoom) so the next cold start lands here.
+  const onOpenRoom = useCallback((room, wid) => {
+    try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
+    goTo(view, { room, worldId: wid || worldId });
+  }, [goTo, view, worldId]);
   // Open a project's home (missions + general chat) on the Home surface.
   const onOpenProject = useCallback((proj) => {
     const id = proj?.id || proj;
@@ -2896,12 +2912,13 @@ export default function CornerCV6() {
   // room selection. Both the conversations list and an opened room route to it on desktop.
   if (isDesktop && (view === 'chatlist' || openedRoom)) {
     body = <ChatDesktop worldId={worldId}
-      initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText } : null}
+      initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, isMission: openedRoom.room?.isMission, missionSlug: openedRoom.room?.missionSlug, projectSlug: openedRoom.room?.projectSlug, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText } : null}
       onNav={onNav} onOpenNav={onOpenNav}
+      onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })}
       onReviewFile={(f, proj) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', needsReview: true } : null); }} />;
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
-  else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = `chat:${openedRoom.room?.id}`; }
+  else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId || worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = `chat:${openedRoom.room?.id}`; }
   else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={onAssignEmail} worldId={worldId} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} onBack={() => onNav('back')} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'support'; }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'settings'; }

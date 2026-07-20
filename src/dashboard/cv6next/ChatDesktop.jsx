@@ -16,6 +16,10 @@ import { titleForAgent } from './data/agentTitles.js';
 import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
+import SupportDesktop from './SupportDesktop.jsx';
+import EmailShell from './EmailShell.jsx';
+import NewComposer from './NewComposer.jsx';
+import { useDataContext } from './providers/DataContext.jsx';
 
 const NAV = [
   { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
@@ -35,12 +39,20 @@ function NavTile({ item, active, onNav }) {
   );
 }
 
-function RoomRow({ row, open, onClick }) {
+// The amber "waiting on you" badge every rail row can carry (drop 3): fed by the
+// per-room needs-you feed (inboxItems), it replaced the catch-up strip and the
+// old Files nav badge as THE at-a-glance attention signal.
+export function NeedsBadge({ count }) {
+  if (!count) return null;
+  return <span style={{ minWidth: 17, height: 17, borderRadius: 9, background: 'var(--warn)', color: '#1c1503', fontSize: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', flex: 'none' }}>{count}</span>;
+}
+function RoomRow({ row, open, onClick, needsCount = 0 }) {
   return (
     <div className="room" role="button" aria-current={open ? 'true' : undefined} onClick={onClick} style={{ cursor: open ? 'default' : 'pointer', background: open ? 'var(--accent-weak)' : undefined }}>
       <span className={`sdot is-${row.status || 'ready'}`} style={{ flex: 'none' }} />
       <span className="rn" style={{ fontWeight: open ? 600 : 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</span>
-      {row.statusLabel ? <span style={{ fontSize: 10.5, color: open ? 'var(--accent)' : 'var(--faint)', fontWeight: 600 }}>{row.statusLabel.toLowerCase()}</span> : null}
+      <NeedsBadge count={needsCount} />
+      {row.statusLabel && !needsCount ? <span style={{ fontSize: 10.5, color: open ? 'var(--accent)' : 'var(--faint)', fontWeight: 600 }}>{row.statusLabel.toLowerCase()}</span> : null}
     </div>
   );
 }
@@ -215,7 +227,7 @@ function flattenMissions(nodes, depth = 0, out = []) {
   }
   return out;
 }
-function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, expanded, onToggle, onPickProject, onPickMission }) {
+function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, expanded, onToggle, onPickProject, onPickMission, needsCount = 0, needsByMission = {} }) {
   const flat = flattenMissions(missions);
   const hasMissions = flat.length > 0;
   const [showAll, setShowAll] = useState(false);
@@ -235,7 +247,8 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
         </button>
         <svg className={`folder is-${row.tint || 'violet'}`} width="17" height="17" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
         <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: selectedProject ? 600 : 500 }}>{row.name}</span>
-        {hasMissions ? <span style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{flat.length}</span> : null}
+        <NeedsBadge count={needsCount} />
+        {hasMissions && !needsCount ? <span style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{flat.length}</span> : null}
       </div>
       {expanded ? (
         <div style={{ margin: '2px 0 6px 16px', borderLeft: '1px solid var(--divider)', paddingLeft: 6 }}>
@@ -246,6 +259,7 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
               <div key={missionSlug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7, paddingLeft: depth * 14 }}>
                 <span className={`sdot is-${missionDot(m.status)}`} style={{ flex: 'none' }} />
                 <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{missionLabelClean(m.name || m.slug)}</span>
+                <NeedsBadge count={needsByMission[missionSlug] || needsByMission[String(missionSlug).split(':').pop()] || 0} />
               </div>
             );
           }) : <div style={{ fontSize: 12, color: 'var(--faint)', padding: '6px 8px' }}>No missions yet.</div>}
@@ -347,7 +361,7 @@ function PlainThread({ messages, onSend, localReadOnly = false }) {
   );
 }
 
-export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile }) {
+export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile, onAssignEmail }) {
   const { data: list } = useChatList();
   // Stable refs so the memoized composer below doesn't re-mount on every list poll.
   const agents = useMemo(() => list?.agents || [], [list]);
@@ -556,15 +570,38 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     else if (fromBottom < 400) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selKey]);
 
-  const pickAgent = (a) => setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel });
-  const pickProject = (p) => setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' });
+  const pickAgent = (a) => { setCenterMode('thread'); setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel }); };
+  const pickProject = (p) => { setCenterMode('thread'); setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' }); };
   // DEF-14 guard: m.slug may be JS undefined when a mission object is partially constructed.
   // String(undefined) = "undefined" which is truthy and passes guards — explicitly reject it.
-  const pickMission = (p, m) => { const safeSlug = (m.slug != null && String(m.slug).trim() !== 'undefined' && String(m.slug).trim() !== '') ? m.slug : null; const nm = missionLabelClean(m.name || safeSlug); setPicked({ id: safeSlug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: safeSlug && String(safeSlug).includes(':') ? safeSlug : (safeSlug ? `${p.slug}:${safeSlug}` : null), projectSlug: p.slug, status: missionDot(m.status), statusText: p.name }); };
+  const pickMission = (p, m) => { const safeSlug = (m.slug != null && String(m.slug).trim() !== 'undefined' && String(m.slug).trim() !== '') ? m.slug : null; const nm = missionLabelClean(m.name || safeSlug); setCenterMode('thread'); setPicked({ id: safeSlug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: safeSlug && String(safeSlug).includes(':') ? safeSlug : (safeSlug ? `${p.slug}:${safeSlug}` : null), projectSlug: p.slug, status: missionDot(m.status), statusText: p.name }); };
 
   // Real missions per project (same endpoint the mobile project screen uses). Each project
   // row fans open to these; clicking one opens that mission's own thread.
   const missionsByProject = useProjectMissions(worldId);
+  // ── The rail is the switchboard (drop 3) ──────────────────────────────────
+  // Email pinned at the rail's foot swaps the center pane to the inbox; "+ New"
+  // opens the one shared creation flow; per-room amber badges ride the same
+  // needs-you feed that used to power the catch-up strip (now cut, Patrik 7-20).
+  const [centerMode, setCenterMode] = useState('thread'); // 'thread' | 'email'
+  const [composerOpen, setComposerOpen] = useState(false);
+  const { inboxItems = [] } = useDataContext() || {};
+  const needsByProject = useMemo(() => {
+    const m = {};
+    for (const it of inboxItems) if (it.project && !it.missionSlug) m[it.project] = (m[it.project] || 0) + 1;
+    return m;
+  }, [inboxItems]);
+  const needsByMission = useMemo(() => {
+    const m = {};
+    for (const it of inboxItems) if (it.missionSlug) m[it.missionSlug] = (m[it.missionSlug] || 0) + 1;
+    return m;
+  }, [inboxItems]);
+  // Cold start lands on the last-open room (drop 3): remember every pick; the
+  // shell seeds its initial room from this key when the app opens plain.
+  useEffect(() => {
+    if (!selected?.id) return;
+    try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room: selected, worldId })); } catch { /* private mode */ }
+  }, [selected, worldId]);
   const [expanded, setExpanded] = useState(() => new Set());
   const toggleProject = (slug) => setExpanded((prev) => { const n = new Set(prev); if (n.has(slug)) n.delete(slug); else n.add(slug); return n; });
   // Fan open ONLY the project we arrive on (from Home) — keyed on initialRoom, not on every
@@ -582,28 +619,55 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
       <div data-cv6 data-theme="dark" className="cv6-screen" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* topbar now mounted once in the shell (SharedNav DesktopNav) */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-          {/* rooms rail */}
-          <div style={{ width: 220, flex: 'none', borderRight: '1px solid var(--divider)', padding: '18px 12px', overflowY: 'auto' }}>
-            <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Agents</div>
-            <div style={{ marginBottom: 16 }}>
-              {agents.length ? agents.map((a) => <RoomRow key={a.id} row={a} open={selected?.id === a.id && !selected?.isProject} onClick={() => pickAgent(a)} />)
-                : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No agents yet.</div>}
+          {/* rooms rail — the switchboard (drop 3): + New up top, rooms scroll,
+              Email pinned OUTSIDE the scroll so it is always one click away. */}
+          <div style={{ width: 220, flex: 'none', borderRight: '1px solid var(--divider)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div style={{ flex: 'none', padding: '14px 12px 10px' }}>
+              <button onClick={() => setComposerOpen(true)}
+                style={{ width: '100%', height: 36, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                New
+              </button>
             </div>
-            <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Projects</div>
-            {projects.length ? projects.map((p) => (
-              <ProjectGroup key={p.id} row={p}
-                selectedProject={selected?.id === p.id && selected?.isProject}
-                selectedMissionSlug={selected?.isMission ? selected.missionSlug : null}
-                missions={missionsByProject[p.slug] || []}
-                expanded={expanded.has(p.slug)}
-                onToggle={() => toggleProject(p.slug)}
-                onPickProject={() => { pickProject(p); toggleProject(p.slug); }}
-                onPickMission={(m) => pickMission(p, m)} />
-            ))
-              : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No projects yet.</div>}
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 12px' }}>
+              <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Agents</div>
+              <div style={{ marginBottom: 16 }}>
+                {agents.length ? agents.map((a) => <RoomRow key={a.id} row={a} needsCount={a.needsCount || 0} open={centerMode === 'thread' && selected?.id === a.id && !selected?.isProject} onClick={() => pickAgent(a)} />)
+                  : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No agents yet.</div>}
+              </div>
+              <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Projects</div>
+              {projects.length ? projects.map((p) => (
+                <ProjectGroup key={p.id} row={p}
+                  selectedProject={centerMode === 'thread' && selected?.id === p.id && selected?.isProject}
+                  selectedMissionSlug={centerMode === 'thread' && selected?.isMission ? selected.missionSlug : null}
+                  missions={missionsByProject[p.slug] || []}
+                  needsCount={needsByProject[p.slug] || needsByProject[p.id] || 0}
+                  needsByMission={needsByMission}
+                  expanded={expanded.has(p.slug)}
+                  onToggle={() => toggleProject(p.slug)}
+                  onPickProject={() => { pickProject(p); toggleProject(p.slug); }}
+                  onPickMission={(m) => pickMission(p, m)} />
+              ))
+                : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No projects yet.</div>}
+            </div>
+            <div style={{ flex: 'none', borderTop: '1px solid var(--divider)', padding: '8px 12px' }}>
+              <div className="room" role="button" onClick={() => setCenterMode('email')}
+                style={{ cursor: centerMode === 'email' ? 'default' : 'pointer', background: centerMode === 'email' ? 'var(--accent-weak)' : undefined }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={centerMode === 'email' ? 'var(--accent)' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+                <span className="rn" style={{ fontWeight: 600 }}>Email</span>
+              </div>
+            </div>
           </div>
 
-          {/* conversation */}
+          {/* conversation — or, when the pinned Email row is picked, the inbox
+              swaps into the center (drop 3: same screen, the middle changes). */}
+          {centerMode === 'email' ? (
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              <EmailShell isDesktop
+                inbox={<SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} />}
+                onBack={() => setCenterMode('thread')} onOpenNav={onOpenNav} />
+            </div>
+          ) : (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {selected ? (
               <>
@@ -651,8 +715,10 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
               <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>Pick a room on the left to open its thread.</div>
             )}
           </div>
+          )}
 
-          {/* control drawer */}
+          {/* control drawer — hidden while Email fills the center */}
+          {centerMode !== 'email' && (
           <div style={{ width: 316, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 20, overflowY: 'auto' }}>
             {selected ? (
               <>
@@ -753,6 +819,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
               </>
             ) : null}
           </div>
+          )}
         </div>
       </div>
       {/* Rich CV4 composer — mounted once, kept alive. Portals into composerHost
@@ -767,6 +834,11 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         quickSend={send}
         onOpenFiles={() => setDrawerView('files')}
       />
+      {/* "+ New" — the one shared creation flow (NewComposer), rehomed to the rail. */}
+      {composerOpen ? (
+        <NewComposer worldId={worldId} projects={projects} agents={agents} initialMode="mission"
+          onClose={() => setComposerOpen(false)} onCreated={() => setComposerOpen(false)} />
+      ) : null}
     </ReviewCtx.Provider>
     </SendCtx.Provider>
   );

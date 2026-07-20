@@ -367,7 +367,9 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'var(--ground)', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderTop: '1px solid var(--hair)', boxShadow: '0 -22px 54px -22px rgba(0,0,0,.65)', maxHeight: '78%', display: 'flex', flexDirection: 'column', padding: '8px 16px max(22px, env(safe-area-inset-bottom, 0px))' }}>
+      {/* Files and goals come from the RIGHT (Patrik ruling 2026-07-20); the rooms
+          menu comes from the left. A side panel, not a bottom sheet. */}
+      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 340, maxWidth: '88%', background: 'var(--ground)', borderTopLeftRadius: 22, borderBottomLeftRadius: 22, borderLeft: '1px solid var(--hair)', boxShadow: '-22px 0 54px -22px rgba(0,0,0,.65)', display: 'flex', flexDirection: 'column', padding: '14px 16px max(22px, env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ width: 38, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '6px auto 12px', flex: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flex: 'none' }}>
           <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Files in this room</span>
