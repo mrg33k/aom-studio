@@ -82,6 +82,21 @@ document.head.appendChild(o)}initApollo();</script>
         min-height: 100%;
         background: var(--cv6-boot-ground);
       }
+      /* Keep the ground on the page canvas AFTER boot too. FullscreenLoading
+         removes data-cv6-boot once the app mounts, which dropped html/body to a
+         flat canvas — so the strips behind the app (the notch safe-area above the
+         header, the home-indicator area below the content, and any iOS overscroll)
+         flashed a flat dark band instead of the wallpaper. On glass that read as a
+         "border" on the top and bottom that didn't blend with the body (Patrik
+         2026-07-19). Painting the same per-theme ground here means the canvas
+         behind the app always matches the shell, so those strips blend seamlessly.
+         --cv6-boot-ground is defined per data-app-theme (always set), so it tracks
+         dark/light/glass. */
+      html,
+      html body {
+        min-height: 100%;
+        background: var(--cv6-boot-ground);
+      }
       #cv6-boot-loader {
         display: none;
       }
