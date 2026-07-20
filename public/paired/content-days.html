@@ -874,5 +874,6 @@
   };
 })();
 </script>
+<script>(function(){var b=document.createElement('button');b.textContent='📋 COPY FEEDBACK';b.style.cssText='position:fixed;bottom:18px;right:18px;z-index:99999;background:#C4A46A;color:#0B0B0B;font:800 13px sans-serif;letter-spacing:.08em;padding:14px 20px;border:none;cursor:pointer';b.onclick=function(){try{var j=JSON.stringify(typeof feedback==='function'?feedback():{});navigator.clipboard.writeText(j).then(function(){b.textContent='✓ COPIED — PASTE TO PATRIK/CLAUDE';setTimeout(function(){b.textContent='📋 COPY FEEDBACK'},2600)})}catch(e){b.textContent='✗ '+e.message}};document.body.appendChild(b)})();</script>
 </body>
 </html>
