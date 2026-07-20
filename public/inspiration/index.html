@@ -1128,6 +1128,9 @@ function renderGrid(){
 function toggleSave(id){ state.saved.has(id) ? state.saved.delete(id) : state.saved.add(id); }
 
 /* ================= MODAL ================= */
+/* Resolve media/ against the page's directory so it works at /inspiration
+   (no trailing slash, as Vercel serves it), /inspiration/, and local root. */
+const MEDIA_BASE = location.pathname.replace(/\/index\.html$/, "").replace(/\/$/, "") + "/media/";
 function mediaHTML(ad){
   /* Plays ./media/<id>.mp4 when present (fetched by scripts/fetch-ad-videos.mjs);
      falls back to the captured still if the file is missing. */
@@ -1138,7 +1141,7 @@ function mediaHTML(ad){
       style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#0B0B0B"
       onerror="this.outerHTML=decodeURIComponent(this.dataset.fb)"
       data-fb="${encodeURIComponent(`<img src='${still}' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover'>`)}">
-      <source src="media/${ad.id}.mp4" type="video/mp4" onerror="const v=this.parentNode; v.outerHTML=decodeURIComponent(v.dataset.fb)">
+      <source src="${MEDIA_BASE}${ad.id}.mp4" type="video/mp4" onerror="const v=this.parentNode; v.outerHTML=decodeURIComponent(v.dataset.fb)">
     </video>
     <span class="platform">${esc(ad.platform)}</span>
     <span class="runtime">Running ${ad.runLabel}</span>
