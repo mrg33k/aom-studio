@@ -17,7 +17,7 @@ import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, find
 import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
-import ChatDesktop, { FilesShelf, fileKind, libKindLabel, shelfItems } from './ChatDesktop.jsx';
+import ChatDesktop, { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
@@ -30,7 +30,6 @@ import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { roomProjectSlug } from './data/roomKeys.js';
-import { mergeRoomShelf } from './data/shelfMerge.js';
 import NewComposer from './NewComposer.jsx';
 import { supabase } from '../lib/supabase.js';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
@@ -379,56 +378,14 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
   );
 }
 
-// Files panel for the Home col3 quick chat (Patrik 2026-06-30). The "Files" button in the
-// conversation header used to jump to the Organize tool; now it opens this panel in place —
-// the SAME shelf the full Chat tool's Files drawer shows (the room's real library files +
-// links shared in the conversation). Rendered as an overlay over the Conversation column so
-// you never leave Home. host = the .home-files anchor inside the Conversation column (a
-// data-cv6-keep node that survives re-binds); the panel is position:absolute and covers the
-// .convo column, which is position:relative in CSS. null host = closed.
-function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
-  const libProjectSlug = room?.isMission ? room.projectSlug : (room?.isProject ? room.id : null);
-  const [roomFiles, setRoomFiles] = useState([]);
-  // WD40 FILE-CON R3: mirror ChatDesktop — honest truncation banner + on-demand full load
-  // when the server capped huge folders (truncated_dirs in the project-files response).
-  const [libHidden, setLibHidden] = useState(0);
-  const [libFull, setLibFull] = useState(false);
-  const [libLoading, setLibLoading] = useState(false);
-  useEffect(() => { setLibFull(false); }, [libProjectSlug]);
-  useEffect(() => {
-    if (!libProjectSlug) { setRoomFiles([]); setLibHidden(0); return undefined; }
-    let alive = true;
-    setLibLoading(true);
-    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(libProjectSlug)}${libFull ? '&dir_limit=10000' : ''}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d) return;
-        const flat = [];
-        for (const f of (d.files || [])) flat.push(f);
-        for (const m of (d.missions || [])) for (const f of (m.files || [])) flat.push(f);
-        setRoomFiles(flat);
-        setLibHidden((d.truncated_dirs || []).reduce((n, s) => n + Math.max(0, (s.total || 0) - (s.shown || 0)), 0));
-      })
-      .catch(() => { if (alive) { setRoomFiles([]); setLibHidden(0); } })
-      .finally(() => { if (alive) setLibLoading(false); });
-    return () => { alive = false; };
-  }, [libProjectSlug, libFull]);
-  // Shelf = the room's library files (project/mission rooms) + links from the conversation;
-  // agent rooms fall back to whatever files/links the conversation itself carries. Mirrors the
-  // full Chat tool's shelf build (ChatDesktop) so the two read identically.
-  const shelf = useMemo(() => {
-    const convo = shelfItems(messages || []);
-    if (!libProjectSlug) return convo;
-    const lib = roomFiles.map((f) => ({
-      type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
-      ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
-    }));
-    // qa-files matrix 2026-07-18: keep conversation FILE attachments (uploads +
-    // agent shares live outside the library walk's tree) — mergeRoomShelf dedupes.
-    const merged = mergeRoomShelf(lib, convo);
-    merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
-    return merged;
-  }, [messages, roomFiles, libProjectSlug]);
+// Files panel for the Home col3 quick chat (Patrik 2026-06-30, re-sourced drop 1).
+// The "Files" button opens this panel in place over the Conversation column — the
+// SAME crossings panel the full Chat tool's Files drawer shows (this chat's files,
+// From agent / You sent, nothing else). host = the .home-files anchor inside the
+// Conversation column (a data-cv6-keep node that survives re-binds); the panel is
+// position:absolute over the .convo column. null host = closed.
+function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
+  const { fromAgent, youSent, status } = useRoomCrossings(host ? worldId : null, room);
   if (!host) return null;
   return createPortal(
     <div style={{ position: 'absolute', inset: 0, zIndex: 12, background: 'var(--ground)', display: 'flex', flexDirection: 'column' }}>
@@ -445,8 +402,7 @@ function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 18px 20px' }}>
-        <FilesShelf items={shelf} onReview={onReview}
-          truncation={libHidden > 0 ? { shown: roomFiles.length, total: roomFiles.length + libHidden, loading: libLoading, onLoadAll: () => setLibFull(true) } : null} />
+        <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} onReview={onReview} />
       </div>
     </div>,
     host,
@@ -1504,8 +1460,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       />
       <HomeFilesPanel
         host={filesOpen && knavOpenedRoom ? convoColHost : null}
+        worldId={worldId}
         room={knavOpenedRoom}
-        messages={quickThread && quickThread.messages}
         onClose={() => setFilesOpen(false)}
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(knavOpenedRoom), needsReview: true } : null); }}
       />

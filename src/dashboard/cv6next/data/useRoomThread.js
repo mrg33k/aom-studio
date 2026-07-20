@@ -111,6 +111,55 @@ function injectWorkSteps(list, stepsByParent, awaiting, awaitingId) {
   });
 }
 
+// ── rowAttachments — THE definition of "this message carries a file" ──────────
+// One parser for every attachment shape in the wild, shared by the thread and the
+// room files panel (corner:one-corner drop 1), so the two can never disagree:
+//   1. metadata.attachments[]            — structured multi-file
+//   2. metadata.attachment               — watcher auto-share {url, name, mime, size}
+//   3. attachment_url column             — composer/legacy single file
+//   4. "Attached file: NAME" text        — canonical bridge/listener announcement
+//      ("Attached N files: ..." for multi) — the most common Corner-room shape
+// Returns { attachments: [{url, name, mime, size}], pure, fileName } — `pure`
+// means the message is only the announcement (render the cards, hide the note).
+export function rowAttachments(m) {
+  const rawText = m.text || '';
+  const lines = rawText.split('\n');
+  const single = /^\s*attached file:\s*(.+?)\s*$/i.exec(lines[0] || '');
+  const multi = /^\s*attached\s+\d+\s+files?:\s*(.+?)\s*$/i.exec(lines[0] || '');
+  const textUrls = lines.slice(1).map((s) => s.trim()).filter(Boolean);
+  const metaAttach = (m.metadata && m.metadata.attachment && (m.metadata.attachment.url || m.metadata.attachment.name)) ? m.metadata.attachment : null;
+  const fileName = m.attachment_name || (metaAttach && metaAttach.name) || (single ? displayNameFromFileRef(single[1]) : '');
+  if (Array.isArray(m.metadata?.attachments) && m.metadata.attachments.length) {
+    return { attachments: m.metadata.attachments, pure: false, fileName };
+  }
+  if (metaAttach) {
+    return {
+      attachments: [{ url: metaAttach.url || '', name: metaAttach.name || fileName || 'File', mime: metaAttach.mime || '', size: metaAttach.size || 0 }],
+      pure: true, fileName,
+    };
+  }
+  if (m.attachment_url) {
+    return {
+      attachments: [{ url: m.attachment_url, name: m.attachment_name || 'File', mime: m.file_mime_type || 'application/octet-stream', size: m.file_size || 0 }],
+      pure: false, fileName,
+    };
+  }
+  if (multi) {
+    const names = multi[1].split(',').map((s) => s.trim()).filter(Boolean);
+    return {
+      attachments: names.map((n, i) => ({ name: displayNameFromFileRef(n), url: textUrls[i] || cornerPathFromText(n) || textUrls[0] || '', mime: '', size: 0 })),
+      pure: true, fileName,
+    };
+  }
+  if (single) {
+    return {
+      attachments: [{ name: displayNameFromFileRef(single[1]), url: textUrls[0] || cornerPathFromText(single[1]) || '', mime: '', size: 0 }],
+      pure: true, fileName,
+    };
+  }
+  return { attachments: [], pure: false, fileName };
+}
+
 // Session render cache (corner:cv6-polish R3): switching BACK to a room paints its
 // last rendered thread instantly instead of a loader flash, while the normal fetch
 // still runs and reconciles fresh rows. Render-only and page-scoped; the server
@@ -348,17 +397,11 @@ export function useRoomThread(worldId, room) {
           //   multi  → "Attached N files: NAME1, NAME2\nURL1\nURL2"
           // (canonical per bridge.py / supabase-listener.py). Parse names + URLs from
           // the text so they render as cards instead of plain "Attached file:" text.
-          const rawText = m.text || '';
-          const lines = rawText.split('\n');
-          const single = /^\s*attached file:\s*(.+?)\s*$/i.exec(lines[0] || '');
-          const multi = /^\s*attached\s+\d+\s+files?:\s*(.+?)\s*$/i.exec(lines[0] || '');
-          const textUrls = lines.slice(1).map((s) => s.trim()).filter(Boolean);
-          // An agent auto-shared file carries its real URL on metadata.attachment (singular
-          // object {url, mime, name, size}) — the announcement text is just "Attached file: NAME"
-          // with NO URL line. This is the most common Corner-room file shape, so check it first.
-          const metaAttach = (m.metadata && m.metadata.attachment && (m.metadata.attachment.url || m.metadata.attachment.name)) ? m.metadata.attachment : null;
-          const isFile = !!m.attachment_url || !!metaAttach || !!single || !!multi || !!m.metadata?.attachments?.length;
-          const fileName = m.attachment_name || (metaAttach && metaAttach.name) || (single ? displayNameFromFileRef(single[1]) : '');
+          // Attachment parsing lives in rowAttachments — one definition of "this
+          // message carries a file", shared with the room files panel so the panel
+          // and the thread can never disagree (corner:one-corner drop 1).
+          const { attachments, pure, fileName } = rowAttachments(m);
+          const isFile = attachments.length > 0;
           // Live Goal Thread: a structured reply carries its blocks on metadata.blocks.
           // We attach them to THIS message so the thread renders inline as that agent
           // turn (history stays above it), instead of taking over the whole screen.
@@ -367,45 +410,7 @@ export function useRoomThread(worldId, room) {
           // chips.py). Render them as tappable chips at the tail of the agent's turn so the
           // suggestion reads as part of what the agent just said — not a separate panel.
           const msgChips = Array.isArray(m.metadata?.chips) && m.metadata.chips.length ? m.metadata.chips : null;
-          // Build the grouped attachments array MessageAttachments renders from. Priority:
-          // structured metadata.attachments[] → single attachment_url column → parsed text.
-          let attachments = [];
-          let displayText = rawText;
-          if (Array.isArray(m.metadata?.attachments) && m.metadata.attachments.length) {
-            attachments = m.metadata.attachments;
-          } else if (metaAttach) {
-            attachments = [{
-              url: metaAttach.url || '',
-              name: metaAttach.name || fileName || 'File',
-              mime: metaAttach.mime || '',
-              size: metaAttach.size || 0,
-            }];
-            displayText = ''; // pure attachment auto-share → show the card, not the "Attached file:" note
-          } else if (m.attachment_url) {
-            attachments = [{
-              url: m.attachment_url,
-              name: m.attachment_name || 'File',
-              mime: m.file_mime_type || 'application/octet-stream',
-              size: m.file_size || 0,
-            }];
-          } else if (multi) {
-            const names = multi[1].split(',').map((s) => s.trim()).filter(Boolean);
-            attachments = names.map((n, i) => ({
-              name: displayNameFromFileRef(n),
-              url: textUrls[i] || cornerPathFromText(n) || textUrls[0] || '',
-              mime: '',
-              size: 0,
-            }));
-            displayText = ''; // pure attachment announcement → show cards, not the note
-          } else if (single) {
-            attachments = [{
-              name: displayNameFromFileRef(single[1]),
-              url: textUrls[0] || cornerPathFromText(single[1]) || '',
-              mime: '',
-              size: 0,
-            }];
-            displayText = '';
-          }
+          let displayText = pure ? '' : (m.text || '');
           // Completed web work lands as a tappable link card, never a bare URL buried in
           // the text (Patrik 2026-07-13): the structured completion payload
           // (metadata.result_payload) first, then any URL the agent shared in its text —

@@ -14,7 +14,7 @@ import ResultLinkCards from './ResultLinkCard.jsx';
 import { useDictation } from './data/useDictation.js';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
-import { FilesShelf, useRoomLibrary } from './ChatDesktop.jsx';
+import { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { supabase } from '../lib/supabase.js';
 // The chat file modal renders REAL previews through the same machinery the
@@ -358,13 +358,12 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
 }
 
 // ── Files in this room, from chat (Patrik #1, chat-surface WD40 R1) ──────────
-// A CV6 bottom sheet over the conversation: the SAME shelf the desktop Files
-// drawer shows (real project/mission library + the conversation's files and
-// links, with the honest truncation banner), reachable from the chat header and
-// from the composer's command menu. Mounted only while open, so the library
-// fetch happens on first open, not on every room visit.
-function RoomFilesSheet({ projectSlug, messages, uploadScope, onClose, onReview }) {
-  const { shelf, truncation } = useRoomLibrary(projectSlug, messages, uploadScope);
+// A CV6 bottom sheet over the conversation: the SAME crossings panel the desktop
+// Files drawer shows (this chat's files, From agent / You sent — drop 1),
+// reachable from the chat header and from the composer's command menu. Mounted
+// only while open, so the fetch happens on first open, not on every room visit.
+function RoomFilesSheet({ worldId, room, onClose, onReview }) {
+  const { fromAgent, youSent, status } = useRoomCrossings(worldId, room);
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
@@ -380,7 +379,7 @@ function RoomFilesSheet({ projectSlug, messages, uploadScope, onClose, onReview 
           </div>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <FilesShelf items={shelf} onReview={onReview} truncation={truncation} />
+          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} onReview={onReview} />
         </div>
       </div>
     </div>
@@ -397,12 +396,6 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
   const [filesSheetOpen, setFilesSheetOpen] = useState(false);
   const [mComposerHost, setMComposerHost] = useState(null);
   const richComposer = !!(fullRoom && worldId);
-  const libProjectSlug = fullRoom?.isMission ? fullRoom.projectSlug : (fullRoom?.isProject ? fullRoom.id : null);
-  // Scope for the per-chat Uploads/ folder (project + bare mission, project, or agent).
-  const uploadScope = fullRoom?.isMission
-    ? { world: worldId, project: fullRoom.projectSlug, mission: String(fullRoom.missionSlug || fullRoom.id || '').split(':').pop() }
-    : fullRoom?.isProject ? { world: worldId, project: fullRoom.id }
-    : (fullRoom?.agent || fullRoom?.id) ? { world: worldId, agent: fullRoom.agent || fullRoom.id } : null;
   const roomKeyForSheet = fullRoom?.id || room?.name;
   // Room switch: close the sheet AND drop any plain-bar draft, so text typed in
   // one room never reappears when the fallback composer mounts in another
@@ -638,7 +631,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
       )}
 
       {filesSheetOpen && (
-        <RoomFilesSheet projectSlug={libProjectSlug} messages={messages} uploadScope={uploadScope}
+        <RoomFilesSheet worldId={worldId} room={fullRoom}
           onClose={() => setFilesSheetOpen(false)}
           onReview={(it) => { setFilesSheetOpen(false); onOpenReview?.(it ? [it] : null); }} />
       )}

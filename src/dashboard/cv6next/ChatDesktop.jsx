@@ -10,12 +10,9 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
 import { supabase } from '../lib/supabase.js';
-import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
+import { useRoomThread, useGoalThread, rowAttachments } from './data/useRoomThread.js';
+import { titleForAgent } from './data/agentTitles.js';
 
-// The rag-server tunnel: same host uploads stream to, and the source of truth for
-// a chat's Uploads/ folder (list-chat-files). Reading uploads from disk here is
-// why they show even after they scroll out of the loaded message window.
-const RAG_TUNNEL = 'https://rag.aheadofmarket.com';
 import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
@@ -76,34 +73,6 @@ function fileHref(url) {
   if (/^https?:\/\//i.test(u)) return u;
   return `/api/dashboard/project-file?path=${encodeURIComponent(u.replace(/^\/+/, ''))}&raw=1`;
 }
-// Pull every real link out of a message: markdown [text](url) first, then bare urls. Trailing
-// punctuation is stripped so the URL is valid and the click never lands on a 404 from a stray
-// ")" or ".". Agents send a lot of links; these are the priority to get right.
-function extractLinks(text) {
-  const s = String(text || '');
-  const out = [];
-  const seen = new Set();
-  const push = (raw) => {
-    let u = String(raw || '').replace(/[.,;:!?)\]}'"]+$/, '');
-    if (!/^https?:\/\//i.test(u)) return;
-    if (seen.has(u)) return;
-    seen.add(u); out.push(u);
-  };
-  let m;
-  const md = /\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/g;
-  while ((m = md.exec(s))) push(m[1]);
-  const bare = /(https?:\/\/[^\s<>()\[\]]+)/g;
-  while ((m = bare.exec(s))) push(m[1]);
-  return out;
-}
-// A short human label for a link (host + first path segment), so the row is scannable.
-function linkLabel(url) {
-  try {
-    const u = new URL(url);
-    const seg = u.pathname.split('/').filter(Boolean)[0];
-    return u.hostname.replace(/^www\./, '') + (seg ? `/${seg}` : '');
-  } catch { return String(url).replace(/^https?:\/\//, '').slice(0, 40); }
-}
 // Short "how long ago" + human file size, for the per-row meta line (who · when · size).
 function relAgo(ts) {
   if (!ts) return '';
@@ -120,51 +89,9 @@ function humanSize(bytes) {
   if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
   return `${(b / 1048576).toFixed(1)} MB`;
 }
-// Build the de-duped, newest-first shelf of files + links from the loaded thread. Each item
-// carries who shared it, how long ago, and (for files) its size — the design's row meta.
-export function shelfItems(messages) {
-  const items = [];
-  for (const msg of messages || []) {
-    const who = msg.isUser ? 'You' : (msg.agentName || '');
-    // Read the same `attachments` array the in-thread file cards use (one message can carry
-    // several files); fall back to the legacy single attachment if that's all there is.
-    const atts = (Array.isArray(msg.attachments) && msg.attachments.length)
-      ? msg.attachments
-      : (msg.attachmentUrl && msg.fileName ? [{ url: msg.attachmentUrl, name: msg.fileName, mime: msg.fileMime, size: msg.fileSize }] : []);
-    for (const att of atts) {
-      if (!att?.url || !att?.name) continue;
-      // `uploaded` marks a file the USER dropped into the chat (vs one an agent
-      // produced or a disk-library file) so the "Uploads" filter can select them.
-      items.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime, ts: msg.ts || null, who, size: att.size || 0, uploaded: !!msg.isUser });
-    }
-    for (const url of extractLinks(msg.text)) {
-      items.push({ type: 'link', kind: 'link', name: linkLabel(url), url, ts: msg.ts || null, who });
-    }
-  }
-  items.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
-  return items;
-}
-// "Elon · 1h · 8 KB" style meta line — only the parts we actually have. Library files have no
-// size/author, so they fall back to their kind (canon / deliverable / research) + when.
+// "Elon · 1h · 8 KB" style meta line — only the parts we actually have.
 function itemMeta(it) {
-  const tail = it.type === 'link' ? 'link' : (humanSize(it.size) || it.libKind || '');
-  return [it.who, relAgo(it.ts), tail].filter(Boolean).join(' · ');
-}
-// Map a project-files kind/name to a pill bucket + a clean kind label.
-export function libKindLabel(k) {
-  return ({ canon: 'doc', tape: 'notes', 'research-drop': 'research', deliverable: 'deliverable' })[k] || (k || 'file');
-}
-const FILE_PILLS = [
-  { k: 'all', label: 'All' }, { k: 'recent', label: 'Recent' }, { k: 'upload', label: 'Uploads' },
-  { k: 'photo', label: 'Photos' }, { k: 'video', label: 'Video' }, { k: 'pdf', label: 'PDFs' },
-  { k: 'link', label: 'Links' },
-];
-function pillFilter(items, pill) {
-  if (pill === 'all') return items;
-  if (pill === 'recent') return items.slice(0, 12);
-  if (pill === 'upload') return items.filter((i) => i.uploaded);
-  if (pill === 'link') return items.filter((i) => i.type === 'link');
-  return items.filter((i) => i.kind === pill);
+  return [it.who, relAgo(it.ts), humanSize(it.size)].filter(Boolean).join(' · ');
 }
 function fileGlyph(kind) {
   const c = kind === 'photo' ? 'var(--accent)' : kind === 'video' ? '#ec4899' : kind === 'pdf' ? '#f59e0b' : 'var(--muted)';
@@ -173,175 +100,104 @@ function fileGlyph(kind) {
     : 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6';
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 }
-// truncation (optional, WD40 FILE-CON R3): { shown, total, onLoadAll, loading } — when the
-// server capped huge folders, say so honestly ("Showing X of Y") and offer to load the rest.
-export function FilesShelf({ items, onReview, truncation }) {
-  const [pill, setPill] = useState('all');
-  const counts = useMemo(() => ({
-    all: items.length, recent: Math.min(items.length, 12),
-    upload: items.filter((i) => i.uploaded).length,
-    photo: items.filter((i) => i.kind === 'photo').length,
-    video: items.filter((i) => i.kind === 'video').length,
-    pdf: items.filter((i) => i.kind === 'pdf').length,
-    link: items.filter((i) => i.type === 'link').length,
-  }), [items]);
-  const filtered = pillFilter(items, pill);
-  const CAP = 60; // a busy project has hundreds of files; render the newest CAP, note the rest.
-  const shown = filtered.slice(0, CAP);
-  const overflow = filtered.length - shown.length;
-  const trunc = truncation && truncation.total > truncation.shown ? truncation : null;
+// The room's files panel: everything that crossed this chat, nothing else.
+// Two plain chron sections — From <agent> / You sent (Patrik ruling 2026-07-20).
+// Each row: open the file, or review it. No pills, no filters, no cabinet merge.
+export function FilesShelf({ fromAgent = [], youSent = [], onReview, status }) {
+  const CAP = 80; // newest per section; a busy room can carry hundreds
+  const row = (it, i) => (
+    <div key={`${it.url || it.name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--divider)' }}>
+      <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
+        <div className="mono" style={{ fontSize: 10, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{itemMeta(it)}</div>
+      </div>
+      <a href={fileHref(it.url)} target="_blank" rel="noopener noreferrer" title="Open the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
+      <button onClick={() => onReview?.(it)} title="Review this file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
+    </div>
+  );
+  const section = (label, list) => {
+    const shown = list.slice(0, CAP);
+    return (
+      <div key={label} style={{ marginBottom: 14 }}>
+        <div className="eyebrow" style={{ margin: '2px 4px 6px' }}>{label}</div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>{shown.map(row)}</div>
+        {list.length > shown.length ? <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', padding: '10px 4px' }}>+{list.length - shown.length} more</div> : null}
+      </div>
+    );
+  };
+  if (!fromAgent.length && !youSent.length) {
+    return <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>{status === 'loading' ? 'Loading files…' : 'No files have crossed this chat yet.'}</div>;
+  }
+  // Section label: the single sender's title when one agent speaks here, else the plural.
+  const senders = [...new Set(fromAgent.map((i) => i.who).filter(Boolean))];
+  const fromLabel = senders.length === 1 ? `From ${senders[0]}` : 'From agents';
   return (
     <>
-      {trunc ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 10px', borderRadius: 9, background: 'var(--surface-2)', border: '1px solid var(--hair)' }}>
-          <span className="mono" style={{ flex: 1, fontSize: 10.5, color: 'var(--muted)' }}>
-            Showing {trunc.shown.toLocaleString()} of {trunc.total.toLocaleString()} project files — some folders are very large.
-          </span>
-          <button onClick={() => trunc.onLoadAll?.()} disabled={!!trunc.loading} style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '5px 10px', borderRadius: 8, cursor: trunc.loading ? 'default' : 'pointer', opacity: trunc.loading ? 0.6 : 1, flex: 'none' }}>
-            {trunc.loading ? 'Loading…' : 'Load all'}
-          </button>
-        </div>
-      ) : null}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-        {FILE_PILLS.map((p) => {
-          const on = pill === p.k; const n = counts[p.k];
-          return (
-            <button key={p.k} onClick={() => setPill(p.k)} style={{ height: 28, padding: '0 11px', borderRadius: 14, border: `1px solid ${on ? 'transparent' : 'var(--hair)'}`, background: on ? 'var(--accent)' : 'var(--surface-2)', color: on ? '#fff' : 'var(--muted)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
-              {p.label}{n ? ` ${n}` : ''}
-            </button>
-          );
-        })}
-      </div>
-      {shown.length ? (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {shown.map((it, i) => (it.type === 'link' ? (
-            <a key={i} href={it.url} target="_blank" rel="noopener noreferrer" title={it.url} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--divider)', textDecoration: 'none' }}>
-              <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
-                <div className="mono" style={{ fontSize: 10, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{itemMeta(it)}</div>
-              </div>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M7 17 17 7M7 7h10v10" /></svg>
-            </a>
-          ) : (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--divider)' }}>
-              <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
-                <div className="mono" style={{ fontSize: 10, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{itemMeta(it)}</div>
-              </div>
-              <a href={fileHref(it.url)} target="_blank" rel="noopener noreferrer" title="Open the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
-              <button onClick={() => onReview?.(it)} title="Open in the Review tab" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
-            </div>
-          )))}
-          {overflow > 0 ? <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', padding: '10px 4px' }}>+{overflow} more · filter or search to narrow</div> : null}
-        </div>
-      ) : (
-        <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>{pill === 'link' ? 'No links shared here yet.' : 'No files here yet.'}</div>
-      )}
+      <div style={{ fontSize: 11.5, color: 'var(--muted)', margin: '0 4px 10px' }}>Everything that crossed this chat. Nothing else.</div>
+      {fromAgent.length ? section(fromLabel, fromAgent) : null}
+      {youSent.length ? section('You sent', youSent) : null}
     </>
   );
 }
 
-// ── useRoomLibrary — one source of truth for "the files in this room" ─────────
-// The room's REAL file library (project-files: canon, deliverables, research,
-// per-mission) merged with the conversation's links; agent rooms (no project
-// library) fall back to the conversation's files + links. WD40 FILE-CON R3
-// truncation honesty rides along: `truncation` is null unless the server capped
-// huge folders, and onLoadAll refetches with a raised dir_limit.
-// Shared by the desktop Files drawer AND the mobile chat files sheet.
-// `uploadScope` = { world, project?, mission?, agent? } — drives the per-chat
-// Uploads/ folder fetch so uploads show regardless of how far back they were
-// dropped (the message-only approach missed anything past the ~50-message window).
-export function useRoomLibrary(projectSlug, messages, uploadScope) {
-  const [roomFiles, setRoomFiles] = useState([]);
-  const [libHidden, setLibHidden] = useState(0);
-  const [libFull, setLibFull] = useState(false);
-  const [libLoading, setLibLoading] = useState(false);
-  const [chatUploads, setChatUploads] = useState([]);
-  useEffect(() => { setLibFull(false); }, [projectSlug]);
+// ── useRoomCrossings — this chat's files, from the conversation itself ────────
+// corner:one-corner drop 1 (Patrik's file rule): a file exists for the user only
+// if it crossed the conversation. ONE query — the SAME room scoping the thread
+// uses (mission_slug | project + project_only | agent) with attachments=1 — so
+// the panel can never disagree with the chat: it is the chat, narrowed to files.
+// Replaces the old three-source merge (project-files disk walk + list-chat-files
+// + message-window scrape), demolished in this block per one-corner doctrine.
+// Shared by the desktop Files drawer, the mobile files sheet, and Home's files panel.
+export function useRoomCrossings(worldId, room) {
+  const [items, setItems] = useState([]);
+  const [status, setStatus] = useState('loading');
   useEffect(() => {
-    if (!projectSlug) { setRoomFiles([]); setLibHidden(0); return undefined; }
+    if (!worldId || !room?.id) { setItems([]); setStatus('empty'); return undefined; }
     let alive = true;
-    setLibLoading(true);
-    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(projectSlug)}${libFull ? '&dir_limit=10000' : ''}`)
+    setItems([]);
+    setStatus('loading');
+    const params = new URLSearchParams();
+    params.set('client', worldId);
+    if (room.isMission) params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
+    else if (room.isProject) { params.set('project', room.id); params.set('project_only', '1'); }
+    else params.set('agent', room.id);
+    params.set('attachments', '1');
+    params.set('limit', '400');
+    const load = () => authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!alive || !d) return;
-        const flat = [];
-        for (const f of (d.files || [])) flat.push(f);
-        for (const m of (d.missions || [])) for (const f of (m.files || [])) flat.push(f);
-        setRoomFiles(flat);
-        setLibHidden((d.truncated_dirs || []).reduce((n, x) => n + Math.max(0, (x.total || 0) - (x.shown || 0)), 0));
+        if (!alive) return;
+        const rows = Array.isArray(d?.messages) ? d.messages : [];
+        const out = [];
+        for (const m of rows) {
+          const isUser = m.role === 'user' || !!m.user_name;
+          const who = isUser ? 'You' : titleForAgent(m.agent || room.name);
+          for (const att of rowAttachments(m).attachments) {
+            if (!att?.url || !att?.name) continue;
+            out.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime || '', ts: m.timestamp || null, who, size: att.size || 0, isUser });
+          }
+        }
+        out.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
+        // Same file announced twice (re-share, retry) → keep the newest card only.
+        const seen = new Set();
+        const deduped = out.filter((it) => {
+          const key = `${it.isUser ? 'u' : 'a'}|${it.url || it.name}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setItems(deduped);
+        setStatus(deduped.length ? 'ready' : 'empty');
       })
-      .catch(() => { if (alive) { setRoomFiles([]); setLibHidden(0); } })
-      .finally(() => { if (alive) setLibLoading(false); });
-    return () => { alive = false; };
-  }, [projectSlug, libFull]);
-  // The per-chat Uploads/ folder is the authoritative, COMPLETE record of what a
-  // user uploaded here — it lives under FILES_ROOT (not the repo the disk walk
-  // scans), so we read it straight from the rag-server. Same tunnel + Supabase
-  // JWT posture as upload. Independent of the loaded message window, which is
-  // why old uploads finally appear. Empty list when the folder doesn't exist.
-  const scopeKey = uploadScope && uploadScope.world && (uploadScope.project || uploadScope.agent)
-    ? `${uploadScope.world}|${uploadScope.project || ''}|${uploadScope.mission || ''}|${uploadScope.agent || ''}`
-    : '';
-  useEffect(() => {
-    if (!scopeKey) { setChatUploads([]); return undefined; }
-    let alive = true;
-    const sc = uploadScope;
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const jwt = data?.session?.access_token;
-        if (!jwt) { if (alive) setChatUploads([]); return; }
-        const qs = [`world=${encodeURIComponent(sc.world)}`];
-        if (sc.project) qs.push(`project=${encodeURIComponent(sc.project)}`);
-        if (sc.mission) qs.push(`mission=${encodeURIComponent(sc.mission)}`);
-        if (sc.agent && !sc.project) qs.push(`agent=${encodeURIComponent(sc.agent)}`);
-        const r = await fetch(`${RAG_TUNNEL}/list-chat-files?${qs.join('&')}`, { headers: { Authorization: `Bearer ${jwt}` } });
-        if (!r.ok) { if (alive) setChatUploads([]); return; }
-        const body = await r.json();
-        const files = (body?.files || []).map((f) => ({
-          type: 'file', kind: fileKind(f.name, f.mime_type), name: f.name, mime: f.mime_type || '',
-          url: f.url && f.url.startsWith('http') ? f.url : `${RAG_TUNNEL}${f.url || ''}`,
-          ts: f.mtime ? new Date(f.mtime).toISOString() : null,
-          who: 'You', size: f.size || 0, uploaded: true,
-        }));
-        if (alive) setChatUploads(files);
-      } catch { if (alive) setChatUploads([]); }
-    })();
-    return () => { alive = false; };
-  }, [scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const shelf = useMemo(() => {
-    const convo = shelfItems(messages);
-    const convoFiles = convo.filter((i) => i.type === 'file');
-    const links = convo.filter((i) => i.type === 'link');
-    const lib = projectSlug ? roomFiles.map((f) => ({
-      type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
-      ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
-    })) : [];
-    // Order matters for dedupe: chatUploads first (the complete disk record of
-    // uploads, tagged uploaded:true) so a message-window duplicate with the same
-    // URL is dropped in its favour, then the project library, then any recent
-    // conversation files not already covered, then links. Dedupe by URL (upload
-    // URLs are unique; lib files carry disk paths, so canon never collides).
-    const seen = new Set();
-    const merged = [...chatUploads, ...lib, ...convoFiles, ...links].filter((it) => {
-      const key = it.url || `${it.name}::${it.ts || ''}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-    merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
-    return merged;
-  }, [messages, roomFiles, projectSlug, chatUploads]);
-  const truncation = useMemo(() => (libHidden > 0
-    ? { shown: roomFiles.length, total: roomFiles.length + libHidden, loading: libLoading, onLoadAll: () => setLibFull(true) }
-    : null), [libHidden, roomFiles.length, libLoading]);
-  return { shelf, truncation };
+      .catch(() => { if (alive) setStatus((s) => (s === 'ready' ? s : 'empty')); });
+    load();
+    const t = setInterval(load, 25000);
+    return () => { alive = false; clearInterval(t); };
+  }, [worldId, room?.id, room?.isMission, room?.isProject, room?.missionSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fromAgent = useMemo(() => items.filter((i) => !i.isUser), [items]);
+  const youSent = useMemo(() => items.filter((i) => i.isUser), [items]);
+  return { fromAgent, youSent, status };
 }
 
 // A project in the rail is a folder that fans open to its missions. The row itself opens the
@@ -668,16 +524,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
       setControlBusy(false);
     }
   };
-  // The room's REAL file library + the conversation's files/links (extracted to
-  // useRoomLibrary so the mobile chat's files sheet shows the exact same shelf).
-  const libProjectSlug = selected?.isMission ? selected.projectSlug : (selected?.isProject ? selected.id : null);
-  // Scope for the per-chat Uploads/ folder — same shape the composer uploads with
-  // (project + bare mission slug, or project alone, or agent for a 1:1 room).
-  const uploadScope = selected?.isMission
-    ? { world: worldId, project: selected.projectSlug, mission: String(selected.missionSlug || selected.id || '').split(':').pop() }
-    : selected?.isProject ? { world: worldId, project: selected.id }
-    : selected?.id ? { world: worldId, agent: selected.id } : null;
-  const { shelf, truncation: libTruncation } = useRoomLibrary(libProjectSlug, messages, uploadScope);
+  // This chat's files: the conversation's crossings, nothing else (drop 1).
+  // Shared with the mobile files sheet so both read the identical panel.
+  const crossings = useRoomCrossings(worldId, selected);
   // Host node the rich CV4 composer (ThreadInputBar: command menu / voice / image
   // gen) portals into. Cv6FullComposer is mounted ONCE at the end of the tree and
   // kept alive; it only paints when a room is open + this host exists, so a thread
@@ -814,7 +663,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   ))}
                 </div>
                 {drawerView === 'files' ? (
-                  <FilesShelf items={shelf} onReview={(it) => onReviewFile?.(it, reviewProject)} truncation={libTruncation} />
+                  <FilesShelf fromAgent={crossings.fromAgent} youSent={crossings.youSent} status={crossings.status} onReview={(it) => onReviewFile?.(it, reviewProject)} />
                 ) : (
                 <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}

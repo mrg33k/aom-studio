@@ -168,8 +168,22 @@ export default async function handler(req, res) {
       return `&or=(${[...new Set(arms)].join(',')})`
     })()
     const beforeFilter = req.query.before ? `&timestamp=lt.${encodeURIComponent(req.query.before)}` : ''
+    // ?attachments=1 — the room's file CROSSINGS (corner:one-corner drop 1): only
+    // rows that carry a file, in any of the four shapes that exist in the wild
+    // (structured metadata.attachments[], watcher metadata.attachment, the
+    // attachment_url column, or the canonical "Attached file:" text announcement
+    // bridge.py / supabase-listener.py write — the most common Corner-room shape).
+    // Rides the SAME room filters as the thread, so a files panel reading this
+    // mode cannot disagree with the chat: it IS the chat, narrowed to files.
+    // Nested and(or(...)) so it composes with whichever or= arm the room mode set.
+    // NOTE: there is no attachment_url COLUMN on messages (verified live 2026-07-20;
+    // 42703 if referenced) — that shape only ever lives inside metadata.
+    const attachmentsOnly = req.query.attachments === '1' || req.query.attachments === 'true'
+    const attachmentsFilter = attachmentsOnly
+      ? '&and=(or(metadata->attachment.not.is.null,metadata->attachments.not.is.null,metadata->>attachment_url.not.is.null,text.ilike.attached%20file:*,text.ilike.attached%20*%20files:*))'
+      : ''
     const searchLimit = searchQuery ? 500 : limit  // search returns more results
-    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${projectOnlyFilter}${missionFilter}${beforeFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
+    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${projectOnlyFilter}${missionFilter}${beforeFilter}${attachmentsFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()
