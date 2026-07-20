@@ -1246,6 +1246,18 @@
   -webkit-backdrop-filter: none !important;
 }
 
+/* Desktop nav bar on glass: same treatment as .mhdr above — no fill so the one
+   shell-painted wallpaper shows through unbroken (Patrik 2026-07-19: homepage
+   header + nav background should be transparent on glass). The backdrop-filter
+   blur from the band rule is intentionally retained: the frosted diffusion reads
+   as navigation affordance and separates the bar from body without a dark band.
+   .topbar is flex:none at the TOP of the column on desktop, identical layout
+   safety to .mhdr. Equal specificity to the band (0,3,0), later in file wins. */
+[data-app-theme="glass"] [data-cv6] .topbar,
+[data-cv6][data-app-theme="glass"] .topbar {
+  background: transparent !important;
+}
+
 /* ---- Global action feedback + touch target baseline. The independent `scale`
    property preserves controls that already use transform for positioning (pins,
    drawers, centered glyphs). Template actions also carry data-cv6-pressed so a
