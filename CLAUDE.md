@@ -43,16 +43,16 @@ If you are a background agent, you MUST:
 
 If you find yourself working without a mission attached and you are a background agent: **stop and surface that to the user** before continuing. Don't silently fix it after the fact.
 
-## CV4 is the active Corner-product design surface
+## CV6 is the active Corner-product design surface
 
 For any dashboard frontend work in this repo (`src/dashboard/`):
 
-- **Default target = CV4** (`src/dashboard/cv4-explore-v2/` static prototype + `src/dashboard/CornerV4.jsx` mounted at `/cv4`). Every new brief targets CV4 unless explicitly named otherwise.
-- **CornerV3 stays sacred.** Touch `src/dashboard/CornerV3.jsx` only for live-prod emergency fixes (shipped-feature regression, blocking user-facing breakage). Any CV3 patch needs a CV4 mirror or immediate follow-up.
-- **Pre-flight reads:** `src/dashboard/cv4-explore-v2/INVENTORY.md` + `cv4-explore-v2/DESIGN.md`. Match the design system (Instrument Serif / Hanken Grotesk / JetBrains Mono, deep cool-ink ground, warm bone text, AOM amber as the only accent).
+- **Default target = CV6** (`src/dashboard/cv6next/`, the default at `/dashboard` since 2026-06-17; `CornerCV6.jsx` is the orchestrator, `SharedNav.jsx` the nav). Every new brief targets CV6 unless explicitly named otherwise. Build only from the design system at the `design-system-current` symlink (corner-ui-cv6 mission, AOM-EA repo) — never freestyle.
+- **One Page model (ratified 2026-07-20, corner:one-corner):** the product is ONE room screen — rooms rail (Email pinned, + New, amber needs-you badges), the chat center, this chat's files right (crossings only: From agent / You sent). Review happens in place over the room; a request-changes decision writes the agent a real task. No top tool bar; parked surfaces (Files/Organize, Tracker, Command, Scribe, Home) stay alive at their `?view=` deep links. Headers are transparent in every theme — one wallpaper, never a locally repainted ground.
+- **CV4 (`/cv4`, `?cv4=1`) and CornerV3 are legacy.** Touch only for live-prod emergency fixes. Do not retire endpoints CV4 still consumes (e.g. `list-chat-files`) until CV4 is demolished.
 - **Legacy dead code — never touch:** `BoardView.jsx`, `GameDashboard.jsx`, `GameHUD.jsx`.
 
-The mission home is `corner/missions/corner-ui-cv4/` (in the AOM-EA repo, sibling to this one). Full doctrine in AOM-EA's `.claude/rules/cv4-is-the-active-design-surface.md`. Scope: Corner product frontend only — does NOT apply to other AOM project sites (Ambition, Skylar, Brandon, ISA, etc.), the marketing site, or static skill-built pages.
+The mission home for the One Page build is `corner/missions/one-corner/` (AOM-EA repo, sibling to this one); the design system mission is `corner/missions/general/missions/corner-ui-cv6/`. Full doctrine in AOM-EA's `.claude/playbooks/cv6-is-the-active-design-surface.md`. Scope: Corner product frontend only — does NOT apply to other AOM project sites (Ambition, Skylar, Brandon, ISA, etc.), the marketing site, or static skill-built pages.
 
 ## Worktrees
 
