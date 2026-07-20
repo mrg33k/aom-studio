@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ahead of Market — The Library — Construction Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Ahead of Market — Design System tokens (June 2026)
+     Source: Ahead of Market Design System / tokens/*.css
+     Single-accent system: champagne gold. Orange retired.
+     ============================================================ */
+  :root{
+    /* ink */
+    --ink-900:#0B0B0B; --ink-800:#161615; --ink-700:#2A2A28; --ink-600:#44443F;
+    --ink-500:#6E6E66; --ink-400:#8E8D84; --ink-300:#B6B2AB; --ink-200:#D8D5CE; --ink-100:#ECEAE4;
+    /* paper */
+    --paper:#F6F6F4; --paper-pure:#FFFFFF; --paper-alt:#EEEDE8;
+    /* stone */
+    --stone:#B6B2AB; --stone-soft:#D5D2CA; --stone-deep:#8C887F;
+    /* accent — champagne gold, THE accent */
+    --gold:#C4A46A; --gold-deep:#A8884C; --gold-dim:#EFE6D3;
+    /* functional */
+    --danger:#E5341F; --success:#1C9A6B;
+    /* semantic */
+    --bg:var(--paper); --text:var(--ink-900);
+    --text-muted:var(--ink-500); --text-faint:var(--ink-400);
+    --border:var(--ink-900); --border-soft:var(--ink-200); --divider:var(--ink-200);
+    --surface-card:var(--paper-pure);
+    /* rules / radii / motion */
+    --rule-hairline:1px; --rule:1.5px; --rule-heavy:3px;
+    --shadow-overlay:0 18px 44px -14px rgba(10,10,10,.32);
+    --ease:cubic-bezier(.2,0,0,1); --dur-fast:120ms; --dur:200ms;
+    /* type */
+    --font-display:'Bricolage Grotesque',system-ui,'Segoe UI',Helvetica,Arial,sans-serif;
+    --font-text:'Schibsted Grotesk',system-ui,'Segoe UI',Helvetica,Arial,sans-serif;
+    --tracking-label:.18em;
+    --container:1240px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:var(--font-text);line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  ::selection{background:var(--gold);color:var(--ink-900)}
+  button{font-family:inherit}
+
+  .display{
+    font-family:var(--font-display);font-weight:700;text-transform:uppercase;
+    line-height:.96;letter-spacing:-.01em;
+  }
+  .kicker{
+    font-family:var(--font-display);font-weight:700;font-size:11px;
+    letter-spacing:var(--tracking-label);text-transform:uppercase;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:var(--paper);
+    border-bottom:var(--rule-hairline) solid var(--ink-900);
+  }
+  .header-inner{
+    max-width:var(--container);margin:0 auto;
+    padding:14px 24px;
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  }
+  .logo{display:flex;align-items:center;gap:12px;white-space:nowrap}
+  .logo svg{width:30px;height:26px;color:var(--ink-900);flex-shrink:0}
+  .logo .word{
+    font-family:var(--font-display);font-weight:800;font-size:1rem;
+    letter-spacing:.02em;text-transform:uppercase;line-height:1;
+  }
+  .logo .sep{width:1px;height:20px;background:var(--ink-200)}
+  .logo .sub{
+    font-family:var(--font-display);font-weight:700;font-size:10px;
+    letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep);
+  }
+  .tagline{color:var(--text-faint);font-size:.8rem}
+  @media(max-width:1020px){.tagline{display:none}}
+
+  .mode-toggle{margin-left:auto;display:flex;border:var(--rule-hairline) solid var(--ink-900)}
+  .mode-toggle button{
+    background:var(--paper);border:none;color:var(--ink-500);cursor:pointer;
+    font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    padding:0 18px;min-height:36px;transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease);
+  }
+  .mode-toggle button+button{border-left:var(--rule-hairline) solid var(--ink-900)}
+  .mode-toggle button.active{background:var(--ink-900);color:var(--paper)}
+
+  .header-stats{display:flex;gap:22px}
+  @media(max-width:760px){.header-stats{display:none}}
+  .hstat{text-align:right}
+  .hstat .n{font-family:var(--font-display);font-weight:800;font-size:1.05rem;line-height:1.15}
+  .hstat .n.gold{color:var(--gold-deep)}
+  .hstat .l{font-size:9px;text-transform:uppercase;letter-spacing:var(--tracking-label);color:var(--text-faint);font-weight:500}
+
+  .wrap{max-width:var(--container);margin:0 auto;padding:32px 24px 96px}
+
+  /* ---------- Today's Pick — inverse editorial band ---------- */
+  .todays-pick{
+    display:grid;grid-template-columns:minmax(260px,400px) 1fr;gap:32px;
+    background:var(--ink-900);color:var(--paper);
+    border:var(--rule) solid var(--ink-900);
+    padding:28px;
+  }
+  @media(max-width:760px){.todays-pick{grid-template-columns:1fr}}
+  .pick-kicker{
+    display:flex;align-items:center;gap:10px;margin-bottom:18px;
+    font-family:var(--font-display);font-weight:700;font-size:11px;
+    letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold);
+  }
+  .pick-kicker .live{
+    width:8px;height:8px;background:var(--gold);animation:pulse 1.6s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  .pick-title{
+    font-family:var(--font-display);font-weight:800;font-size:clamp(1.8rem,3.6vw,2.6rem);
+    text-transform:uppercase;line-height:.96;letter-spacing:-.01em;margin-bottom:12px;
+  }
+  .pick-sub{color:var(--stone);font-size:.95rem;margin-bottom:18px}
+  .pick-sub b{color:var(--gold);font-weight:600}
+  .pick-quote{
+    border-left:var(--rule-heavy) solid var(--gold);padding:4px 0 4px 16px;
+    color:var(--ink-100);font-style:italic;margin-bottom:22px;font-size:1rem;
+  }
+
+  /* ---------- Buttons (Button.jsx idiom) ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-height:44px;padding:0 22px;
+    font-family:var(--font-display);font-weight:700;font-size:.85rem;
+    letter-spacing:.04em;text-transform:uppercase;
+    background:var(--ink-900);color:var(--paper);
+    border:var(--rule) solid var(--ink-900);border-radius:0;cursor:pointer;
+    transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease);
+  }
+  .btn:hover{background:var(--ink-700)}
+  .btn:active{transform:translateY(1px)}
+  .btn.gold{background:var(--gold);color:var(--ink-900);border-color:var(--gold)}
+  .btn.gold:hover{background:var(--gold-deep)}
+  .btn.outline{background:transparent;color:var(--ink-900);border-color:var(--ink-900)}
+  .btn.outline:hover{background:var(--ink-900);color:var(--paper)}
+  .btn.outline-inverse{background:transparent;color:var(--paper);border-color:var(--paper);margin-left:10px}
+  .btn.outline-inverse:hover{background:var(--paper);color:var(--ink-900)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+  /* ---------- Marquee (the one continuous motion) ---------- */
+  .marquee{
+    margin:40px 0 36px;border-top:var(--rule-hairline) solid var(--ink-900);
+    border-bottom:var(--rule-hairline) solid var(--ink-900);
+    overflow:hidden;white-space:nowrap;padding:9px 0;background:var(--paper);
+  }
+  .marquee .inner{
+    display:inline-block;animation:scroll 28s linear infinite;
+    font-family:var(--font-display);font-weight:700;font-size:11px;
+    letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--ink-900);
+  }
+  .marquee .inner .g{color:var(--gold-deep);padding:0 14px}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @media(prefers-reduced-motion:reduce){.marquee .inner{animation:none}}
+
+  /* ---------- Thumbnails — flat color blocks + letterform ---------- */
+  .thumb{
+    position:relative;overflow:hidden;
+    aspect-ratio:4/5;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .thumb .letter{
+    font-family:var(--font-display);font-weight:800;
+    font-size:min(11rem,26vw);line-height:1;user-select:none;
+    transform:translateY(4%);
+  }
+  .thumb .play{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:50px;height:50px;
+    display:flex;align-items:center;justify-content:center;z-index:2;
+  }
+  .thumb .play::after{
+    content:"";display:block;margin-left:4px;
+    border-left:15px solid currentColor;border-top:9px solid transparent;border-bottom:9px solid transparent;
+  }
+  .thumb .brand-chip{
+    position:absolute;left:12px;bottom:12px;z-index:2;
+    background:var(--ink-900);color:var(--paper);
+    padding:5px 10px;font-family:var(--font-display);font-weight:700;
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  }
+  .thumb .runtime{
+    position:absolute;top:12px;right:12px;z-index:2;
+    background:var(--gold);color:var(--ink-900);
+    font-family:var(--font-display);font-weight:700;font-size:10px;
+    letter-spacing:.1em;text-transform:uppercase;padding:5px 9px;
+  }
+  .thumb .platform{
+    position:absolute;top:12px;left:12px;z-index:2;
+    background:var(--paper);color:var(--ink-900);border:var(--rule-hairline) solid var(--ink-900);
+    font-family:var(--font-display);font-weight:700;font-size:10px;
+    letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;
+  }
+
+  /* ---------- Control bar ---------- */
+  .toolbar h2{
+    font-family:var(--font-display);font-weight:800;font-size:1.6rem;
+    text-transform:uppercase;letter-spacing:-.01em;line-height:1;margin-bottom:6px;
+  }
+  .toolbar .tkicker{margin-bottom:6px;color:var(--gold-deep)}
+  .toolbar > p{color:var(--text-muted);font-size:.85rem;margin-bottom:18px}
+  .toolbar > p b{color:var(--ink-900);font-weight:600}
+  .control-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .search{
+    flex:1;min-width:220px;
+    background:var(--paper-pure);border:var(--rule-hairline) solid var(--ink-900);border-radius:0;
+    padding:0 14px;min-height:44px;color:var(--text);font-size:.9rem;outline:none;
+    font-family:var(--font-text);
+  }
+  .search::placeholder{color:var(--text-faint)}
+  .search:focus{outline:2px solid var(--gold);outline-offset:-1px}
+
+  .fbtn-wrap{position:relative}
+  .fbtn{
+    background:var(--paper-pure);border:var(--rule-hairline) solid var(--ink-900);border-radius:0;
+    color:var(--ink-900);font-family:var(--font-display);font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;
+    padding:0 14px;min-height:44px;cursor:pointer;display:flex;align-items:center;gap:8px;
+    transition:background var(--dur-fast) var(--ease);
+  }
+  .fbtn:hover{background:var(--ink-100)}
+  .fbtn.on{border-color:var(--gold-deep);box-shadow:inset 0 0 0 1px var(--gold-deep)}
+  .fbtn .cnt{
+    background:var(--gold);color:var(--ink-900);font-size:10px;font-weight:700;
+    min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;
+  }
+  .fbtn .arrow{font-size:.55rem;color:var(--text-faint)}
+  .popover{
+    position:absolute;top:calc(100% + 6px);left:0;z-index:60;
+    background:var(--paper-pure);border:var(--rule-hairline) solid var(--ink-900);
+    min-width:240px;padding:6px;display:none;
+    box-shadow:var(--shadow-overlay);
+    animation:rise var(--dur-fast) var(--ease);
+  }
+  .popover.open{display:block}
+  .popt{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 10px;cursor:pointer;font-size:.83rem;color:var(--ink-500);
+    user-select:none;transition:background var(--dur-fast) var(--ease);
+  }
+  .popt:hover{background:var(--ink-100);color:var(--ink-900)}
+  .popt .box{
+    width:16px;height:16px;border:var(--rule-hairline) solid var(--ink-900);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--ink-900);
+    background:var(--paper-pure);
+  }
+  .popt.sel{color:var(--ink-900);background:var(--gold-dim)}
+  .popt.sel .box{background:var(--gold);border-color:var(--ink-900)}
+  .popt .n{margin-left:auto;color:var(--text-faint);font-size:.7rem}
+
+  select.sort{
+    background:var(--paper-pure);border:var(--rule-hairline) solid var(--ink-900);border-radius:0;
+    color:var(--ink-900);font-family:var(--font-display);font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;
+    padding:0 10px;min-height:44px;cursor:pointer;outline:none;
+  }
+  select.sort:focus{outline:2px solid var(--gold);outline-offset:-1px}
+  .result-count{
+    font-size:11px;color:var(--text-faint);white-space:nowrap;
+    font-family:var(--font-display);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  }
+
+  .active-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+  .apill{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--gold-dim);border:var(--rule-hairline) solid var(--ink-900);color:var(--ink-900);
+    font-family:var(--font-display);font-weight:700;font-size:10px;
+    letter-spacing:.1em;text-transform:uppercase;
+    padding:6px 10px;cursor:pointer;
+  }
+  .apill .x{color:var(--gold-deep);font-weight:700}
+  .clear-all{
+    background:none;border:none;color:var(--text-muted);font-family:var(--font-text);
+    font-size:.76rem;font-weight:500;cursor:pointer;text-decoration:underline;padding:6px 4px;
+  }
+  .clear-all:hover{color:var(--ink-900)}
+
+  /* ---------- Grid ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:20px}
+  .card{
+    background:var(--surface-card);border:var(--rule) solid var(--ink-900);
+    overflow:hidden;cursor:pointer;
+    transition:transform var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease);
+    display:flex;flex-direction:column;
+  }
+  .card:hover{transform:translateY(-3px);border-color:var(--gold-deep)}
+  .card .thumb{aspect-ratio:4/5;border-bottom:var(--rule-hairline) solid var(--ink-900)}
+  .card-body{padding:16px 16px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .card-hook{font-weight:600;font-size:.92rem;letter-spacing:-.005em;line-height:1.4}
+  .card-why{color:var(--text-muted);font-size:.79rem;line-height:1.5}
+  .card-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+  .tag{
+    background:transparent;border:var(--rule-hairline) solid var(--ink-200);color:var(--ink-500);
+    font-family:var(--font-display);font-weight:700;font-size:9px;
+    letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;
+  }
+  .tag.hooktag{border-color:var(--gold);color:var(--gold-deep)}
+  .card-foot{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 16px;border-top:var(--rule-hairline) solid var(--ink-200);
+  }
+  .card-foot .date{
+    font-family:var(--font-display);font-weight:700;font-size:9px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);
+  }
+  .save-btn{
+    background:none;border:var(--rule-hairline) solid var(--ink-900);color:var(--ink-900);
+    font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    padding:6px 12px;border-radius:0;cursor:pointer;
+    transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease);
+  }
+  .save-btn:hover{background:var(--ink-900);color:var(--paper)}
+  .save-btn.saved{background:var(--gold);color:var(--ink-900);border-color:var(--ink-900)}
+
+  .empty{
+    text-align:center;padding:64px 20px;color:var(--text-muted);
+    border:var(--rule-hairline) dashed var(--stone);font-size:.9rem;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(11,11,11,.55);
+    display:none;align-items:flex-start;justify-content:center;z-index:100;
+    padding:30px 16px;overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex}
+  .modal{
+    background:var(--paper-pure);border:var(--rule) solid var(--ink-900);
+    max-width:900px;width:100%;overflow:hidden;
+    display:grid;grid-template-columns:340px 1fr;
+    box-shadow:var(--shadow-overlay);
+    animation:rise var(--dur) var(--ease);
+  }
+  @keyframes rise{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+  @media(max-width:760px){.modal{grid-template-columns:1fr}}
+  .modal .thumb{aspect-ratio:auto;min-height:340px;height:100%;border-right:var(--rule-hairline) solid var(--ink-900)}
+  @media(max-width:760px){.modal .thumb{border-right:none;border-bottom:var(--rule-hairline) solid var(--ink-900);min-height:240px}}
+  .modal-content{padding:28px 30px 32px;position:relative}
+  .modal-close{
+    position:absolute;top:16px;right:16px;
+    background:var(--paper);border:var(--rule-hairline) solid var(--ink-900);color:var(--ink-900);
+    width:34px;height:34px;cursor:pointer;font-size:1rem;line-height:1;
+    transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease);
+  }
+  .modal-close:hover{background:var(--ink-900);color:var(--paper)}
+  .m-brand{
+    font-family:var(--font-display);font-weight:800;font-size:1.6rem;
+    text-transform:uppercase;letter-spacing:-.01em;line-height:.98;
+    margin-bottom:8px;padding-right:44px;
+  }
+  .m-meta{color:var(--text-muted);font-size:.78rem;margin-bottom:4px}
+  .m-meta b{color:var(--gold-deep);font-weight:600}
+  .m-src{color:var(--text-faint);font-size:.72rem;margin-bottom:18px}
+  .m-src span{color:var(--text-muted)}
+  .m-section{margin-bottom:18px}
+  .m-label{
+    font-family:var(--font-display);font-weight:700;font-size:10px;
+    letter-spacing:var(--tracking-label);text-transform:uppercase;
+    color:var(--gold-deep);margin-bottom:7px;
+  }
+  .m-hook{font-size:1.05rem;font-weight:600;line-height:1.45}
+  .m-why{color:var(--ink-600);font-size:.9rem}
+  .m-why li{margin:0 0 8px 18px}
+  .m-steal{
+    background:var(--gold-dim);border:var(--rule-hairline) solid var(--ink-900);
+    border-left:var(--rule-heavy) solid var(--gold);
+    padding:14px 16px;font-size:.9rem;color:var(--ink-900);
+  }
+  .m-steal .m-label{margin-bottom:8px}
+  .m-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .m-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+
+  /* ---------- Curator desk ---------- */
+  .desk-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+  .desk-head h2{
+    font-family:var(--font-display);font-weight:800;font-size:1.6rem;
+    text-transform:uppercase;letter-spacing:-.01em;line-height:1;
+  }
+  .desk-head .btn{margin-left:auto}
+  .tabs{display:flex;border-bottom:var(--rule-hairline) solid var(--ink-900);margin-bottom:20px}
+  .tab{
+    background:none;border:none;border-bottom:var(--rule-heavy) solid transparent;
+    color:var(--text-muted);font-family:var(--font-display);font-size:11px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;
+    padding:12px 16px;cursor:pointer;transition:color var(--dur-fast) var(--ease);
+  }
+  .tab:hover{color:var(--ink-900)}
+  .tab.active{color:var(--ink-900);border-bottom-color:var(--gold)}
+  .tab .tn{color:var(--text-faint);margin-left:5px}
+
+  .qrow{
+    display:flex;gap:14px;align-items:flex-start;
+    background:var(--surface-card);border:var(--rule-hairline) solid var(--ink-900);
+    padding:16px 18px;margin-bottom:10px;
+  }
+  @media(max-width:760px){.qrow{flex-wrap:wrap}}
+  .qdot{width:8px;height:8px;margin-top:7px;flex-shrink:0}
+  .qdot.published{background:var(--success)}
+  .qdot.queue{background:var(--gold)}
+  .qdot.rejected{background:var(--stone)}
+  .qmain{flex:1;min-width:220px}
+  .qbrand{
+    font-family:var(--font-display);font-weight:700;font-size:.95rem;
+    text-transform:uppercase;letter-spacing:.01em;
+  }
+  .qbrand .star{color:var(--gold-deep);font-size:.75rem;margin-left:8px;letter-spacing:.1em}
+  .qmeta{color:var(--text-faint);font-size:.75rem;margin:3px 0 4px}
+  .qmeta b{color:var(--gold-deep);font-weight:600}
+  .qsrc{color:var(--text-faint);font-size:.72rem;margin-bottom:6px}
+  .qsrc span{color:var(--text-muted)}
+  .qhook{font-size:.85rem;color:var(--ink-600);font-style:italic}
+  .qwarn{font-size:.76rem;color:var(--danger);font-weight:600}
+  .qactions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  @media(max-width:760px){.qactions{width:100%;padding-top:4px}}
+  .qbtn{
+    background:var(--paper-pure);border:var(--rule-hairline) solid var(--ink-900);color:var(--ink-900);
+    font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    padding:0 13px;min-height:34px;border-radius:0;cursor:pointer;
+    transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease);
+  }
+  .qbtn:hover{background:var(--ink-900);color:var(--paper)}
+  .qbtn.publish{background:var(--ink-900);color:var(--paper)}
+  .qbtn.publish:hover:not(:disabled){background:var(--ink-700)}
+  .qbtn.publish:disabled{opacity:.4;cursor:not-allowed}
+  .qbtn.danger:hover{background:var(--danger);border-color:var(--danger);color:#fff}
+  .qbtn.star-btn.picked{background:var(--gold);border-color:var(--ink-900);color:var(--ink-900)}
+
+  /* ---------- Candidate form ---------- */
+  .cform{
+    background:var(--paper-alt);border:var(--rule-hairline) solid var(--ink-900);
+    padding:24px;margin-bottom:24px;display:none;
+  }
+  .cform.open{display:block}
+  .cform h3{
+    font-family:var(--font-display);font-weight:800;font-size:1rem;
+    text-transform:uppercase;letter-spacing:.02em;margin-bottom:16px;
+  }
+  .frow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px}
+  .fgroup{display:flex;flex-direction:column;gap:5px}
+  .fgroup label{
+    font-family:var(--font-display);font-size:9px;font-weight:700;
+    text-transform:uppercase;letter-spacing:var(--tracking-label);color:var(--ink-500);
+  }
+  .fgroup input,.fgroup select,.fgroup textarea{
+    background:var(--paper-pure);border:var(--rule-hairline) solid var(--ink-900);border-radius:0;
+    padding:10px 12px;color:var(--text);font-size:.85rem;font-family:var(--font-text);outline:none;min-height:42px;
+  }
+  .fgroup input:focus,.fgroup select:focus,.fgroup textarea:focus{outline:2px solid var(--gold);outline-offset:-1px}
+  .fgroup textarea{resize:vertical;min-height:70px}
+  .fnote{font-size:.72rem;color:var(--text-muted);margin:2px 0 14px}
+  .form-actions{display:flex;gap:10px}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);
+    background:var(--ink-900);border-left:var(--rule-heavy) solid var(--gold);
+    color:var(--paper);font-size:.82rem;padding:13px 18px;
+    box-shadow:var(--shadow-overlay);z-index:200;opacity:0;pointer-events:none;
+    transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease);max-width:90vw;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Footer — inverse band ---------- */
+  footer{
+    background:var(--ink-900);color:var(--stone);
+    border-top:var(--rule-heavy) solid var(--gold);
+  }
+  .footer-inner{
+    max-width:var(--container);margin:0 auto;padding:36px 24px;
+    font-size:.75rem;line-height:1.8;text-align:center;
+  }
+  footer .fmark{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;color:var(--paper)}
+  footer .fmark svg{width:26px;height:23px;color:var(--gold)}
+  footer .fmark .word{
+    font-family:var(--font-display);font-weight:800;font-size:.85rem;
+    letter-spacing:.02em;text-transform:uppercase;
+  }
+  footer .vision{
+    font-family:var(--font-display);font-weight:700;font-size:10px;
+    letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <svg viewBox="345.8 311.2 742 634.9" fill="currentColor" role="img" aria-label="Ahead of Market monogram"><use href="#aom-monogram"/></svg>
+      <span class="word">Ahead of Market</span>
+      <span class="sep"></span>
+      <span class="sub">The Library</span>
+    </div>
+    <div class="tagline">We watch ads every morning so you don't have to.</div>
+    <div class="mode-toggle" id="modeToggle">
+      <button id="modeLibrary" class="active" onclick="setMode('library')">Library</button>
+      <button id="modeCurator" onclick="setMode('curator')">Curator</button>
+    </div>
+    <div class="header-stats" id="headerStats"></div>
+  </div>
+</header>
+
+<!-- ================= PUBLIC: LIBRARY ================= -->
+<div class="wrap" id="libraryView">
+
+  <section class="todays-pick" id="todaysPick"></section>
+
+  <div class="marquee" aria-hidden="true"><div class="inner" id="marqueeInner"></div></div>
+
+  <section class="toolbar">
+    <div class="kicker tkicker" id="archiveKicker">[ Construction Edition ] — Phoenix Metro · Day 1</div>
+    <h2>The Archive</h2>
+    <p>Every pick lives here forever. Filter by what you're trying to make. Press <b>/</b> to search.</p>
+    <div class="control-row">
+      <input type="text" class="search" id="search" placeholder="Search brands, hooks, breakdowns…">
+      <div class="fbtn-wrap" id="fwrap-industry"></div>
+      <div class="fbtn-wrap" id="fwrap-hookType"></div>
+      <div class="fbtn-wrap" id="fwrap-platform"></div>
+      <select class="sort" id="sortSel" onchange="setSort(this.value)">
+        <option value="newest">Newest</option>
+        <option value="longest">Longest running</option>
+        <option value="brand">Brand A–Z</option>
+      </select>
+      <span class="result-count" id="resultCount"></span>
+    </div>
+    <div class="active-row" id="activeRow"></div>
+  </section>
+
+  <section class="grid" id="grid"></section>
+  <div class="empty" id="emptyGrid" style="display:none">No ads match those filters yet — the archive grows every morning.</div>
+</div>
+
+<!-- ================= CURATOR DESK ================= -->
+<div class="wrap" id="curatorView" style="display:none">
+  <div class="desk-head">
+    <h2>Curation Desk</h2>
+    <button class="btn gold" onclick="openForm()">+ Add candidate</button>
+  </div>
+
+  <div class="cform" id="cform">
+    <h3 id="formTitle">Add candidate</h3>
+    <div class="frow">
+      <div class="fgroup"><label>Brand</label><input id="f-brand" placeholder="e.g. Saguaro Roofing Co."></div>
+      <div class="fgroup"><label>Source (provenance)</label><input id="f-src" placeholder="e.g. Meta Ad Library · 26 months running, Phoenix roofing search"></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Industry</label><select id="f-industry"></select></div>
+      <div class="fgroup"><label>Platform</label><select id="f-platform"></select></div>
+      <div class="fgroup"><label>Format</label><select id="f-format"></select></div>
+      <div class="fgroup"><label>Hook type</label><select id="f-hookType"></select></div>
+      <div class="fgroup"><label>Months running</label><input id="f-months" type="number" min="1" value="6"></div>
+    </div>
+    <div class="frow" style="grid-template-columns:1fr">
+      <div class="fgroup"><label>The Hook — opening line</label><input id="f-hook" placeholder="One sentence: what literally happens in the first 2 seconds. Quotes if spoken."></div>
+      <div class="fgroup"><label>Why it works — one point per line</label><textarea id="f-why" placeholder="Each line = one full sentence with a mechanism, not a compliment."></textarea></div>
+      <div class="fgroup"><label>Steal this — the SMB translation</label><input id="f-steal" placeholder="Exactly one actionable move, phrased for a non-marketer."></div>
+    </div>
+    <p class="fnote">Publish unlocks when hook + at least one why + steal-this exist. Nothing reaches the public page unapproved.</p>
+    <div class="form-actions">
+      <button class="btn" onclick="saveForm()">Save candidate</button>
+      <button class="btn outline" onclick="closeForm()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="deskTabs"></div>
+  <div id="deskList"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="fmark">
+      <svg viewBox="345.8 311.2 742 634.9" fill="currentColor"><use href="#aom-monogram"/></svg>
+      <span class="word">Ahead of Market</span>
+    </div>
+    <div class="vision">One vision. Many worlds ahead.</div>
+    The Library — a daily, hand-curated archive of advertising that actually works. Construction edition, day one.<br>
+    All ads are real, sourced from the public Meta Ad Library on Jul 16, 2026. Running durations come from each ad's "Started running on" date, active at curation. Breakdowns are Ahead of Market's own commentary on the ad copy and offer. Thumbnails are placeholders — open any entry's source listing to view the actual creative.
+  </div>
+</footer>
+
+<!-- Monogram source (assets/logo/aom-monogram.svg) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs><g id="aom-monogram"><mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect> <g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none"> <path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0&#xA;-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30&#xA;-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59&#xA;-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41&#xA;-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575&#xA;47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350&#xA;39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295&#xA;-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13&#xA;-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357&#xA;156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124&#xA;335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0&#xA;-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52&#xA;-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59&#xA;-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66&#xA;-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15&#xA;61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52&#xA;52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64&#xA;175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186&#xA;199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57&#xA;153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151&#xA;462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98&#xA;9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235&#xA;563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31&#xA;-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464&#xA;-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31&#xA;81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278&#xA;130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97&#xA;-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1&#xA;30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9&#xA;123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32&#xA;104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18&#xA;121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325&#xA;-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66&#xA;-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1&#xA;-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128&#xA;-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38&#xA;471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134&#xA;-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path> <path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25&#xA;-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129&#xA;-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81&#xA;-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39&#xA;-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66&#xA;-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145&#xA;-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415&#xA;-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360&#xA;-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17&#xA;-35 -3z"></path> <path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25&#xA;-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6&#xA;-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path> <path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20&#xA;-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715&#xA;516 -90 41 -123 48 -123 25z"></path> <path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149&#xA;22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10&#xA;-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153&#xA;-152 122z"></path> <path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8&#xA;-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15&#xA;258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292&#xA;112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12 -396 5&#xA;-408 5 -425 -14z"></path> </g></mask> <rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect></g></defs>
+</svg>
+
+<script>
+/* ================= TAXONOMY =================
+   Review against AoM's actual client base (construction, founders, nonprofits). */
+const INDUSTRIES = ["Roofing","Remodeling","Kitchen & Bath","Bath / Walk-in","B2B / Trade"];
+const PLATFORMS  = ["Meta","Instagram"];
+const FORMATS    = ["Audience build","Offer / Direct","Founder / Direct","Education / Expert","Story / Jobsite"];
+const HOOKS      = ["Anti-pitch","Call-out","Radical honesty","Friction removal","Scarcity offer","Specific number","Underserved audience","Story / Near-miss"];
+
+/* Flat color blocks (design system: no gradients — type-driven imagery).
+   [background, letterform color, chrome color for play glyph] */
+const BLOCKS = [
+  ["#C4A46A","rgba(11,11,11,.22)","#0B0B0B"],   /* gold        */
+  ["#161615","rgba(246,246,244,.10)","#F6F6F4"],/* ink-800     */
+  ["#EFE6D3","rgba(11,11,11,.12)","#0B0B0B"],   /* gold-dim    */
+  ["#B6B2AB","rgba(11,11,11,.14)","#0B0B0B"],   /* stone       */
+  ["#2A2A28","rgba(246,246,244,.09)","#F6F6F4"],/* ink-700     */
+  ["#ECEAE4","rgba(11,11,11,.10)","#0B0B0B"]    /* ink-100     */
+];
+
+/* ================= DATA =================
+   status: "queue" | "published" | "rejected"
+   In the live product, each entry deep-links to its public listing
+   (Meta Ad Library / TikTok Creative Center / Google Ads Transparency Center). */
+const ads = [
+  {
+    "id": 1,
+    "brand": "All-Star Renovations",
+    "industry": "Remodeling",
+    "platform": "Instagram",
+    "format": "Audience build",
+    "hookType": "Anti-pitch",
+    "months": 11,
+    "days": 335,
+    "runLabel": "11 mo",
+    "started": "Aug 15, 2025",
+    "libraryId": "735373442629764",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=735373442629764",
+    "block": 0,
+    "status": "published",
+    "src": "Meta Ad Library · \"remodel\" Phoenix, active video ads — longest runner found",
+    "hook": "\"Follow @allstar.renovations for more remodeling tips.\" That's it. That's the whole ad.",
+    "why": [
+      "The longest-running construction ad we could find active in Phoenix — 11 months of continuous spend on an ad that sells nothing and only asks for a follow. Audience first, offers later.",
+      "They run the full ladder in parallel: this follow ad warms the audience, while separate 0%-financing offer ads (running since Apr 2026, \"400+ Phoenix homes remodeled\") do the closing.",
+      "It reads as content, not advertising — an organic-style tips clip — so it survives the scroll at the cheapest possible cost."
+    ],
+    "steal": "Run one ad that sells nothing: real tips, real jobs, and a follow button. Let it warm the audience your offer ads close.",
+    "date": "Jul 16, 2026"
+  },
+  {
+    "id": 2,
+    "brand": "Roofing All Stars LLC",
+    "industry": "Roofing",
+    "platform": "Meta",
+    "format": "Offer / Direct",
+    "hookType": "Call-out",
+    "months": 11,
+    "days": 340,
+    "runLabel": "11 mo",
+    "started": "Aug 11, 2025",
+    "libraryId": "1513899236693409",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=1513899236693409",
+    "block": 1,
+    "status": "published",
+    "src": "Meta Ad Library · \"roofing\" Phoenix — 3 identical active copies, all started Aug 11, 2025",
+    "hook": "\"Tired of living with a roof that's seen better days? Water damage already showing up?\"",
+    "why": [
+      "Eleven months live with three parallel copies — this is the control ad of the Phoenix roofing market. Somebody has paid for it every single day since August 2025.",
+      "Two questions in a row that only the right homeowner answers yes to — self-selecting targeting that beats any audience setting.",
+      "The stack underneath is direct-response textbook: fear trigger, urgency, 5-star proof, free inspection, 20% off. No gimmick in this market has outlived the plain formula."
+    ],
+    "steal": "Open with the question only your ideal customer answers yes to. Then stack: proof, a free first step, one incentive.",
+    "date": "Jul 16, 2026"
+  },
+  {
+    "id": 3,
+    "brand": "Max Roofing",
+    "industry": "Roofing",
+    "platform": "Meta",
+    "format": "Education / Expert",
+    "hookType": "Radical honesty",
+    "months": 4,
+    "days": 127,
+    "runLabel": "4 mo",
+    "started": "Mar 11, 2026",
+    "libraryId": "2112030296261867",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=2112030296261867",
+    "block": 2,
+    "status": "published",
+    "src": "Meta Ad Library · \"roofing\" Phoenix — 3-ad repair-first suite, all started Mar 11, 2026",
+    "hook": "\"A leaking shingle roof doesn't automatically mean you need a full replacement.\"",
+    "why": [
+      "Positions directly against the industry's incentive structure — \"many roofing companies recommend replacement because it's more profitable.\" Trust built by betraying category norms.",
+      "It's a suite, not an ad: the claim ad, a proof ad (a filmed return visit to a roof they repaired instead of replacing — still holding), and a worldview ad (\"condition, not commission\"). Three angles, one position, four months running.",
+      "The CTA asks for an evaluation, not a sale — the offer matches the trust promise instead of undercutting it."
+    ],
+    "steal": "Find the thing your industry profits from that customers hate. Publicly refuse to do it — then film the proof.",
+    "date": "Jul 16, 2026"
+  },
+  {
+    "id": 4,
+    "brand": "Lyons Roofing",
+    "industry": "Roofing",
+    "platform": "Meta",
+    "format": "Offer / Direct",
+    "hookType": "Friction removal",
+    "months": 3,
+    "days": 107,
+    "runLabel": "3.5 mo",
+    "started": "Mar 31, 2026",
+    "libraryId": "26579736064993692",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=26579736064993692",
+    "block": 3,
+    "status": "published",
+    "src": "Meta Ad Library · \"roofing\" Phoenix — 2 active variants",
+    "hook": "\"Stop waiting days for a roof quote. See your exact price instantly — quick, easy, no obligation.\"",
+    "why": [
+      "Sells the quote, not the roof. The scariest step in the category is a salesman at your kitchen table — this ad removes it entirely with a self-serve instant price.",
+      "\"No hassle, no pressure\" names the exact fear out loud instead of pretending it doesn't exist.",
+      "The click goes to a dedicated path (go.lyonsroofing.com/phoenix-free-instant-quote) — promise and landing page match 1:1, which is why it can run for months without fatiguing."
+    ],
+    "steal": "If the first step in your industry scares people, build a self-serve version of that step and sell it instead of the end product.",
+    "date": "Jul 16, 2026"
+  },
+  {
+    "id": 5,
+    "brand": "Pivot Roofing",
+    "industry": "Roofing",
+    "platform": "Meta",
+    "format": "Offer / Direct",
+    "hookType": "Scarcity offer",
+    "months": 3,
+    "days": 100,
+    "runLabel": "3 mo",
+    "started": "Apr 7, 2026",
+    "libraryId": "2091264364779828",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=2091264364779828",
+    "block": 4,
+    "status": "published",
+    "src": "Meta Ad Library · \"roofing\" Phoenix — 2 active entries (Apr 7 + Jun 3 starts)",
+    "hook": "\"We are offering a crazy FREE roofing deal to 25 local Home Owners!\"",
+    "why": [
+      "This is offer engineering, not a discount: a named package (\"Pivot Protection Package\"), an itemized checklist, a $650 anchored value, a 25-slot cap, and a $300 cash-back bridge to the real sale.",
+      "The free thing is genuinely useful (inspection + reseals + cleared valleys) — value first makes the list-building feel fair.",
+      "It rides the monsoon season the entire Valley is bracing for — the calendar does the urgency work."
+    ],
+    "steal": "Package your free first step: name it, itemize it, price-anchor it, cap it. A named package beats \"free quote\" every time.",
+    "date": "Jul 16, 2026"
+  },
+  {
+    "id": 6,
+    "brand": "Affordable Walk-Ins",
+    "industry": "Bath / Walk-in",
+    "platform": "Meta",
+    "format": "Founder / Direct",
+    "hookType": "Specific number",
+    "months": 2,
+    "days": 48,
+    "runLabel": "7 wks",
+    "started": "May 29, 2026",
+    "libraryId": "1771583223808724",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=1771583223808724",
+    "block": 5,
+    "status": "published",
+    "src": "Meta Ad Library · \"remodel\" Phoenix — 4 active placements of the same creative",
+    "hook": "\"I know… $7,499 for a new bathroom? Plus FREE shower doors??? That's crazy.\"",
+    "why": [
+      "Voices the reader's objection before they can think it — price anchor plus manufactured disbelief is the oldest direct-response formula still converting.",
+      "Then it earns the claim with a mechanism: small crew, no showrooms, no TV budget — \"guess who pays for that at the big companies? You.\" Unbelievable numbers become believable with a why.",
+      "The exact same script skeleton is live right now in Phoenix roofing (RHS Roofing, $8,997) and tile (Harper Stone, $9,500). It's a template because it works."
+    ],
+    "steal": "Say your price up front, call it crazy yourself, then explain the mechanism that makes it possible.",
+    "date": "Jul 16, 2026"
+  },
+  {
+    "id": 7,
+    "brand": "Outlaws Roofing Company",
+    "industry": "Roofing",
+    "platform": "Meta",
+    "format": "Offer / Direct",
+    "hookType": "Underserved audience",
+    "months": 2,
+    "days": 59,
+    "runLabel": "2 mo",
+    "started": "May 18, 2026",
+    "libraryId": "3914214748884276",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=3914214748884276",
+    "block": 1,
+    "status": "published",
+    "src": "Meta Ad Library · \"roofing\" Phoenix — 3 active geo variants (Phoenix Oeste, Tucson Oeste)",
+    "hook": "\"¿Daños en su techo? Inspecciones gratuitas para propietarios en Phoenix Oeste. Hablamos español.\"",
+    "why": [
+      "A whole-market blind spot: Spanish-first homeowners in west Phoenix see almost no roofing ads in their language — this runs in a near-empty auction.",
+      "\"Hablamos español\" is three words doing three jobs: targeting, trust, and differentiation.",
+      "Geo-named (\"Phoenix Oeste\") so the ad states exactly who it's for — relevance you can't buy with settings alone."
+    ],
+    "steal": "Find the audience your competitors' ads ignore and speak to them natively — language, neighborhood, or trade.",
+    "date": "Jul 16, 2026"
+  },
+  {
+    "id": 8,
+    "brand": "Durafoam Roofing",
+    "industry": "Roofing",
+    "platform": "Meta",
+    "format": "Story / Jobsite",
+    "hookType": "Story / Near-miss",
+    "months": 2,
+    "days": 48,
+    "runLabel": "7 wks",
+    "started": "May 29, 2026",
+    "libraryId": "892551673867208",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=892551673867208",
+    "block": 0,
+    "status": "published",
+    "src": "Meta Ad Library · \"roofing\" Phoenix — story ad + parallel \"since 1989\" heritage ad",
+    "hook": "\"We almost missed this.\"",
+    "why": [
+      "A four-word thriller opening. Near-miss stories are wired to hold attention — and the whole ad is one true anecdote: a crack hidden under leaves at a scupper drain, found on a routine inspection.",
+      "Specificity is the proof: scupper drain, cleared leaves, monsoon timing. You cannot fake jobsite detail, and readers know it.",
+      "The heritage runs as a separate parallel ad (\"family owned since 1989 — your word\") — the story sells the inspection, the trust ad catches the skeptics."
+    ],
+    "steal": "Tell one true near-miss from a real job. Specific detail sells inspections better than any discount.",
+    "date": "Jul 16, 2026"
+  },
+  {
+    "id": 9,
+    "brand": "RHS Roofing",
+    "industry": "Roofing",
+    "platform": "Meta",
+    "format": "Founder / Direct",
+    "hookType": "Specific number",
+    "months": 1,
+    "days": 9,
+    "runLabel": "9 days",
+    "started": "Jul 7, 2026",
+    "libraryId": "3284196791769717",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=3284196791769717",
+    "block": 2,
+    "status": "queue",
+    "src": "Meta Ad Library · \"roofing\" Phoenix — started Jul 7, 2026",
+    "hook": "\"$8,997 for a roof sounds kind of crazy… Most roofs are like $15-25k right?\"",
+    "why": [
+      "The same price-objection skeleton as Affordable Walk-Ins, retooled for roofing — a proven template propagating across Phoenix trades in real time.",
+      "Names the enemy precisely: wrapped trucks, billboards, bloated overhead — \"you foot the bill\" turns competitors' brand advertising into a reason to buy from the small guy."
+    ],
+    "steal": "Borrow a working script skeleton from a neighboring trade before your competitors do.",
+    "date": ""
+  },
+  {
+    "id": 10,
+    "brand": "Cactus Kitchen & Bath",
+    "industry": "Kitchen & Bath",
+    "platform": "Meta",
+    "format": "Offer / Direct",
+    "hookType": "Scarcity offer",
+    "months": 1,
+    "days": 12,
+    "runLabel": "12 days",
+    "started": "Jul 4, 2026",
+    "libraryId": "1025133189894429",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=1025133189894429",
+    "block": 3,
+    "status": "queue",
+    "src": "Meta Ad Library · \"remodel\" Phoenix — started Jul 4, 2026",
+    "hook": "\"Quick question, Phoenix. What if your kitchen countertop just came included?\"",
+    "why": [],
+    "steal": "",
+    "date": ""
+  },
+  {
+    "id": 11,
+    "brand": "Harper Stone and Tile",
+    "industry": "Kitchen & Bath",
+    "platform": "Meta",
+    "format": "Founder / Direct",
+    "hookType": "Specific number",
+    "months": 1,
+    "days": 18,
+    "runLabel": "18 days",
+    "started": "Jun 28, 2026",
+    "libraryId": "1927387334645746",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=1927387334645746",
+    "block": 4,
+    "status": "queue",
+    "src": "Meta Ad Library · \"remodel\" Phoenix — 2 active copies, started Jun 28, 2026",
+    "hook": "\"$9,500 for a bathroom remodel?\"",
+    "why": [],
+    "steal": "",
+    "date": ""
+  },
+  {
+    "id": 12,
+    "brand": "Roofing Strong Alliance by TAMKO",
+    "industry": "B2B / Trade",
+    "platform": "Meta",
+    "format": "Education / Expert",
+    "hookType": "Anti-pitch",
+    "months": 1,
+    "days": 35,
+    "runLabel": "5 wks",
+    "started": "Jun 11, 2026",
+    "libraryId": "1246256284084490",
+    "sourceUrl": "https://www.facebook.com/ads/library/?id=1246256284084490",
+    "block": 5,
+    "status": "queue",
+    "src": "Meta Ad Library · \"roofing\" Phoenix — B2B long-copy interview ad",
+    "hook": "",
+    "why": [],
+    "steal": "",
+    "date": ""
+  }
+];
+
+let pickId = 1;
+const state = {
+  filters:{ industry:new Set(), hookType:new Set(), platform:new Set() },
+  sort:"newest", q:"", saved:new Set()
+};
+let mode = "library";
+let curTab = "queue";
+let editId = null;
+const STREAK = 1;
+const TODAY = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}).replace(/(\d{2})$/,"20$1");
+
+/* ================= HELPERS ================= */
+const $ = s => document.querySelector(s);
+const byId = id => ads.find(a => a.id === id);
+const published = () => ads.filter(a => a.status === "published");
+const queue = () => ads.filter(a => a.status === "queue");
+const rejected = () => ads.filter(a => a.status === "rejected");
+const complete = a => !!(a.hook && a.why.length >= 1 && a.steal);
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const parseDate = d => d ? Date.parse(d) : 0;
+
+const FILTER_DEFS = [
+  {key:"industry", label:"Industry", list:INDUSTRIES},
+  {key:"hookType", label:"Hook", list:HOOKS},
+  {key:"platform", label:"Platform", list:PLATFORMS}
+];
+
+function thumbHTML(ad, extra=""){
+  const [bg, fg, chrome] = BLOCKS[ad.block % BLOCKS.length];
+  return `<div class="thumb ${extra}" style="background:${bg}">
+    <span class="letter" style="color:${fg}">${esc(ad.brand[0])}</span>
+    <span class="platform">${esc(ad.platform)}</span>
+    <span class="runtime">Running ${ad.runLabel}</span>
+    <div class="play" style="color:${chrome};border:1px solid ${chrome}"></div>
+    <div class="brand-chip">${esc(ad.brand)}</div>
+  </div>`;
+}
+
+function toast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove("show"), 3200);
+}
+
+/* ================= HEADER + MARQUEE ================= */
+function renderHeader(){
+  const el = $("#headerStats");
+  if(mode === "library"){
+    el.innerHTML = `
+      <div class="hstat"><div class="n gold">${published().length}</div><div class="l">Ads curated</div></div>
+      <div class="hstat"><div class="n">${STREAK}</div><div class="l">Day streak</div></div>
+      <div class="hstat"><div class="n">${state.saved.size}</div><div class="l">In your file</div></div>`;
+  } else {
+    el.innerHTML = `
+      <div class="hstat"><div class="n gold">${published().length}</div><div class="l">Published</div></div>
+      <div class="hstat"><div class="n">${queue().length}</div><div class="l">In queue</div></div>
+      <div class="hstat"><div class="n">${STREAK}</div><div class="l">Day streak</div></div>`;
+  }
+  $("#modeLibrary").classList.toggle("active", mode==="library");
+  $("#modeCurator").classList.toggle("active", mode==="curator");
+}
+
+function renderMarquee(){
+  const items = [
+    "Construction edition — Phoenix metro",
+    "Proof, not promises",
+    `${published().length} real ads curated`,
+    "Every months-running badge verified in the Meta Ad Library",
+    "Every breakdown ends in a move you can steal"
+  ];
+  const seq = items.map(t => `${esc(t)}<span class="g">✶</span>`).join("");
+  $("#marqueeInner").innerHTML = seq + seq; /* doubled for seamless loop */
+}
+
+function setMode(m){
+  mode = m;
+  $("#libraryView").style.display = m==="library" ? "" : "none";
+  $("#curatorView").style.display = m==="curator" ? "" : "none";
+  closeAllFilterMenus();
+  renderAll();
+}
+
+/* ================= TODAY'S PICK ================= */
+function renderPick(){
+  const ad = byId(pickId) && byId(pickId).status==="published" ? byId(pickId) : published()[0];
+  if(!ad){ $("#todaysPick").innerHTML = `<div class="empty" style="grid-column:1/-1">Nothing published yet.</div>`; return; }
+  $("#todaysPick").innerHTML = `
+    <div onclick="openModal(${ad.id})">${thumbHTML(ad)}</div>
+    <div>
+      <div class="pick-kicker"><span class="live"></span> [ Today's Pick ] — ${esc(ad.date)}</div>
+      <div class="pick-title">${esc(ad.brand)}</div>
+      <div class="pick-sub">${esc(ad.industry)} · ${esc(ad.format)} · has run <b>${ad.runLabel} straight</b> — somebody's paying for this because it works.</div>
+      <div class="pick-quote">${esc(ad.hook)}</div>
+      <button class="btn gold" onclick="openModal(${ad.id})">Read the breakdown</button>
+      <button class="btn outline-inverse" onclick="toggleSave(${ad.id});renderAll()">${state.saved.has(ad.id) ? "✓ Saved" : "+ Save to swipe file"}</button>
+    </div>`;
+}
+
+/* ================= FILTERS ================= */
+function renderControls(){
+  FILTER_DEFS.forEach(def => {
+    const sel = state.filters[def.key];
+    const opts = def.list.filter(v => published().some(a => a[def.key] === v));
+    const wrap = $("#fwrap-" + def.key);
+    const open = wrap._open;
+    wrap.innerHTML = `
+      <button class="fbtn ${sel.size ? "on" : ""}" onclick="toggleFilterMenu('${def.key}');event.stopPropagation()">
+        ${def.label} ${sel.size ? `<span class="cnt">${sel.size}</span>` : ""} <span class="arrow">▾</span>
+      </button>
+      <div class="popover ${open ? "open" : ""}" onclick="event.stopPropagation()">
+        ${opts.map(v => {
+          const n = published().filter(a => a[def.key] === v).length;
+          const on = sel.has(v);
+          return `<div class="popt ${on ? "sel" : ""}" onclick="toggleFilter('${def.key}',\`${v}\`)">
+            <span class="box">${on ? "✓" : ""}</span>${esc(v)}<span class="n">${n}</span>
+          </div>`;
+        }).join("")}
+      </div>`;
+  });
+
+  const pills = [];
+  FILTER_DEFS.forEach(def => {
+    state.filters[def.key].forEach(v => {
+      pills.push(`<span class="apill" onclick="toggleFilter('${def.key}',\`${v}\`)">${esc(v)} <span class="x">✕</span></span>`);
+    });
+  });
+  const any = pills.length || state.q;
+  $("#activeRow").innerHTML = pills.join("") + (any ? `<button class="clear-all" onclick="clearAll()">Clear everything</button>` : "");
+}
+
+function toggleFilterMenu(key){
+  FILTER_DEFS.forEach(def => {
+    const w = $("#fwrap-" + def.key);
+    w._open = def.key === key ? !w._open : false;
+  });
+  renderControls();
+}
+function closeAllFilterMenus(){
+  FILTER_DEFS.forEach(def => { $("#fwrap-" + def.key)._open = false; });
+  renderControls();
+}
+function toggleFilter(key, val){
+  const s = state.filters[key];
+  s.has(val) ? s.delete(val) : s.add(val);
+  renderControls(); renderGrid();
+}
+function clearAll(){
+  FILTER_DEFS.forEach(def => state.filters[def.key].clear());
+  state.q = ""; $("#search").value = "";
+  renderControls(); renderGrid();
+}
+function setSort(v){ state.sort = v; renderGrid(); }
+
+/* ================= GRID ================= */
+function filtered(){
+  let list = published().filter(a =>
+    FILTER_DEFS.every(def => !state.filters[def.key].size || state.filters[def.key].has(a[def.key])) &&
+    (state.q === "" || JSON.stringify(a).toLowerCase().includes(state.q))
+  );
+  if(state.sort === "newest") list.sort((a,b) => parseDate(b.date) - parseDate(a.date));
+  if(state.sort === "longest") list.sort((a,b) => b.days - a.days);
+  if(state.sort === "brand") list.sort((a,b) => a.brand.localeCompare(b.brand));
+  return list;
+}
+
+function renderGrid(){
+  const list = filtered();
+  $("#grid").innerHTML = list.map((ad, i) => `
+    <div class="card">
+      <div onclick="openModal(${ad.id})">${thumbHTML(ad)}</div>
+      <div class="card-body" onclick="openModal(${ad.id})">
+        <div class="card-hook">${esc(ad.hook)}</div>
+        <div class="card-why">${esc(ad.why[0] || "")}</div>
+        <div class="card-tags">
+          <span class="tag">${esc(ad.industry)}</span>
+          <span class="tag hooktag">${esc(ad.hookType)}</span>
+          <span class="tag">${esc(ad.format)}</span>
+        </div>
+      </div>
+      <div class="card-foot">
+        <span class="date">[ ${String(i+1).padStart(2,"0")} ] — ${esc(ad.date)}</span>
+        <button class="save-btn ${state.saved.has(ad.id) ? "saved" : ""}" onclick="event.stopPropagation();toggleSave(${ad.id});renderAll()">
+          ${state.saved.has(ad.id) ? "✓ Saved" : "+ Save"}
+        </button>
+      </div>
+    </div>`).join("");
+  $("#emptyGrid").style.display = list.length ? "none" : "block";
+  $("#resultCount").textContent = `${list.length} of ${published().length} ads`;
+  renderHeader();
+}
+
+function toggleSave(id){ state.saved.has(id) ? state.saved.delete(id) : state.saved.add(id); }
+
+/* ================= MODAL ================= */
+function openModal(id){
+  const ad = byId(id);
+  $("#modal").innerHTML = `
+    ${thumbHTML(ad)}
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="m-brand">${esc(ad.brand)}</div>
+      <div class="m-meta">${esc(ad.industry)} · ${esc(ad.platform)} · ${esc(ad.format)} · <b>running ${ad.runLabel}</b> · started ${esc(ad.started)}${ad.date ? " · curated " + esc(ad.date) : ""}</div>
+      <div class="m-src">Found via <span>${esc(ad.src)}</span></div>
+
+      <div class="m-section">
+        <div class="m-label">The Hook — opening line</div>
+        <div class="m-hook">${esc(ad.hook)}</div>
+      </div>
+
+      <div class="m-section">
+        <div class="m-label">Why it works</div>
+        <ul class="m-why">${ad.why.map(w => `<li>${esc(w)}</li>`).join("")}</ul>
+      </div>
+
+      <div class="m-section m-steal">
+        <div class="m-label">Steal this</div>
+        ${esc(ad.steal)}
+      </div>
+
+      <div class="m-tags">
+        <span class="tag">${esc(ad.industry)}</span>
+        <span class="tag hooktag">${esc(ad.hookType)}</span>
+        <span class="tag">${esc(ad.format)}</span>
+        <span class="tag">${esc(ad.platform)}</span>
+      </div>
+
+      <div class="m-actions">
+        <button class="btn gold" onclick="toggleSave(${ad.id});openModal(${ad.id});renderAll()">${state.saved.has(ad.id) ? "✓ In your swipe file" : "+ Save to swipe file"}</button>
+        ${ad.sourceUrl ? `<a class="btn outline" href="${ad.sourceUrl}" target="_blank" rel="noopener" style="text-decoration:none">View source ad ↗</a>` : ``}
+      </div>
+    </div>`;
+  $("#overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeModal(){
+  $("#overlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+/* ================= CURATOR DESK ================= */
+function renderDesk(){
+  const tabs = [
+    {key:"queue", label:"Queue", list:queue()},
+    {key:"published", label:"Published", list:published()},
+    {key:"rejected", label:"Passed on", list:rejected()}
+  ];
+  $("#deskTabs").innerHTML = tabs.map(t =>
+    `<button class="tab ${curTab===t.key ? "active" : ""}" onclick="setTab('${t.key}')">${t.label}<span class="tn">${t.list.length}</span></button>`
+  ).join("");
+
+  const list = tabs.find(t => t.key === curTab).list;
+  if(!list.length){
+    const msg = curTab === "queue" ? "Queue is clear. Go hunting — TikTok Creative Center, Meta Ad Library, the wild."
+      : curTab === "published" ? "Nothing published yet. Complete a breakdown in the queue and hit Publish."
+      : "Nothing passed on. Rejected candidates land here and stay recoverable.";
+    $("#deskList").innerHTML = `<div class="empty">${msg}</div>`;
+    return;
+  }
+
+  $("#deskList").innerHTML = list.map(ad => {
+    const ok = complete(ad);
+    let actions = "";
+    if(ad.status === "queue"){
+      actions = `
+        <button class="qbtn" onclick="openForm(${ad.id})">Edit</button>
+        <button class="qbtn publish" ${ok ? "" : "disabled"} title="${ok ? "Publish to the Library" : "Breakdown incomplete — hook, one why, and steal-this required"}" onclick="publishAd(${ad.id})">Publish</button>
+        <button class="qbtn danger" onclick="passAd(${ad.id})">Pass</button>`;
+    } else if(ad.status === "published"){
+      actions = `
+        <button class="qbtn star-btn ${pickId===ad.id ? "picked" : ""}" title="Set as Today's Pick" onclick="setPick(${ad.id})">★</button>
+        <button class="qbtn" onclick="openForm(${ad.id})">Edit</button>
+        <button class="qbtn danger" onclick="unpublishAd(${ad.id})">Unpublish</button>`;
+    } else {
+      actions = `<button class="qbtn" onclick="restoreAd(${ad.id})">Restore to queue</button>`;
+    }
+    return `
+    <div class="qrow">
+      <span class="qdot ${ad.status}"></span>
+      <div class="qmain">
+        <div class="qbrand">${esc(ad.brand)}${pickId===ad.id && ad.status==="published" ? '<span class="star">★ Today’s Pick</span>' : ""}</div>
+        <div class="qmeta">${esc(ad.industry)} · ${esc(ad.platform)} · ${esc(ad.format)} · <b>${ad.runLabel} running</b> · started ${esc(ad.started)}${ad.date ? " · " + esc(ad.date) : ""}</div>
+        <div class="qsrc">⌕ <span>${esc(ad.src)}</span></div>
+        ${ad.hook ? `<div class="qhook">${esc(ad.hook)}</div>` : `<div class="qwarn">Breakdown not written yet</div>`}
+        ${ad.hook && !ok && ad.status==="queue" ? `<div class="qwarn" style="margin-top:4px">Incomplete — ${!ad.why.length ? "no why-it-works" : ""}${!ad.why.length && !ad.steal ? " + " : ""}${!ad.steal ? "no steal-this" : ""}</div>` : ""}
+      </div>
+      <div class="qactions">${actions}</div>
+    </div>`;
+  }).join("");
+}
+
+function setTab(t){ curTab = t; renderDesk(); }
+
+function publishAd(id){
+  const ad = byId(id);
+  if(!complete(ad)) return;
+  ad.status = "published";
+  ad.date = TODAY;
+  toast(`${ad.brand} published to the Library.`);
+  renderAll();
+}
+function unpublishAd(id){
+  const ad = byId(id);
+  ad.status = "queue";
+  if(pickId === id) pickId = published()[0] ? published()[0].id : null;
+  renderAll();
+}
+function passAd(id){ byId(id).status = "rejected"; renderAll(); }
+function restoreAd(id){ byId(id).status = "queue"; curTab = "queue"; renderAll(); }
+function setPick(id){ pickId = id; toast(`${byId(id).brand} is now Today's Pick.`); renderAll(); }
+
+/* ================= CANDIDATE FORM ================= */
+function fillSelect(id, list, val){
+  $(id).innerHTML = list.map(v => `<option ${v===val ? "selected" : ""}>${esc(v)}</option>`).join("");
+}
+function openForm(id){
+  editId = id || null;
+  const ad = id ? byId(id) : null;
+  $("#formTitle").textContent = ad ? `Edit — ${ad.brand}` : "Add candidate";
+  $("#f-brand").value = ad ? ad.brand : "";
+  $("#f-src").value = ad ? ad.src : "";
+  fillSelect("#f-industry", INDUSTRIES, ad && ad.industry);
+  fillSelect("#f-platform", PLATFORMS, ad && ad.platform);
+  fillSelect("#f-format", FORMATS, ad && ad.format);
+  fillSelect("#f-hookType", HOOKS, ad && ad.hookType);
+  $("#f-months").value = ad ? ad.months : 6;
+  $("#f-hook").value = ad ? ad.hook : "";
+  $("#f-why").value = ad ? ad.why.join("\n") : "";
+  $("#f-steal").value = ad ? ad.steal : "";
+  $("#cform").classList.add("open");
+  $("#f-brand").focus();
+}
+function closeForm(){ $("#cform").classList.remove("open"); editId = null; }
+function saveForm(){
+  const brand = $("#f-brand").value.trim();
+  if(!brand){ toast("Brand is required."); return; }
+  const data = {
+    brand,
+    src: $("#f-src").value.trim() || "Source not recorded",
+    industry: $("#f-industry").value,
+    platform: $("#f-platform").value,
+    format: $("#f-format").value,
+    hookType: $("#f-hookType").value,
+    months: Math.max(1, parseInt($("#f-months").value || "1", 10)),
+    hook: $("#f-hook").value.trim(),
+    why: $("#f-why").value.split("\n").map(s => s.trim()).filter(Boolean),
+    steal: $("#f-steal").value.trim()
+  };
+  if(editId){
+    Object.assign(byId(editId), data);
+    toast(`${brand} updated.`);
+  } else {
+    ads.push(Object.assign({
+      id: Math.max(...ads.map(a => a.id)) + 1,
+      block: ads.length % BLOCKS.length,
+      days: (parseInt($("#f-months").value || "1", 10)) * 30,
+      runLabel: $("#f-months").value + " mo",
+      started: "", libraryId: "", sourceUrl: "",
+      status: "queue", date: ""
+    }, data));
+    curTab = "queue";
+    toast(`${brand} added to the queue.`);
+  }
+  closeForm();
+  renderAll();
+}
+
+/* ================= GLOBAL EVENTS ================= */
+$("#overlay").addEventListener("click", e => { if(e.target.id === "overlay") closeModal(); });
+document.addEventListener("click", () => closeAllFilterMenus());
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){ closeModal(); closeAllFilterMenus(); }
+  if(e.key === "/" && mode === "library" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){
+    e.preventDefault(); $("#search").focus();
+  }
+});
+$("#search").addEventListener("input", e => { state.q = e.target.value.toLowerCase(); renderGrid(); renderControls(); });
+
+/* ================= INIT ================= */
+function renderAll(){ renderHeader(); renderMarquee(); renderPick(); renderControls(); renderGrid(); renderDesk(); }
+renderAll();
+</script>
+</body>
+</html>
