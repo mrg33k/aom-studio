@@ -1210,7 +1210,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                   </td>
                   <td style={td}>
                     {lead.email
-                      ? <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none', wordBreak: 'break-all' }}>{lead.email}</a>
+                      ? <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none', whiteSpace: 'nowrap' }}>{lead.email}</a>
                       : <span style={{ color: '#444' }}>—</span>}
                   </td>
                   <td style={{ ...td, fontSize: '0.72rem', color: '#999' }}>
