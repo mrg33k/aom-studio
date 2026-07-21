@@ -76,7 +76,7 @@ function AppearancePanel({ theme, onTheme }) {
                 <span style={{ display: 'block', width: '78%', height: 8, borderRadius: 4, background: item.surface }} />
                 <span style={{ display: 'block', width: '62%', height: 8, borderRadius: 4, background: item.surface }} />
               </span>
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, fontSize: 13, fontWeight: 600 }}><span>{item.label}</span><span style={{ color: selected ? 'var(--accent)' : 'var(--faint)' }}>{selected ? 'Selected' : 'Choose'}</span></span>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, fontSize: 13, fontWeight: 600 }}><span>{item.label}</span><span style={{ color: selected ? 'var(--accent)' : 'var(--muted)' }}>{selected ? 'Selected' : 'Choose'}</span></span>
             </button>
           );
         })}
@@ -120,7 +120,10 @@ export default function Settings({ onNav, onOpenNav, onSearch, theme = 'dark', o
   const isMobile = useMediaQuery('(max-width: 899px)');
   const worldId = useWorldId();
   const { state, data } = useSettings(worldId, theme);
-  const [section, setSection] = useState('workspace');
+  // Land on the one section with a real, editable control (theme). Workspace is
+  // read-only and Planned is inert, so opening there is a dead end (design-gate
+  // intention: land the user on the thing they can actually DO).
+  const [section, setSection] = useState('appearance');
   const rooms = data?.rooms || [];
   const profile = data?.profile || { initials: '·', name: '', email: '' };
 
@@ -136,7 +139,7 @@ export default function Settings({ onNav, onOpenNav, onSearch, theme = 'dark', o
         <nav aria-label="Settings sections" style={{ width: isMobile ? '100%' : 230, flex: 'none', padding: isMobile ? '10px 12px' : '18px 14px', borderRight: isMobile ? 'none' : '1px solid var(--divider)', borderBottom: isMobile ? '1px solid var(--divider)' : 'none', display: isMobile ? 'flex' : 'block', gap: 6, overflowX: isMobile ? 'auto' : 'visible' }}>
           {SECTIONS.map((item) => {
             const active = item.id === section;
-            return <button type="button" key={item.id} onClick={() => setSection(item.id)} aria-current={active ? 'page' : undefined} style={{ width: isMobile ? 'auto' : '100%', minWidth: isMobile ? 'max-content' : 0, display: 'block', padding: isMobile ? '8px 11px' : '10px 11px', marginBottom: isMobile ? 0 : 5, borderRadius: 10, border: 'none', background: active ? 'var(--accent-weak)' : 'transparent', color: active ? 'var(--accent)' : 'var(--muted)', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}><span style={{ display: 'block', fontSize: 13, fontWeight: 650 }}>{item.label}</span>{!isMobile ? <span style={{ display: 'block', marginTop: 2, fontSize: 11.5, lineHeight: 1.35, color: active ? 'var(--accent)' : 'var(--faint)' }}>{item.sub}</span> : null}</button>;
+            return <button type="button" key={item.id} onClick={() => setSection(item.id)} aria-current={active ? 'page' : undefined} style={{ width: isMobile ? 'auto' : '100%', minWidth: isMobile ? 'max-content' : 0, display: 'block', padding: isMobile ? '8px 11px' : '10px 11px', marginBottom: isMobile ? 0 : 5, borderRadius: 10, border: 'none', background: active ? 'var(--accent-weak)' : 'transparent', color: active ? 'var(--accent)' : 'var(--muted)', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}><span style={{ display: 'block', fontSize: 13, fontWeight: 650 }}>{item.label}</span>{!isMobile ? <span style={{ display: 'block', marginTop: 2, fontSize: 11.5, lineHeight: 1.35, color: active ? 'var(--accent)' : 'var(--muted)' }}>{item.sub}</span> : null}</button>;
           })}
         </nav>
         <main style={{ flex: 1, minWidth: 0, minHeight: 0, overflowY: 'auto', padding: isMobile ? '22px 16px max(28px,env(safe-area-inset-bottom))' : '26px 30px' }}>
