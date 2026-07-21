@@ -29,7 +29,9 @@ const MAPS_ORIGIN = '1128 W Dunbar Dr, Tempe, AZ'
 const DAY_LABELS = {
   1: 'Day 1 — Tempe + Chandler',
   2: 'Day 2 — Gilbert / San Tan Valley / Mesa',
-  3: 'Day 3 — Phoenix / Scottsdale / Glendale',
+  3: 'Day 3 — Phoenix Central + South',
+  4: 'Day 4 — Phoenix North + Scottsdale',
+  5: 'Day 5 — Glendale + Peoria',
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -1106,7 +1108,7 @@ function FilterBar({ filterDay, setFilterDay, filterStatus, setFilterStatus, fil
 
       {/* Day filter */}
       <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', scrollbarWidth: 'none' }}>
-        {['all', '1', '2', '3'].map(d => (
+        {['all', '1', '2', '3', '4', '5'].map(d => (
           <button
             key={d}
             onClick={() => setFilterDay(d)}
@@ -1213,7 +1215,7 @@ export default function OutreachTracker() {
     return true
   })
 
-  const days = filterDay === 'all' ? [1, 2, 3] : [Number(filterDay)]
+  const days = filterDay === 'all' ? [1, 2, 3, 4, 5] : [Number(filterDay)]
   const groups = days.map(day => ({
     day,
     leads: filtered.filter(l => l.day_route === day),
