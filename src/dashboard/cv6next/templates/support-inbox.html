@@ -41,8 +41,8 @@
     <div class="mhdr">
       <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
       <div class="mhtitle">
-        <div class="mhname"><div class="mttl">Email</div><span class="needs-count" data-bind="counts.needYou">3</span></div>
-        <div class="msub"><span data-bind="counts.needYou">3</span> need you · <span data-bind="counts.watching">9</span> watching</div>
+        <div class="mhname"><div class="mttl">Email</div></div>
+        <div class="msub">People-first inbox</div>
       </div>
       <div class="mhactions">
         <!-- DEF-6: was bare div — added role+aria-label for assistive tech -->
@@ -60,12 +60,11 @@
 
         <div class="assure">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          <span class="assure-t">Real people only. Spam and no-reply mail never reach here; messages asking for you are flagged.</span>
+          <span class="assure-t">People only <i></i> Spam and no-reply stay out</span>
         </div>
 
         <div class="sec" data-mod="is-:secVis.needs">
-          <span class="needs"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Needs you</span>
-          <span class="sec-n" data-bind="counts.needYou">3</span>
+          <span class="needs"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Needs a reply</span>
         </div>
 
         <!-- needs-you list — ONE template row; host renders one per item.
@@ -85,12 +84,11 @@
               <span class="astat is-live" data-each="email.tags" data-mod="is-:tag.kind"><span class="sd"></span><span data-bind="tag.label">REAL</span></span>
             </div>
           </div>
-          <button class="assign" style="flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer;" data-action="assignAgent" data-arg="email.id" title="Assign to agent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
+          <button class="assign email-assign" data-action="assignAgent" data-arg="email.id" aria-label="Assign email to an agent" title="Assign to agent"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
         </div>
 
         <div class="sec is-watching" data-mod="is-:secVis.watching">
           <span class="eyebrow">Watching</span>
-          <span class="sec-n" data-bind="counts.watching">9</span>
         </div>
 
         <!-- watching list — ONE template row; host renders one per item -->
@@ -103,7 +101,7 @@
             </div>
             <div class="esnip" data-bind="email.snippet">billing@stripe. Agent filed it. No action needed.</div>
           </div>
-          <button class="assign" style="flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer;" data-action="assignAgent" data-arg="email.id" title="Assign to agent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
+          <button class="assign email-assign" data-action="assignAgent" data-arg="email.id" aria-label="Assign email to an agent" title="Assign to agent"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
         </div>
 
       </div>

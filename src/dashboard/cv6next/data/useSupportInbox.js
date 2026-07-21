@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase';
+import { mailListSnippet } from './presentationClean.js';
 
 const NOREPLY = /(no-?reply|do-?not-?reply|mailer-daemon|postmaster|bounce[@+]|notifications?@|newsletter@|marketing@|mailchimp|sendgrid|klaviyo|hubspot|salesforce)/i;
 const TINTS = ['is-pink', 'is-violet', 'is-green', 'is-neutral'];
@@ -126,7 +127,11 @@ export function useSupportInbox(worldId) {
       initials: initials(w.name || w.email), avatarTint: tintFor(w.email || w.name),
       subject: parsed.subjectLine || firstLine(w.message) || 'New request',
       time: relTime(w.updated_at || w.created_at),
-      snippet: `${w.name || w.email || 'Someone'} · ${firstLine(w.latest_response?.body || w.latest_response || parsed.original || w.message)}`,
+      snippet: mailListSnippet(
+        w.name || w.email || 'Someone',
+        parsed.subjectLine || firstLine(w.message),
+        firstLine(w.latest_response?.body || w.latest_response || parsed.original || w.message),
+      ),
       sender: w.name || w.email || 'Someone', senderSub: `to you · ${w.email || 'Support'}`,
       address: w.email || '',
       body: parsed.original || String(w.message || '').trim(),
@@ -160,7 +165,7 @@ export function useSupportInbox(worldId) {
       while (seenIds.has(id)) id += '+';
       seenIds.add(id);
       const subject = it.subject || '(no subject)';
-      const snippet = `${it.from || it.email || ''} · ${firstLine(it.lastInbound?.snippet || it.snippet)}`;
+      const snippet = mailListSnippet(it.from || it.email || 'Sender', subject, firstLine(it.lastInbound?.snippet || it.snippet));
       const time = relTime(it.lastReply?.date || it.lastInbound?.date || it.date);
       const sender = it.from || it.email || 'Sender';
       const senderSub = `to you · ${it.email || 'mail'}`;

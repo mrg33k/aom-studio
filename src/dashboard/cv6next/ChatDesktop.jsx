@@ -384,7 +384,7 @@ function PlainThread({ messages, onSend, localReadOnly = false }) {
   );
 }
 
-export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile, onAssignEmail }) {
+export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile, onAssignEmail, onOpenWindow, windowMode = false, persistSelection = true }) {
   const { data: list } = useChatList();
   // Stable refs so the memoized composer below doesn't re-mount on every list poll.
   const agents = useMemo(() => list?.agents || [], [list]);
@@ -417,6 +417,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return undefined;
   }, [picked, cleared, agents]);
   useEffect(() => {
+    if (windowMode) return undefined;
     const onKey = (e) => {
       if (e.key !== 'ArrowLeft') return;
       const f = document.activeElement;
@@ -427,7 +428,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selected, onNav]);
+  }, [selected, onNav, windowMode]);
 
   const { messages, blocks, send, awaiting, liveSteps } = useRoomThread(worldId, selected);
   const lastActiveLabel = (() => {
@@ -669,9 +670,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // auto-pins the first agent when nothing is chosen, and persisting that
   // overwrote the real last room with a default (xhigh review finding 7).
   useEffect(() => {
-    if (!picked?.id) return;
+    if (!persistSelection || !picked?.id) return;
     try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room: picked, worldId })); } catch { /* private mode */ }
-  }, [picked, worldId]);
+  }, [picked, worldId, persistSelection]);
   const [expanded, setExpanded] = useState(() => new Set());
   const toggleProject = (slug) => setExpanded((prev) => { const n = new Set(prev); if (n.has(slug)) n.delete(slug); else n.add(slug); return n; });
   // Fan open ONLY the project we arrive on (from Home) — keyed on initialRoom, not on every
@@ -686,12 +687,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   return (
     <SendCtx.Provider value={send || (() => {})}>
     <ReviewCtx.Provider value={(file) => { if (file) onReviewFile?.(file, reviewProject, reviewMission); }}>
-      <div data-cv6 data-theme="dark" className="cv6-screen" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div data-cv6 data-theme="dark" data-chat-window={windowMode ? '1' : undefined} className={`cv6-screen${windowMode ? ' is-chat-window' : ''}`} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* topbar now mounted once in the shell (SharedNav DesktopNav) */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           {/* rooms rail — the switchboard (drop 3): + New up top, rooms scroll,
               Email pinned OUTSIDE the scroll so it is always one click away. */}
-          <div style={{ width: 220, flex: 'none', borderRight: '1px solid var(--divider)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {!windowMode && <div data-chat-room-rail style={{ width: 220, flex: 'none', borderRight: '1px solid var(--divider)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div style={{ flex: 'none', padding: '14px 12px 10px' }}>
               <button type="button" onClick={() => onNav?.('home')}
                 style={{ width: '100%', height: 32, marginBottom: 8, padding: '0 10px', borderRadius: 9, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -732,7 +733,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 <span className="rn" style={{ fontWeight: 600 }}>Email</span>
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* conversation — or, when the pinned Email row is picked, the inbox
               swaps into the center (drop 3: same screen, the middle changes). */}
@@ -753,13 +754,21 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, marginBottom: 2, fontSize: 11.5, color: 'var(--muted)' }}>
-                      <button type="button" onClick={() => onNav?.('home')} style={{ border: 'none', background: 'transparent', color: 'var(--muted)', padding: 0, font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>Rooms</button>
+                      {windowMode
+                        ? <span className="cv6-chat-window-label">Independent chat window</span>
+                        : <button type="button" onClick={() => onNav?.('home')} style={{ border: 'none', background: 'transparent', color: 'var(--muted)', padding: 0, font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>Rooms</button>}
                       {selected.isProject || selected.isMission ? <span aria-hidden="true">/</span> : null}
                       {selected.isMission ? <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{projects.find((p) => p.slug === selected.projectSlug || p.id === selected.projectSlug)?.name || selected.statusText || selected.projectSlug}</span> : null}
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation')}</div>
                   </div>
+                  {!windowMode && onOpenWindow ? (
+                    <button type="button" className="cv6-chat-popout" onClick={() => onOpenWindow(selected)} aria-label={`Open ${selected.name} in a new window`} title="Keep this chat open in its own window">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="8" width="12" height="11" rx="2"/><path d="M9 5h9a2 2 0 0 1 2 2v8"/><path d="m13 11 3-3m0 0v3m0-3h-3"/></svg>
+                      New window
+                    </button>
+                  ) : null}
                   <button
                     onClick={toggleFollow}
                     title={following ? 'You will see this room on Home and get its updates. Click to mute.' : 'Muted. Click to follow along again.'}
@@ -799,7 +808,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
           {/* control drawer — hidden while Email fills the center */}
           {centerMode !== 'email' && (
-          <div style={{ width: 316, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 20, overflowY: 'auto' }}>
+          <div className="cv6-chat-drawer" style={{ width: 316, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 20, overflowY: 'auto' }}>
             {selected ? (
               <>
                 {/* Goals | Files toggle — choose what this column shows. */}

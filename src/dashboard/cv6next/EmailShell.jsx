@@ -32,8 +32,9 @@ function AutoReplyStrip({ isDesktop }) {
   if (state === null) return null;
   if (state === 'error') {
     return (
-      <div className="cv6-autoreply-strip" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isDesktop ? '7px 24px' : '7px 14px', borderBottom: '1px solid var(--divider)', fontSize: 12, color: 'var(--faint)' }}>
-        Auto reply status unavailable right now.
+      <div className="cv6-autoreply-strip is-unavailable" data-layout={isDesktop ? 'desktop' : 'mobile'}>
+        <span className="cv6-autoreply-status" data-tone="quiet"><i /> Status unavailable</span>
+        <span className="cv6-autoreply-copy">Auto reply could not be checked right now.</span>
       </div>
     );
   }
@@ -78,28 +79,27 @@ function AutoReplyStrip({ isDesktop }) {
       ? `${answering ? 'Easy mail can send automatically' : 'Replies are drafted, never sent'}${fs.threshold_min ? ` · holding note after ${fs.threshold_min} min` : ''}`
       : 'Nothing sends without you.';
   return (
-    <div className="cv6-autoreply-strip" aria-live="polite" style={{ display: 'flex', alignItems: 'center', flexWrap: isDesktop ? 'nowrap' : 'wrap', gap: 10, padding: isDesktop ? '9px 24px' : '9px 14px', borderBottom: '1px solid var(--divider)', flexShrink: 0 }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 8, background: on && !stale ? 'var(--success-weak)' : stale ? 'var(--warn-weak)' : 'var(--chip)', color: on && !stale ? 'var(--success)' : stale ? 'var(--warn)' : 'var(--muted)', fontSize: 10.5, fontWeight: 700, flex: 'none' }}>
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor' }} />
-        {policyLabel}
+    <div className="cv6-autoreply-strip" data-layout={isDesktop ? 'desktop' : 'mobile'} aria-live="polite">
+      <div className="cv6-autoreply-primary">
+        <span className="cv6-autoreply-status" data-tone={on && !stale ? 'live' : stale ? 'stale' : 'quiet'}>
+          <i /> {policyLabel}
+        </span>
+        {pending ? (
+          <button type="button" className="cv6-autoreply-action" data-tone="quiet" onClick={cancel} disabled={busy}>
+            Cancel
+          </button>
+        ) : fs.mode && (on || state.can_restore) ? (
+          <button type="button" className="cv6-autoreply-action" data-tone={on ? 'danger' : 'success'} onClick={flip} disabled={busy || (!on && stale)} title={!on && stale ? 'Wait for a fresh watcher check before restoring automation' : undefined}>
+            {on ? 'Pause' : 'Restore'}
+          </button>
+        ) : fs.mode && !on ? <span className="cv6-autoreply-no-restore">No saved mode</span> : null}
+      </div>
+      <span className="cv6-autoreply-copy">
+        <strong>{label}</strong>
+        <span data-stale={stale ? '1' : undefined}>{relativeSync}{stale ? ' · may be stale' : ''}</span>
+        {pending ? <span data-state="pending">Applying your change…</span> : null}
+        {actionError ? <span data-state="error">{actionError}</span> : null}
       </span>
-      <span style={{ flex: 1, minWidth: isDesktop ? 220 : 180, fontSize: 12, color: 'var(--muted)', lineHeight: 1.35 }}>
-        <strong style={{ color: 'var(--fg)', fontWeight: 600 }}>{label}</strong>
-        <span style={{ color: stale ? 'var(--warn)' : 'var(--faint)' }}> · {relativeSync}{stale ? ' — status may be stale' : ''}</span>
-        {pending ? <span style={{ color: 'var(--accent)' }}> · Applying your change…</span> : null}
-        {actionError ? <span style={{ color: 'var(--error)' }}> · {actionError}</span> : null}
-      </span>
-      {pending ? (
-        <button type="button" onClick={cancel} disabled={busy}
-          style={{ height: 26, padding: '0 12px', borderRadius: 13, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1, flex: 'none' }}>
-          Cancel change
-        </button>
-      ) : fs.mode && (on || state.can_restore) ? (
-        <button type="button" onClick={flip} disabled={busy || (!on && stale)} title={!on && stale ? 'Wait for a fresh watcher check before restoring automation' : undefined}
-          style={{ height: 28, padding: '0 13px', borderRadius: 14, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: on ? 'var(--error)' : 'var(--success)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: busy || (!on && stale) ? 'not-allowed' : 'pointer', opacity: busy || (!on && stale) ? 0.55 : 1, flex: 'none' }}>
-          {on ? 'Pause' : 'Restore'}
-        </button>
-      ) : fs.mode && !on ? <span style={{ fontSize: 11.5, color: 'var(--faint)', flex: 'none' }}>No saved mode to restore</span> : null}
     </div>
   );
 }
@@ -118,13 +118,8 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
     <button
       key={id}
       onClick={() => setTab(id)}
-      style={{
-        height: 32, padding: '0 18px', borderRadius: 16, border: 'none',
-        background: tab === id ? 'var(--surface-2)' : 'transparent',
-        color: tab === id ? 'var(--fg)' : 'var(--muted)',
-        fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)',
-        cursor: 'pointer', transition: 'background .15s',
-      }}
+      className={`cv6-email-tab${tab === id ? ' is-active' : ''}`}
+      aria-current={tab === id ? 'page' : undefined}
     >
       {label}
     </button>
@@ -145,18 +140,8 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
           </div>
         </div>
       )}
-      <div className="cv6-email-tabs" style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: isDesktop ? '10px 24px 8px' : '7px 14px',
-        borderBottom: '1px solid var(--divider)', flexShrink: 0,
-        // Headers are fully transparent in every theme (Patrik 2026-07-20): the
-        // one fixed wallpaper shows through — never a locally repainted ground.
-        background: 'transparent',
-      }}>
-        <div style={{
-          display: 'inline-flex', gap: 2, padding: 3, borderRadius: 19,
-          border: '1px solid var(--hair)', background: 'var(--surface)',
-        }}>
+      <div className="cv6-email-tabs" data-layout={isDesktop ? 'desktop' : 'mobile'}>
+        <div className="cv6-email-tablist" role="navigation" aria-label="Email sections">
           {seg('inbox', 'Inbox')}
           {seg('campaign', 'Campaign')}
         </div>

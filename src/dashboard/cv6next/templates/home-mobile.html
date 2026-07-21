@@ -20,7 +20,7 @@
 <div data-cv6 data-theme="dark" data-screen="home-mobile" data-screen-label="Home" class="cv6-screen" style="position:relative;width:390px;height:760px;border-radius:24px;overflow:hidden;background:#05080b;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
   <div class="bg1"></div><div class="bg2"></div>
   <div class="mhdr" style="position:relative;z-index:2;background:transparent;border-bottom-color:rgba(255,255,255,.08);">
-    <div class="mhtitle"><div class="mttl">Home</div><div class="msub">Your rooms</div></div>
+    <div class="mhtitle"><div class="mttl">Rooms</div><div class="msub">Your Corner</div></div>
     <div class="mhactions">
       <!-- Patrik 2026-07-18: Search sits left of Menu, both top-right (matches every other screen). -->
       <div class="ib" role="button" aria-label="Search" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
@@ -37,36 +37,43 @@
          desktop convo column and the old buried "Recently active" strip used (that strip is
          now removed so recents don't render twice). Hidden entirely when there's nothing recent. -->
     <div class="mresume" data-mod="is-:recent.has">
-      <div class="roomshdr"><span class="eyebrow">Pick up where you left off</span></div>
+      <div class="mhome-intro">
+        <span class="eyebrow">Recently active</span>
+        <h1>Pick up where<br><em>work left off.</em></h1>
+      </div>
       <div class="mresumelist">
-        <div class="mresumerow" data-each="recent" data-action="openRecent" data-arg="rec.key">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex:none;margin-top:4px;color:var(--faint);"><circle cx="12" cy="12" r="10"/><path d="m12 6 0 6 4 2"/></svg>
+        <div class="mresumecard" data-each="recent" data-action="openRecent" data-arg="rec.key" data-mod="is-:rec.tint">
+          <div class="mresume-meta"><span class="rsub" data-bind="rec.sub">Space Rising</span><span class="mono mresumeage" data-bind="rec.age">2h</span></div>
           <div class="mresumebody">
-            <div class="mresumetop"><span class="rn" data-bind="rec.name">Deal Bank</span><span class="rsub" data-bind="rec.sub">Space Rising</span></div>
+            <span class="rn" data-bind="rec.name">Deal Bank</span>
             <span class="rprev" data-bind="rec.preview">Shipped the fix; the deploy is live and verified.</span>
           </div>
-          <span class="mono mresumeage" data-bind="rec.age">2h</span>
-          <svg class="mresumechev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+          <span class="mresume-open">Open room <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
         </div>
       </div>
     </div>
-    <div class="roomshdr"><span class="eyebrow">All rooms</span><span style="display:flex;align-items:center;gap:14px;"><span style="font-size:12.5px;font-weight:600;color:var(--accent);" data-action="nav" data-target="rooms">See all</span><button style="display:flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:14px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="newRoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New</button></span></div>
-    <div class="rooms">
+    <div class="roomshdr rooms-directory-head"><span><span class="eyebrow">All rooms</span><small>Projects and specialists</small></span><button class="newroom-btn" data-action="newRoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New room</button></div>
+    <div class="room-directory">
+      <div class="rooms agent-rooms">
       <!-- Agents accordion: one header row that expands its roster in place -->
       <div class="room agentgrp" data-action="toggleAgents" data-mod="is-:agentsOpen" style="cursor:pointer;">
         <span class="agentppl"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.1"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M17.5 19a5.5 5.5 0 0 0-3-4.9"/></svg></span>
-        <span class="rn" style="font-weight:600;">Agents</span>
+        <span class="rn" style="font-weight:600;">Agent rooms</span>
         <span class="tag" data-bind="agentsTotal">6</span>
         <span class="agentcaret"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
       </div>
       <!-- ONE row per curated agent (titles), shown only while the accordion is open -->
       <div class="room agentrow" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" data-bind="room.name">Web</span></div>
+      </div>
       <!-- Recent rooms now live in the "Pick up where you left off" section above All rooms
            (Patrik 2026-07-07); the old buried strip was removed to avoid a double render. -->
+      <div class="project-list-head"><span>Projects</span><span class="mono" data-bind="projects.count">12</span></div>
+      <div class="project-list">
       <!-- ONE template row per project -->
-      <div class="room" style="border-bottom:none;" data-each="projects" data-action="openRoom" data-arg="room.id"><svg class="folder is-violet" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span class="rn" style="font-weight:500;" data-bind="room.name">Space Rising</span><span style="font-size:12px;color:var(--muted);" data-bind="room.count">28</span></div>
+      <div class="room projectroom" data-each="projects" data-action="openRoom" data-arg="room.id"><span class="project-glyph"><svg class="folder is-violet" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span><span class="rn" data-bind="room.name">Space Rising</span><span class="mono project-count" data-bind="room.count">28</span><svg class="project-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></div>
+      </div>
       <!-- Show the rest of the rooms (hidden when none remain) -->
-      <button class="smore-btn" data-mod="is-:projects.moreState" style="width:100%;height:40px;margin-top:8px;border-radius:10px;border:1px dashed var(--hair);background:transparent;color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="showMoreProjects">Show <span data-bind="projects.moreCount">78</span> more rooms</button>
+      <button class="smore-btn" data-mod="is-:projects.moreState" data-action="showMoreProjects">Show <span data-bind="projects.moreCount">78</span> more rooms</button>
     </div>
   </div>
 </div>

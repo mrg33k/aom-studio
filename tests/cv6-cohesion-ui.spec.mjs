@@ -60,3 +60,46 @@ test('mobile Settings makes planned capability status explicit', async ({ page }
   await page.waitForTimeout(250)
   await page.screenshot({ path: '/tmp/corner-m11-mobile.png', fullPage: true })
 })
+
+test('M12 mobile Home gives recent work and room types distinct visual homes', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await open(page, 'demo=m12-mobile&screen=home')
+
+  await expect(page.getByText('Pick up where')).toBeVisible()
+  await expect(page.getByText('Projects', { exact: true })).toBeVisible()
+  await expect(page.getByText('Agent rooms', { exact: true })).toBeVisible()
+  await expect(page.getByText(/Chat-serving alert/)).toHaveCount(0)
+  await expect(page.locator('.mresumecard')).toHaveCount(4)
+
+  const rail = page.locator('.mresumelist')
+  expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
+  const agentCard = await page.locator('.agent-rooms').boundingBox()
+  const projectList = await page.locator('.project-list').boundingBox()
+  expect(agentCard.y + agentCard.height).toBeLessThan(projectList.y)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await page.screenshot({ path: '/tmp/corner-m12-home.png', fullPage: true })
+})
+
+test('M12 mobile Email reserves clean geometry for tabs, policy, and filters', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.route('**/api/dashboard/support-autoreply**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ control: null, can_restore: true, file_state: { mode: 'live', answer_mode: 'send', threshold_min: 8, synced_at: new Date().toISOString() } }),
+  }))
+  await open(page, 'demo=m12-mobile&screen=email')
+
+  await expect(page.getByText('People-first inbox')).toBeVisible()
+  await expect(page.getByText('Needs a reply')).toBeVisible()
+  await expect(page.locator('.needs-count')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible()
+
+  const tabs = await page.locator('.cv6-email-tabs').boundingBox()
+  const policy = await page.locator('.cv6-autoreply-strip').boundingBox()
+  const filters = await page.locator('[data-screen="support-inbox"] .mhchips').boundingBox()
+  expect(tabs.y + tabs.height).toBeLessThanOrEqual(policy.y + 0.5)
+  expect(policy.y + policy.height).toBeLessThanOrEqual(filters.y + 0.5)
+  expect(await page.locator('.email-assign').first().evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgba(0, 0, 0, 0)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await page.screenshot({ path: '/tmp/corner-m12-email.png', fullPage: true })
+})

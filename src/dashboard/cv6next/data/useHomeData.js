@@ -16,6 +16,7 @@ import { useDataContext } from '../providers/DataContext.jsx';
 import { curateTitledAgents, titleForAgent } from './agentTitles.js';
 import { normalizePreview } from './previewText.js';
 import { missionRecencyKey } from './roomKeys.js';
+import { isRoomActivityNoise } from './presentationClean.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -87,8 +88,8 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     };
   });
   const projects = [...(projectRooms || [])].sort((a, b) => {
-    const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-    const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+    const ta = !isRoomActivityNoise({ text: a.last_message_text }) && a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+    const tb = !isRoomActivityNoise({ text: b.last_message_text }) && b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
     return tb - ta;
   }).map((p) => ({
     id: p.id || p.slug, slug: p.slug, name: p.name || p.slug || 'Project',
@@ -165,6 +166,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // nothing — fall back to the honest generic label instead.
   const missionSub = (pn, nm) => (pn && pn.trim().toLowerCase() !== String(nm || '').trim().toLowerCase()) ? pn : 'Mission';
   for (const it of inboxItems || []) {
+    if (isRoomActivityNoise(it)) continue;
     const ts = it.timestamp ? new Date(it.timestamp).getTime() : 0;
     const preview = normalizePreview(it.text);
     if (it.missionSlug) {
@@ -179,6 +181,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   }
   for (const p of projectRooms || []) {
     if (!p.last_message_at || !p.slug) continue;
+    if (isRoomActivityNoise({ text: p.last_message_text })) continue;
     bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at, preview: normalizePreview(p.last_message_text) });
   }
   // Activity-based mission recency: any mission with recent messages surfaces in
@@ -186,6 +189,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // a later inbox bump would overwrite with a fresher timestamp if applicable.
   for (const mr of missionRooms || []) {
     if (!mr.last_message_at || !mr.slug) continue;
+    if (isRoomActivityNoise({ text: mr.last_message_text })) continue;
     const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
     const nm = missionLabel(mr.slug) || mr.slug;
     bump('m:' + missionRecencyKey(mr.slug), { key: 'm:' + missionRecencyKey(mr.slug), id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: normalizePreview(mr.last_message_text) });

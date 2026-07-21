@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { authFetch } from '../lib/authFetch'
 import { getClientId } from '../lib/clientConfig'
+import { isRoomActivityNoise } from '../cv6next/data/presentationClean.js'
 
 // Catch Up = ONLY the things where Patrik is the bottleneck to respond (his words,
 // 2026-06-26). The raw "unread agent message" feed is far too broad: it's full of
@@ -481,6 +482,9 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
           }
           for (const m of (data.messages || [])) {
             if (!m.timestamp) continue
+            // Home is a human activity digest, not an infrastructure log. Supervisor
+            // health alerts remain available in their room but never become recents.
+            if (isRoomActivityNoise(m)) continue
             const t = new Date(m.timestamp).getTime()
             if (Number.isNaN(t)) continue
             if (m.project && (!projRecency[m.project] || t > projRecency[m.project].t)) projRecency[m.project] = { t, text: previewOf(m) }

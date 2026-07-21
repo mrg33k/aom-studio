@@ -3,7 +3,7 @@
    Import ONCE. Put data-cv6 + data-theme on the mount wrapper. Do NOT add
    per-screen CSS — every screen uses only these classes + token vars. */
 
-@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap");
 
 [data-cv6] {
   
@@ -138,6 +138,7 @@
 
 [data-cv6] {
   --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
   --font-mono: 'Space Mono', ui-monospace, 'SF Mono', monospace;
 
   
@@ -1878,4 +1879,373 @@
 @media (prefers-reduced-motion: reduce) {
   [data-cv6] .chip-btn, [data-cv6kit] .chip-btn, [data-cv6] .goalcard .gc-head { transition: none; }
   [data-cv6] .chip-btn:active, [data-cv6kit] .chip-btn:active { transform: none; }
+}
+
+/* ============================================================
+   M12 · MOBILE VISUAL DIRECTION + CLEANUP
+   The first screen should feel like a workspace, not a settings table. Recents
+   become editorial snap cards; specialists and projects get distinct homes.
+   ============================================================ */
+[data-cv6][data-screen="home-mobile"] .hbody { padding-top:0; }
+[data-cv6][data-screen="home-mobile"] .mresume { padding:26px 0 4px; }
+[data-cv6][data-screen="home-mobile"] .mhome-intro { padding:0 22px 16px; }
+[data-cv6][data-screen="home-mobile"] .mhome-intro .eyebrow { color:var(--accent); }
+[data-cv6][data-screen="home-mobile"] .mhome-intro h1 {
+  margin:8px 0 0;
+  font-family:var(--font-serif);
+  font-size:34px;
+  line-height:.96;
+  font-weight:400;
+  letter-spacing:-.025em;
+  color:var(--fg);
+}
+[data-cv6][data-screen="home-mobile"] .mhome-intro h1 em { color:var(--muted); font-weight:400; }
+[data-cv6][data-screen="home-mobile"] .mresumelist {
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:minmax(252px,78vw);
+  gap:11px;
+  margin:0;
+  padding:0 22px 5px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  scroll-padding-inline:22px;
+  scrollbar-width:none;
+}
+[data-cv6][data-screen="home-mobile"] .mresumelist::-webkit-scrollbar { display:none; }
+[data-cv6][data-screen="home-mobile"] .mresumecard {
+  position:relative;
+  min-height:142px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:12px;
+  padding:16px;
+  border:1px solid var(--hair);
+  border-radius:18px;
+  background:
+    radial-gradient(90% 100% at 100% 0%,var(--accent-weak),transparent 64%),
+    var(--surface);
+  color:var(--fg);
+  box-shadow:0 16px 38px -28px rgba(0,0,0,.9);
+  text-align:left;
+  font-family:var(--font-sans);
+  cursor:pointer;
+  scroll-snap-align:start;
+  overflow:hidden;
+}
+[data-cv6][data-screen="home-mobile"] .mresumecard::before {
+  content:"";
+  position:absolute;
+  left:16px;
+  top:0;
+  width:38px;
+  height:3px;
+  border-radius:0 0 4px 4px;
+  background:var(--accent);
+}
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-violet::before { background:var(--violet-400); }
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-pink::before { background:var(--pink-400); }
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-teal::before { background:var(--teal-400); }
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-lime::before { background:var(--lime-400); }
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-amber::before { background:var(--amber-400); }
+[data-cv6][data-screen="home-mobile"] .mresume-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+[data-cv6][data-screen="home-mobile"] .mresume-meta .rsub {
+  min-width:0;
+  font-size:10.5px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+[data-cv6][data-screen="home-mobile"] .mresumeage { flex:none; font-size:10px; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .mresumebody { flex:1; min-width:0; }
+[data-cv6][data-screen="home-mobile"] .mresumecard .rn { display:block; font-size:17px; letter-spacing:-.015em; }
+[data-cv6][data-screen="home-mobile"] .mresumecard .rprev {
+  display:-webkit-box;
+  margin-top:5px;
+  font-size:12.5px;
+  line-height:1.42;
+  color:var(--muted);
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-open {
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  align-self:flex-start;
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--accent);
+}
+[data-cv6][data-screen="home-mobile"] .rooms-directory-head { margin:28px 0 12px; }
+[data-cv6][data-screen="home-mobile"] .rooms-directory-head > span { display:flex; flex-direction:column; gap:3px; }
+[data-cv6][data-screen="home-mobile"] .rooms-directory-head small { color:var(--faint); font-size:12px; }
+[data-cv6][data-screen="home-mobile"] .newroom-btn {
+  min-height:38px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:0 13px;
+  border:1px solid var(--accent-weak);
+  border-radius:12px;
+  background:var(--accent-weak);
+  color:var(--accent);
+  font-family:var(--font-sans);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+[data-cv6][data-screen="home-mobile"] .room-directory { margin:0 22px 26px; }
+[data-cv6][data-screen="home-mobile"] .rooms.agent-rooms {
+  margin:0;
+  border-radius:16px;
+  background:linear-gradient(135deg,var(--surface),var(--surface-2));
+  box-shadow:0 14px 34px -30px rgba(0,0,0,.9);
+}
+[data-cv6][data-screen="home-mobile"] .rooms.agent-rooms .room:last-child { border-bottom:0; }
+[data-cv6][data-screen="home-mobile"] .room.agentrow { background:transparent; }
+[data-cv6][data-screen="home-mobile"] .project-list-head {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:22px 2px 10px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+[data-cv6][data-screen="home-mobile"] .project-list-head .mono { font-size:10px; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .project-list { display:flex; flex-direction:column; gap:8px; }
+[data-cv6][data-screen="home-mobile"] .room.projectroom {
+  width:100%;
+  height:58px;
+  box-sizing:border-box;
+  border:1px solid var(--hair);
+  border-radius:15px;
+  background:var(--surface);
+  color:var(--fg);
+  font-family:var(--font-sans);
+  text-align:left;
+  cursor:pointer;
+}
+[data-cv6][data-screen="home-mobile"] .project-glyph {
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+  background:var(--chip);
+}
+[data-cv6][data-screen="home-mobile"] .project-count { font-size:10px; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .project-chev { color:var(--faint); flex:none; }
+[data-cv6][data-screen="home-mobile"] .smore-btn {
+  width:100%;
+  min-height:42px;
+  margin-top:10px;
+  border-radius:12px;
+  border:1px dashed var(--hair);
+  background:transparent;
+  color:var(--accent);
+  font-size:12.5px;
+  font-weight:700;
+  font-family:var(--font-sans);
+  cursor:pointer;
+}
+
+/* Email navigation and automation policy now have explicit, non-overlapping
+   geometry. The status reads as a compact control plane instead of a banner. */
+[data-cv6] .cv6-email-tabs {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 24px 8px;
+  border-bottom:1px solid var(--divider);
+  flex-shrink:0;
+  background:transparent;
+}
+[data-cv6] .cv6-email-tabs[data-layout="mobile"] { padding:7px 14px; }
+[data-cv6] .cv6-email-tablist {
+  display:inline-flex;
+  gap:2px;
+  padding:3px;
+  border:1px solid var(--hair);
+  border-radius:18px;
+  background:var(--surface);
+}
+[data-cv6] .cv6-email-tab {
+  height:32px;
+  padding:0 18px;
+  border:0;
+  border-radius:15px;
+  background:transparent;
+  color:var(--muted);
+  font-family:var(--font-sans);
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:background .15s ease,color .15s ease;
+}
+[data-cv6] .cv6-email-tab.is-active { background:var(--surface-2); color:var(--fg); }
+[data-cv6] .cv6-autoreply-strip {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:9px 24px;
+  border-bottom:1px solid var(--divider);
+  flex-shrink:0;
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-autoreply-primary { display:contents; }
+[data-cv6] .cv6-autoreply-status {
+  order:1;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex:none;
+  padding:4px 8px;
+  border-radius:8px;
+  background:var(--chip);
+  color:var(--muted);
+  font-size:10.5px;
+  font-weight:800;
+}
+[data-cv6] .cv6-autoreply-status i { width:7px; height:7px; border-radius:50%; background:currentColor; }
+[data-cv6] .cv6-autoreply-status[data-tone="live"] { background:var(--success-weak); color:var(--success); }
+[data-cv6] .cv6-autoreply-status[data-tone="stale"] { background:var(--warn-weak); color:var(--warn); }
+[data-cv6] .cv6-autoreply-copy {
+  order:2;
+  flex:1;
+  min-width:0;
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+  color:var(--faint);
+  font-size:11.5px;
+  line-height:1.35;
+}
+[data-cv6] .cv6-autoreply-copy strong { color:var(--fg); font-size:12px; font-weight:650; }
+[data-cv6] .cv6-autoreply-copy [data-stale="1"] { color:var(--warn); }
+[data-cv6] .cv6-autoreply-copy [data-state="pending"] { color:var(--accent); }
+[data-cv6] .cv6-autoreply-copy [data-state="error"] { color:var(--error); }
+[data-cv6] .cv6-autoreply-action {
+  order:3;
+  min-height:34px;
+  padding:0 12px;
+  border:1px solid var(--hair);
+  border-radius:11px;
+  background:var(--surface-2);
+  color:var(--muted);
+  font-family:var(--font-sans);
+  font-size:11.5px;
+  font-weight:700;
+  cursor:pointer;
+}
+[data-cv6] .cv6-autoreply-action[data-tone="danger"] { color:var(--error); }
+[data-cv6] .cv6-autoreply-action[data-tone="success"] { color:var(--success); }
+[data-cv6] .cv6-autoreply-action:disabled { cursor:not-allowed; opacity:.55; }
+[data-cv6] .cv6-autoreply-no-restore { order:3; color:var(--faint); font-size:11px; }
+
+/* Email list: one source of counts (filters), one quiet trust line, less chrome. */
+[data-cv6][data-screen="support-inbox"] .mhchips { padding-top:9px; padding-bottom:10px; }
+[data-cv6][data-screen="support-inbox"] .assure {
+  gap:7px;
+  margin:7px 16px 2px;
+  padding:7px 1px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+[data-cv6][data-screen="support-inbox"] .assure-t { font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6][data-screen="support-inbox"] .assure-t i { display:inline-block; width:3px; height:3px; margin:0 6px 2px; border-radius:50%; background:var(--faint); }
+[data-cv6][data-screen="support-inbox"] .sec { padding:12px 16px 7px; }
+[data-cv6][data-screen="support-inbox"] .sec.is-watching { padding-top:18px; }
+[data-cv6][data-screen="support-inbox"] .erow { align-items:flex-start; gap:11px; padding:13px 16px; }
+[data-cv6][data-screen="support-inbox"] .ava { width:38px; height:38px; }
+[data-cv6][data-screen="support-inbox"] .esubj { font-size:14px; }
+[data-cv6][data-screen="support-inbox"] .esnip { margin-top:4px; font-size:12px; -webkit-line-clamp:1; }
+[data-cv6][data-screen="support-inbox"] .email-assign {
+  width:42px;
+  min-width:42px;
+  height:42px;
+  padding:0;
+  justify-content:center;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:var(--faint);
+}
+[data-cv6][data-screen="support-inbox"] .email-assign:active { background:var(--surface-2); color:var(--fg); }
+
+@media (max-width:899px) {
+  [data-cv6] .cv6-email-shell { --cv6-email-tabs-height:50px; --cv6-autoreply-strip-height:88px; }
+  [data-cv6] .cv6-email-shell[data-autoreply="1"] .cv6-autoreply-strip {
+    height:var(--cv6-autoreply-strip-height);
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    justify-content:center;
+    gap:5px;
+    padding:8px 16px 9px;
+    overflow:hidden;
+  }
+  [data-cv6] .cv6-autoreply-primary { display:flex; align-items:center; gap:9px; }
+  [data-cv6] .cv6-autoreply-primary .cv6-autoreply-action,
+  [data-cv6] .cv6-autoreply-primary .cv6-autoreply-no-restore { margin-left:auto; }
+  [data-cv6] .cv6-autoreply-copy { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  [data-cv6] .cv6-autoreply-copy strong,
+  [data-cv6] .cv6-autoreply-copy > span { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  [data-cv6] .cv6-autoreply-copy strong { font-size:11.5px; }
+  [data-cv6] .cv6-autoreply-copy > span { margin-top:1px; font-size:10.5px; }
+  [data-cv6] .cv6-autoreply-strip.is-unavailable { flex-direction:row; align-items:center; gap:8px; }
+}
+
+/* M13 · desktop chat windows. The main room keeps one explicit pop-out action;
+   the dedicated window drops the room rail but preserves chat + Files/Goals. */
+[data-cv6] .cv6-chat-popout {
+  min-height:36px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  flex:none;
+  padding:0 12px;
+  border:1px solid var(--hair);
+  border-radius:11px;
+  background:var(--surface-2);
+  color:var(--fg);
+  font-family:var(--font-sans);
+  font-size:12px;
+  font-weight:650;
+  cursor:pointer;
+  transition:border-color .14s ease,background .14s ease,color .14s ease;
+}
+[data-cv6] .cv6-chat-popout:hover { border-color:var(--accent); background:var(--accent-weak); color:var(--accent); }
+[data-cv6] .cv6-chat-popout:active { transform:scale(var(--press-scale)); }
+[data-cv6] .cv6-chat-window-label {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:var(--accent);
+  font-size:10.5px;
+  font-weight:750;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+[data-cv6] .cv6-chat-window-label::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--accent); }
+[data-cv6].is-chat-window { border:1px solid var(--hair); }
+@media (max-width:1020px) {
+  [data-cv6].is-chat-window .cv6-chat-drawer { width:276px !important; padding:16px !important; }
 }
