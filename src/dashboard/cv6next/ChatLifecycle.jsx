@@ -382,7 +382,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
           </div>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} />
+          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={onClose} />
         </div>
       </div>
     </div>

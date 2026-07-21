@@ -82,7 +82,7 @@ export function Cv6MessageTurn({
   const hasText = !!String(message.text || '').trim();
   const extras = hasMessageExtras(message, { allowBlocks, allowAttachments, allowLinkCards, allowChips });
   return (
-    <span data-cv6-message-turn="" data-variant={variant} style={{ display: 'contents' }}>
+    <span data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant={variant} style={{ display: 'contents' }}>
       {hasText ? (
         <div className={bubbleClass}>
           <ChatMessageRenderer content={message.text} />
@@ -198,7 +198,7 @@ function MobileMessageTurn({ message, onAction }) {
     if (el && !open) setClamped(el.scrollHeight > 168 + 4);
   }, [message.text, open]);
   return (
-    <div data-cv6-message-turn="" data-variant="mobile" data-userturn={message.isUser ? '' : undefined} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+    <div data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant="mobile" data-userturn={message.isUser ? '' : undefined} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
       <MobileAvatar message={message} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
@@ -228,7 +228,7 @@ function MobileMessageTurn({ message, onAction }) {
 
 function MobileGoalTurn({ message, goal, blocks }) {
   return (
-    <div data-cv6-message-turn="" data-variant="mobile-goal" style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+    <div data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant="mobile-goal" style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
       <MobileAvatar message={message} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>

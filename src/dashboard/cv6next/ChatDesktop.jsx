@@ -77,13 +77,6 @@ export function fileKind(name, mime) {
   if (m === 'application/pdf' || ext === 'pdf') return 'pdf';
   return 'file';
 }
-// A file's openable URL. An absolute http(s) link opens as-is; a corner path goes through the
-// authed file endpoint (raw bytes) so it never 404s on a bare path.
-function fileHref(url) {
-  const u = String(url || '');
-  if (/^https?:\/\//i.test(u)) return u;
-  return `/api/dashboard/project-file?path=${encodeURIComponent(u.replace(/^\/+/, ''))}&raw=1`;
-}
 // Short "how long ago" + human file size, for the per-row meta line (who · when · size).
 function relAgo(ts) {
   if (!ts) return '';
@@ -114,18 +107,18 @@ function fileGlyph(kind) {
 // The room's files panel: everything that crossed this chat, nothing else.
 // The whole row is the primary open action. Amber is reserved for an item that
 // is still in the waiting-review queue; ordinary files keep a quiet chevron.
-export function FilesShelf({ fromAgent = [], youSent = [], onReview, needsReview, status, windowFull = false }) {
+export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, needsReview, status, windowFull = false }) {
   const CAP = 80; // newest per section; a busy room can carry hundreds
   const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
   const openItem = (it) => {
-    if (onReview) { onReview(it); return; }
-    if (it.url && typeof window !== 'undefined') window.open(fileHref(it.url), '_blank', 'noopener,noreferrer');
+    if (needsAttention(it) && onReview) { onReview(it); return; }
+    onLocate?.(it);
   };
   const row = (it, i) => {
     const waiting = needsAttention(it);
     return (
     <button type="button" key={`${it.url || it.name}-${i}`} onClick={() => openItem(it)}
-      aria-label={`${waiting ? 'Review' : 'Open'} ${it.name}`}
+      aria-label={`${waiting ? 'Review' : 'Find in chat'} ${it.name}`}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 5px', border: 'none', borderBottom: '1px solid var(--divider)', background: 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)', cursor: 'pointer', borderRadius: 8 }}>
       <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -208,7 +201,7 @@ export function useRoomCrossings(worldId, room) {
           const who = isUser ? 'You' : titleForAgent(m.agent || room.name);
           for (const att of rowAttachments(m).attachments) {
             if (!att?.url || !att?.name) continue;
-            out.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime || '', ts: m.timestamp || null, who, size: att.size || 0, isUser });
+            out.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime || '', ts: m.timestamp || null, who, size: att.size || 0, isUser, messageId: m.id || '' });
           }
         }
         out.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
@@ -680,6 +673,17 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const waitingFileKeys = useMemo(() => new Set(reviewWaiting.fileKeys || []), [reviewWaiting.fileKeys]);
   const fileNeedsReview = useCallback((it) => waitingFileKeys.has(String(it?.url || '')) || waitingFileKeys.has(String(it?.name || '')), [waitingFileKeys]);
   const nextReviewFile = useMemo(() => crossings.fromAgent.find(fileNeedsReview) || null, [crossings.fromAgent, fileNeedsReview]);
+  const locateCrossing = useCallback((item) => {
+    setDrawerView('goals');
+    requestAnimationFrame(() => {
+      const root = scrollRef.current;
+      const anchor = [...(root?.querySelectorAll('[data-message-id]') || [])].find((node) => node.getAttribute('data-message-id') === String(item?.messageId || ''));
+      if (!anchor) { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); return; }
+      anchor.closest('.goalcard')?.classList.add('is-open');
+      const visible = anchor.querySelector('.pb, .pb-me, .cv6-msg-extras') || anchor;
+      visible.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }, []);
   // Cold start lands on the last-open room (drop 3): remember every pick; the
   // shell seeds its initial room from this key when the app opens plain.
   // Persist only rooms the user actually PICKED (or arrived in) — `selected`
@@ -822,7 +826,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   ))}
                 </div>
                 {drawerView === 'files' ? (
-                  <FilesShelf fromAgent={crossings.fromAgent} youSent={crossings.youSent} status={crossings.status} windowFull={crossings.windowFull} needsReview={fileNeedsReview} onReview={(it) => onReviewFile?.(it, reviewProject, reviewMission)} />
+                  <FilesShelf fromAgent={crossings.fromAgent} youSent={crossings.youSent} status={crossings.status} windowFull={crossings.windowFull} needsReview={fileNeedsReview} onReview={(it) => onReviewFile?.(it, reviewProject, reviewMission)} onLocate={locateCrossing} />
                 ) : (
                 <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}

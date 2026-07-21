@@ -22,6 +22,7 @@ test('desktop renames a direct chat while keeping its specialist identity', asyn
 
   await openWeb(page, 1440);
   await expect(page.getByRole('button', { name: 'Rename chat' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'More', exact: true }).last().click();
   await page.getByTestId('room-settings-trigger').click();
   await expect(page.getByTestId('room-settings-dialog')).toBeVisible();
   await page.getByLabel('Chat name').fill('Website refresh');
@@ -32,7 +33,7 @@ test('desktop renames a direct chat while keeping its specialist identity', asyn
   await expect(page.getByTestId('room-settings-dialog')).toHaveCount(0);
   await expect(page.getByText('Website refresh', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Web specialist', { exact: true })).toBeVisible();
-  await expect(page.locator('[data-chat-room-rail] .room', { hasText: 'Website refresh' })).toBeVisible();
+  await expect(page.locator('[data-column-type="chat"]', { hasText: 'Website refresh' })).toBeVisible();
   expect(patchBody).toMatchObject({ agent: 'bobby', title: 'Website refresh' });
 });
 
@@ -42,6 +43,7 @@ test('mobile exposes the same persistent rename interaction', async ({ page }) =
 
   await openWeb(page, 390);
   await expect(page.getByRole('button', { name: 'Rename chat' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'More', exact: true }).last().click();
   await page.getByTestId('room-settings-trigger').click();
   await page.getByLabel('Chat name').fill('Launch site');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -63,10 +65,12 @@ test('mobile room settings restore access and specialist controls without docume
   await page.route('**/api/dashboard/supabase-messages**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ messages: [] }) }));
 
   await openWeb(page, 390);
+  await page.getByRole('button', { name: 'More', exact: true }).last().click();
   await page.getByTestId('room-settings-trigger').click();
   await page.getByTestId('room-settings-tab-access').click();
   await expect(page.getByRole('button', { name: 'Copy', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Create workspace invite' })).toHaveAttribute('href', '/dashboard/settings/invites');
+  await expect(page.getByText('Add a new workspace member first, then send them the room link above.')).toBeVisible();
+  await expect(page.getByTestId('room-settings-dialog').locator('a[target="_blank"]')).toHaveCount(0);
   await page.getByTestId('room-settings-tab-specialist').click();
   await expect(page.getByLabel('Model')).toBeVisible();
   await expect(page.getByTestId('room-settings-dialog').getByLabel('Voice')).toBeVisible();

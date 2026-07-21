@@ -52,8 +52,7 @@ function errorCard(src, name) {
     '<div style="display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:10px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);">'
     + `<span style="font-size:13px;font-weight:600;color:${INK};">This PDF couldn't load</span>`
     + `<span style="font-size:12px;color:${INK_MID};">Open it directly or download it instead.</span>`
-    + `<span style="display:flex;gap:14px;"><a href="${escAttr(src)}" target="_blank" rel="noopener" style="font-size:12.5px;font-weight:600;color:#0066FF;text-decoration:none;">Open ↗</a>`
-    + `<a href="${escAttr(src)}" download="${escAttr(name)}" style="font-size:12.5px;font-weight:600;color:#0066FF;text-decoration:none;">Download</a></span></div>`
+    + `<span><a href="${escAttr(src)}" download="${escAttr(name)}" style="font-size:12.5px;font-weight:600;color:#0066FF;text-decoration:none;">Download</a></span></div>`
   );
 }
 
@@ -85,12 +84,10 @@ async function hydrateOne(node, registry) {
     }
 
     const frag = document.createDocumentFragment();
-    // Slim header: mono page count + the native-viewer escape hatch (print/search).
+    // Slim header: the document stays in this in-page reader.
     const head = document.createElement('div');
     head.setAttribute('style', 'display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;');
-    head.innerHTML =
-      `<span class="mono" style="font-size:10.5px;letter-spacing:.4px;color:${INK_MID};">PDF · ${doc.numPages} PAGE${doc.numPages === 1 ? '' : 'S'}</span>`
-      + `<a href="${escAttr(src)}" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#0066FF;text-decoration:none;">Open ↗</a>`;
+    head.innerHTML = `<span class="mono" style="font-size:10.5px;letter-spacing:.4px;color:${INK_MID};">PDF · ${doc.numPages} PAGE${doc.numPages === 1 ? '' : 'S'}</span>`;
     frag.appendChild(head);
 
     const holders = [];

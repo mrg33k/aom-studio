@@ -402,7 +402,7 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 18px 20px' }}>
-        <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} />
+        <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={onClose} />
       </div>
     </div>,
     host,

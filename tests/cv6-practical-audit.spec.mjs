@@ -44,9 +44,10 @@ test.describe('CV6 One Page practical product audit', () => {
     await page.getByRole('button', { name: 'Search', exact: true }).first().click()
     await page.getByPlaceholder('Search rooms and missions…').fill('web')
     await page.locator('.sres', { hasText: 'Web' }).first().click()
-    await expect(page.getByRole('button', { name: 'All rooms' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Rooms', exact: true }).last()).toBeVisible()
-    await expect(page.getByText('No messages in this room yet. Connect a workspace to send messages.')).toBeVisible()
+    await expect(page.locator('[data-column-type="chat"]', { hasText: 'Web' })).toBeVisible()
+    await expect(page.getByText('No messages with Web yet')).toBeVisible()
+    await expect(page.getByText('Connect a workspace to send messages.')).toBeVisible()
+    await page.getByRole('button', { name: 'Files', exact: true }).last().click()
     await expect(page.getByText("Couldn't load this chat's files right now. They're safe — it retries automatically.")).toBeVisible()
 
     for (const [view, label] of [['organize', 'Files'], ['command', 'Command'], ['tracker', 'Tracker'], ['livescribe', 'Scribe']]) {

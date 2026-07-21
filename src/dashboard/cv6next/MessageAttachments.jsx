@@ -229,13 +229,13 @@ function SingleFile({ file, onReview }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 10, maxWidth: 560 }}>
       {usable ? (
-        <a href={fileHref(file.url)} target="_blank" rel="noopener noreferrer" title="Preview the file" className="mfile-open" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textDecoration: 'none' }}>
+        <button type="button" onClick={() => onReview?.(file)} title="Preview the file in Review" className="mfile-open" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textDecoration: 'none', border: 0, background: 'transparent', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
           {glyph}
           <span style={{ flex: 1, minWidth: 0 }}>
             <span className="mfile-name" style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
             <span style={{ display: 'block', fontSize: 10, fontWeight: 600, letterSpacing: '.04em', color: 'var(--faint)', textTransform: 'uppercase' }}>{formatSize(file.size) || ext || kind}</span>
           </span>
-        </a>
+        </button>
       ) : (
         // No usable address (announcement-only post) → non-interactive: name it and
         // point to where it CAN be opened, instead of an Open link that 400s (RANK 19a).
@@ -294,10 +294,10 @@ function FileCollection({ files, onReviewAll, onReview }) {
               return (
                 <div key={i} className="fc-lrow">
                   {usable ? (
-                    <a href={fileHref(f.url)} target="_blank" rel="noopener noreferrer" title="Preview the file" className="mfile-open" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textDecoration: 'none' }}>
+                    <button type="button" onClick={() => onReview?.(f)} title="Preview the file in Review" className="mfile-open" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, textDecoration: 'none', border: 0, background: 'transparent', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                       <span className="lg">{fileGlyph(fileKind(f.name, f.mime))}</span>
                       <span className="mfile-name" style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                    </a>
+                    </button>
                   ) : (
                     // No usable address → non-interactive row (RANK 19a): no Open/Download
                     // that 400s; the "Review all" footer still reaches the queue's copy.

@@ -55,6 +55,7 @@ function normalizeData(b) {
 // Email block renderer.
 function EmailBlock({ block, onAction }) {
   const atts = Array.isArray(block.attachments) ? block.attachments : [];
+  const openReview = React.useContext(ReviewCtx);
   return (
     <div className="cmail" style={{ marginTop: 4 }}>
       <div className="cmail-h">
@@ -91,7 +92,7 @@ function EmailBlock({ block, onAction }) {
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)' }}>{f.name || 'file'}</div>
                 {f.size ? <div className="mono" style={{ fontSize: 10, color: 'var(--faint)' }}>{f.size}</div> : null}
               </div>
-              {f.url ? <button className="pillbtn" onClick={() => window.open(f.url, '_blank', 'noopener')}>Open</button> : null}
+              {f.url ? <button className="pillbtn" onClick={() => openReview?.({ url: f.url, name: f.name || f.url })}>Review</button> : null}
             </div>
           ))}
         </div>
@@ -197,8 +198,7 @@ function ArtifactBlock({ block, onAction }) {
       openReview({ url: block.url, name: block.name || block.url, type: isShot ? '' : 'sitelive' });
       return;
     }
-    if (block.url) window.open(block.url, '_blank', 'noopener');
-    else onAction?.(`Open ${block.name || 'this'} in Review`);
+    onAction?.(`Open ${block.name || 'this'} in Review`);
   };
   return (
     <div className="cartifact" style={{ marginTop: 4 }}>
@@ -542,8 +542,9 @@ function GalleryBlock({ block }) {
   const imgs = Array.isArray(block.images) ? block.images : [];
   const shown = imgs.slice(0, 5);
   const overflow = imgs.length - shown.length;
+  const openReview = React.useContext(ReviewCtx);
   const open = (im) => {
-    if (im?.url) window.open(im.url, '_blank', 'noopener');
+    if (im?.url) openReview?.({ url: im.url, name: im.label || 'Image' });
   };
   return (
     <div style={{ marginTop: 4 }}>

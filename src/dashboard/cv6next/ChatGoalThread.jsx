@@ -255,6 +255,7 @@ export function ActionChips({ actions, primaryFirst = true }) {
 function EmailBlock({ block }) {
   const atts = Array.isArray(block.attachments) ? block.attachments : [];
   const send = useThreadSend();
+  const openReview = useThreadReview();
   return (
     <div className="cmail" style={{ marginTop: 4 }}>
       <div className="cmail-h">
@@ -272,7 +273,7 @@ function EmailBlock({ block }) {
             <div key={i} className="frowm" style={{ marginTop: i ? 8 : 0 }}>
               <span className="fg"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg></span>
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)' }}>{f.name || 'file'}</div>{f.size ? <div className="mono" style={{ fontSize: 10, color: 'var(--faint)' }}>{f.size}</div> : null}</div>
-              {f.url ? <button className="pillbtn" onClick={() => window.open(f.url, '_blank', 'noopener')}>Open</button> : null}
+              {f.url ? <button className="pillbtn" onClick={() => openReview?.({ url: f.url, name: f.name || f.url })}>Review</button> : null}
             </div>
           ))}
         </div>
@@ -344,8 +345,7 @@ function ArtifactBlock({ block }) {
       openReview({ url: block.url, name: block.name || block.url, type: isShot ? '' : 'sitelive' });
       return;
     }
-    if (block.url) window.open(block.url, '_blank', 'noopener');
-    else send(`Open ${block.name || 'this'} in Review`);
+    send(`Open ${block.name || 'this'} in Review`);
   };
   return (
     <div className="cartifact" style={{ marginTop: 4 }}>
@@ -605,7 +605,8 @@ function GalleryBlock({ block }) {
   const imgs = Array.isArray(block.images) ? block.images : [];
   const shown = imgs.slice(0, 5);
   const overflow = imgs.length - shown.length;
-  const open = (im) => { if (im?.url) window.open(im.url, '_blank', 'noopener'); };
+  const openReview = useThreadReview();
+  const open = (im) => { if (im?.url) openReview?.({ url: im.url, name: im.label || 'Image' }); };
   return (
     <div style={{ marginTop: 4 }}>
       <div className="cgal">

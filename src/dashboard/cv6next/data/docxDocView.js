@@ -46,8 +46,7 @@ function errorCard(src, name, why) {
     '<div style="display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:10px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);">'
     + `<span style="font-size:13px;font-weight:600;color:${INK};">This document couldn't load</span>`
     + `<span style="font-size:12px;color:${INK_MID};">${escAttr(why || 'Open it directly or download it instead.')}</span>`
-    + `<span style="display:flex;gap:14px;"><a href="${escAttr(src)}" target="_blank" rel="noopener" style="font-size:12.5px;font-weight:600;color:#0066FF;text-decoration:none;">Open ↗</a>`
-    + `<a href="${escAttr(src)}" download="${escAttr(name)}" style="font-size:12.5px;font-weight:600;color:#0066FF;text-decoration:none;">Download</a></span></div>`
+    + `<span><a href="${escAttr(src)}" download="${escAttr(name)}" style="font-size:12.5px;font-weight:600;color:#0066FF;text-decoration:none;">Download</a></span></div>`
   );
 }
 
@@ -108,9 +107,8 @@ async function hydrateOne(node, registry) {
     const body = sanitize(result.value || '');
     if (!body.trim()) throw new Error('empty document');
     node.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;">'
-      + `<span class="mono" style="font-size:10.5px;letter-spacing:.4px;color:${INK_MID};">WORD DOCUMENT</span>`
-      + `<a href="${escAttr(src)}" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#0066FF;text-decoration:none;">Open ↗</a></div>`
+      '<div style="display:flex;align-items:center;margin:0 0 10px;">'
+      + `<span class="mono" style="font-size:10.5px;letter-spacing:.4px;color:${INK_MID};">WORD DOCUMENT</span></div>`
       + `<style>${BODY_CSS}</style>`
       + `<div data-docx-body>${body}</div>`;
   } catch (e) {

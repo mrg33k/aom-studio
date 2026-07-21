@@ -72,7 +72,6 @@ export default function RoomSettingsDialog({
   onClose,
   onRenamed,
   onOpenFiles,
-  onOpenWindow,
   archivedMessages = [],
   onClearRoom,
 }) {
@@ -288,7 +287,6 @@ export default function RoomSettingsDialog({
               <div className="room-settings-card room-settings-stack">
                 <SettingRow icon={<SettingIcon type="updates" />} title={following ? 'Following this room' : 'Updates muted'} copy={following ? 'Activity can surface on Home.' : 'The room stays available without update nudges.'} action={<button type="button" role="switch" aria-checked={following} className={`room-settings-switch${following ? ' is-on' : ''}`} onClick={toggleFollowing}><span /></button>} />
                 {onOpenFiles ? <SettingRow icon={<SettingIcon type="files" />} title="Room files" copy="Everything sent by you and the specialist." action={<button type="button" className="room-settings-link" onClick={() => { onClose?.(); onOpenFiles?.(); }}>Open</button>} /> : null}
-                {onOpenWindow ? <SettingRow icon={<SettingIcon type="window" />} title="Open another window" copy="Keep this chat visible beside your other work." action={<button type="button" className="room-settings-link" onClick={() => { onClose?.(); onOpenWindow?.(room); }}>Open</button>} /> : null}
               </div>
             </>
           ) : null}
@@ -321,7 +319,6 @@ export default function RoomSettingsDialog({
                       ))}
                       {!collaboratorsLoading && !collaborators.length ? <div className="room-settings-note">No collaborators yet.</div> : null}
                     </div>
-                    <a className="room-settings-secondary-link" href="/dashboard/settings/invites" target="_blank" rel="noreferrer">Invite someone new to Corner</a>
                   </div>
                 </>
               ) : (
@@ -329,7 +326,6 @@ export default function RoomSettingsDialog({
                   <SectionIntro title="Workspace access">Direct specialist rooms are shared with signed-in members of this Corner workspace.</SectionIntro>
                   <div className="room-settings-card">
                     <div className="room-settings-note">Add a new workspace member first, then send them the room link above.</div>
-                    <a className="room-settings-secondary-link" href="/dashboard/settings/invites" target="_blank" rel="noreferrer">Create workspace invite</a>
                   </div>
                 </>
               )}

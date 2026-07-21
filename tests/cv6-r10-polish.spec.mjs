@@ -11,14 +11,8 @@ test('Home exposes all projects, mobile logo, one theme control, and desktop Ema
   await expect(top.getByRole('button', { name: /theme\. Switch to/i })).toHaveCount(1)
   await expect(page.getByRole('button', { name: /more projects|more rooms/i })).toHaveCount(0)
   await page.screenshot({ path: '/tmp/corner-r10-home-desktop.png', fullPage: true })
-  const [emailColumn] = await Promise.all([
-    page.waitForEvent('popup'),
-    top.getByRole('button', { name: 'Open Email column' }).click(),
-  ])
-  await emailColumn.waitForLoadState('domcontentloaded')
-  expect(new URL(emailColumn.url()).searchParams.get('popout')).toBe('email')
-  await expect(emailColumn.locator('.topbar')).toHaveCount(0)
-  await emailColumn.close()
+  await top.getByRole('button', { name: 'Open Email column' }).click()
+  await expect(page.locator('[data-column-type="email"]')).toBeVisible()
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload({ waitUntil: 'domcontentloaded' })
@@ -42,7 +36,7 @@ test('chat composer has two rows, Plan mode metadata, options, and live progress
   })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`${BASE}/dashboard?cv6=1&demo=mobile-chat-lifecycle`, { waitUntil: 'domcontentloaded' })
-  await expect(page.getByRole('button', { name: /Options for/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'More', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Commands' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Attach and upload files' })).toBeVisible()
   const mode = page.getByRole('button', { name: /Currently in work mode/i })
@@ -55,7 +49,8 @@ test('chat composer has two rows, Plan mode metadata, options, and live progress
   await expect(page.locator('.cv6-live-progress')).toHaveText(/\S+/)
   await page.screenshot({ path: '/tmp/corner-r10-chat-mobile.png', fullPage: true })
 
-  await page.getByRole('button', { name: /Options for/i }).click()
+  await page.getByRole('button', { name: 'More', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Room settings' }).click()
   await expect(page.getByTestId('room-settings-dialog')).toBeVisible()
   await page.getByTestId('room-settings-tab-access').click()
   await expect(page.getByText('Invite and share')).toBeVisible()
@@ -76,7 +71,7 @@ test('Email exposes Auto-reply controls and urgency scores', async ({ page }) =>
   const policyPosts = []
   await page.route('**/api/dashboard/support-autoreply*', async (route) => {
     if (route.request().method() === 'POST') policyPosts.push(JSON.parse(route.request().postData() || '{}'))
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ file_state: { mode: 'live', answer_mode: 'send', threshold_min: 8, tone: 'warm and direct', instructions: 'Be concise', sign_off: 'Best,\nThe AOM Team', synced_at: new Date().toISOString() }, control: null, can_restore: true }) })
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ file_state: { mode: 'live', answer_mode: 'send', threshold_min: 8, tone: 'warm and direct', instructions: 'Be concise', synced_at: new Date().toISOString() }, control: null, can_restore: true }) })
   })
   await page.setViewportSize({ width: 1440, height: 950 })
   await page.goto(`${BASE}/dashboard?cv6=1&demo=email-autoreply`, { waitUntil: 'domcontentloaded' })
@@ -86,6 +81,7 @@ test('Email exposes Auto-reply controls and urgency scores', async ({ page }) =>
   await expect(page.getByText('Easy answers')).toBeVisible()
   await expect(page.getByText('Reply vibe', { exact: true })).toBeVisible()
   await expect(page.getByText('Instructions', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Sign-off')).toHaveValue('Cheers,')
   await page.getByLabel('Reply vibe').fill('calm, warm, and concise')
   await page.getByLabel('Instructions').fill('Answer the direct question first.')
   await page.getByRole('button', { name: 'Save policy' }).click()

@@ -138,8 +138,8 @@ export function rewriteHtmlForPreview(source, src, sourcePath = '') {
   doc.querySelectorAll('a[href]').forEach((node) => {
     const href = node.getAttribute('href') || '';
     if (!isPassthroughUrl(href)) node.setAttribute('href', assetUrl(href, ctx));
-    node.setAttribute('target', '_blank');
-    node.setAttribute('rel', 'noopener noreferrer');
+    node.removeAttribute('target');
+    node.removeAttribute('rel');
   });
 
   return `<!doctype html>\n${doc.documentElement.outerHTML}`;
@@ -151,7 +151,6 @@ function errorCard(src, name) {
     + `<span style="font-size:12.5px;color:${INK_MID};">Retry the inline preview. Your file is unchanged.</span>`
     + '<span style="display:flex;gap:10px;">'
     + '<button type="button" data-html-retry style="height:32px;padding:0 14px;border:none;border-radius:9px;background:#0066FF;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Retry</button>'
-    + `<a href="${escAttr(src)}" target="_blank" rel="noopener" style="height:32px;display:inline-flex;align-items:center;color:#0066FF;font-size:12px;font-weight:600;text-decoration:none;">Open source ↗</a>`
     + `<span hidden>${escAttr(name)}</span></span></div>`;
 }
 

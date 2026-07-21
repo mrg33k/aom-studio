@@ -25,11 +25,12 @@ test('desktop room spine and file rail keep context and attention honest', async
   await page.getByPlaceholder('Search rooms and missions…').fill('web')
   await page.locator('.sres', { hasText: 'Web' }).first().click()
 
-  await expect(page.getByRole('button', { name: 'All rooms' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Rooms', exact: true }).last()).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Review draft-strategy.pdf' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Open final-copy.docx' })).toBeVisible()
-  await expect(page.getByText('Review', { exact: true })).toBeVisible()
+  await expect(page.locator('[data-column-type="chat"]', { hasText: 'Web' })).toBeVisible()
+  await page.getByRole('button', { name: 'Files', exact: true }).last().click()
+  await expect(page.getByRole('button', { name: 'Find in chat draft-strategy.pdf' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Find in chat final-copy.docx' })).toBeVisible()
+  await page.getByRole('button', { name: 'Find in chat final-copy.docx' }).click()
+  await expect(page.getByText('Files in this room')).toHaveCount(0)
   await page.screenshot({ path: '/tmp/corner-m11-desktop.png', fullPage: true })
 })
 
