@@ -175,6 +175,7 @@ const TenantSignupPage = lazy(() => import('./pages/TenantSignupPage.jsx'))
 const R65LiveThread = lazy(() => import('./pages/R65LiveThread.jsx'))
 const ConradFoundation = lazy(() => import('./pages/ConradFoundation.jsx'))
 const ConradFoundation2 = lazy(() => import('./pages/ConradFoundation2.jsx'))
+const OutreachTracker = lazy(() => import('./pages/OutreachTracker.jsx'))
 const MissionWaterGame = lazy(() => import('./pages/MissionWaterGame.jsx'))
 // NOTE: SpaceAvailableGame import + routes removed 2026-06-22 — its file was untracked
 // (another workstream's WIP) and broke the Vercel production build (could not resolve
@@ -635,6 +636,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/ai-hours/admin" element={<AIHoursAdmin />} />
           <Route path="/support" element={<SupportWish />} />
           <Route path="/support/admin" element={<SupportAdmin />} />
+          <Route path="/outreach" element={<OutreachTracker />} />
           <Route path="/:tenantSlug/signup" element={<TenantSignupPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
