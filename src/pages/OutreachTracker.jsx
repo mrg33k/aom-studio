@@ -1254,6 +1254,11 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                           <span style={{ color: '#D0D0CE' }}>{lead.hook}</span>
                         </div>
                       )}
+                      {lead.gaps && (
+                        <div style={{ fontSize: '0.6rem', color: '#C4A46A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                          How we help
+                        </div>
+                      )}
                       {lead.gaps && lead.gaps.split('\n').filter(Boolean).map((g, i) => (
                         <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.2rem', color: '#D0D0CE' }}>
                           <span style={{ color: '#C4A46A', flexShrink: 0 }}>•</span>
