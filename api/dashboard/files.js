@@ -392,7 +392,26 @@ export default async function handler(req, res) {
     const { type, prefix, client } = req.query
 
     if (type === 'images') {
-      const listPrefix = prefix || ''
+      // HARD-GATE (corner:audit R4b, 2026-07-21). This reader lists the corner-files
+      // Storage bucket and returns public byte URLs. It used to take req.query.prefix
+      // verbatim with NO tenant check + permissive CORS -- any unauthenticated caller
+      // could enumerate EVERY tenant's objects (cross-tenant leak). The bucket is a
+      // retired byte store (CV6 Files no longer reads it; only the legacy CV3 tasks
+      // drawer does, and it degrades gracefully to an empty list). We keep the endpoint
+      // for that one caller but now REQUIRE a verified tenant and FORCE the listing
+      // under the tenant's own world segment, so cross-prefix enumeration is impossible.
+      const clientId = client ? String(client).trim().toLowerCase() : ''
+      if (!clientId) return res.status(400).json({ error: 'client (tenant) required', files: [] })
+      try {
+        await verifyTenant(clientId, req)
+      } catch (e) {
+        return res.status(e.status || 403).json({ error: e.message || 'forbidden', files: [] })
+      }
+      // Mirror layout is <world>/<project>/... -- force the world segment, stripping any
+      // leading slash and '..' so a caller can never reach outside their own namespace.
+      const worldSeg = `${clientId}/`
+      let listPrefix = String(prefix || '').replace(/^\/+/, '').replace(/\.\.(\/|$)/g, '')
+      if (!listPrefix.startsWith(worldSeg)) listPrefix = `${worldSeg}${listPrefix}`
       const recursive = req.query.recursive === '1' || req.query.recursive === 'true'
 
       // ── Supabase Storage list ──
@@ -804,40 +823,16 @@ export default async function handler(req, res) {
     const { action } = body
 
     if (action === 'sign-upload') {
-      // Returns a signed upload URL for the client to PUT the file directly to Supabase Storage.
-      // This keeps the service role key server-side while allowing direct-to-Supabase uploads.
-      const { path: filePath, contentType } = body
-      if (!filePath || !contentType) {
-        return res.status(400).json({ error: 'path and contentType required' })
-      }
-
-      const url = `${SUPABASE_URL}/storage/v1/object/upload/sign/${BUCKET}/${filePath}`
-      const sbRes = await fetch(url, {
-        method: 'POST',
-        headers: { ...storageHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ upsert: false }),
+      // RETIRED (corner:audit R4a, 2026-07-21). This action signed a direct-to-
+      // Supabase-Storage upload URL for the corner-files bucket -- a bytes-into-Storage
+      // violation of the hard platform invariant: file BYTES never touch Supabase
+      // Storage (Supabase holds only rows; bytes live on disk, served via the
+      // rag.aheadofmarket.com tunnel). No caller remains in the app. Uploads route
+      // through the tunnel binary endpoint instead (POST /api/dashboard/file-upload
+      // -> rag-server /upload-file). Return 410 Gone so any straggler fails loud.
+      return res.status(410).json({
+        error: 'sign-upload is retired: direct-to-Supabase-Storage uploads are not allowed. Route file bytes through POST /api/dashboard/file-upload (rag.aheadofmarket.com tunnel) instead.',
       })
-      if (!sbRes.ok) {
-        const err = await sbRes.text()
-        return res.status(sbRes.status).json({ error: err })
-      }
-      const data = await sbRes.json()
-      // Supabase returns { url: "/object/upload/sign/..." } (no /storage/v1 prefix)
-      const signedPath = data.signedURL || data.url
-      if (!signedPath) {
-        return res.status(500).json({ error: 'Supabase did not return a signed URL' })
-      }
-      let fullUploadUrl
-      if (signedPath.startsWith('http')) {
-        fullUploadUrl = signedPath
-      } else if (signedPath.startsWith('/storage/')) {
-        fullUploadUrl = `${SUPABASE_URL}${signedPath}`
-      } else {
-        // Supabase returns /object/... without /storage/v1 prefix
-        fullUploadUrl = `${SUPABASE_URL}/storage/v1${signedPath}`
-      }
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${filePath}`
-      return res.status(200).json({ uploadUrl: fullUploadUrl, publicUrl })
     }
 
     if (action === 'save-text') {

@@ -81,6 +81,13 @@ export default async function handler(req, res) {
     const fileName = `${user_id}.${ext}`
     const imageBuffer = Buffer.from(image_base64, 'base64')
 
+    // INVARIANT-VIOLATION TODO(corner:audit R15): avatar bytes go to Supabase Storage; reroute to disk+tunnel
+    // Reroute DEFERRED (not ripped out) so avatar rendering keeps working. The only
+    // server-side disk+tunnel write path a Vercel function can reach is the RAG server's
+    // /upload-file (used by file-upload.js) -- but that endpoint auto-shares every upload
+    // into the world chat AND indexes it into RAG search, both wrong for a profile picture.
+    // A side-effect-free avatar endpoint on rag-server is needed first; until then the
+    // bucket write below stays. See RISK NOTES.
     // Upload to Supabase Storage (upsert)
     const uploadRes = await fetch(
       `${SUPABASE_URL}/storage/v1/object/avatars/${fileName}`,

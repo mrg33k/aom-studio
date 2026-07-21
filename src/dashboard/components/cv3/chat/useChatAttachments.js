@@ -318,15 +318,28 @@ export default function useChatAttachments({
     if (selectedProject?.missionSlug) uploadScope.mission_slug = _bareMissionSlug(selectedProject.missionSlug, selectedProject.slug)
     if (selectedAgent?.slug && !selectedProject) uploadScope.agent_slug = selectedAgent.slug
 
+    // Fold the "can you confirm you got it?" ask into THIS one attachment message
+    // for project rooms (RANK 19b), instead of firing a second delayed message that
+    // caused a double-dispatch (and sometimes the agent replied to the confirm before
+    // the file hint). One row → one dispatch, carrying both the caption and the hint.
+    // The ask rides on a trailing line AFTER the URL(s); the bridge/listener parse the
+    // "Attached ..." header + RAG URLs, and rowAttachments only reads the URL lines, so
+    // a natural-language tail can't be mistaken for a file address.
+    const confirmAsk = selectedProject
+      ? (attachmentMetas.length === 1
+          ? `\n\nI just uploaded ${attachmentMetas[0].name}. Can you confirm you got it?`
+          : `\n\nI just uploaded ${attachmentMetas.length} files: ${attachmentMetas.map(a => a.name).join(', ')}. Can you confirm you got them?`)
+      : ''
+
     let attachText, metadata
     if (attachmentMetas.length === 1) {
       const att = attachmentMetas[0]
-      attachText = `Attached file: ${att.name}\n${att.url}`
+      attachText = `Attached file: ${att.name}\n${att.url}${confirmAsk}`
       metadata = { attachment: att, ...uploadScope }
     } else {
       const names = attachmentMetas.map(a => a.name).join(', ')
       const urls = attachmentMetas.map(a => a.url).join('\n')
-      attachText = `Attached ${attachmentMetas.length} files: ${names}\n${urls}`
+      attachText = `Attached ${attachmentMetas.length} files: ${names}\n${urls}${confirmAsk}`
       metadata = { attachments: attachmentMetas, ...uploadScope }
     }
 
@@ -374,13 +387,10 @@ export default function useChatAttachments({
       })
       .catch(() => {})
 
-    if (selectedProject && sendProjectTextRef?.current) {
-      const names = uploaded.map(r => r.file.name).join(', ')
-      const autoMsg = uploaded.length === 1
-        ? `I just uploaded ${names}. Can you confirm you got it?`
-        : `I just uploaded ${uploaded.length} files: ${names}. Can you confirm you got them?`
-      setTimeout(() => sendProjectTextRef.current?.(autoMsg), 500)
-    }
+    // (RANK 19b) The former delayed second "I just uploaded X, can you confirm…"
+    // send was removed — its ask is now folded into attachText above, so the upload
+    // is exactly ONE row / ONE dispatch. sendProjectTextRef is retained on the hook's
+    // signature for API compatibility but is no longer used here.
   }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, surfaceUploadError])
 
   return {

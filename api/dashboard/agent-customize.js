@@ -36,6 +36,10 @@ export default async function handler(req, res) {
   if (image_base64) {
     const fileName = `agent-${slug}-${client_id}.jpg`
     const imageBuffer = Buffer.from(image_base64, 'base64')
+    // INVARIANT-VIOLATION TODO(corner:audit R15): avatar bytes go to Supabase Storage; reroute to disk+tunnel
+    // Reroute DEFERRED (not ripped out) so agent sprite rendering keeps working -- same
+    // blocker as avatar.js: the reachable disk+tunnel path (rag-server /upload-file) auto-
+    // shares to chat + indexes to RAG, wrong for a sprite. See RISK NOTES.
     const uploadRes = await fetch(
       `${SUPABASE_URL}/storage/v1/object/avatars/${fileName}`,
       {
