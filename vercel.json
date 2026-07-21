@@ -599,6 +599,10 @@
     {
       "source": "/holistic-balance/deck",
       "destination": "/holisticbalance/business-deck.html"
+    },
+    {
+      "source": "/aztc",
+      "destination": "/aztc.html"
     }
   ],
   "redirects": [

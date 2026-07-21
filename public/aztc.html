@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ahead of Market × Arizona Technology Council — Partnership Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Schibsted+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink-900:#0B0B0B; --ink-700:#2A2A28; --ink-500:#6E6E66; --ink-400:#8E8D84;
+    --ink-300:#B6B2AB; --ink-200:#D8D5CE; --ink-100:#ECEAE4;
+    --paper:#F6F6F4; --paper-pure:#FFFFFF; --paper-alt:#EEEDE8;
+    --gold:#C4A46A; --gold-deep:#A8884C; --gold-dim:#EFE6D3;
+    --font-display:'Bricolage Grotesque', system-ui, Helvetica, Arial, sans-serif;
+    --font-text:'Schibsted Grotesk', system-ui, Helvetica, Arial, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0b0b0b; font-family:var(--font-text); }
+  .scroller{ height:100vh; overflow-y:auto; scroll-snap-type:y mandatory; }
+  .frame{ height:100vh; width:100vw; display:flex; align-items:center; justify-content:center;
+    scroll-snap-align:start; scroll-snap-stop:always; background:#0b0b0b; }
+  .stage{ width:1280px; height:720px; position:relative; transform-origin:center center; flex:0 0 auto; }
+
+  /* every slide is ivory */
+  .slide{ position:absolute; inset:0; overflow:hidden; padding:80px; box-sizing:border-box;
+    background:var(--paper); color:var(--ink-900); }
+  .mark{ position:absolute; top:60px; right:68px; height:50px; line-height:0; z-index:3; color:var(--ink-900); }
+  .mark svg{ height:100%; width:auto; display:block; }
+  .kick{ font-family:var(--font-text); font-size:15px; letter-spacing:0.2em; text-transform:uppercase; color:var(--ink-500); }
+  .kick.gold{ color:var(--gold-deep); }
+  .disp{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; letter-spacing:-0.03em; margin:0; }
+  .accent{ color:var(--gold-deep); }
+  .gp{ color:var(--gold); }
+  .foot{ position:absolute; left:80px; right:80px; bottom:54px; display:flex; justify-content:space-between;
+    font-family:var(--font-text); font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-500); }
+  .h2{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; letter-spacing:-0.03em;
+    font-size:56px; line-height:0.98; margin:14px 0 40px; }
+
+  /* ---- 1 · cover ---- */
+  #cover{ display:flex; flex-direction:column; justify-content:space-between; }
+  #cover .top{ display:flex; flex-direction:column; gap:12px; }
+  #cover h1{ font-size:132px; line-height:0.88; }
+  #cover .sub{ font-family:var(--font-text); font-size:19px; letter-spacing:0.02em; color:var(--ink-500); margin-top:26px; text-transform:uppercase; letter-spacing:0.14em; }
+
+  /* ---- 2 · trade ---- */
+  .trade{ display:grid; grid-template-columns:1fr 1fr; height:100%; }
+  .trade .col{ padding:74px 56px 64px; display:flex; flex-direction:column; }
+  .trade .give{ border-right:1px solid var(--ink-200); }
+  .colhead{ font-family:var(--font-text); font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:var(--ink-500); }
+  .coltitle{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; font-size:38px; letter-spacing:-0.02em; margin:10px 0 24px; line-height:0.98; }
+  .item{ padding:15px 0; border-top:1px solid var(--ink-200); }
+  .item b{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; font-size:19px; letter-spacing:-0.01em; display:block; }
+  .item span{ font-size:14px; color:var(--ink-500); line-height:1.4; display:block; margin-top:3px; }
+  .colfoot{ margin-top:auto; padding-top:22px; font-family:var(--font-display); font-weight:800; font-size:22px; letter-spacing:-0.02em; }
+  .stripe{ position:absolute; left:0; right:0; bottom:0; background:var(--gold); color:var(--ink-900);
+    text-align:center; padding:14px 0; font-family:var(--font-display); font-weight:800; text-transform:uppercase;
+    letter-spacing:0.02em; font-size:16px; z-index:4; }
+
+  /* ---- 3 · deliverables breakdown ---- */
+  .dlv{ display:grid; grid-template-columns:1fr auto; gap:24px; align-items:start;
+    padding:19px 0; border-top:1px solid var(--ink-200); }
+  .dlv:first-of-type{ border-top:2px solid var(--ink-900); }
+  .dlv .dt{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; font-size:25px; letter-spacing:-0.02em; }
+  .dlv .din{ font-size:14px; color:var(--ink-500); line-height:1.4; margin-top:6px; }
+  .dlv .din b{ color:var(--ink-900); font-weight:700; }
+  .dlv .meta{ text-align:right; white-space:nowrap; padding-top:4px; }
+  .dlv .mf{ font-family:var(--font-text); font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-500); }
+  .dlv .mw{ font-family:var(--font-text); font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold-deep); margin-top:5px; }
+
+  /* ---- 4 · investment ledger ---- */
+  .ledger{ margin-top:4px; }
+  .phase{ display:grid; grid-template-columns:1fr auto; align-items:baseline; gap:20px;
+    border-top:2px solid var(--ink-900); padding:14px 0 6px; }
+  .phase .pl{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; font-size:19px; letter-spacing:-0.01em; }
+  .phase .pv{ font-family:var(--font-display); font-weight:800; font-size:19px; color:var(--gold-deep); font-variant-numeric:tabular-nums; }
+  .line{ display:grid; grid-template-columns:1fr auto; align-items:baseline; gap:20px;
+    padding:7px 0 7px 22px; border-top:1px solid var(--ink-200); }
+  .line .ll{ font-size:15.5px; color:var(--ink-700); }
+  .line .ll b{ color:var(--ink-900); font-weight:700; }
+  .line .lsub{ color:var(--ink-400); }
+  .line .lv{ font-family:var(--font-text); font-size:15.5px; font-weight:500; color:var(--ink-500); }
+  .total{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:20px;
+    margin-top:16px; background:var(--gold); color:var(--ink-900); padding:16px 22px; }
+  .total .tl{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; font-size:21px; letter-spacing:-0.01em; }
+  .total .tv{ font-family:var(--font-display); font-weight:800; font-size:26px; font-variant-numeric:tabular-nums; }
+
+  /* ---- 5 · sponsorship now / next ---- */
+  .cards2{ display:grid; grid-template-columns:1fr 1fr; gap:26px; margin-top:8px; }
+  .spcard{ border:1.5px solid var(--ink-900); padding:36px 34px; display:flex; flex-direction:column; min-height:340px; }
+  .spcard.next{ border-color:var(--gold-deep); }
+  .sptag{ display:inline-block; align-self:flex-start; font-family:var(--font-text); font-size:12px;
+    letter-spacing:0.16em; text-transform:uppercase; background:var(--ink-900); color:var(--paper); padding:5px 10px; }
+  .spcard.next .sptag{ background:var(--gold); color:var(--ink-900); }
+  .sptitle{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; font-size:32px; letter-spacing:-0.02em; margin:22px 0 12px; line-height:1.0; }
+  .spbody{ font-size:16px; line-height:1.5; color:var(--ink-500); }
+  .spbody b{ color:var(--ink-900); font-weight:700; }
+  .spfoot{ margin-top:auto; padding-top:20px; font-family:var(--font-text); font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-500); }
+  .spcard.next .spfoot{ color:var(--gold-deep); }
+
+  /* ---- 5 · close ---- */
+  #close{ display:flex; flex-direction:column; justify-content:space-between; }
+  #close h1{ font-size:118px; line-height:0.88; }
+  #close .line{ font-family:var(--font-text); font-size:22px; line-height:1.4; color:var(--ink-700); max-width:30ch; margin-top:26px; }
+  #close .rule{ width:120px; height:6px; background:var(--gold); margin:34px 0 26px; }
+  #close .connect{ font-family:var(--font-text); font-size:19px; letter-spacing:0.01em; color:var(--ink-900); font-weight:500; }
+  #close .connect b{ font-weight:700; }
+
+  /* nav dots + hint */
+  .dots{ position:fixed; right:16px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:10px; z-index:50; }
+  .dots a{ width:9px; height:9px; background:rgba(11,11,11,.22); display:block; }
+  .dots a.on{ background:var(--gold); }
+  .hint{ position:fixed; left:16px; bottom:14px; z-index:50; font-family:var(--font-text);
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(11,11,11,.4); }
+
+  @media print{
+    @page{ size:1280px 720px; margin:0; }
+    html,body,.scroller{ height:auto; overflow:visible; }
+    .dots,.hint{ display:none; }
+    .frame{ height:720px; page-break-after:always; break-after:page; background:#fff; }
+    .stage{ transform:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="scroller" id="scroller">
+
+  <!-- 1 · COVER -->
+  <section class="frame" id="f1"><div class="stage"><div class="slide" id="cover">
+    <span class="mark"></span>
+    <div class="top">
+      <span class="kick">Ahead of Market &nbsp;×&nbsp; Arizona Technology Council</span>
+      <span class="kick gold">Partnership Proposal</span>
+    </div>
+    <div>
+      <h1 class="disp">A media<br />partnership<span class="gp">.</span></h1>
+      <div class="sub">Arizona Aerospace Summit · July 15, 2026 · Tucson</div>
+    </div>
+    <div class="foot"><span>In-kind trade · ≈ $5,500 value</span><span>aheadofmarket.com</span></div>
+  </div></div></section>
+
+  <!-- 2 · THE PARTNERSHIP AT A GLANCE -->
+  <section class="frame" id="f2"><div class="stage"><div class="slide" style="padding:0;">
+    <span class="mark"></span>
+    <div class="trade">
+      <div class="col give">
+        <span class="colhead">[ 01 ] — We provide</span>
+        <div class="coltitle">Media, end<br />to end.</div>
+        <div class="item"><b>Pre-production</b><span>Creative direction & shot planning</span></div>
+        <div class="item"><b>Production</b><span>Full event-day capture across the Summit</span></div>
+        <div class="item"><b>Post & editing</b><span>Recap film, social cuts, highlights, stills</span></div>
+        <div class="colfoot">≈ $5,500 in value<span class="gp">.</span></div>
+      </div>
+      <div class="col get">
+        <span class="colhead">In exchange for</span>
+        <div class="coltitle">A seat with<br />the room.</div>
+        <div class="item"><b>Event sponsorship</b><span>Recognized sponsor of the Aerospace Summit</span></div>
+        <div class="item"><b>Exhibitor space</b><span>A table on a sold-out exhibit floor</span></div>
+        <div class="item"><b>3 AZTC memberships</b><span>Full membership for the AOM team</span></div>
+        <div class="colfoot">A balanced trade<span class="gp">.</span></div>
+      </div>
+    </div>
+    <div class="stripe">A pure in-kind trade — no cash either way.</div>
+  </div></div></section>
+
+  <!-- 3 · DELIVERABLES + INVESTMENT BREAKDOWN -->
+  <section class="frame" id="f3n"><div class="stage"><div class="slide">
+    <span class="mark"></span>
+    <span class="kick">[ 02 ] — Deliverables & investment</span>
+    <h2 class="h2" style="margin:14px 0 22px;">Where the $5,500 goes.</h2>
+    <div class="ledger">
+
+      <div class="phase"><div class="pl">Pre-planning</div><div class="pv">$700</div></div>
+      <div class="line"><div class="ll"><b>Creative direction &amp; shot planning</b> <span class="lsub">— run-of-show mapping, shot list, look &amp; music direction</span></div><div class="lv">$450</div></div>
+      <div class="line"><div class="ll"><b>Logistics &amp; crew coordination</b> <span class="lsub">— schedule, floor access, gear &amp; crew plan for the day</span></div><div class="lv">$250</div></div>
+
+      <div class="phase"><div class="pl">Production · event day</div><div class="pv">$3,100</div></div>
+      <div class="line"><div class="ll"><b>Multi-cam video capture</b> <span class="lsub">— keynotes, main-stage panels &amp; exhibit floor, full event day</span></div><div class="lv">$3,000</div></div>
+      <div class="line"><div class="ll"><b>Event photography</b> <span class="lsub">— light: a lean set of key stills, keynotes &amp; sponsors</span></div><div class="lv">$100</div></div>
+
+      <div class="phase"><div class="pl">Edit &amp; post-production</div><div class="pv">$1,700</div></div>
+      <div class="line"><div class="ll"><b>Hero recap film</b> <span class="lsub">— edit, color, licensed music, motion titles</span></div><div class="lv">$850</div></div>
+      <div class="line"><div class="ll"><b>Social sample cuts</b> <span class="lsub">— vertical, captioned, post-ready days after</span></div><div class="lv">$300</div></div>
+      <div class="line"><div class="ll"><b>Highlight clips</b> <span class="lsub">— sponsor &amp; speaker moments for LinkedIn / partners</span></div><div class="lv">$300</div></div>
+      <div class="line"><div class="ll"><b>Curated photo set</b> <span class="lsub">— edited &amp; color-corrected high-res gallery</span></div><div class="lv">$250</div></div>
+
+      <div class="total"><div class="tl">Total in-kind value</div><div class="tv">$5,500</div></div>
+    </div>
+  </div></div></section>
+
+  <!-- 5 · SPONSORSHIP NOW / NEXT -->
+  <section class="frame" id="f4"><div class="stage"><div class="slide">
+    <span class="mark"></span>
+    <span class="kick">[ 03 ] — The sponsorship</span>
+    <h2 class="h2">Start here. Grow from it.</h2>
+    <div class="cards2">
+      <div class="spcard now">
+        <span class="sptag">Now · July 15, 2026</span>
+        <div class="sptitle">Event<br />sponsorship</div>
+        <div class="spbody">AOM comes on as a <b>recognized media sponsor</b> of the inaugural Summit — sponsor billing, a table on the floor, and memberships for the team.</div>
+        <div class="spfoot">This proposal</div>
+      </div>
+      <div class="spcard next">
+        <span class="sptag">Next · 2026 onward</span>
+        <div class="sptitle">Annual<br />sponsorship</div>
+        <div class="spbody">The room proves it out. From there, the potential for a <b>year-round media partnership</b> — AOM covering AZTC events across the calendar as your standing annual sponsor.</div>
+        <div class="spfoot">The upside for both sides</div>
+      </div>
+    </div>
+  </div></div></section>
+
+  <!-- 5 · CLOSE -->
+  <section class="frame" id="f5"><div class="stage"><div class="slide" id="close">
+    <span class="mark"></span>
+    <span class="kick gold">Partners for the Summit</span>
+    <div>
+      <h1 class="disp">Let's tell<br />the story<span class="gp">.</span></h1>
+      <div class="line">Really glad to be doing this with you. Between now and event day, think of us as part of your team — reach out anytime, no formality needed, and we'll shape the day together. We can't wait to capture it.</div>
+      <div class="rule"></div>
+      <div class="connect"><b>hello@aheadofmarket.com</b> &nbsp;·&nbsp; aheadofmarket.com</div>
+    </div>
+    <div class="foot"><span>Ahead of Market × Arizona Technology Council</span><span>See you in Tucson · July 15, 2026</span></div>
+  </div></div></section>
+
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="hint">Scroll / ↓ to advance · ⌘P to export PDF</div>
+
+<template id="mono"><svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+<mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
+<g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0&#xA;-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30&#xA;-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59&#xA;-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41&#xA;-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575&#xA;47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350&#xA;39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295&#xA;-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13&#xA;-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357&#xA;156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124&#xA;335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0&#xA;-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52&#xA;-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59&#xA;-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66&#xA;-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15&#xA;61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52&#xA;52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64&#xA;175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186&#xA;199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57&#xA;153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151&#xA;462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98&#xA;9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235&#xA;563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31&#xA;-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464&#xA;-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31&#xA;81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278&#xA;130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97&#xA;-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1&#xA;30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9&#xA;123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32&#xA;104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18&#xA;121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325&#xA;-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66&#xA;-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1&#xA;-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128&#xA;-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38&#xA;471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134&#xA;-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path>
+<path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25&#xA;-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129&#xA;-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81&#xA;-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39&#xA;-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66&#xA;-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145&#xA;-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415&#xA;-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360&#xA;-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17&#xA;-35 -3z"></path>
+<path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25&#xA;-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6&#xA;-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path>
+<path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20&#xA;-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715&#xA;516 -90 41 -123 48 -123 25z"></path>
+<path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149&#xA;22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10&#xA;-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153&#xA;-152 122z"></path>
+<path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8&#xA;-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15&#xA;258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292&#xA;112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12 -396 5&#xA;-408 5 -425 -14z"></path>
+</g></mask>
+<rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
+</svg></template>
+
+<script>
+  var MONO = document.getElementById('mono').innerHTML;
+  document.querySelectorAll('.mark').forEach(function(el){ el.innerHTML = MONO; });
+
+  function fit(){
+    document.querySelectorAll('.frame').forEach(function(f){
+      var stage = f.querySelector('.stage');
+      var s = Math.min(f.clientWidth/1280, f.clientHeight/720);
+      stage.style.transform = 'scale('+s+')';
+    });
+  }
+  window.addEventListener('resize', fit); fit();
+
+  var frames = Array.prototype.slice.call(document.querySelectorAll('.frame'));
+  var dots = document.getElementById('dots');
+  frames.forEach(function(f,i){
+    var a=document.createElement('a'); a.href='#';
+    a.addEventListener('click', function(e){ e.preventDefault(); f.scrollIntoView({behavior:'smooth'}); });
+    dots.appendChild(a);
+  });
+  var scroller = document.getElementById('scroller');
+  function onScroll(){
+    var idx = Math.round(scroller.scrollTop / window.innerHeight);
+    dots.querySelectorAll('a').forEach(function(a,i){ a.className = (i===idx)?'on':''; });
+  }
+  scroller.addEventListener('scroll', onScroll); onScroll();
+  window.addEventListener('keydown', function(e){
+    if(e.key==='ArrowDown'||e.key==='PageDown'){ e.preventDefault(); scroller.scrollBy({top:window.innerHeight,behavior:'smooth'}); }
+    if(e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); scroller.scrollBy({top:-window.innerHeight,behavior:'smooth'}); }
+  });
+</script>
+</body>
+</html>
