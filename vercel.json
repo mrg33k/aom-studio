@@ -17,6 +17,10 @@
       "destination": "/embed.html"
     },
     {
+      "source": "/outreach",
+      "destination": "/index.html"
+    },
+    {
       "source": "/about",
       "destination": "/index.html"
     },
