@@ -86,3 +86,19 @@ dispatch, sign-off, and file-location markers. The signed robot-Chrome skill req
 by the brief was unavailable in this session, so the final authenticated desktop/390px
 production walkthrough remains explicitly pending and the round is not represented as
 fully signed off.
+
+## 2026-07-21 - R12 production Home load regression
+
+Patrik reported that Home showed `This screen hit a snag` on load. Direct authenticated
+production diagnostics reproduced it and isolated a render-time
+`ReferenceError: Cannot access 'Lt' before initialization`: after the missions tree
+arrived, the recent-mission rename projection called `missionLabelClean` before its
+`const` initialization later in the Home render. Moved the helper above its first use
+and added a source-order regression that would fail on the shipped arrangement.
+
+The focused regression passed, the production build passed, and all 31 CV6 Playwright
+scenarios passed. Commit `6b2434e1` was pushed and Vercel deployment
+`56rpRtCYVzrvnAMKzbc7pUun6JRC` was aliased to `https://lab.aheadofmarket.com`.
+Authenticated production Chrome then loaded Home with both missions-tree requests
+complete at desktop and 390px widths, showing the full project list and recent mission
+activity with no Corner render error. R12 is shipped and production-verified.

@@ -426,4 +426,24 @@ authentication and the CV6 APIs load successfully, then captured a render-time
 arrives. This round will correct that source-order defect, add a data-loaded Home
 regression, rerun the full CV6/build battery, and redeploy before it is marked shipped.
 
-**Status:** in progress.
+Resolution and verification (2026-07-21):
+
+- Moved `missionLabelClean` ahead of the live recent-mission projection that calls it.
+  The initial empty render was safe; the authenticated missions-tree update was the
+  first render that entered the broken temporal-dead-zone branch.
+- Added `tests/cv6-home-mission-load.test.mjs`, which locks the initialization order
+  required by that asynchronous Home refresh.
+- `node --test tests/cv6-home-mission-load.test.mjs` passed 1/1.
+- `npm run build` passed. The existing unrelated OutreachTracker duplicate-key
+  warnings and large-chunk advisory remain.
+- `CV6_AUDIT_BASE=http://127.0.0.1:5173 npx playwright test tests/cv6-*.spec.mjs
+  --reporter=line --workers=2` passed 31/31.
+- Commit `6b2434e1` was pushed to `main`. Vercel deployment
+  `56rpRtCYVzrvnAMKzbc7pUun6JRC` reached production and was aliased to
+  `https://lab.aheadofmarket.com`.
+- Authenticated production Chrome loaded Home after both live missions-tree requests
+  at desktop and 390px widths, rendered all 45 projects plus recent mission activity,
+  and emitted no Corner render error. The only remaining console error is the existing
+  unrelated Apollo tracking-pixel 400.
+
+**Status:** shipped and authenticated-production verified.
