@@ -1102,13 +1102,49 @@ function CallKit({ lead, columns }) {
           <CallBlock num={1} label="Front desk — first words" text={lead.intro_line} />
           <CallBlock num={2} label="When the owner picks up" text={lead.hook} />
           <CallBlock num={3} label="Why we're calling" text={lead.why_calling} />
-          <CallBlock num={4} label="Proof we did our homework" text={lead.proof_points} bullets />
+          {lead.questions
+            ? <CallBlock num={4} label="Questions to ask" text={lead.questions} bullets />
+            : <CallBlock num={4} label="Proof we did our homework" text={lead.proof_points} bullets />}
           <CallBlock num={5} label="The ask — permission to stop by" text={lead.meeting_ask} wide />
         </>
       ) : (
         <CallBlock label="Opener" text={lead.hook} wide />
       )}
       <CallBlock num={6} label="How we help" text={lead.gaps} bullets wide />
+      {lead.questions && lead.proof_points && (
+        <div style={{
+          gridColumn: '1 / -1',
+          background: '#0a0a0a',
+          border: '1px solid #161616',
+          borderLeft: '2px solid #333',
+          padding: '0.55rem 0.75rem',
+        }}>
+          <div style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '0.6rem',
+            color: '#777',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            marginBottom: '0.3rem',
+          }}>
+            Context for you — don't recite this at them
+          </div>
+          {lead.proof_points.split('\n').filter(Boolean).map((g, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              gap: '0.5rem',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.74rem',
+              color: '#999',
+              lineHeight: 1.5,
+              marginBottom: '0.15rem',
+            }}>
+              <span style={{ color: '#555', flexShrink: 0 }}>•</span>
+              <span>{g.replace(/^[-•*]\s*/, '')}</span>
+            </div>
+          ))}
+        </div>
+      )}
       {lead.notes && !lead.proof_points && (
         <div style={{
           gridColumn: '1 / -1',
