@@ -1339,6 +1339,9 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
   // Recent activity is keyed by stable slugs, but its visible label must come
   // from the same renamed project/mission records as the tree. Otherwise a
   // successful rename appears to "not save" until the slug itself changes.
+  // This must be initialized before recentList: the authenticated missions tree
+  // resolves after first paint, then recent mission labels enter this branch.
+  const missionLabelClean = (n) => { const s = String(n || ''); return (s.includes(':') ? s.slice(s.lastIndexOf(':') + 1).trim() : s) || s; };
   const recentList = (data.recent || []).map((recent) => {
     if (recent.kind === 'project') {
       const project = allProjects.find((item) => item.slug === recent.project || item.id === recent.project);
@@ -1371,7 +1374,6 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
   });
   const missionDotStatus = (s) => (['running', 'building', 'active'].includes(String(s || '').toLowerCase()) ? 'live' : 'ready');
   // The project is already the folder above, so drop a "Parent:" prefix from the mission name.
-  const missionLabelClean = (n) => { const s = String(n || ''); return (s.includes(':') ? s.slice(s.lastIndexOf(':') + 1).trim() : s) || s; };
   const projRoomObj = (p) => ({ id: p.slug || p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status || 'ready', statusText: 'project chat' });
   const missionRoomObj = (missionSlug, name, projName) => { const slug = String(missionSlug || ''); const short = missionLabelClean(name || slug.split(':').pop()); return { id: slug.split(':').pop(), name: short, initials: (short || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: slug, projectSlug: slug.split(':')[0], status: 'ready', statusText: projName || slug.split(':')[0] }; };
   const recentRoomObj = (r) => {

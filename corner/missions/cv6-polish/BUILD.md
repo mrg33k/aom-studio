@@ -416,3 +416,14 @@ capability is not installed in this Codex session; local Playwright and producti
 artifact proof do not substitute for that authentication-only acceptance pass.
 
 **Status:** shipped and artifact-verified; signed robot-Chrome acceptance pending.
+
+### R12 - Production Home load regression
+
+Started 2026-07-21 after the deployed authenticated Home screen rendered the
+`This screen hit a snag` boundary. Direct production browser diagnostics confirmed
+authentication and the CV6 APIs load successfully, then captured a render-time
+`ReferenceError: Cannot access 'Lt' before initialization` after the missions tree
+arrives. This round will correct that source-order defect, add a data-loaded Home
+regression, rerun the full CV6/build battery, and redeploy before it is marked shipped.
+
+**Status:** in progress.
