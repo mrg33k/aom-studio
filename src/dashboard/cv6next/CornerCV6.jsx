@@ -21,6 +21,7 @@ import ChatDesktop, { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
+import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import Organize from './Organize.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
@@ -421,6 +422,7 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
   const homeWrapRef = useRef(null);
   const homeProjectsRef = useRef([]);
   const missionsByProjectRef = useRef({});
+  const [treeSettings, setTreeSettings] = useState(null);
   const resolveHomeHit = useCallback((rowEl) => {
     const id = rowEl.getAttribute('data-cv6-arg') || '';
     if (!id) return null;
@@ -428,7 +430,7 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
     if (rowEl.classList.contains('projrow')) {
       const p = projects.find((x) => x.id === id || x.slug === id);
       if (!p?.slug) return null;
-      return { kind: 'project', projectSlug: p.slug, name: p.name || p.slug };
+      return { kind: 'project', projectSlug: p.slug, projectId: p.databaseId || p.id || '', name: p.name || p.slug };
     }
     if (rowEl.classList.contains('missrow')) {
       const projectSlug = id.includes(':') ? id.slice(0, id.indexOf(':')) : null;
@@ -453,7 +455,7 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
       if (recent.kind === 'project') {
         const project = projects.find((x) => x.slug === recent.project || x.id === recent.project);
         if (!project?.slug) return null;
-        return { kind: 'project', projectSlug: project.slug, name: project.name || project.slug };
+        return { kind: 'project', projectSlug: project.slug, projectId: project.databaseId || project.id || '', name: project.name || project.slug };
       }
       const projectSlug = recent.project || String(recent.missionSlug || '').split(':')[0];
       const treeId = recent.missionSlug || recent.id;
@@ -499,6 +501,14 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
       await archiveNode(authFetch, target, worldId);
       setMissionReload((k) => k + 1);
       await refetchHomeData?.();
+    },
+    onSettings: (target) => {
+      const project = (homeProjectsRef.current || []).find((item) => item.slug === target.projectSlug);
+      const name = target.name || target.missionSlug || target.projectSlug;
+      const room = target.kind === 'mission'
+        ? { id: target.missionSlug, missionSlug: target.treeId || `${target.projectSlug}:${target.missionSlug}`, projectSlug: target.projectSlug, path: target.path || null, name, initials: name.slice(0, 2).toUpperCase(), isMission: true }
+        : { id: target.projectSlug, name, initials: name.slice(0, 2).toUpperCase(), isProject: true };
+      setTreeSettings({ room, projectId: target.projectId || project?.databaseId || project?.id || '' });
     },
   });
   // Latest data for the context-menu resolver (refs, so the delegated listener
@@ -1482,6 +1492,19 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
         aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
       {treeCtxOverlay}
+      {treeSettings ? (
+        <RoomSettingsDialog
+          room={treeSettings.room}
+          worldId={worldId}
+          projectId={treeSettings.projectId}
+          onClose={() => setTreeSettings(null)}
+          onRenamed={(name) => {
+            setTreeSettings((current) => current ? { ...current, room: { ...current.room, name, initials: name.slice(0, 2).toUpperCase() } } : current);
+            setMissionReload((key) => key + 1);
+            refetchHomeData?.();
+          }}
+        />
+      ) : null}
       <Cv6QuickThread
         target={knavOpenedRoom ? threadHost : null}
         messages={(quickThread && quickThread.messages ? quickThread.messages : []).slice(-40)}

@@ -2498,7 +2498,8 @@ html.cv6-app-active #root {
 [data-cv6] button { border-radius:999px !important; }
 [data-cv6] :where(.ib,.mback,.room-settings-close,.fcv-step,.cv6-chat-popout,.chat-column-open,.room-options-trigger) { border-radius:50% !important; }
 [data-cv6] .ib.is-active { color:var(--accent); background:var(--accent-weak); border-color:var(--accent); }
-[data-cv6][data-screen="home-mobile"] .hlogo { width:54px; height:auto; margin-left:2px; flex:none; }
+[data-cv6][data-screen="home-mobile"] .hlogo { width:64px; height:auto; margin-left:2px; flex:none; }
+[data-app-theme="light"] [data-cv6] .hlogo { filter:brightness(0); }
 [data-cv6][data-screen="home-desktop"] .chat-column-open { width:34px; height:34px; padding:0; flex:none; cursor:pointer; }
 [data-cv6] .cv6-chat-popout { width:38px; height:38px; padding:0 !important; display:flex; align-items:center; justify-content:center; flex:none; }
 

@@ -114,6 +114,14 @@ function ArchiveIcon() {
     </svg>
   );
 }
+function SettingsIcon() {
+  return (
+    <svg style={S.rowIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.14.36.36.7.66.96.3.26.68.4 1.08.4H21v4h-.09A1.7 1.7 0 0 0 19.4 15Z" />
+    </svg>
+  );
+}
 
 function MenuRow({ icon, label, sub, onPick, disabled }) {
   const [hover, setHover] = useState(false);
@@ -148,7 +156,7 @@ function MenuRow({ icon, label, sub, onPick, disabled }) {
 //                  omit to hide the item)
 // onArchive      — async (target) => throws on failure ("Archive project",
 //                  projects only, confirm dialog first; omit to hide the item)
-export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename, onMove, onCreate, onArchive }) {
+export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename, onMove, onCreate, onArchive, onSettings }) {
   const [menu, setMenu] = useState(null);      // { x, y, target }
   const [mode, setMode] = useState('menu');    // 'menu' | 'move'
   const [rename, setRename] = useState(null);  // { kind: 'rename'|'create', target, value }
@@ -261,6 +269,12 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
     if (target) setRename({ kind: 'archive', target, value: '' });
   }, [menu, close]);
 
+  const openSettings = useCallback(() => {
+    const target = menu?.target;
+    close();
+    if (target) onSettings?.(target);
+  }, [menu, close, onSettings]);
+
   const submitArchive = useCallback(async () => {
     if (!rename || rename.kind !== 'archive' || busy) return;
     setBusy(true); setError('');
@@ -323,6 +337,7 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
             {mode === 'menu' && (
               <>
                 <MenuRow icon={<PencilIcon />} label="Rename" onPick={startRename} disabled={menu.target.canRename === false} />
+                {onSettings ? <MenuRow icon={<SettingsIcon />} label="Project settings" onPick={openSettings} /> : null}
                 {onCreate && (menu.target.kind === 'project' || menu.target.path) ? (
                   <MenuRow icon={<FolderPlusIcon />} label="New subfolder" onPick={startCreate} />
                 ) : null}
