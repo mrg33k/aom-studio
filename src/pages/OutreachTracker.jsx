@@ -3,7 +3,7 @@
 // Backend: Supabase outreach_leads + outreach_touchpoints
 // Brand: obsidian #060606 / ivory #F6F6F4 / gold #C4A46A / Bricolage Grotesque + Inter
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -705,6 +705,42 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             </div>
           )}
 
+          {/* How we help — one bullet per verified gap */}
+          {lead.gaps && (
+            <div style={{
+              background: '#0d0d0d',
+              border: '1px solid #1a1a1a',
+              borderLeft: '2px solid #C4A46A',
+              padding: '0.65rem 0.75rem',
+              margin: '0.85rem 0',
+            }}>
+              <div style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '0.6rem',
+                color: '#C4A46A',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                marginBottom: '0.4rem',
+              }}>
+                How we help
+              </div>
+              {lead.gaps.split('\n').filter(Boolean).map((g, i) => (
+                <div key={i} style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.8rem',
+                  color: '#D0D0CE',
+                  lineHeight: 1.5,
+                  marginBottom: '0.25rem',
+                }}>
+                  <span style={{ color: '#C4A46A', flexShrink: 0 }}>•</span>
+                  <span>{g.replace(/^[-•*]\s*/, '')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Site issue */}
           {lead.site_issue && (
             <div style={{ marginBottom: '0.65rem' }}>
@@ -1069,6 +1105,251 @@ const editSelectStyle = {
 }
 
 // ─── Filter Bar ───────────────────────────────────────────────────────────────
+function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
+  const [sort, setSort] = useState({ key: 'day_route', dir: 1 })
+  const cols = [
+    { key: 'company', label: 'Company' },
+    { key: 'trade', label: 'Trade' },
+    { key: 'city', label: 'City' },
+    { key: 'day_route', label: 'Day' },
+    { key: 'need_score', label: 'Need' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'email', label: 'Email' },
+    { key: 'street_address', label: 'Address' },
+    { key: 'status', label: 'Status' },
+    { key: 'assigned_to', label: 'Rep' },
+  ]
+  const sorted = [...leads].sort((a, b) => {
+    const va = a[sort.key] ?? '', vb = b[sort.key] ?? ''
+    if (va < vb) return -1 * sort.dir
+    if (va > vb) return 1 * sort.dir
+    return (b.need_score || 0) - (a.need_score || 0)
+  })
+  const th = {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: '0.6rem',
+    color: '#C4A46A',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+    textAlign: 'left',
+    padding: '0.6rem 0.6rem',
+    borderBottom: '1px solid #1f1f1f',
+    background: '#060606',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    userSelect: 'none',
+  }
+  const td = {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: '0.78rem',
+    color: '#D0D0CE',
+    padding: '0.55rem 0.6rem',
+    borderBottom: '1px solid #101010',
+    verticalAlign: 'top',
+  }
+  const sel = {
+    background: '#0d0d0d',
+    color: '#D0D0CE',
+    border: '1px solid #1f1f1f',
+    fontFamily: "'Inter', sans-serif",
+    fontSize: '0.72rem',
+    padding: '0.25rem 0.3rem',
+    maxWidth: '9.5rem',
+  }
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1150 }}>
+        <thead>
+          <tr>
+            {cols.map(c => (
+              <th
+                key={c.key}
+                style={th}
+                onClick={() => setSort(s => ({ key: c.key, dir: s.key === c.key ? -s.dir : 1 }))}
+              >
+                {c.label}{sort.key === c.key ? (sort.dir === 1 ? ' ▲' : ' ▼') : ''}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map(lead => {
+            const open = expandedId === lead.id
+            return (
+              <React.Fragment key={lead.id}>
+                <tr
+                  onClick={() => onToggle(lead.id)}
+                  style={{ cursor: 'pointer', background: open ? '#0a0a0a' : 'transparent' }}
+                >
+                  <td style={{ ...td, fontWeight: 600, color: '#EDEDEB' }}>
+                    {lead.company}
+                    {lead.contact_name && (
+                      <div style={{ fontWeight: 400, fontSize: '0.68rem', color: '#777', marginTop: '0.1rem' }}>
+                        {lead.contact_name}{lead.title ? `, ${lead.title}` : ''}
+                      </div>
+                    )}
+                  </td>
+                  <td style={td}>{lead.trade}</td>
+                  <td style={td}>{lead.city}</td>
+                  <td style={{ ...td, textAlign: 'center' }}>{lead.day_route}</td>
+                  <td style={td}>
+                    <span style={{
+                      background: needScoreColor(lead.need_score),
+                      color: '#0a0a0a',
+                      fontWeight: 700,
+                      fontSize: '0.68rem',
+                      padding: '0.12rem 0.4rem',
+                    }}>
+                      {lead.need_score}
+                    </span>
+                  </td>
+                  <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                    {lead.phone
+                      ? <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none' }}>{lead.phone}</a>
+                      : <span style={{ color: '#444' }}>—</span>}
+                  </td>
+                  <td style={td}>
+                    {lead.email
+                      ? <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none', wordBreak: 'break-all' }}>{lead.email}</a>
+                      : <span style={{ color: '#444' }}>—</span>}
+                  </td>
+                  <td style={{ ...td, fontSize: '0.72rem', color: '#999' }}>
+                    {lead.street_address
+                      ? <a
+                          href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(MAPS_ORIGIN)}&destination=${encodeURIComponent(lead.street_address)}`}
+                          target="_blank" rel="noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          style={{ color: '#999', textDecoration: 'none' }}
+                        >{lead.street_address}</a>
+                      : '—'}
+                  </td>
+                  <td style={td}>
+                    <select
+                      value={lead.status || 'Not contacted'}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => onUpdate(lead.id, 'status', e.target.value)}
+                      style={sel}
+                    >
+                      {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </td>
+                  <td style={td}>
+                    <select
+                      value={lead.assigned_to || ''}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => onUpdate(lead.id, 'assigned_to', e.target.value || null)}
+                      style={sel}
+                    >
+                      <option value="">—</option>
+                      {REPS.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </td>
+                </tr>
+                {open && (
+                  <tr>
+                    <td colSpan={cols.length} style={{ ...td, background: '#0a0a0a', padding: '0.75rem 0.9rem' }}>
+                      {lead.hook && (
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <span style={{ fontSize: '0.6rem', color: '#C4A46A', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Opener </span>
+                          <span style={{ color: '#D0D0CE' }}>{lead.hook}</span>
+                        </div>
+                      )}
+                      {lead.gaps && lead.gaps.split('\n').filter(Boolean).map((g, i) => (
+                        <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.2rem', color: '#D0D0CE' }}>
+                          <span style={{ color: '#C4A46A', flexShrink: 0 }}>•</span>
+                          <span>{g.replace(/^[-•*]\s*/, '')}</span>
+                        </div>
+                      ))}
+                      {lead.notes && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.72rem', color: '#777' }}>{lead.notes}</div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function CriteriaStrip() {
+  const [open, setOpen] = useState(false)
+  const gapItems = [
+    'No website, or a dated pre-2018 one',
+    'No real project photos',
+    'No quote or contact form',
+    'Broken or clumsy on mobile',
+    'Weak or missing Google listing, few reviews',
+    'No case studies or search content',
+    'Dated or inconsistent branding',
+  ]
+  return (
+    <div style={{ borderBottom: '1px solid #131313', background: '#050505' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.5rem 1rem',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '0.6rem',
+          color: '#C4A46A',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+        }}
+      >
+        <span>How this list is built — what the NEED number means</span>
+        <span style={{ color: '#555' }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div style={{
+          padding: '0 1rem 0.9rem 1rem',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '0.75rem',
+          color: '#aaa',
+          lineHeight: 1.55,
+        }}>
+          <div style={{ marginBottom: '0.5rem' }}>
+            Every company on this page cleared two bars before it was added:
+          </div>
+          <div style={{ marginBottom: '0.35rem' }}>
+            <span style={{ color: '#D0D0CE', fontWeight: 600 }}>1. Can they afford us.</span>{' '}
+            15+ years state-licensed, commercial trade, a real crew (not a one-man shop), and not an
+            enterprise that already runs an agency.
+          </div>
+          <div style={{ marginBottom: '0.4rem' }}>
+            <span style={{ color: '#D0D0CE', fontWeight: 600 }}>2. Do they need us.</span>{' '}
+            The <span style={{ color: '#C4A46A' }}>NEED</span> badge is a count of marketing gaps we
+            verified by checking each company by hand. Minimum 4 to make the list. The gaps we look for:
+          </div>
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.3rem 0.9rem',
+            marginBottom: '0.5rem',
+          }}>
+            {gapItems.map((g, i) => (
+              <span key={i} style={{ color: '#888' }}>• {g}</span>
+            ))}
+          </div>
+          <div style={{ color: '#888' }}>
+            <span style={{ color: '#D95050', fontWeight: 600 }}>NEED 7</span> = worst presence, hottest door.
+            Open a lead to see the opener line and the exact ways we can help that company.
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function FilterBar({ filterDay, setFilterDay, filterStatus, setFilterStatus, filterRep, setFilterRep, search, setSearch }) {
   const chipBase = {
     flexShrink: 0,
@@ -1167,6 +1448,9 @@ export default function OutreachTracker() {
   const [filterRep, setFilterRep] = useState('all')
   const [search, setSearch] = useState('')
   const [expandedId, setExpandedId] = useState(null)
+  const [view, setView] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth >= 900 ? 'table' : 'cards'
+  )
 
   const loadLeads = useCallback(async () => {
     setLoading(true)
@@ -1259,6 +1543,39 @@ export default function OutreachTracker() {
         />
       </div>
 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: '0.4rem',
+        padding: '0.45rem 1rem',
+        borderBottom: '1px solid #131313',
+        background: '#050505',
+      }}>
+        {['table', 'cards'].map(v => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.6rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              padding: '0.3rem 0.7rem',
+              cursor: 'pointer',
+              background: view === v ? '#C4A46A' : 'none',
+              color: view === v ? '#0a0a0a' : '#777',
+              border: view === v ? '1px solid #C4A46A' : '1px solid #222',
+              fontWeight: view === v ? 700 : 400,
+            }}
+          >
+            {v === 'table' ? 'Spreadsheet' : 'Cards'}
+          </button>
+        ))}
+      </div>
+
+      <CriteriaStrip />
+
       {/* Content */}
       {loading && (
         <div style={{
@@ -1283,7 +1600,16 @@ export default function OutreachTracker() {
         </div>
       )}
 
-      {!loading && !error && groups.map(({ day, leads: dayLeads }) => (
+      {!loading && !error && view === 'table' && (
+        <LeadTable
+          leads={filtered}
+          expandedId={expandedId}
+          onToggle={id => setExpandedId(expandedId === id ? null : id)}
+          onUpdate={(id, field, value) => updateLead(id, field, value)}
+        />
+      )}
+
+      {!loading && !error && view === 'cards' && groups.map(({ day, leads: dayLeads }) => (
         <div key={day}>
           {/* Day group header */}
           <div style={{
