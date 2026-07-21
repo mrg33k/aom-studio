@@ -139,7 +139,7 @@ export default function Settings({ onNav, onOpenNav, onSearch, theme = 'dark', o
             return <button type="button" key={item.id} onClick={() => setSection(item.id)} aria-current={active ? 'page' : undefined} style={{ width: isMobile ? 'auto' : '100%', minWidth: isMobile ? 'max-content' : 0, display: 'block', padding: isMobile ? '8px 11px' : '10px 11px', marginBottom: isMobile ? 0 : 5, borderRadius: 10, border: 'none', background: active ? 'var(--accent-weak)' : 'transparent', color: active ? 'var(--accent)' : 'var(--muted)', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}><span style={{ display: 'block', fontSize: 13, fontWeight: 650 }}>{item.label}</span>{!isMobile ? <span style={{ display: 'block', marginTop: 2, fontSize: 11.5, lineHeight: 1.35, color: active ? 'var(--accent)' : 'var(--faint)' }}>{item.sub}</span> : null}</button>;
           })}
         </nav>
-        <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: isMobile ? '22px 16px max(28px,env(safe-area-inset-bottom))' : '26px 30px' }}>
+        <main style={{ flex: 1, minWidth: 0, minHeight: 0, overflowY: 'auto', padding: isMobile ? '22px 16px max(28px,env(safe-area-inset-bottom))' : '26px 30px' }}>
           <div style={{ maxWidth: 760 }}>
             {state === 'loading' && section !== 'appearance' && section !== 'planned' ? <div style={{ color: 'var(--muted)', fontSize: 13 }}>Loading settings…</div> : (
               <>
