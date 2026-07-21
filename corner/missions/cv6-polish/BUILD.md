@@ -339,4 +339,18 @@ Verification:
   because its Node runtime raised `Cannot redefine property: process` twice; local
   Playwright screenshots were used for visual verification instead.
 
-**Status:** implemented and locally verified; deployment in progress.
+Deployment (2026-07-21):
+
+- Web commit `18f2baf3` and worker commit `7fc4002e0` pushed to their default
+  branches. The listener and support-mail watcher were restarted and confirmed
+  running with new PIDs.
+- Vercel deployment `dpl_3Y5Y1tKU18Amq9XGxjKRf35RkaGj` completed Ready and was
+  aliased to `https://lab.aheadofmarket.com`. The deployed CornerCV6 bundle returned
+  200 and contains the R10 `Open Email column`, `Clear the current screen?`, and
+  `Send Back To Agent` contracts; `/api/dashboard/room-reset` returned the expected
+  405 on GET, proving the function is deployed rather than missing.
+- An unauthenticated production browser reached the expected Corner sign-in gate.
+  A signed production walkthrough remains unclaimed: the in-app browser holding the
+  signed session could not attach because of the recorded Node runtime collision.
+
+**Status:** shipped and artifact-verified; signed-in production walkthrough pending browser-tool recovery.

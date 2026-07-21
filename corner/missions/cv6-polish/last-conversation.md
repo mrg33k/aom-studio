@@ -43,3 +43,24 @@ Vite transformation but was silently terminated by this sandbox (exit 143; cappe
 retry exit 1), so the EA must rerun build plus the new topbar and practical-audit
 Playwright specs externally before landing. The brief's requested RESEARCH.md remains
 absent; no substitute was fabricated.
+
+## 2026-07-21 - R10 Home, Chat, Email, and Review control pass
+
+Patrik confirmed CV6 as the active surface and authorized implementation,
+verification, and deployment. The round shipped the Home/mobile logo and one-button
+theme cleanup, all-project recency list, recent-work rename/move/reclassify access,
+narrow independent chat and Email windows, complete room options/history/reset,
+floating two-row composer with Plan/Work enforcement, real streamed progress,
+configurable Email auto-reply policy and urgency scoring, and the full Review verdict
+rail plus optional checklist/pin/note send-back loop that returns to Chat.
+
+Local proof: all 31 `tests/cv6-*.spec.mjs` Playwright scenarios passed, the Vite
+production build passed, API/Python syntax checks passed, and desktop/390px/narrow
+window screenshots were inspected. The Browser skill failed to attach twice with
+`Cannot redefine property: process`, so the visual fallback used local Playwright
+captures. Commits `18f2baf3` (aom-studio) and `7fc4002e0` (AOM-EA workers) were pushed;
+listener and Email watcher services were restarted and confirmed running. Vercel
+deployment `dpl_3Y5Y1tKU18Amq9XGxjKRf35RkaGj` is Ready at
+`https://lab.aheadofmarket.com`; the deployed bundle and room-reset function were
+artifact-verified. Production UI requires sign-in, so a signed-in production
+walkthrough remains pending browser-tool recovery and was not represented as passed.
