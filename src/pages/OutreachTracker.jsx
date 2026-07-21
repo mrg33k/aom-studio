@@ -23,6 +23,16 @@ const STATUSES = [
   'Won',
   'Lost / Not a fit',
 ]
+const STATUS_SHORT = {
+  'Not contacted': 'Uncontacted',
+  'Called (no answer)': 'No answer',
+  'Left VM': 'Left VM',
+  'Spoke': 'Spoke',
+  'Meeting booked': 'Booked',
+  'Proposal sent': 'Proposal',
+  'Won': 'Won',
+  'Lost / Not a fit': 'Lost',
+}
 const CHANNELS = ['call', 'text', 'email', 'walk-in']
 const GOAL = 12
 const MAPS_ORIGIN = '1128 W Dunbar Dr, Tempe, AZ'
@@ -401,16 +411,12 @@ function DashboardHeader({ leads, onLock }) {
             <div style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.6rem',
-              color: '#555',
+              color: '#B6B2AB',
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
               marginTop: '0.2rem',
-              maxWidth: 64,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
             }}>
-              {s}
+              {STATUS_SHORT[s] || s}
             </div>
           </div>
         ))}
@@ -1108,16 +1114,15 @@ const editSelectStyle = {
 function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
   const [sort, setSort] = useState({ key: 'day_route', dir: 1 })
   const cols = [
-    { key: 'company', label: 'Company' },
-    { key: 'trade', label: 'Trade' },
-    { key: 'city', label: 'City' },
-    { key: 'day_route', label: 'Day' },
-    { key: 'need_score', label: 'Need' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'email', label: 'Email' },
-    { key: 'street_address', label: 'Address' },
-    { key: 'status', label: 'Status' },
-    { key: 'assigned_to', label: 'Rep' },
+    { key: 'company', label: 'Company', w: '17%' },
+    { key: 'trade', label: 'Trade', w: '13%' },
+    { key: 'city', label: 'City', w: '7%' },
+    { key: 'day_route', label: 'Day', w: '4%' },
+    { key: 'need_score', label: 'Need', w: '5%' },
+    { key: 'phone', label: 'Contact', w: '14%' },
+    { key: 'street_address', label: 'Address', w: '19%' },
+    { key: 'status', label: 'Status', w: '12%' },
+    { key: 'assigned_to', label: 'Rep', w: '9%' },
   ]
   const sorted = [...leads].sort((a, b) => {
     const va = a[sort.key] ?? '', vb = b[sort.key] ?? ''
@@ -1157,14 +1162,17 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
     maxWidth: '9.5rem',
   }
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1150 }}>
+    <div style={{ overflow: 'auto', maxHeight: '75vh' }}>
+      <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1150, tableLayout: 'fixed' }}>
+        <colgroup>
+          {cols.map(c => <col key={c.key} style={{ width: c.w }} />)}
+        </colgroup>
         <thead>
           <tr>
             {cols.map(c => (
               <th
                 key={c.key}
-                style={th}
+                style={{ ...th, position: 'sticky', top: 0, zIndex: 2 }}
                 onClick={() => setSort(s => ({ key: c.key, dir: s.key === c.key ? -s.dir : 1 }))}
               >
                 {c.label}{sort.key === c.key ? (sort.dir === 1 ? ' ▲' : ' ▼') : ''}
@@ -1203,15 +1211,27 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       {lead.need_score}
                     </span>
                   </td>
-                  <td style={{ ...td, whiteSpace: 'nowrap' }}>
-                    {lead.phone
-                      ? <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none' }}>{lead.phone}</a>
-                      : <span style={{ color: '#444' }}>—</span>}
-                  </td>
                   <td style={td}>
-                    {lead.email
-                      ? <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none', whiteSpace: 'nowrap' }}>{lead.email}</a>
+                    {lead.phone
+                      ? <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none', whiteSpace: 'nowrap', display: 'block' }}>{lead.phone}</a>
                       : <span style={{ color: '#444' }}>—</span>}
+                    {lead.email && (
+                      <a
+                        href={`mailto:${lead.email}`}
+                        onClick={e => e.stopPropagation()}
+                        title={lead.email}
+                        style={{
+                          color: '#C4A46A',
+                          textDecoration: 'none',
+                          whiteSpace: 'nowrap',
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          fontSize: '0.72rem',
+                          marginTop: '0.15rem',
+                        }}
+                      >{lead.email}</a>
+                    )}
                   </td>
                   <td style={{ ...td, fontSize: '0.72rem', color: '#999' }}>
                     {lead.street_address
@@ -1219,11 +1239,12 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                           href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(MAPS_ORIGIN)}&destination=${encodeURIComponent(lead.street_address)}`}
                           target="_blank" rel="noreferrer"
                           onClick={e => e.stopPropagation()}
+                          title="Open drive route from Dunbar Dr"
                           style={{ color: '#999', textDecoration: 'none' }}
-                        >{lead.street_address}</a>
+                        >{lead.street_address} <span style={{ color: '#C4A46A', fontSize: '0.65rem' }}>↗</span></a>
                       : '—'}
                   </td>
-                  <td style={td}>
+                  <td style={{ ...td, verticalAlign: 'middle' }}>
                     <select
                       value={lead.status || 'Not contacted'}
                       onClick={e => e.stopPropagation()}
@@ -1233,7 +1254,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
-                  <td style={td}>
+                  <td style={{ ...td, verticalAlign: 'middle' }}>
                     <select
                       value={lead.assigned_to || ''}
                       onClick={e => e.stopPropagation()}
