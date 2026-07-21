@@ -2071,6 +2071,7 @@
 [data-cv6] .cv6-email-tabs {
   display:flex;
   align-items:center;
+  justify-content:center;
   gap:10px;
   padding:10px 24px 8px;
   border-bottom:1px solid var(--divider);
@@ -2080,6 +2081,7 @@
 [data-cv6] .cv6-email-tabs[data-layout="mobile"] { padding:7px 14px; }
 [data-cv6] .cv6-email-tablist {
   display:inline-flex;
+  margin:0 auto;
   gap:2px;
   padding:3px;
   border:1px solid var(--hair);
@@ -2574,6 +2576,54 @@ html.cv6-app-active #root {
 @media (max-width:640px) {
   [data-cv6] .cv6-chat-header-button { min-width:52px; height:36px; padding:0 10px; font-size:12px; }
   [data-cv6] .cv6-chat-more-menu { position:fixed; top:calc(env(safe-area-inset-top,0px) + 66px); right:12px; }
+}
+
+/* R11 one-page workspace. Home/tools stay mounted as the base column while
+   every room and Email appends an independent, fixed-width sibling. The page
+   never navigates away; overflow belongs to this horizontal canvas. */
+[data-cv6] .cv6-workspace-canvas {
+  flex:1;
+  min-width:0;
+  min-height:0;
+  display:flex;
+  align-items:stretch;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  scrollbar-width:thin;
+  background:transparent;
+}
+[data-cv6] .cv6-workspace-base {
+  flex:1 0 100%;
+  width:auto;
+}
+[data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base {
+  flex:0 0 clamp(560px,50vw,760px);
+}
+[data-cv6] .cv6-workspace-column {
+  position:relative;
+  flex:0 0 clamp(440px,36vw,560px);
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  border-left:1px solid var(--divider);
+  background:var(--ground);
+  box-shadow:-18px 0 36px -30px rgba(0,0,0,.7);
+}
+[data-app-theme="glass"] [data-cv6] .cv6-workspace-column { background:rgba(8,12,17,.72); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); }
+@media (max-width:899px) {
+  [data-cv6] .cv6-workspace-canvas { scroll-snap-type:x mandatory; scrollbar-width:none; }
+  [data-cv6] .cv6-workspace-canvas::-webkit-scrollbar { display:none; }
+  [data-cv6] .cv6-workspace-base,
+  [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base,
+  [data-cv6] .cv6-workspace-column {
+    flex:0 0 100%;
+    width:100%;
+    scroll-snap-align:start;
+  }
+  [data-cv6] .cv6-workspace-column { border-left:0; box-shadow:none; }
 }
 
 /* R11 mobile context actions: a held room row opens Corner's menu without

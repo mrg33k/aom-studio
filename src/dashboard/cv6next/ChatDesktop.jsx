@@ -16,8 +16,6 @@ import { titleForAgent } from './data/agentTitles.js';
 import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
-import SupportDesktop from './SupportDesktop.jsx';
-import EmailShell from './EmailShell.jsx';
 import NewComposer from './NewComposer.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import { useDataContext } from './providers/DataContext.jsx';
@@ -385,7 +383,7 @@ function PlainThread({ messages, onSend, localReadOnly = false }) {
   );
 }
 
-export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onSearch, onReviewFile, onAssignEmail, windowMode = false, persistSelection = true }) {
+export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onSearch, onReviewFile, onAssignEmail, onOpenRoomColumn, onOpenEmailColumn, windowMode = false, persistSelection = true }) {
   const { data: list } = useChatList();
   const [titleOverrides, setTitleOverrides] = useState({});
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -617,11 +615,11 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     else if (fromBottom < 400) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selKey]);
 
-  const pickAgent = (a) => { setCenterMode('thread'); setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel, specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle }); };
-  const pickProject = (p) => { setCenterMode('thread'); setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' }); };
+  const pickAgent = (a) => { const room = { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel, specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle }; if (onOpenRoomColumn) onOpenRoomColumn(room, worldId); else setPicked(room); };
+  const pickProject = (p) => { const room = { id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' }; if (onOpenRoomColumn) onOpenRoomColumn(room, worldId); else setPicked(room); };
   // DEF-14 guard: m.slug may be JS undefined when a mission object is partially constructed.
   // String(undefined) = "undefined" which is truthy and passes guards — explicitly reject it.
-  const pickMission = (p, m) => { const safeSlug = (m.slug != null && String(m.slug).trim() !== 'undefined' && String(m.slug).trim() !== '') ? m.slug : null; const missionSlug = safeSlug && String(safeSlug).includes(':') ? safeSlug : (safeSlug ? `${p.slug}:${safeSlug}` : null); const nm = titleOverrides[`m:${missionSlug}`] || missionLabelClean(m.name || safeSlug); setCenterMode('thread'); setPicked({ id: safeSlug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug: p.slug, path: m.path || null, status: missionDot(m.status), statusText: p.name }); };
+  const pickMission = (p, m) => { const safeSlug = (m.slug != null && String(m.slug).trim() !== 'undefined' && String(m.slug).trim() !== '') ? m.slug : null; const missionSlug = safeSlug && String(safeSlug).includes(':') ? safeSlug : (safeSlug ? `${p.slug}:${safeSlug}` : null); const nm = titleOverrides[`m:${missionSlug}`] || missionLabelClean(m.name || safeSlug); const room = { id: safeSlug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug: p.slug, path: m.path || null, status: missionDot(m.status), statusText: p.name }; if (onOpenRoomColumn) onOpenRoomColumn(room, worldId); else setPicked(room); };
 
   // Real missions per project (same endpoint the mobile project screen uses). Each project
   // row fans open to these; clicking one opens that mission's own thread.
@@ -635,18 +633,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     if (selected.isMission) setMissionReload((n) => n + 1);
   }, [selected, roomTitleKey]);
   // ── The rail is the switchboard (drop 3) ──────────────────────────────────
-  // Email pinned at the rail's foot swaps the center pane to the inbox; "+ New"
-  // opens the one shared creation flow; per-room amber badges ride the same
-  // needs-you feed that used to power the catch-up strip (now cut, Patrik 7-20).
-  const [centerMode, setCenterMode] = useState('thread'); // 'thread' | 'email'
-  // Returning from Email remounts the thread scroller at the top with your
-  // just-sent message far below the fold (adv2 finding 2) — re-pin to the tail.
-  useEffect(() => {
-    if (centerMode !== 'thread') return;
-    prevLenRef.current = 0;
-    const t = setTimeout(() => bottomRef.current?.scrollIntoView(), 60);
-    return () => clearTimeout(t);
-  }, [centerMode]);
+  // Email and rooms append page-owned workspace columns; they never replace
+  // this conversation or escape into browser windows.
   const [composerOpen, setComposerOpen] = useState(false);
   const { inboxItems = [] } = useDataContext() || {};
   // Files waiting on review are attention too (xhigh review finding 4): the
@@ -736,14 +724,14 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 12px' }}>
               <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Agents</div>
               <div style={{ marginBottom: 16 }}>
-                {agents.length ? agents.map((a) => <RoomRow key={a.id} row={a} needsCount={a.needsCount || 0} open={centerMode === 'thread' && selected?.id === a.id && !selected?.isProject} onClick={() => pickAgent(a)} />)
+                {agents.length ? agents.map((a) => <RoomRow key={a.id} row={a} needsCount={a.needsCount || 0} open={selected?.id === a.id && !selected?.isProject} onClick={() => pickAgent(a)} />)
                   : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No agents yet.</div>}
               </div>
               <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Projects</div>
               {projects.length ? projects.map((p) => (
                 <ProjectGroup key={p.id} row={p}
-                  selectedProject={centerMode === 'thread' && selected?.id === p.id && selected?.isProject}
-                  selectedMissionSlug={centerMode === 'thread' && selected?.isMission ? selected.missionSlug : null}
+                  selectedProject={selected?.id === p.id && selected?.isProject}
+                  selectedMissionSlug={selected?.isMission ? selected.missionSlug : null}
                   missions={missionsByProject[p.slug] || []}
                   needsCount={needsByProject[p.slug] || needsByProject[p.id] || 0}
                   needsByMission={needsByMission}
@@ -756,23 +744,16 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No projects yet.</div>}
             </div>
             <div style={{ flex: 'none', borderTop: '1px solid var(--divider)', padding: '8px 12px' }}>
-              <div className="room" role="button" onClick={() => setCenterMode('email')}
-                style={{ cursor: centerMode === 'email' ? 'default' : 'pointer', background: centerMode === 'email' ? 'var(--accent-weak)' : undefined }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={centerMode === 'email' ? 'var(--accent)' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+              <div className="room" role="button" onClick={() => onOpenEmailColumn?.()}
+                style={{ cursor: 'pointer' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
                 <span className="rn" style={{ fontWeight: 600 }}>Email</span>
               </div>
             </div>
           </div>}
 
-          {/* conversation — or, when the pinned Email row is picked, the inbox
-              swaps into the center (drop 3: same screen, the middle changes). */}
-          {centerMode === 'email' ? (
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              <EmailShell isDesktop
-                inbox={<SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} />}
-                onBack={() => setCenterMode('thread')} onOpenNav={onOpenNav} />
-            </div>
-          ) : (
+          {/* The selected conversation remains alive while other rooms and Email
+              append beside it as independent workspace columns. */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {selected ? (
               <>
@@ -800,6 +781,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       <div className="cv6-chat-more-menu" role="menu" aria-label={`More for ${selected.name}`}>
                         <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); onSearch?.(); }}>Search conversation</button>
                         <button type="button" role="menuitem" data-testid="room-settings-trigger" onClick={() => { setHeaderMoreOpen(false); setSettingsOpen(true); }}>Room settings</button>
+                        {onOpenRoomColumn ? <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); onOpenRoomColumn(selected, worldId); }}>Open as column</button> : null}
                         <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); toggleFollow(); }}>{following ? 'Mute updates' : 'Follow along'}</button>
                       </div>
                     </>
@@ -828,10 +810,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
               <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>Pick a room on the left to open its thread.</div>
             )}
           </div>
-          )}
 
-          {/* control drawer — hidden while Email fills the center */}
-          {centerMode !== 'email' && (
+          {/* control drawer */}
           <div className="cv6-chat-drawer" style={{ width: 316, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 20, overflowY: 'auto' }}>
             {selected ? (
               <>
@@ -933,7 +913,6 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
               </>
             ) : null}
           </div>
-          )}
         </div>
       </div>
       {/* Rich CV4 composer — mounted once, kept alive. Portals into composerHost

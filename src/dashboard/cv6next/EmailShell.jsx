@@ -113,7 +113,7 @@ function AutoReplySettings() {
       .then((data) => {
         const fs = data?.file_state;
         if (!fs) return;
-        setForm({ mode: fs.mode || 'off', answer_mode: fs.answer_mode || 'off', threshold_min: fs.threshold_min || 8, tone: fs.tone || 'warm and direct', instructions: fs.instructions || '', sign_off: fs.sign_off || 'Best,\nThe AOM Team' });
+        setForm({ mode: fs.mode || 'off', answer_mode: fs.answer_mode || 'off', threshold_min: fs.threshold_min || 8, tone: fs.tone || 'warm and direct', instructions: fs.instructions || '', sign_off: fs.sign_off || 'Cheers,' });
       }).catch(() => setStatus({ busy: false, message: 'Auto-reply settings could not be loaded.', error: true }));
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -141,7 +141,7 @@ function AutoReplySettings() {
         <label><span>Holding-note delay</span><div className="cv6-autoreply-number"><input type="number" min="2" max="240" value={form.threshold_min} onChange={(event) => set('threshold_min', event.target.value)} /><em>minutes</em></div></label>
         <label><span>Reply vibe</span><input value={form.tone} maxLength={40} onChange={(event) => set('tone', event.target.value)} placeholder="Warm, plain, direct" /></label>
         <label className="is-wide"><span>Instructions</span><textarea value={form.instructions} maxLength={2000} onChange={(event) => set('instructions', event.target.value)} placeholder="What should every automatic reply sound like or avoid?" /></label>
-        <label className="is-wide"><span>Sign-off</span><textarea value={form.sign_off} maxLength={300} onChange={(event) => set('sign_off', event.target.value)} /></label>
+        <label className="is-wide"><span>Sign-off</span><textarea value={form.sign_off} maxLength={300} onChange={(event) => set('sign_off', event.target.value)} placeholder="Cheers," /></label>
       </div>
       {status.message ? <div className={`room-settings-note${status.error ? ' is-error' : ' is-saved'}`}>{status.message}</div> : null}
     </form>

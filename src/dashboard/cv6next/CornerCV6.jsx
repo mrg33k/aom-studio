@@ -19,8 +19,9 @@ import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop, { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
-import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
+import { normalizeLinks } from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
+import SupportThread from './SupportThread.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import Organize from './Organize.jsx';
 import Review from './Review.jsx';
@@ -42,12 +43,11 @@ import { useCommand, useTrackerBugs } from './data/useCommandTracker.js';
 import { useWorldId } from '../lib/tenantContext.jsx';
 import { useCommandContext, useDataContext } from './providers/DataContext.jsx';
 import { titleForAgent } from './data/agentTitles.js';
-import { chatWindowName, chatWindowRouteFromSearch, chatWindowUrl } from './data/chatWindowRoute.js';
+import { chatWindowRouteFromSearch } from './data/chatWindowRoute.js';
 import { useDemoBlocksFeed } from './data/useDemoBlocks.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
 import inboxRaw from './templates/support-inbox.html?raw';
-import supportThreadRaw from './templates/support-thread.html?raw';
 import chatRaw from './templates/chat.html?raw';
 import kitRaw from './templates/kit.html?raw';
 import commandRaw from './templates/command.html?raw';
@@ -409,7 +409,7 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
   );
 }
 
-function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
+function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
   const { refetch: refetchHomeData } = useDataContext();
@@ -1200,7 +1200,7 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
     // (HomeFilesPanel overlay), instead of jumping to the Organize tool. Only meaningful when
     // a room is open in col3; harmless otherwise.
     toggleFiles: () => setFilesOpen((o) => !o),
-    openChatWindow: () => { if (knavOpenedRoom) onOpenWindow?.(knavOpenedRoom); },
+    openChatColumn: () => { if (knavOpenedRoom) onOpenColumn?.(knavOpenedRoom); },
     // Send a quick reply from the col3 room panel: read the uncontrolled input and post into the
     // opened room via the same thread the full Chat uses (Patrik: the quick reply room should work).
     sendMessage: async (_arg, e) => {
@@ -1232,7 +1232,7 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker, quickSend, knavOpenedRoom]);
+  }), [onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker, quickSend, knavOpenedRoom]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),
@@ -1609,7 +1609,6 @@ const EARLIER_CUT = /^\s*>|^-{2,}\s*Forwarded message|^Begin forwarded message:|
 function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
   const { state, data, reload } = useSupportInbox(worldId);
   const html = useMemo(() => composeScreen(inboxRaw, { mobile: true, dropEmbeddedStates: true }), []);
-  const threadHtml = useMemo(() => composeScreen(supportThreadRaw, { mobile: true }), []);
   // The "Draft reply" screen the design ships next to the inbox (pick=1). Tone and
   // Redo have no live mechanism yet, so they're stripped at compose time — same
   // no-dead-controls doctrine as composeScreen's dead-nav-tile removal.
@@ -1819,8 +1818,39 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
       aliases={SUPPORT_THREAD_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
   }
   if (openedEmail) {
-    return <TemplateScreen html={threadHtml} data={threadData} actions={threadActions} state="ready"
-      aliases={SUPPORT_THREAD_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
+    const e = openedEmail;
+    const summary = threadData.thread.summary || [];
+    return (
+      <div data-cv6 data-screen="support-thread" className="cv6-screen" style={{ width: 'min(440px, 100%)', height: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', background: 'var(--ground)' }}>
+        <div className="mhdr" style={{ flex: 'none' }}>
+          <button type="button" className="mback" aria-label="Back to inbox" onClick={threadActions.closeThread}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+          <div className="mhtitle"><div className="mttl">{e.subject || 'Conversation'}</div><div className="msub">{e.sender || 'Sender'} · {e.threadCount || 1} message{Number(e.threadCount || 1) === 1 ? '' : 's'}</div></div>
+          <div className="mhactions"><button type="button" className="ib" aria-label="Search" onClick={onSearch}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button></div>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px' }}>
+          {(summary.length || threadData.thread.summaryNote) ? (
+            <div style={{ marginBottom: 14, padding: '14px 16px', borderRadius: 14, border: '1px solid var(--hair)', background: 'var(--surface-2)' }}>
+              <div className="eyebrow" style={{ marginBottom: 9 }}>At a glance</div>
+              {summary.map((point, index) => <div key={index} style={{ display: 'flex', gap: 9, marginTop: index ? 7 : 0, color: 'var(--fg)', fontSize: 13, lineHeight: 1.5 }}><span style={{ color: 'var(--accent)' }}>•</span><span>{point.text}</span></div>)}
+              {!summary.length && threadData.thread.summaryNote ? <div style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.5 }}>{threadData.thread.summaryNote}</div> : null}
+            </div>
+          ) : null}
+          <SupportThread
+            wishId={e.kind === 'wish' ? e.wishId : null}
+            threadId={e.kind !== 'wish' ? e.threadId : null}
+            account={e.kind !== 'wish' ? e.boxEmail : null}
+            refreshToken={`${e.id}${sentNote ? '-sent' : ''}`}
+            fallback={{ sender: e.sender, address: e.address, initials: e.initials, avatarTint: e.avatarTint, time: e.time, body: suggest?.original || e.body || 'No message body.' }}
+          />
+          {(sentNote || heldNote) ? <div role="status" style={{ marginTop: 12, color: heldNote ? 'var(--warn)' : 'var(--success)', fontSize: 12.5, lineHeight: 1.5 }}>{sentNote || heldNote}</div> : null}
+        </div>
+        <div style={{ flex: 'none', padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))', borderTop: '1px solid var(--divider)', background: 'var(--ground)' }}>
+          <button type="button" className="primary" style={{ width: '100%', minHeight: 42, borderRadius: 21 }} onClick={openDraft}>{e.kind === 'wish' ? 'Reply with agent' : 'Assign to agent'}</button>
+        </div>
+      </div>
+    );
   }
   return <TemplateScreen html={html} data={view} actions={actions} state={state}
     aliases={SUPPORT_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
@@ -2903,11 +2933,50 @@ function DemoGlobalMotion() {
 
 // Bare mission slug for a room (review routing needs it; xhigh finding 3).
 const roomMissionSlug = (r) => (r?.isMission ? String(r.missionSlug || r.id || '').split(':').pop() : '');
+const roomColumnKey = (room) => {
+  if (room?.isMission) return `mission:${room.missionSlug || room.id}`;
+  if (room?.isProject) return `project:${room.id}`;
+  return `agent:${room?.id || room?.name || 'room'}`;
+};
+const flattenDispatchMissions = (nodes, output = []) => {
+  for (const node of nodes || []) {
+    if (node && (node.slug || node.id)) output.push(node);
+    flattenDispatchMissions(node?.children || node?.missions || [], output);
+  }
+  return output;
+};
 
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
   const roomRegistry = useChatList();
+  const dispatchMissionsByProject = useProjectMissions(worldId, 0);
+  const dispatchDestinations = useMemo(() => {
+    const agents = (roomRegistry.data?.agents || []).map((agent) => ({
+      key: `agent:${agent.id}`, kind: 'agent', slug: agent.id, label: agent.name,
+      room: { id: agent.id, name: agent.name, initials: agent.initials, status: agent.status, statusText: agent.statusLabel },
+    }));
+    const rooms = [];
+    for (const project of (roomRegistry.data?.projects || [])) {
+      const projectSlug = project.slug || project.id;
+      rooms.push({
+        key: `project:${projectSlug}`, kind: 'project', slug: projectSlug, projectSlug, label: project.name,
+        room: { id: projectSlug, name: project.name, initials: (project.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: project.status, statusText: 'project chat' },
+      });
+      for (const mission of flattenDispatchMissions(dispatchMissionsByProject[projectSlug] || [], [])) {
+        const bareSlug = String(mission.slug || mission.id || '').split(':').pop();
+        if (!bareSlug) continue;
+        const missionSlug = String(mission.slug || '').includes(':') ? String(mission.slug) : `${projectSlug}:${bareSlug}`;
+        const missionName = String(mission.name || bareSlug).split(':').pop().trim();
+        rooms.push({
+          key: `mission:${missionSlug}`, kind: 'mission', slug: bareSlug, missionSlug, projectSlug,
+          label: `${project.name} / ${missionName}`,
+          room: { id: bareSlug, name: missionName, initials: missionName.slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug, path: mission.path || null, status: mission.status || 'ready', statusText: project.name },
+        });
+      }
+    }
+    return [...agents, ...rooms];
+  }, [roomRegistry.data, dispatchMissionsByProject]);
   // iOS can defer its first `dvh` correction until the user scrolls the document,
   // which leaves a false strip of body background under an otherwise full-height
   // app. Lock the document and size the shell from VisualViewport on first paint;
@@ -2945,11 +3014,10 @@ export default function CornerCV6() {
   const chatWindowRoute = useMemo(() => {
     try { return chatWindowRouteFromSearch(window.location.search); } catch { return null; }
   }, []);
-  const isChatWindow = Boolean(chatWindowRoute);
-  const isEmailColumn = useMemo(() => {
+  const legacyEmailRequested = useMemo(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      return params.get('view') === 'support' && params.get('popout') === 'email';
+      return params.get('view') === 'support';
     } catch { return false; }
   }, []);
   // Cold start lands in the last-open room (drop 3): Home stops being the front
@@ -2969,14 +3037,22 @@ export default function CornerCV6() {
   })();
   const routeSeed = chatWindowRoute ? { room: chatWindowRoute.room, worldId: null } : null;
   const [view, setView] = useState(() => {
-    if (routeSeed) return 'chatlist';
+    if (routeSeed || legacyEmailRequested) return 'home';
     const v = initialViewFromUrl();
     if (v !== 'home' || explicitView) return v;
-    return coldSeed ? 'chatlist' : 'home';
+    return 'home';
   }); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
-  const [openedRoom, setOpenedRoom] = useState(() => routeSeed || (coldSeed ? { room: coldSeed.room, worldId: coldSeed.worldId } : null)); // { room, worldId } -> Chat
+  const initialChatSeed = routeSeed || (coldSeed ? { room: coldSeed.room, worldId: coldSeed.worldId } : null);
+  const [openedRoom, setOpenedRoom] = useState(null); // retained for legacy history entries; live rooms are workspace columns
+  const [workspaceColumns, setWorkspaceColumns] = useState(() => {
+    const columns = [];
+    if (initialChatSeed?.room) columns.push({ id: `chat:${roomColumnKey(initialChatSeed.room)}`, type: 'chat', room: initialChatSeed.room, worldId: initialChatSeed.worldId || worldId });
+    if (legacyEmailRequested) columns.push({ id: 'email', type: 'email' });
+    return columns;
+  });
+  const [activeColumnId, setActiveColumnId] = useState(() => legacyEmailRequested ? 'email' : (initialChatSeed?.room ? `chat:${roomColumnKey(initialChatSeed.room)}` : ''));
+  const workspaceCanvasRef = useRef(null);
   const [restoredRoomPending, setRestoredRoomPending] = useState(() => Boolean(routeSeed || coldSeed));
-  const [chatWindowInvalid, setChatWindowInvalid] = useState(false);
   const [roomNotice, setRoomNotice] = useState('');
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
@@ -3004,20 +3080,19 @@ export default function CornerCV6() {
   // agent/project registry and, for missions, the mission tree. Archived rooms
   // now fall back to Rooms with an honest notice instead of opening a phantom.
   useEffect(() => {
-    if (!restoredRoomPending || !openedRoom?.room || roomRegistry.state === 'loading') return undefined;
+    const restoredColumn = workspaceColumns.find((column) => column.type === 'chat');
+    if (!restoredRoomPending || !restoredColumn?.room || roomRegistry.state === 'loading') return undefined;
     let alive = true;
-    const room = openedRoom.room;
+    const room = restoredColumn.room;
     const base = { agents: roomRegistry.data?.agents || [], projects: roomRegistry.data?.projects || [] };
     const invalidate = () => {
       if (!alive) return;
-      if (!isChatWindow) {
-        try { localStorage.removeItem('cv6.lastRoom'); } catch { /* private mode */ }
-      }
-      setOpenedRoom(null);
-      setView(isChatWindow ? 'chatlist' : 'home');
+      try { localStorage.removeItem('cv6.lastRoom'); } catch { /* private mode */ }
+      setWorkspaceColumns((columns) => columns.filter((column) => column.id !== restoredColumn.id));
+      setActiveColumnId('');
+      setView('home');
       setHistory([]);
-      if (isChatWindow) setChatWindowInvalid(true);
-      else setRoomNotice('That saved room is no longer active. Showing all rooms instead.');
+      setRoomNotice('That saved room is no longer active. Showing all rooms instead.');
       setRestoredRoomPending(false);
     };
     const initial = savedRoomExists(room, base);
@@ -3034,12 +3109,15 @@ export default function CornerCV6() {
       })
       .catch(() => { if (alive) setRestoredRoomPending(false); });
     return () => { alive = false; };
-  }, [restoredRoomPending, openedRoom, roomRegistry.state, roomRegistry.data, worldId, isChatWindow]);
+  }, [restoredRoomPending, workspaceColumns, roomRegistry.state, roomRegistry.data, worldId]);
 
   useEffect(() => {
-    if (!isChatWindow || !openedRoom?.room?.name) return;
-    document.title = `${openedRoom.room.name} · Corner chat`;
-  }, [isChatWindow, openedRoom?.room?.name]);
+    if (!activeColumnId) return;
+    const canvas = workspaceCanvasRef.current;
+    const column = [...(canvas?.children || [])].find((item) => item.getAttribute('data-workspace-column') === activeColumnId);
+    if (!canvas || !column) return;
+    requestAnimationFrame(() => canvas.scrollTo({ left: column.offsetLeft, behavior: 'smooth' }));
+  }, [activeColumnId, workspaceColumns.length]);
 
   // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
   // nav's search icon opens it too (onOpenCommandK below). Escape closes inside Search.
@@ -3094,8 +3172,40 @@ export default function CornerCV6() {
       return h.slice(0, -1);
     });
   }, []);
+
+  const closeWorkspaceColumn = useCallback((columnId) => {
+    setWorkspaceColumns((columns) => {
+      const index = columns.findIndex((column) => column.id === columnId);
+      const next = columns.filter((column) => column.id !== columnId);
+      const fallback = next[Math.min(Math.max(0, index - 1), Math.max(0, next.length - 1))];
+      setActiveColumnId(fallback?.id || '');
+      return next;
+    });
+  }, []);
+
+  // A room is a page-owned column, never a browser window or a route takeover.
+  // Reopening an existing room focuses its live column; opening another room
+  // appends a new independent chat with its own hook/composer state.
+  const onOpenRoom = useCallback((room, wid) => {
+    if (!room?.id && !room?.name) return;
+    setRestoredRoomPending(false);
+    setRoomNotice('');
+    const id = `chat:${roomColumnKey(room)}`;
+    const column = { id, type: 'chat', room, worldId: wid || worldId };
+    setWorkspaceColumns((columns) => columns.some((item) => item.id === id) ? columns : [...columns, column]);
+    setActiveColumnId(id);
+    try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
+  }, [worldId]);
+
+  const onOpenEmailColumn = useCallback(() => {
+    setWorkspaceColumns((columns) => columns.some((column) => column.id === 'email') ? columns : [...columns, { id: 'email', type: 'email' }]);
+    setActiveColumnId('email');
+    return true;
+  }, []);
+
   const onNav = useCallback((target, arg) => {
     if (target === 'back') { back(); return; }
+    if (target === 'support') { onOpenEmailColumn(); return; }
     // Legacy 'review' navs (any straggler call site) land in Files with the
     // needs-review filter on — the Review tool is a mode of Files now.
     if (target === 'review') {
@@ -3108,7 +3218,7 @@ export default function CornerCV6() {
       setRoomReview(arg);
       return;
     }
-    if (['home', 'support', 'command', 'tracker', 'organize', 'settings', 'livescribe'].includes(target)) {
+    if (['home', 'command', 'tracker', 'organize', 'settings', 'livescribe'].includes(target)) {
       // Carry a "Review this file" target into Files; a plain toolbar nav('organize')
       // passes no arg and clears any prior target.
       if (target === 'organize') setFilesTarget(arg && typeof arg === 'object' ? arg : null);
@@ -3119,15 +3229,7 @@ export default function CornerCV6() {
     // "See all" rooms (Home All Rooms header) routes to the same full rooms list (was a
     // dead 'rooms' target that fell through to nothing).
     else if (target === 'chat' || target === 'rooms') goTo('chatlist', null);
-  }, [back, goTo]);
-  // Opening a room keeps the current view underneath so Back returns to where you tapped from.
-  // Every open also remembers the room (cv6.lastRoom) so the next cold start lands here.
-  const onOpenRoom = useCallback((room, wid) => {
-    setRestoredRoomPending(false);
-    setRoomNotice('');
-    try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
-    goTo(view, { room, worldId: wid || worldId });
-  }, [goTo, view, worldId]);
+  }, [back, goTo, onOpenEmailColumn]);
   // Open a project's home (missions + general chat) on the Home surface.
   const onOpenProject = useCallback((proj) => {
     const id = proj?.id || proj;
@@ -3139,52 +3241,6 @@ export default function CornerCV6() {
   const onSearch = useCallback(() => setSearchOpen(true), []);
   const closeNav = useCallback(() => setNavOpen(false), []);
   const goHome = useCallback(() => { setHistory([]); setOpenedRoom(null); setView('home'); }, []);
-  const onOpenChatWindow = useCallback((room) => {
-    if (!room?.id || typeof window === 'undefined') return;
-    // A chat opens at one-column width. Each room has its own named window, so several
-    // independent conversations can stay open and be tiled side by side on desktop.
-    const width = Math.max(460, Math.min(540, (window.screen?.availWidth || 1280) - 80));
-    const height = Math.max(680, Math.min(920, (window.screen?.availHeight || 900) - 90));
-    const slotKey = 'cv6.chatWindowSlot';
-    let slot = 0;
-    try { slot = (Number(sessionStorage.getItem(slotKey) || 0) + 1) % 3; sessionStorage.setItem(slotKey, String(slot)); } catch { /* private mode */ }
-    const left = Math.max(20, Math.min((window.screen?.availWidth || width) - width - 20, 24 + slot * (width + 18)));
-    const top = Math.max(20, Math.round(((window.screen?.availHeight || height) - height) / 2));
-    const child = window.open(
-      chatWindowUrl(room, window.location.href),
-      chatWindowName(room, worldId),
-      `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
-    );
-    if (!child) {
-      setRoomNotice('Your browser blocked the chat window. Allow pop-ups for Corner and try again.');
-      return;
-    }
-    try { child.opener = null; child.focus(); } catch { /* the window still opened */ }
-  }, [worldId]);
-  const onOpenEmailWindow = useCallback(() => {
-    if (typeof window === 'undefined') return false;
-    const width = Math.max(460, Math.min(560, (window.screen?.availWidth || 1280) - 80));
-    const height = Math.max(680, Math.min(920, (window.screen?.availHeight || 900) - 90));
-    const url = new URL(window.location.href);
-    url.search = '';
-    url.hash = '';
-    url.searchParams.set('cv6', '1');
-    url.searchParams.set('view', 'support');
-    url.searchParams.set('popout', 'email');
-    const left = Math.max(20, (window.screen?.availWidth || width) - width - 24);
-    const top = Math.max(20, Math.round(((window.screen?.availHeight || height) - height) / 2));
-    const child = window.open(
-      url.toString(),
-      `corner-email-${String(worldId || 'world').replace(/[^a-z0-9_-]+/gi, '-')}`,
-      `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
-    );
-    if (!child) {
-      setRoomNotice('Your browser blocked the Email column. Opening Email here instead.');
-      return false;
-    }
-    try { child.opener = null; child.focus(); } catch { /* the window still opened */ }
-    return true;
-  }, [worldId]);
 
   // ?demo=blocks — render the full chat-element preview through the real renderer and stop.
   // (After all hooks above, so hook order stays stable; the flag is constant per load.)
@@ -3221,35 +3277,25 @@ export default function CornerCV6() {
   }
 
   let body; let viewKey;
-  // Desktop Chat is the real 3-column layout (rooms rail + thread + drawer), with its own
-  // room selection. Both the conversations list and an opened room route to it on desktop.
-  if (chatWindowInvalid) {
-    body = (
-      <div data-cv6 data-theme="dark" className="cv6-screen" style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 28, textAlign: 'center' }}>
-        <div><div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>This chat is no longer available.</div><div style={{ marginTop: 7, color: 'var(--muted)', fontSize: 13 }}>It may have been archived or moved.</div><a href="/dashboard?cv6=1&view=home" style={{ display: 'inline-flex', marginTop: 18, minHeight: 40, alignItems: 'center', padding: '0 15px', borderRadius: 11, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Open Corner</a></div>
-      </div>
-    );
-    viewKey = 'chat-window:invalid';
-  }
-  else if ((isDesktop || isChatWindow) && (view === 'chatlist' || openedRoom)) {
+  // The Chat directory can still use its wide desktop browser. Individual room
+  // conversations append to the one-page workspace below instead of replacing it.
+  if (isDesktop && view === 'chatlist') {
     body = <ChatDesktop worldId={worldId}
-      initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, isMission: openedRoom.room?.isMission, missionSlug: openedRoom.room?.missionSlug, projectSlug: openedRoom.room?.projectSlug, path: openedRoom.room?.path, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText, specialistTitle: openedRoom.room?.specialistTitle, hasCustomTitle: openedRoom.room?.hasCustomTitle } : null}
-      onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} windowMode={isChatWindow} persistSelection={!isChatWindow}
+      initialRoom={null}
+      onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoomColumn={onOpenRoom} onOpenEmailColumn={onOpenEmailColumn} windowMode={false} persistSelection
       onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })}
       onReviewFile={(f, proj, mission) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', missionSlug: mission || '', needsReview: true } : null); }} />;
-    viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
+    viewKey = 'chatdesktop:list';
   }
-  else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId || worldId} onNav={onNav} onSearch={onSearch} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={onAssignEmail} worldId={worldId} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} onBack={() => onNav('back')} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'support'; }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} theme={theme} onTheme={changeTheme} />; viewKey = 'settings'; }
   else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'livescribe'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={onSearch} />; viewKey = 'chatlist'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenWindow={onOpenChatWindow} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenColumn={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
-  const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
+  const current = view === 'chatlist' ? 'chat' : view;
   const parkedLabel = { organize: 'Files', command: 'Command', tracker: 'Tracker', livescribe: 'Scribe' }[view] || '';
   // Nav badges retired with the bar (drop 4): "waiting on you" now lives as amber
   // badges on the room rows themselves — the signal sits where the work is.
@@ -3280,36 +3326,58 @@ export default function CornerCV6() {
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
-      {isDesktop && !isChatWindow && !isEmailColumn && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailWindow={onOpenEmailWindow} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
-      {!isChatWindow && !isEmailColumn && <ActivityDock worldId={worldId} onOpenJob={(job) => {
+      <ActivityDock worldId={worldId} onOpenJob={(job) => {
         if (job?.live && job?.id) {
           const name = job.shortTitle || job.title || titleForAgent(job.id);
           onOpenRoom({ id: job.id, name, initials: name.slice(0, 2).toUpperCase(), status: 'active', statusText: 'working' }, worldId);
         } else onNav?.('command');
-      }} />}
+      }} />
       {roomNotice ? (
         <div role="status" style={{ position: 'absolute', zIndex: 34, top: isDesktop ? 68 : 10, left: '50%', transform: 'translateX(-50%)', maxWidth: 'calc(100% - 28px)', padding: '9px 13px', borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', boxShadow: '0 12px 30px -12px rgba(0,0,0,.55)', fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span>{roomNotice}</span><button type="button" aria-label="Dismiss notice" onClick={() => setRoomNotice('')} style={{ border: 'none', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', padding: 2 }}>×</button>
         </div>
       ) : null}
-      <div key={viewKey} className="cv6-screen-stage" data-cv6-view={viewKey}>
-        <ScreenBoundary viewKey={viewKey} onHome={goHome}>
-          {isDesktop && parkedLabel ? (
-            <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ height: 38, flex: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', borderBottom: '1px solid var(--divider)', background: 'var(--surface)', color: 'var(--muted)', fontSize: 11.5 }}>
-                <span style={{ fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--faint)' }}>Advanced tool</span>
-                <span aria-hidden="true">·</span><span style={{ color: 'var(--fg)', fontWeight: 600 }}>{parkedLabel}</span>
-                <span style={{ flex: 1 }} />
-                {history.length ? <button type="button" onClick={back} style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>Back</button> : null}
-                <button type="button" onClick={goHome} style={{ height: 28, padding: '0 10px', borderRadius: 8, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>All rooms</button>
+      <div ref={workspaceCanvasRef} className="cv6-workspace-canvas" data-column-count={workspaceColumns.length}>
+        <div key={viewKey} className="cv6-screen-stage cv6-workspace-base" data-cv6-view={viewKey} data-workspace-column="base">
+          <ScreenBoundary viewKey={viewKey} onHome={goHome}>
+            {isDesktop && parkedLabel ? (
+              <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: 38, flex: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', borderBottom: '1px solid var(--divider)', background: 'var(--surface)', color: 'var(--muted)', fontSize: 11.5 }}>
+                  <span style={{ fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--faint)' }}>Advanced tool</span>
+                  <span aria-hidden="true">·</span><span style={{ color: 'var(--fg)', fontWeight: 600 }}>{parkedLabel}</span>
+                  <span style={{ flex: 1 }} />
+                  {history.length ? <button type="button" onClick={back} style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>Back</button> : null}
+                  <button type="button" onClick={goHome} style={{ height: 28, padding: '0 10px', borderRadius: 8, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', font: '600 11.5px var(--font-sans)', cursor: 'pointer' }}>All rooms</button>
+                </div>
+                <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>{body}</div>
               </div>
-              <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>{body}</div>
-            </div>
-          ) : body}
-        </ScreenBoundary>
+            ) : body}
+          </ScreenBoundary>
+        </div>
+        {workspaceColumns.map((column) => (
+          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} aria-label={column.type === 'email' ? 'Email column' : `${column.room?.name || 'Chat'} chat column`}>
+            {column.type === 'email' ? (
+              <EmailShell
+                isDesktop={false}
+                inbox={<SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Dispatch email', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })} worldId={worldId} />}
+                onBack={() => closeWorkspaceColumn(column.id)}
+                onOpenNav={onOpenNav}
+                onSearch={onSearch}
+              />
+            ) : (
+              <Chat
+                room={column.room}
+                worldId={column.worldId || worldId}
+                onNav={(target, arg) => { if (target === 'back') closeWorkspaceColumn(column.id); else onNav(target, arg); }}
+                onSearch={onSearch}
+              />
+            )}
+          </section>
+        ))}
       </div>
-      {!isChatWindow && !isEmailColumn && <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} badges={navBadges} />
       {/* ⌘K command palette — jump to any room or mission. Opens its own data. */}
       {searchOpen && (
         <Search
@@ -3331,11 +3399,15 @@ export default function CornerCV6() {
           details={assignConfig.details || ''}
           projectSlug={assignConfig.project || ''}
           worldId={worldId}
+          destinations={assignConfig.type === 'email' ? dispatchDestinations : undefined}
           onAssigned={assignConfig.onAssigned || null}
           autoOpen
           onClose={() => setAssignConfig(null)}
-          onSuccess={() => setAssignConfig(null)}
-          onError={() => setAssignConfig(null)}
+          onSuccess={(result) => {
+            setAssignConfig(null);
+            if (assignConfig.type === 'email' && result?.room) onOpenRoom(result.room, worldId);
+          }}
+          onError={assignConfig.type === 'email' ? () => {} : () => setAssignConfig(null)}
         />
       )}
       {/* Review in place (drop 2): the review viewer mounted OVER the current screen.

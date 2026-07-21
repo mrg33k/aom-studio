@@ -584,7 +584,7 @@ function ConfirmDialog({
   );
 }
 
-export function AssignButton({
+function LegacyAssignButton({
   artifactType = 'email', // 'email' | 'file' | 'doc' | 'bug' | 'deliverable' | 'transcript'
   artifactId = '',
   artifactTitle = '',
@@ -837,4 +837,97 @@ export function AssignButton({
       )}
     </>
   );
+}
+
+function destinationLabel(target) {
+  if (!target) return 'Choose a destination';
+  return target.label || target.name || (target.kind === 'agent' ? titleForAgent(target.slug) : target.slug) || 'Destination';
+}
+
+function DestinationDispatch({
+  destinations,
+  artifactType = 'email',
+  artifactId = '',
+  artifactTitle = '',
+  title = '',
+  details = '',
+  worldId = 'aom',
+  onClose = () => {},
+  onSuccess = () => {},
+  onError = () => {},
+  onAssigned = null,
+}) {
+  const [targetKey, setTargetKey] = useState(destinations[0]?.key || '');
+  const [instruction, setInstruction] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const target = destinations.find((item) => item.key === targetKey) || null;
+  const label = artifactTitle || title || '(untitled)';
+  const dispatch = async () => {
+    if (!target || busy) return;
+    setBusy(true); setError('');
+    const kind = { email: 'email', file: 'file', doc: 'document', bug: 'bug', deliverable: 'deliverable', transcript: 'transcript' }[artifactType] || 'item';
+    const body = [
+      instruction.trim() || `Please take the next appropriate action on this ${kind}: "${label}".`,
+      details ? `\nContext:\n${details}` : '',
+      artifactId ? `\n(ref: ${artifactType}:${artifactId})` : '',
+    ].filter(Boolean).join('\n');
+    const payload = {
+      client_id: worldId || 'aom', role: 'user', source: 'corner-dashboard', text: body,
+      agent: target.kind === 'agent' ? target.slug : 'corner',
+      ...(target.projectSlug ? { project: target.projectSlug } : {}),
+      metadata: {
+        assign: { type: artifactType, id: artifactId, project: target.projectSlug || null, destination: target.kind },
+        ...(target.kind === 'mission' ? { mission_slug: String(target.missionSlug || target.slug || '').split(':').pop() } : {}),
+      },
+    };
+    try {
+      const response = await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      if (!response?.ok) throw new Error(`dispatch failed (${response?.status || '?'})`);
+      if (typeof onAssigned === 'function') await onAssigned(target);
+      const data = await response.json().catch(() => ({}));
+      onSuccess({ id: data?.message?.id || `dispatch-${Date.now()}`, status: 'sent', target, room: target.room || null });
+    } catch (dispatchError) {
+      const message = dispatchError?.message || 'Dispatch failed. Nothing was sent.';
+      setError(message); onError(dispatchError);
+    } finally { setBusy(false); }
+  };
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'grid', placeItems: 'center', padding: 16 }} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(4,6,9,.62)', backdropFilter: 'blur(3px)' }} />
+      <div role="dialog" aria-modal="true" aria-label="Dispatch item" style={{ position: 'relative', zIndex: 1, width: 'min(460px, 100%)', maxHeight: 'min(680px, calc(100dvh - 32px))', overflowY: 'auto', border: '1px solid var(--hair)', borderRadius: 20, background: 'var(--ground)', padding: 20, boxShadow: '0 24px 64px rgba(0,0,0,.45)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 18 }}>
+          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)' }}>Dispatch email</div><div style={{ marginTop: 4, color: 'var(--muted)', fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div></div>
+          <button type="button" aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--muted)', cursor: 'pointer', fontSize: 18 }}>×</button>
+        </div>
+        <label style={{ display: 'grid', gap: 7, marginBottom: 14, color: 'var(--muted)', fontSize: 12, fontWeight: 700 }}>
+          Destination
+          <select value={targetKey} onChange={(event) => setTargetKey(event.target.value)} style={{ width: '100%', height: 44, border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--surface)', color: 'var(--fg)', padding: '0 12px', font: '500 13px var(--font-sans)' }}>
+            {['agent', 'project', 'mission'].map((kind) => {
+              const items = destinations.filter((item) => item.kind === kind);
+              return items.length ? <optgroup key={kind} label={`${kind[0].toUpperCase()}${kind.slice(1)}s`}>{items.map((item) => <option key={item.key} value={item.key}>{destinationLabel(item)}</option>)}</optgroup> : null;
+            })}
+          </select>
+        </label>
+        <label style={{ display: 'grid', gap: 7, color: 'var(--muted)', fontSize: 12, fontWeight: 700 }}>
+          What should they do?
+          <textarea value={instruction} onChange={(event) => setInstruction(event.target.value)} placeholder="Add instructions, context, tone, or the exact outcome you want…" maxLength={4000} style={{ width: '100%', minHeight: 124, resize: 'vertical', boxSizing: 'border-box', border: '1px solid var(--hair)', borderRadius: 14, background: 'var(--surface)', color: 'var(--fg)', padding: 12, font: '400 13.5px/1.55 var(--font-sans)' }} />
+        </label>
+        <div style={{ marginTop: 10, color: 'var(--faint)', fontSize: 11.5 }}>The email reference and sender context are attached automatically.</div>
+        {error ? <div role="alert" style={{ marginTop: 12, color: 'var(--danger, #ef4444)', fontSize: 12.5 }}>{error}</div> : null}
+        <div style={{ display: 'flex', gap: 9, marginTop: 18 }}>
+          <button type="button" onClick={onClose} style={{ flex: 1, height: 42, borderRadius: 21, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+          <button type="button" onClick={dispatch} disabled={!target || busy} style={{ flex: 1, height: 42, borderRadius: 21, border: 0, background: 'var(--accent)', color: '#fff', fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: !target || busy ? .6 : 1 }}>{busy ? 'Sending…' : `Send to ${destinationLabel(target)}`}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function AssignButton(props) {
+  return Array.isArray(props.destinations) && props.destinations.length
+    ? <DestinationDispatch {...props} />
+    : <LegacyAssignButton {...props} />;
 }
