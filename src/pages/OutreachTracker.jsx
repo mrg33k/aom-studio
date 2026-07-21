@@ -1114,14 +1114,15 @@ const editSelectStyle = {
 function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
   const [sort, setSort] = useState({ key: 'day_route', dir: 1 })
   const cols = [
-    { key: 'company', label: 'Company', w: '17%' },
-    { key: 'trade', label: 'Trade', w: '13%' },
+    { key: 'company', label: 'Company', w: '16%' },
+    { key: 'trade', label: 'Trade', w: '12%' },
     { key: 'city', label: 'City', w: '7%' },
     { key: 'day_route', label: 'Day', w: '4%' },
     { key: 'need_score', label: 'Need', w: '5%' },
+    { key: 'employees', label: 'Emp', w: '5%' },
     { key: 'phone', label: 'Contact', w: '14%' },
-    { key: 'street_address', label: 'Address', w: '19%' },
-    { key: 'status', label: 'Status', w: '12%' },
+    { key: 'street_address', label: 'Address', w: '17%' },
+    { key: 'status', label: 'Status', w: '11%' },
     { key: 'assigned_to', label: 'Rep', w: '9%' },
   ]
   const sorted = [...leads].sort((a, b) => {
@@ -1210,6 +1211,9 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                     }}>
                       {lead.need_score}
                     </span>
+                  </td>
+                  <td style={{ ...td, fontSize: '0.72rem', color: '#999', whiteSpace: 'nowrap' }}>
+                    {lead.employees || <span style={{ color: '#444' }}>—</span>}
                   </td>
                   <td style={td}>
                     {lead.phone
