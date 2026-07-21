@@ -1135,6 +1135,38 @@ function CallKit({ lead, columns }) {
       gridTemplateColumns: columns === 2 ? '1fr 1fr' : '1fr',
       gap: '0.6rem',
     }}>
+      {lead.alive_evidence && (
+        <div style={{
+          gridColumn: '1 / -1',
+          display: 'flex',
+          gap: '0.5rem',
+          alignItems: 'baseline',
+          background: '#0b120b',
+          border: '1px solid #1c2a1c',
+          borderLeft: '2px solid #5a9e5a',
+          padding: '0.5rem 0.75rem',
+        }}>
+          <span style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '0.6rem',
+            color: '#7bbd7b',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}>
+            Confirmed open
+          </span>
+          <span style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '0.76rem',
+            color: '#b8c9b8',
+            lineHeight: 1.45,
+          }}>
+            {lead.alive_evidence}
+          </span>
+        </div>
+      )}
       {hasKit ? (
         <>
           <CallBlock num={1} label="Front desk — first words" text={lead.intro_line} />
