@@ -506,6 +506,33 @@
   .fnote{font-size:.72rem;color:var(--text-muted);margin:2px 0 14px}
   .form-actions{display:flex;gap:10px}
 
+  /* ---------- Curator gate (internal access only) ---------- */
+  .curator-gate-overlay{
+    position:fixed;inset:0;background:rgba(11,11,11,.72);
+    display:none;align-items:center;justify-content:center;z-index:300;
+    padding:20px;
+  }
+  .curator-gate-overlay.open{display:flex}
+  .curator-gate{
+    background:var(--paper-pure);border:var(--rule) solid var(--ink-900);
+    max-width:320px;width:100%;padding:26px 24px;
+    box-shadow:var(--shadow-overlay);animation:rise var(--dur) var(--ease);
+  }
+  .curator-gate .cg-label{
+    font-family:var(--font-display);font-weight:700;font-size:10px;
+    letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep);
+    margin-bottom:12px;
+  }
+  .curator-gate input{
+    width:100%;box-sizing:border-box;background:var(--paper-pure);
+    border:var(--rule-hairline) solid var(--ink-900);border-radius:0;
+    padding:10px 12px;color:var(--text);font-size:.9rem;
+    font-family:var(--font-text);outline:none;margin-bottom:10px;
+  }
+  .curator-gate input:focus{outline:2px solid var(--gold);outline-offset:-1px}
+  .curator-gate .cg-err{color:#B5453A;font-size:.78rem;margin:-2px 0 10px}
+  .curator-gate .cg-actions{display:flex;gap:10px}
+
   /* ---------- Toast ---------- */
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);
@@ -625,6 +652,19 @@
 <!-- Modal -->
 <div class="modal-overlay" id="overlay">
   <div class="modal" id="modal"></div>
+</div>
+
+<!-- Curator gate — internal access only, not part of the public page -->
+<div class="curator-gate-overlay" id="curatorGate">
+  <form class="curator-gate" onsubmit="submitCuratorGate(event)">
+    <div class="cg-label">Curator Desk — internal access</div>
+    <input type="password" id="curatorGatePw" placeholder="Access code" autocomplete="off">
+    <div class="cg-err" id="curatorGateErr" style="display:none">Wrong code — try again.</div>
+    <div class="cg-actions">
+      <button type="submit" class="btn gold">Unlock</button>
+      <button type="button" class="btn outline" onclick="closeCuratorGate()">Cancel</button>
+    </div>
+  </form>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -979,6 +1019,33 @@ let mode = "library";
 let curTab = "queue";
 let editId = null;
 const STREAK = 1;
+
+/* ================= CURATOR ACCESS GATE =================
+   Internal-only tool — same soft password-gate pattern already used at /outreach.
+   This gates the Curator Desk (mode==="curator"); the public Library view is untouched. */
+const CURATOR_PASSWORD = "AOM2026";
+function curatorUnlocked(){ return localStorage.getItem("curator_unlocked") === "1"; }
+function openCuratorGate(){
+  $("#curatorGateErr").style.display = "none";
+  $("#curatorGatePw").value = "";
+  $("#curatorGate").classList.add("open");
+  setTimeout(() => $("#curatorGatePw") && $("#curatorGatePw").focus(), 20);
+}
+function closeCuratorGate(){
+  $("#curatorGate").classList.remove("open");
+}
+function submitCuratorGate(e){
+  if(e) e.preventDefault();
+  if($("#curatorGatePw").value === CURATOR_PASSWORD){
+    localStorage.setItem("curator_unlocked", "1");
+    $("#curatorGate").classList.remove("open");
+    setMode("curator");
+  } else {
+    $("#curatorGateErr").style.display = "block";
+    $("#curatorGatePw").value = "";
+    $("#curatorGatePw").focus();
+  }
+}
 const TODAY = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}).replace(/(\d{2})$/,"20$1");
 
 /* ================= HELPERS ================= */
@@ -1052,6 +1119,10 @@ function renderMarquee(){
 }
 
 function setMode(m){
+  if(m === "curator" && !curatorUnlocked()){
+    openCuratorGate();
+    return;
+  }
   mode = m;
   $("#libraryView").style.display = m==="library" ? "" : "none";
   $("#curatorView").style.display = m==="curator" ? "" : "none";
@@ -1419,9 +1490,10 @@ function saveForm(){
 
 /* ================= GLOBAL EVENTS ================= */
 $("#overlay").addEventListener("click", e => { if(e.target.id === "overlay") closeModal(); });
+$("#curatorGate").addEventListener("click", e => { if(e.target.id === "curatorGate") closeCuratorGate(); });
 document.addEventListener("click", () => closeAllFilterMenus());
 document.addEventListener("keydown", e => {
-  if(e.key === "Escape"){ closeModal(); closeAllFilterMenus(); }
+  if(e.key === "Escape"){ closeModal(); closeAllFilterMenus(); closeCuratorGate(); }
   if(e.key === "/" && mode === "library" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){
     e.preventDefault(); $("#search").focus();
   }
