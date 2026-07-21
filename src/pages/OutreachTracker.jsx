@@ -1030,7 +1030,7 @@ const editSelectStyle = {
 }
 
 // ─── Filter Bar ───────────────────────────────────────────────────────────────
-function CallBlock({ label, text, bullets, wide }) {
+function CallBlock({ num, label, text, bullets, wide }) {
   if (!text) return null
   return (
     <div style={{
@@ -1048,6 +1048,16 @@ function CallBlock({ label, text, bullets, wide }) {
         textTransform: 'uppercase',
         marginBottom: '0.35rem',
       }}>
+        {num != null && (
+          <span style={{
+            fontFamily: "'Bricolage Grotesque', sans-serif",
+            fontWeight: 700,
+            fontSize: '0.7rem',
+            marginRight: '0.45rem',
+          }}>
+            {num}
+          </span>
+        )}
         {label}
       </div>
       {bullets
@@ -1089,17 +1099,17 @@ function CallKit({ lead, columns }) {
     }}>
       {hasKit ? (
         <>
-          <CallBlock label="Front desk — first words" text={lead.intro_line} />
-          <CallBlock label="When the owner picks up" text={lead.hook} />
-          <CallBlock label="Why we're calling" text={lead.why_calling} />
-          <CallBlock label="Proof we did our homework" text={lead.proof_points} bullets />
-          <CallBlock label="The ask — permission to stop by" text={lead.meeting_ask} wide />
+          <CallBlock num={1} label="Front desk — first words" text={lead.intro_line} />
+          <CallBlock num={2} label="When the owner picks up" text={lead.hook} />
+          <CallBlock num={3} label="Why we're calling" text={lead.why_calling} />
+          <CallBlock num={4} label="Proof we did our homework" text={lead.proof_points} bullets />
+          <CallBlock num={5} label="The ask — permission to stop by" text={lead.meeting_ask} wide />
         </>
       ) : (
         <CallBlock label="Opener" text={lead.hook} wide />
       )}
-      <CallBlock label="How we help" text={lead.gaps} bullets wide />
-      {lead.notes && (
+      <CallBlock num={6} label="How we help" text={lead.gaps} bullets wide />
+      {lead.notes && !lead.proof_points && (
         <div style={{
           gridColumn: '1 / -1',
           fontFamily: "'Inter', sans-serif",
