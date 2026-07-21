@@ -1089,6 +1089,44 @@ function CallBlock({ num, label, text, bullets, wide }) {
   )
 }
 
+function MutedBlock({ label, text }) {
+  if (!text) return null
+  return (
+    <div style={{
+      gridColumn: '1 / -1',
+      background: '#0a0a0a',
+      border: '1px solid #161616',
+      borderLeft: '2px solid #333',
+      padding: '0.55rem 0.75rem',
+    }}>
+      <div style={{
+        fontFamily: "'Inter', sans-serif",
+        fontSize: '0.6rem',
+        color: '#777',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        marginBottom: '0.3rem',
+      }}>
+        {label}
+      </div>
+      {text.split('\n').filter(Boolean).map((g, i) => (
+        <div key={i} style={{
+          display: 'flex',
+          gap: '0.5rem',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '0.74rem',
+          color: '#999',
+          lineHeight: 1.5,
+          marginBottom: '0.15rem',
+        }}>
+          <span style={{ color: '#555', flexShrink: 0 }}>•</span>
+          <span>{g.replace(/^[-•*]\s*/, '')}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function CallKit({ lead, columns }) {
   const hasKit = lead.intro_line || lead.why_calling || lead.meeting_ask
   return (
@@ -1110,40 +1148,9 @@ function CallKit({ lead, columns }) {
       ) : (
         <CallBlock label="Opener" text={lead.hook} wide />
       )}
-      <CallBlock num={6} label="How we help" text={lead.gaps} bullets wide />
-      {lead.questions && lead.proof_points && (
-        <div style={{
-          gridColumn: '1 / -1',
-          background: '#0a0a0a',
-          border: '1px solid #161616',
-          borderLeft: '2px solid #333',
-          padding: '0.55rem 0.75rem',
-        }}>
-          <div style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '0.6rem',
-            color: '#777',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            marginBottom: '0.3rem',
-          }}>
-            Context for you — don't recite this at them
-          </div>
-          {lead.proof_points.split('\n').filter(Boolean).map((g, i) => (
-            <div key={i} style={{
-              display: 'flex',
-              gap: '0.5rem',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '0.74rem',
-              color: '#999',
-              lineHeight: 1.5,
-              marginBottom: '0.15rem',
-            }}>
-              <span style={{ color: '#555', flexShrink: 0 }}>•</span>
-              <span>{g.replace(/^[-•*]\s*/, '')}</span>
-            </div>
-          ))}
-        </div>
+      <MutedBlock label="If they ask what you'd do — reference, not a script" text={lead.gaps} />
+      {lead.questions && (
+        <MutedBlock label="Context for you — don't recite this at them" text={lead.proof_points} />
       )}
       {lead.notes && !lead.proof_points && (
         <div style={{
