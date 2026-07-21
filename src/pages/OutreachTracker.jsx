@@ -1215,8 +1215,13 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       {lead.need_score}
                     </span>
                   </td>
-                  <td style={{ ...td, fontSize: '0.72rem', color: '#999', whiteSpace: 'nowrap' }}>
-                    {lead.employees || <span style={{ color: '#444' }}>—</span>}
+                  <td
+                    title={lead.employees || ''}
+                    style={{ ...td, fontSize: '0.72rem', color: '#999', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {lead.employees
+                      ? lead.employees.replace(/\s*\(.*$/, '')
+                      : <span style={{ color: '#444' }}>—</span>}
                   </td>
                   <td style={td}>
                     {lead.phone
