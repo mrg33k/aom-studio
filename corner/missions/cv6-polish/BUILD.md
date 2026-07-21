@@ -354,3 +354,21 @@ Deployment (2026-07-21):
   signed session could not attach because of the recorded Node runtime collision.
 
 **Status:** shipped and artifact-verified; signed-in production walkthrough pending browser-tool recovery.
+
+### R11 - One-page columns and mobile interaction corrections
+
+Started 2026-07-21 from the supplied Corner UI-fixes brief. This round corrects
+the R10 interpretation of multi-chat and Email: all in-app destinations remain on
+one page and open as side-by-side columns or in-place panels, never browser windows
+or full-screen route takeovers. It also covers the iPhone safe-area strip, mobile
+long-press selection, immediate recent-room rename refresh, Home branding/context
+settings, Chat Files + More headers, mobile Gmail-style threads, richer Email
+dispatch destinations, and linked room Files behavior.
+
+Scope guard: work stays entirely inside the `aom-studio` repository on `main`.
+Parent `AOM-EA` scripts/data/backend are owned by rex and will not be touched.
+Changes will be committed in small scoped groups and pushed promptly after their
+focused verification. Final acceptance requires the signed robot Chrome at desktop
+and mobile widths plus the local CV6 regression/build battery.
+
+**Status:** in progress.

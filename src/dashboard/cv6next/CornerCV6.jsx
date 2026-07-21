@@ -39,7 +39,7 @@ import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useCommand, useTrackerBugs } from './data/useCommandTracker.js';
 import { useWorldId } from '../lib/tenantContext.jsx';
-import { useCommandContext } from './providers/DataContext.jsx';
+import { useCommandContext, useDataContext } from './providers/DataContext.jsx';
 import { titleForAgent } from './data/agentTitles.js';
 import { chatWindowName, chatWindowRouteFromSearch, chatWindowUrl } from './data/chatWindowRoute.js';
 import { useDemoBlocksFeed } from './data/useDemoBlocks.js';
@@ -411,6 +411,7 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
 function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
+  const { refetch: refetchHomeData } = useDataContext();
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
 
@@ -471,8 +472,16 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
     wrapRef: homeWrapRef,
     resolveHit: resolveHomeHit,
     listProjects: () => (homeProjectsRef.current || []).filter((p) => p.slug).map((p) => ({ slug: p.slug, name: p.name })),
-    onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); setMissionReload((k) => k + 1); },
-    onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); setMissionReload((k) => k + 1); },
+    onRename: async (target, name) => {
+      await renameNode(authFetch, target, name, worldId);
+      setMissionReload((k) => k + 1);
+      await refetchHomeData?.();
+    },
+    onMove: async (target, dest) => {
+      await moveNode(authFetch, target, dest, worldId);
+      setMissionReload((k) => k + 1);
+      await refetchHomeData?.();
+    },
     onCreate: async (target, name) => {
       await createNode(authFetch, target, name, worldId);
       // Show the result: fan the parent project open (and the parent mission
@@ -486,7 +495,11 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
     // wd40 DEF-3: archive from the Home tree too — same confirm dialog as
     // Organize. The room list itself refreshes on the next data-pipe tick
     // (supabase-status.js drops archived rooms server-side).
-    onArchive: async (target) => { await archiveNode(authFetch, target, worldId); setMissionReload((k) => k + 1); },
+    onArchive: async (target) => {
+      await archiveNode(authFetch, target, worldId);
+      setMissionReload((k) => k + 1);
+      await refetchHomeData?.();
+    },
   });
   // Latest data for the context-menu resolver (refs, so the delegated listener
   // never needs re-binding — same pattern as curCardRef).
@@ -1313,7 +1326,22 @@ function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingP
   // agents (when open) -> recent -> each project (and its missions when the folder is open).
   // navNodes is the single source of truth; the rows tag knavSel from the selected node's key,
   // and the keydown handler reads navNodes via navNodesRef. (Patrik 2026-06-25 arrow spec.)
-  const recentList = data.recent || [];
+  // Recent activity is keyed by stable slugs, but its visible label must come
+  // from the same renamed project/mission records as the tree. Otherwise a
+  // successful rename appears to "not save" until the slug itself changes.
+  const recentList = (data.recent || []).map((recent) => {
+    if (recent.kind === 'project') {
+      const project = allProjects.find((item) => item.slug === recent.project || item.id === recent.project);
+      return project?.name ? { ...recent, name: project.name } : recent;
+    }
+    if (recent.kind !== 'mission') return recent;
+    const projectSlug = recent.project || String(recent.missionSlug || '').split(':')[0];
+    const treeId = recent.missionSlug || recent.id;
+    const leaf = String(treeId || '').split(':').pop();
+    const found = findMissionNode(missionsByProject[projectSlug], treeId, leaf);
+    return found?.node?.name ? { ...recent, name: missionLabelClean(found.node.name) } : recent;
+  });
+  recentList.count = data.recent?.count ?? recentList.length;
   const agentsList = agentsOpen ? (data.agents || []) : [];
   const HOME_MISSION_CAP = 8;
   // Corner's top-level rooms mirror the top nav exactly: the live tools in nav order
@@ -3215,7 +3243,10 @@ export default function CornerCV6() {
       // one fixed wallpaper = the strips share the exact same ground as the body.
       background: 'transparent', boxSizing: 'border-box',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      // Bottom-aware children (composer, sheets, readers) already reserve the
+      // home-indicator inset. Reserving it again on the shell shortened every
+      // screen and exposed a flat strip above the body-painted wallpaper.
+      paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 0,
     }}>
       {/* The positioning context lives INSIDE the safe-area padding: every
           absolutely-positioned overlay (search, viewers, forms) anchors below the
