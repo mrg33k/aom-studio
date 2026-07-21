@@ -2529,6 +2529,53 @@ html.cv6-app-active #root {
 [data-cv6] .room-clear-card p { color:var(--muted); font-size:12px; line-height:1.45; margin:4px 0 0; }
 [data-cv6] .room-settings-danger { min-height:36px; padding:0 14px; border:1px solid rgba(248,113,113,.42); background:transparent; color:var(--error,#f87171); font:600 12.5px var(--font-sans); cursor:pointer; }
 
+/* Chat headers expose only the two stable actions. Everything else lives in
+   the shared overflow, keeping mobile and desktop muscle memory identical. */
+[data-cv6] .mhactions { position:relative; }
+[data-cv6] .desktop-room-header { position:relative; }
+[data-cv6] .cv6-chat-header-button {
+  min-width:58px;
+  height:38px;
+  padding:0 13px;
+  border:1px solid var(--hair);
+  background:var(--chip);
+  color:var(--fg);
+  font:650 12.5px var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .cv6-chat-header-button[aria-expanded="true"] { color:var(--accent); background:var(--accent-weak); }
+[data-cv6] .cv6-chat-more-scrim { position:fixed; inset:0; z-index:48; border:0; background:transparent; }
+[data-cv6] .cv6-chat-more-menu {
+  position:absolute;
+  z-index:49;
+  top:calc(100% + 8px);
+  right:0;
+  width:210px;
+  padding:6px;
+  border:1px solid var(--hair);
+  border-radius:14px;
+  background:var(--surface);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.58);
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+[data-cv6] .cv6-chat-more-menu > button {
+  min-height:38px;
+  padding:0 11px;
+  border:0;
+  background:transparent;
+  color:var(--fg);
+  font:550 12.5px var(--font-sans);
+  text-align:left;
+  cursor:pointer;
+}
+[data-cv6] .cv6-chat-more-menu > button:hover { background:var(--surface-2); }
+@media (max-width:640px) {
+  [data-cv6] .cv6-chat-header-button { min-width:52px; height:36px; padding:0 10px; font-size:12px; }
+  [data-cv6] .cv6-chat-more-menu { position:fixed; top:calc(env(safe-area-inset-top,0px) + 66px); right:12px; }
+}
+
 /* R11 mobile context actions: a held room row opens Corner's menu without
    selecting its label or invoking Safari's touch-callout. Keep vertical pan
    available so the room/project lists still scroll naturally. */

@@ -385,10 +385,11 @@ function PlainThread({ messages, onSend, localReadOnly = false }) {
   );
 }
 
-export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile, onAssignEmail, onOpenWindow, windowMode = false, persistSelection = true }) {
+export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onSearch, onReviewFile, onAssignEmail, windowMode = false, persistSelection = true }) {
   const { data: list } = useChatList();
   const [titleOverrides, setTitleOverrides] = useState({});
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [headerMoreOpen, setHeaderMoreOpen] = useState(false);
   const roomTitleKey = useCallback((room) => room?.isMission ? `m:${room.missionSlug || room.id}` : room?.isProject ? `p:${room.id}` : `a:${room?.id}`, []);
   // Stable refs so the memoized composer below doesn't re-mount on every list poll.
   const agents = useMemo(() => (list?.agents || []).map((a) => titleOverrides[`a:${a.id}`] ? { ...a, name: titleOverrides[`a:${a.id}`], initials: titleOverrides[`a:${a.id}`].slice(0, 2).toUpperCase(), hasCustomTitle: true } : a), [list, titleOverrides]);
@@ -396,7 +397,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   // Selected room: the one opened from elsewhere, else the first agent. {id,name,initials,isProject,status}.
   const [picked, setPicked] = useState(initialRoom || null);
-  useEffect(() => { setSettingsOpen(false); }, [picked?.id, picked?.missionSlug]);
+  useEffect(() => { setSettingsOpen(false); setHeaderMoreOpen(false); }, [picked?.id, picked?.missionSlug]);
   // ← chain (Patrik 2026-06-25): from an open thread, ArrowLeft drops back to the chat directory
   // (rail visible, no thread); ArrowLeft again goes Home. 'cleared' forces the directory state.
   const [cleared, setCleared] = useState(false);
@@ -791,14 +792,18 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div className="desktop-room-title">{selected.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.hasCustomTitle && selected.specialistTitle ? `${selected.specialistTitle} specialist` : (goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation'))}</div>
                   </div>
-                  {!windowMode && onOpenWindow ? (
-                    <button type="button" className="cv6-chat-popout" onClick={() => onOpenWindow(selected)} aria-label={`Open ${selected.name} in a new window`} title="Keep this chat open in its own window">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="8" width="12" height="11" rx="2"/><path d="M9 5h9a2 2 0 0 1 2 2v8"/><path d="m13 11 3-3m0 0v3m0-3h-3"/></svg>
-                    </button>
+                  <button type="button" className="cv6-chat-header-button" aria-label="Files" onClick={() => { setHeaderMoreOpen(false); setDrawerView('files'); }}>Files</button>
+                  <button type="button" className="cv6-chat-header-button" aria-label="More" aria-expanded={headerMoreOpen ? 'true' : 'false'} onClick={() => setHeaderMoreOpen((open) => !open)}>More</button>
+                  {headerMoreOpen ? (
+                    <>
+                      <button type="button" className="cv6-chat-more-scrim" aria-label="Close More menu" onClick={() => setHeaderMoreOpen(false)} />
+                      <div className="cv6-chat-more-menu" role="menu" aria-label={`More for ${selected.name}`}>
+                        <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); onSearch?.(); }}>Search conversation</button>
+                        <button type="button" role="menuitem" data-testid="room-settings-trigger" onClick={() => { setHeaderMoreOpen(false); setSettingsOpen(true); }}>Room settings</button>
+                        <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); toggleFollow(); }}>{following ? 'Mute updates' : 'Follow along'}</button>
+                      </div>
+                    </>
                   ) : null}
-                  <button type="button" className="ib room-options-trigger" onClick={() => setSettingsOpen(true)} aria-label={`Options for ${selected.name}`} title="Room options" data-testid="room-settings-trigger">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-                  </button>
                 </div>
                 <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
                   {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
@@ -957,7 +962,6 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         onClose={() => setSettingsOpen(false)}
         onRenamed={onRoomRenamed}
         onOpenFiles={() => setDrawerView('files')}
-        onOpenWindow={!windowMode && onOpenWindow ? onOpenWindow : null}
         archivedMessages={archivedMessages}
         onClearRoom={clearRoom}
       /> : null}

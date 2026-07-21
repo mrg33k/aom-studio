@@ -1830,7 +1830,7 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
 // (the live Goal Thread: steps, decision cards, data tables) we render the rich thread
 // from that real output. Otherwise we show the real messages honestly. ──
 const CHAT_ALIASES = { 'goal.checklist': 'item' };
-function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
+function Chat({ room, worldId, onNav, onSearch }) {
   const [localTitle, setLocalTitle] = useState(null);
   const [localCustomTitle, setLocalCustomTitle] = useState(null);
   const { data: roomList } = useChatList();
@@ -1866,12 +1866,12 @@ function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
   }), [isDemo, activeRoom, messages, goal]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t),
-    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(), openProfile: () => {}, openCommandK: () => {},
+    search: () => onSearch?.(), openNav: () => {}, openProfile: () => {}, openCommandK: () => onSearch?.(),
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
     chooseOption: () => {}, openAgentMenu: () => {}, pauseAgent: () => {}, retaskAgent: () => {},
     handoffAgent: () => {}, addContext: () => {}, addAttachment: () => {},
     openAttachment: () => {}, review: () => {}, setDataView: () => {}, toggleFollow: () => {}, retry: () => {},
-  }), [onNav, onOpenNav]);
+  }), [onNav, onSearch]);
   // One conversation surface. When the agent emits a structured Goal Thread it renders
   // INLINE as that agent turn (the live step thread, steps ticking) with the real
   // message history scrollable above it -- never a separate screen that replaces the
@@ -1884,7 +1884,7 @@ function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
       fullRoom={isDemo ? null : activeRoom} worldId={worldId} projectId={parentProject?.databaseId || activeRoom?.databaseId || ''}
       messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
-      onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSearch={() => onSearch?.()} onRoomRenamed={isDemo ? null : (name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} onClearRoom={isDemo ? null : rt.clearRoom} onSend={(text, options) => send?.(text, options)}
+      onBack={() => onNav('back')} onSearch={() => onSearch?.()} onRoomRenamed={isDemo ? null : (name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} onClearRoom={isDemo ? null : rt.clearRoom} onSend={(text, options) => send?.(text, options)}
       onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), missionSlug: roomMissionSlug(room), needsReview: true } : null)}
     />
     </>
@@ -2818,7 +2818,6 @@ function DemoMobileChatLifecycle() {
         liveSteps={cleared ? [] : liveSteps}
         awaiting={!cleared}
         onBack={() => {}}
-        onOpenNav={() => {}}
         onClearRoom={async () => {
           try {
             const response = await fetch('/api/dashboard/room-reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: 'local-render', agent: room.id }) });
@@ -3235,12 +3234,12 @@ export default function CornerCV6() {
   else if ((isDesktop || isChatWindow) && (view === 'chatlist' || openedRoom)) {
     body = <ChatDesktop worldId={worldId}
       initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, isMission: openedRoom.room?.isMission, missionSlug: openedRoom.room?.missionSlug, projectSlug: openedRoom.room?.projectSlug, path: openedRoom.room?.path, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText, specialistTitle: openedRoom.room?.specialistTitle, hasCustomTitle: openedRoom.room?.hasCustomTitle } : null}
-      onNav={onNav} onOpenNav={onOpenNav} onOpenWindow={onOpenChatWindow} windowMode={isChatWindow} persistSelection={!isChatWindow}
+      onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} windowMode={isChatWindow} persistSelection={!isChatWindow}
       onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })}
       onReviewFile={(f, proj, mission) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', missionSlug: mission || '', needsReview: true } : null); }} />;
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
-  else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId || worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = `chat:${openedRoom.room?.id}`; }
+  else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId || worldId} onNav={onNav} onSearch={onSearch} />; viewKey = `chat:${openedRoom.room?.id}`; }
   else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); const inboxBody = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} worldId={worldId} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={onAssignEmail} worldId={worldId} />; body = <EmailShell isDesktop={isDesktop} inbox={inboxBody} onBack={() => onNav('back')} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'support'; }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} theme={theme} onTheme={changeTheme} />; viewKey = 'settings'; }
