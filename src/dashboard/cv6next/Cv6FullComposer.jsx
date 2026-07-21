@@ -98,6 +98,19 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const removePasteChip = useCallback((id) => setPasteChips((p) => p.filter((c) => c.id !== id)), []);
   const [chatInputFocused, setChatInputFocused] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
+  const [interactionMode, setInteractionMode] = useState(() => {
+    try { return localStorage.getItem(`cv6.chatMode.${currentChatKey}`) === 'plan' ? 'plan' : 'work'; } catch { return 'work'; }
+  });
+  useEffect(() => {
+    let next = 'work';
+    try { next = localStorage.getItem(`cv6.chatMode.${currentChatKey}`) === 'plan' ? 'plan' : 'work'; } catch { /* use work */ }
+    setInteractionMode(next);
+  }, [currentChatKey]);
+  const changeInteractionMode = useCallback((next) => {
+    const value = next === 'plan' ? 'plan' : 'work';
+    setInteractionMode(value);
+    try { localStorage.setItem(`cv6.chatMode.${currentChatKey}`, value); } catch { /* private mode */ }
+  }, [currentChatKey]);
 
   // ── Throwaway messages slice. The col3 thread renders from useRoomThread; the
   // CV4 hooks only need setMessages for optimistic rows, which we let the thread
@@ -155,7 +168,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       setPasteChips([]);
       // Keep the caret in the box: sending is a conversation beat, not an exit.
       try { inputRef.current?.focus?.(); } catch { /* portal not mounted yet */ }
-      const ok = typeof quickSend === 'function' ? await quickSend(text) : false;
+      const ok = typeof quickSend === 'function' ? await quickSend(text, { interactionMode }) : false;
       if (ok === false) {
         // Honest failure: put the words back so nothing typed is ever lost — but
         // never clobber something newly typed during the in-flight window
@@ -166,7 +179,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     } finally {
       sendingRef.current = false;
     }
-  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom]);
+  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -200,7 +213,8 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const composerValue = useMemo(() => ({
     input, setInput, inputRef, handleSend, handleKeyDown,
     pasteChips, addPasteChip, removePasteChip, selectedImageTool, setSelectedImageTool,
-  }), [input, handleSend, handleKeyDown, pasteChips, addPasteChip, removePasteChip, selectedImageTool]);
+    interactionMode, setInteractionMode: changeInteractionMode,
+  }), [input, handleSend, handleKeyDown, pasteChips, addPasteChip, removePasteChip, selectedImageTool, interactionMode, changeInteractionMode]);
 
   const messagesValue = useMemo(() => ({ setMessages }), [setMessages]);
 

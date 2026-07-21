@@ -104,6 +104,50 @@ function AutoReplyStrip({ isDesktop }) {
   );
 }
 
+function AutoReplySettings() {
+  const [form, setForm] = useState(null);
+  const [status, setStatus] = useState({ busy: false, message: '', error: false });
+  const load = useCallback(() => {
+    authFetch('/api/dashboard/support-autoreply?world=aom')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        const fs = data?.file_state;
+        if (!fs) return;
+        setForm({ mode: fs.mode || 'off', answer_mode: fs.answer_mode || 'off', threshold_min: fs.threshold_min || 8, tone: fs.tone || 'warm and direct', instructions: fs.instructions || '', sign_off: fs.sign_off || 'Best,\nThe AOM Team' });
+      }).catch(() => setStatus({ busy: false, message: 'Auto-reply settings could not be loaded.', error: true }));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const set = (key, value) => setForm((current) => ({ ...(current || {}), [key]: value }));
+  const save = async (event) => {
+    event.preventDefault();
+    if (!form || status.busy) return;
+    setStatus({ busy: true, message: '', error: false });
+    try {
+      const response = await authFetch('/api/dashboard/support-autoreply?world=aom', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save', ...form, threshold_min: Number(form.threshold_min) }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || 'Settings did not save.');
+      setStatus({ busy: false, message: 'Saved. The mail watcher is applying this policy now.', error: false });
+    } catch (error) { setStatus({ busy: false, message: error?.message || 'Settings did not save.', error: true }); }
+  };
+  if (!form) return <div className="cv6-autoreply-settings"><div className="room-settings-note">{status.message || 'Loading the live auto-reply policy…'}</div></div>;
+  return (
+    <form className="cv6-autoreply-settings" onSubmit={save}>
+      <div className="cv6-autoreply-settings-head"><div><span className="eyebrow">Auto-reply policy</span><h2>Control the reply vibe and safety ceiling.</h2><p>Changes are applied by the mail watcher. High-stakes messages still stay drafts.</p></div><button type="submit" className="room-settings-primary" disabled={status.busy}>{status.busy ? 'Saving…' : 'Save policy'}</button></div>
+      <div className="cv6-autoreply-grid">
+        <label><span>Holding notes</span><select value={form.mode} onChange={(event) => set('mode', event.target.value)}><option value="off">Off</option><option value="test">Test senders only</option><option value="live">Live</option></select></label>
+        <label><span>Easy answers</span><select value={form.answer_mode} onChange={(event) => set('answer_mode', event.target.value)}><option value="off">Off</option><option value="draft">Draft only</option><option value="send">Send low-stakes answers</option></select></label>
+        <label><span>Holding-note delay</span><div className="cv6-autoreply-number"><input type="number" min="2" max="240" value={form.threshold_min} onChange={(event) => set('threshold_min', event.target.value)} /><em>minutes</em></div></label>
+        <label><span>Reply vibe</span><input value={form.tone} maxLength={40} onChange={(event) => set('tone', event.target.value)} placeholder="Warm, plain, direct" /></label>
+        <label className="is-wide"><span>Instructions</span><textarea value={form.instructions} maxLength={2000} onChange={(event) => set('instructions', event.target.value)} placeholder="What should every automatic reply sound like or avoid?" /></label>
+        <label className="is-wide"><span>Sign-off</span><textarea value={form.sign_off} maxLength={300} onChange={(event) => set('sign_off', event.target.value)} /></label>
+      </div>
+      {status.message ? <div className={`room-settings-note${status.error ? ' is-error' : ' is-saved'}`}>{status.message}</div> : null}
+    </form>
+  );
+}
+
 export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSearch, forceAutoReply = false }) {
   const [tab, setTabState] = useState(() => {
     try { return sessionStorage.getItem(TAB_KEY) || 'inbox'; } catch { return 'inbox'; }
@@ -128,12 +172,12 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
   const stripOn = tab === 'inbox' && (worldId === 'aom' || forceAutoReply);
   return (
     <div className="cv6-email-shell" data-email-tab={tab} data-autoreply={stripOn ? '1' : undefined} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', flex: 1, position: 'relative' }}>
-      {!isDesktop && tab === 'campaign' && (
+      {!isDesktop && tab !== 'inbox' && (
         <div className="mhdr">
           <button type="button" className="mback" aria-label="Back" onClick={onBack}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
-          <div className="mhtitle"><div className="mttl">Email</div><div className="msub">Campaign</div></div>
+          <div className="mhtitle"><div className="mttl">Email</div><div className="msub">{tab === 'campaign' ? 'Campaign' : 'Auto-reply'}</div></div>
           <div className="mhactions">
             <button type="button" className="ib" aria-label="Search" onClick={onSearch}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button>
             <button type="button" className="ib" aria-label="Menu" onClick={onOpenNav}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></button>
@@ -144,13 +188,16 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
         <div className="cv6-email-tablist" role="navigation" aria-label="Email sections">
           {seg('inbox', 'Inbox')}
           {seg('campaign', 'Campaign')}
+          {(worldId === 'aom' || forceAutoReply) ? seg('autoreply', 'Auto-reply') : null}
         </div>
       </div>
       {stripOn ? <AutoReplyStrip isDesktop={isDesktop} /> : null}
       <div className="cv6-email-body" style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'inbox'
           ? inbox
-          : <Campaign isDesktop={isDesktop} worldId={worldId} onOpenInbox={() => setTab('inbox')} />}
+          : tab === 'campaign'
+            ? <Campaign isDesktop={isDesktop} worldId={worldId} onOpenInbox={() => setTab('inbox')} />
+            : <AutoReplySettings />}
       </div>
     </div>
   );

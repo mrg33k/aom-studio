@@ -18,7 +18,6 @@ import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop, { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
-import RenameRoomDialog from './RenameRoomDialog.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
@@ -219,9 +218,6 @@ const HOME_ALIASES = {
   'catchUp.items': 'item',
 };
 
-// Projects pagination: show this many by default, rest behind "Show N more".
-const PROJ_LIMIT = 8;
-
 // Add-to-Tracker drawer (catch-up card, Patrik 2026-06-25): a bottom sheet shown ONLY when
 // one+ trackers already exist for the card's mission — pick an existing one or create a new
 // one. Built from the proven Tracker "Switch" sheet visual (scrim + bottom sheet + .trk rows),
@@ -412,7 +408,7 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
   );
 }
 
-function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
+function Home({ onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
   const [missionReload, setMissionReload] = useState(0);
@@ -450,8 +446,27 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         canMove: !path || path.startsWith('corner/users/'),
       };
     }
+    if (rowEl.classList.contains('recentrow') || rowEl.classList.contains('mresumecard') || rowEl.classList.contains('restrow')) {
+      const recent = (data.recent || []).find((x) => x.key === id || x.id === id);
+      if (!recent || recent.kind === 'agent') return null;
+      if (recent.kind === 'project') {
+        const project = projects.find((x) => x.slug === recent.project || x.id === recent.project);
+        if (!project?.slug) return null;
+        return { kind: 'project', projectSlug: project.slug, name: project.name || project.slug };
+      }
+      const projectSlug = recent.project || String(recent.missionSlug || '').split(':')[0];
+      const treeId = recent.missionSlug || recent.id;
+      const leaf = String(treeId || '').split(':').pop();
+      const found = findMissionNode(missionsByProjectRef.current?.[projectSlug], treeId, leaf);
+      const node = found?.node;
+      return {
+        kind: 'mission', treeId, projectSlug, missionSlug: node?.folder_name || leaf,
+        name: node?.name || recent.name || leaf, path: node?.path || null,
+        canMove: !node?.path || node.path.startsWith('corner/users/'),
+      };
+    }
     return null;
-  }, []);
+  }, [data.recent]);
   const { overlay: treeCtxOverlay } = useTreeContextMenu({
     wrapRef: homeWrapRef,
     resolveHit: resolveHomeHit,
@@ -728,9 +743,6 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // Agents accordion (top of Home): one "Agents" row that expands its roster in place,
   // default collapsed so the front door stays calm. (Decided 2026-06-23.)
   const [agentsOpen, setAgentsOpen] = useState(false);
-  // All Rooms is built for hundreds: show a first page of projects with a real
-  // "Show N more" that expands the rest in place (default collapsed = calm front door).
-  const [projShowAll, setProjShowAll] = useState(false);
   // Keyboard navigation state (desktop only): tracks selected row in All Rooms list.
   // -1 = nothing selected. 0..agentsLen-1 = agents. agentsLen..agentsLen+projLen-1 = projects.
   const [knavSelectedIdx, setKnavSelectedIdx] = useState(-1);
@@ -1118,7 +1130,6 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // All-rooms "New" → open the Start-a-mission composer (CV6 design). Default it to a
     // mission in the first project with Auto-assign; the user can flip to New project inside.
     newRoom: () => setComposerOpen('mission'),
-    showMoreProjects: () => setProjShowAll(true),
     // Catch Up deck navigation (desktop arrows + mobile next). Clamp against the LIVE deck
     // length (inbox minus device-dismissed) so the arrows never run past the last card.
     catchUpPrev: () => setCatchUpIndex((i) => Math.max(0, i - 1)),
@@ -1166,6 +1177,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // (HomeFilesPanel overlay), instead of jumping to the Organize tool. Only meaningful when
     // a room is open in col3; harmless otherwise.
     toggleFiles: () => setFilesOpen((o) => !o),
+    openChatWindow: () => { if (knavOpenedRoom) onOpenWindow?.(knavOpenedRoom); },
     // Send a quick reply from the col3 room panel: read the uncontrolled input and post into the
     // opened room via the same thread the full Chat uses (Patrik: the quick reply room should work).
     sendMessage: async (_arg, e) => {
@@ -1197,7 +1209,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker, quickSend]);
+  }), [onNav, onOpenRoom, onOpenWindow, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker, quickSend, knavOpenedRoom]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),
@@ -1286,16 +1298,16 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // Agents accordion: the roster collapses (rows hidden) but the count + caret stay. The
   // header binds agentsTotal (always the full count) and agentsOpen drives the caret rotate.
   const agentsTotal = (data.agents && data.agents.length) || 0;
-  // Projects: first PROJ_LIMIT by default, the rest behind a real "Show N more".
+  // Projects are always complete and arrive newest-activity first from useHomeData.
   const allProjects = data.projects || [];
-  const projShown = projShowAll ? allProjects.slice() : allProjects.slice(0, PROJ_LIMIT);
+  const projShown = allProjects.slice();
   // arrays carry their bound scalars as props (the engine reads projects.count /
   // projects.moreCount / projects.moreState); set them on the sliced array we pass
   // through. count = the TRUE total (header "Projects · N"), independent of how many
   // rows are shown; moreCount = how many are still hidden.
   projShown.count = allProjects.length;
-  projShown.moreCount = projShowAll ? 0 : Math.max(0, allProjects.length - PROJ_LIMIT);
-  projShown.moreState = projShown.moreCount > 0 ? 'has' : 'none';
+  projShown.moreCount = 0;
+  projShown.moreState = 'none';
 
   // Build the navigable model the arrow keys walk, in the SAME visual order the rows render:
   // agents (when open) -> recent -> each project (and its missions when the folder is open).
@@ -1768,11 +1780,16 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
 // from that real output. Otherwise we show the real messages honestly. ──
 const CHAT_ALIASES = { 'goal.checklist': 'item' };
 function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
-  const [renameOpen, setRenameOpen] = useState(false);
   const [localTitle, setLocalTitle] = useState(null);
   const [localCustomTitle, setLocalCustomTitle] = useState(null);
-  useEffect(() => { setLocalTitle(null); setLocalCustomTitle(null); setRenameOpen(false); }, [room?.id]);
+  const { data: roomList } = useChatList();
+  useEffect(() => { setLocalTitle(null); setLocalCustomTitle(null); }, [room?.id]);
   const activeRoom = useMemo(() => localTitle ? { ...room, name: localTitle, initials: localTitle.slice(0, 2).toUpperCase(), hasCustomTitle: localCustomTitle ?? room.hasCustomTitle } : room, [room, localTitle, localCustomTitle]);
+  const parentProject = useMemo(() => {
+    if (!activeRoom?.isProject && !activeRoom?.isMission) return null;
+    const slug = activeRoom.isMission ? activeRoom.projectSlug : activeRoom.id;
+    return (roomList?.projects || []).find((project) => project.slug === slug || project.id === slug) || null;
+  }, [activeRoom, roomList?.projects]);
   // Demo mode: check for ?demo=blocks query param
   const demoFeed = useDemoBlocksFeed();
   const isDemo = !!demoFeed;
@@ -1813,13 +1830,12 @@ function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
     <>
     <ChatLifecycle
       room={{ name: isDemo ? 'DEMO: Block Showcase' : activeRoom.name, initials: activeRoom.initials || '·', statusText: isDemo ? 'demo' : (activeRoom.hasCustomTitle && activeRoom.specialistTitle ? `${activeRoom.specialistTitle} specialist` : activeRoom.statusText || ''), status: activeRoom.status || 'ready' }}
-      fullRoom={isDemo ? null : activeRoom} worldId={worldId}
-      messages={messages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
+      fullRoom={isDemo ? null : activeRoom} worldId={worldId} projectId={parentProject?.databaseId || activeRoom?.databaseId || ''}
+      messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
-      onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSearch={() => onSearch?.()} onRename={isDemo ? null : () => setRenameOpen(true)} onSend={(t) => send?.(t)}
+      onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSearch={() => onSearch?.()} onRoomRenamed={isDemo ? null : (name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} onClearRoom={isDemo ? null : rt.clearRoom} onSend={(text, options) => send?.(text, options)}
       onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), missionSlug: roomMissionSlug(room), needsReview: true } : null)}
     />
-    {renameOpen && !isDemo ? <RenameRoomDialog room={activeRoom} worldId={worldId} onClose={() => setRenameOpen(false)} onRenamed={(name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} /> : null}
     </>
   );
 }
@@ -2609,6 +2625,7 @@ function DemoHomeQuickThread() {
 }
 
 function DemoMobileChatLifecycle() {
+  const [cleared, setCleared] = useState(false);
   const nowMs = Date.now();
   const at = (minutesAgo) => new Date(nowMs - minutesAgo * 60_000).toISOString();
   // Real same-origin public assets (same set DemoFilePreviews uses) so the file
@@ -2743,18 +2760,27 @@ function DemoMobileChatLifecycle() {
         room={room}
         fullRoom={room}
         worldId="local-render"
-        messages={messages}
-        status="ready"
-        goal={{ title: 'Keep checking the mobile renderer.' }}
-        liveSteps={liveSteps}
-        awaiting
+        messages={cleared ? [] : messages}
+        archivedMessages={cleared ? messages : []}
+        status={cleared ? 'empty' : 'ready'}
+        goal={cleared ? null : { title: 'Keep checking the mobile renderer.' }}
+        liveSteps={cleared ? [] : liveSteps}
+        awaiting={!cleared}
         onBack={() => {}}
         onOpenNav={() => {}}
-        onSend={async (text) => {
+        onClearRoom={async () => {
+          try {
+            const response = await fetch('/api/dashboard/room-reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: 'local-render', agent: room.id }) });
+            if (!response.ok) return false;
+            setCleared(true);
+            return true;
+          } catch { return false; }
+        }}
+        onSend={async (text, options = {}) => {
           // Demo fixture: the send must be awaitable + interceptable so specs can
           // assert the composer contract; Playwright owns this POST.
           try {
-            const r = await fetch('/api/dashboard/supabase-messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: 'local-render', agent: 'renderer-room', text, role: 'user', source: 'demo-fixture' }) });
+            const r = await fetch('/api/dashboard/supabase-messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: 'local-render', agent: 'renderer-room', text, role: 'user', source: 'demo-fixture', metadata: { interaction_mode: options.interactionMode === 'plan' ? 'plan' : 'work' } }) });
             return r.ok;
           } catch { return false; }
         }}
@@ -2832,10 +2858,50 @@ export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
   const roomRegistry = useChatList();
+  // iOS can defer its first `dvh` correction until the user scrolls the document,
+  // which leaves a false strip of body background under an otherwise full-height
+  // app. Lock the document and size the shell from VisualViewport on first paint;
+  // inner chat/list panels remain the only intentional scroll owners.
+  useEffect(() => {
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    let frame = 0;
+    const syncViewport = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const height = Math.ceil(viewport?.height || window.innerHeight || root.clientHeight);
+        if (height > 0) root.style.setProperty('--cv6-viewport-height', `${height}px`);
+      });
+    };
+    root.classList.add('cv6-app-active');
+    syncViewport();
+    requestAnimationFrame(syncViewport);
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
+    window.addEventListener('pageshow', syncViewport);
+    viewport?.addEventListener('resize', syncViewport);
+    viewport?.addEventListener('scroll', syncViewport);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', syncViewport);
+      window.removeEventListener('orientationchange', syncViewport);
+      window.removeEventListener('pageshow', syncViewport);
+      viewport?.removeEventListener('resize', syncViewport);
+      viewport?.removeEventListener('scroll', syncViewport);
+      root.classList.remove('cv6-app-active');
+      root.style.removeProperty('--cv6-viewport-height');
+    };
+  }, []);
   const chatWindowRoute = useMemo(() => {
     try { return chatWindowRouteFromSearch(window.location.search); } catch { return null; }
   }, []);
   const isChatWindow = Boolean(chatWindowRoute);
+  const isEmailColumn = useMemo(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('view') === 'support' && params.get('popout') === 'email';
+    } catch { return false; }
+  }, []);
   // Cold start lands in the last-open room (drop 3): Home stops being the front
   // door. An explicit ?view= deep link still wins; Back still reaches Home.
   // An EXPLICIT ?view= (any value, home included) always wins over the seed —
@@ -3025,9 +3091,14 @@ export default function CornerCV6() {
   const goHome = useCallback(() => { setHistory([]); setOpenedRoom(null); setView('home'); }, []);
   const onOpenChatWindow = useCallback((room) => {
     if (!room?.id || typeof window === 'undefined') return;
-    const width = Math.max(920, Math.min(1180, (window.screen?.availWidth || 1280) - 80));
+    // A chat opens at one-column width. Each room has its own named window, so several
+    // independent conversations can stay open and be tiled side by side on desktop.
+    const width = Math.max(460, Math.min(540, (window.screen?.availWidth || 1280) - 80));
     const height = Math.max(680, Math.min(920, (window.screen?.availHeight || 900) - 90));
-    const left = Math.max(20, Math.round(((window.screen?.availWidth || width) - width) / 2));
+    const slotKey = 'cv6.chatWindowSlot';
+    let slot = 0;
+    try { slot = (Number(sessionStorage.getItem(slotKey) || 0) + 1) % 3; sessionStorage.setItem(slotKey, String(slot)); } catch { /* private mode */ }
+    const left = Math.max(20, Math.min((window.screen?.availWidth || width) - width - 20, 24 + slot * (width + 18)));
     const top = Math.max(20, Math.round(((window.screen?.availHeight || height) - height) / 2));
     const child = window.open(
       chatWindowUrl(room, window.location.href),
@@ -3039,6 +3110,30 @@ export default function CornerCV6() {
       return;
     }
     try { child.opener = null; child.focus(); } catch { /* the window still opened */ }
+  }, [worldId]);
+  const onOpenEmailWindow = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    const width = Math.max(460, Math.min(560, (window.screen?.availWidth || 1280) - 80));
+    const height = Math.max(680, Math.min(920, (window.screen?.availHeight || 900) - 90));
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('cv6', '1');
+    url.searchParams.set('view', 'support');
+    url.searchParams.set('popout', 'email');
+    const left = Math.max(20, (window.screen?.availWidth || width) - width - 24);
+    const top = Math.max(20, Math.round(((window.screen?.availHeight || height) - height) / 2));
+    const child = window.open(
+      url.toString(),
+      `corner-email-${String(worldId || 'world').replace(/[^a-z0-9_-]+/gi, '-')}`,
+      `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
+    );
+    if (!child) {
+      setRoomNotice('Your browser blocked the Email column. Opening Email here instead.');
+      return false;
+    }
+    try { child.opener = null; child.focus(); } catch { /* the window still opened */ }
+    return true;
   }, [worldId]);
 
   // ?demo=blocks — render the full chat-element preview through the real renderer and stop.
@@ -3086,7 +3181,7 @@ export default function CornerCV6() {
     );
     viewKey = 'chat-window:invalid';
   }
-  else if (isDesktop && (view === 'chatlist' || openedRoom)) {
+  else if ((isDesktop || isChatWindow) && (view === 'chatlist' || openedRoom)) {
     body = <ChatDesktop worldId={worldId}
       initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, isMission: openedRoom.room?.isMission, missionSlug: openedRoom.room?.missionSlug, projectSlug: openedRoom.room?.projectSlug, path: openedRoom.room?.path, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText, specialistTitle: openedRoom.room?.specialistTitle, hasCustomTitle: openedRoom.room?.hasCustomTitle } : null}
       onNav={onNav} onOpenNav={onOpenNav} onOpenWindow={onOpenChatWindow} windowMode={isChatWindow} persistSelection={!isChatWindow}
@@ -3102,7 +3197,7 @@ export default function CornerCV6() {
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={onSearch} />; viewKey = 'chatlist'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenWindow={onOpenChatWindow} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
   const parkedLabel = { organize: 'Files', command: 'Command', tracker: 'Tracker', livescribe: 'Scribe' }[view] || '';
@@ -3110,7 +3205,7 @@ export default function CornerCV6() {
   // badges on the room rows themselves — the signal sits where the work is.
   const navBadges = {};
   return (
-    <div data-cv6 data-theme="dark" data-app-theme={theme} style={{
+    <div data-cv6 data-theme="dark" data-app-theme={theme} className="cv6-app-shell" style={{
       // The wallpaper is painted ONCE as a viewport-fixed layer behind everything
       // (index.html body::before), so the frame itself stays transparent. Painting
       // the ground here instead sized the gradient to this box — and with the
@@ -3118,7 +3213,7 @@ export default function CornerCV6() {
       // the notch strip + home-indicator strip fell on the dark edge and read as
       // flat borders that didn't blend (Patrik 2026-07-19). Transparent frame +
       // one fixed wallpaper = the strips share the exact same ground as the body.
-      minHeight: '100dvh', height: '100dvh', background: 'transparent',
+      background: 'transparent', boxSizing: 'border-box',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
       paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
@@ -3132,9 +3227,9 @@ export default function CornerCV6() {
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
-      {isDesktop && !isChatWindow && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      {isDesktop && !isChatWindow && !isEmailColumn && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailWindow={onOpenEmailWindow} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
-      {!isChatWindow && <ActivityDock worldId={worldId} onOpenJob={(job) => {
+      {!isChatWindow && !isEmailColumn && <ActivityDock worldId={worldId} onOpenJob={(job) => {
         if (job?.live && job?.id) {
           const name = job.shortTitle || job.title || titleForAgent(job.id);
           onOpenRoom({ id: job.id, name, initials: name.slice(0, 2).toUpperCase(), status: 'active', statusText: 'working' }, worldId);
@@ -3161,7 +3256,7 @@ export default function CornerCV6() {
           ) : body}
         </ScreenBoundary>
       </div>
-      {!isChatWindow && <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      {!isChatWindow && !isEmailColumn && <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {/* ⌘K command palette — jump to any room or mission. Opens its own data. */}
       {searchOpen && (
         <Search
@@ -3211,10 +3306,12 @@ export default function CornerCV6() {
             {isDesktop ? (
               <ReviewDesktop worldId={worldId} target={roomReview}
                 onNav={(t, p) => { setRoomReview(null); if (t !== 'back') onNav?.(t, p); }} onOpenNav={onOpenNav}
+                onSendBackComplete={() => setRoomReview(null)}
                 onAssignDeliverable={(id, extra) => setAssignConfig({ type: 'file', id, title: 'Assign file to agent', artifactTitle: String(id || '').split('/').pop() || '', ...(extra || {}) })} />
             ) : (
               <Review worldId={worldId} target={roomReview}
                 onNav={(t, p) => { setRoomReview(null); if (t !== 'back') onNav?.(t, p); }} onOpenNav={onOpenNav}
+                onSendBackComplete={() => setRoomReview(null)}
                 onAssignDeliverable={(id, extra) => setAssignConfig({ type: 'file', id, title: 'Assign file to agent', artifactTitle: String(id || '').split('/').pop() || '', ...(extra || {}) })} />
             )}
           </div>

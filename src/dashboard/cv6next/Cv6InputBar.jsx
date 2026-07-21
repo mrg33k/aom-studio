@@ -80,7 +80,7 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
   return (
     <div ref={wrapRef} data-testid="cv6-commands-menu" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 'none' }}>
       <button type="button" title="Commands" data-testid="cv6-commands-menu-button" onClick={() => setOpen((o) => !o)}
-        style={{ width: 42, height: 42, borderRadius: 12, flex: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: open || selectedImageTool ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${open ? 'var(--accent)' : 'var(--hair)'}`, color: open || selectedImageTool || isRecording ? 'var(--accent)' : 'var(--muted)', transition: 'background .15s, color .15s, border-color .15s' }}>
+        style={{ width: 42, height: 42, borderRadius: '50%', flex: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: open || selectedImageTool ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${open ? 'var(--accent)' : 'var(--hair)'}`, color: open || selectedImageTool || isRecording ? 'var(--accent)' : 'var(--muted)', transition: 'background .15s, color .15s, border-color .15s' }}>
         {isRecording ? I.stop : I.sparkles}
       </button>
       {open ? (
@@ -134,6 +134,7 @@ export default function Cv6InputBar({ onOpenFiles }) {
     handleSend, handleKeyDown,
     pasteChips, addPasteChip, removePasteChip,
     selectedImageTool, setSelectedImageTool,
+    interactionMode = 'work', setInteractionMode,
   } = useChatComposerCtx();
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx();
   const { isVoiceActive, setIsVoiceActive } = useChatVoiceCtx();
@@ -165,7 +166,7 @@ export default function Cv6InputBar({ onOpenFiles }) {
   const toolName = selectedImageTool ? (IMAGE_TOOLS.find((t) => t.id === selectedImageTool)?.name || selectedImageTool) : null;
 
   return (
-    <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', fontFamily: 'var(--font-sans)' }}>
+    <div className="cv6-floating-composer" style={{ width: '100%', maxWidth: 680, margin: '0 auto', fontFamily: 'var(--font-sans)', padding: 10, borderRadius: 24, background: 'var(--surface)', border: '1px solid var(--hair)', boxShadow: '0 18px 42px -24px rgba(0,0,0,.75)' }}>
       {/* Hidden file input — no accept filter on purpose: any file type is allowed. */}
       <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFileSelection} />
       {/* Pinned image tool + recording state, as quiet chips above the bar. */}
@@ -185,13 +186,12 @@ export default function Cv6InputBar({ onOpenFiles }) {
         </div>
       ) : null}
       <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 9 }}>
-        <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} />
-        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <div style={{ minWidth: 0, position: 'relative' }}>
           <SlashCommandAutocomplete value={input} setValue={setInput} inputRef={inputRef} caret={caret}
             onModalCommand={(name) => { if (name === '/integrations') setIntegrationsOpen(true); }} surface="1on1"
             panelStyle={{ background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', height: 42, borderRadius: 12, background: 'var(--surface-2)', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 2px 0 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', minHeight: 46, borderRadius: 16, background: 'var(--surface-2)', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 14px' }}>
             <input
               ref={inputRef}
               data-testid="cv6-chat-input"
@@ -208,25 +208,28 @@ export default function Cv6InputBar({ onOpenFiles }) {
               placeholder={selectedImageTool ? 'Describe the image to generate…' : `Message ${roomName}…`}
               style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)' }}
             />
-            <button type="button" title="Attach a file" aria-label="Attach and upload a file" onClick={() => fileInputRef.current?.click()} disabled={uploading}
-              style={{ width: 38, height: 38, borderRadius: 10, background: 'none', border: 'none', color: uploading ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-              {uploading
-                ? <CornerLoaderMark compact className="cv6-upload-loader" />
-                : I.attach}
-            </button>
           </div>
         </div>
-        {hasContent ? (
-          <button type="button" title="Send" onClick={handleSend}
-            style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
-            {I.send}
+        <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+          <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} />
+          <button type="button" title="Files" aria-label="Attach and upload files" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+            style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--hair)', color: uploading ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            {uploading ? <CornerLoaderMark compact className="cv6-upload-loader" /> : I.attach}
           </button>
-        ) : (
-          <button type="button" title={isVoiceActive ? 'End voice chat' : 'Start voice chat'} onClick={() => setIsVoiceActive(true)}
-            style={{ width: 42, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+          <button type="button" className="cv6-mode-toggle" aria-label={`Currently in ${interactionMode} mode. Switch to ${interactionMode === 'plan' ? 'work' : 'plan'} mode`} title={interactionMode === 'plan' ? 'Plan mode: think until we decide' : 'Work mode: go go go'} onClick={() => setInteractionMode?.(interactionMode === 'plan' ? 'work' : 'plan')}
+            style={{ height: 42, padding: '0 13px', borderRadius: 21, border: `1px solid ${interactionMode === 'plan' ? 'var(--accent)' : 'var(--hair)'}`, background: interactionMode === 'plan' ? 'var(--accent-weak)' : 'var(--surface-2)', color: interactionMode === 'plan' ? 'var(--accent)' : 'var(--muted)', font: '700 11.5px var(--font-sans)', cursor: 'pointer' }}>
+            {interactionMode === 'plan' ? 'Plan' : 'Work'}
+          </button>
+          <span style={{ flex: 1 }} />
+          <button type="button" title={isVoiceActive ? 'End voice chat' : 'Start voice chat'} aria-label="Talk aloud" onClick={() => setIsVoiceActive(true)}
+            style={{ width: 42, height: 42, borderRadius: '50%', border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
             {I.mic}
           </button>
-        )}
+          <button type="button" title="Send" aria-label="Send message" onClick={handleSend} disabled={!hasContent}
+            style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', background: hasContent ? 'var(--accent)' : 'var(--surface-2)', color: hasContent ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : .72 }}>
+            {I.send}
+          </button>
+        </div>
       </div>
       <IntegrationsModal open={integrationsOpen} onClose={() => setIntegrationsOpen(false)} />
     </div>

@@ -283,3 +283,60 @@ reload, backed by real rows (no fake UI, system-level for every tenant, not spec
 Patrik). Push/browser notifications are a later round if Patrik wants them.
 
 **Status:** queued.
+
+### R10 - Home, Chat, Email, and Review control pass
+
+Patrik's 2026-07-21 directive: finish the CV6 Home, Chat, Email, and Review surfaces
+as one verified product loop. Scope includes circular global controls and the
+three-state theme button; full recent-project ordering and desktop multi-chat
+columns; real project/mission rename, reclassification, and move controls; the chat
+options menu, floating two-row composer, plan/work mode, honest live agent progress,
+and room reset-to-history; desktop Email access plus urgency and editable auto-reply
+controls; and an in-context Review handoff that turns checklist/pin comments into an
+agent message and returns to Chat. The completion bar remains the mission's live-data
+contract at 390x844 and 1440 widths, followed by production deployment and live
+verification.
+
+Existing uncommitted CV6 work was present at round start, including room settings,
+rename/reclassify plumbing, chat lifecycle work, and focused tests. Preserve and audit
+that work before extending it; do not claim it as newly verified until the full round
+battery passes.
+
+Implementation and local verification (2026-07-21):
+
+- Home now keeps the logo at the right edge on mobile, removes the redundant desktop
+  Rooms control, cycles Light/Dark/Glass through one icon, shows every project in live
+  activity order, exposes existing rename/move/reclassification actions from recent
+  work, and opens independent chat or Email columns at a useful single-column width.
+- Chat has a dedicated options menu (General, Access/Invite, History/Clear, and
+  Specialist settings), a floating rounded two-row composer, explicit Plan/Work turn
+  metadata enforced by the listener, and live progress copy inside the real activity
+  bar. Clear Chat writes an archive boundary plus scoped `clear_context`; it never
+  deletes messages, files, or project memory.
+- Email is reachable from desktop and can live beside chat. Auto-reply now exposes
+  holding-note mode/delay, easy-answer mode, tone, instructions, and sign-off; the
+  watcher applies those fields to both holding notes and easy answers. Inbox rows and
+  detail carry a deterministic 1-10 urgency score.
+- Files/Review restored Approve, Dismiss, Request changes, Assign, and Download;
+  removed Type/Location; and turns pins, optional checklist items, and typed notes into
+  one direct request-changes task. The checklist is a right-side review panel on
+  desktop and the existing bottom sheet on mobile. Successful in-room send-back closes
+  the review takeover back to the exact chat; failures leave the panel open.
+- Added `api/dashboard/room-reset.js` and `tests/cv6-r10-polish.spec.mjs`; updated
+  adjacent regression expectations for the intentional Rooms removal and live-progress
+  duplication.
+
+Verification:
+
+- `CV6_AUDIT_BASE=http://127.0.0.1:5173 npx playwright test tests/cv6-*.spec.mjs
+  --reporter=line --workers=2` — 31/31 passed.
+- `npm run build` — passed in 15.27s. Existing unrelated OutreachTracker duplicate-key
+  warnings and the existing large-chunk advisory remain.
+- `git diff --check`, API `node --check`, and Python `py_compile` for the listener and
+  three support-mail workers — passed.
+- Captured and visually inspected desktop Home/Review/Email, 390px Home/Chat/History,
+  and the narrow independent chat window. The in-app Browser skill could not attach
+  because its Node runtime raised `Cannot redefine property: process` twice; local
+  Playwright screenshots were used for visual verification instead.
+
+**Status:** implemented and locally verified; deployment in progress.

@@ -47,6 +47,24 @@ export function latencyLabel(seconds) {
   return `${Math.round(h / 24)}d`;
 }
 
+// A transparent 1-10 triage score: unresolved age + an approaching auto-send
+// raise urgency; resolved mail stays quiet. It is deterministic client-side and
+// never presented as model certainty.
+export function urgencyScore(item, now = Date.now()) {
+  if (!item) return 1;
+  if (item.status === 'resolved') return 2;
+  let score = item.kind === 'email' ? 5 : 4;
+  const created = item.createdAt ? new Date(item.createdAt).getTime() : 0;
+  const ageHours = created && Number.isFinite(created) ? Math.max(0, (now - created) / 3600000) : 0;
+  if (ageHours >= 1) score += 1;
+  if (ageHours >= 4) score += 1;
+  if (ageHours >= 24) score += 2;
+  if (item.hasStaged) score += 1;
+  const autoSend = item.autoSendAt ? new Date(item.autoSendAt).getTime() : 0;
+  if (autoSend && autoSend > now && autoSend - now <= 30 * 60000) score += 1;
+  return Math.max(1, Math.min(10, score));
+}
+
 // wish.message = subject line + • summary bullets + "--- ORIGINAL MESSAGE ---" +
 // original text + optional [staged_draft:ID|conn:ID] tag (support-email-watch.py).
 // Split it here so the pane renders summary and original as separate cards.
@@ -149,6 +167,7 @@ export function useSupportInbox(worldId) {
       agentRead: (w.agent_read && typeof w.agent_read === 'object') ? w.agent_read : null,
       autoSendAt: w.auto_send_at || null,
     };
+    item.urgency = urgencyScore(item);
     if (w.status === 'resolved') watching.push(item);
     else needsYou.push(item);
   }
@@ -174,10 +193,15 @@ export function useSupportInbox(worldId) {
       // threadId + the mailbox it lives in let the pane fetch the REAL chain for
       // scan rows too (M27b — these rows used to render a single message only).
       const threadRef = { threadId: it.threadId || null, boxEmail: box.email || null };
+      const createdAt = it.lastInbound?.date || it.date || null;
       if (kind === 'need') {
-        needsYou.push({ id, kind: 'email', initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount, tags: [], ...threadRef });
+        const item = { id, kind: 'email', initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount, tags: [], createdAt, ...threadRef };
+        item.urgency = urgencyScore(item);
+        needsYou.push(item);
       } else {
-        watching.push({ id, kind: 'email', subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount, ...threadRef });
+        const item = { id, kind: 'email', subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount, status: 'resolved', createdAt, ...threadRef };
+        item.urgency = urgencyScore(item);
+        watching.push(item);
       }
     }
   }

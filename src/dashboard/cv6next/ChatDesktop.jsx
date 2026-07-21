@@ -19,7 +19,7 @@ import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
 import NewComposer from './NewComposer.jsx';
-import RenameRoomDialog from './RenameRoomDialog.jsx';
+import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import { useDataContext } from './providers/DataContext.jsx';
 
 const NAV = [
@@ -388,7 +388,7 @@ function PlainThread({ messages, onSend, localReadOnly = false }) {
 export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile, onAssignEmail, onOpenWindow, windowMode = false, persistSelection = true }) {
   const { data: list } = useChatList();
   const [titleOverrides, setTitleOverrides] = useState({});
-  const [renameOpen, setRenameOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const roomTitleKey = useCallback((room) => room?.isMission ? `m:${room.missionSlug || room.id}` : room?.isProject ? `p:${room.id}` : `a:${room?.id}`, []);
   // Stable refs so the memoized composer below doesn't re-mount on every list poll.
   const agents = useMemo(() => (list?.agents || []).map((a) => titleOverrides[`a:${a.id}`] ? { ...a, name: titleOverrides[`a:${a.id}`], initials: titleOverrides[`a:${a.id}`].slice(0, 2).toUpperCase(), hasCustomTitle: true } : a), [list, titleOverrides]);
@@ -396,6 +396,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   // Selected room: the one opened from elsewhere, else the first agent. {id,name,initials,isProject,status}.
   const [picked, setPicked] = useState(initialRoom || null);
+  useEffect(() => { setSettingsOpen(false); }, [picked?.id, picked?.missionSlug]);
   // ← chain (Patrik 2026-06-25): from an open thread, ArrowLeft drops back to the chat directory
   // (rail visible, no thread); ArrowLeft again goes Home. 'cleared' forces the directory state.
   const [cleared, setCleared] = useState(false);
@@ -411,6 +412,11 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     const a = agents[0];
     return a ? { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel, specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle } : null;
   }, [cleared, picked, agents, titleOverrides, roomTitleKey]);
+  const selectedProjectRecord = useMemo(() => {
+    if (!selected?.isProject && !selected?.isMission) return null;
+    const slug = selected.isMission ? selected.projectSlug : selected.id;
+    return projects.find((project) => project.slug === slug || project.id === slug) || null;
+  }, [selected, projects]);
   // Pin the default room (the first agent) into state the moment it's known, so a room-list
   // refetch can never recompute or momentarily drop `selected`. The list refetches very often —
   // realtime agent-status heartbeats fire one every ~2.5s while any agent is working, and the
@@ -443,7 +449,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav, windowMode]);
 
-  const { messages, blocks, send, awaiting, liveSteps } = useRoomThread(worldId, selected);
+  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, liveSteps } = useRoomThread(worldId, selected);
   const lastActiveLabel = (() => {
     const m = messages?.[messages.length - 1];
     if (!m?.ts) return null;
@@ -708,7 +714,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   return (
     <SendCtx.Provider value={send || (() => {})}>
     <ReviewCtx.Provider value={(file) => { if (file) onReviewFile?.(file, reviewProject, reviewMission); }}>
-      <div data-cv6 data-theme="dark" data-chat-window={windowMode ? '1' : undefined} className={`cv6-screen${windowMode ? ' is-chat-window' : ''}`} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div data-cv6 data-theme="dark" data-chat-window={windowMode ? '1' : undefined} className={`cv6-screen${windowMode ? ' is-chat-window' : ''}`} style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* topbar now mounted once in the shell (SharedNav DesktopNav) */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           {/* rooms rail — the switchboard (drop 3): + New up top, rooms scroll,
@@ -769,7 +775,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {selected ? (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '15px 24px', borderBottom: '1px solid var(--divider)' }}>
+                <div className="desktop-room-header">
                   <div style={{ position: 'relative', flex: 'none' }}>
                     <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--avatar)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 15, fontWeight: 700 }}>{selected.initials || '·'}</div>
                     <span className={`sdot is-${selected.status || 'ready'}`} style={{ position: 'absolute', bottom: -1, right: -1, width: 12, height: 12, border: '2.5px solid var(--ground)' }} />
@@ -782,30 +788,16 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       {selected.isProject || selected.isMission ? <span aria-hidden="true">/</span> : null}
                       {selected.isMission ? <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{projects.find((p) => p.slug === selected.projectSlug || p.id === selected.projectSlug)?.name || selected.statusText || selected.projectSlug}</span> : null}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</div>
-                      <button type="button" onClick={() => setRenameOpen(true)} aria-label="Rename chat" title="Rename chat" data-testid="rename-chat-button" style={{ width: 25, height: 25, flex: 'none', display: 'grid', placeItems: 'center', border: 'none', borderRadius: 7, background: 'transparent', color: 'var(--faint)', cursor: 'pointer' }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
-                      </button>
-                    </div>
+                    <div className="desktop-room-title">{selected.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.hasCustomTitle && selected.specialistTitle ? `${selected.specialistTitle} specialist` : (goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation'))}</div>
                   </div>
                   {!windowMode && onOpenWindow ? (
                     <button type="button" className="cv6-chat-popout" onClick={() => onOpenWindow(selected)} aria-label={`Open ${selected.name} in a new window`} title="Keep this chat open in its own window">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="8" width="12" height="11" rx="2"/><path d="M9 5h9a2 2 0 0 1 2 2v8"/><path d="m13 11 3-3m0 0v3m0-3h-3"/></svg>
-                      New window
                     </button>
                   ) : null}
-                  <button
-                    onClick={toggleFollow}
-                    title={following ? 'You will see this room on Home and get its updates. Click to mute.' : 'Muted. Click to follow along again.'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 7, flex: 'none', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', padding: '6px 12px', borderRadius: 18, border: following ? 'none' : '1px solid var(--hair)', color: following ? 'var(--accent)' : 'var(--muted)', background: following ? 'var(--accent-weak)' : 'var(--surface-2)' }}>
-                    {following ? (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                    ) : (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                    )}
-                    {following ? 'Following along' : 'Follow'}
+                  <button type="button" className="ib room-options-trigger" onClick={() => setSettingsOpen(true)} aria-label={`Options for ${selected.name}`} title="Room options" data-testid="room-settings-trigger">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                   </button>
                 </div>
                 <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
@@ -870,7 +862,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       <div style={{ position: 'absolute', top: 46, right: 14, zIndex: 21, minWidth: 184, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 12, boxShadow: '0 16px 40px -12px rgba(0,0,0,.45)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {[
                           { label: 'View files', onClick: () => { setDrawerView('files'); setAgentMenuOpen(false); } },
-                          { label: 'Rename chat', onClick: () => { setRenameOpen(true); setAgentMenuOpen(false); } },
+                          { label: 'Room settings', onClick: () => { setSettingsOpen(true); setAgentMenuOpen(false); } },
                           ...(nextReviewFile ? [{ label: 'Review next waiting file', onClick: () => { onReviewFile?.(nextReviewFile, reviewProject, reviewMission); setAgentMenuOpen(false); } }] : []),
                           { label: following ? 'Mute updates' : 'Follow along', onClick: () => { toggleFollow(); setAgentMenuOpen(false); } },
                         ].map((mi) => (
@@ -956,7 +948,19 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         <NewComposer worldId={worldId} projects={projects} agents={agents} initialMode="mission"
           onClose={() => setComposerOpen(false)} onCreated={() => setComposerOpen(false)} />
       ) : null}
-      {renameOpen && selected ? <RenameRoomDialog room={selected} worldId={worldId} onClose={() => setRenameOpen(false)} onRenamed={onRoomRenamed} /> : null}
+      {settingsOpen && selected ? <RoomSettingsDialog
+        room={selected}
+        worldId={worldId}
+        projectId={selectedProjectRecord?.databaseId || selected?.databaseId || ''}
+        following={following}
+        onToggleFollowing={toggleFollow}
+        onClose={() => setSettingsOpen(false)}
+        onRenamed={onRoomRenamed}
+        onOpenFiles={() => setDrawerView('files')}
+        onOpenWindow={!windowMode && onOpenWindow ? onOpenWindow : null}
+        archivedMessages={archivedMessages}
+        onClearRoom={clearRoom}
+      /> : null}
     </ReviewCtx.Provider>
     </SendCtx.Provider>
   );

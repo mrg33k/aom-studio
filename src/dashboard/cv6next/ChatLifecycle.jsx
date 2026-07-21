@@ -26,6 +26,7 @@ import { normalizeReviewHandoff } from './data/reviewTargetResolve.js';
 import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
+import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -388,7 +389,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, messages, status, onBack, onOpenNav, onSearch, onRename, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, messages, archivedMessages, status, onBack, onOpenNav, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -396,6 +397,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
   // CV4-functionality/CV6-look composer needs the room's full identity (project /
   // mission / agent scope) + world; without them we keep the plain bar.
   const [filesSheetOpen, setFilesSheetOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => { setSettingsOpen(false); }, [fullRoom?.id, fullRoom?.missionSlug]);
   const [mComposerHost, setMComposerHost] = useState(null);
   const richComposer = !!(fullRoom && worldId);
   const roomKeyForSheet = fullRoom?.id || room?.name;
@@ -530,10 +533,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
         <div className="mhactions">
-          {onRename ? <button type="button" className="ib" aria-label="Rename chat" title="Rename chat" data-testid="rename-chat-button" onClick={onRename}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button> : null}
           <button type="button" className="ib" aria-label="Files in this room" title="Files in this room" data-testid="chat-files-button" onClick={() => setFilesSheetOpen(true)}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg></button>
           <button type="button" className="ib" aria-label="Search" onClick={onSearch}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button>
-          <button type="button" className="ib" aria-label="Menu" onClick={onOpenNav}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></button>
+          <button type="button" className="ib room-options-trigger" aria-label={`Options for ${room.name}`} title="Room options" data-testid="room-settings-trigger" onClick={() => setSettingsOpen(true)}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+          <button type="button" className="ib" aria-label="Corner menu" onClick={onOpenNav}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></button>
         </div>
       </div>
 
@@ -638,6 +641,17 @@ export default function ChatLifecycle({ room, fullRoom, worldId, messages, statu
           onClose={() => setFilesSheetOpen(false)}
           onReview={(it) => { setFilesSheetOpen(false); onOpenReview?.(it ? [it] : null); }} />
       )}
+
+      {settingsOpen && fullRoom ? <RoomSettingsDialog
+        room={fullRoom}
+        worldId={worldId}
+        projectId={projectId}
+        onClose={() => setSettingsOpen(false)}
+        onRenamed={onRoomRenamed}
+        onOpenFiles={() => setFilesSheetOpen(true)}
+        archivedMessages={archivedMessages}
+        onClearRoom={onClearRoom}
+      /> : null}
 
       {collection && <FileCollectionViewer files={collection.files} startIndex={collection.index} onClose={() => setCollection(null)} onReview={reviewHandoff} />}
     </div>

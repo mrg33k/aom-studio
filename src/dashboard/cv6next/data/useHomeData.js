@@ -271,7 +271,7 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] 
   const projectRows = (projectRooms || []).map((p) => ({
     // Key the room by SLUG, not the UUID: the messages table tags rows by project slug, so a
     // UUID id makes the thread query (project=<id>) return nothing -> an empty chat. (Corner bug.)
-    id: p.slug || p.id, slug: p.slug, name: p.name || p.slug || 'Project', snippet: '',
+    id: p.slug || p.id, slug: p.slug, databaseId: p.id || '', name: p.name || p.slug || 'Project', snippet: '',
     tint: tintFor(p.name || p.id), status: 'ready',
   }));
   agentRows.count = agentRows.length;

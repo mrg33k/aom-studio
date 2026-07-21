@@ -332,16 +332,12 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
     setFilter: (id) => setFilterBoth(id || 'recent'),
     setMission: (id) => selectMission(id || '__all'),
     setSort: (id) => setSort(id === 'az' ? 'az' : 'newest'),
-    // ── the rehomed review actions (simplified 2026-07-18: send-changes and
-    // download are the only verdicts; Approve/Dismiss buttons are gone) ──
+    // ── the rehomed review actions ──
+    approve: (id) => { review.actions.approve(id); afterVerdict(); },
+    dismiss: (id) => { review.actions.dismiss(id); afterVerdict(); },
     requestChanges: () => setChangesOpen(true),
     sendChecklist: (id) => review.actions.sendChecklist(id),
-    // Download IS "reviewed, moving on": a waiting item silently records its
-    // approve decision so the NEEDS REVIEW badge drains instead of nagging.
-    download: (id) => {
-      review.actions.download(id);
-      if ((review.data.queue.itemsAll || []).some((i) => i.id === id)) { review.actions.approve(id); afterVerdict(); }
-    },
+    download: (id) => review.actions.download(id),
     openPin: (id) => openPinById(id),
     openComments: () => {},
     toggleReviewed: () => setReviewedOn((v) => !v),
@@ -395,11 +391,12 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
         <ReviewChangesOverlay
           pins={pins}
           title={openedRow?.name || ''}
-          onSendBack={(extraNotes = '') => {
+          onSendBack={async (extraNotes = '') => {
             const compiled = compileChanges(pins, extraNotes);
-            if (openReviewId && compiled) review.actions.requestChanges(openReviewId, compiled);
+            if (!openReviewId || !compiled) return;
+            const sent = await review.actions.requestChanges(openReviewId, compiled);
+            if (!sent) return;
             setChangesOpen(false);
-            onAssignFile?.(openReviewId, assignExtra());
             afterVerdict();
           }}
           onClose={() => setChangesOpen(false)}

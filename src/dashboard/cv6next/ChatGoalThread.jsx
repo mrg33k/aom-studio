@@ -141,7 +141,8 @@ function StepRow({ step }) {
   const state = step.state === 'done' ? 'done' : (step.state === 'active' || step.state === 'working') ? 'active' : (step.state === 'queued') ? 'queued' : 'pending';
   const isActive = state === 'active';
   const isNote = step.kind === 'note';
-  const progress = step.progress != null ? Math.min(100, Math.max(0, step.progress)) : 0;
+  const hasProgress = step.progress != null;
+  const progress = hasProgress ? Math.min(100, Math.max(0, step.progress)) : 0;
   // The done icon fits the row's action (search / edit / ship / …); pending + working keep the
   // kit's ring + spinner so a live turn still reads as progress. CSS reveals exactly one.
   const icons = (
@@ -175,8 +176,9 @@ function StepRow({ step }) {
         {step.detail && !isNote ? <div className="gssub">{step.detail}</div> : null}
         {isActive ? (
           <div style={{ marginTop: 8, marginBottom: 6 }}>
-            <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'var(--surface-2)', overflow: 'hidden' }}>
-              <i style={{ display: 'block', width: `${progress}%`, height: '100%', background: 'var(--accent)', transition: 'width 0.3s ease' }} />
+            <div className={`cv6-live-progress${hasProgress ? ' is-determinate' : ' is-indeterminate'}`} style={{ position: 'relative', width: '100%', height: 22, borderRadius: 11, background: 'var(--surface-2)', overflow: 'hidden', border: '1px solid var(--hair)' }}>
+              <i style={{ display: 'block', width: hasProgress ? `${progress}%` : '38%', height: '100%', background: 'var(--accent)', transition: 'width 0.3s ease' }} />
+              <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 9px', color: 'var(--fg)', fontSize: 10.5, fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 1px 2px var(--ground)' }}>{step.detail || step.title || 'Working'}</span>
             </div>
           </div>
         ) : null}

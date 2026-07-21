@@ -43,6 +43,7 @@ function InboxRow({ it, open, onClick }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flex: 'none' }}>
         <span style={{ fontSize: 11, color: 'var(--faint)' }}>{it.time}</span>
+        <span className="cv6-urgency" data-score={it.urgency >= 8 ? 'high' : it.urgency >= 5 ? 'medium' : 'low'} title="Urgency score based on age, state, and send timing">{it.urgency || 1}/10</span>
         {it.hasStaged ? <span className="pill" style={{ fontSize: 10, padding: '2px 7px', borderRadius: 8, background: 'var(--success-weak)', color: 'var(--success)', fontWeight: 600 }}>Draft ready</span>
           : it.kind === 'email' ? <span className="pill is-email" style={{ fontSize: 10, padding: '2px 7px', borderRadius: 8 }}>Email</span> : null}
       </div>
@@ -349,6 +350,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
                     )}
                   </div>
                 </div>
+                <span className="cv6-urgency is-detail" data-score={selected.urgency >= 8 ? 'high' : selected.urgency >= 5 ? 'medium' : 'low'} title="Urgency score based on age, state, and send timing">Urgency {selected.urgency || 1}/10</span>
                 <button onClick={() => onAssignEmail?.(selected.id, selected)} style={{ height: 36, padding: '0 14px', borderRadius: 10, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Assign</button>
                 {isWish && (
                   <button onClick={doResolve} style={{ height: 36, padding: '0 15px', borderRadius: 10, border: 'none', background: 'var(--success-weak)', color: 'var(--success)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>

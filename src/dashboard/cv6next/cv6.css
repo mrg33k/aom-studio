@@ -2249,3 +2249,313 @@
 @media (max-width:1020px) {
   [data-cv6].is-chat-window .cv6-chat-drawer { width:276px !important; padding:16px !important; }
 }
+
+/* M15 · room controls + airier chrome. The page itself never scrolls: each
+   screen owns its deliberate inner scroller, and the shell follows the visual
+   viewport pixel-for-pixel (the JS fallback covers iOS toolbar lag). */
+html.cv6-app-active,
+html.cv6-app-active body,
+html.cv6-app-active #root {
+  width:100%;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+[data-cv6].cv6-app-shell {
+  width:100%;
+  height:var(--cv6-viewport-height, 100dvh);
+  min-height:0;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+
+/* Headers should read as open space, not a stack of bordered bands. */
+[data-cv6] .topbar,
+[data-cv6] .mhdr {
+  border-bottom:0 !important;
+  background:transparent !important;
+}
+[data-cv6] .topbar .ib {
+  border:0;
+  border-radius:50%;
+  background:var(--chip);
+}
+[data-cv6] .mhdr {
+  --cv6-mobile-header-height:72px;
+  gap:10px;
+  padding:8px 14px !important;
+}
+[data-cv6] .mhdr :where(.mback, .mhactions .ib),
+[data-cv6] .mhdr > .ib {
+  width:42px !important;
+  height:42px !important;
+  min-width:42px;
+  min-height:42px;
+  flex-basis:42px;
+  border:0 !important;
+  border-radius:50% !important;
+  background:var(--chip) !important;
+}
+[data-cv6] .mhdr .mh-av,
+[data-cv6] .mhdr .mh-av .mh-ring { border-radius:50%; }
+[data-cv6] .room-title-trigger {
+  min-width:0;
+  max-width:100%;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+[data-cv6] .room-title-trigger:hover .mttl,
+[data-cv6] .desktop-room-title:hover { color:var(--accent); }
+[data-cv6] .desktop-room-header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:20px 26px 18px;
+  border-bottom:0;
+}
+[data-cv6] .desktop-room-title {
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--fg);
+  font-size:18px;
+  font-weight:650;
+  line-height:1.2;
+  transition:color .14s ease;
+}
+
+/* The title opens one room-specific control surface. Desktop gets a right
+   sheet; phone gets a true full-width settings screen inside the safe area. */
+[data-cv6] .room-settings-layer {
+  position:absolute;
+  inset:0;
+  z-index:120;
+  display:flex;
+  justify-content:flex-end;
+  overflow:hidden;
+}
+[data-cv6] .room-settings-scrim {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:rgba(0,0,0,.58);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+[data-cv6] .room-settings-panel {
+  position:relative;
+  width:min(520px, 100%);
+  height:100%;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:var(--ground);
+  color:var(--fg);
+  box-shadow:-28px 0 72px -30px rgba(0,0,0,.8);
+  animation:roomSettingsIn .22s var(--ease-out) both;
+}
+@keyframes roomSettingsIn { from { opacity:.5; transform:translateX(24px); } to { opacity:1; transform:translateX(0); } }
+[data-cv6] .room-settings-header {
+  flex:none;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:24px 22px 16px;
+}
+[data-cv6] .room-settings-avatar {
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  flex:none;
+  background:var(--avatar);
+  color:#fff;
+  font-size:14px;
+  font-weight:750;
+}
+[data-cv6] .room-settings-heading { flex:1; min-width:0; }
+[data-cv6] .room-settings-kicker { color:var(--accent); font-size:10px; font-weight:750; letter-spacing:.1em; text-transform:uppercase; }
+[data-cv6] .room-settings-heading h2 { margin:3px 0 0; overflow:hidden; color:var(--fg); font-size:21px; line-height:1.15; letter-spacing:-.02em; text-overflow:ellipsis; white-space:nowrap; }
+[data-cv6] .room-settings-heading p { margin:3px 0 0; color:var(--muted); font-size:12px; }
+[data-cv6] .room-settings-close {
+  width:42px;
+  height:42px;
+  flex:none;
+  padding:0 0 3px;
+  border:0;
+  border-radius:50%;
+  background:var(--chip);
+  color:var(--muted);
+  font:300 25px/1 var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .room-settings-tabs { flex:none; display:flex; gap:5px; padding:4px 20px 14px; overflow-x:auto; }
+[data-cv6] .room-settings-tabs button {
+  height:36px;
+  padding:0 14px;
+  border:0;
+  border-radius:18px;
+  background:transparent;
+  color:var(--muted);
+  font:650 12.5px var(--font-sans);
+  white-space:nowrap;
+  cursor:pointer;
+}
+[data-cv6] .room-settings-tabs button[aria-current="page"] { background:var(--accent-weak); color:var(--accent); }
+[data-cv6] .room-settings-body { flex:1; min-height:0; overflow-y:auto; padding:10px 22px 34px; overscroll-behavior:contain; }
+[data-cv6] .room-settings-intro { margin:10px 1px 11px; }
+[data-cv6] .room-settings-section-title { color:var(--fg); font-size:15px; font-weight:700; }
+[data-cv6] .room-settings-section-copy { max-width:430px; margin-top:3px; color:var(--muted); font-size:12.5px; line-height:1.45; }
+[data-cv6] .room-settings-card { padding:15px; border:0; border-radius:18px; background:var(--surface); }
+[data-cv6] .room-settings-card + .room-settings-intro { margin-top:26px; }
+[data-cv6] .room-settings-card label { display:block; margin:0 0 7px; color:var(--muted); font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; }
+[data-cv6] .room-settings-card select,
+[data-cv6] .room-settings-card input {
+  width:100%;
+  height:44px;
+  min-width:0;
+  box-sizing:border-box;
+  border:0;
+  border-radius:12px;
+  outline:0;
+  background:var(--surface-2);
+  color:var(--fg);
+  padding:0 12px;
+  font:500 14px var(--font-sans);
+}
+[data-cv6] .room-settings-card select { margin-bottom:17px; color-scheme:dark; }
+[data-app-theme="light"] [data-cv6] .room-settings-card select { color-scheme:light; }
+[data-cv6] .room-settings-name-row,
+[data-cv6] .room-settings-invite { display:flex; align-items:center; gap:8px; }
+[data-cv6] .room-settings-primary {
+  height:44px;
+  flex:none;
+  padding:0 16px;
+  border:0;
+  border-radius:12px;
+  background:var(--accent);
+  color:#fff;
+  font:700 12.5px var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .room-settings-primary:disabled { cursor:default; opacity:.42; }
+[data-cv6] .room-settings-form-foot { min-height:24px; display:flex; align-items:flex-end; justify-content:space-between; gap:10px; padding:7px 2px 0; color:var(--faint); font-size:11.5px; }
+[data-cv6] .room-settings-form-foot button { padding:0; border:0; background:transparent; color:var(--muted); font:650 11.5px var(--font-sans); cursor:pointer; }
+[data-cv6] :is(.room-settings-form-foot,.room-settings-note).is-error { color:var(--error); }
+[data-cv6] :is(.room-settings-form-foot span,.room-settings-note).is-saved { color:var(--success); }
+[data-cv6] .room-settings-stack { padding:4px 12px; }
+[data-cv6] .room-setting-row { min-height:66px; display:flex; align-items:center; gap:11px; padding:7px 2px; }
+[data-cv6] .room-setting-row + .room-setting-row { border-top:1px solid var(--divider); }
+[data-cv6] .room-setting-icon { width:34px; height:34px; flex:none; display:grid; place-items:center; border-radius:50%; background:var(--accent-weak); color:var(--accent); font-size:15px; }
+[data-cv6] .room-setting-copy { flex:1; min-width:0; }
+[data-cv6] .room-setting-copy strong,
+[data-cv6] .room-setting-copy small { display:block; }
+[data-cv6] .room-setting-copy strong { color:var(--fg); font-size:13.5px; font-weight:650; }
+[data-cv6] .room-setting-copy small { margin-top:2px; color:var(--muted); font-size:11.5px; line-height:1.35; }
+[data-cv6] .room-settings-link { min-width:58px; height:34px; padding:0 11px; border:0; border-radius:17px; background:var(--chip); color:var(--accent); font:700 11.5px var(--font-sans); cursor:pointer; }
+[data-cv6] .room-settings-switch { width:44px; height:26px; flex:none; padding:3px; border:0; border-radius:13px; background:var(--chip); cursor:pointer; transition:background .15s ease; }
+[data-cv6] .room-settings-switch span { display:block; width:20px; height:20px; border-radius:50%; background:var(--muted); transition:transform .15s ease,background .15s ease; }
+[data-cv6] .room-settings-switch.is-on { background:var(--accent); }
+[data-cv6] .room-settings-switch.is-on span { transform:translateX(18px); background:#fff; }
+[data-cv6] .room-settings-note { margin-top:10px; color:var(--muted); font-size:11.5px; line-height:1.45; }
+[data-cv6] .room-settings-people { display:grid; gap:5px; margin-top:13px; }
+[data-cv6] .room-settings-person { min-height:43px; display:flex; align-items:center; gap:9px; }
+[data-cv6] .room-settings-person > span { width:30px; height:30px; flex:none; display:grid; place-items:center; border-radius:50%; background:var(--accent-weak); color:var(--accent); font-size:11px; font-weight:750; }
+[data-cv6] .room-settings-person > div { flex:1; min-width:0; }
+[data-cv6] .room-settings-person strong,
+[data-cv6] .room-settings-person small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+[data-cv6] .room-settings-person strong { color:var(--fg); font-size:12.5px; }
+[data-cv6] .room-settings-person small { color:var(--muted); font-size:11px; }
+[data-cv6] .room-settings-person em { color:var(--faint); font-size:10px; font-style:normal; text-transform:uppercase; }
+[data-cv6] .room-settings-secondary-link { display:inline-flex; margin-top:14px; color:var(--accent); font-size:12px; font-weight:650; text-decoration:none; }
+
+@media (max-width:640px) {
+  [data-cv6] .room-settings-scrim { display:none; }
+  [data-cv6] .room-settings-panel { width:100%; box-shadow:none; animation:none; }
+  [data-cv6] .room-settings-header { padding:18px 16px 12px; }
+  [data-cv6] .room-settings-tabs { padding:4px 14px 12px; }
+  [data-cv6] .room-settings-body { padding:8px 16px calc(28px + env(safe-area-inset-bottom, 0px)); }
+  [data-cv6] .room-settings-name-row,
+  [data-cv6] .room-settings-invite { align-items:stretch; }
+}
+@media (prefers-reduced-motion:reduce) { [data-cv6] .room-settings-panel { animation:none; } }
+/* corner:cv6-polish R10 — control geometry and composed surfaces. Text actions
+   are pills; icon controls are true circles on every CV6 page. */
+[data-cv6] button { border-radius:999px !important; }
+[data-cv6] :where(.ib,.mback,.room-settings-close,.fcv-step,.cv6-chat-popout,.chat-column-open,.room-options-trigger) { border-radius:50% !important; }
+[data-cv6] .ib.is-active { color:var(--accent); background:var(--accent-weak); border-color:var(--accent); }
+[data-cv6][data-screen="home-mobile"] .hlogo { width:54px; height:auto; margin-left:2px; flex:none; }
+[data-cv6][data-screen="home-desktop"] .chat-column-open { width:34px; height:34px; padding:0; flex:none; cursor:pointer; }
+[data-cv6] .cv6-chat-popout { width:38px; height:38px; padding:0 !important; display:flex; align-items:center; justify-content:center; flex:none; }
+
+/* The composer floats clear of the viewport edge and uses one rounded two-row card. */
+[data-cv6] .cv6-floating-composer { box-sizing:border-box; }
+[data-cv6] .mcomposer { left:12px !important; right:12px !important; bottom:max(12px,env(safe-area-inset-bottom,0px)) !important; padding:0 !important; border-top:none !important; background:transparent !important; }
+[data-cv6] .scrbody { padding-bottom:calc(150px + env(safe-area-inset-bottom,0px)) !important; }
+[data-cv6] .jumplive { bottom:164px !important; }
+[data-cv6] .cv6-mode-toggle { min-width:62px; }
+
+/* Real bridge activity only: the moving segment exists only while WorkingTurn is
+   mounted. Determinate tool progress stays numeric; heartbeat-only work glides. */
+[data-cv6] .cv6-live-progress.is-indeterminate > i { animation:cv6-live-sweep 1.35s cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes cv6-live-sweep { from { transform:translateX(-105%); } to { transform:translateX(280%); } }
+@media (prefers-reduced-motion:reduce) { [data-cv6] .cv6-live-progress.is-indeterminate > i { animation:none; transform:translateX(80%); } }
+
+/* Room history / reset lives inside the three-dot options panel. */
+[data-cv6] .room-history-message { padding:11px 0; border-bottom:1px solid var(--divider); }
+[data-cv6] .room-history-message:last-child { border-bottom:none; }
+[data-cv6] .room-history-message > div { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+[data-cv6] .room-history-message strong { font-size:12.5px; color:var(--fg); }
+[data-cv6] .room-history-message span { font-size:10.5px; color:var(--faint); }
+[data-cv6] .room-history-message p { margin:5px 0 0; color:var(--muted); font-size:12.5px; line-height:1.45; white-space:pre-wrap; }
+[data-cv6] .room-clear-card { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+[data-cv6] .room-clear-card > div:first-child { flex:1 1 220px; }
+[data-cv6] .room-clear-card strong { color:var(--fg); font-size:13px; }
+[data-cv6] .room-clear-card p { color:var(--muted); font-size:12px; line-height:1.45; margin:4px 0 0; }
+[data-cv6] .room-settings-danger { min-height:36px; padding:0 14px; border:1px solid rgba(248,113,113,.42); background:transparent; color:var(--error,#f87171); font:600 12.5px var(--font-sans); cursor:pointer; }
+
+/* Auto-reply is a full Email section, not a switch hidden inside the inbox. */
+[data-cv6] .cv6-autoreply-settings { flex:1; min-height:0; overflow-y:auto; width:min(880px,100%); margin:0 auto; padding:28px; box-sizing:border-box; }
+[data-cv6] .cv6-autoreply-settings-head { display:flex; align-items:flex-start; gap:20px; margin-bottom:24px; }
+[data-cv6] .cv6-autoreply-settings-head > div { flex:1; }
+[data-cv6] .cv6-autoreply-settings-head h2 { margin:6px 0; color:var(--fg); font-size:24px; letter-spacing:-.025em; }
+[data-cv6] .cv6-autoreply-settings-head p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+[data-cv6] .cv6-autoreply-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+[data-cv6] .cv6-autoreply-grid label { display:flex; flex-direction:column; gap:7px; padding:15px; border:1px solid var(--hair); border-radius:18px; background:var(--surface); }
+[data-cv6] .cv6-autoreply-grid label.is-wide { grid-column:1/-1; }
+[data-cv6] .cv6-autoreply-grid label > span { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+[data-cv6] .cv6-autoreply-grid :where(input,select,textarea) { width:100%; box-sizing:border-box; border:1px solid var(--hair); border-radius:13px; background:var(--surface-2); color:var(--fg); padding:10px 12px; font:13.5px var(--font-sans); outline:none; }
+[data-cv6] .cv6-autoreply-grid textarea { min-height:96px; resize:vertical; }
+[data-cv6] .cv6-autoreply-number { display:flex; align-items:center; gap:8px; }
+[data-cv6] .cv6-autoreply-number em { color:var(--muted); font-size:12px; font-style:normal; }
+
+[data-cv6] .cv6-urgency { display:inline-flex; align-items:center; justify-content:center; min-height:20px; padding:0 7px; border-radius:10px; border:1px solid var(--hair); color:var(--muted); background:var(--surface-2); font-size:10px; font-weight:750; white-space:nowrap; }
+[data-cv6] .cv6-urgency[data-score="medium"] { color:var(--warn,#fbbf24); background:var(--warn-weak,rgba(251,191,36,.12)); border-color:rgba(251,191,36,.28); }
+[data-cv6] .cv6-urgency[data-score="high"] { color:var(--error,#f87171); background:rgba(248,113,113,.1); border-color:rgba(248,113,113,.3); }
+[data-cv6] .cv6-urgency.is-detail { min-height:28px; padding:0 10px; font-size:11px; }
+
+[data-cv6] .review-default-check { width:100%; min-height:40px; padding:7px 11px; border:1px solid var(--hair); background:var(--surface); color:var(--muted); display:flex; align-items:center; gap:10px; text-align:left; font:600 12.5px var(--font-sans); cursor:pointer; }
+[data-cv6] .review-default-check > span { width:22px; height:22px; border-radius:50%; border:1px solid var(--hair); display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6] .review-default-check.is-on { color:var(--fg); border-color:var(--accent); background:var(--accent-weak); }
+[data-cv6] .review-default-check.is-on > span { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+@media (max-width:639px) {
+  [data-cv6] .cv6-autoreply-settings { padding:18px 14px 110px; }
+  [data-cv6] .cv6-autoreply-settings-head { flex-direction:column; }
+  [data-cv6] .cv6-autoreply-grid { grid-template-columns:1fr; }
+  [data-cv6] .cv6-autoreply-grid label.is-wide { grid-column:auto; }
+}

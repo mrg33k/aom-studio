@@ -172,6 +172,7 @@ const threadCacheKey = (worldId, room) => (room?.id ? `${worldId}|${room.isMissi
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.
 export function useRoomThread(worldId, room) {
   const [messages, setMessages] = useState([]);
+  const [archivedMessages, setArchivedMessages] = useState([]);
   const [blocks, setBlocks] = useState(null);
   const [status, setStatus] = useState('loading');
   const [reloadKey, setReloadKey] = useState(0);
@@ -200,7 +201,7 @@ export function useRoomThread(worldId, room) {
   const sigRef = useRef('');
 
   // Clear the outbox when you switch rooms (those messages belong to the old thread).
-  useEffect(() => { setPending([]); }, [room?.id]);
+  useEffect(() => { setPending([]); setArchivedMessages([]); }, [room?.id]);
   // Switching rooms must drop the previous thread immediately. The signature guard
   // below skips re-committing an unchanged thread, but a NEW empty room produces an
   // empty signature that matches the reset sentinel — so without clearing here, the
@@ -228,7 +229,7 @@ export function useRoomThread(worldId, room) {
   // Post a real user message into this room (composer + choice/question taps).
   // Agent rooms POST to the agent slug; project rooms to the project slug. After
   // the write, bump reloadKey so the thread refetches and the message appears.
-  const send = useCallback(async (text) => {
+  const send = useCallback(async (text, options = {}) => {
     const body = String(text || '').trim();
     if (!worldId || !room?.id || !body) return false;
     // Real local no-Supabase mode is read-only (no phantom sends); explicit ?demo=
@@ -243,11 +244,12 @@ export function useRoomThread(worldId, room) {
       text: body, time: hhmm(now.toISOString()), ts: now.toISOString(),
       isFile: false, fileName: '', attachmentUrl: '', fileMime: '', fileSize: 0, blocks: null,
     }]);
+    const interactionMode = options?.interactionMode === 'plan' ? 'plan' : 'work';
     const payload = room.isMission
-      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || '').split(':').pop() } }
+      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || '').split(':').pop(), interaction_mode: interactionMode } }
       : room.isProject
-        ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard' }
-        : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard' };
+        ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } }
+        : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } };
     // Show "working" the instant you send, so the thread never looks dead.
     setAwaiting(true);
     setLiveSteps([]);
@@ -267,6 +269,31 @@ export function useRoomThread(worldId, room) {
       return true;
     } catch { setPending((p) => p.filter((m) => m.optId !== optId)); setAwaiting(false); return false; }
   }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug]);
+
+  const clearRoom = useCallback(async () => {
+    if (!worldId || !room?.id) return false;
+    const payload = room.isMission
+      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, mission_slug: String(room.missionSlug || room.id || '').split(':').pop() }
+      : room.isProject
+        ? { client_id: worldId, agent: 'corner', project: room.id }
+        : { client_id: worldId, agent: room.id };
+    try {
+      const response = await authFetch('/api/dashboard/room-reset', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      if (!response?.ok) return false;
+      setArchivedMessages((prev) => [...prev, ...messages]);
+      setMessages([]);
+      setPending([]);
+      setAwaiting(false);
+      setLiveSteps([]);
+      sigRef.current = null;
+      threadCache.delete(threadCacheKey(worldId, room));
+      setStatus('empty');
+      setReloadKey((key) => key + 1);
+      return true;
+    } catch { return false; }
+  }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug, messages]);
 
   // Poll the live step heartbeats for the message you just sent (events table via
   // /message-steps; client-side anon reads are RLS-blocked, hence the server proxy).
@@ -373,6 +400,20 @@ export function useRoomThread(worldId, room) {
           // them so a fired come-back never shows a raw trigger bubble in the room
           // (corner:followups auto-detect, 2026-07-08).
           .filter((m) => m.source !== 'task-followup' && !(m.metadata && m.metadata.followup_trigger));
+        let resetIndex = -1;
+        for (let i = raw.length - 1; i >= 0; i -= 1) {
+          if (raw[i]?.source === 'room_reset' || raw[i]?.metadata?.room_reset) { resetIndex = i; break; }
+        }
+        const archivedRaw = resetIndex >= 0 ? raw.slice(0, resetIndex) : [];
+        const renderRaw = (resetIndex >= 0 ? raw.slice(resetIndex + 1) : raw)
+          .filter((m) => m.source !== 'room_reset' && m.source !== 'clear_context' && m.role !== 'system');
+        setArchivedMessages(archivedRaw
+          .filter((m) => m.role !== 'system' && m.source !== 'clear_context')
+          .map((m) => ({
+            id: m.id || '', isUser: m.role === 'user' || !!m.user_name,
+            agentName: (m.role === 'user' || m.user_name) ? (m.user_name || 'You') : titleForAgent(m.agent || room.name),
+            text: m.text || '', time: hhmm(m.timestamp), ts: m.timestamp || null,
+          })));
         // Drop any optimistic message the server now reflects (matched by text), so the
         // real row replaces it with no duplicate.
         const userTexts = new Set(raw.filter((m) => m.role === 'user' || m.user_name).map((m) => (m.text || '').trim()));
@@ -381,12 +422,12 @@ export function useRoomThread(worldId, room) {
         // metadata.blocks. The agent re-emits the current thread state in its latest
         // structured reply, so the freshest message that carries blocks IS the thread.
         let liveBlocks = null;
-        for (let i = raw.length - 1; i >= 0; i -= 1) {
-          const b = raw[i]?.metadata?.blocks;
+        for (let i = renderRaw.length - 1; i >= 0; i -= 1) {
+          const b = renderRaw[i]?.metadata?.blocks;
           if (Array.isArray(b) && b.length) { liveBlocks = b; break; }
         }
         setBlocks(liveBlocks);
-        const msgs = raw.map((m) => {
+        const msgs = renderRaw.map((m) => {
           const isUser = m.role === 'user' || !!m.user_name;
           // Agent messages show the agent's ROLE TITLE, never its persona name (titles
           // everywhere, decided 2026-06-23).
@@ -546,7 +587,7 @@ export function useRoomThread(worldId, room) {
     () => injectWorkSteps(pending.length ? [...messages, ...pending] : messages, stepsByParent, awaiting, lastSentId),
     [messages, pending, stepsByParent, awaiting, lastSentId],
   );
-  return { messages: withWork, blocks, status, send, awaiting, liveSteps };
+  return { messages: withWork, archivedMessages, blocks, status, send, clearRoom, awaiting, liveSteps };
 }
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──

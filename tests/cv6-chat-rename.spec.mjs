@@ -21,11 +21,15 @@ test('desktop renames a direct chat while keeping its specialist identity', asyn
   await page.route('**/api/dashboard/review-queue**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) }));
 
   await openWeb(page, 1440);
-  await page.getByTestId('rename-chat-button').click();
+  await expect(page.getByRole('button', { name: 'Rename chat' })).toHaveCount(0);
+  await page.getByTestId('room-settings-trigger').click();
+  await expect(page.getByTestId('room-settings-dialog')).toBeVisible();
   await page.getByLabel('Chat name').fill('Website refresh');
-  await page.getByRole('button', { name: 'Save name' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
 
-  await expect(page.getByTestId('rename-chat-dialog')).toHaveCount(0);
+  await expect(page.getByText('Name saved')).toBeVisible();
+  await page.getByRole('button', { name: 'Close room settings' }).last().click();
+  await expect(page.getByTestId('room-settings-dialog')).toHaveCount(0);
   await expect(page.getByText('Website refresh', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Web specialist', { exact: true })).toBeVisible();
   await expect(page.locator('[data-chat-room-rail] .room', { hasText: 'Website refresh' })).toBeVisible();
@@ -37,10 +41,46 @@ test('mobile exposes the same persistent rename interaction', async ({ page }) =
   await page.route('**/api/dashboard/supabase-messages**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ messages: [] }) }));
 
   await openWeb(page, 390);
-  await page.getByTestId('rename-chat-button').click();
+  await expect(page.getByRole('button', { name: 'Rename chat' })).toHaveCount(0);
+  await page.getByTestId('room-settings-trigger').click();
   await page.getByLabel('Chat name').fill('Launch site');
-  await page.getByRole('button', { name: 'Save name' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: 'Close room settings' }).click();
 
   await expect(page.locator('.mttl')).toHaveText('Launch site');
   await expect(page.locator('.msub')).toHaveText('Web specialist');
+});
+
+test('mobile room settings restore access and specialist controls without document scroll', async ({ page }) => {
+  await page.route('**/api/dashboard/agent-model**', async (route) => {
+    if (route.request().method() === 'PATCH') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ models: { bobby: 'default' } }) });
+  });
+  await page.route('**/api/dashboard/agent-voice**', async (route) => {
+    if (route.request().method() === 'PATCH') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ voices: { bobby: 'kore' } }) });
+  });
+  await page.route('**/api/dashboard/supabase-messages**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ messages: [] }) }));
+
+  await openWeb(page, 390);
+  await page.getByTestId('room-settings-trigger').click();
+  await page.getByTestId('room-settings-tab-access').click();
+  await expect(page.getByRole('button', { name: 'Copy', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Create workspace invite' })).toHaveAttribute('href', '/dashboard/settings/invites');
+  await page.getByTestId('room-settings-tab-specialist').click();
+  await expect(page.getByLabel('Model')).toBeVisible();
+  await expect(page.getByTestId('room-settings-dialog').getByLabel('Voice')).toBeVisible();
+
+  const viewport = await page.evaluate(() => {
+    const shell = document.querySelector('.cv6-app-shell');
+    return {
+      shell: Math.round(shell.getBoundingClientRect().height),
+      visual: Math.round(window.visualViewport?.height || window.innerHeight),
+      documentRange: Math.max(0, document.documentElement.scrollHeight - document.documentElement.clientHeight),
+      bodyOverflow: getComputedStyle(document.body).overflow,
+    };
+  });
+  expect(Math.abs(viewport.shell - viewport.visual)).toBeLessThanOrEqual(1);
+  expect(viewport.documentRange).toBe(0);
+  expect(viewport.bodyOverflow).toBe('hidden');
 });

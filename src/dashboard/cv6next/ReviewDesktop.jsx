@@ -58,7 +58,7 @@ function composeDesktopReview(raw) {
   return screen.outerHTML;
 }
 
-export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliverable, target }) {
+export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliverable, onSendBackComplete, target }) {
   // Files from a chat "Review all" ARE the queue — show exactly those, live.
   const injected = useMemo(
     () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project, target.missionSlug || '') : null),
@@ -98,14 +98,16 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     })(),
   }), [pickedItem, pickedId, pins]);
   // WD40-R3: sendBackToAgent receives the typed notes string from the overlay textarea.
-  const sendBackToAgent = useCallback((extraNotes = '') => {
+  const sendBackToAgent = useCallback(async (extraNotes = '') => {
     const compiled = compileChanges(pins, extraNotes);
-    // Record the decision on the deliverable (real write since R-ASSIGN fixed the
-    // endpoint's schema), then open the agent picker with the list attached.
-    if (pickedId && compiled) actions.requestChanges(pickedId, compiled);
+    // review-decision queues the scoped agent task itself, so this is one click:
+    // archive the annotated decision, hand the exact anchors to the agent, return.
+    if (!pickedId || !compiled) return;
+    const sent = await actions.requestChanges(pickedId, compiled);
+    if (!sent) return;
     setChangesOpen(false);
-    onAssignDeliverable?.(pickedId, assignExtra(extraNotes));
-  }, [pins, pickedId, actions, onAssignDeliverable, assignExtra]);
+    onSendBackComplete?.();
+  }, [pins, pickedId, actions, onSendBackComplete]);
 
   // Pin-comment interaction: a delegated click listener on the stable wrapper (survives
   // TemplateScreen's innerHTML rebuilds — binding to the inner DOM dies on the first data

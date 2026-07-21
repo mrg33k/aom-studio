@@ -1,0 +1,119 @@
+import { test, expect } from 'playwright/test'
+
+const BASE = process.env.CV6_AUDIT_BASE || 'http://127.0.0.1:5173'
+
+test('Home exposes all projects, mobile logo, one theme control, and desktop Email', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 950 })
+  await page.goto(`${BASE}/dashboard?cv6=1&view=home`, { waitUntil: 'domcontentloaded' })
+  const top = page.locator('[data-cv6][data-app-theme] > div > .topbar')
+  await expect(top.getByRole('button', { name: 'Rooms', exact: true })).toHaveCount(0)
+  await expect(top.getByRole('button', { name: 'Open Email column' })).toBeVisible()
+  await expect(top.getByRole('button', { name: /theme\. Switch to/i })).toHaveCount(1)
+  await expect(page.getByRole('button', { name: /more projects|more rooms/i })).toHaveCount(0)
+  await page.screenshot({ path: '/tmp/corner-r10-home-desktop.png', fullPage: true })
+  const [emailColumn] = await Promise.all([
+    page.waitForEvent('popup'),
+    top.getByRole('button', { name: 'Open Email column' }).click(),
+  ])
+  await emailColumn.waitForLoadState('domcontentloaded')
+  expect(new URL(emailColumn.url()).searchParams.get('popout')).toBe('email')
+  await expect(emailColumn.locator('.topbar')).toHaveCount(0)
+  await emailColumn.close()
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await expect(page.locator('[data-screen="home-mobile"] .mhdr .hlogo')).toBeVisible()
+  await page.screenshot({ path: '/tmp/corner-r10-home-mobile.png', fullPage: true })
+})
+
+test('chat composer has two rows, Plan mode metadata, options, and live progress text', async ({ page }) => {
+  const posts = []
+  const resets = []
+  await page.route('**/api/dashboard/supabase-messages', async (route) => {
+    if (route.request().method() === 'POST') {
+      posts.push(JSON.parse(route.request().postData() || '{}'))
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, message: { id: 'r10-user' } }) })
+    } else await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ messages: [] }) })
+  })
+  await page.route('**/api/dashboard/message-steps*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ steps: [{ id: 's1', parent_message_id: 'r10-user', step_index: 0, text: 'Inspecting the active CV6 route', timestamp: new Date().toISOString() }] }) }))
+  await page.route('**/api/dashboard/room-reset', async (route) => {
+    resets.push(JSON.parse(route.request().postData() || '{}'))
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, archived: true }) })
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`${BASE}/dashboard?cv6=1&demo=mobile-chat-lifecycle`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('button', { name: /Options for/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Commands' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Attach and upload files' })).toBeVisible()
+  const mode = page.getByRole('button', { name: /Currently in work mode/i })
+  await mode.click()
+  const input = page.getByPlaceholder(/^Message /)
+  await input.fill('Plan this safely')
+  await page.getByRole('button', { name: 'Send message' }).click()
+  await expect.poll(() => posts.length).toBe(1)
+  expect(posts[0].metadata?.interaction_mode).toBe('plan')
+  await expect(page.locator('.cv6-live-progress')).toHaveText(/\S+/)
+  await page.screenshot({ path: '/tmp/corner-r10-chat-mobile.png', fullPage: true })
+
+  await page.getByRole('button', { name: /Options for/i }).click()
+  await expect(page.getByTestId('room-settings-dialog')).toBeVisible()
+  await page.getByTestId('room-settings-tab-access').click()
+  await expect(page.getByText('Invite and share')).toBeVisible()
+  await page.getByTestId('room-settings-tab-specialist').click()
+  await expect(page.getByText('Specialist behavior')).toBeVisible()
+  await page.getByTestId('room-settings-tab-history').click()
+  await page.getByRole('button', { name: 'Clear chat' }).click()
+  await page.getByRole('button', { name: 'Confirm clear' }).click()
+  await expect.poll(() => resets.length).toBe(1)
+  expect(resets[0]).toMatchObject({ client_id: 'local-render', agent: 'renderer-room' })
+  await expect(page.getByText('Room cleared. The previous session is archived above.')).toBeVisible()
+  await page.screenshot({ path: '/tmp/corner-r10-chat-history.png', fullPage: true })
+  await page.getByRole('button', { name: 'Close room settings' }).last().click()
+  await expect(page.getByText('Older mobile request for day folding.')).toHaveCount(0)
+})
+
+test('Email exposes Auto-reply controls and urgency scores', async ({ page }) => {
+  const policyPosts = []
+  await page.route('**/api/dashboard/support-autoreply*', async (route) => {
+    if (route.request().method() === 'POST') policyPosts.push(JSON.parse(route.request().postData() || '{}'))
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ file_state: { mode: 'live', answer_mode: 'send', threshold_min: 8, tone: 'warm and direct', instructions: 'Be concise', sign_off: 'Best,\nThe AOM Team', synced_at: new Date().toISOString() }, control: null, can_restore: true }) })
+  })
+  await page.setViewportSize({ width: 1440, height: 950 })
+  await page.goto(`${BASE}/dashboard?cv6=1&demo=email-autoreply`, { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Auto-reply' }).click()
+  await expect(page.getByRole('heading', { name: /Control the reply vibe/i })).toBeVisible()
+  await expect(page.getByText('Holding notes')).toBeVisible()
+  await expect(page.getByText('Easy answers')).toBeVisible()
+  await expect(page.getByText('Reply vibe', { exact: true })).toBeVisible()
+  await expect(page.getByText('Instructions', { exact: true })).toBeVisible()
+  await page.getByLabel('Reply vibe').fill('calm, warm, and concise')
+  await page.getByLabel('Instructions').fill('Answer the direct question first.')
+  await page.getByRole('button', { name: 'Save policy' }).click()
+  await expect.poll(() => policyPosts.length).toBe(1)
+  expect(policyPosts[0]).toMatchObject({ action: 'save', tone: 'calm, warm, and concise', instructions: 'Answer the direct question first.' })
+  const scores = await page.evaluate(async () => {
+    const { urgencyScore } = await import('/src/dashboard/cv6next/data/useSupportInbox.js')
+    const now = Date.now()
+    return [urgencyScore({ kind: 'email', createdAt: new Date(now - 25 * 3600000).toISOString(), hasStaged: true }, now), urgencyScore({ kind: 'email', status: 'resolved' }, now)]
+  })
+  expect(scores).toEqual([10, 2])
+  await page.screenshot({ path: '/tmp/corner-r10-email-autoreply.png', fullPage: true })
+})
+
+test('Review changes compiles checklist and anchored notes into one send-back', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 950 })
+  await page.goto(`${BASE}/dashboard?cv6=1&demo=file-previews`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('button', { name: 'Approve', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Dismiss', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Assign', exact: true })).toBeVisible()
+  await expect(page.getByText('Type', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Location', { exact: true })).toHaveCount(0)
+  const changes = page.getByRole('button', { name: 'Request changes', exact: true })
+  await changes.click()
+  await expect(page.getByRole('complementary', { name: 'Review checklist and comments' })).toBeVisible()
+  await expect(page.getByText('Optional checklist')).toBeVisible()
+  await page.getByRole('button', { name: 'Matches the original request' }).click()
+  await expect(page.getByRole('button', { name: /Send back to agent/i })).toBeEnabled()
+  await page.screenshot({ path: '/tmp/corner-r10-review-sendback.png', fullPage: true })
+})

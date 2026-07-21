@@ -28,7 +28,7 @@ test.describe('CV6 One Page practical product audit', () => {
     const errors = await openCv6(page)
 
     await expect(page.getByRole('button', { name: 'Open Rooms home' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Rooms', exact: true }).first()).toBeVisible()
+    await expect(page.locator('.topbar').getByRole('button', { name: 'Rooms', exact: true })).toHaveCount(0)
     await expect(page.locator('.ctile')).toHaveCount(0)
     await expect(page.getByText('All rooms').first()).toBeVisible()
 
@@ -74,7 +74,7 @@ test.describe('CV6 One Page practical product audit', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     const errors = await openCv6(page)
 
-    await page.getByRole('button', { name: 'Menu', exact: true }).first().click()
+    await page.getByRole('button', { name: /menu$/i }).first().click()
     const drawer = page.locator('.navdrawer')
     await expect(drawer).toBeVisible()
     expect(await drawer.locator('.nl').allTextContents()).toEqual(['Rooms', 'Email', 'Settings'])
@@ -86,7 +86,7 @@ test.describe('CV6 One Page practical product audit', () => {
     await page.getByRole('button', { name: /Planned/ }).click()
     await expect(page.getByText('COMING LATER')).toHaveCount(4)
 
-    await page.getByRole('button', { name: 'Menu', exact: true }).first().click()
+    await page.getByRole('button', { name: /menu$/i }).first().click()
     await page.locator('.navdrawer').getByRole('button', { name: /Rooms/ }).click()
     await page.locator('[data-action="toggleAgents"]:visible').first().click()
     await page.locator('[data-action="openRoom"]:visible').first().click()
@@ -96,7 +96,7 @@ test.describe('CV6 One Page practical product audit', () => {
     await expect(page.getByText("Couldn't load this chat's files right now. They're safe — it retries automatically.")).toBeVisible()
     await page.getByRole('button', { name: 'Close files' }).press('Enter')
 
-    await page.getByRole('button', { name: 'Menu', exact: true }).first().click()
+    await page.getByRole('button', { name: /menu$/i }).first().click()
     await page.locator('.navdrawer').getByRole('button', { name: /Email/ }).click()
     await expect(page.getByRole('button', { name: 'Inbox' })).toBeVisible()
     await expectNoCrash(page)

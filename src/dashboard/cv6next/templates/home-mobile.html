@@ -25,6 +25,7 @@
       <!-- Patrik 2026-07-18: Search sits left of Menu, both top-right (matches every other screen). -->
       <div class="ib" role="button" aria-label="Search" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
       <div class="ib" role="button" aria-label="Menu" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
+      <img class="hlogo" src="/cv6/assets/corner-logo-white.svg" alt="Corner">
     </div>
   </div>
   <div class="hbody" data-state="ready">
@@ -72,8 +73,6 @@
       <!-- ONE template row per project -->
       <div class="room projectroom" data-each="projects" data-action="openRoom" data-arg="room.id"><span class="project-glyph"><svg class="folder is-violet" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span><span class="rn" data-bind="room.name">Space Rising</span><span class="mono project-count" data-bind="room.count">28</span><svg class="project-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></div>
       </div>
-      <!-- Show the rest of the rooms (hidden when none remain) -->
-      <button class="smore-btn" data-mod="is-:projects.moreState" data-action="showMoreProjects">Show <span data-bind="projects.moreCount">78</span> more rooms</button>
     </div>
   </div>
 </div>

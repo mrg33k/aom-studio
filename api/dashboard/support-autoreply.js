@@ -85,6 +85,9 @@ export default async function handler(req, res) {
           mode: String(fs.mode || ''),
           answer_mode: String(fs.answer_mode || ''),
           threshold_min: Number.isFinite(Number(fs.threshold_min)) ? Number(fs.threshold_min) : null,
+          tone: String(fs.tone || ''),
+          instructions: String(fs.instructions || ''),
+          sign_off: String(fs.sign_off || ''),
           synced_at: new Date().toISOString(),
         },
       });
@@ -100,12 +103,23 @@ export default async function handler(req, res) {
 
     // User lane.
     const action = String(body.action || '');
-    if (!['off', 'restore', 'clear'].includes(action)) {
-      return res.status(400).json({ error: "action required: 'off' | 'restore' | 'clear'" });
+    if (!['off', 'restore', 'clear', 'save'].includes(action)) {
+      return res.status(400).json({ error: "action required: 'off' | 'restore' | 'clear' | 'save'" });
     }
     const ctl = await loadRow(CONTROL_KIND);
     if (action === 'clear') {
       ctl.control = null;
+    } else if (action === 'save') {
+      const mode = String(body.mode || 'off');
+      const answerMode = String(body.answer_mode || 'off');
+      const threshold = Number(body.threshold_min);
+      const tone = String(body.tone || 'warm').trim().slice(0, 40);
+      const instructions = String(body.instructions || '').trim().slice(0, 2000);
+      const signOff = String(body.sign_off || '').trim().slice(0, 300);
+      if (!['off', 'test', 'live'].includes(mode) || !['off', 'draft', 'send'].includes(answerMode)) return res.status(400).json({ error: 'Invalid auto-reply mode.' });
+      if (!Number.isFinite(threshold) || threshold < 2 || threshold > 240) return res.status(400).json({ error: 'Holding-note delay must be 2 to 240 minutes.' });
+      ctl.control = { mode, answer_mode: answerMode, threshold_min: threshold, tone, instructions, sign_off: signOff, requested_at: new Date().toISOString() };
+      if (ON_MODES.has(mode)) ctl.last_on = { mode, answer_mode: answerMode };
     } else if (action === 'off') {
       const st = await loadRow(STATE_KIND);
       const fs = st.file_state || {};

@@ -50,7 +50,7 @@ function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
   return screen.outerHTML;
 }
 
-export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable, target }) {
+export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable, onSendBackComplete, target }) {
   // Files handed in from a chat "Review"/"Review all" ARE the queue — show exactly
   // those, live from the message. Otherwise the global review queue loads.
   const injected = useMemo(
@@ -292,12 +292,14 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
         <ReviewChangesOverlay
           pins={pins}
           title={picked?.title || ''}
-          onSendBack={(extraNotes = '') => {
+          onSendBack={async (extraNotes = '') => {
             // WD40-R3: merge pin comments + typed notes into one dispatch message.
             const compiled = compileChanges(pins, extraNotes);
-            if (pickedId && compiled) actions.requestChanges(pickedId, compiled);
+            if (!pickedId || !compiled) return;
+            const sent = await actions.requestChanges(pickedId, compiled);
+            if (!sent) return;
             setChangesOpen(false);
-            onAssignDeliverable?.(pickedId, assignExtra(pins));
+            onSendBackComplete?.();
           }}
           onClose={() => setChangesOpen(false)}
         />

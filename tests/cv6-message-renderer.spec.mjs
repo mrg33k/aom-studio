@@ -284,7 +284,7 @@ test.describe('CV6 shared message renderer', () => {
     await expect(latestThread.getByRole('button', { name: /^Review$/ })).toBeVisible()
     await expect(latestThread.getByRole('link', { name: /example\.test/ })).toBeVisible()
     await expect(latestThread.getByRole('button', { name: 'Approve desktop renderer' })).toBeVisible()
-    await expect(page.getByText('Checking shared renderer output')).toBeVisible()
+    await expect(page.getByText('Checking shared renderer output').first()).toBeVisible()
 
     await page.locator('.goalcard').filter({ hasText: '2 messages' }).getByRole('button').click()
     const foldedThread = page.locator('[data-cv6-message-thread][data-variant="desktop"][data-mode="day-folded"]')

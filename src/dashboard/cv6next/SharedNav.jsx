@@ -81,46 +81,41 @@ function Badge({ badge }) {
 
 const LOGO = '/cv6/assets/corner-logo-white.svg';
 
-// --- Theme switcher (drop 7): Dark / Light / Glass segmented control. Lives in the
-// mobile drawer and the desktop nav; flips data-app-theme on the shell root. Token-
-// styled so it reads right in every theme.
+// One theme control, three states. The icon always describes the active surface:
+// sun = light, moon = dark, crystal ball = glass. A click advances to the next.
 const THEMES = [
-  { id: 'dark', label: 'Dark' },
   { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
   { id: 'glass', label: 'Glass' },
 ];
-function ThemeSeg({ theme, onTheme, compact }) {
+function ThemeIcon({ theme, size = 18 }) {
+  const p = { width: size, height: size, viewBox: '0 0 24 24', ...S };
+  if (theme === 'light') return <svg {...p}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
+  if (theme === 'glass') return <svg {...p}><circle cx="12" cy="10" r="7" /><path d="M8 18h8M9 21h6" /><path d="M9.5 8.5c1-1.2 2.3-1.8 4-1.8" /></svg>;
+  return <svg {...p}><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" /></svg>;
+}
+function ThemeCycle({ theme, onTheme, compact }) {
   if (!onTheme) return null;
+  const currentIndex = Math.max(0, THEMES.findIndex((t) => t.id === theme));
+  const current = THEMES[currentIndex];
+  const next = THEMES[(currentIndex + 1) % THEMES.length];
   return (
-    <div role="group" aria-label="Theme"
-      style={{ display: 'inline-flex', gap: 4, padding: 4, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--hair)' }}>
-      {THEMES.map((t) => {
-        const on = t.id === theme;
-        return (
-          <button key={t.id} type="button" onClick={() => onTheme(t.id)} aria-pressed={on}
-            style={{ height: compact ? 28 : 34, padding: compact ? '0 11px' : '0 14px', borderRadius: 9, border: 'none', cursor: 'pointer',
-              fontSize: compact ? 12 : 13, fontWeight: 600, fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
-              background: on ? 'var(--accent)' : 'transparent', color: on ? '#fff' : 'var(--muted)' }}>
-            {t.label}
-          </button>
-        );
-      })}
-    </div>
+    <button type="button" className="ib cv6-theme-cycle" onClick={() => onTheme(next.id)}
+      aria-label={`${current.label} theme. Switch to ${next.label}`} title={`${current.label} theme`}
+      style={{ width: compact ? 38 : 42, height: compact ? 38 : 42, borderRadius: '50%', cursor: 'pointer' }}>
+      <ThemeIcon theme={current.id} />
+    </button>
   );
 }
 
 // --- DESKTOP: the top tool bar -------------------------------------------------
-export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, userInitials = 'P', badges = {}, theme, onTheme }) {
+export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailWindow, onOpenProfile, userInitials = 'P', badges = {}, theme, onTheme }) {
   return (
     <div className="topbar">
       <div className="tgreet" style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
         <button type="button" onClick={() => onPick?.('home')} aria-label="Open Rooms home"
           style={{ display: 'flex', alignItems: 'center', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}>
           <img src={LOGO} alt="Corner" style={{ height: 20 }} />
-        </button>
-        <button type="button" onClick={() => onPick?.('home')} aria-current={current === 'home' ? 'page' : undefined}
-          style={{ height: 30, padding: '0 10px', borderRadius: 9, border: '1px solid var(--hair)', background: current === 'home' ? 'var(--accent-weak)' : 'transparent', color: current === 'home' ? 'var(--accent)' : 'var(--muted)', font: '600 12.5px var(--font-sans)', cursor: 'pointer' }}>
-          Rooms
         </button>
       </div>
       <div className="toolnav">
@@ -140,7 +135,8 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, use
         ))}
       </div>
       <div className="topbar-actions">
-        <ThemeSeg theme={theme} onTheme={onTheme} compact />
+        <ThemeCycle theme={theme} onTheme={onTheme} compact />
+        <button type="button" className={`ib${current === 'support' ? ' is-active' : ''}`} onClick={() => onOpenEmailWindow?.() || onPick?.('support')} aria-label="Open Email column" title="Open Email column"><Icon id="support" size={18} /></button>
         <button type="button" className="ib" onClick={() => onOpenCommandK?.()} aria-label="Search"><SearchGlyph /></button>
         <button type="button" className="av" onClick={() => onOpenProfile?.()} aria-label="Profile">{userInitials}</button>
       </div>
@@ -182,8 +178,10 @@ export function MobileNav({ open, current, onPick, onClose, badges = {}, theme, 
         ))}
         {onTheme && (
           <div style={{ padding: '14px 14px 4px', borderTop: '1px solid var(--divider)', marginTop: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 9 }}>Theme</div>
-            <ThemeSeg theme={theme} onTheme={onTheme} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)' }}>Theme</div><div style={{ marginTop: 3, fontSize: 13, color: 'var(--muted)' }}>{THEMES.find((t) => t.id === theme)?.label || 'Dark'}</div></div>
+              <ThemeCycle theme={theme} onTheme={onTheme} />
+            </div>
           </div>
         )}
       </div>

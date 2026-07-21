@@ -148,13 +148,14 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
       return compiled ? `Requested changes:\n${compiled}` : '';
     })(),
   }), [openedRow, openReviewId, activeProjectId, pins]);
-  const sendBackToAgent = useCallback((extraNotes = '') => {
+  const sendBackToAgent = useCallback(async (extraNotes = '') => {
     const compiled = compileChanges(pins, extraNotes);
-    if (openReviewId && compiled) review.actions.requestChanges(openReviewId, compiled);
+    if (!openReviewId || !compiled) return;
+    const sent = await review.actions.requestChanges(openReviewId, compiled);
+    if (!sent) return;
     setChangesOpen(false);
-    onAssignFile?.(openReviewId, assignExtra(extraNotes));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pins, openReviewId, onAssignFile, assignExtra]);
+  }, [pins, openReviewId]);
 
   // ── deep-link / in-app target: select the room, flip needs-review on, open the file ──
   const targetKeyRef = useRef(null);
@@ -201,8 +202,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
   }, [data.files, state]);
 
   // ── keyboard triage: j/k move through the CURRENT filtered list ──
-  // (the 'a' approve shortcut left with the Approve button — review simplified
-  // 2026-07-18: the only verdicts are send-changes and download.)
+  // Keyboard navigation stays focused on moving through the current review list.
   const kbRef = useRef({});
   kbRef.current = {
     files: data.files || [],
@@ -354,16 +354,12 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
     setFilter: (id) => setFilter(id || 'recent'),
     toggleSelect: () => {},
     toggleSelectMode: () => {},
-    // ── the rehomed review actions (simplified 2026-07-18: send-changes and
-    // download are the only verdicts; Approve/Dismiss buttons are gone) ──
+    // ── the rehomed review actions ──
+    approve: (id) => review.actions.approve(id),
+    dismiss: (id) => review.actions.dismiss(id),
     requestChanges: () => setChangesOpen(true),
     sendChecklist: (id) => review.actions.sendChecklist(id),
-    // Download IS "reviewed, moving on": a waiting item silently records its
-    // approve decision so the NEEDS REVIEW badge drains instead of nagging.
-    download: (id) => {
-      review.actions.download(id);
-      if ((review.data.queue.itemsAll || []).some((i) => i.id === id)) review.actions.approve(id);
-    },
+    download: (id) => review.actions.download(id),
     openPin: (id) => openPinById(id),
     openComments: () => {},
     toggleReviewed: () => setReviewedOn((v) => !v),
