@@ -681,91 +681,10 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
           padding: '0 1rem 1.25rem 1rem',
           borderTop: '1px solid #131313',
         }}>
-          {/* Hook/opener */}
-          {lead.hook && (
-            <div style={{
-              background: '#0d0d0d',
-              border: '1px solid #1a1a1a',
-              borderLeft: `2px solid ${scoreColor}`,
-              padding: '0.65rem 0.75rem',
-              margin: '0.85rem 0',
-            }}>
-              <div style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '0.6rem',
-                color: '#C4A46A',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                marginBottom: '0.3rem',
-              }}>
-                Opener
-              </div>
-              <div style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '0.8rem',
-                color: '#D0D0CE',
-                lineHeight: 1.5,
-              }}>
-                {lead.hook}
-              </div>
-            </div>
-          )}
-
-          {/* How we help — one bullet per verified gap */}
-          {lead.gaps && (
-            <div style={{
-              background: '#0d0d0d',
-              border: '1px solid #1a1a1a',
-              borderLeft: '2px solid #C4A46A',
-              padding: '0.65rem 0.75rem',
-              margin: '0.85rem 0',
-            }}>
-              <div style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '0.6rem',
-                color: '#C4A46A',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                marginBottom: '0.4rem',
-              }}>
-                How we help
-              </div>
-              {lead.gaps.split('\n').filter(Boolean).map((g, i) => (
-                <div key={i} style={{
-                  display: 'flex',
-                  gap: '0.5rem',
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.8rem',
-                  color: '#D0D0CE',
-                  lineHeight: 1.5,
-                  marginBottom: '0.25rem',
-                }}>
-                  <span style={{ color: '#C4A46A', flexShrink: 0 }}>•</span>
-                  <span>{g.replace(/^[-•*]\s*/, '')}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Site issue */}
-          {lead.site_issue && (
-            <div style={{ marginBottom: '0.65rem' }}>
-              <span style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '0.65rem',
-                color: '#555',
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-              }}>Site Issue: </span>
-              <span style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '0.8rem',
-                color: '#aaa',
-              }}>
-                {lead.site_issue}
-              </span>
-            </div>
-          )}
+          {/* Call kit */}
+          <div style={{ margin: '0.85rem 0' }}>
+            <CallKit lead={lead} columns={1} />
+          </div>
 
           {/* Quick action buttons */}
           <div style={{
@@ -1111,6 +1030,90 @@ const editSelectStyle = {
 }
 
 // ─── Filter Bar ───────────────────────────────────────────────────────────────
+function CallBlock({ label, text, bullets, wide }) {
+  if (!text) return null
+  return (
+    <div style={{
+      background: '#0d0d0d',
+      border: '1px solid #1a1a1a',
+      borderLeft: '2px solid #C4A46A',
+      padding: '0.6rem 0.75rem',
+      gridColumn: wide ? '1 / -1' : 'auto',
+    }}>
+      <div style={{
+        fontFamily: "'Inter', sans-serif",
+        fontSize: '0.6rem',
+        color: '#C4A46A',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        marginBottom: '0.35rem',
+      }}>
+        {label}
+      </div>
+      {bullets
+        ? text.split('\n').filter(Boolean).map((g, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              gap: '0.5rem',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.8rem',
+              color: '#D0D0CE',
+              lineHeight: 1.5,
+              marginBottom: '0.2rem',
+            }}>
+              <span style={{ color: '#C4A46A', flexShrink: 0 }}>•</span>
+              <span>{g.replace(/^[-•*]\s*/, '')}</span>
+            </div>
+          ))
+        : (
+          <div style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '0.8rem',
+            color: '#D0D0CE',
+            lineHeight: 1.5,
+          }}>
+            {text}
+          </div>
+        )}
+    </div>
+  )
+}
+
+function CallKit({ lead, columns }) {
+  const hasKit = lead.intro_line || lead.why_calling || lead.meeting_ask
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: columns === 2 ? '1fr 1fr' : '1fr',
+      gap: '0.6rem',
+    }}>
+      {hasKit ? (
+        <>
+          <CallBlock label="Front desk — first words" text={lead.intro_line} />
+          <CallBlock label="When the owner picks up" text={lead.hook} />
+          <CallBlock label="Why we're calling" text={lead.why_calling} />
+          <CallBlock label="Proof we did our homework" text={lead.proof_points} bullets />
+          <CallBlock label="The ask — permission to stop by" text={lead.meeting_ask} wide />
+        </>
+      ) : (
+        <CallBlock label="Opener" text={lead.hook} wide />
+      )}
+      <CallBlock label="How we help" text={lead.gaps} bullets wide />
+      {lead.notes && (
+        <div style={{
+          gridColumn: '1 / -1',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '0.72rem',
+          color: '#777',
+          lineHeight: 1.5,
+        }}>
+          {lead.notes}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
   const [sort, setSort] = useState({ key: 'day_route', dir: 1 })
   const cols = [
@@ -1273,26 +1276,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                 {open && (
                   <tr>
                     <td colSpan={cols.length} style={{ ...td, background: '#0a0a0a', padding: '0.75rem 0.9rem' }}>
-                      {lead.hook && (
-                        <div style={{ marginBottom: '0.6rem' }}>
-                          <span style={{ fontSize: '0.6rem', color: '#C4A46A', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Opener </span>
-                          <span style={{ color: '#D0D0CE' }}>{lead.hook}</span>
-                        </div>
-                      )}
-                      {lead.gaps && (
-                        <div style={{ fontSize: '0.6rem', color: '#C4A46A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
-                          How we help
-                        </div>
-                      )}
-                      {lead.gaps && lead.gaps.split('\n').filter(Boolean).map((g, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.2rem', color: '#D0D0CE' }}>
-                          <span style={{ color: '#C4A46A', flexShrink: 0 }}>•</span>
-                          <span>{g.replace(/^[-•*]\s*/, '')}</span>
-                        </div>
-                      ))}
-                      {lead.notes && (
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.72rem', color: '#777' }}>{lead.notes}</div>
-                      )}
+                      <CallKit lead={lead} columns={2} />
                     </td>
                   </tr>
                 )}
