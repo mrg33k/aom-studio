@@ -84,6 +84,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     const status = agentStatus(a.status);
     return {
       id: a.slug, name: a.title,
+      specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle,
       status, statusText: statusText(status), initials: initials(a.title),
     };
   });
@@ -102,6 +103,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // pinged is the sender; the room (project/mission/agent thread) is the subject.
   const projectNameBySlug = {};
   for (const p of projectRooms || []) { if (p.slug) projectNameBySlug[p.slug] = p.name || p.slug; }
+  const agentNameBySlug = Object.fromEntries(agentRooms.map((a) => [a.id, a.name]));
   const cards = (inboxItems || []).map((it) => {
     // No structured action-item feed exists yet (H3): the card carries an empty list and
     // actionState='none', which hides the "Action items" header instead of showing a naked
@@ -112,9 +114,9 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     const isAgentThread = !it.project;
     const projName = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
     const missionName = missionLabel(it.missionSlug);
-    const from = isAgentThread ? (it.agent ? titleForAgent(it.agent) : 'Your agent') : projName;
+    const from = isAgentThread ? (it.agent ? (agentNameBySlug[it.agent] || titleForAgent(it.agent)) : 'Your agent') : projName;
     const subject = isAgentThread
-      ? (it.agent ? `${titleForAgent(it.agent)} thread` : '')
+      ? (it.agent ? `${agentNameBySlug[it.agent] || titleForAgent(it.agent)} thread` : '')
       : (missionName || 'General');
     // Attachment-delivery messages swap the text summary for a file chip + Review.
     const att = detectAttachment(it.text);
@@ -176,7 +178,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     } else if (it.project) {
       bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts, preview });
     } else if (it.agent) {
-      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: titleForAgent(it.agent), sub: 'Direct chat', ts, preview });
+      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: agentNameBySlug[it.agent] || titleForAgent(it.agent), sub: 'Direct chat', ts, preview });
     }
   }
   for (const p of projectRooms || []) {
@@ -261,6 +263,7 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] 
     const inb = byAgent[String(a.slug || a.name || '').toLowerCase()] || null;
     return {
       id: a.slug, name: a.title, initials: initials(a.title),
+      specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle,
       tint: tintFor(a.title || a.slug), status, statusLabel: CHAT_STATUS_LABEL[status] || 'READY',
       snippet: inb?.text || '', time: inb?.time || '', needsCount: a.unread || inb?.count || 0,
     };

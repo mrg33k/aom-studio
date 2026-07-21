@@ -19,6 +19,7 @@ import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
 import NewComposer from './NewComposer.jsx';
+import RenameRoomDialog from './RenameRoomDialog.jsx';
 import { useDataContext } from './providers/DataContext.jsx';
 
 const NAV = [
@@ -250,7 +251,7 @@ function flattenMissions(nodes, depth = 0, out = []) {
   }
   return out;
 }
-function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, expanded, onToggle, onPickProject, onPickMission, needsCount = 0, needsByMission = {} }) {
+function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, expanded, onToggle, onPickProject, onPickMission, needsCount = 0, needsByMission = {}, titleOverrides = {} }) {
   const flat = flattenMissions(missions);
   const hasMissions = flat.length > 0;
   const [showAll, setShowAll] = useState(false);
@@ -281,7 +282,7 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
             return (
               <div key={missionSlug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7, paddingLeft: depth * 14 }}>
                 <span className={`sdot is-${missionDot(m.status)}`} style={{ flex: 'none' }} />
-                <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{missionLabelClean(m.name || m.slug)}</span>
+                <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{titleOverrides[`m:${missionSlug}`] || missionLabelClean(m.name || m.slug)}</span>
                 <NeedsBadge count={needsByMission[missionSlug] || needsByMission[String(missionSlug).split(':').pop()] || 0} />
               </div>
             );
@@ -386,9 +387,12 @@ function PlainThread({ messages, onSend, localReadOnly = false }) {
 
 export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile, onAssignEmail, onOpenWindow, windowMode = false, persistSelection = true }) {
   const { data: list } = useChatList();
+  const [titleOverrides, setTitleOverrides] = useState({});
+  const [renameOpen, setRenameOpen] = useState(false);
+  const roomTitleKey = useCallback((room) => room?.isMission ? `m:${room.missionSlug || room.id}` : room?.isProject ? `p:${room.id}` : `a:${room?.id}`, []);
   // Stable refs so the memoized composer below doesn't re-mount on every list poll.
-  const agents = useMemo(() => list?.agents || [], [list]);
-  const projects = useMemo(() => list?.projects || [], [list]);
+  const agents = useMemo(() => (list?.agents || []).map((a) => titleOverrides[`a:${a.id}`] ? { ...a, name: titleOverrides[`a:${a.id}`], initials: titleOverrides[`a:${a.id}`].slice(0, 2).toUpperCase(), hasCustomTitle: true } : a), [list, titleOverrides]);
+  const projects = useMemo(() => (list?.projects || []).map((p) => titleOverrides[`p:${p.id}`] ? { ...p, name: titleOverrides[`p:${p.id}`] } : p), [list, titleOverrides]);
 
   // Selected room: the one opened from elsewhere, else the first agent. {id,name,initials,isProject,status}.
   const [picked, setPicked] = useState(initialRoom || null);
@@ -398,10 +402,15 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   useEffect(() => { setCleared(false); }, [initialRoom?.id]); // a freshly opened room shows its thread
   const selected = useMemo(() => {
     if (cleared) return null;
-    if (picked) return picked;
+    if (picked) {
+      const live = !picked.isProject && !picked.isMission ? agents.find((a) => a.id === picked.id) : null;
+      const base = live ? { ...picked, ...live } : picked;
+      const renamed = titleOverrides[roomTitleKey(base)];
+      return renamed ? { ...base, name: renamed, initials: renamed.slice(0, 2).toUpperCase(), hasCustomTitle: !base.isProject && !base.isMission ? true : base.hasCustomTitle } : base;
+    }
     const a = agents[0];
-    return a ? { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel } : null;
-  }, [cleared, picked, agents]);
+    return a ? { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel, specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle } : null;
+  }, [cleared, picked, agents, titleOverrides, roomTitleKey]);
   // Pin the default room (the first agent) into state the moment it's known, so a room-list
   // refetch can never recompute or momentarily drop `selected`. The list refetches very often —
   // realtime agent-status heartbeats fire one every ~2.5s while any agent is working, and the
@@ -413,9 +422,13 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   useEffect(() => {
     if (picked || cleared) return undefined;
     const a = agents[0];
-    if (a) setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel });
+    if (a) setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel, specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle });
     return undefined;
   }, [picked, cleared, agents]);
+  useEffect(() => {
+    if (!windowMode || !selected?.name) return;
+    document.title = `${selected.name} · Corner chat`;
+  }, [windowMode, selected?.name]);
   useEffect(() => {
     if (windowMode) return undefined;
     const onKey = (e) => {
@@ -521,8 +534,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   };
   const handoffAgent = () => sendControl('Please hand this off to another agent. Tell me who you are handing it to and why.', 'Asked for a hand off.');
   const promoteToMission = () => sendControl(
-    'Before continuing, please move this work into a project mission structure. Identify the right project and mission slug, create or request the mission scaffold if it does not exist, put any files or deliverables under that mission, and reply with the exact mission path and file paths so I can resume this later.',
-    'Asked the agent to promote this into a mission.',
+    'I am explicitly asking to promote this work into a mission. First match it to one of my existing visible projects and tell me which one. If the destination is ambiguous, ask me before creating anything. Only create a new project with my explicit confirmation. Propose a short outcome-based mission name (3-6 words) before scaffolding it, then keep its BUILD, CONTEXT, and last-conversation records synchronized and reply here with a user-visible link to the mission and its deliverables.',
+    'Asked the specialist to propose a mission destination and name.',
   );
   const pauseAgent = () => sendControl('Please pause here and wait for my next message before continuing.', 'Asked the agent to pause.');
   const retaskAgent = () => {
@@ -597,15 +610,23 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     else if (fromBottom < 400) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selKey]);
 
-  const pickAgent = (a) => { setCenterMode('thread'); setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel }); };
+  const pickAgent = (a) => { setCenterMode('thread'); setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel, specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle }); };
   const pickProject = (p) => { setCenterMode('thread'); setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' }); };
   // DEF-14 guard: m.slug may be JS undefined when a mission object is partially constructed.
   // String(undefined) = "undefined" which is truthy and passes guards — explicitly reject it.
-  const pickMission = (p, m) => { const safeSlug = (m.slug != null && String(m.slug).trim() !== 'undefined' && String(m.slug).trim() !== '') ? m.slug : null; const nm = missionLabelClean(m.name || safeSlug); setCenterMode('thread'); setPicked({ id: safeSlug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: safeSlug && String(safeSlug).includes(':') ? safeSlug : (safeSlug ? `${p.slug}:${safeSlug}` : null), projectSlug: p.slug, status: missionDot(m.status), statusText: p.name }); };
+  const pickMission = (p, m) => { const safeSlug = (m.slug != null && String(m.slug).trim() !== 'undefined' && String(m.slug).trim() !== '') ? m.slug : null; const missionSlug = safeSlug && String(safeSlug).includes(':') ? safeSlug : (safeSlug ? `${p.slug}:${safeSlug}` : null); const nm = titleOverrides[`m:${missionSlug}`] || missionLabelClean(m.name || safeSlug); setCenterMode('thread'); setPicked({ id: safeSlug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug: p.slug, path: m.path || null, status: missionDot(m.status), statusText: p.name }); };
 
   // Real missions per project (same endpoint the mobile project screen uses). Each project
   // row fans open to these; clicking one opens that mission's own thread.
-  const missionsByProject = useProjectMissions(worldId);
+  const [missionReload, setMissionReload] = useState(0);
+  const missionsByProject = useProjectMissions(worldId, missionReload);
+  const onRoomRenamed = useCallback((name, { reset = false } = {}) => {
+    if (!selected) return;
+    const key = roomTitleKey(selected);
+    setTitleOverrides((prev) => reset ? (() => { const next = { ...prev }; delete next[key]; return next; })() : { ...prev, [key]: name });
+    setPicked((prev) => prev ? { ...prev, name, initials: name.slice(0, 2).toUpperCase(), hasCustomTitle: !prev.isProject && !prev.isMission ? !reset : prev.hasCustomTitle } : prev);
+    if (selected.isMission) setMissionReload((n) => n + 1);
+  }, [selected, roomTitleKey]);
   // ── The rail is the switchboard (drop 3) ──────────────────────────────────
   // Email pinned at the rail's foot swaps the center pane to the inbox; "+ New"
   // opens the one shared creation flow; per-room amber badges ride the same
@@ -719,6 +740,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   missions={missionsByProject[p.slug] || []}
                   needsCount={needsByProject[p.slug] || needsByProject[p.id] || 0}
                   needsByMission={needsByMission}
+                  titleOverrides={titleOverrides}
                   expanded={expanded.has(p.slug)}
                   onToggle={() => toggleProject(p.slug)}
                   onPickProject={() => { pickProject(p); toggleProject(p.slug); }}
@@ -760,8 +782,13 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       {selected.isProject || selected.isMission ? <span aria-hidden="true">/</span> : null}
                       {selected.isMission ? <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{projects.find((p) => p.slug === selected.projectSlug || p.id === selected.projectSlug)?.name || selected.statusText || selected.projectSlug}</span> : null}
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation')}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</div>
+                      <button type="button" onClick={() => setRenameOpen(true)} aria-label="Rename chat" title="Rename chat" data-testid="rename-chat-button" style={{ width: 25, height: 25, flex: 'none', display: 'grid', placeItems: 'center', border: 'none', borderRadius: 7, background: 'transparent', color: 'var(--faint)', cursor: 'pointer' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+                      </button>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.hasCustomTitle && selected.specialistTitle ? `${selected.specialistTitle} specialist` : (goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation'))}</div>
                   </div>
                   {!windowMode && onOpenWindow ? (
                     <button type="button" className="cv6-chat-popout" onClick={() => onOpenWindow(selected)} aria-label={`Open ${selected.name} in a new window`} title="Keep this chat open in its own window">
@@ -843,6 +870,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       <div style={{ position: 'absolute', top: 46, right: 14, zIndex: 21, minWidth: 184, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 12, boxShadow: '0 16px 40px -12px rgba(0,0,0,.45)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {[
                           { label: 'View files', onClick: () => { setDrawerView('files'); setAgentMenuOpen(false); } },
+                          { label: 'Rename chat', onClick: () => { setRenameOpen(true); setAgentMenuOpen(false); } },
                           ...(nextReviewFile ? [{ label: 'Review next waiting file', onClick: () => { onReviewFile?.(nextReviewFile, reviewProject, reviewMission); setAgentMenuOpen(false); } }] : []),
                           { label: following ? 'Mute updates' : 'Follow along', onClick: () => { toggleFollow(); setAgentMenuOpen(false); } },
                         ].map((mi) => (
@@ -928,6 +956,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         <NewComposer worldId={worldId} projects={projects} agents={agents} initialMode="mission"
           onClose={() => setComposerOpen(false)} onCreated={() => setComposerOpen(false)} />
       ) : null}
+      {renameOpen && selected ? <RenameRoomDialog room={selected} worldId={worldId} onClose={() => setRenameOpen(false)} onRenamed={onRoomRenamed} /> : null}
     </ReviewCtx.Provider>
     </SendCtx.Provider>
   );

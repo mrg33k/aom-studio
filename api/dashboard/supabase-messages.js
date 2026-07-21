@@ -9,11 +9,6 @@
 
 import { writeMessageRow } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
-import {
-  buildMissionPromotion,
-  ensurePromotedMission,
-  shouldPromoteDirectAgentMessage,
-} from '../_lib/directMissionPromotion.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 
@@ -254,104 +249,6 @@ export default async function handler(req, res) {
     // mission_slug canonicalization, and the collaborator-gated crosspost all
     // live in api/_lib/write-message.js. This endpoint only owns auth above.
     const dbHeaders = supabaseHeaders()
-    const shouldPromote = shouldPromoteDirectAgentMessage({
-      agent,
-      text,
-      role,
-      project,
-      metadata,
-      source,
-    })
-    if (shouldPromote) {
-      const promotion = buildMissionPromotion({ agent, text, tenantId: resolvedClientId })
-      await ensurePromotedMission({
-        supabaseUrl: SUPABASE_URL,
-        headers: dbHeaders,
-        tenantId: resolvedClientId,
-        promotion,
-      })
-
-      // Keep a non-routed copy in the direct agent thread so the chat history
-      // doesn't appear to swallow the user's send. The listener ignores this
-      // source; the mission-scoped row below is the one that wakes the worker.
-      const shadow = await writeMessageRow({
-        supabaseUrl: SUPABASE_URL,
-        headers: dbHeaders,
-        text,
-        role,
-        source: 'corner-dashboard-direct-shadow',
-        agent,
-        clientId: resolvedClientId,
-        metadata: {
-          ...(metadata && typeof metadata === 'object' ? metadata : {}),
-          direct_shadow: true,
-          auto_promoted_mission: promotion.fullSlug,
-        },
-        userId: user_id,
-        userName: user_name,
-        senderRole: sender_role,
-        worldId: world_id,
-        attachmentUrl: attachment_url,
-        fileMimeType: file_mime_type,
-        fileSize: file_size,
-        replyTo: reply_to,
-      })
-      if (!shadow.ok) {
-        return res.status(shadow.status || 500).json({ error: shadow.error || 'write failed' })
-      }
-
-      await writeMessageRow({
-        supabaseUrl: SUPABASE_URL,
-        headers: dbHeaders,
-        text: `Moved this work into mission ${promotion.fullSlug}.\n\nOpen the mission room for the agent's work and files. The original direct-chat ask is preserved above.`,
-        role: 'assistant',
-        source: 'mission-promotion-note',
-        agent,
-        clientId: resolvedClientId,
-        metadata: { auto_promoted_mission: promotion.fullSlug, mission_path: promotion.missionPath },
-      }).catch(() => {})
-
-      const missionResult = await writeMessageRow({
-        supabaseUrl: SUPABASE_URL,
-        headers: dbHeaders,
-        text: promotion.instruction,
-        role,
-        source,
-        agent,
-        clientId: resolvedClientId,
-        project: promotion.parentSlug,
-        metadata: {
-          ...(metadata && typeof metadata === 'object' ? metadata : {}),
-          mission_slug: promotion.fullSlug,
-          auto_promoted_from_agent: agent,
-          direct_shadow_id: shadow.row?.id || null,
-          mission_path: promotion.missionPath,
-        },
-        userId: user_id,
-        userName: user_name,
-        senderRole: sender_role,
-        worldId: world_id,
-        attachmentUrl: attachment_url,
-        fileMimeType: file_mime_type,
-        fileSize: file_size,
-        replyTo: reply_to,
-      })
-      if (!missionResult.ok) {
-        return res.status(missionResult.status || 500).json({ error: missionResult.error || 'write failed' })
-      }
-      return res.status(200).json({
-        ok: true,
-        message: shadow.row,
-        promoted_to: {
-          project: promotion.parentSlug,
-          mission_slug: promotion.missionSlug,
-          full_slug: promotion.fullSlug,
-          mission_path: promotion.missionPath,
-          message_id: missionResult.row?.id || null,
-        },
-      })
-    }
-
     const result = await writeMessageRow({
       supabaseUrl: SUPABASE_URL,
       headers: dbHeaders,

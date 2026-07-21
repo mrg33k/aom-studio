@@ -18,6 +18,7 @@ import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop, { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
+import RenameRoomDialog from './RenameRoomDialog.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
@@ -1767,6 +1768,11 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
 // from that real output. Otherwise we show the real messages honestly. ──
 const CHAT_ALIASES = { 'goal.checklist': 'item' };
 function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [localTitle, setLocalTitle] = useState(null);
+  const [localCustomTitle, setLocalCustomTitle] = useState(null);
+  useEffect(() => { setLocalTitle(null); setLocalCustomTitle(null); setRenameOpen(false); }, [room?.id]);
+  const activeRoom = useMemo(() => localTitle ? { ...room, name: localTitle, initials: localTitle.slice(0, 2).toUpperCase(), hasCustomTitle: localCustomTitle ?? room.hasCustomTitle } : room, [room, localTitle, localCustomTitle]);
   // Demo mode: check for ?demo=blocks query param
   const demoFeed = useDemoBlocksFeed();
   const isDemo = !!demoFeed;
@@ -1782,14 +1788,14 @@ function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
   const liveThread = Array.isArray(messages) && messages.some((m) => m.blocks?.length > 0);
   const html = useMemo(() => composeChatMobile(hasGoal), [hasGoal]);
   const data = useMemo(() => ({
-    room: { name: isDemo ? 'DEMO: Block Showcase' : room.name, initials: room.initials || '·', statusText: isDemo ? 'demo' : room.statusText || '', count: '' },
+    room: { name: isDemo ? 'DEMO: Block Showcase' : activeRoom.name, initials: activeRoom.initials || '·', statusText: isDemo ? 'demo' : activeRoom.statusText || '', count: '' },
     messages,
     goal: goal || { title: '', step: '', doneCount: '', total: '', pct: 0, checklist: [] },
     user: { initials: 'PM' },
-    loading: { label: `Opening ${room.name}…` },
-    empty: { title: `No messages with ${room.name} yet`, body: 'Start the conversation below.', actionLabel: '' },
+    loading: { label: `Opening ${activeRoom.name}…` },
+    empty: { title: `No messages with ${activeRoom.name} yet`, body: 'Start the conversation below.', actionLabel: '' },
     error: { title: "Couldn't load this conversation", body: 'Your connection dropped. Nothing was lost.', code: 'chat · retry' },
-  }), [isDemo, room, messages, goal]);
+  }), [isDemo, activeRoom, messages, goal]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t),
     search: () => onOpenNav?.(), openNav: () => onOpenNav?.(), openProfile: () => {}, openCommandK: () => {},
@@ -1804,14 +1810,17 @@ function Chat({ room, worldId, onNav, onOpenNav, onSearch }) {
   // conversation. Plain replies render as plain turns. So you always keep your history,
   // and the goal thread is just the latest turn (design: the visual chat language).
   return (
+    <>
     <ChatLifecycle
-      room={{ name: isDemo ? 'DEMO: Block Showcase' : room.name, initials: room.initials || '·', statusText: isDemo ? 'demo' : room.statusText || '', status: room.status || 'ready' }}
-      fullRoom={isDemo ? null : room} worldId={worldId}
+      room={{ name: isDemo ? 'DEMO: Block Showcase' : activeRoom.name, initials: activeRoom.initials || '·', statusText: isDemo ? 'demo' : (activeRoom.hasCustomTitle && activeRoom.specialistTitle ? `${activeRoom.specialistTitle} specialist` : activeRoom.statusText || ''), status: activeRoom.status || 'ready' }}
+      fullRoom={isDemo ? null : activeRoom} worldId={worldId}
       messages={messages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
-      onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSearch={() => onSearch?.()} onSend={(t) => send?.(t)}
+      onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSearch={() => onSearch?.()} onRename={isDemo ? null : () => setRenameOpen(true)} onSend={(t) => send?.(t)}
       onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), missionSlug: roomMissionSlug(room), needsReview: true } : null)}
     />
+    {renameOpen && !isDemo ? <RenameRoomDialog room={activeRoom} worldId={worldId} onClose={() => setRenameOpen(false)} onRenamed={(name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} /> : null}
+    </>
   );
 }
 
@@ -3079,7 +3088,7 @@ export default function CornerCV6() {
   }
   else if (isDesktop && (view === 'chatlist' || openedRoom)) {
     body = <ChatDesktop worldId={worldId}
-      initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, isMission: openedRoom.room?.isMission, missionSlug: openedRoom.room?.missionSlug, projectSlug: openedRoom.room?.projectSlug, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText } : null}
+      initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, isMission: openedRoom.room?.isMission, missionSlug: openedRoom.room?.missionSlug, projectSlug: openedRoom.room?.projectSlug, path: openedRoom.room?.path, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText, specialistTitle: openedRoom.room?.specialistTitle, hasCustomTitle: openedRoom.room?.hasCustomTitle } : null}
       onNav={onNav} onOpenNav={onOpenNav} onOpenWindow={onOpenChatWindow} windowMode={isChatWindow} persistSelection={!isChatWindow}
       onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })}
       onReviewFile={(f, proj, mission) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', missionSlug: mission || '', needsReview: true } : null); }} />;

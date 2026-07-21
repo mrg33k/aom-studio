@@ -60,6 +60,8 @@ function cap(s) { const v = String(s || ''); return v ? v[0].toUpperCase() + v.s
 // if we somehow have no mapping (so it never renders blank), but the map should be complete.
 export function titleForAgent(a) {
   const k = agentKey(a);
+  const custom = typeof a === 'object' ? String(a?.chatTitle || '').trim() : '';
+  if (custom) return custom;
   return AGENT_TITLES[k] || cap(k) || 'Agent';
 }
 
@@ -73,10 +75,15 @@ export function curateTitledAgents(agents = []) {
   const out = [];
   for (const d of DASHBOARD_AGENTS) {
     const live = bySlug[d.slug];
+    const specialistTitle = AGENT_TITLES[d.slug] || cap(d.slug);
+    const chatTitle = String(live?.chatTitle || '').trim();
     out.push({
       ...(live || {}),
       slug: d.slug,
-      title: AGENT_TITLES[d.slug] || cap(d.slug),
+      title: chatTitle || specialistTitle,
+      specialistTitle,
+      chatTitle: chatTitle || null,
+      hasCustomTitle: !!chatTitle,
       status: live?.status || 'ready',
       unread: live?.unread || 0,
       _order: d.order,
@@ -84,10 +91,15 @@ export function curateTitledAgents(agents = []) {
   }
   for (const [slug, live] of Object.entries(bySlug)) {
     if (!slug || out.some((a) => a.slug === slug)) continue;
+    const specialistTitle = AGENT_TITLES[slug] || cap(slug);
+    const chatTitle = String(live?.chatTitle || '').trim();
     out.push({
       ...(live || {}),
       slug,
-      title: AGENT_TITLES[slug] || cap(slug),
+      title: chatTitle || specialistTitle,
+      specialistTitle,
+      chatTitle: chatTitle || null,
+      hasCustomTitle: !!chatTitle,
       status: live?.status || 'ready',
       unread: live?.unread || 0,
       _order: 1000 + out.length,

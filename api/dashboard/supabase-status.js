@@ -6,6 +6,7 @@
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 import { classifyCommandWorkBucket } from '../_lib/commandWorkStatus.js';
+import { directChatTitlesByAgent } from '../_lib/chatTitles.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -63,7 +64,7 @@ export default async function handler(req, res) {
   const _timed = async (label, p) => { const s = Date.now(); const r = await p; _timings[label] = Date.now() - s; return r; };
   const _tAll = Date.now();
   try {
-    const [agents, messages, activeTasks, recentDone, projectDefs, rawEvents, tasksV2Active, tasksV2Done, archivedProjects] = await Promise.all([
+    const [agents, messages, activeTasks, recentDone, projectDefs, rawEvents, tasksV2Active, tasksV2Done, archivedProjects, chatTitleRooms] = await Promise.all([
       _timed('agent_status', supabaseGet('agent_status', `order=slug${clientFilter}`)),
       _timed('messages', supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`)),
       // Legacy active tasks ONLY. Allowlist (not denylist) so v2 terminal
@@ -90,6 +91,7 @@ export default async function handler(req, res) {
       // flipped to hidden would still render with a live dot. This set
       // closes that gap server-side for every consumer of this endpoint.
       _timed('projects_archived', supabaseGet('projects', `is_active=eq.false&select=slug${clientFilter}`).catch(() => [])),
+      _timed('chat_titles', supabaseGet('rooms', `type=eq.chat&select=id,name${clientFilter}`).catch(() => [])),
     ]);
     _timings._total = Date.now() - _tAll;
     _timings._verifyTenant = _vtMs;
@@ -175,11 +177,13 @@ export default async function handler(req, res) {
     // Build status format matching what useDataPipe expects.
     // agent_status table is the SOLE source of truth for agent status.
     // status_source and status_set_at are included for transparency.
+    const chatTitles = directChatTitlesByAgent(chatTitleRooms, clientId);
     const agentStatuses = agentList.map(a => ({
       slug: a.slug,
       name: a.name,
       display_name: a.display_name || null,
       role: a.role,
+      chatTitle: chatTitles[a.slug] || null,
       status: a.status || 'idle',
       currentTask: a.current_task || '',
       color: a.color,

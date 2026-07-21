@@ -21,6 +21,8 @@ export function buildSearchGroups({ query = '', agents = [], projects = [], byPr
         initials: agent.initials,
         status: agent.status,
         statusText: agent.statusLabel,
+        specialistTitle: agent.specialistTitle,
+        hasCustomTitle: agent.hasCustomTitle,
       },
     })),
     ...projects.filter((project) => match(project.name)).map((project) => ({
@@ -65,6 +67,7 @@ export function buildSearchGroups({ query = '', agents = [], projects = [], byPr
                 projectSlug,
                 status: mission.status,
                 statusText: project.name,
+                ...(mission.path ? { path: mission.path } : {}),
               },
             });
           }
