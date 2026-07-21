@@ -82,6 +82,16 @@ function statusBadgeStyle(status) {
   }
 }
 
+// Build a LinkedIn people-search URL — one tap lands on the person (or company),
+// no guessed profile URLs that could point at the wrong John Smith
+function buildLinkedInURL(lead) {
+  const parts = lead.contact_name
+    ? [lead.contact_name, lead.company]
+    : [lead.company, lead.city, 'Arizona']
+  const kw = parts.filter(Boolean).join(' ')
+  return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(kw)}`
+}
+
 // Build a Google Maps multi-stop directions URL for a group of leads
 function buildMapsURL(leads) {
   const addrs = leads
@@ -551,8 +561,8 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             </div>
           )}
 
-          {/* Contact row — phone + email visible on the card face, tap to call/email */}
-          {(lead.phone || lead.email) && (
+          {/* Contact row — phone + email + LinkedIn on the card face, tap to reach out */}
+          {(lead.phone || lead.email || lead.company) && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -620,6 +630,30 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   email pending
                 </span>
               )}
+              <a
+                href={buildLinkedInURL(lead)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={e => e.stopPropagation()}
+                title={`Find ${lead.contact_name || lead.company} on LinkedIn`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  background: '#0A1622',
+                  border: '1px solid #1E4A6B',
+                  color: '#5EA9E0',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.72rem',
+                  letterSpacing: '0.02em',
+                  padding: '0.3rem 0.5rem',
+                  textDecoration: 'none',
+                  minHeight: 30,
+                  boxSizing: 'border-box',
+                }}
+              >
+                LinkedIn ↗
+              </a>
             </div>
           )}
         </div>
@@ -1329,6 +1363,20 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                         }}
                       >{lead.email}</a>
                     )}
+                    <a
+                      href={buildLinkedInURL(lead)}
+                      target="_blank" rel="noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      title={`Find ${lead.contact_name || lead.company} on LinkedIn`}
+                      style={{
+                        color: '#5EA9E0',
+                        textDecoration: 'none',
+                        whiteSpace: 'nowrap',
+                        display: 'block',
+                        fontSize: '0.72rem',
+                        marginTop: '0.15rem',
+                      }}
+                    >LinkedIn ↗</a>
                   </td>
                   <td style={{ ...td, fontSize: '0.72rem', color: '#999' }}>
                     {lead.street_address
