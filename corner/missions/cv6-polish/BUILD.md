@@ -371,4 +371,48 @@ Changes will be committed in small scoped groups and pushed promptly after their
 focused verification. Final acceptance requires the signed robot Chrome at desktop
 and mobile widths plus the local CV6 regression/build battery.
 
-**Status:** in progress.
+Implementation and local verification (2026-07-21):
+
+- A: removed the duplicate shell bottom safe-area reservation, disabled text
+  selection/callout on long-press room rows, and made recent-room rename/move/archive
+  mutations refetch and re-shape their real project/mission names immediately.
+- B: added Project settings to the room context menu and restored the Corner wordmark
+  as the mobile Home identity, with a larger desktop mark.
+- C: reduced both chat headers to Files + More, moved Search/Room settings/follow
+  controls into More, and removed the mobile chat hamburger.
+- D: replaced popup windows and Email takeovers with one horizontally scrollable
+  page-owned workspace. Rooms dedupe by identity and retain independent live hook and
+  composer state; Email appends and focuses like a chat. Email tabs are centered,
+  Auto-reply defaults to `Cheers,`, mobile threads use the shared Gmail chain (latest
+  expanded, earlier collapsed), and Email dispatch now selects an agent/project/mission,
+  carries free-text instructions plus the machine reference, posts to the correct room
+  fields, and opens that destination as a column after a successful send.
+- E: the desktop/mobile/Home Files shelves remain the same attachment-derived link
+  list. Ordinary rows now locate the file in its chat (opening an older folded day when
+  needed) instead of downloading a raw blob or opening a new tab; Review-only rows stay
+  explicit. In-app attachments, block files/galleries, and document readers remain in
+  Review/readers rather than escaping to browser tabs. Explicit external results,
+  OAuth, and live-preview destinations remain the documented exception.
+
+Verification and deployment:
+
+- `npm run build` passed. Only the existing unrelated OutreachTracker duplicate-key
+  warnings and the existing large-chunk advisory remain.
+- `CV6_AUDIT_BASE=http://127.0.0.1:5173 npx playwright test tests/cv6-*.spec.mjs
+  --reporter=line --workers=2` passed 31/31. Focused column/Email/Chat/Review coverage
+  also passed 6/6 before the full sweep.
+- The rendered multi-column workspace screenshot was visually inspected at 1440px.
+- Commits `697a73df`, `f032d9c2`, `c8ddddd8`, `ffeb5daa`, and `84c56262` were pushed
+  to `main`; the parent/backend repository was not touched.
+- Vercel deployment `EP42M5agZkHEBGZA48Xqn7sENzvX` reached Ready and was aliased to
+  `https://lab.aheadofmarket.com`. The deployed `CornerCV6-pU5EDFa3.js` bundle was
+  fetched from the alias and contains the new `Find in chat`, `Dispatch email`,
+  `Open as column`, `Cheers,`, and workspace-column contracts.
+
+Rex handoff: frontend items A1-A3, B1-B2, C1-C2, D0-D4, and E1 are landed and pushed.
+No rex-owned AOM-EA/backend/script/data file was changed. The final signed desktop +
+390px production walkthrough is still pending because the requested signed robot-Chrome
+capability is not installed in this Codex session; local Playwright and production
+artifact proof do not substitute for that authentication-only acceptance pass.
+
+**Status:** shipped and artifact-verified; signed robot-Chrome acceptance pending.

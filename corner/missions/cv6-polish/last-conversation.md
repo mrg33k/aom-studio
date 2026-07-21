@@ -64,3 +64,25 @@ deployment `dpl_3Y5Y1tKU18Amq9XGxjKRf35RkaGj` is Ready at
 `https://lab.aheadofmarket.com`; the deployed bundle and room-reset function were
 artifact-verified. Production UI requires sign-in, so a signed-in production
 walkthrough remains pending browser-tool recovery and was not represented as passed.
+
+## 2026-07-21 - R11 one-page columns and mobile interaction corrections
+
+Patrik supplied the corrective CV6 brief: multi-chat and Email must be side-by-side
+columns on one page, never popup windows or route takeovers. Landed A1-A3, B1-B2,
+C1-C2, D0-D4, and E1 entirely in `aom-studio`; rex-owned parent/backend state was
+preserved. Home now has correct iPhone bottom geometry, non-selecting long-press room
+rows, immediate recent-room mutation refresh, Corner branding, and Project settings.
+Chat headers expose only Files + More. Rooms and Email append/dedupe as independent
+page-owned columns. Email gained centered tabs, `Cheers,`, collapsed Gmail history,
+and agent/project/mission dispatch with free instructions and post-send room opening.
+Files remain attachment links and locate their room message/in-place Review instead
+of opening raw blobs or internal browser tabs.
+
+Commits `697a73df`, `f032d9c2`, `c8ddddd8`, `ffeb5daa`, and `84c56262` were pushed to
+`main`. The Vite build passed and all 31 CV6 Playwright scenarios passed. Vercel
+deployment `EP42M5agZkHEBGZA48Xqn7sENzvX` is Ready and aliased to
+`https://lab.aheadofmarket.com`; the production bundle contains all new column,
+dispatch, sign-off, and file-location markers. The signed robot-Chrome skill requested
+by the brief was unavailable in this session, so the final authenticated desktop/390px
+production walkthrough remains explicitly pending and the round is not represented as
+fully signed off.
