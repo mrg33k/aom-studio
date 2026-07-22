@@ -112,11 +112,12 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   const CAP = 80; // newest per section; a busy room can carry hundreds
   const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
   const openItem = (it) => {
-    if (needsAttention(it) && onReview) { onReview(it); return; }
-    // Photos and videos open directly — scrolling to the message is not useful for media.
-    if ((it.kind === 'photo' || it.kind === 'video') && it.url) {
-      window.open(it.url, '_blank', 'noopener');
-      return;
+    // Photos and videos (and anything flagged for review) open in the in-app
+    // review viewer — scrolling to the message is not useful for media, and a
+    // raw browser tab was a regression away from the viewer we already had.
+    if (needsAttention(it) || it.kind === 'photo' || it.kind === 'video') {
+      if (onReview) { onReview(it); return; }
+      if (it.url) { window.open(it.url, '_blank', 'noopener'); return; }
     }
     onLocate?.(it);
   };
