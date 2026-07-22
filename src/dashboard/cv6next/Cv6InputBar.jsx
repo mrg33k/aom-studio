@@ -206,7 +206,7 @@ export default function Cv6InputBar({ onOpenFiles }) {
               onBlur={() => setChatInputFocused?.(false)}
               onPaste={handlePaste}
               placeholder={selectedImageTool ? 'Describe the image to generate…' : `Message ${roomName}…`}
-              style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)' }}
+              style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 16, fontFamily: 'var(--font-sans)' }}
             />
           </div>
         </div>

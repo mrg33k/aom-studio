@@ -447,3 +447,16 @@ Resolution and verification (2026-07-21):
   unrelated Apollo tracking-pixel 400.
 
 **Status:** shipped and authenticated-production verified.
+
+### R13 - Mobile bottom spacing and keyboard composer geometry
+
+Started 2026-07-21 from Patrik's iPhone captures. The first defect is a global
+150px `.scrbody` composer clearance leaking onto every CV6 page. The second is an
+iOS viewport contract: the shell follows `VisualViewport.height` without its
+`offsetTop`, the composer keeps the home-indicator inset while the software keyboard
+is open, and the 14px chat input permits Safari focus zoom. This round will scope
+chat-only clearance, follow the complete visible viewport while editing, suppress the
+stale keyboard-time safe-area gap, use a non-zooming mobile input size, and verify both
+resting and focused composer geometry before deployment.
+
+**Status:** in progress.

@@ -2979,20 +2979,45 @@ export default function CornerCV6() {
     }
     return [...agents, ...rooms];
   }, [roomRegistry.data, dispatchMissionsByProject]);
-  // iOS can defer its first `dvh` correction until the user scrolls the document,
-  // which leaves a false strip of body background under an otherwise full-height
-  // app. Lock the document and size the shell from VisualViewport on first paint;
-  // inner chat/list panels remain the only intentional scroll owners.
+  // Keep the shell on the full dynamic viewport at rest. While a text control is
+  // focused, iOS shrinks and can also pan the *visual* viewport without moving the
+  // layout viewport, so cover both its height and offsetTop. Using visualViewport
+  // height at rest shortened the app by Safari's bottom UI/safe-area allowance;
+  // ignoring offsetTop while editing stranded the composer high above the keyboard.
   useEffect(() => {
     const root = document.documentElement;
     const viewport = window.visualViewport;
     let frame = 0;
+    let focusTimer = 0;
+    const textEntryFocused = () => {
+      const active = document.activeElement;
+      if (!active) return false;
+      if (active instanceof HTMLTextAreaElement || active.isContentEditable) return true;
+      if (!(active instanceof HTMLInputElement)) return false;
+      return !['button', 'checkbox', 'color', 'file', 'hidden', 'radio', 'range', 'reset', 'submit'].includes(active.type);
+    };
     const syncViewport = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
+        const editing = textEntryFocused();
+        root.classList.toggle('cv6-keyboard-open', editing);
+        if (!editing) {
+          root.style.removeProperty('--cv6-viewport-height');
+          root.style.removeProperty('--cv6-viewport-top');
+          return;
+        }
         const height = Math.ceil(viewport?.height || window.innerHeight || root.clientHeight);
+        const top = Math.max(0, Math.ceil(viewport?.offsetTop || 0));
         if (height > 0) root.style.setProperty('--cv6-viewport-height', `${height}px`);
+        root.style.setProperty('--cv6-viewport-top', `${top}px`);
       });
+    };
+    const syncFocusedViewport = () => {
+      syncViewport();
+      clearTimeout(focusTimer);
+      // iOS reports several intermediate viewport sizes during the keyboard
+      // animation; settle once more after it finishes.
+      focusTimer = window.setTimeout(syncViewport, 360);
     };
     root.classList.add('cv6-app-active');
     syncViewport();
@@ -3000,17 +3025,24 @@ export default function CornerCV6() {
     window.addEventListener('resize', syncViewport);
     window.addEventListener('orientationchange', syncViewport);
     window.addEventListener('pageshow', syncViewport);
+    document.addEventListener('focusin', syncFocusedViewport);
+    document.addEventListener('focusout', syncFocusedViewport);
     viewport?.addEventListener('resize', syncViewport);
     viewport?.addEventListener('scroll', syncViewport);
     return () => {
       cancelAnimationFrame(frame);
+      clearTimeout(focusTimer);
       window.removeEventListener('resize', syncViewport);
       window.removeEventListener('orientationchange', syncViewport);
       window.removeEventListener('pageshow', syncViewport);
+      document.removeEventListener('focusin', syncFocusedViewport);
+      document.removeEventListener('focusout', syncFocusedViewport);
       viewport?.removeEventListener('resize', syncViewport);
       viewport?.removeEventListener('scroll', syncViewport);
       root.classList.remove('cv6-app-active');
+      root.classList.remove('cv6-keyboard-open');
       root.style.removeProperty('--cv6-viewport-height');
+      root.style.removeProperty('--cv6-viewport-top');
     };
   }, []);
   const chatWindowRoute = useMemo(() => {

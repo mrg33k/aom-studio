@@ -2265,6 +2265,10 @@ html.cv6-app-active #root {
   overscroll-behavior:none;
 }
 [data-cv6].cv6-app-shell {
+  position:fixed;
+  top:var(--cv6-viewport-top, 0px);
+  left:0;
+  right:0;
   width:100%;
   height:var(--cv6-viewport-height, 100dvh);
   min-height:0;
@@ -2508,7 +2512,12 @@ html.cv6-app-active #root {
 /* The composer floats clear of the viewport edge and uses one rounded two-row card. */
 [data-cv6] .cv6-floating-composer { box-sizing:border-box; }
 [data-cv6] .mcomposer { left:12px !important; right:12px !important; bottom:max(12px,env(safe-area-inset-bottom,0px)) !important; padding:0 !important; border-top:none !important; background:transparent !important; }
-[data-cv6] .scrbody { padding-bottom:calc(150px + env(safe-area-inset-bottom,0px)) !important; }
+[data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:calc(150px + env(safe-area-inset-bottom,0px)) !important; }
+/* WebKit keeps safe-area-inset-bottom populated after the software keyboard
+   opens. The focused visual viewport is already rectangular, so retaining that
+   inset creates the white moat visible in the iPhone capture. */
+html.cv6-keyboard-open [data-cv6] .mcomposer { bottom:8px !important; }
+html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:138px !important; }
 [data-cv6] .jumplive { bottom:164px !important; }
 [data-cv6] .cv6-mode-toggle { min-width:62px; }
 
