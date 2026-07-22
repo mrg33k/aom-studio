@@ -354,6 +354,7 @@ const PROJECTS = [
   { slug: 'ai-advisory', name: 'AI Advisory', type: 'project', color: '#29B6F6', statusColors: { active: '#29B6F6', idle: '#0288D1', offline: '#01579B' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81D4FA', monitorColor: '#81D4FA', hidden: false, team: ['steve', 'elon', 'alex'] },
   { slug: 'included-health', name: 'Included Health', type: 'project', color: '#78909C', statusColors: { active: '#78909C', idle: '#546E7A', offline: '#37474F' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#B0BEC5', monitorColor: '#B0BEC5', hidden: true, team: ['paige'] },
   { slug: 'conrad-foundation', name: 'Conrad Foundation', type: 'project', color: '#0EA5E9', statusColors: { active: '#0EA5E9', idle: '#0369A1', offline: '#0C4A6E' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#7DD3FC', monitorColor: '#7DD3FC', hidden: false, team: ['alex', 'steve', 'cleo'] },
+  { slug: 'rpg-mechanics', name: 'RPG Mechanics', type: 'project', color: '#A78BFA', statusColors: { active: '#A78BFA', idle: '#53457D', offline: '#211B32' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#DCD0FD', monitorColor: '#DCD0FD', hidden: false, team: ['bobby'] },
   // ── Special rooms ──────────────────────────────────────────────────────────
   { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'rex', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'gary', 'pixel'] },
 ]
@@ -398,6 +399,7 @@ const ALL_ROOMS = [
   _PROJECT_MAP['outreach'],
   _PROJECT_MAP['ai-advisory'],
   _PROJECT_MAP['conrad-foundation'],
+  _PROJECT_MAP['rpg-mechanics'],
   // Row 4 (overflow) -- On-set crew
   _AGENT_MAP['mark'],
   // Hidden -- not rendered on hex grid (still accessible in Board view, chat dropdowns, @mentions)
