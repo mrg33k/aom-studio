@@ -203,6 +203,8 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
   // Mission rooms: missions with last_message_at computed from messages, so Recently Active
   // on Home can surface missions the user actively worked in (not only inbox-pinged ones).
   const [missionRooms, setMissionRooms] = useState([])
+  // Direct 1:1 agent threads with computed last activity, for Recently Active.
+  const [agentThreadRooms, setAgentThreadRooms] = useState([])
   // Unique channel ID per hook instance -- prevents duplicate channel name conflicts when
   // useDataPipe is mounted in multiple components (GameDashboard, UnifiedPanel, ChecklistMode, GameHUD)
   const channelIdRef = useRef(`pipe-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
@@ -468,6 +470,12 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
         {
           const projRecency = {}
           const missionRecency = {}
+          // Per-agent recency for 1:1 chats: a direct agent thread is a message
+          // carrying an agent but NO project and NO mission (those belong to the
+          // project/mission room, not the agent). Lets Recently Active surface an
+          // agent you actually talked to, the same way missions/projects surface —
+          // without an agent ever masquerading as a project (Patrik 2026-07-21).
+          const agentRecency = {}
           // Preview text rides with recency (Home resting digest, loop R5): the room's last
           // message, whitespace-collapsed. Structured payloads (raw JSON) never preview.
           // ARTIFACT_GUARD — skip QA/screenshot paths, round-labelled filenames (r7-*),
@@ -492,6 +500,9 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
             if (ms) {
               if (!missionRecency[ms] || t > missionRecency[ms].ts) missionRecency[ms] = { ts: t, project: m.project || '', text: previewOf(m) }
             }
+            if (m.agent && !m.project && !ms) {
+              if (!agentRecency[m.agent] || t > agentRecency[m.agent].ts) agentRecency[m.agent] = { ts: t, text: previewOf(m) }
+            }
           }
           for (const p of merged) { const r = projRecency[p.slug]; p.last_message_at = r ? r.t : 0; p.last_message_text = r ? r.text : '' }
           merged.sort((a, b) => (b.last_message_at - a.last_message_at) || (a.name || '').localeCompare(b.name || ''))
@@ -499,6 +510,9 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
           // waiting for an inbox ping. Stored as { slug, project, last_message_at }.
           const missionList = Object.entries(missionRecency).map(([slug, v]) => ({ slug, project: v.project, last_message_at: v.ts, last_message_text: v.text || '' }))
           setMissionRooms(missionList)
+          // Same for direct agent threads — { agent, last_message_at, last_message_text }.
+          const agentThreadList = Object.entries(agentRecency).map(([agent, v]) => ({ agent, last_message_at: v.ts, last_message_text: v.text || '' }))
+          setAgentThreadRooms(agentThreadList)
         }
         if (merged.length > 0) {
           const sig = JSON.stringify(merged)
@@ -952,6 +966,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
     agents,
     projectRooms: supabaseProjectRooms,
     missionRooms,
+    agentThreadRooms,
     refetch: fetchAll,
   }
 }

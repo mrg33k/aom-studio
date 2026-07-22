@@ -84,6 +84,7 @@ export function useDataContext() {
       projectRooms: [],
       personalTodos: [],
       missionRooms: [],
+      agentThreadRooms: [],
       refetch: () => {},
     }
   }

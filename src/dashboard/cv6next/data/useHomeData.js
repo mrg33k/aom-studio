@@ -77,7 +77,7 @@ function relTime(ts) {
   return `${Math.round(h / 24)}d`;
 }
 
-export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [] } = {}) {
+export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [], agentThreadRooms = [] } = {}) {
   // Agents render as TITLES (curated set), never names. id stays the agent slug so the chat
   // opens the right thread. (Agents-as-titles + Agents accordion, decided 2026-06-23.)
   const agentRooms = curateTitledAgents(agents).map((a) => {
@@ -196,6 +196,17 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     const nm = missionLabel(mr.slug) || mr.slug;
     bump('m:' + missionRecencyKey(mr.slug), { key: 'm:' + missionRecencyKey(mr.slug), id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: normalizePreview(mr.last_message_text) });
   }
+  // Activity-based recency for direct 1:1 agent threads — parallel to projects/
+  // missions above so an agent you actually talked to surfaces in Recently Active
+  // even after you've read it (the inbox-ping path only catches unread pings).
+  // kind:'agent' throughout keeps it a direct chat that opens the agent's room; it
+  // never enters or becomes a project. Same bump key as the inbox path (a:<agent>),
+  // so a fresher timestamp just wins — no double row.
+  for (const ar of agentThreadRooms || []) {
+    if (!ar.last_message_at || !ar.agent) continue;
+    if (isRoomActivityNoise({ text: ar.last_message_text })) continue;
+    bump('a:' + ar.agent, { key: 'a:' + ar.agent, id: ar.agent, kind: 'agent', agent: ar.agent, name: agentNameBySlug[ar.agent] || titleForAgent(ar.agent), sub: 'Direct chat', ts: ar.last_message_at, preview: normalizePreview(ar.last_message_text) });
+  }
   const recent = Object.values(recentMap)
     // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).
     .filter((r) => { const n = String(r.name || '').trim().toLowerCase(); return n && n !== 'undefined' && n !== 'null'; })
@@ -229,13 +240,13 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
 // auth-derived world (Patrik -> aom).
 export function useHome() {
   const { status, worldId } = useTenantContext();
-  const { agents, projectRooms, inboxItems, missionRooms } = useDataContext();
+  const { agents, projectRooms, inboxItems, missionRooms, agentThreadRooms } = useDataContext();
 
   // Memoize the shaped data so its identity is stable between renders (it only changes
   // when the underlying pipe arrays change). Without this, `data` was a new object every
   // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
   // list under the user's finger and making taps miss (the "can't open a chat" bug).
-  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms }), [agents, projectRooms, inboxItems, missionRooms]);
+  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms]);
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
