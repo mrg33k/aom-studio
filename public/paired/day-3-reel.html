@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AOM Day 3 Reel — The Shift (moving preview)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-900:#0B0B0B; --ink-700:#2A2A28; --ink-500:#6E6E66; --ink-300:#B6B2AB;
+    --paper:#F6F6F4; --paper-alt:#EEEDE8; --gold:#C4A46A; --gold-deep:#A8884C;
+    --danger:#E5341F;
+    --fd:'Bricolage Grotesque',system-ui,Helvetica,Arial,sans-serif;
+    --ft:'Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#111;font-family:var(--ft);display:flex;align-items:center;justify-content:center}
+  /* 9:16 stage, scaled to fit any screen */
+  .stage{position:relative;width:min(46.9vh,100vw);aspect-ratio:9/16;background:var(--paper);
+         overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);--u:calc(min(46.9vh,100vw)/1080)}
+  .frame{position:absolute;inset:0;opacity:0;visibility:hidden;
+         padding:calc(96*var(--u)) calc(80*var(--u));display:flex;flex-direction:column}
+  .frame.on{opacity:1;visibility:visible}
+  .inverse{background:var(--ink-900);color:var(--paper)}
+  /* kicker */
+  .kicker{font-family:var(--ft);font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+          font-size:calc(26*var(--u));color:var(--gold-deep)}
+  .inverse .kicker{color:var(--gold)}
+  .spring{flex:1}
+  /* kinetic word rows */
+  .line{font-family:var(--fd);font-weight:800;line-height:1.02;font-size:calc(112*var(--u));
+        letter-spacing:-.02em;opacity:0;transform:translateY(calc(26*var(--u)))}
+  .line.sm{font-size:calc(78*var(--u))}
+  .on .line{animation:rise .55s cubic-bezier(.2,.8,.2,1) forwards}
+  .on .d1{animation-delay:.15s}.on .d2{animation-delay:.45s}.on .d3{animation-delay:.9s}.on .d4{animation-delay:1.3s}
+  .red{color:var(--danger)}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  /* ghost feed behind hook = no empty space */
+  .ghost{position:absolute;inset:0;opacity:.06;pointer-events:none}
+  .scrim{position:absolute;inset:0;pointer-events:none;
+         background:radial-gradient(120% 55% at 12% 62%,rgba(11,11,11,.92) 30%,rgba(11,11,11,0) 72%)}
+  .inverse .line{text-shadow:0 calc(3*var(--u)) calc(30*var(--u)) rgba(0,0,0,.55)}
+  .ghost .card{position:absolute;left:calc(80*var(--u));right:calc(80*var(--u));height:calc(150*var(--u));
+        border:calc(2*var(--u)) solid var(--paper);border-radius:calc(20*var(--u))}
+  .on .ghost .card{animation:scrollup 6s linear infinite}
+  @keyframes scrollup{from{transform:translateY(0)}to{transform:translateY(calc(-360*var(--u)))}}
+  /* three-number board */
+  .board{display:flex;flex-direction:column;gap:calc(28*var(--u));margin-top:calc(24*var(--u))}
+  .row{display:flex;align-items:center;gap:calc(28*var(--u));padding:calc(34*var(--u)) calc(36*var(--u));
+       background:var(--paper-alt);border:calc(2*var(--u)) solid #E2E0DA;border-radius:calc(24*var(--u));
+       transition:all .45s ease;opacity:.4;filter:grayscale(.4)}
+  .row .num{font-family:var(--fd);font-weight:800;font-size:calc(70*var(--u));color:var(--ink-300);width:calc(96*var(--u))}
+  .row .ic{font-size:calc(56*var(--u));width:calc(80*var(--u));text-align:center}
+  .row .lb{font-family:var(--fd);font-weight:700;font-size:calc(56*var(--u));color:var(--ink-700)}
+  .row .q{font-family:var(--fd);font-weight:800;font-size:calc(64*var(--u));color:var(--ink-300)}
+  .row .tag{margin-left:auto;font-family:var(--ft);font-weight:800;font-size:calc(40*var(--u));
+       background:var(--gold);color:#1a1406;padding:calc(10*var(--u)) calc(22*var(--u));border-radius:calc(14*var(--u));opacity:0}
+  .row.live{opacity:1;filter:none;border-color:var(--ink-900);background:var(--paper);transform:translateX(0)}
+  .row.live .num{color:var(--ink-900)}
+  .row.big{border-color:var(--gold-deep);background:linear-gradient(180deg,#FBF4E4,#F3E9CF)}
+  .row.big .tag{opacity:1}
+  .row.big .lb{color:var(--gold-deep)}
+  /* closer */
+  .mono{width:calc(190*var(--u));height:calc(190*var(--u));color:var(--paper);margin:0 auto calc(40*var(--u))}
+  .mono svg{width:100%;height:100%}
+  .center{align-items:center;text-align:center;justify-content:center}
+  .sub{font-family:var(--ft);font-weight:500;font-size:calc(42*var(--u));color:var(--ink-300);margin-top:calc(28*var(--u));max-width:calc(760*var(--u))}
+  .inverse .sub{color:#C9C6BE}
+  .cta{margin-top:calc(46*var(--u));font-family:var(--ft);font-weight:800;font-size:calc(46*var(--u));
+       color:#1a1406;background:var(--gold);padding:calc(24*var(--u)) calc(52*var(--u));border-radius:calc(999px)}
+  /* footer brand + progress */
+  .foot{position:absolute;left:calc(80*var(--u));bottom:calc(64*var(--u));display:flex;align-items:center;gap:calc(16*var(--u));
+        font-family:var(--ft);font-weight:700;font-size:calc(28*var(--u));letter-spacing:.12em;color:var(--ink-500);text-transform:uppercase;z-index:5}
+  .inverse~.foot{color:#8b887f}
+  .foot .dot{width:calc(14*var(--u));height:calc(14*var(--u));border-radius:50%;background:var(--gold)}
+  .prog{position:absolute;left:0;bottom:0;height:calc(10*var(--u));background:var(--gold);width:0;z-index:6}
+  .vo{position:absolute;right:calc(80*var(--u));bottom:calc(64*var(--u));max-width:calc(560*var(--u));text-align:right;
+      font-family:var(--ft);font-style:italic;font-size:calc(26*var(--u));color:var(--ink-500);z-index:5}
+  .inverse~.vo{color:#a7a49b}
+  .replay{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-family:var(--ft);font-weight:700;
+      font-size:14px;color:#F6F6F4;background:#000;border:1px solid #444;padding:8px 18px;border-radius:999px;cursor:pointer;letter-spacing:.05em}
+</style></head>
+<body>
+<div class="stage" id="stage">
+
+  <!-- F1 HOOK -->
+  <div class="frame inverse" data-f="1">
+    <div class="ghost"><div class="card" style="top:calc(120*var(--u))"></div><div class="card" style="top:calc(330*var(--u))"></div><div class="card" style="top:calc(540*var(--u))"></div><div class="card" style="top:calc(750*var(--u))"></div><div class="card" style="top:calc(960*var(--u))"></div><div class="card" style="top:calc(1170*var(--u))"></div></div>
+    <div class="scrim"></div>
+    <div class="kicker" style="position:relative">The Shift · Ep. 03</div>
+    <div class="spring"></div>
+    <div class="line d1">Nobody's</div>
+    <div class="line d1">seeing your</div>
+    <div class="line d2">posts.</div>
+    <div class="line sm d3 red" style="margin-top:calc(34*var(--u))">Here's the actual reason.</div>
+    <div class="spring"></div>
+  </div>
+
+  <!-- F2 THREE NUMBERS -->
+  <div class="frame" data-f="2">
+    <div class="kicker">The Shift · Ep. 03</div>
+    <div class="line sm d1" style="margin-top:calc(40*var(--u))">Instagram ranks every post</div>
+    <div class="line sm d1">on <span class="red">three numbers</span> now.</div>
+    <div class="line sm d2" style="font-size:calc(46*var(--u));color:var(--ink-500);margin-top:calc(16*var(--u))">Not followers. Not likes.</div>
+    <div class="board">
+      <div class="row" data-r="1"><span class="num">01</span><span class="ic">⏱</span><span class="lb">Watch time</span><span class="q" style="margin-left:auto">?</span></div>
+      <div class="row" data-r="2"><span class="num">02</span><span class="ic">➤</span><span class="lb">Sends</span><span class="tag">3–5×</span></div>
+      <div class="row" data-r="3"><span class="num">03</span><span class="ic">♥</span><span class="lb">Likes</span><span class="q" style="margin-left:auto">?</span></div>
+    </div>
+    <div class="spring"></div>
+  </div>
+
+  <!-- F3-F5 reuse the board via classes; F6 closer -->
+  <div class="frame inverse center" data-f="6">
+    <div class="line sm d1" style="font-size:calc(88*var(--u))">Would anyone</div>
+    <div class="line sm d1" style="font-size:calc(88*var(--u))"><span class="red">send</span> this?</div>
+    <div class="sub d2" style="margin-top:calc(40*var(--u))">If the answer's no — that's why nobody's seeing it.</div>
+    <div class="spring" style="max-height:calc(120*var(--u))"></div>
+    <div class="mono d3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+<mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
+<g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0
+-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30
+-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59
+-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41
+-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575
+47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350
+39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295
+-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13
+-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357
+156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124
+335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0
+-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52
+-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59
+-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66
+-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15
+61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52
+52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64
+175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186
+199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57
+153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151
+462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98
+9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235
+563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31
+-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464
+-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31
+81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278
+130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97
+-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1
+30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9
+123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32
+104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18
+121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325
+-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66
+-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1
+-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128
+-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38
+471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134
+-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path>
+<path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25
+-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129
+-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81
+-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39
+-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66
+-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145
+-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415
+-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360
+-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17
+-35 -3z"></path>
+<path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25
+-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6
+-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path>
+<path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20
+-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715
+516 -90 41 -123 48 -123 25z"></path>
+<path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149
+22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10
+-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153
+-152 122z"></path>
+<path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8
+-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15
+258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292
+112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12
+-396 5 -408 5 -425 -14z"></path>
+</g></mask>
+<rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
+</svg></div>
+    <div class="line sm d3" style="font-size:calc(54*var(--u));text-align:center">Follow the shift.</div>
+    <div class="sub d4">We break down a change like this every week — so the next one doesn't blindside you.</div>
+  </div>
+
+  <div class="foot"><span class="dot"></span>Ahead of Market</div>
+  <div class="vo" id="vo"></div>
+  <div class="prog" id="prog"></div>
+</div>
+<button class="replay" onclick="run()">▶ Replay reel</button>
+
+<script>
+const stage=document.getElementById('stage');
+const F=n=>stage.querySelector('[data-f="'+n+'"]');
+const vo=document.getElementById('vo'), prog=document.getElementById('prog');
+// timeline: [frameToShow, durationMs, voText, afterFn]
+let timers=[];
+function clearAll(){timers.forEach(clearTimeout);timers=[];stage.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));}
+function show(n){stage.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));const f=F(n);f.classList.add('on');
+  // retrigger kinetic animations
+  f.querySelectorAll('.line').forEach(l=>{l.style.animation='none';l.offsetHeight;l.style.animation='';});}
+function board(state){ // state: which rows live/big
+  const b2=F(2); const rows=b2.querySelectorAll('.row');
+  rows.forEach(r=>{r.classList.remove('live','big');});
+  state.forEach(s=>{const r=b2.querySelector('[data-r="'+s.r+'"]');r.classList.add('live');if(s.big)r.classList.add('big');
+     if(s.reveal){r.querySelector('.q')?.remove();}});
+}
+function run(){
+  clearAll(); prog.style.transition='none'; prog.style.width='0';
+  const seq=[
+    {f:1,t:3500,vo:'“Nobody’s seeing your posts. Here’s the actual reason.”'},
+    {f:2,t:4000,vo:'“Instagram ranks every post on three numbers now — not followers, not likes.”',pre:()=>board([])},
+    {f:2,t:3500,vo:'“One: watch time. How long people actually stay.”',pre:()=>board([{r:1,reveal:true}])},
+    {f:2,t:4500,vo:'“Two — the big one: sends per reach. Shares to strangers move you 3–5×.”',pre:()=>board([{r:1,reveal:true},{r:2,big:true}])},
+    {f:2,t:3000,vo:'“Three: likes per reach — the tiebreaker.”',pre:()=>board([{r:1,reveal:true},{r:2,big:true},{r:3,reveal:true}])},
+    {f:6,t:5500,vo:'“We break a shift like this down every week. Follow so the next one doesn’t blindside you.”'}
+  ];
+  const total=seq.reduce((a,s)=>a+s.t,0);
+  let acc=0;
+  seq.forEach(s=>{
+    timers.push(setTimeout(()=>{ s.pre&&s.pre(); show(s.f); vo.textContent=s.vo; },acc));
+    acc+=s.t;
+  });
+  // progress bar
+  prog.offsetHeight; requestAnimationFrame(()=>{prog.style.transition='width '+total+'ms linear';prog.style.width='100%';});
+  // loop
+  timers.push(setTimeout(run,total+400));
+}
+// inject monogram
+document.querySelector('.mono').innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+<mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
+<g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0
+-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30
+-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59
+-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41
+-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575
+47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350
+39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295
+-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13
+-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357
+156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124
+335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0
+-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52
+-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59
+-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66
+-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15
+61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52
+52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64
+175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186
+199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57
+153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151
+462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98
+9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235
+563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31
+-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464
+-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31
+81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278
+130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97
+-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1
+30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9
+123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32
+104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18
+121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325
+-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66
+-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1
+-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128
+-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38
+471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134
+-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path>
+<path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25
+-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129
+-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81
+-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39
+-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66
+-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145
+-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415
+-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360
+-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17
+-35 -3z"></path>
+<path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25
+-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6
+-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path>
+<path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20
+-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715
+516 -90 41 -123 48 -123 25z"></path>
+<path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149
+22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10
+-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153
+-152 122z"></path>
+<path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8
+-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15
+258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292
+112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12
+-396 5 -408 5 -425 -14z"></path>
+</g></mask>
+<rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
+</svg>`;
+// QA / jump: #f1 hook, #f2 board-empty, #f3 watch, #f4 sends, #f5 likes, #f6 closer (static, pauses loop)
+function jump(h){
+  clearAll();
+  if(h==='f1'){show(1);vo.textContent='';}
+  else if(h==='f6'){show(6);vo.textContent='';}
+  else {const st={f2:[],f3:[{r:1,reveal:true}],f4:[{r:1,reveal:true},{r:2,big:true}],f5:[{r:1,reveal:true},{r:2,big:true},{r:3,reveal:true}]};
+        board(st[h]||[]);show(2);vo.textContent='';}
+  prog.style.transition='none';prog.style.width='100%';
+}
+const _h=location.hash.replace('#','');
+if(/^f[1-6]$/.test(_h)){ jump(_h); } else { run(); }
+</script>
+</body></html>
