@@ -122,3 +122,24 @@ Commit `5846f3ea` is on `main`; deployment `5NbQRNbmNdfnvFNQvNmV5Zw7QdX9` is liv
 `https://lab.aheadofmarket.com`, and its served CornerCV6 assets contain the fix. The
 production automation probe reached the expected sign-in gate, so the only remaining
 signoff is a signed-in check with Apple's real on-screen keyboard on Patrik's iPhone.
+
+## 2026-07-21 - R14 mobile recent-chat scrolling and singular live progress
+
+Patrik reported that the mobile "Pick up where we left off" chats would not scroll
+and that one room could show several progress bars, including one stuck beside an
+older message. The recent cards inherited R11's `touch-action: pan-y`, which blocked
+the horizontal rail gesture. Separately, persisted blocks could retain an active step
+while the current WorkingTurn rendered another bar, and ChatLifecycle intentionally
+pinned the user's question above a 78vh pending spacer instead of following live work.
+
+The rail now accepts horizontal and vertical native touch panning. Historical active
+steps settle at render time without mutating stored messages, exactly one current
+live-work turn renders after the newest message, the blank pending spacer is gone, and
+mobile plus desktop follow actual step updates to the transcript tail. A real emulated
+touch swipe moved the rail; a fixture containing stale and current progress rendered
+one bar at the visible bottom above the composer. Focused tests passed 1/1 and 2/2, all
+34 CV6 Playwright scenarios passed, and the local and Vercel builds passed. Commit
+`acdf3020` is on `main`; deployment `CL6nDGTP3EgJ72aArTuvKeaiWGMV` is live at
+`https://lab.aheadofmarket.com`, with the new contracts confirmed in its served assets.
+Production UI automation remains sign-in gated, leaving only a real signed-in iPhone
+gesture check as final hardware signoff.

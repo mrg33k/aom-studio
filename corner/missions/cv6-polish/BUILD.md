@@ -492,4 +492,25 @@ recent-chat rail, consolidate live work to exactly one progress surface per room
 that surface after the newest message at the bottom of the transcript, and add mobile
 interaction plus progress lifecycle regressions before deployment.
 
-**Status:** in progress.
+Resolution and verification (2026-07-21):
+
+- Restored native horizontal touch panning on the mobile recent-chat rail while
+  retaining vertical Home scrolling and scroll snapping.
+- Persisted message blocks now render as settled history, so an old saved
+  `active`/`working` step cannot keep a second animated progress bar alive.
+- Marked the one current live-work turn explicitly, kept it after the newest
+  message, removed the 78vh pending spacer, and made mobile plus desktop follow
+  real step updates to the transcript tail while work is active.
+- Added a real CDP touch-swipe regression and a deliberately stale historical
+  progress fixture. The focused source test passed 1/1, focused Playwright passed
+  2/2, all CV6 Playwright scenarios passed 34/34, the Vite production build passed,
+  and the mobile live-tail screenshot was inspected.
+- Commit `acdf3020` was pushed to `main`. Vercel deployment
+  `CL6nDGTP3EgJ72aArTuvKeaiWGMV` completed and was aliased to
+  `https://lab.aheadofmarket.com`; live assets `CornerCV6-DDPBPEP3.js` and
+  `CornerCV6-Dzmcpowf.css` contain the singular-live-work and two-axis touch
+  contracts. A production UI rerun reached the expected sign-in gate, so the
+  shipped artifacts are verified and a signed-in iPhone gesture check remains
+  the final hardware signoff.
+
+**Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
