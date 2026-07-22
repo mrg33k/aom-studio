@@ -1886,7 +1886,7 @@
    become editorial snap cards; specialists and projects get distinct homes.
    ============================================================ */
 [data-cv6][data-screen="home-mobile"] .hbody { padding-top:0; }
-[data-cv6][data-screen="home-mobile"] .mresume { padding:26px 0 4px; }
+[data-cv6][data-screen="home-mobile"] .mresume { padding:8px 0 4px; }
 [data-cv6][data-screen="home-mobile"] .mhome-intro { padding:0 22px 16px; }
 [data-cv6][data-screen="home-mobile"] .mhome-intro .eyebrow { color:var(--accent); }
 [data-cv6][data-screen="home-mobile"] .mhome-intro h1 {
