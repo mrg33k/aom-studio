@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marketing Department Agreement — AOM &amp; Wolfpack Companies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14120E; --paper:#FBF9F2; --panel:#FFFFFF; --mute:#5B564A; --mute-2:#8A8474;
+    --gold:#B78A3C; --gold-soft:#C4A46A; --line:#E4DFD1; --line-2:#EFEBDF;
+    --disp:'Bricolage Grotesque', system-ui, Helvetica, Arial, sans-serif;
+    --text:'Schibsted Grotesk', system-ui, Helvetica, Arial, sans-serif;
+    --sign:'Alex Brush', cursive;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ background:#EEEADD; }
+  body{ font-family:var(--text); color:var(--ink); -webkit-font-smoothing:antialiased; line-height:1.5; }
+
+  .sheet{
+    max-width:8.5in; margin:20px auto; background:var(--paper);
+    box-shadow:0 18px 60px rgba(20,18,14,.16); border:1px solid var(--line);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .pad{ padding:.7in .8in; }
+
+  /* header */
+  .top{ display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:18px; border-bottom:2px solid var(--ink); }
+  .brand b{ font-family:var(--disp); font-weight:800; font-size:19px; letter-spacing:.01em; }
+  .brand b .dot{ color:var(--gold); }
+  .brand span{ display:block; font-size:10.5px; font-weight:600; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--mute-2); margin-top:3px; }
+  .meta{ text-align:right; font-size:10.5px; color:var(--mute); line-height:1.7; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  .kick{ font-family:var(--text); font-size:10.5px; font-weight:700; letter-spacing:.28em;
+    text-transform:uppercase; color:var(--gold); margin-top:34px; }
+  h1{ font-family:var(--disp); font-weight:800; font-size:33px; line-height:1.05;
+    letter-spacing:-.015em; margin-top:10px; }
+  .subhead{ font-size:13px; color:var(--mute); margin-top:12px; max-width:6in; }
+
+  .parties{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; }
+  .party{ background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:16px 18px; }
+  .party .role{ font-size:9.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--gold); }
+  .party .name{ font-family:var(--disp); font-weight:800; font-size:15px; margin-top:6px; }
+  .party .det{ font-size:11px; color:var(--mute); line-height:1.6; margin-top:6px; }
+
+  h2{ font-family:var(--disp); font-weight:800; font-size:14.5px; letter-spacing:.01em;
+    text-transform:uppercase; margin-top:30px; padding-bottom:7px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:11px; }
+  h2 .no{ font-family:var(--text); font-size:11px; font-weight:700; color:var(--gold); letter-spacing:.1em; }
+  section p{ font-size:12.5px; color:#2A271F; margin-top:11px; }
+  section p.mut{ color:var(--mute); }
+
+  ul.svc{ list-style:none; margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:9px 22px; }
+  ul.svc li{ font-size:12px; padding-left:16px; position:relative; color:#2A271F; }
+  ul.svc li::before{ content:""; position:absolute; left:0; top:.5em; width:6px; height:6px;
+    background:var(--gold); border-radius:1px; }
+  ul.svc li b{ font-weight:700; }
+
+  ul.terms{ margin-top:11px; padding-left:18px; }
+  ul.terms li{ font-size:12.5px; color:#2A271F; margin-top:7px; }
+
+  .fee{ margin-top:16px; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+  .fee .row{ display:flex; justify-content:space-between; align-items:center;
+    padding:13px 18px; border-bottom:1px solid var(--line-2); }
+  .fee .row:last-child{ border-bottom:0; }
+  .fee .row.hl{ background:#151209; color:#F4F1E6; }
+  .fee .lbl{ font-size:12px; } .fee .row.hl .lbl{ color:#D8D2C2; }
+  .fee .lbl small{ display:block; font-size:10px; color:var(--mute-2); margin-top:2px; }
+  .fee .row.hl .lbl small{ color:#A7A08C; }
+  .fee .amt{ font-family:var(--disp); font-weight:800; font-size:16px; }
+  .fee .row.hl .amt{ color:#E7C77E; font-size:20px; }
+
+  .note{ font-size:11px; color:var(--mute); margin-top:9px; font-style:italic; }
+
+  /* signatures */
+  .sigwrap{ margin-top:30px; padding-top:22px; border-top:2px solid var(--ink); }
+  .sigwrap h2{ border:0; margin-top:0; padding:0; }
+  .siggrid{ display:grid; grid-template-columns:1fr 1fr; gap:26px; margin-top:20px; }
+  .sigcol .for{ font-size:9.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--mute-2); }
+  .sigcol .co{ font-family:var(--disp); font-weight:800; font-size:13px; margin-top:2px; }
+  .sigline{ margin-top:26px; height:52px; border-bottom:1.5px solid var(--ink); position:relative;
+    display:flex; align-items:flex-end; }
+  .sigline .rendered{ font-family:var(--sign); font-size:40px; line-height:1; color:#141B4D;
+    padding-bottom:3px; }
+  .sigline .draw{ position:absolute; inset:0; width:100%; height:100%; cursor:crosshair; touch-action:none; }
+  .sigcap{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--mute); margin-top:6px; }
+  .field{ margin-top:14px; }
+  .field label{ font-size:9.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--mute-2); display:block; margin-bottom:4px; }
+  .field .val{ font-size:12.5px; font-weight:600; }
+  .field input{ width:100%; font-family:var(--text); font-size:13px; padding:8px 10px;
+    border:1px solid var(--line); border-radius:4px; background:#fff; color:var(--ink); }
+  .field input:focus{ outline:none; border-color:var(--gold); }
+
+  /* sign panel (interactive) */
+  .signbar{ margin:26px 0 4px; padding:18px; background:#151209; border-radius:8px; color:#F4F1E6; }
+  .signbar h3{ font-family:var(--disp); font-weight:800; font-size:15px; }
+  .signbar p{ font-size:11.5px; color:#B7B0A0; margin-top:5px; }
+  .signbar .tabs{ display:flex; gap:8px; margin-top:14px; }
+  .signbar .tab{ font-family:var(--text); font-size:11px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; padding:7px 14px; border:1px solid #3A3527; border-radius:5px;
+    background:transparent; color:#D8D2C2; cursor:pointer; }
+  .signbar .tab.on{ background:#E7C77E; color:#141009; border-color:#E7C77E; }
+  .signbar .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+  .signbar label{ font-size:9.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:#A7A08C; display:block; margin-bottom:5px; }
+  .signbar input{ width:100%; font-family:var(--text); font-size:13px; padding:9px 11px;
+    border:1px solid #3A3527; border-radius:5px; background:#0E0C07; color:#F4F1E6; }
+  .signbar input:focus{ outline:none; border-color:#E7C77E; }
+  .previewline{ margin-top:14px; background:#0E0C07; border:1px solid #3A3527; border-radius:6px;
+    height:70px; display:flex; align-items:center; justify-content:center; position:relative; }
+  .previewline .rendered{ font-family:var(--sign); font-size:44px; color:#E7C77E; }
+  .previewline canvas{ position:absolute; inset:0; width:100%; height:100%; cursor:crosshair; touch-action:none; }
+  .signbar .acts{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  .btn{ font-family:var(--text); font-size:12px; font-weight:700; letter-spacing:.04em;
+    padding:11px 20px; border-radius:6px; cursor:pointer; border:1px solid transparent; }
+  .btn.primary{ background:#E7C77E; color:#141009; }
+  .btn.ghost{ background:transparent; color:#D8D2C2; border-color:#3A3527; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .doneflag{ display:none; margin-top:12px; font-size:11.5px; color:#8FD19A; font-weight:600; }
+
+  .foot{ margin-top:30px; padding-top:14px; border-top:1px solid var(--line); font-size:10px;
+    color:var(--mute-2); display:flex; justify-content:space-between; }
+
+  @media print{
+    body{ background:#fff; }
+    .sheet{ box-shadow:none; margin:0; border:0; max-width:none; }
+    .signbar, .no-print{ display:none !important; }
+    .pad{ padding:.55in .65in; }
+  }
+  @media (max-width:760px){
+    .parties, .siggrid, ul.svc, .signbar .row2{ grid-template-columns:1fr; }
+    .pad{ padding:26px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet"><div class="pad">
+
+  <div class="top">
+    <div class="brand">
+      <b>AOM<span class="dot">.</span></b>
+      <span>Ahead of Market</span>
+    </div>
+    <div class="meta">
+      <div>Agreement No. <b>AOM-WP-2026-07</b></div>
+      <div>Effective <b>July 22, 2026</b></div>
+    </div>
+  </div>
+
+  <div class="kick">Marketing Department Agreement</div>
+  <h1>We run Wolfpack&rsquo;s marketing<br>as your department.</h1>
+  <p class="subhead">This agreement sets the terms of the relationship between Ahead of Market and Wolfpack Companies: what we own, what it costs, and how we work together. It is written to be read once and signed &mdash; not to be decoded.</p>
+
+  <div class="parties">
+    <div class="party">
+      <div class="role">Provider</div>
+      <div class="name">AOM-INHOUSE LLC <span style="font-weight:600;font-size:11px;color:var(--mute)">(dba Ahead of Market)</span></div>
+      <div class="det">1128 W Dunbar Dr, Tempe, AZ 85282<br>602-373-2164 &middot; hello@aom-inhouse.com</div>
+    </div>
+    <div class="party">
+      <div class="role">Client</div>
+      <div class="name">Wolfpack Companies LLC</div>
+      <div class="det">Attn: Ross<br>Ross@wolfpackcompanies.com<br>Phoenix, Arizona</div>
+    </div>
+  </div>
+
+  <section>
+    <h2><span class="no">01</span> Scope &mdash; Your Marketing Department</h2>
+    <p>AOM acts as Wolfpack&rsquo;s outsourced marketing department. We own the strategy and the day-to-day execution across the channels below, so Wolfpack does not have to build the function in-house. Our focus is getting Wolfpack <b>recommended</b> to the buyers that matter &mdash; not chasing followers.</p>
+    <ul class="svc">
+      <li><b>Strategy &amp; direction</b> &mdash; positioning, monthly plan, reporting</li>
+      <li><b>Website</b> &mdash; rebuild, hosting oversight, ongoing updates</li>
+      <li><b>Video</b> &mdash; production and editing for social and web</li>
+      <li><b>Photography &amp; imagery</b> &mdash; shoots and brand image</li>
+      <li><b>Organic content</b> &mdash; LinkedIn-led, published on cadence</li>
+      <li><b>Email newsletter</b> &mdash; build, write, and send</li>
+      <li><b>Google Ads &amp; paid media</b> &mdash; setup, management, optimization</li>
+      <li><b>Reputation</b> &mdash; reviews, profiles, and search presence</li>
+    </ul>
+    <p><b>Measured against KPIs.</b> We set clear performance targets with Wolfpack at the start of the engagement and track them throughout the relationship. These KPIs are agreed together in the first planning session and reviewed in monthly reporting, so you always see what the work is producing and how it is trending.</p>
+    <p class="mut">Phase 01 is the website rebuild as the fast, visible win. From there the recommendation engine ramps over the following months. Specific deliverables and cadence are set in the monthly plan and may be adjusted by mutual agreement without amending this contract.</p>
+  </section>
+
+  <section>
+    <h2><span class="no">02</span> Term</h2>
+    <p>This agreement begins on the Effective Date and runs for an initial term of <b>three (3) months</b>, giving the strategy the runway it needs to compound. After the initial term it continues month-to-month until either party ends it under Section 06.</p>
+  </section>
+
+  <section>
+    <h2><span class="no">03</span> Fees &amp; Payment</h2>
+    <div class="fee">
+      <div class="row hl">
+        <div class="lbl">Marketing department retainer<small>Billed monthly, in advance</small></div>
+        <div class="amt">$3,000 / mo</div>
+      </div>
+      <div class="row">
+        <div class="lbl">Advertising budget (Google Ads / paid media)<small>Paid by Client to the ad platforms &mdash; not included in the retainer</small></div>
+        <div class="amt" style="color:var(--mute)">Separate</div>
+      </div>
+    </div>
+    <ul class="terms">
+      <li>The first monthly invoice is issued on signing; each following invoice is issued at the start of the service month.</li>
+      <li>Invoices are due within <b>fifteen (15) days</b> of receipt.</li>
+      <li>Preferred payment is ACH direct deposit to AOM-INHOUSE LLC (details provided on each invoice).</li>
+      <li>Ad spend is scoped with Wolfpack and paid directly to Google / the ad platforms; AOM does not mark it up.</li>
+    </ul>
+    <p class="note">A recommended monthly ad budget will be proposed in the first planning session and is the Client&rsquo;s decision.</p>
+  </section>
+
+  <section>
+    <h2><span class="no">04</span> What Each Side Brings</h2>
+    <p><b>Wolfpack provides:</b> timely access to accounts and assets, a single point of contact for approvals, and reasonable turnaround on reviews so work stays on schedule.</p>
+    <p><b>AOM provides:</b> the people, tools, and management of the marketing function described in Section 01, and clear monthly reporting on what was done and what it produced.</p>
+  </section>
+
+  <section>
+    <h2><span class="no">05</span> Ownership</h2>
+    <p>All final deliverables &mdash; website, videos, photos, and content &mdash; belong to Wolfpack once the invoice covering them is paid in full. Wolfpack owns what it pays for. AOM keeps the right to show the work in its own portfolio and case studies.</p>
+  </section>
+
+  <section>
+    <h2><span class="no">06</span> Ending the Agreement</h2>
+    <p>After the initial three-month term, either party may end this agreement with <b>thirty (30) days&rsquo;</b> written notice. Wolfpack is responsible for fees through the end of the notice period; any work already delivered and paid for remains Wolfpack&rsquo;s. AOM will hand off access and final files in an organized way.</p>
+  </section>
+
+  <section>
+    <h2><span class="no">07</span> The Standard Terms</h2>
+    <p class="mut">AOM is an independent contractor, not an employee of Wolfpack. Each party keeps the other&rsquo;s non-public information confidential. Neither party is liable for indirect or consequential damages, and AOM&rsquo;s total liability is limited to fees paid in the prior three months. This agreement is governed by the laws of the State of Arizona and is the entire agreement between the parties; changes must be in writing and signed by both.</p>
+  </section>
+
+  <!-- INTERACTIVE SIGN PANEL (screen only) -->
+  <div class="signbar no-print" id="signbar">
+    <h3>Sign this agreement</h3>
+    <p>Type your name to adopt a signature, or switch to Draw. Signing stamps your name and today&rsquo;s date into the Wolfpack block below, then lets you save a signed copy.</p>
+    <div class="tabs">
+      <button class="tab on" id="tabType" type="button">Type</button>
+      <button class="tab" id="tabDraw" type="button">Draw</button>
+    </div>
+    <div class="row2">
+      <div><label>Full name</label><input id="inName" type="text" placeholder="Ross ..." autocomplete="name"></div>
+      <div><label>Title</label><input id="inTitle" type="text" placeholder="Owner" autocomplete="organization-title"></div>
+    </div>
+    <div class="previewline" id="prevType"><span class="rendered" id="prevText"></span></div>
+    <div class="previewline" id="prevDraw" style="display:none"><canvas id="pad"></canvas></div>
+    <div class="acts">
+      <button class="btn primary" id="btnAdopt" type="button" disabled>Adopt &amp; sign</button>
+      <button class="btn ghost" id="btnClear" type="button">Clear</button>
+      <button class="btn ghost" id="btnSave" type="button" disabled>1. Save signed copy (PDF)</button>
+      <button class="btn ghost" id="btnEmail" type="button" disabled>2. Email confirmation to AOM</button>
+    </div>
+    <div class="doneflag" id="done">Signed. <b>Step 1</b> &mdash; save the signed PDF to your device. <b>Step 2</b> &mdash; tap &ldquo;Email confirmation to AOM,&rdquo; attach that saved PDF, and send. That confirms the agreement on your end.</div>
+  </div>
+
+  <!-- SIGNATURE BLOCKS (print) -->
+  <div class="sigwrap">
+    <h2>Signatures</h2>
+    <div class="siggrid">
+      <div class="sigcol">
+        <div class="for">For the Provider</div>
+        <div class="co">AOM-INHOUSE LLC (dba Ahead of Market)</div>
+        <div class="sigline"><span class="rendered">Patrik Matheson</span></div>
+        <div class="sigcap"><span>Signature</span><span>Date: July 22, 2026</span></div>
+        <div class="field"><label>Print name</label><div class="val">Patrik Matheson</div></div>
+        <div class="field"><label>Title</label><div class="val">Owner, AOM-INHOUSE LLC</div></div>
+      </div>
+      <div class="sigcol">
+        <div class="for">For the Client</div>
+        <div class="co">Wolfpack Companies LLC</div>
+        <div class="sigline"><span class="rendered" id="wpSig"></span><canvas class="draw" id="wpDraw" style="display:none"></canvas></div>
+        <div class="sigcap"><span>Signature</span><span id="wpDate">Date: ____________</span></div>
+        <div class="field"><label>Print name</label><div class="val" id="wpName">____________________</div></div>
+        <div class="field"><label>Title</label><div class="val" id="wpTitle">____________________</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>AOM-INHOUSE LLC dba Ahead of Market &middot; 1128 W Dunbar Dr, Tempe, AZ 85282</span>
+    <span>Agreement No. AOM-WP-2026-07</span>
+  </div>
+
+</div></div>
+
+<script>
+(function(){
+  var mode='type';
+  var inName=document.getElementById('inName'), inTitle=document.getElementById('inTitle');
+  var prevText=document.getElementById('prevText');
+  var prevType=document.getElementById('prevType'), prevDraw=document.getElementById('prevDraw');
+  var btnAdopt=document.getElementById('btnAdopt'), btnClear=document.getElementById('btnClear'), btnSave=document.getElementById('btnSave'), btnEmail=document.getElementById('btnEmail');
+  var done=document.getElementById('done');
+  var wpSig=document.getElementById('wpSig'), wpDraw=document.getElementById('wpDraw');
+  var wpName=document.getElementById('wpName'), wpTitle=document.getElementById('wpTitle'), wpDate=document.getElementById('wpDate');
+  var pad=document.getElementById('pad'), pctx, drew=false;
+
+  function todayStr(){
+    var d=new Date();
+    var m=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return m[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
+  }
+  function setupPad(canvas){
+    var ctx=canvas.getContext('2d');
+    var r=canvas.getBoundingClientRect();
+    canvas.width=r.width; canvas.height=r.height;
+    ctx.strokeStyle='#E7C77E'; ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round';
+    return ctx;
+  }
+  function bindDraw(canvas,ctx,onDraw){
+    var drawing=false, lx=0, ly=0;
+    function pos(e){ var r=canvas.getBoundingClientRect(); var t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
+    function start(e){ drawing=true; var p=pos(e); lx=p.x; ly=p.y; e.preventDefault(); }
+    function move(e){ if(!drawing)return; var p=pos(e); ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(p.x,p.y); ctx.stroke(); lx=p.x; ly=p.y; onDraw(); e.preventDefault(); }
+    function end(){ drawing=false; }
+    canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
+    canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',move,{passive:false}); canvas.addEventListener('touchend',end);
+  }
+
+  function refresh(){
+    if(mode==='type'){
+      prevText.textContent=inName.value.trim();
+      btnAdopt.disabled = inName.value.trim().length<2;
+    } else {
+      btnAdopt.disabled = !drew;
+    }
+  }
+  inName.addEventListener('input',refresh);
+
+  document.getElementById('tabType').onclick=function(){
+    mode='type'; this.classList.add('on'); document.getElementById('tabDraw').classList.remove('on');
+    prevType.style.display='flex'; prevDraw.style.display='none'; refresh();
+  };
+  document.getElementById('tabDraw').onclick=function(){
+    mode='draw'; this.classList.add('on'); document.getElementById('tabType').classList.remove('on');
+    prevType.style.display='none'; prevDraw.style.display='flex';
+    if(!pctx){ pctx=setupPad(pad); bindDraw(pad,pctx,function(){ drew=true; refresh(); }); }
+    refresh();
+  };
+
+  btnClear.onclick=function(){
+    inName.value=''; inTitle.value=''; prevText.textContent='';
+    if(pctx){ pctx.clearRect(0,0,pad.width,pad.height); } drew=false;
+    btnAdopt.disabled=true; btnSave.disabled=true; done.style.display='none';
+    wpSig.textContent=''; wpSig.style.display='inline'; wpDraw.style.display='none';
+    wpName.textContent='____________________'; wpTitle.textContent='____________________';
+    wpDate.textContent='Date: ____________';
+  };
+
+  btnAdopt.onclick=function(){
+    if(mode==='type'){
+      wpSig.style.display='inline'; wpDraw.style.display='none';
+      wpSig.textContent=inName.value.trim();
+    } else {
+      // copy drawn signature into the block canvas
+      wpSig.style.display='none'; wpDraw.style.display='block';
+      var r=wpDraw.parentElement.getBoundingClientRect();
+      wpDraw.width=r.width; wpDraw.height=r.height;
+      var c=wpDraw.getContext('2d');
+      c.drawImage(pad,0,0,pad.width,pad.height,0,0,wpDraw.width,wpDraw.height*(pad.height/70));
+    }
+    wpName.textContent=inName.value.trim()||'____________________';
+    wpTitle.textContent=inTitle.value.trim()||'____________________';
+    wpDate.textContent='Date: '+todayStr();
+    btnSave.disabled=false; btnEmail.disabled=false; done.style.display='block';
+    window.scrollTo({top:document.querySelector('.sigwrap').offsetTop-40,behavior:'smooth'});
+  };
+
+  btnSave.onclick=function(){ window.print(); };
+  btnEmail.onclick=function(){
+    var who=(inName.value.trim()||'Ross');
+    var subj='Signed — Marketing Department Agreement (Wolfpack, AOM-WP-2026-07)';
+    var body='Hi AOM team,\n\n'+who+' has signed the Marketing Department Agreement (No. AOM-WP-2026-07) on '+todayStr()+'. '
+      +'The signed PDF is attached.\n\nPlease send the first invoice.\n\n— '+who+', Wolfpack Companies';
+    window.location.href='mailto:hello@aom-inhouse.com?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  };
+})();
+</script>
+</body>
+</html>
