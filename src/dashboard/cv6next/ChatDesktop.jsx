@@ -592,6 +592,14 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const bottomRef = useRef(null);
   const prevLenRef = useRef(0);
   const selKey = selected?.id || '';
+  const liveProgressKey = useMemo(() => (liveSteps || []).map((step) => [
+    step?.id,
+    step?.step_index,
+    step?.text,
+    step?.timestamp,
+    step?.progress,
+    step?.state,
+  ].join(':')).join('|'), [liveSteps]);
   useEffect(() => { prevLenRef.current = 0; }, [selKey]);
   useEffect(() => {
     const el = scrollRef.current;
@@ -607,6 +615,17 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     if (prev === 0) bottomRef.current?.scrollIntoView();
     else if (fromBottom < 400) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selKey]);
+  // Live step polling does not change the message count, so the message-only effect above
+  // cannot keep the active work visible. While this room is genuinely awaiting a reply,
+  // follow the singular live thread at the tail after each real step update.
+  useEffect(() => {
+    if (!awaiting) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [awaiting, liveProgressKey, selKey]);
 
   const pickAgent = (a) => { const room = { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel, specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle }; if (onOpenRoomColumn) onOpenRoomColumn(room, worldId); else setPicked(room); };
   const pickProject = (p) => { const room = { id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' }; if (onOpenRoomColumn) onOpenRoomColumn(room, worldId); else setPicked(room); };

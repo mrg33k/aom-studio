@@ -481,3 +481,15 @@ Resolution and verification (2026-07-21):
   so a real signed-in iPhone keyboard check remains the final hardware signoff.
 
 **Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
+
+### R14 - Mobile recent-chat scrolling and singular live progress
+
+Started 2026-07-21 from Patrik's mobile follow-up. The Home "Pick up where we left
+off" chat rail cannot be scrolled reliably on touch devices. Chat can also render
+multiple live progress treatments and leave one attached to an older message instead
+of the active bottom edge. This round will restore deliberate mobile scrolling for the
+recent-chat rail, consolidate live work to exactly one progress surface per room, keep
+that surface after the newest message at the bottom of the transcript, and add mobile
+interaction plus progress lifecycle regressions before deployment.
+
+**Status:** in progress.

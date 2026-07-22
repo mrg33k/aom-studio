@@ -2822,6 +2822,19 @@ function DemoMobileChatLifecycle() {
       fileSize: 0,
       attachments: [{ url: `${origin}/cv4-static/DESIGN.md`, name: 'DESIGN.md', mime: 'text/markdown', size: 0 }],
     },
+    // Deliberately stale saved state: the live-progress contract must settle this
+    // historical active step so only the current WorkingTurn below can animate.
+    {
+      id: 'mobile-stale-progress',
+      agentInitials: 'RR',
+      agentName: 'Renderer Room',
+      agentTint: 'violet',
+      isUser: false,
+      text: 'The earlier renderer pass was saved.',
+      time: '11:40 AM',
+      ts: at(20),
+      blocks: [{ type: 'step', stepIndex: 0, title: 'Earlier renderer pass', state: 'active', progress: 48 }],
+    },
     {
       id: 'mobile-live-user',
       agentInitials: 'YO',

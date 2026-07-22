@@ -433,72 +433,67 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, mess
     if (ok !== false) setDraft('');
   };
 
-  // Send behavior (design contract, drop 7): a fresh message is NOT bottom-stuck. We pin
-  // the just-sent user message to the TOP of the view and let the agent's reply grow
-  // downward beneath it (thinking, then bubble / Goal Thread). It stays pinned until you
-  // scroll or send again. So while a reply is pending we reserve a viewport of room below.
+  // Live work owns one place: the tail of the conversation. Older behavior pinned the
+  // user's question near the header and reserved 78vh underneath it. That made the real
+  // progress turn look attached to an older message and let it leave the visible bottom.
   const lastMsg = messages?.length ? messages[messages.length - 1] : null;
   // Prefer the hook's hardened working signal (settles on the bridge's end-of-turn marker,
   // shows when you open a busy room) so mobile reads identically to the other surfaces; fall
   // back to the local "last message is mine" guess only when no signal was passed (demo).
   const awaiting = awaitingProp != null ? awaitingProp : (!!lastMsg && lastMsg.isUser);
-  const lastUserSig = useMemo(() => {
-    for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
-      if (messages[i]?.isUser) return `${i}:${messages[i].ts || messages[i].text || ''}`;
-    }
-    return '';
-  }, [messages]);
+  const liveProgressKey = useMemo(() => (liveSteps || []).map((step) => [
+    step?.id,
+    step?.step_index,
+    step?.text,
+    step?.timestamp,
+    step?.progress,
+    step?.state,
+  ].join(':')).join('|'), [liveSteps]);
 
-  // Scroll so the latest user message sits ~12px under the header (its top edge).
-  const pinLastUser = useCallback((behavior = 'smooth') => {
+  const followTail = useCallback((behavior = 'smooth') => {
     const el = scrollRef.current;
     if (!el) return;
-    const nodes = el.querySelectorAll('[data-userturn]');
-    const node = nodes[nodes.length - 1];
-    if (!node) return;
-    const delta = node.getBoundingClientRect().top - el.getBoundingClientRect().top - 12;
-    el.scrollBy({ top: delta, behavior });
+    el.scrollTo({ top: el.scrollHeight, behavior });
   }, []);
-  const jumpToLatest = useCallback(() => {
-    if (awaiting) pinLastUser('smooth');
-    else bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [awaiting, pinLastUser]);
+  const jumpToLatest = useCallback(() => followTail('smooth'), [followTail]);
 
   // The pill shows when scrolled away from the active exchange.
   const onScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setShowJump(fromBottom > 240);
-  }, []);
+    setShowJump(!awaiting && fromBottom > 240);
+  }, [awaiting]);
 
   const prevLenRef = useRef(0);
-  const prevUserSigRef = useRef('');
   const roomKey = room?.id || room?.name;
-  useEffect(() => { prevLenRef.current = 0; prevUserSigRef.current = ''; }, [roomKey]);
+  useEffect(() => { prevLenRef.current = 0; }, [roomKey]);
   useEffect(() => {
     const el = scrollRef.current;
     const len = messages?.length || 0;
     const prev = prevLenRef.current;
     prevLenRef.current = len;
-    const prevSig = prevUserSigRef.current;
-    prevUserSigRef.current = lastUserSig;
     if (!el || !len) return;
     // The thread polls every 3s and hands back a fresh array each time. When the count didn't
     // change it's an identical re-render, not a new message — bail before any pin/scroll so the
     // view stays exactly where you left it (this is the guard the desktop screen already has;
     // without it a poll could re-snap your latest message to the top while you sat at the bottom).
     if (len === prev) return;
-    // First load for this room: land on the active exchange (pin the question if a reply
-    // is pending, else the tail).
-    if (prev === 0) { if (awaiting) pinLastUser('auto'); else bottomRef.current?.scrollIntoView(); return; }
-    // A NEW user message was just sent -> pin it to the top; the answer fills in below.
-    if (lastUserSig && lastUserSig !== prevSig && awaiting) { pinLastUser('smooth'); return; }
-    // Agent reply streaming in beneath the pinned question: leave the scroll alone unless
-    // you're right at the tail watching it (then keep the newest in view).
+    // First load and every newly-sent active turn land at the tail. Once work settles,
+    // preserve history reading unless the user was already following the bottom.
+    if (prev === 0 || awaiting) { followTail(prev === 0 ? 'auto' : 'smooth'); return; }
     const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (!awaiting && fromBottom < 200) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, roomKey, awaiting, lastUserSig, pinLastUser]);
+    if (fromBottom < 200) followTail('smooth');
+  }, [messages, roomKey, awaiting, followTail]);
+
+  // Step polling can change the live thread without adding a message. Follow those
+  // real updates too, after React has laid out the newest step, so the singular
+  // progress surface remains visibly anchored at the conversation tail.
+  useEffect(() => {
+    if (!awaiting) return undefined;
+    const frame = requestAnimationFrame(() => followTail('auto'));
+    return () => cancelAnimationFrame(frame);
+  }, [awaiting, liveProgressKey, followTail]);
 
   const empty = status === 'empty' || !messages?.length;
   const [collection, setCollection] = useState(null); // { files, index } for the look-only viewer
@@ -596,10 +591,9 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, mess
               )}
             </>
           )}
-          {/* Reserve a viewport of room below the pinned question while a reply is pending,
-              so the just-sent message can sit at the top and the answer grows into the space
-              beneath it (design send-behavior). Collapses once the reply has landed. */}
-          <div style={{ height: awaiting ? '78vh' : 4 }} />
+          {/* A small tail marker only. Composer clearance comes from `.scrbody`; the former
+              78vh pending spacer stranded live work above a blank page. */}
+          <div style={{ height: 4 }} />
           <div ref={bottomRef} style={{ height: 4 }} />
         </div>
         </ReviewCtx.Provider>

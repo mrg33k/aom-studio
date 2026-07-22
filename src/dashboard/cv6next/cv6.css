@@ -1914,6 +1914,9 @@
   overflow-y:hidden;
   scroll-snap-type:x mandatory;
   scroll-padding-inline:22px;
+  overscroll-behavior-x:contain;
+  touch-action:pan-x pan-y;
+  -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
 }
 [data-cv6][data-screen="home-mobile"] .mresumelist::-webkit-scrollbar { display:none; }
@@ -2643,6 +2646,15 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   user-select:none;
   -webkit-touch-callout:none;
   touch-action:pan-y;
+}
+
+/* The recent-chat cards live in a horizontal rail. R11's long-press protection
+   accidentally forced those cards to pan vertically only, so iOS never handed a
+   sideways swipe to `.mresumelist`. Preserve both axes here: horizontal gestures
+   move between chats; vertical gestures still move the Home page. */
+[data-cv6][data-screen="home-mobile"] .mresumelist,
+[data-cv6][data-screen="home-mobile"] .mresumecard {
+  touch-action:pan-x pan-y;
 }
 
 /* Auto-reply is a full Email section, not a switch hidden inside the inbox. */

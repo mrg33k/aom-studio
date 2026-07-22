@@ -33,6 +33,19 @@ function hasMessageExtras(m, { allowBlocks, allowAttachments, allowLinkCards, al
   );
 }
 
+// Persisted message blocks are history, never the room's live activity surface.
+// Some older agent messages were saved while their newest step still said
+// active/working, which left a moving progress bar attached to that old message
+// while WorkingTurn rendered the real current one at the tail. Settle only those
+// stale step states at render time (without mutating message data) so a room owns
+// at most one live progress bar: the explicit live-work turn below the newest item.
+export function settleHistoricalBlocks(blocks) {
+  return (Array.isArray(blocks) ? blocks : []).map((block) => {
+    if (block?.type !== 'step' || !['active', 'working'].includes(block.state)) return block;
+    return { ...block, state: 'done', progress: null };
+  });
+}
+
 export function Cv6MessageExtras({
   message,
   goal,
@@ -46,7 +59,7 @@ export function Cv6MessageExtras({
   onReviewAttachment,
 }) {
   if (!message) return null;
-  const blocks = Array.isArray(message.blocks) ? message.blocks : [];
+  const blocks = settleHistoricalBlocks(message.blocks);
   const attachments = Array.isArray(message.attachments) ? message.attachments : [];
   const linkCards = Array.isArray(message.linkCards) ? message.linkCards : [];
   const chips = Array.isArray(message.chips) ? message.chips : [];
@@ -226,16 +239,17 @@ function MobileMessageTurn({ message, onAction }) {
   );
 }
 
-function MobileGoalTurn({ message, goal, blocks }) {
+function MobileGoalTurn({ message, goal, blocks, live = false }) {
+  const renderedBlocks = live ? (blocks || message.blocks || []) : settleHistoricalBlocks(blocks || message.blocks);
   return (
-    <div data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant="mobile-goal" style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+    <div data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant="mobile-goal" data-cv6-live-work={live ? '' : undefined} className={live ? 'cv6-live-work' : undefined} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
       <MobileAvatar message={message} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{message.agentName}</span>
           <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{message.time}</span>
         </div>
-        <GoalThreadBody goal={goal} blocks={blocks || message.blocks} header={false} />
+        <GoalThreadBody goal={goal} blocks={renderedBlocks} header={false} />
         {!message.isUser && message.linkCards?.length ? <ResultLinkCards cards={message.linkCards} /> : null}
       </div>
     </div>
@@ -302,6 +316,7 @@ function MobileMessageThread({
           message={{ agentName: room?.name, agentInitials: room?.initials || '·', agentTint: 'accent', time: '' }}
           goal={askGoal}
           blocks={liveBlocks}
+          live
         />
       ) : null}
       {showLive && renderLiveWork !== 'goalBody' ? <WorkingTurn room={room} liveSteps={liveSteps} goal={askGoal} /> : null}
@@ -387,7 +402,7 @@ export function Cv6MessageThread({
             />
           ))}
           {showLive && renderLiveWork === 'goalBody' ? (
-            <div style={{ marginTop: 16 }}>
+            <div data-cv6-live-work="" className="cv6-live-work" style={{ marginTop: 16 }}>
               <GoalThreadBody goal={askGoal} blocks={liveBlocks} header={false} />
             </div>
           ) : null}

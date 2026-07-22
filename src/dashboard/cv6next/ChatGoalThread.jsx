@@ -83,7 +83,7 @@ export function liveStepsToBlocks(liveSteps) {
 export function WorkingTurn({ room, liveSteps, steps, goal }) {
   const blocks = liveStepsToBlocks(liveSteps || steps);
   return (
-    <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'flex-start' }}>
+    <div data-cv6-live-work="" className="cv6-live-work" style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'flex-start' }}>
       <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{room?.initials || '·'}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         {room?.name ? <div className="gname" style={{ marginBottom: 6 }}>{room.name}</div> : null}
