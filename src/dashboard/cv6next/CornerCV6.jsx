@@ -1234,6 +1234,14 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [worldId, openedProject, missionSeed]);
 
+  // Room options for the checklist composer. MUST live above the early returns below
+  // (catchUpOpen / missionSeed / openedProject) — a hook after an early return renders
+  // fewer hooks on the branch that bails, which crashed the mobile project screen into
+  // the error boundary (React #300). Consumed only by the full Home render further down.
+  const checklistRoomOptions = useMemo(
+    () => buildChecklistRoomOptions(data.agents, data.projects, missionsByProject),
+    [data.agents, data.projects, missionsByProject],
+  );
 
   // Card footer state drives the bottom of the catch-up card: 'none' = caught up (hide it),
   // 'actions' = the suggested-action buttons, 'reply' = the inline reply composer.
@@ -1408,10 +1416,6 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     if (pn.open) for (const m of pn.missions) navNodes.push({ key: `m:${m.id}`, kind: 'mission', id: m.id, isFolder: m.isFolder, roomObj: m.roomObj });
   }
   navNodesRef.current = navNodes;
-  const checklistRoomOptions = useMemo(
-    () => buildChecklistRoomOptions(data.agents, data.projects, missionsByProject),
-    [data.agents, data.projects, missionsByProject],
-  );
   const selectedKey = (knavSelectedIdx >= 0 && knavSelectedIdx < navNodes.length) ? navNodes[knavSelectedIdx].key : null;
 
   // tag rows from the selected node's key
