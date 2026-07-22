@@ -2760,15 +2760,69 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   white-space:normal;
   overflow-wrap:anywhere;
 }
+/* ── Decision cards ──────────────────────────────────────────────────────────
+   A ChoiceBlock is a "pick one" moment, not a chat bubble. Each option renders
+   as a full-width card with a leading select-dot, roomy padding, and a clear
+   recommended-vs-alternate hierarchy — never a heavy solid-blue block that
+   mimics a sent message. Scoped to .is-choice so quick-reply chips stay tiny. */
 [data-cv6] .chips.is-choice, [data-cv6kit] .chips.is-choice {
   flex-direction:column;
   align-items:stretch;
+  gap:9px;
 }
-[data-cv6] .chips.is-choice .chip-btn, [data-cv6kit] .chips.is-choice .chip-btn {
+[data-cv6] .chips.is-choice .chip-btn,
+[data-cv6kit] .chips.is-choice .chip-btn {
   width:100%;
+  display:flex;
+  align-items:flex-start;
   justify-content:flex-start;
-  min-height:44px;
-  padding:11px 15px;
-  border-radius:12px;
-  font-size:13px;
+  gap:11px;
+  min-height:0;
+  padding:13px 15px;
+  border-radius:14px;
+  border:1px solid var(--hair);
+  background:var(--surface);
+  color:var(--fg);
+  font-size:13.5px;
+  font-weight:500;
+  line-height:1.45;
+  text-align:left;
+  transition:border-color .16s ease, background .16s ease, transform .12s ease;
+}
+[data-cv6] .chips.is-choice .chip-btn:hover,
+[data-cv6kit] .chips.is-choice .chip-btn:hover { border-color:var(--accent); }
+[data-cv6] .chips.is-choice .chip-btn:active,
+[data-cv6kit] .chips.is-choice .chip-btn:active { transform:scale(.99); }
+
+/* leading select-dot */
+[data-cv6] .chips.is-choice .chip-dot,
+[data-cv6kit] .chips.is-choice .chip-dot {
+  width:18px; height:18px; border-radius:50%;
+  border:2px solid var(--hair); background:transparent;
+  flex:none; margin-top:1px;
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .16s ease, background .16s ease;
+}
+[data-cv6] .chips.is-choice .chip-txt,
+[data-cv6kit] .chips.is-choice .chip-txt { flex:1; min-width:0; overflow-wrap:anywhere; }
+
+/* recommended tag */
+[data-cv6] .chips.is-choice .chip-badge,
+[data-cv6kit] .chips.is-choice .chip-badge {
+  flex:none; align-self:flex-start; margin-top:1px;
+  font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  padding:3px 8px; border-radius:20px;
+  color:var(--accent); background:var(--accent-weak); white-space:nowrap;
+}
+
+/* recommended card — accent-tinted, not solid blue */
+[data-cv6] .chips.is-choice .chip-btn.is-recommended,
+[data-cv6kit] .chips.is-choice .chip-btn.is-recommended {
+  border-color:var(--accent);
+  background:linear-gradient(180deg,var(--accent-weak),transparent);
+  font-weight:600;
+}
+[data-cv6] .chips.is-choice .chip-btn.is-recommended .chip-dot,
+[data-cv6kit] .chips.is-choice .chip-btn.is-recommended .chip-dot {
+  border-color:var(--accent); background:var(--accent);
 }
