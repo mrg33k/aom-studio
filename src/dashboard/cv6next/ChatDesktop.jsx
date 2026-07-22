@@ -113,6 +113,11 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
   const openItem = (it) => {
     if (needsAttention(it) && onReview) { onReview(it); return; }
+    // Photos and videos open directly — scrolling to the message is not useful for media.
+    if ((it.kind === 'photo' || it.kind === 'video') && it.url) {
+      window.open(it.url, '_blank', 'noopener');
+      return;
+    }
     onLocate?.(it);
   };
   const row = (it, i) => {

@@ -962,6 +962,22 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
     }))
   }
 
+  // Immediate recency bump for direct agent threads: called right after the user
+  // sends a message so Recently Active reflects the send without waiting for the
+  // next poll cycle (which could take 3s, or miss the thread entirely if the
+  // 100-message window is full of more-recent project/mission messages).
+  const bumpAgentThread = useCallback((agentSlug, text) => {
+    if (!agentSlug) return
+    const ts = Date.now()
+    setAgentThreadRooms(prev => {
+      const map = {}
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000
+      for (const a of (prev || [])) { if (a.last_message_at >= cutoff) map[a.agent] = a }
+      map[agentSlug] = { agent: agentSlug, last_message_at: ts, last_message_text: String(text || '').slice(0, 160) }
+      return Object.values(map)
+    })
+  }, [])
+
   return {
     rightNow,
     completedFeed,
@@ -981,6 +997,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
     projectRooms: supabaseProjectRooms,
     missionRooms,
     agentThreadRooms,
+    bumpAgentThread,
     refetch: fetchAll,
   }
 }

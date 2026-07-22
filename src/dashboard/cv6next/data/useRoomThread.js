@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase.js';
 import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { titleForAgent } from './agentTitles.js';
 import { extractLinkCards, stripTrailingCardUrl } from './resultLinks.js';
+import { useDataContext } from '../providers/DataContext.jsx';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function initials(name) {
@@ -171,6 +172,7 @@ const threadCacheKey = (worldId, room) => (room?.id ? `${worldId}|${room.isMissi
 
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.
 export function useRoomThread(worldId, room) {
+  const { bumpAgentThread } = useDataContext() || {};
   const [messages, setMessages] = useState([]);
   const [archivedMessages, setArchivedMessages] = useState([]);
   const [blocks, setBlocks] = useState(null);
@@ -272,10 +274,13 @@ export function useRoomThread(worldId, room) {
       }
       // The created row id is the parent the bridge keys its step heartbeats to.
       try { const j = await r.clone().json(); const id = j?.message?.id; if (id) setLastSentId(String(id)); } catch { /* non-JSON */ }
+      // Immediately bump this direct agent thread's recency so Recently Active
+      // reflects the send before the next poll cycle picks it up.
+      if (!room.isProject && !room.isMission && bumpAgentThread) bumpAgentThread(room.id, body);
       setReloadKey((k) => k + 1);
       return true;
     } catch { setPending((p) => p.filter((m) => m.optId !== optId)); setAwaiting(false); return false; }
-  }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug]);
+  }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug, bumpAgentThread]);
 
   const clearRoom = useCallback(async () => {
     if (!worldId || !room?.id) return false;
