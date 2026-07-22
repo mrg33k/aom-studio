@@ -57,6 +57,7 @@ test('per-room checklist keeps drafts, persists lists, plays an item, and copies
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await openMobileFixture(page);
+  await page.evaluate(() => document.documentElement.setAttribute('data-app-theme', 'glass'));
 
   const chatInput = page.locator('[data-testid="cv6-chat-input"]');
   await chatInput.fill('A draft that should survive checklist mode');
@@ -73,6 +74,36 @@ test('per-room checklist keeps drafts, persists lists, plays an item, and copies
   await addItem.fill('Draft the intro');
   await addItem.press('Enter');
   await expect(page.getByLabel('Checklist item')).toHaveValue('Draft the intro');
+
+  const visual = await page.evaluate(() => {
+    const alpha = (value) => {
+      const parts = String(value).match(/rgba?\(([^)]+)\)/)?.[1]?.split(/[\s,\/]+/).filter(Boolean) || [];
+      return parts.length > 3 ? Number(parts[3]) : 1;
+    };
+    const composer = document.querySelector('.cv6-floating-composer');
+    const list = document.querySelector('[data-testid="room-checklist-list"]');
+    const heading = document.querySelector('[data-role="checklist-heading"]');
+    const panel = document.querySelector('[data-testid="room-checklist-panel"]');
+    const composerStyle = getComputedStyle(composer);
+    const listStyle = getComputedStyle(list);
+    return {
+      composerAlpha: alpha(composerStyle.backgroundColor),
+      listAlpha: alpha(listStyle.backgroundColor),
+      composerPaddingTop: parseFloat(composerStyle.paddingTop),
+      headingHeight: heading.getBoundingClientRect().height,
+      panelGap: parseFloat(getComputedStyle(panel).rowGap),
+    };
+  });
+  expect(visual.composerAlpha).toBe(1);
+  expect(visual.listAlpha).toBe(1);
+  expect(visual.composerPaddingTop).toBeGreaterThanOrEqual(14);
+  expect(visual.headingHeight).toBeGreaterThanOrEqual(58);
+  expect(visual.panelGap).toBeGreaterThanOrEqual(13);
+
+  await page.getByLabel('Collapse Launch notes').click();
+  await expect(page.getByLabel('Expand Launch notes')).toBeVisible();
+  await page.screenshot({ path: '/tmp/cv6-room-checklists-collapsed.png', fullPage: false });
+  await page.getByLabel('Expand Launch notes').click();
 
   await page.getByLabel('Send Draft the intro to agent').click();
   await expect.poll(() => sent.filter((entry) => entry.text === 'Draft the intro').length).toBe(1);

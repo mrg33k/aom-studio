@@ -170,7 +170,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
   const toolName = selectedImageTool ? (IMAGE_TOOLS.find((t) => t.id === selectedImageTool)?.name || selectedImageTool) : null;
 
   return (
-    <div className="cv6-floating-composer" style={{ width: '100%', maxWidth: 680, margin: '0 auto', fontFamily: 'var(--font-sans)', padding: 10, borderRadius: 24, background: 'var(--surface)', border: '1px solid var(--hair)', boxShadow: '0 18px 42px -24px rgba(0,0,0,.75)' }}>
+    <div className={`cv6-floating-composer${checklistOpen ? ' is-checklist-open' : ''}`} style={{ width: '100%', maxWidth: 680, margin: '0 auto', fontFamily: 'var(--font-sans)', padding: checklistOpen ? 14 : 12, borderRadius: 26, background: 'var(--composer-solid, #131317)', border: '1px solid var(--hair)', boxShadow: '0 22px 52px -22px rgba(0,0,0,.88)', transition: 'padding .18s ease, background .18s ease' }}>
       {/* Hidden file input — no accept filter on purpose: any file type is allowed. */}
       <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFileSelection} />
       {/* Pinned image tool + recording state, as quiet chips above the bar. */}
@@ -197,7 +197,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
           <SlashCommandAutocomplete value={input} setValue={setInput} inputRef={inputRef} caret={caret}
             onModalCommand={(name) => { if (name === '/integrations') setIntegrationsOpen(true); }} surface="1on1"
             panelStyle={{ background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', minHeight: 46, borderRadius: 16, background: 'var(--surface-2)', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', minHeight: 50, borderRadius: 17, background: 'var(--composer-card-solid, var(--surface-2))', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 15px' }}>
             <input
               ref={inputRef}
               data-testid="cv6-chat-input"
@@ -216,7 +216,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
             />
           </div>
         </div>}
-        <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+        <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: checklistOpen ? 12 : 10 }}>
           <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} />
           <button type="button" title="Files" aria-label="Attach and upload files" onClick={() => fileInputRef.current?.click()} disabled={uploading}
             style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--hair)', color: uploading ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>

@@ -36,6 +36,9 @@
   --ground: var(--ink-900);          
   --surface: var(--ink-850);         
   --surface-2: #1c1c21;              
+  --composer-solid: #131317;
+  --composer-card-solid: #202026;
+  --composer-control-solid: #292930;
   --fg: #E9E9EC;                     
   --muted: #9a9aa2;                  
   --faint: #62626b;                  
@@ -64,6 +67,9 @@
   --ground: #0A0A0B;
   --surface: #161619;
   --surface-2: #1c1c21;
+  --composer-solid: #131317;
+  --composer-card-solid: #202026;
+  --composer-control-solid: #292930;
   --fg: #E9E9EC;
   --muted: #9a9aa2;
   --faint: #62626b;
@@ -85,6 +91,9 @@
   --ground: #F6F6F7;
   --surface: #FFFFFF;
   --surface-2: #F0F0F2;
+  --composer-solid: #FFFFFF;
+  --composer-card-solid: #F3F3F5;
+  --composer-control-solid: #E9E9ED;
   --fg: #18181B;
   --muted: #6a6a72;
   --faint: #a0a0a8;
@@ -114,6 +123,9 @@
     linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%); 
   --surface: rgba(22,26,33,.55);
   --surface-2: rgba(255,255,255,.08);
+  --composer-solid: #111820;
+  --composer-card-solid: #1B242E;
+  --composer-control-solid: #273340;
   --fg: #F3F4F6;
   --muted: #c0c4cc;
   --faint: #828690;
@@ -1144,6 +1156,9 @@
   --chat-bar: rgba(246,246,247,.92);
   --surface: #FFFFFF;
   --surface-2: #F0F0F2;
+  --composer-solid: #FFFFFF;
+  --composer-card-solid: #F3F3F5;
+  --composer-control-solid: #E9E9ED;
   --fg: #18181B;
   --muted: #6a6a72;
   --faint: #a0a0a8;
@@ -1168,6 +1183,9 @@
     linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%); 
   --surface: rgba(22,26,33,.55);
   --surface-2: rgba(255,255,255,.08);
+  --composer-solid: #111820;
+  --composer-card-solid: #1B242E;
+  --composer-control-solid: #273340;
   --fg: #F3F4F6;
   --muted: #c0c4cc;
   --faint: #828690;

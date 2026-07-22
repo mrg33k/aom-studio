@@ -34,3 +34,12 @@
   `https://lab.aheadofmarket.com`.
 
 **Status:** shipped.
+
+## R2 — Opaque, roomier checklist composer
+
+- Replace the translucent composer/list layers with theme-aware solid surfaces.
+- Give the checklist header, accordion rows, item rows, and share controls more breathing room.
+- Preserve the mobile bottom anchor, bounded internal scroll, and circular action row.
+- Re-run the focused checklist loop and the sibling mobile composer regression suite.
+
+**Status:** in progress.

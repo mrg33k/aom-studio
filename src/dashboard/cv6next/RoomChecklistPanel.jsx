@@ -18,7 +18,7 @@ const circleButton = (active = false, danger = false) => ({
   width: 34, height: 34, minWidth: 34, borderRadius: '50%', padding: 0,
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
   border: `1px solid ${danger ? 'rgba(229,72,77,.5)' : active ? 'var(--accent)' : 'var(--hair)'}`,
-  background: danger ? 'rgba(229,72,77,.12)' : active ? 'var(--accent-weak)' : 'var(--surface-2)',
+  background: danger ? 'rgba(229,72,77,.16)' : active ? 'var(--accent-weak)' : 'var(--composer-control-solid, var(--surface-2))',
   color: danger ? 'var(--danger, #e5484d)' : active ? 'var(--accent)' : 'var(--muted)',
   cursor: 'pointer', flex: 'none',
 });
@@ -32,18 +32,18 @@ function EditableItem({ item, disabled, onEdit, onToggle, onDelete, onPlay }) {
     if (next !== item.text) onEdit(next);
   };
   return (
-    <div data-testid="room-checklist-item" style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+    <div data-testid="room-checklist-item" style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0, minHeight: 42 }}>
       <button type="button" aria-label={item.done ? 'Reopen item' : 'Complete item'} disabled={disabled} onClick={onToggle}
-        style={{ ...circleButton(item.done), width: 30, height: 30, minWidth: 30 }}>
+        style={{ ...circleButton(item.done), width: 32, height: 32, minWidth: 32 }}>
         {item.done ? <span style={{ fontSize: 15, fontWeight: 800 }}>✓</span> : <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1.5px solid currentColor' }} />}
       </button>
       <input aria-label="Checklist item" value={text} disabled={disabled} onChange={(event) => setText(event.target.value)} onBlur={commit}
         onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
-        style={{ flex: 1, minWidth: 0, height: 34, border: 'none', borderBottom: '1px solid var(--hair)', background: 'transparent', color: item.done ? 'var(--faint)' : 'var(--fg)', textDecoration: item.done ? 'line-through' : 'none', outline: 'none', font: '500 13px var(--font-sans)', padding: '0 3px' }} />
+        style={{ flex: 1, minWidth: 0, height: 40, border: 'none', borderBottom: '1px solid var(--hair)', background: 'transparent', color: item.done ? 'var(--faint)' : 'var(--fg)', textDecoration: item.done ? 'line-through' : 'none', outline: 'none', font: '500 13.5px var(--font-sans)', padding: '0 4px' }} />
       <button type="button" aria-label={`Send ${item.text} to agent`} title="Play: send this item to the agent" disabled={disabled} onClick={onPlay}
-        style={{ ...circleButton(false), width: 30, height: 30, minWidth: 30, color: 'var(--accent)' }}><Icon name="play" size={13}/></button>
+        style={{ ...circleButton(false), width: 32, height: 32, minWidth: 32, color: 'var(--accent)' }}><Icon name="play" size={13}/></button>
       <button type="button" aria-label={`Delete ${item.text}`} title="Delete item" disabled={disabled} onClick={onDelete}
-        style={{ ...circleButton(false), width: 30, height: 30, minWidth: 30 }}><Icon name="trash" size={13}/></button>
+        style={{ ...circleButton(false), width: 32, height: 32, minWidth: 32 }}><Icon name="trash" size={13}/></button>
     </div>
   );
 }
@@ -81,15 +81,15 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
   const openCount = (list.items || []).filter((item) => !item.done).length;
 
   return (
-    <section data-testid="room-checklist-list" style={{ border: '1px solid var(--hair)', borderRadius: 15, background: 'var(--surface-2)', overflow: 'hidden' }}>
-      <div style={{ minHeight: 46, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 7px 5px 10px' }}>
+    <section data-testid="room-checklist-list" style={{ border: '1px solid var(--hair)', borderRadius: 18, background: 'var(--composer-card-solid, #202026)', overflow: 'hidden', boxShadow: '0 10px 26px -22px rgba(0,0,0,.9)' }}>
+      <div data-role="checklist-heading" style={{ minHeight: 60, display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px 9px 12px' }}>
         <button type="button" aria-label={list.collapsed ? `Expand ${list.title}` : `Collapse ${list.title}`} aria-expanded={!list.collapsed} disabled={disabled}
           onClick={() => mutate('toggle-list', { list_id: list.id })} style={{ ...circleButton(false), width: 30, height: 30, minWidth: 30, background: 'transparent', borderColor: 'transparent', transform: list.collapsed ? 'none' : 'rotate(90deg)', transition: 'transform .15s' }}>
           <Icon name="chevron" size={14}/>
         </button>
         <input aria-label="List title" value={title} disabled={disabled} onChange={(event) => setTitle(event.target.value)} onBlur={saveTitle}
           onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
-          style={{ flex: 1, minWidth: 0, height: 34, border: 'none', background: 'transparent', color: 'var(--fg)', outline: 'none', font: '700 13px var(--font-sans)' }} />
+          style={{ flex: 1, minWidth: 0, height: 40, border: 'none', background: 'transparent', color: 'var(--fg)', outline: 'none', font: '700 14px var(--font-sans)' }} />
         <span aria-label={`${openCount} open items`} style={{ font: '600 10.5px var(--font-mono)', color: 'var(--faint)', whiteSpace: 'nowrap' }}>{openCount} open</span>
         <button type="button" aria-label={`Share ${list.title}`} title="Copy or move this list" disabled={disabled} onClick={() => { setShareOpen((open) => !open); setDeleteArmed(false); }}
           style={{ ...circleButton(shareOpen), width: 30, height: 30, minWidth: 30 }}><Icon name="share" size={13}/></button>
@@ -99,11 +99,11 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
       </div>
 
       {shareOpen ? (
-        <div data-testid="room-checklist-share" style={{ margin: '0 10px 9px', padding: 10, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface)', display: 'grid', gap: 8 }}>
+        <div data-testid="room-checklist-share" style={{ margin: '0 12px 12px', padding: 14, borderRadius: 14, border: '1px solid var(--hair)', background: 'var(--composer-solid, #131317)', display: 'grid', gap: 10 }}>
           <label style={{ display: 'grid', gap: 5, color: 'var(--muted)', font: '600 11px var(--font-sans)' }}>
             Send this list to
             <select aria-label="Destination room" value={targetRoom} onChange={(event) => setTargetRoom(event.target.value)} disabled={disabled}
-              style={{ width: '100%', height: 38, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', padding: '0 10px', font: '500 13px var(--font-sans)', outline: 'none' }}>
+              style={{ width: '100%', height: 42, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--composer-card-solid, #202026)', color: 'var(--fg)', padding: '0 11px', font: '500 13px var(--font-sans)', outline: 'none' }}>
               <option value="">Choose a room…</option>
               {roomOptions.filter((entry) => roomChecklistKey(entry) !== currentRoomKey).map((entry) => {
                 const key = roomChecklistKey(entry);
@@ -115,15 +115,15 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
           <div style={{ color: 'var(--faint)', font: '500 11px/1.4 var(--font-sans)' }}>Copy keeps it in both rooms. Move removes it from this room after transfer.</div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" disabled={disabled || !targetRoom} onClick={() => share('copy')}
-              style={{ flex: 1, height: 36, borderRadius: 18, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: targetRoom ? 'var(--fg)' : 'var(--faint)', font: '700 11.5px var(--font-sans)', cursor: targetRoom ? 'pointer' : 'default' }}>Copy</button>
+              style={{ flex: 1, height: 40, borderRadius: 20, border: '1px solid var(--hair)', background: 'var(--composer-control-solid, var(--surface-2))', color: targetRoom ? 'var(--fg)' : 'var(--faint)', font: '700 11.5px var(--font-sans)', cursor: targetRoom ? 'pointer' : 'default' }}>Copy</button>
             <button type="button" disabled={disabled || !targetRoom} onClick={() => share('move')}
-              style={{ flex: 1, height: 36, borderRadius: 18, border: '1px solid var(--accent)', background: targetRoom ? 'var(--accent)' : 'var(--surface-2)', color: targetRoom ? '#fff' : 'var(--faint)', font: '700 11.5px var(--font-sans)', cursor: targetRoom ? 'pointer' : 'default' }}>Move</button>
+              style={{ flex: 1, height: 40, borderRadius: 20, border: '1px solid var(--accent)', background: targetRoom ? 'var(--accent)' : 'var(--composer-control-solid, var(--surface-2))', color: targetRoom ? '#fff' : 'var(--faint)', font: '700 11.5px var(--font-sans)', cursor: targetRoom ? 'pointer' : 'default' }}>Move</button>
           </div>
         </div>
       ) : null}
 
       {!list.collapsed ? (
-        <div style={{ padding: '3px 10px 10px', display: 'grid', gap: 7 }}>
+        <div style={{ padding: '5px 12px 14px', display: 'grid', gap: 10 }}>
           {(list.items || []).map((item) => (
             <EditableItem key={item.id} item={item} disabled={disabled}
               onEdit={(text) => mutate('edit-item', { list_id: list.id, item_id: item.id, text })}
@@ -136,8 +136,8 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
           ))}
           <form onSubmit={addItem} style={{ display: 'flex', gap: 7, alignItems: 'center', marginTop: 2 }}>
             <input aria-label={`Add item to ${list.title}`} value={newItem} disabled={disabled} onChange={(event) => setNewItem(event.target.value)} placeholder="Add a note or next step…"
-              style={{ flex: 1, minWidth: 0, height: 36, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', padding: '0 11px', outline: 'none', font: '500 13px var(--font-sans)' }} />
-            <button type="submit" aria-label={`Add item to ${list.title}`} disabled={disabled || !newItem.trim()} style={{ ...circleButton(Boolean(newItem.trim())), width: 34, height: 34, minWidth: 34 }}><Icon name="plus" size={15}/></button>
+              style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--composer-solid, #131317)', color: 'var(--fg)', padding: '0 12px', outline: 'none', font: '500 13px var(--font-sans)' }} />
+            <button type="submit" aria-label={`Add item to ${list.title}`} disabled={disabled || !newItem.trim()} style={{ ...circleButton(Boolean(newItem.trim())), width: 38, height: 38, minWidth: 38 }}><Icon name="plus" size={15}/></button>
           </form>
         </div>
       ) : null}
@@ -177,9 +177,9 @@ export default function RoomChecklistPanel({ room, worldId, roomOptions = [], on
   };
 
   return (
-    <div data-testid="room-checklist-panel" style={{ display: 'grid', gap: 9, maxHeight: 'min(52dvh, 470px)', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '1px 2px' }}>
-        <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--accent-weak)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><Icon name="checklist"/></span>
+    <div data-testid="room-checklist-panel" style={{ display: 'grid', gap: 13, maxHeight: 'min(52dvh, 470px)', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '2px 3px 3px' }}>
+        <span style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--accent-weak)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><Icon name="checklist"/></span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', color: 'var(--fg)', font: '700 13px var(--font-sans)' }}>Room lists</span>
           <span style={{ display: 'block', color: 'var(--faint)', font: '500 10.5px var(--font-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{roomChecklistLabel(room)} · private until you press Play</span>
@@ -189,17 +189,17 @@ export default function RoomChecklistPanel({ room, worldId, roomOptions = [], on
       </div>
 
       {newListOpen ? (
-        <form onSubmit={createList} style={{ display: 'flex', gap: 7 }}>
+        <form onSubmit={createList} style={{ display: 'flex', gap: 9 }}>
           <input autoFocus aria-label="New list title" value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="List title…"
-            style={{ flex: 1, minWidth: 0, height: 38, borderRadius: 12, border: '1px solid var(--accent)', background: 'var(--surface-2)', color: 'var(--fg)', padding: '0 12px', outline: 'none', font: '600 13px var(--font-sans)' }} />
-          <button type="submit" disabled={disabled || !newTitle.trim()} style={{ height: 38, padding: '0 14px', borderRadius: 19, border: 'none', background: newTitle.trim() ? 'var(--accent)' : 'var(--surface-2)', color: newTitle.trim() ? '#fff' : 'var(--faint)', font: '700 11.5px var(--font-sans)' }}>Create</button>
+            style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 13, border: '1px solid var(--accent)', background: 'var(--composer-card-solid, #202026)', color: 'var(--fg)', padding: '0 13px', outline: 'none', font: '600 13px var(--font-sans)' }} />
+          <button type="submit" disabled={disabled || !newTitle.trim()} style={{ height: 42, padding: '0 16px', borderRadius: 21, border: 'none', background: newTitle.trim() ? 'var(--accent)' : 'var(--composer-control-solid, var(--surface-2))', color: newTitle.trim() ? '#fff' : 'var(--faint)', font: '700 11.5px var(--font-sans)' }}>Create</button>
         </form>
       ) : null}
 
-      <div style={{ minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', display: 'grid', gap: 8, paddingRight: 1 }}>
+      <div style={{ minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', display: 'grid', gap: 12, padding: '2px 3px 3px' }}>
         {status === 'loading' ? <div style={{ padding: '18px 8px', textAlign: 'center', color: 'var(--faint)', font: '500 12px var(--font-sans)' }}>Opening your room lists…</div> : null}
         {status !== 'loading' && !lists.length ? (
-          <button type="button" onClick={() => setNewListOpen(true)} style={{ minHeight: 84, borderRadius: 15, border: '1px dashed var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', padding: 14, cursor: 'pointer', font: '600 12.5px/1.5 var(--font-sans)' }}>
+          <button type="button" onClick={() => setNewListOpen(true)} style={{ minHeight: 104, borderRadius: 18, border: '1px dashed var(--hair)', background: 'var(--composer-card-solid, #202026)', color: 'var(--muted)', padding: 18, cursor: 'pointer', font: '600 12.5px/1.55 var(--font-sans)' }}>
             Start a list for notes, reminders, or work you may send later.
           </button>
         ) : null}
