@@ -180,3 +180,26 @@ passed 3/3, focused viewport checks passed 3/3, all CV6 Playwright scenarios pas
 `https://lab.aheadofmarket.com`. Its served `CornerCV6-DL-_d2F5.css` was fetched and
 verified to contain the 20px resting rule with no safe-area inset, 150px transcript
 clearance, and 8px keyboard rule. The signed-in iPhone visual check remains decisive.
+
+## 2026-07-21 - R17 mobile brand, message typography, and Email tabs
+
+Patrik asked for a larger mobile Corner logo, proper designed message emphasis instead
+of visible `****asterisks****`, and a simpler Email surface where Auto-reply status lives
+in its own roomier tab instead of a redundant Inbox box.
+
+The mobile wordmark is now 96px. Structured agent output now uses the same Markdown
+typography renderer as normal chat bubbles, with an inline form for compact headings,
+steps, captions, and result titles; the regression fixture proves the exact four-star
+headline pattern renders as styled emphasis with no visible markers. Email no longer
+mounts the Auto-reply status strip. Its live On/Off state sits inside the Auto-reply tab,
+refreshes after policy saves, and the mobile rail now has a 76px slot, 11/12px exterior
+spacing, and 46px controls.
+
+The 390px Home/Inbox and desktop Auto-reply captures were inspected, all 36 CV6
+Playwright scenarios passed, the focused Email rerun passed 4/4, `git diff --check`
+passed, and the production build passed with only the existing warnings. The shared
+worktree committed R17 together with a concurrent live-progress correction as
+`a24aedbb`. Deployment `J8m9UDv1nmm19xiqNatJ3kWPzzuE` is Ready at
+`https://lab.aheadofmarket.com`; fetched production assets contain the 96px logo,
+roomier Email rail, status badge, and shared message prose paths. Production remains
+sign-in gated, so Patrik's signed-in iPhone is the final hardware visual check.

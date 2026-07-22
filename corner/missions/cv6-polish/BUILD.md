@@ -576,7 +576,15 @@ Resolution and verification (2026-07-21):
   status-refresh wiring, `git diff --check` passed, and the Vite production build
   passed with only the existing OutreachTracker duplicate-key and chunk-size warnings.
 
-**Status:** verified locally; commit and lab deployment in progress.
+The R17 files landed in combined pushed commit `a24aedbb` while a concurrent CV6
+live-progress correction was committing the shared worktree. The resulting pushed HEAD
+was re-inspected before deployment and contains both verified changes. Vercel deployment
+`J8m9UDv1nmm19xiqNatJ3kWPzzuE` is Ready and aliased to
+`https://lab.aheadofmarket.com`. The live alias returns `CornerCV6-CrU8ivnD.css` with
+the 96px wordmark, 76px Email rail, 46px tab control, and tab-status rules, plus
+`CornerCV6-wE5ZM-Kk.js` with the shared agent-prose and Auto-reply status paths.
+
+**Status:** shipped and deployment assets verified; signed-in iPhone visual signoff pending.
 
 ### R14 - Mobile recent-chat scrolling and singular live progress
 
