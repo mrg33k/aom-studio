@@ -13,4 +13,24 @@
 - Verify mobile and desktop chat paths, reload persistence, send behavior, and sharing.
 - Deploy the verified round to the Corner lab.
 
-**Status:** in progress.
+### Shipped behavior
+
+- Tenant-scoped `dash_room_checklists` persistence, separate from the agent plan.
+- Canonical agent/project/mission room keys and a full nested-room share directory.
+- Multiple editable accordion lists with editable, completable, deletable items.
+- Explicit Play-to-agent through the room's existing Work/Plan-aware send path.
+- Explicit Copy versus Move confirmation with independent destination copies.
+- Bounded checklist-mode composer that preserves the typed chat draft and bottom anchor.
+
+### Verification
+
+- `19/19` CV6/source contract checks passed.
+- `38/38` CV6 Playwright checks passed across mobile, desktop, keyboard geometry,
+  bottom spacing, scrolling, live progress, multi-column chat, Email, Review, and files.
+- Production build passed; existing unrelated OutreachTracker duplicate-style warnings remain.
+- Live asset contains the checklist UI and `/api/dashboard/room-checklists` returns the
+  expected authenticated-route guard (`401 jwt required`) when called unsigned.
+- Deployment `dpl_B9itB5hQLE9vAxhWGbZhGNTyRGVa` is aliased to
+  `https://lab.aheadofmarket.com`.
+
+**Status:** shipped.

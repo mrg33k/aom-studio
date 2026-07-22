@@ -9,8 +9,10 @@
 - Room messages already expose a send callback; Play can reuse that path without creating a second chat transport.
 - Existing tenant-scoped `cm_state` APIs provide the persistence pattern for a dedicated checklist store.
 
-## Open verification questions
+## Resolved verification questions
 
-- Confirm canonical room keys across project, mission, and direct agent rooms.
-- Confirm mobile keyboard geometry while checklist mode is open.
-- Confirm Copy and Move stay atomic under mocked and live API responses.
+- Canonical keys use explicit `agent:`, `project:`, and `mission:` prefixes.
+- Checklist mode is capped at `min(52dvh, 470px)` and scrolls internally while the
+  composer retains the existing resting and keyboard-open bottom geometry.
+- Copy and Move mutate the source and destination within one tenant-state write;
+  copied lists and items receive new IDs so later edits do not share references.
