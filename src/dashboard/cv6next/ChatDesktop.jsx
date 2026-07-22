@@ -12,6 +12,7 @@ import { authFetch } from '../lib/authFetch';
 import { supabase } from '../lib/supabase.js';
 import { useRoomThread, useGoalThread, rowAttachments } from './data/useRoomThread.js';
 import { titleForAgent } from './data/agentTitles.js';
+import { buildChecklistRoomOptions } from './data/roomKeys.js';
 
 import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
@@ -637,6 +638,10 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // row fans open to these; clicking one opens that mission's own thread.
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
+  const checklistRoomOptions = useMemo(
+    () => buildChecklistRoomOptions(agents, projects, missionsByProject),
+    [agents, projects, missionsByProject],
+  );
   const onRoomRenamed = useCallback((name, { reset = false } = {}) => {
     if (!selected) return;
     const key = roomTitleKey(selected);
@@ -951,6 +956,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         room={selected}
         worldId={worldId}
         agents={agents}
+        roomOptions={checklistRoomOptions}
         quickSend={send}
         onOpenFiles={() => setDrawerView('files')}
       />

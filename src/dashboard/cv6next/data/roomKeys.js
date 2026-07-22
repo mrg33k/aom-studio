@@ -23,3 +23,67 @@ export function missionRecencyKey(slug) {
   if (!s) return '';
   return s.includes(':') ? s.split(':').pop() : s;
 }
+
+// User checklists are a separate, private room notebook. Keep their room keys
+// explicit so Corner's agent room, Corner's project chat, and a mission inside
+// that project can never share a bucket by accident.
+export function roomChecklistKey(room) {
+  if (!room || typeof room !== 'object') return '';
+  if (room.isMission || room.kind === 'mission') {
+    const slug = String(room.missionSlug || room.slug || room.id || '').trim();
+    if (!slug) return '';
+    const project = String(room.projectSlug || room.project || '').trim();
+    const full = slug.includes(':') || !project ? slug : `${project}:${slug}`;
+    return `mission:${full}`;
+  }
+  if (room.isProject || room.kind === 'project') {
+    const slug = String(room.slug || room.id || room.project || '').trim();
+    return slug ? `project:${slug}` : '';
+  }
+  const slug = String(room.slug || room.id || room.agent || '').trim();
+  return slug ? `agent:${slug}` : '';
+}
+
+export function roomChecklistLabel(room) {
+  const name = String(room?.name || room?.title || '').trim();
+  if (name) return name;
+  const key = roomChecklistKey(room);
+  return key ? key.slice(key.indexOf(':') + 1).split(':').pop().replace(/[-_]/g, ' ') : 'Room';
+}
+
+// Build the share picker from the whole directory, including nested missions.
+// It deliberately ignores visual expansion state: a closed folder is still a
+// valid destination.
+export function buildChecklistRoomOptions(agents = [], projects = [], missionsByProject = {}) {
+  const rooms = [];
+  for (const agent of (agents || [])) rooms.push({ ...agent, id: agent.id || agent.slug, slug: agent.slug || agent.id });
+  for (const project of (projects || [])) {
+    const projectSlug = project.slug || project.id;
+    if (!projectSlug) continue;
+    rooms.push({ ...project, id: projectSlug, slug: projectSlug, isProject: true });
+    const walk = (nodes) => {
+      for (const mission of (nodes || [])) {
+        const raw = String(mission?.slug || '').trim();
+        if (raw) {
+          const missionSlug = raw.includes(':') ? raw : `${projectSlug}:${raw}`;
+          rooms.push({
+            id: missionSlug.split(':').pop(),
+            name: mission.name || mission.title || missionSlug.split(':').pop().replace(/[-_]/g, ' '),
+            isMission: true,
+            missionSlug,
+            projectSlug,
+          });
+        }
+        if (Array.isArray(mission?.children)) walk(mission.children);
+      }
+    };
+    walk(missionsByProject?.[projectSlug] || []);
+  }
+  const seen = new Set();
+  return rooms.filter((room) => {
+    const key = roomChecklistKey(room);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}

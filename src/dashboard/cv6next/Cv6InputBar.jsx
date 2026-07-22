@@ -21,6 +21,7 @@ import IntegrationsModal from '../components/cv3/IntegrationsModal.jsx';
 import { PasteChipBar, shouldChipPaste } from '../components/cv3/shared/PasteChip.jsx';
 import { IMAGE_TOOLS } from '../components/cv3/shared/ImageGenPicker.jsx';
 import { CornerLoaderMark } from '../cv6kit/FullscreenLoading.jsx';
+import RoomChecklistPanel from './RoomChecklistPanel.jsx';
 import {
   useChatCore,
   useChatComposerCtx,
@@ -42,6 +43,7 @@ const I = {
   back: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>,
   chev: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>,
   x: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>,
+  checklist: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.2 1.2L6.5 5M3 12l1.2 1.2L6.5 11M3 18l1.2 1.2L6.5 17"/></svg>,
 };
 
 function MenuRow({ icon, label, detail, hasSubmenu, onClick, tint, testid }) {
@@ -127,7 +129,7 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
   );
 }
 
-export default function Cv6InputBar({ onOpenFiles }) {
+export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = [], onPlayChecklistItem }) {
   const { selectedAgent, selectedProject, chatInputFocused, setChatInputFocused } = useChatCore();
   const {
     input, setInput, inputRef,
@@ -142,7 +144,9 @@ export default function Cv6InputBar({ onOpenFiles }) {
 
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const [caret, setCaret] = useState(null);
+  useEffect(() => { setChecklistOpen(false); }, [room?.id, room?.missionSlug]);
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null);
 
   const handlePaste = useCallback((e) => {
@@ -187,7 +191,9 @@ export default function Cv6InputBar({ onOpenFiles }) {
       ) : null}
       <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
       <div style={{ position: 'relative' }}>
-        <div style={{ minWidth: 0, position: 'relative' }}>
+        {checklistOpen ? (
+          <RoomChecklistPanel room={room} worldId={worldId} roomOptions={roomOptions} onPlay={onPlayChecklistItem} onClose={() => setChecklistOpen(false)} />
+        ) : <div style={{ minWidth: 0, position: 'relative' }}>
           <SlashCommandAutocomplete value={input} setValue={setInput} inputRef={inputRef} caret={caret}
             onModalCommand={(name) => { if (name === '/integrations') setIntegrationsOpen(true); }} surface="1on1"
             panelStyle={{ background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)' }} />
@@ -209,7 +215,7 @@ export default function Cv6InputBar({ onOpenFiles }) {
               style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 16, fontFamily: 'var(--font-sans)' }}
             />
           </div>
-        </div>
+        </div>}
         <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
           <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} />
           <button type="button" title="Files" aria-label="Attach and upload files" onClick={() => fileInputRef.current?.click()} disabled={uploading}
@@ -219,6 +225,11 @@ export default function Cv6InputBar({ onOpenFiles }) {
           <button type="button" className="cv6-mode-toggle" aria-label={`Currently in ${interactionMode} mode. Switch to ${interactionMode === 'plan' ? 'work' : 'plan'} mode`} title={interactionMode === 'plan' ? 'Plan mode: think until we decide' : 'Work mode: go go go'} onClick={() => setInteractionMode?.(interactionMode === 'plan' ? 'work' : 'plan')}
             style={{ height: 42, padding: '0 13px', borderRadius: 21, border: `1px solid ${interactionMode === 'plan' ? 'var(--accent)' : 'var(--hair)'}`, background: interactionMode === 'plan' ? 'var(--accent-weak)' : 'var(--surface-2)', color: interactionMode === 'plan' ? 'var(--accent)' : 'var(--muted)', font: '700 11.5px var(--font-sans)', cursor: 'pointer' }}>
             {interactionMode === 'plan' ? 'Plan' : 'Work'}
+          </button>
+          <button type="button" data-testid="room-checklist-toggle" title={checklistOpen ? 'Back to message' : 'Room checklists'} aria-label={checklistOpen ? 'Close room checklists' : 'Open room checklists'} aria-pressed={checklistOpen}
+            onClick={() => { setCommandsOpen(false); setChecklistOpen((open) => !open); }}
+            style={{ width: 42, height: 42, borderRadius: '50%', background: checklistOpen ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${checklistOpen ? 'var(--accent)' : 'var(--hair)'}`, color: checklistOpen ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            {I.checklist}
           </button>
           <span style={{ flex: 1 }} />
           <button type="button" title={isVoiceActive ? 'End voice chat' : 'Start voice chat'} aria-label="Talk aloud" onClick={() => setIsVoiceActive(true)}

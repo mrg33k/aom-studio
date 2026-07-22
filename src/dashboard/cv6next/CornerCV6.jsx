@@ -33,7 +33,7 @@ import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
 import { useHome, useProjectMissions, shapeHome, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { savedRoomExists, missionTreesFromResponse } from './data/lastRoomValidation.js';
-import { roomProjectSlug } from './data/roomKeys.js';
+import { roomProjectSlug, buildChecklistRoomOptions } from './data/roomKeys.js';
 import NewComposer from './NewComposer.jsx';
 import { supabase } from '../lib/supabase.js';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
@@ -1429,6 +1429,10 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
     if (pn.open) for (const m of pn.missions) navNodes.push({ key: `m:${m.id}`, kind: 'mission', id: m.id, isFolder: m.isFolder, roomObj: m.roomObj });
   }
   navNodesRef.current = navNodes;
+  const checklistRoomOptions = useMemo(
+    () => buildChecklistRoomOptions(data.agents, data.projects, missionsByProject),
+    [data.agents, data.projects, missionsByProject],
+  );
   const selectedKey = (knavSelectedIdx >= 0 && knavSelectedIdx < navNodes.length) ? navNodes[knavSelectedIdx].key : null;
 
   // tag rows from the selected node's key
@@ -1523,6 +1527,7 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
         room={knavOpenedRoom}
         worldId={worldId}
         agents={data.agents}
+        roomOptions={checklistRoomOptions}
         quickSend={quickSend}
         onClose={() => { setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null); }}
       />
@@ -1866,6 +1871,11 @@ function Chat({ room, worldId, onNav, onSearch }) {
   const [localTitle, setLocalTitle] = useState(null);
   const [localCustomTitle, setLocalCustomTitle] = useState(null);
   const { data: roomList } = useChatList();
+  const checklistMissionsByProject = useProjectMissions(worldId);
+  const checklistRoomOptions = useMemo(
+    () => buildChecklistRoomOptions(roomList?.agents || [], roomList?.projects || [], checklistMissionsByProject),
+    [roomList?.agents, roomList?.projects, checklistMissionsByProject],
+  );
   useEffect(() => { setLocalTitle(null); setLocalCustomTitle(null); }, [room?.id]);
   const activeRoom = useMemo(() => localTitle ? { ...room, name: localTitle, initials: localTitle.slice(0, 2).toUpperCase(), hasCustomTitle: localCustomTitle ?? room.hasCustomTitle } : room, [room, localTitle, localCustomTitle]);
   const parentProject = useMemo(() => {
@@ -1914,6 +1924,7 @@ function Chat({ room, worldId, onNav, onSearch }) {
     <ChatLifecycle
       room={{ name: isDemo ? 'DEMO: Block Showcase' : activeRoom.name, initials: activeRoom.initials || '·', statusText: isDemo ? 'demo' : (activeRoom.hasCustomTitle && activeRoom.specialistTitle ? `${activeRoom.specialistTitle} specialist` : activeRoom.statusText || ''), status: activeRoom.status || 'ready' }}
       fullRoom={isDemo ? null : activeRoom} worldId={worldId} projectId={parentProject?.databaseId || activeRoom?.databaseId || ''}
+      roomOptions={checklistRoomOptions}
       messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
       onBack={() => onNav('back')} onSearch={() => onSearch?.()} onRoomRenamed={isDemo ? null : (name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} onClearRoom={isDemo ? null : rt.clearRoom} onSend={(text, options) => send?.(text, options)}
@@ -2856,6 +2867,11 @@ function DemoMobileChatLifecycle() {
         room={room}
         fullRoom={room}
         worldId="local-render"
+        roomOptions={[
+          room,
+          { id: 'another-room', name: 'Another Room', initials: 'AR', status: 'ready' },
+          { id: 'fixture-project', slug: 'fixture-project', name: 'Fixture Project', isProject: true },
+        ]}
         messages={cleared ? [] : messages}
         archivedMessages={cleared ? messages : []}
         status={cleared ? 'empty' : 'ready'}

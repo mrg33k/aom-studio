@@ -39,6 +39,7 @@ import useChatRecording from '../components/cv3/chat/useChatRecording.js';
 import useChatSettings from '../components/cv3/chat/useChatSettings.js';
 import VoiceModeBar from '../components/cv3/thread/VoiceModeBar.jsx';
 import Cv6InputBar from './Cv6InputBar.jsx';
+import { roomChecklistKey } from './data/roomKeys.js';
 import VoiceChat from '../components/VoiceChat.jsx';
 
 const READ_ONLY_COPY = 'Chat needs a connected workspace. Local mode is read-only.';
@@ -69,7 +70,7 @@ function mapRoom(room, agents) {
   };
 }
 
-function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], onOpenFiles }) {
+function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], roomOptions = [], onOpenFiles }) {
   // CornerCV6 is NOT mounted under the CV4 Corner context providers (it uses
   // useHome/useDataPipe standalone), so we can't read useCornerAuth/Data here —
   // worldId + agents come in as props and the user comes straight from supabase.
@@ -83,7 +84,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   }, []);
 
   const { selectedAgent, selectedProject } = useMemo(() => mapRoom(room, agents), [room, agents]);
-  const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : 'home');
+  const currentChatKey = roomChecklistKey(room) || 'home';
   const userIdentity = useMemo(() => ({
     user_id: currentUser?.id || null,
     user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
@@ -185,6 +186,18 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   }, [handleSend]);
 
+  // A checklist item only becomes agent work through this explicit Play path.
+  // Reuse the room thread sender so it receives the same optimistic rendering,
+  // mission scoping, and Work/Plan metadata as a typed message.
+  const checklistSendingRef = useRef(false);
+  const playChecklistItem = useCallback(async (text) => {
+    const value = String(text || '').trim();
+    if (!value || typeof quickSend !== 'function' || checklistSendingRef.current) return false;
+    checklistSendingRef.current = true;
+    try { return await quickSend(value, { interactionMode }); }
+    finally { checklistSendingRef.current = false; }
+  }, [quickSend, interactionMode]);
+
   // ── Voice slice ──
   const voiceChatRef = useRef(null);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -249,7 +262,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
               <ChatComposerProvider value={composerValue}>
                 <ChatSettingsProvider value={settingsValue}>
                   <ChatContextMenuProvider value={ctxMenuValue}>
-                    {isVoiceActive ? <VoiceModeBar /> : <Cv6InputBar onOpenFiles={onOpenFiles} />}
+                    {isVoiceActive ? <VoiceModeBar /> : <Cv6InputBar onOpenFiles={onOpenFiles} room={room} worldId={worldId} roomOptions={roomOptions} onPlayChecklistItem={playChecklistItem} />}
                     {isVoiceActive && (
                       <div style={{ display: 'none' }}>
                         <VoiceChat

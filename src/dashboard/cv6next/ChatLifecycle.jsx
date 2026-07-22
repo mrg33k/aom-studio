@@ -389,7 +389,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -618,7 +618,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, mess
           <div className="mcomposer" ref={setMComposerHost}
             style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }} />
           <Cv6FullComposer target={mComposerHost} room={fullRoom} worldId={worldId} agents={[]}
-            quickSend={onSend} onOpenFiles={() => setFilesSheetOpen(true)} />
+            roomOptions={roomOptions} quickSend={onSend} onOpenFiles={() => setFilesSheetOpen(true)} />
         </>
       ) : (
       <div className="mcomposer" style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
