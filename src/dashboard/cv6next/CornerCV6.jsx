@@ -386,7 +386,12 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
 // position:absolute over the .convo column. null host = closed.
 function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
   const { fromAgent, youSent, status, windowFull } = useRoomCrossings(host ? worldId : null, room);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
   if (!host) return null;
+  const handleLocate = (it) => {
+    if (it?.kind === 'photo' && it?.url) { setLightboxUrl(it.url); return; }
+    onClose?.();
+  };
   return createPortal(
     <div style={{ position: 'absolute', inset: 0, zIndex: 12, background: 'var(--ground)', display: 'flex', flexDirection: 'column' }}>
       <div className="cvhdr">
@@ -402,8 +407,20 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 18px 20px' }}>
-        <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={onClose} />
+        <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={handleLocate} />
       </div>
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{ position: 'absolute', inset: 0, zIndex: 20, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}
+        >
+          <img src={lightboxUrl} alt="" style={{ maxWidth: '92%', maxHeight: '88%', borderRadius: 10, objectFit: 'contain', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }} onClick={(e) => e.stopPropagation()} />
+          <button
+            onClick={() => setLightboxUrl(null)}
+            style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', padding: '6px 10px', fontSize: 13, fontWeight: 600 }}
+          >✕</button>
+        </div>
+      )}
     </div>,
     host,
   );

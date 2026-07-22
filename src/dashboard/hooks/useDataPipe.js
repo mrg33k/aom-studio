@@ -511,8 +511,22 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
           const missionList = Object.entries(missionRecency).map(([slug, v]) => ({ slug, project: v.project, last_message_at: v.ts, last_message_text: v.text || '' }))
           setMissionRooms(missionList)
           // Same for direct agent threads — { agent, last_message_at, last_message_text }.
+          // Merge with previous state rather than replacing: the 100-message fetch window
+          // may not include an older agent thread on a busy client, which would wipe it
+          // from recents on the next poll. Accumulate seen agents; prune entries older
+          // than 24 h so stale threads don't linger forever.
           const agentThreadList = Object.entries(agentRecency).map(([agent, v]) => ({ agent, last_message_at: v.ts, last_message_text: v.text || '' }))
-          setAgentThreadRooms(agentThreadList)
+          const cutoff = Date.now() - 24 * 60 * 60 * 1000
+          setAgentThreadRooms(prev => {
+            const merged = {}
+            for (const a of (prev || [])) {
+              if (a.last_message_at >= cutoff) merged[a.agent] = a
+            }
+            for (const a of agentThreadList) {
+              if (!merged[a.agent] || a.last_message_at > merged[a.agent].last_message_at) merged[a.agent] = a
+            }
+            return Object.values(merged)
+          })
         }
         if (merged.length > 0) {
           const sig = JSON.stringify(merged)
