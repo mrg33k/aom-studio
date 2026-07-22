@@ -24,3 +24,7 @@ R1 is deployed on the CV6 lab surface. The user notebook is durable per room,
 independent from agent goal steps, available from every full composer, and verified
 through the complete CV6 browser regression suite. The production route remains behind
 Corner authentication; no auth bypass was introduced for testing.
+
+R2 removes glass translucency from the working composer and checklist layers while
+keeping the surrounding glass theme. The mobile list header, rows, inputs, and sharing
+controls now have a roomier solid treatment without moving the verified bottom anchor.

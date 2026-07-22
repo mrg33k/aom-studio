@@ -42,4 +42,23 @@
 - Preserve the mobile bottom anchor, bounded internal scroll, and circular action row.
 - Re-run the focused checklist loop and the sibling mobile composer regression suite.
 
-**Status:** in progress.
+### Shipped behavior
+
+- Dedicated solid composer, list-card, and control surfaces in dark, light, and glass themes.
+- Taller accordion headings, item rows, inputs, share controls, and more internal spacing.
+- The checklist remains bounded and internally scrollable while the composer stays on the
+  existing keyboard-aware mobile bottom anchor.
+
+### Verification
+
+- `19/19` CV6/source contract checks passed.
+- `38/38` CV6 Playwright checks passed, including the exact collapsed mobile list state,
+  opacity assertions in glass mode, keyboard geometry, and the shared composer regressions.
+- A clean build from commit `4c73b625` passed; existing unrelated OutreachTracker
+  duplicate-style warnings remain.
+- Live CSS exposes the solid dark/light/glass tokens and the authenticated checklist route
+  returns `401 jwt required` when called unsigned with a room key.
+- Deployment `dpl_2oLGCBg3opcWmMP3idhpaGZTsipB` is explicitly aliased to
+  `https://lab.aheadofmarket.com`.
+
+**Status:** shipped.
