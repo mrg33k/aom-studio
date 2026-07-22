@@ -375,15 +375,3 @@ Audit findings ranked by frequency x severity x impact:
 Fix shipped locally: `src/dashboard/cv6next/ChatLifecycle.jsx` gives the mobile Room Files sheet close control an explicit `Close files` label, title, focus target, and Enter/Space activation. `src/dashboard/cv6next/CornerCV6.jsx` gives the desktop Home Files overlay close control the same label and keyboard return path. `tests/cv6-practical-audit.spec.mjs` now opens the room file shelf on desktop and mobile, verifies the empty state, closes via `Close files`, and then continues through sibling CV6 surfaces.
 
 Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-practical-audit.spec.mjs --reporter=line` passed (2 tests across desktop Home quick-chat, mobile chat room-files, and sibling CV6 tools). `npm run build` passed. No deploy, push, schema/data migration, secret rotation, external message send, or stored login/world/member/data mutation.
-
-## 2026-07-21 - Simple desktop room columns
-
-Mission path: `corner:truth-contracts`.
-
-User goal: replace the complicated desktop chat pin/dock interaction with a simple horizontal set of clean, mobile-width room columns. Rooms should stay narrow, its `+` should create a project, selecting another room should append it, every room should close from a top-right `x`, and the columns should have no floating shadow treatment.
-
-Shipped locally: desktop Home's Rooms directory is a fixed 340px first column and its retired quick-chat pane is no longer shown. The header action is now a quiet icon-only `New project` button that opens the shared composer in project mode. Agent, recent, project, mission, Search, and keyboard room opens all append/focus the real room column directly; the old `Open as column` controls are removed. Each desktop room is a fixed 400px column with a 1px divider, no outer shadow, and an accessible `Close <room>` button in the top-right. Focus scrolling only moves when a column is clipped, so fitting columns remain visibly adjacent. Mobile keeps the existing Back interaction.
-
-Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-multi-window.spec.mjs tests/cv6-practical-audit.spec.mjs --reporter=line --workers=1` passed 4/4. `npm run test:tenant-context`, `npm run build`, `node --check tests/cv6-multi-window.spec.mjs`, and `git diff --check` passed. The production build still reports pre-existing duplicate object-key notices in `src/pages/OutreachTracker.jsx` and the existing chunk-size warning.
-
-No deploy, commit, push, schema/data mutation, secret rotation, external message, or stored login/world/member/data mutation. Pre-existing unrelated working-tree files were left untouched; the already-dirty generated missions registry remains modified after the required build.

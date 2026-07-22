@@ -489,21 +489,3 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Remaining notes: production-auth verification is still blocked on an inspectable logged-in browser session; the dashboard was opened for the user to log in, but this verified unit is local-safe and committed without touching live data.
 
 **Status:** shipped and locally verified for the delegated chat-room-files-workflow audit; production-auth verification blocked.
-
-### R6b - Simple desktop room columns
-
-- 2026-07-21 implementation started:
-  - User goal: remove the desktop chat pin/dock decision and make Rooms a simple horizontal workspace.
-  - Approved interaction: the Rooms directory stays a narrow first column; its `+` opens New project; selecting a room appends a fixed mobile-width room column; reopening a room focuses the existing column; every room column closes from an `x` in its top-right corner.
-  - Approved visual contract: adjacent columns with a quiet divider, no outer column shadows, no floating-card treatment, and horizontal overflow only when the open columns exceed the viewport.
-  - Scope: live CV6 desktop room navigation and focused multi-column regression coverage. Mobile remains a single-room surface and existing login/world/member/data state is preserved.
-- 2026-07-21 shipped locally:
-  - Desktop Home now renders the Rooms directory as a stable 340px first column and hides the retired quick-chat/pin pane. Its quiet `+` opens the shared composer directly in New project mode.
-  - Clicking an agent, recent room, project, or mission now appends/focuses the room immediately. Keyboard `→` follows the same direct-column contract; the old `Open as column` controls were removed.
-  - Room columns are fixed at 400px, sit flush beside one another with a 1px divider, carry no outer shadow, and expose a labeled top-right `Close <room>` control on desktop. Mobile keeps its Back control.
-  - Column focus scrolls only when the target is clipped; opening a room that already fits no longer slides the Rooms directory away.
-  - Verification passed: focused multi-column + no-popup Playwright coverage (2/2), full desktop/mobile CV6 practical audit (2/2), `npm run test:tenant-context`, `npm run build`, and `git diff --check`.
-  - Build retains pre-existing `OutreachTracker.jsx` duplicate-object-key notices and the existing large-chunk warning. No deploy, commit, push, schema/data mutation, external message, secret change, or stored login/world/member/data mutation.
-- 2026-07-21 production deployment authorized by the user. The validated R6b source is being committed and published through the existing `aom-studio` Vercel project that serves `aheadofmarket.com`; the checkout's separate `aom-studio-lab` link will not be used.
-
-**Status:** production deployment in progress.
