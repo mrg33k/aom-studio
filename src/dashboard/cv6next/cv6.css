@@ -2744,3 +2744,31 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   [data-cv6] .cv6-autoreply-grid { grid-template-columns:1fr; }
   [data-cv6] .cv6-autoreply-grid label.is-wide { grid-column:auto; }
 }
+
+/* ── Long-text choice buttons: stop overflow, read as clean cards ─────────────
+   Base .chip-btn has a fixed 34px height + centered single line, so a long
+   choice label spilled above and below the pill (IMG_2144). Make chip-btn grow
+   with its content, and give multi-word choice buttons a stacked, full-width,
+   left-aligned card treatment. Short quick-reply chips are visually unchanged
+   (single line still resolves to 34px via min-height). */
+[data-cv6] .chip-btn, [data-cv6kit] .chip-btn {
+  height:auto;
+  min-height:34px;
+  padding:8px 13px;
+  line-height:1.4;
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+[data-cv6] .chips.is-choice, [data-cv6kit] .chips.is-choice {
+  flex-direction:column;
+  align-items:stretch;
+}
+[data-cv6] .chips.is-choice .chip-btn, [data-cv6kit] .chips.is-choice .chip-btn {
+  width:100%;
+  justify-content:flex-start;
+  min-height:44px;
+  padding:11px 15px;
+  border-radius:12px;
+  font-size:13px;
+}

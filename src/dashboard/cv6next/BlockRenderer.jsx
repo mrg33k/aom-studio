@@ -371,7 +371,7 @@ function ChoiceBlock({ block, onAction }) {
   return (
     <div style={{ marginTop: 4 }}>
       {block.prompt ? <div className="gssub" style={{ marginBottom: 6 }}><ChatMessageRenderer content={block.prompt} className="cv6-agent-prose" /></div> : null}
-      <div className="chips">
+      <div className="chips is-choice">
         {choices.map((c) => (
           <button
             key={c.id}
