@@ -513,6 +513,30 @@ signed-in iPhone check of the real home indicator and Apple keyboard.
 
 **Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
 
+### R16 - Remove the real mobile composer spacer
+
+Started 2026-07-21 after Patrik verified the R15 production deployment on his signed-in
+iPhone and reported that the composer remained in almost the same position. R15 fixed
+the fixed-shell contract but did not remove the actual lower layout layer visible on
+hardware. This round will measure every containing block from the room composer to the
+physical viewport at the screenshot's 440 x 956 CSS dimensions, identify the element
+reserving the remaining roughly 60px, remove that reservation across mobile screens,
+and compare the before/after bottom gap numerically. The existing Files/More icon work
+stays in place.
+
+Local resolution and verification (2026-07-21): every ancestor from the room through
+the workspace column, canvas, app shell, root, and document measured to the full 956px
+viewport at the screenshot's 440px width. The remaining reservation was therefore the
+composer's own `safe-area-inset-bottom`, repeated in the transcript clearance. The
+resting composer now uses an explicit 20px physical-bottom gap matching Patrik's red
+landing line; transcript clearance is a flat 150px, while keyboard-open mode retains
+its independently measured 8px gap. The R13/R15/R16 source contracts passed 3/3,
+focused viewport scenarios passed 3/3, all CV6 Playwright scenarios passed 36/36, the
+440 x 956 capture was inspected, and the Vite production build passed with only the
+existing OutreachTracker duplicate-key and large-chunk warnings.
+
+**Status:** implementation and local regression verification complete; production deployment pending.
+
 ### R14 - Mobile recent-chat scrolling and singular live progress
 
 Started 2026-07-21 from Patrik's mobile follow-up. The Home "Pick up where we left
