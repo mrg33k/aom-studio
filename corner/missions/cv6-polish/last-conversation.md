@@ -102,3 +102,23 @@ scenarios passed. Commit `6b2434e1` was pushed and Vercel deployment
 Authenticated production Chrome then loaded Home with both missions-tree requests
 complete at desktop and 390px widths, showing the full project list and recent mission
 activity with no Corner render error. R12 is shipped and production-verified.
+
+## 2026-07-21 - R13 mobile bottom spacing and keyboard composer geometry
+
+Patrik's iPhone captures showed two remaining mobile geometry failures: a large blank
+footer across CV6 pages and a chat composer stranded well above the software keyboard.
+The shared 150px composer clearance was leaking to every `.scrbody`; at the same time,
+the shell used `VisualViewport.height` at rest and ignored the viewport's keyboard-time
+`offsetTop`, while WebKit retained the bottom safe-area inset and the 14px input allowed
+focus zoom.
+
+The footer clearance is now chat-only, the resting shell fills `100dvh`, the focused
+shell follows the complete visual viewport, keyboard-open composer clearance no longer
+double-counts the home-indicator inset, and the input uses 16px type. New node and
+390px Playwright regressions cover sibling pages, resting geometry, and a reduced/panned
+keyboard viewport. The node test passed 1/1, focused Playwright passed 1/1, all CV6
+Playwright scenarios passed 32/32, and the local plus Vercel production builds passed.
+Commit `5846f3ea` is on `main`; deployment `5NbQRNbmNdfnvFNQvNmV5Zw7QdX9` is live at
+`https://lab.aheadofmarket.com`, and its served CornerCV6 assets contain the fix. The
+production automation probe reached the expected sign-in gate, so the only remaining
+signoff is a signed-in check with Apple's real on-screen keyboard on Patrik's iPhone.

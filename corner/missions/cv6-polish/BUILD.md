@@ -459,4 +459,25 @@ chat-only clearance, follow the complete visible viewport while editing, suppres
 stale keyboard-time safe-area gap, use a non-zooming mobile input size, and verify both
 resting and focused composer geometry before deployment.
 
-**Status:** in progress.
+Resolution and verification (2026-07-21):
+
+- Scoped the 150px composer clearance to chat rooms so Home, Email, Files,
+  Review, Command, and the other sibling screens no longer inherit a false footer.
+- The shell now uses the full dynamic viewport at rest. While a text input is
+  focused it follows both `VisualViewport.height` and `VisualViewport.offsetTop`,
+  then removes WebKit's stale keyboard-time safe-area gap from the composer.
+- Raised the chat input to 16px so iOS does not focus-zoom the page.
+- Added source-contract and 390px Playwright coverage for sibling-screen padding,
+  resting bottom geometry, input size, and the reduced/panned keyboard viewport.
+- `node --test tests/cv6-mobile-viewport.test.mjs` passed 1/1; the focused local
+  Playwright test passed 1/1; all `tests/cv6-*.spec.mjs` passed 32/32; and the local
+  Vite production build passed. Resting and simulated-keyboard screenshots were
+  inspected.
+- Commit `5846f3ea` was pushed to `main`. Vercel deployment
+  `5NbQRNbmNdfnvFNQvNmV5Zw7QdX9` completed and was aliased to
+  `https://lab.aheadofmarket.com`; the live `CornerCV6-DLiUu_wX.js` and
+  `CornerCV6-hw3-YxEv.css` assets contain the new viewport and scoped-spacing
+  contracts. An anonymous production probe correctly stopped at the sign-in gate,
+  so a real signed-in iPhone keyboard check remains the final hardware signoff.
+
+**Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
