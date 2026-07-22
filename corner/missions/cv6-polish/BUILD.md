@@ -482,6 +482,29 @@ Resolution and verification (2026-07-21):
 
 **Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
 
+### R15 - Mobile bottom chrome removal and chat header icons
+
+Started 2026-07-21 from Patrik's signed-in iPhone screenshot. The composer is still
+lifted far above the home indicator by a page-wide bottom box/inset, even though the
+text input itself is correctly floating. This round will identify and remove the final
+shell or workspace clearance that affects every mobile screen, keep only the minimum
+safe home-indicator breathing room, and convert Chat's Files and More word buttons to
+accessible circular icons. Verification will measure the composer-to-viewport gap at
+390px and exercise both icon actions before deployment.
+
+Local resolution and verification (2026-07-21): the resting fixed app shell now pins
+to both physical viewport edges instead of trusting iOS standalone's sometimes-short
+`100dvh`; the explicit VisualViewport height remains limited to the keyboard-open
+state. The composer consequently reaches the intended bottom safe area on every CV6
+screen. Mobile and desktop Chat Files/More actions are icon-only, circular, and keep
+their accessible names; mobile matches the shared 44px touch floor on both axes.
+Focused viewport/action checks passed 2/2, the R15 source contract passed 1/1, all CV6
+Playwright scenarios passed 35/35, the 390px capture was inspected, and the Vite
+production build passed with only the existing OutreachTracker duplicate-key and
+large-chunk warnings.
+
+**Status:** implementation and local regression verification complete; production deployment pending.
+
 ### R14 - Mobile recent-chat scrolling and singular live progress
 
 Started 2026-07-21 from Patrik's mobile follow-up. The Home "Pick up where we left

@@ -796,8 +796,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div className="desktop-room-title">{selected.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.hasCustomTitle && selected.specialistTitle ? `${selected.specialistTitle} specialist` : (goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation'))}</div>
                   </div>
-                  <button type="button" className="cv6-chat-header-button" aria-label="Files" onClick={() => { setHeaderMoreOpen(false); setDrawerView('files'); }}>Files</button>
-                  <button type="button" className="cv6-chat-header-button" aria-label="More" aria-expanded={headerMoreOpen ? 'true' : 'false'} onClick={() => setHeaderMoreOpen((open) => !open)}>More</button>
+                  <button type="button" className="cv6-chat-header-button" aria-label="Files" title="Files" onClick={() => { setHeaderMoreOpen(false); setDrawerView('files'); }}>
+                    <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
+                  </button>
+                  <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={headerMoreOpen ? 'true' : 'false'} onClick={() => setHeaderMoreOpen((open) => !open)}>
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
+                  </button>
                   {headerMoreOpen ? (
                     <>
                       <button type="button" className="cv6-chat-more-scrim" aria-label="Close More menu" onClick={() => setHeaderMoreOpen(false)} />

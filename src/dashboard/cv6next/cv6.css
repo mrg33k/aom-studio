@@ -2270,13 +2270,22 @@ html.cv6-app-active #root {
 [data-cv6].cv6-app-shell {
   position:fixed;
   top:var(--cv6-viewport-top, 0px);
+  bottom:0;
   left:0;
   right:0;
   width:100%;
-  height:var(--cv6-viewport-height, 100dvh);
+  height:auto;
   min-height:0;
   overflow:hidden;
   overscroll-behavior:none;
+}
+/* iOS standalone can report a `100dvh` shorter than the actual fixed-position
+   containing block, leaving a page-wide strip below every screen. At rest the
+   fixed shell therefore pins to both physical viewport edges. Only the focused
+   keyboard state uses VisualViewport's explicit top + height. */
+html.cv6-keyboard-open [data-cv6].cv6-app-shell {
+  bottom:auto;
+  height:var(--cv6-viewport-height, 100dvh);
 }
 
 /* Headers should read as open space, not a stack of bordered bands. */
@@ -2548,13 +2557,17 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
 [data-cv6] .mhactions { position:relative; }
 [data-cv6] .desktop-room-header { position:relative; }
 [data-cv6] .cv6-chat-header-button {
-  min-width:58px;
+  width:38px;
+  min-width:38px;
   height:38px;
-  padding:0 13px;
+  padding:0;
   border:1px solid var(--hair);
   background:var(--chip);
   color:var(--fg);
-  font:650 12.5px var(--font-sans);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50% !important;
   cursor:pointer;
 }
 [data-cv6] .cv6-chat-header-button[aria-expanded="true"] { color:var(--accent); background:var(--accent-weak); }
@@ -2586,7 +2599,9 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
 }
 [data-cv6] .cv6-chat-more-menu > button:hover { background:var(--surface-2); }
 @media (max-width:640px) {
-  [data-cv6] .cv6-chat-header-button { min-width:52px; height:36px; padding:0 10px; font-size:12px; }
+  /* Match the shared mobile 44px touch floor on both axes so the icon actions
+     stay true circles instead of becoming 36 x 44 rounded rectangles. */
+  [data-cv6] .cv6-chat-header-button { width:44px; min-width:44px; height:44px; }
   [data-cv6] .cv6-chat-more-menu { position:fixed; top:calc(env(safe-area-inset-top,0px) + 66px); right:12px; }
 }
 
