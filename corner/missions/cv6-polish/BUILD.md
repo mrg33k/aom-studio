@@ -535,7 +535,14 @@ focused viewport scenarios passed 3/3, all CV6 Playwright scenarios passed 36/36
 440 x 956 capture was inspected, and the Vite production build passed with only the
 existing OutreachTracker duplicate-key and large-chunk warnings.
 
-**Status:** implementation and local regression verification complete; production deployment pending.
+Commit `5e53c3d7` was pushed to `main`. Vercel deployment
+`dpl_HtxQeJmFNZyDcENqddS7GjpSXpyv` is Ready and aliased to
+`https://lab.aheadofmarket.com`; the live alias serves `CornerCV6-DL-_d2F5.css`,
+whose fetched composer rule is `bottom:20px` with no safe-area inset, whose transcript
+clearance is a flat 150px, and whose keyboard-open override remains 8px. Production
+UI remains sign-in gated, so Patrik's signed-in iPhone is the decisive hardware check.
+
+**Status:** shipped and deployment verified; signed-in iPhone visual signoff pending.
 
 ### R14 - Mobile recent-chat scrolling and singular live progress
 

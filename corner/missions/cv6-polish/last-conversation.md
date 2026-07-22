@@ -162,3 +162,21 @@ inspected, and the Vite build passed. Commit `027b2d94` is on `main`; Vercel dep
 `https://lab.aheadofmarket.com`. The served `CornerCV6-CC2bJo6q.js` and
 `CornerCV6-C9_yl5zV.css` contain the verified fix. Production remains sign-in gated,
 so only Patrik's signed-in iPhone hardware check remains.
+
+## 2026-07-21 - R16 remove the real composer spacer
+
+Patrik checked R15 on his signed-in iPhone and reported that the composer remained in
+almost the same position. A full 440 x 956 containing-block trace showed that the room,
+workspace column, horizontal canvas, fixed app shell, root, body, and document all now
+ended at the same physical viewport edge. The remaining visible box was the composer's
+own `safe-area-inset-bottom` reservation, duplicated in its transcript clearance.
+
+The resting composer now lands at an explicit 20px physical-bottom gap matching the
+red line in Patrik's screenshot, the transcript uses a flat 150px clearance, and the
+keyboard-open composer retains its separate 8px offset. The R13/R15/R16 source checks
+passed 3/3, focused viewport checks passed 3/3, all CV6 Playwright scenarios passed
+36/36, the 440 x 956 capture was inspected, and the Vite build passed. Commit
+`5e53c3d7` is on `main`; deployment `dpl_HtxQeJmFNZyDcENqddS7GjpSXpyv` is Ready at
+`https://lab.aheadofmarket.com`. Its served `CornerCV6-DL-_d2F5.css` was fetched and
+verified to contain the 20px resting rule with no safe-area inset, 150px transcript
+clearance, and 8px keyboard rule. The signed-in iPhone visual check remains decisive.
