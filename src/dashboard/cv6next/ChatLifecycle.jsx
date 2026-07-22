@@ -389,7 +389,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp, columnMode = false, onClose }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -513,7 +513,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   return (
     <div data-cv6 data-theme="dark" data-screen="chat-room" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="mhdr">
-        <div className="mback" role="button" aria-label="Back" tabIndex={0} onClick={onBack} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBack?.(); } }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></div>
+        {!columnMode ? <div className="mback" role="button" aria-label="Back" tabIndex={0} onClick={onBack} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBack?.(); } }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></div> : null}
         <div className={`mh-av is-${avRing(room.status)}`} style={avTint(room.status)}>
           {room.initials || '·'}
           <span className="mh-ring" />
@@ -535,6 +535,11 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={moreOpen ? 'true' : 'false'} onClick={() => setMoreOpen((open) => !open)}>
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
           </button>
+          {columnMode ? (
+            <button type="button" className="cv6-chat-header-button cv6-column-close" aria-label={`Close ${room.name}`} title={`Close ${room.name}`} onClick={onClose}>
+              <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+          ) : null}
           {moreOpen ? (
             <>
               <button type="button" className="cv6-chat-more-scrim" aria-label="Close More menu" onClick={() => setMoreOpen(false)} />

@@ -813,7 +813,6 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       <div className="cv6-chat-more-menu" role="menu" aria-label={`More for ${selected.name}`}>
                         <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); onSearch?.(); }}>Search conversation</button>
                         <button type="button" role="menuitem" data-testid="room-settings-trigger" onClick={() => { setHeaderMoreOpen(false); setSettingsOpen(true); }}>Room settings</button>
-                        {onOpenRoomColumn ? <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); onOpenRoomColumn(selected, worldId); }}>Open as column</button> : null}
                         <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); toggleFollow(); }}>{following ? 'Mute updates' : 'Follow along'}</button>
                       </div>
                     </>
