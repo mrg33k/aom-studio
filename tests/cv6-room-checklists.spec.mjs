@@ -84,14 +84,33 @@ test('per-room checklist keeps drafts, persists lists, plays an item, and copies
     const list = document.querySelector('[data-testid="room-checklist-list"]');
     const heading = document.querySelector('[data-role="checklist-heading"]');
     const panel = document.querySelector('[data-testid="room-checklist-panel"]');
+    const circularActions = [
+      'Create a new list',
+      'Close checklist mode',
+      'Share Launch notes',
+      'Delete Launch notes',
+      'Complete item',
+      'Send Draft the intro to agent',
+      'Delete Draft the intro',
+    ].map((label) => document.querySelector(`button[aria-label="${label}"]`));
     const composerStyle = getComputedStyle(composer);
     const listStyle = getComputedStyle(list);
+    const composerRect = composer.getBoundingClientRect();
     return {
       composerAlpha: alpha(composerStyle.backgroundColor),
       listAlpha: alpha(listStyle.backgroundColor),
       composerPaddingTop: parseFloat(composerStyle.paddingTop),
       headingHeight: heading.getBoundingClientRect().height,
       panelGap: parseFloat(getComputedStyle(panel).rowGap),
+      circles: circularActions.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return {
+          width: rect.width,
+          height: rect.height,
+          radius: parseFloat(getComputedStyle(button).borderRadius),
+          insideComposer: rect.left >= composerRect.left && rect.right <= composerRect.right,
+        };
+      }),
     };
   });
   expect(visual.composerAlpha).toBe(1);
@@ -99,6 +118,13 @@ test('per-room checklist keeps drafts, persists lists, plays an item, and copies
   expect(visual.composerPaddingTop).toBeGreaterThanOrEqual(14);
   expect(visual.headingHeight).toBeGreaterThanOrEqual(58);
   expect(visual.panelGap).toBeGreaterThanOrEqual(13);
+  expect(visual.circles).toHaveLength(7);
+  for (const circle of visual.circles) {
+    expect(circle.width).toBeGreaterThanOrEqual(38);
+    expect(Math.abs(circle.width - circle.height)).toBeLessThan(0.1);
+    expect(circle.radius).toBeGreaterThanOrEqual((circle.width / 2) - 1);
+    expect(circle.insideComposer).toBe(true);
+  }
 
   await page.getByLabel('Collapse Launch notes').click();
   await expect(page.getByLabel('Expand Launch notes')).toBeVisible();

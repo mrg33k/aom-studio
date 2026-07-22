@@ -62,3 +62,12 @@
   `https://lab.aheadofmarket.com`.
 
 **Status:** shipped.
+
+## R3 — Unsqueezed circular checklist controls
+
+- Give every checklist icon action an explicit square footprint and circular aspect ratio.
+- Increase the header, list, and item action diameters so the icons have breathing room.
+- Keep the mobile header and item rows within the composer without clipping or shrinking.
+- Render the collapsed and expanded mobile states and re-run the shared composer checks.
+
+**Status:** in progress.
