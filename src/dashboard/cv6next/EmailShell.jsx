@@ -175,7 +175,7 @@ function AutoReplySettings({ onSaved }) {
   );
 }
 
-export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSearch, forceAutoReply = false }) {
+export default function EmailShell({ isDesktop, inbox, onClose, onOpenNav, onSearch, forceAutoReply = false }) {
   const [tab, setTabState] = useState(() => {
     try { return sessionStorage.getItem(TAB_KEY) || 'inbox'; } catch { return 'inbox'; }
   });
@@ -204,7 +204,7 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
     <div className="cv6-email-shell" data-email-tab={tab} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', flex: 1, position: 'relative' }}>
       {!isDesktop && tab !== 'inbox' && (
         <div className="mhdr">
-          <button type="button" className="mback" aria-label="Back" onClick={onBack}>
+          <button type="button" className="mback" aria-label="Back to inbox" onClick={() => setTab('inbox')}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
           <div className="mhtitle"><div className="mttl">Email</div><div className="msub">{tab === 'campaign' ? 'Campaign' : 'Auto-reply'}</div></div>
@@ -215,6 +215,7 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
         </div>
       )}
       <div className="cv6-email-tabs" data-layout={isDesktop ? 'desktop' : 'mobile'}>
+        {onClose ? <span className="cv6-email-side" aria-hidden="true" /> : null}
         <div className="cv6-email-tablist" role="navigation" aria-label="Email sections">
           {seg('inbox', 'Inbox')}
           {seg('campaign', 'Campaign')}
@@ -224,6 +225,13 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
             </span>
           )) : null}
         </div>
+        {onClose ? (
+          <span className="cv6-email-side is-end">
+            <button type="button" className="cv6-chat-header-button cv6-column-close cv6-email-close" aria-label="Close email" title="Close email" onClick={onClose}>
+              <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+          </span>
+        ) : null}
       </div>
       <div className="cv6-email-body" style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'inbox'
