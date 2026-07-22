@@ -390,8 +390,10 @@ function ChoiceBlock({ block, onAction }) {
                   </svg>
                 ) : null}
               </span>
-              <span className="chip-txt">{text}</span>
-              {badge ? <span className="chip-badge">{badge}</span> : null}
+              <span className="chip-main">
+                {badge ? <span className="chip-badge">{badge}</span> : null}
+                <span className="chip-txt">{text}</span>
+              </span>
             </button>
           );
         })}
