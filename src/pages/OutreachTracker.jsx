@@ -117,6 +117,17 @@ function buildLinkedInURL(lead) {
   return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(kw)}`
 }
 
+// Strip https://www. from a URL and return the bare domain (e.g. "hinkleci.com")
+function cleanDomain(url) {
+  if (!url) return null
+  try {
+    const u = new URL(url.startsWith('http') ? url : 'https://' + url)
+    return u.hostname.replace(/^www\./, '')
+  } catch {
+    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  }
+}
+
 // Build a Google Maps multi-stop directions URL for a group of leads
 function buildMapsURL(leads) {
   const addrs = leads
@@ -598,8 +609,8 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             </div>
           )}
 
-          {/* Contact row — phone + email + LinkedIn on the card face, tap to reach out */}
-          {(lead.phone || lead.email || lead.company) && (
+          {/* Contact row — website · office · owner cell · email · LinkedIn */}
+          {(lead.website || lead.phone || lead.owner_phone || lead.email || lead.owner_email || lead.company) && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -607,6 +618,38 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
               flexWrap: 'wrap',
               marginTop: '0.4rem',
             }}>
+              {/* Website link — clean domain label, opens new tab */}
+              {lead.website && (
+                <a
+                  href={lead.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    background: '#080c0f',
+                    border: '1px solid #1a2e3a',
+                    color: '#7bbfdf',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.7rem',
+                    letterSpacing: '0.01em',
+                    padding: '0.3rem 0.5rem',
+                    textDecoration: 'none',
+                    minHeight: 30,
+                    boxSizing: 'border-box',
+                    maxWidth: 160,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {cleanDomain(lead.website)} ↗
+                </a>
+              )}
+
+              {/* Office phone */}
               {lead.phone && (
                 <a
                   href={`tel:${lead.phone}`}
@@ -614,7 +657,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '0.3rem',
+                    gap: '0.25rem',
                     background: '#0f0f0f',
                     border: '1px solid #2a2a2a',
                     color: '#C4A46A',
@@ -627,46 +670,70 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     boxSizing: 'border-box',
                   }}
                 >
+                  <span style={{ fontSize: '0.58rem', color: '#666', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Office</span>
                   {lead.phone}
                 </a>
               )}
-              {lead.email ? (
+
+              {/* Owner cell — emphasized (what reps want) */}
+              {lead.owner_phone && (
                 <a
-                  href={`mailto:${lead.email}`}
+                  href={`tel:${lead.owner_phone}`}
                   onClick={e => e.stopPropagation()}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '0.3rem',
-                    background: '#0f0f0f',
-                    border: '1px solid #2a2a2a',
-                    color: '#C4A46A',
+                    gap: '0.25rem',
+                    background: '#100e08',
+                    border: '1px solid #C4A46A',
+                    color: '#F6F6F4',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.72rem',
+                    fontWeight: 600,
                     letterSpacing: '0.02em',
                     padding: '0.3rem 0.5rem',
                     textDecoration: 'none',
                     minHeight: 30,
                     boxSizing: 'border-box',
-                    maxWidth: '100%',
+                  }}
+                >
+                  <span style={{ fontSize: '0.58rem', color: '#C4A46A', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>Cell</span>
+                  {lead.owner_phone}
+                </a>
+              )}
+
+              {/* Email — owner_email is primary when present */}
+              {(lead.owner_email || lead.email) ? (
+                <a
+                  href={`mailto:${lead.owner_email || lead.email}`}
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    background: '#0f0f0f',
+                    border: '1px solid #2a2a2a',
+                    color: '#C4A46A',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.7rem',
+                    letterSpacing: '0.02em',
+                    padding: '0.3rem 0.5rem',
+                    textDecoration: 'none',
+                    minHeight: 30,
+                    boxSizing: 'border-box',
+                    maxWidth: 200,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {lead.email}
+                  {lead.owner_email && (
+                    <span style={{ fontSize: '0.58rem', color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>Owner</span>
+                  )}
+                  {lead.owner_email || lead.email}
                 </a>
-              ) : (
-                <span style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.68rem',
-                  color: '#555',
-                  letterSpacing: '0.02em',
-                  padding: '0.3rem 0',
-                }}>
-                  email pending
-                </span>
-              )}
+              ) : null}
+
               <a
                 href={buildLinkedInURL(lead)}
                 target="_blank"
@@ -764,9 +831,10 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             marginBottom: '1rem',
             flexWrap: 'wrap',
           }}>
-            {lead.phone && (
+            {/* Owner cell is the primary CTA — emphasized gold when present */}
+            {lead.owner_phone && (
               <a
-                href={`tel:${lead.phone}`}
+                href={`tel:${lead.owner_phone}`}
                 onClick={e => e.stopPropagation()}
                 style={{
                   display: 'inline-flex',
@@ -783,11 +851,38 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   textDecoration: 'none',
                   minHeight: 44,
                   boxSizing: 'border-box',
+                  flex: '2 1 auto',
+                  justifyContent: 'center',
+                }}
+              >
+                Owner Cell — {lead.owner_phone}
+              </a>
+            )}
+            {lead.phone && (
+              <a
+                href={`tel:${lead.phone}`}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  background: lead.owner_phone ? 'transparent' : '#C4A46A',
+                  color: lead.owner_phone ? '#C4A46A' : '#060606',
+                  border: lead.owner_phone ? '1px solid #2a2a2a' : 'none',
+                  padding: '0.6rem 1rem',
+                  fontFamily: "'Bricolage Grotesque', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  minHeight: 44,
+                  boxSizing: 'border-box',
                   flex: '1 1 auto',
                   justifyContent: 'center',
                 }}
               >
-                Call {lead.phone}
+                {lead.owner_phone ? `Office: ${lead.phone}` : `Call ${lead.phone}`}
               </a>
             )}
             {singleMapURL && (
@@ -821,14 +916,27 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             )}
           </div>
 
-          {/* Address + revenue row */}
-          {(lead.street_address || lead.revenue || lead.email) && (
+          {/* Address + revenue + website + email row */}
+          {(lead.street_address || lead.revenue || lead.email || lead.owner_email || lead.website) && (
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: '0.5rem',
               marginBottom: '0.85rem',
             }}>
+              {lead.website && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={labelStyle}>Website</div>
+                  <a
+                    href={lead.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ ...valueStyle, color: '#7bbfdf', textDecoration: 'none' }}
+                  >
+                    {cleanDomain(lead.website)} ↗
+                  </a>
+                </div>
+              )}
               {lead.street_address && (
                 <div>
                   <div style={labelStyle}>Address</div>
@@ -841,12 +949,23 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   <div style={valueStyle}>{lead.revenue}</div>
                 </div>
               )}
+              {lead.owner_email && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={labelStyle}>Owner Email</div>
+                  <a
+                    href={`mailto:${lead.owner_email}`}
+                    style={{ ...valueStyle, color: '#C4A46A', textDecoration: 'none' }}
+                  >
+                    {lead.owner_email}
+                  </a>
+                </div>
+              )}
               {lead.email && (
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={labelStyle}>Email</div>
+                  <div style={labelStyle}>{lead.owner_email ? 'Office Email' : 'Email'}</div>
                   <a
                     href={`mailto:${lead.email}`}
-                    style={{ ...valueStyle, color: '#C4A46A', textDecoration: 'none' }}
+                    style={{ ...valueStyle, color: lead.owner_email ? '#888' : '#C4A46A', textDecoration: 'none' }}
                   >
                     {lead.email}
                   </a>
@@ -1273,15 +1392,16 @@ function CallKit({ lead, columns }) {
 function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
   const [sort, setSort] = useState({ key: 'day_route', dir: 1 })
   const cols = [
-    { key: 'company', label: 'Company', w: '16%' },
-    { key: 'trade', label: 'Trade', w: '12%' },
-    { key: 'city', label: 'City', w: '7%' },
+    { key: 'company', label: 'Company', w: '14%' },
+    { key: 'trade', label: 'Trade', w: '10%' },
+    { key: 'city', label: 'City', w: '6%' },
     { key: 'day_route', label: 'Day', w: '4%' },
     { key: 'need_score', label: 'Need', w: '5%' },
-    { key: 'employees', label: 'Emp', w: '5%' },
+    { key: 'employees', label: 'Emp', w: '4%' },
+    { key: 'website', label: 'Website', w: '9%' },
     { key: 'phone', label: 'Contact', w: '14%' },
-    { key: 'street_address', label: 'Address', w: '17%' },
-    { key: 'status', label: 'Status', w: '11%' },
+    { key: 'street_address', label: 'Address', w: '15%' },
+    { key: 'status', label: 'Status', w: '10%' },
     { key: 'assigned_to', label: 'Rep', w: '9%' },
   ]
   const sorted = [...leads].sort((a, b) => {
@@ -1323,7 +1443,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
   }
   return (
     <div style={{ overflow: 'auto', maxHeight: '75vh' }}>
-      <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1150, tableLayout: 'fixed' }}>
+      <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1320, tableLayout: 'fixed' }}>
         <colgroup>
           {cols.map(c => <col key={c.key} style={{ width: c.w }} />)}
         </colgroup>
@@ -1389,15 +1509,60 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       ? lead.employees.replace(/\s*\(.*$/, '')
                       : <span style={{ color: '#444' }}>—</span>}
                   </td>
+                  {/* Website column */}
+                  <td style={{ ...td, fontSize: '0.72rem' }}>
+                    {lead.website
+                      ? <a
+                          href={lead.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            color: '#7bbfdf',
+                            textDecoration: 'none',
+                            display: 'block',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {cleanDomain(lead.website)} ↗
+                        </a>
+                      : <span style={{ color: '#333', fontSize: '0.66rem' }}>site pending</span>
+                    }
+                  </td>
+                  {/* Contact column — office / owner cell / email / LinkedIn */}
                   <td style={td}>
+                    {/* Office phone */}
                     {lead.phone
-                      ? <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none', whiteSpace: 'nowrap', display: 'block' }}>{lead.phone}</a>
+                      ? <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none', whiteSpace: 'nowrap', display: 'block', fontSize: '0.72rem' }}>
+                          <span style={{ color: '#555', fontSize: '0.58rem', marginRight: '0.2rem' }}>Office</span>{lead.phone}
+                        </a>
                       : <span style={{ color: '#444' }}>—</span>}
-                    {lead.email && (
+                    {/* Owner cell — emphasized */}
+                    {lead.owner_phone && (
                       <a
-                        href={`mailto:${lead.email}`}
+                        href={`tel:${lead.owner_phone}`}
                         onClick={e => e.stopPropagation()}
-                        title={lead.email}
+                        style={{
+                          color: '#F6F6F4',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          whiteSpace: 'nowrap',
+                          display: 'block',
+                          fontSize: '0.72rem',
+                          marginTop: '0.2rem',
+                        }}
+                      >
+                        <span style={{ color: '#C4A46A', fontSize: '0.58rem', marginRight: '0.2rem', fontWeight: 700 }}>Cell</span>{lead.owner_phone}
+                      </a>
+                    )}
+                    {/* Email — owner first */}
+                    {(lead.owner_email || lead.email) && (
+                      <a
+                        href={`mailto:${lead.owner_email || lead.email}`}
+                        onClick={e => e.stopPropagation()}
+                        title={lead.owner_email || lead.email}
                         style={{
                           color: '#C4A46A',
                           textDecoration: 'none',
@@ -1405,10 +1570,14 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                           display: 'block',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          fontSize: '0.72rem',
+                          fontSize: '0.68rem',
                           marginTop: '0.15rem',
                         }}
-                      >{lead.email}</a>
+                      >
+                        {lead.owner_email
+                          ? <><span style={{ color: '#888', fontSize: '0.58rem', marginRight: '0.2rem' }}>Owner</span>{lead.owner_email}</>
+                          : lead.email}
+                      </a>
                     )}
                     <a
                       href={buildLinkedInURL(lead)}
