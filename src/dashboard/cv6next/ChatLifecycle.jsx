@@ -382,7 +382,13 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
           </div>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={onClose} />
+          {/* Tapping a file here opens it in the review viewer. FilesShelf.openItem
+              only routes to onReview when a file "needs attention" (needsReview),
+              which this sheet doesn't pass — so every tap fell through to onLocate.
+              onLocate was onClose, so a tap just shut the sheet instead of opening
+              the file (Patrik 2026-07-21). Point onLocate at the same open-in-viewer
+              handler so any file opens on tap. */}
+          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={onReview} />
         </div>
       </div>
     </div>
