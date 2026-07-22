@@ -409,7 +409,7 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
   );
 }
 
-function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
+function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
   const { refetch: refetchHomeData } = useDataContext();
@@ -894,9 +894,9 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
   const projectHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 1 }), []);
   const missionHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 2 }), []);
 
-  // Keyboard navigation for All Rooms list (desktop only). Combines agents + projects
-  // into a single list for ↑/↓ navigation. → opens quick chat (col 3), → again opens full Chat.
-  // ← steps back. Arrow keys only work when NOT typing in an input/search.
+  // Keyboard navigation for All Rooms (desktop only). ↑/↓ moves through the
+  // directory, → opens the selected room as a fixed workspace column, and ←
+  // collapses a folder or clears the selection. There is no intermediate pin state.
   useEffect(() => {
     if (!isDesktop) return; // keyboard nav desktop-only
     const handleKeyDown = (e) => {
@@ -920,8 +920,12 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
 
       const nodes = navNodesRef.current || [];
       if (!nodes.length) return;
-      const openCol3 = (node) => { setKnavOpenedRoom(node.roomObj); setKnavRoomOpenState('col3'); setKnavOpenedKey(node.key); };
-      const openFull = (node) => { onOpenRoom?.(node.roomObj, worldId); setKnavRoomOpenState('full'); };
+      const openColumn = (node) => {
+        onOpenRoom?.(node.roomObj, worldId);
+        setKnavOpenedRoom(null);
+        setKnavRoomOpenState('full');
+        setKnavOpenedKey(node.key);
+      };
 
       if (e.key === 'ArrowUp') {
         e.preventDefault();
@@ -936,47 +940,24 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
         if (knavSelectedIdx < 0 || knavSelectedIdx >= nodes.length) { setKnavSelectedIdx(0); return; }
         const node = nodes[knavSelectedIdx];
         if (node.kind === 'project') {
-          const expanded = expandedHomeProjects.has(node.id);
-          if (!expanded) {
-            // First → on a project: fan the folder open AND open its chat in col3.
-            setExpandedHomeProjects((prev) => { const n = new Set(prev); n.add(node.id); return n; });
-            openCol3(node);
-          } else if (knavOpenedKey === node.key && knavRoomOpenState === 'col3') {
-            openFull(node); // → again on the same project (nothing typed): full chat tool
-          } else {
-            openCol3(node);
-          }
+          if (!expandedHomeProjects.has(node.id)) setExpandedHomeProjects((prev) => { const n = new Set(prev); n.add(node.id); return n; });
+          openColumn(node);
         } else if (node.kind === 'mission' && node.isFolder) {
-          // A mission that is itself a folder (has sub-missions) expands on → like a project:
-          // first → fans it open AND opens its chat in col3; → again opens the full chat tool.
-          const expanded = expandedHomeNodes.has(node.id);
-          if (!expanded) {
-            setExpandedHomeNodes((prev) => { const n = new Set(prev); n.add(node.id); return n; });
-            openCol3(node);
-          } else if (knavOpenedKey === node.key && knavRoomOpenState === 'col3') {
-            openFull(node);
-          } else {
-            openCol3(node);
-          }
-        } else if (knavOpenedKey === node.key && knavRoomOpenState === 'col3') {
-          openFull(node); // → again on a recent/mission/agent already in col3: full chat tool
+          if (!expandedHomeNodes.has(node.id)) setExpandedHomeNodes((prev) => { const n = new Set(prev); n.add(node.id); return n; });
+          openColumn(node);
         } else {
-          openCol3(node); // first → on a recent/mission/agent: quick chat in col3
+          openColumn(node);
         }
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         const node = (knavSelectedIdx >= 0 && knavSelectedIdx < nodes.length) ? nodes[knavSelectedIdx] : null;
-        if (knavRoomOpenState === 'full') {
-          setKnavRoomOpenState('col3'); // ← out of the full chat tool, back to the col3 list
-        } else if (node && node.kind === 'project' && expandedHomeProjects.has(node.id)) {
+        if (node && node.kind === 'project' && expandedHomeProjects.has(node.id)) {
           // ← on an open folder closes it; selection stays so ↓ goes to the next project.
           setExpandedHomeProjects((prev) => { const n = new Set(prev); n.delete(node.id); return n; });
           setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null);
         } else if (node && node.kind === 'mission' && node.isFolder && expandedHomeNodes.has(node.id)) {
           // ← on an open sub-folder mission closes it; selection stays on the folder row.
           setExpandedHomeNodes((prev) => { const n = new Set(prev); n.delete(node.id); return n; });
-          setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null);
-        } else if (knavRoomOpenState === 'col3') {
           setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null);
         } else {
           setKnavSelectedIdx(-1); // nothing open -> deselect (back to the top)
@@ -1061,14 +1042,12 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
       }
       onNav?.(target);
     },
-    // Tap an agent/project on Home. Desktop: open it in the col3 "quick reply room" (stay on
-    // Home), NOT a jump to the full chat tool (Patrik 2026-06-25: a click should open the quick
-    // reply room). Mobile keeps its own project-detail screen. A second open / the keyboard's
-    // second → takes you into the full chat tool.
+    // Desktop room selection is the whole interaction: append/focus its fixed
+    // workspace column. Mobile keeps its single-room navigation behavior.
     openRoom: (id) => {
       const agent = (data.agents || []).find((a) => a.id === id);
       if (agent) {
-        if (isDesktop) { setKnavOpenedRoom(agent); setKnavRoomOpenState('col3'); setKnavOpenedKey(`a:${agent.id}`); }
+        if (isDesktop) { onOpenRoom?.(agent, worldId); setKnavOpenedRoom(null); setKnavRoomOpenState('full'); setKnavOpenedKey(`a:${agent.id}`); }
         else onOpenRoom?.(agent, worldId);
         return;
       }
@@ -1076,14 +1055,13 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
       if (!proj) return;
       if (isDesktop) {
         const roomObj = { id: proj.slug || proj.id, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: proj.status || 'ready', statusText: 'project chat' };
-        setKnavOpenedRoom(roomObj); setKnavRoomOpenState('col3'); setKnavOpenedKey(`p:${proj.id}`);
+        onOpenRoom?.(roomObj, worldId); setKnavOpenedRoom(null); setKnavRoomOpenState('full'); setKnavOpenedKey(`p:${proj.id}`);
         setExpandedHomeProjects((prev) => { const n = new Set(prev); n.add(proj.id); return n; });
       } else {
         setOpenedProjectId(id);
       }
     },
-    // Tap a recently-active row -> open it in the col3 quick reply room (desktop) or its real
-    // conversation (mobile). Keyed lookup so a project slug and an agent id never collide.
+    // Recently-active rows follow the same direct column rule on desktop.
     openRecent: (key) => {
       const r = (data.recent || []).find((x) => x.key === key || x.id === key);
       if (!r) return;
@@ -1096,28 +1074,29 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
       } else {
         roomObj = (data.agents || []).find((a) => a.id === r.agent) || { id: r.agent || r.id, name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), status: 'ready' };
       }
-      if (isDesktop) { setKnavOpenedRoom(roomObj); setKnavRoomOpenState('col3'); setKnavOpenedKey(`rec:${r.key}`); }
+      if (isDesktop) { onOpenRoom?.(roomObj, worldId); setKnavOpenedRoom(null); setKnavRoomOpenState('full'); setKnavOpenedKey(`rec:${r.key}`); }
       else onOpenRoom?.(roomObj, worldId);
     },
-    // Desktop Home: tap a project folder to fan its missions open inline AND open its chat in
-    // col3. Mobile keeps its own project-detail screen.
+    // Project folders expand in the directory and open their general room beside it.
     toggleProjectMissions: (id) => {
       if (!isDesktop) { setOpenedProjectId(id); return; }
       const proj = (data.projects || []).find((p) => p.id === id);
       setExpandedHomeProjects((prev) => {
         const n = new Set(prev);
-        if (n.has(id)) { n.delete(id); setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null); }
+        if (n.has(id)) n.delete(id);
         else {
           n.add(id);
-          if (proj) { setKnavOpenedRoom({ id: proj.slug || proj.id, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: proj.status || 'ready', statusText: 'project chat' }); setKnavRoomOpenState('col3'); setKnavOpenedKey(`p:${id}`); }
         }
         return n;
       });
+      if (proj) {
+        const roomObj = { id: proj.slug || proj.id, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: proj.status || 'ready', statusText: 'project chat' };
+        onOpenRoom?.(roomObj, worldId); setKnavOpenedRoom(null); setKnavRoomOpenState('full'); setKnavOpenedKey(`p:${id}`);
+      }
     },
     showAllMissions: (id) => setMissionShowAll((prev) => (prev.has(id) ? prev : new Set(prev).add(id))),
     toggleMissionNode: (id) => setExpandedHomeNodes((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; }),
-    // Tap a mission row -> open that mission in the col3 quick reply room (desktop) or its real
-    // chat (mobile).
+    // Mission rows append/focus a room column on desktop.
     openMissionRow: (id) => {
       const missionSlug = String(id || '');
       if (!missionSlug) return;
@@ -1128,7 +1107,7 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
       const rawName = String(m?.name || missionSlug.split(':').pop() || '');
       const name = rawName.includes(':') ? rawName.slice(rawName.lastIndexOf(':') + 1).trim() : rawName;
       const roomObj = { id: missionSlug.split(':').pop(), name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug, status: 'ready', statusText: proj?.name || projectSlug };
-      if (isDesktop) { setKnavOpenedRoom(roomObj); setKnavRoomOpenState('col3'); setKnavOpenedKey(`m:${missionSlug}`); }
+      if (isDesktop) { onOpenRoom?.(roomObj, worldId); setKnavOpenedRoom(null); setKnavRoomOpenState('full'); setKnavOpenedKey(`m:${missionSlug}`); }
       else onOpenRoom?.(roomObj, worldId);
     },
     toggleAgents: () => setAgentsOpen((o) => !o),
@@ -1150,9 +1129,8 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
     // Search opens the command palette (room/agent search), not the nav menu.
     openCommandK: () => (onCommandK ? onCommandK() : onOpenNav?.()), search: () => (onCommandK ? onCommandK() : onOpenNav?.()), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
-    // All-rooms "New" → open the Start-a-mission composer (CV6 design). Default it to a
-    // mission in the first project with Auto-assign; the user can flip to New project inside.
-    newRoom: () => setComposerOpen('mission'),
+    // The quiet + beside All rooms is specifically the New project entry point.
+    newRoom: () => setComposerOpen('project'),
     // Catch Up deck navigation (desktop arrows + mobile next). Clamp against the LIVE deck
     // length (inbox minus device-dismissed) so the arrows never run past the last card.
     catchUpPrev: () => setCatchUpIndex((i) => Math.max(0, i - 1)),
@@ -1200,7 +1178,6 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
     // (HomeFilesPanel overlay), instead of jumping to the Organize tool. Only meaningful when
     // a room is open in col3; harmless otherwise.
     toggleFiles: () => setFilesOpen((o) => !o),
-    openChatColumn: () => { if (knavOpenedRoom) onOpenColumn?.(knavOpenedRoom); },
     // Send a quick reply from the col3 room panel: read the uncontrolled input and post into the
     // opened room via the same thread the full Chat uses (Patrik: the quick reply room should work).
     sendMessage: async (_arg, e) => {
@@ -1232,7 +1209,7 @@ function Home({ onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, pendingP
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenColumn, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker, quickSend, knavOpenedRoom]);
+  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker, quickSend]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),
@@ -1867,7 +1844,7 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
 // (the live Goal Thread: steps, decision cards, data tables) we render the rich thread
 // from that real output. Otherwise we show the real messages honestly. ──
 const CHAT_ALIASES = { 'goal.checklist': 'item' };
-function Chat({ room, worldId, onNav, onSearch }) {
+function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose }) {
   const [localTitle, setLocalTitle] = useState(null);
   const [localCustomTitle, setLocalCustomTitle] = useState(null);
   const { data: roomList } = useChatList();
@@ -1927,6 +1904,7 @@ function Chat({ room, worldId, onNav, onSearch }) {
       roomOptions={checklistRoomOptions}
       messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
+      columnMode={columnMode} onClose={onClose}
       onBack={() => onNav('back')} onSearch={() => onSearch?.()} onRoomRenamed={isDemo ? null : (name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} onClearRoom={isDemo ? null : rt.clearRoom} onSend={(text, options) => send?.(text, options)}
       onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), missionSlug: roomMissionSlug(room), needsReview: true } : null)}
     />
@@ -3179,7 +3157,16 @@ export default function CornerCV6() {
     const canvas = workspaceCanvasRef.current;
     const column = [...(canvas?.children || [])].find((item) => item.getAttribute('data-workspace-column') === activeColumnId);
     if (!canvas || !column) return;
-    requestAnimationFrame(() => canvas.scrollTo({ left: column.offsetLeft, behavior: 'smooth' }));
+    requestAnimationFrame(() => {
+      const visibleLeft = canvas.scrollLeft;
+      const visibleRight = visibleLeft + canvas.clientWidth;
+      const columnLeft = column.offsetLeft;
+      const columnRight = columnLeft + column.offsetWidth;
+      // Keep the simple adjacent layout still when the focused room already fits.
+      // Only reveal the clipped edge once enough columns overflow the viewport.
+      if (columnLeft < visibleLeft) canvas.scrollTo({ left: columnLeft, behavior: 'smooth' });
+      else if (columnRight > visibleRight) canvas.scrollTo({ left: columnRight - canvas.clientWidth, behavior: 'smooth' });
+    });
   }, [activeColumnId, workspaceColumns.length]);
 
   // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
@@ -3356,7 +3343,7 @@ export default function CornerCV6() {
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={onSearch} />; viewKey = 'chatlist'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenColumn={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = view === 'chatlist' ? 'chat' : view;
   const parkedLabel = { organize: 'Files', command: 'Command', tracker: 'Tracker', livescribe: 'Scribe' }[view] || '';
@@ -3433,6 +3420,8 @@ export default function CornerCV6() {
               <Chat
                 room={column.room}
                 worldId={column.worldId || worldId}
+                columnMode={isDesktop}
+                onClose={() => closeWorkspaceColumn(column.id)}
                 onNav={(target, arg) => { if (target === 'back') closeWorkspaceColumn(column.id); else onNav(target, arg); }}
                 onSearch={onSearch}
               />

@@ -28,3 +28,7 @@ Corner authentication; no auth bypass was introduced for testing.
 R2 removes glass translucency from the working composer and checklist layers while
 keeping the surrounding glass theme. The mobile list header, rows, inputs, and sharing
 controls now have a roomier solid treatment without moving the verified bottom anchor.
+
+R3 gives every checklist icon action a fixed circular target and prevents the nested
+list grid from overflowing the composer. Collapsed and expanded mobile states now keep
+all header, list, and item controls round, unsqueezed, and fully visible.

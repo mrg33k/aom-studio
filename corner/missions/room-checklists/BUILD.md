@@ -70,4 +70,23 @@
 - Keep the mobile header and item rows within the composer without clipping or shrinking.
 - Render the collapsed and expanded mobile states and re-run the shared composer checks.
 
-**Status:** in progress.
+### Shipped behavior
+
+- Header add/close actions now use fixed `42px` circular targets.
+- List and item actions use fixed `38px` circular targets with larger icons.
+- Explicit square sizing, aspect ratio, and non-shrinking flex geometry prevent oval controls.
+- The checklist grid and destination select are width-bounded so every circle remains fully
+  inside the composer in both collapsed and expanded states.
+
+### Verification
+
+- `19/19` CV6/source contract checks passed.
+- `38/38` CV6 Playwright checks passed, including computed square dimensions, circular
+  radius, full composer containment, mobile bottom geometry, and desktop parity.
+- Clean build from commit `552c6285` passed; existing unrelated OutreachTracker
+  duplicate-style warnings remain.
+- Live bundle contains the fixed `42px` geometry and `1 / 1` aspect-ratio contract.
+- Deployment `dpl_6maNgD89jjc4up3jbxGwWjeEACrd` is explicitly aliased to
+  `https://lab.aheadofmarket.com`.
+
+**Status:** shipped.

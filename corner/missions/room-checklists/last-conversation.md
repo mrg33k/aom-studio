@@ -36,3 +36,17 @@ The exact collapsed mobile state was rendered and inspected. Verification finish
 Deployment `dpl_2oLGCBg3opcWmMP3idhpaGZTsipB` is live at
 `https://lab.aheadofmarket.com`, where the served CSS contains the solid theme tokens
 and the checklist API still enforces JWT authentication.
+
+## 2026-07-21 — R3 shipped
+
+Patrik noted that the checklist buttons still felt squeezed. Increased the add/close
+actions to fixed 42px circles and the list/item actions to fixed 38px circles, with
+larger icons and an explicit square aspect ratio. Rendering the expanded state exposed
+that the destination select could force the nested grid wider than the composer, so the
+panel, list, heading, scroll region, and select now share a strict width-bounded layout.
+
+Both collapsed and expanded mobile states were rendered and inspected with every action
+fully inside the composer. Verification passed at 19/19 source checks, 38/38 browser
+checks, and a clean production build. Deployment `dpl_6maNgD89jjc4up3jbxGwWjeEACrd`
+is live at `https://lab.aheadofmarket.com`; its served bundle contains the fixed 42px
+circle geometry and the checklist API remains JWT-protected.
