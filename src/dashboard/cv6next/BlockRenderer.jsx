@@ -375,8 +375,8 @@ function ChoiceBlock({ block, onAction }) {
         {choices.map((c) => {
           const isAlt = c.style === 'alt';
           const text = c.title || c.label || '';
-          const badge = c.label && c.label !== text ? c.label : null;
-          const isRec = !isAlt && !!badge;
+          const isRec = !isAlt;
+          const badge = isRec && c.label && c.label !== text ? c.label : null;
           return (
             <button
               key={c.id}

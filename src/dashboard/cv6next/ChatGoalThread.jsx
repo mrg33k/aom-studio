@@ -482,13 +482,27 @@ function ChoiceBlock({ block }) {
   return (
     <div style={{ marginTop: 4 }}>
       {block.prompt ? <div className="gssub" style={{ marginBottom: 6 }}><ChatMessageRenderer content={block.prompt} className="cv6-agent-prose" /></div> : null}
-      <div className="chips">
-        {choices.map((c) => (
-          <button key={c.id} className={`chip-btn ${c.style === 'alt' ? '' : 'is-primary'}`}
-            onClick={() => send(c.title || c.label)}>
-            {c.title || c.label}
-          </button>
-        ))}
+      <div className="chips is-choice">
+        {choices.map((c) => {
+          const isAlt = c.style === 'alt';
+          const text = c.title || c.label || '';
+          const isRec = !isAlt;
+          const badge = isRec && c.label && c.label !== text ? c.label : null;
+          return (
+            <button key={c.id} className={`chip-btn ${isRec ? 'is-recommended' : 'is-alt'}`}
+              onClick={() => send(c.title || c.label)}>
+              <span className="chip-dot" aria-hidden="true">
+                {isRec ? (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : null}
+              </span>
+              <span className="chip-txt">{text}</span>
+              {badge ? <span className="chip-badge">{badge}</span> : null}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
