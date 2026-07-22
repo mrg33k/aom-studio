@@ -143,3 +143,22 @@ one bar at the visible bottom above the composer. Focused tests passed 1/1 and 2
 `https://lab.aheadofmarket.com`, with the new contracts confirmed in its served assets.
 Production UI automation remains sign-in gated, leaving only a real signed-in iPhone
 gesture check as final hardware signoff.
+
+## 2026-07-21 - R15 physical mobile bottom and chat header icons
+
+Patrik's signed-in iPhone screenshot showed the composer still ending roughly 60px
+above the intended home-indicator clearance across CV6, plus word-based Files and More
+buttons in room headers. The remaining strip came from the fixed app shell trusting
+iOS standalone's short `100dvh`; the composer itself was correctly pinned to that
+shortened shell. The resting shell now pins to the physical viewport with `top` and
+`bottom`, while only keyboard-open mode uses the explicit VisualViewport top and
+height. Files is now a folder icon and More an ellipsis icon on both mobile and
+desktop, with accessible names and true 44px mobile circles.
+
+The R15 source contract passed 1/1, focused mobile viewport/action scenarios passed
+2/2, all CV6 Playwright scenarios passed 35/35, the 390px capture was visually
+inspected, and the Vite build passed. Commit `027b2d94` is on `main`; Vercel deployment
+`dpl_Ef3rDvWmv9GoL9L5moxT5yGXqK59` is Ready at
+`https://lab.aheadofmarket.com`. The served `CornerCV6-CC2bJo6q.js` and
+`CornerCV6-C9_yl5zV.css` contain the verified fix. Production remains sign-in gated,
+so only Patrik's signed-in iPhone hardware check remains.

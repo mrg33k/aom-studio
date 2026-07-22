@@ -503,7 +503,15 @@ Playwright scenarios passed 35/35, the 390px capture was inspected, and the Vite
 production build passed with only the existing OutreachTracker duplicate-key and
 large-chunk warnings.
 
-**Status:** implementation and local regression verification complete; production deployment pending.
+Commit `027b2d94` was pushed to `main`. Vercel deployment
+`dpl_Ef3rDvWmv9GoL9L5moxT5yGXqK59` is Ready and aliased to
+`https://lab.aheadofmarket.com`; the live alias serves `CornerCV6-CC2bJo6q.js` and
+`CornerCV6-C9_yl5zV.css`, whose fetched contents contain the physical-bottom shell,
+keyboard override, circular header-action, and accessible Files/More contracts.
+Production UI remains sign-in gated, so the final hardware signoff is Patrik's
+signed-in iPhone check of the real home indicator and Apple keyboard.
+
+**Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
 
 ### R14 - Mobile recent-chat scrolling and singular live progress
 
