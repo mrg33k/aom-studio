@@ -64,7 +64,16 @@ document.head.appendChild(o)}initApollo();</script>
         --cv6-boot-mask: url('/cv6/assets/corner-logo.svg');
       }
       html[data-app-theme="glass"] {
+        /* Glass is the only theme whose wallpaper is a gradient, not a flat
+           color — and its two bright radials sit at 12%/20% height, exactly the
+           status-bar + header zone. On the fixed body::before that put a bright
+           glass band at the very top while the content-filled conversation read
+           dark: a top strip that didn't feel seamless (Patrik 2026-07-21). Dark
+           and light are flat so never had it. The leading top-anchored scrim
+           darkens the top ~27% back to the dark base so the header blends into
+           the body, and the glass glow still reads lower down. */
         --cv6-boot-ground:
+          linear-gradient(180deg, rgba(4,7,11,.94) 0%, rgba(4,7,11,.55) 12%, rgba(4,7,11,0) 27%),
           radial-gradient(54% 40% at 22% 12%, rgba(74,116,148,.55), transparent 62%),
           radial-gradient(50% 34% at 86% 20%, rgba(206,148,70,.34), transparent 58%),
           radial-gradient(46% 34% at 72% 86%, rgba(46,96,128,.45), transparent 64%),
