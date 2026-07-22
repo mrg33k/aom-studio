@@ -36,7 +36,7 @@ function humanizeStep(raw) {
       curl: 'Checking a live page', wget: 'Checking a live page', ping: 'Checking a connection',
       mkdir: 'Setting things up', cp: 'Organizing files', mv: 'Organizing files', rm: 'Tidying up',
       chmod: 'Setting things up', touch: 'Setting things up', ln: 'Setting things up',
-      vercel: 'Checking the deployment', docker: 'Checking the deployment',
+      vercel: "Checking it's live", docker: "Checking it's live",
       launchctl: 'Checking a background service', ps: 'Checking what is running', kill: 'Restarting a service',
       open: 'Opening a preview', echo: 'Noting something down',
     }
@@ -73,7 +73,17 @@ function humanizeStep(raw) {
     .replace(/(?:\/[\w.\-]+){2,}\/?/g, 'the files')
     .replace(/\b[\w\-]+\.(?:jsx?|tsx?|py|sh|json|ya?ml|md|css|html?|png|jpe?g|gif|webp|svg)\b/gi, 'the file')
     .replace(/\s{2,}/g, ' ')
-  return t.trim()
+    .trim()
+  // Root safety net (Steffen design-gate 2026-07-21): a machine-flavored label
+  // ("Count entries in current directory") must NEVER reach the user — the whole
+  // strip exists to translate the machine into plain comprehension (rule 4). If the
+  // text still carries dev-world vocabulary after scrubbing, speak the intent
+  // generically instead of leaking the terminal's voice. Clean plain-English
+  // descriptions have none of these tokens and pass through untouched.
+  if (/\b(director(?:y|ies)|subdir|cwd|std(?:out|err|in)|node_modules|localhost|entries|filesystem|grep|chmod|mkdir|rmdir|dir|repo|regex|npm|npx)\b/i.test(t)) {
+    return 'Working through the project'
+  }
+  return t
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL

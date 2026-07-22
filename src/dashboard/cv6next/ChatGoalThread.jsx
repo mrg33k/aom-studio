@@ -45,8 +45,10 @@ export function buildSteps(blocks) {
 }
 
 // Opener phrases shown on the active row before the first real step lands, cycled by a
-// wall-clock bucket so the strip reads as alive, not frozen on one static line.
-const LIVE_OPENERS = ['Reading your message', 'Getting started', 'Thinking it through', 'Getting to work'];
+// wall-clock bucket so the strip reads as alive, not frozen on one static line. A real arc
+// (read -> think -> plan), not three synonyms for "starting" — and never the retired dead
+// phrase "Getting started" (Steffen design-gate 2026-07-21).
+const LIVE_OPENERS = ['Reading your message', 'Thinking it through', 'Working out the approach'];
 
 // Live message-steps (the agent's real tool activity, polled while a reply is pending) ->
 // the same `blocks` shape buildSteps/GoalThreadBody render. This is what makes the thread
@@ -75,8 +77,16 @@ export function liveStepsToBlocks(liveSteps) {
     const phrase = LIVE_OPENERS[Math.floor(Date.now() / 2500) % LIVE_OPENERS.length];
     return [{ type: 'step', stepIndex: 0, title: phrase, state: 'active' }];
   }
-  const last = ordered.length - 1;
-  return ordered.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: i === last ? 'active' : 'done' }));
+  // Collapse consecutive identical labels into ONE row (Steffen design-gate): a stack of
+  // identical done-rows is the visual signature of a stuck/looping process — the exact
+  // opposite of what this strip is for. A repeated action shows as a single row.
+  const deduped = [];
+  for (const s of ordered) {
+    if (deduped.length && deduped[deduped.length - 1].text === s.text) continue;
+    deduped.push(s);
+  }
+  const last = deduped.length - 1;
+  return deduped.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: i === last ? 'active' : 'done' }));
 }
 
 // THE one "agent is working" turn, shared by EVERY chat surface (full Chat tool, Home quick
