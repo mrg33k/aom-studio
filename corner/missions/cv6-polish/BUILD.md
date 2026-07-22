@@ -544,6 +544,40 @@ UI remains sign-in gated, so Patrik's signed-in iPhone is the decisive hardware 
 
 **Status:** shipped and deployment verified; signed-in iPhone visual signoff pending.
 
+### R17 - Mobile brand scale, message typography, and Email tabs
+
+Started 2026-07-21 from Patrik's signed-in mobile Email screenshot and Home/room
+feedback. This round will make the Corner logo on mobile materially larger; add a safe,
+shared message typography renderer so agent-authored Markdown emphasis and headlines
+render as designed text instead of literal asterisks; remove the redundant Email
+auto-reply status box now that Auto-reply has its own tab; move the On/Off state into
+that tab; and increase the mobile tab control's size plus exterior top/bottom breathing
+room. Verification will cover real Chat message variants and Inbox/Auto-reply switching
+at the screenshot's mobile width before deployment.
+
+Resolution and verification (2026-07-21):
+
+- Increased the mobile Corner wordmark from 64px to 96px without moving or crowding
+  the canonical Search/Menu controls.
+- Extended the shared `ChatMessageRenderer` into structured room prose and added an
+  inline variant for headings, step labels, captions, and compact result titles.
+  Questions, summaries, action items, notes, email quotes, explanations, and other
+  agent-authored blocks now parse Markdown through the same typography kit as normal
+  room messages. The regression fixture includes the reported `****headline****`
+  pattern and proves it renders as emphasis with no literal markers.
+- Removed the Inbox-mounted Auto-reply status strip. A polled On/Off badge now lives
+  inside the Auto-reply tab, refreshes immediately after a saved policy, and keeps the
+  tab's accessible name stable.
+- Enlarged the mobile Email rail to a 76px reserved slot with 11/12px exterior padding,
+  a 46px segmented control, and a one-line Auto-reply status destination. The old
+  policy-strip reservation is gone, so filters follow the rail directly.
+- Visually inspected the 390px Home, Inbox, and desktop Auto-reply captures. All 36
+  CV6 Playwright scenarios passed, four focused Email scenarios passed after the final
+  status-refresh wiring, `git diff --check` passed, and the Vite production build
+  passed with only the existing OutreachTracker duplicate-key and chunk-size warnings.
+
+**Status:** verified locally; commit and lab deployment in progress.
+
 ### R14 - Mobile recent-chat scrolling and singular live progress
 
 Started 2026-07-21 from Patrik's mobile follow-up. The Home "Pick up where we left

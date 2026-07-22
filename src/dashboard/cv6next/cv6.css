@@ -1484,7 +1484,7 @@
    top bar. On phones it sits immediately below the canonical 60px header; the
    content reserves its fixed slot so neither the header nor the first row jumps. */
 @media (max-width:899px) {
-  [data-cv6] .cv6-email-shell { --cv6-email-tabs-height:53px; }
+  [data-cv6] .cv6-email-shell { --cv6-mobile-header-height:72px; --cv6-email-tabs-height:76px; }
   [data-cv6] .cv6-email-tabs {
     position:absolute;
     z-index:4;
@@ -1500,28 +1500,9 @@
   [data-cv6] .cv6-email-shell[data-email-tab="inbox"] .cv6-email-body [data-screen^="support"] .mhdr {
     margin-bottom:var(--cv6-email-tabs-height);
   }
-  /* One Page: the auto-reply strip joins the mobile header geometry. It gets its
-     own absolute slot UNDER the tabs (fixed height, single truncating line) and
-     the inbox header's reserved margin grows to match — without this the strip
-     pushed the template header down into the absolutely-positioned tab pill
-     (found on the iOS simulator, 2026-07-20). */
   /* Mobile: these header rows are absolute overlays above scrolling content —
      they need a backing here (desktop keeps the seamless transparent header). */
   [data-cv6] .cv6-email-tabs { background:var(--ground); }
-  [data-cv6] .cv6-email-shell { --cv6-autoreply-strip-height:40px; }
-  [data-cv6] .cv6-email-shell[data-autoreply="1"] .cv6-autoreply-strip {
-    position:absolute;
-    z-index:4;
-    top:calc(var(--cv6-mobile-header-height) + var(--cv6-email-tabs-height));
-    left:0;
-    right:0;
-    height:var(--cv6-autoreply-strip-height);
-    box-sizing:border-box;
-    background:var(--ground);
-  }
-  [data-cv6] .cv6-email-shell[data-autoreply="1"][data-email-tab="inbox"] .cv6-email-body [data-screen^="support"] .mhdr {
-    margin-bottom:calc(var(--cv6-email-tabs-height) + var(--cv6-autoreply-strip-height));
-  }
 }
 
 /* ---- Desktop Home convo column: show the honest "No active goal" rest state when
@@ -2076,35 +2057,58 @@
   align-items:center;
   justify-content:center;
   gap:10px;
-  padding:10px 24px 8px;
+  padding:12px 24px;
   border-bottom:1px solid var(--divider);
   flex-shrink:0;
   background:transparent;
 }
-[data-cv6] .cv6-email-tabs[data-layout="mobile"] { padding:7px 14px; }
+[data-cv6] .cv6-email-tabs[data-layout="mobile"] { padding:11px 14px 12px; }
 [data-cv6] .cv6-email-tablist {
   display:inline-flex;
   margin:0 auto;
   gap:2px;
-  padding:3px;
+  padding:4px;
   border:1px solid var(--hair);
-  border-radius:18px;
+  border-radius:25px;
   background:var(--surface);
 }
 [data-cv6] .cv6-email-tab {
-  height:32px;
-  padding:0 18px;
+  min-width:0;
+  height:42px;
+  padding:0 16px;
   border:0;
-  border-radius:15px;
+  border-radius:21px;
   background:transparent;
   color:var(--muted);
   font-family:var(--font-sans);
-  font-size:13px;
+  font-size:13.5px;
   font-weight:600;
   cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
   transition:background .15s ease,color .15s ease;
 }
 [data-cv6] .cv6-email-tab.is-active { background:var(--surface-2); color:var(--fg); }
+[data-cv6] .cv6-email-tab-label { white-space:nowrap; }
+[data-cv6] .cv6-email-tab-status {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  flex:none;
+  padding:3px 6px;
+  border-radius:9px;
+  background:var(--chip);
+  color:var(--faint);
+  font-size:9px;
+  font-weight:850;
+  line-height:1;
+  letter-spacing:.02em;
+}
+[data-cv6] .cv6-email-tab-status i { width:5px; height:5px; border-radius:50%; background:currentColor; }
+[data-cv6] .cv6-email-tab-status[data-tone="on"] { background:var(--success-weak); color:var(--success); }
+[data-cv6] .cv6-email-tab-status[data-tone="off"] { color:var(--muted); }
 [data-cv6] .cv6-autoreply-strip {
   display:flex;
   align-items:center;
@@ -2196,26 +2200,10 @@
 [data-cv6][data-screen="support-inbox"] .email-assign:active { background:var(--surface-2); color:var(--fg); }
 
 @media (max-width:899px) {
-  [data-cv6] .cv6-email-shell { --cv6-email-tabs-height:50px; --cv6-autoreply-strip-height:88px; }
-  [data-cv6] .cv6-email-shell[data-autoreply="1"] .cv6-autoreply-strip {
-    height:var(--cv6-autoreply-strip-height);
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
-    justify-content:center;
-    gap:5px;
-    padding:8px 16px 9px;
-    overflow:hidden;
-  }
-  [data-cv6] .cv6-autoreply-primary { display:flex; align-items:center; gap:9px; }
-  [data-cv6] .cv6-autoreply-primary .cv6-autoreply-action,
-  [data-cv6] .cv6-autoreply-primary .cv6-autoreply-no-restore { margin-left:auto; }
-  [data-cv6] .cv6-autoreply-copy { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  [data-cv6] .cv6-autoreply-copy strong,
-  [data-cv6] .cv6-autoreply-copy > span { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  [data-cv6] .cv6-autoreply-copy strong { font-size:11.5px; }
-  [data-cv6] .cv6-autoreply-copy > span { margin-top:1px; font-size:10.5px; }
-  [data-cv6] .cv6-autoreply-strip.is-unavailable { flex-direction:row; align-items:center; gap:8px; }
+  [data-cv6] .cv6-email-shell { --cv6-mobile-header-height:72px; --cv6-email-tabs-height:76px; }
+  [data-cv6] .cv6-email-tablist { width:min(100%, 390px); box-sizing:border-box; }
+  [data-cv6] .cv6-email-tab { flex:1 1 0; height:46px; padding:0 8px; font-size:14px; }
+  [data-cv6] .cv6-email-tab.has-status { gap:4px; padding-inline:4px; font-size:13.5px; }
 }
 
 /* M13 · desktop chat windows. The main room keeps one explicit pop-out action;
@@ -2516,8 +2504,23 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 [data-cv6] button { border-radius:999px !important; }
 [data-cv6] :where(.ib,.mback,.room-settings-close,.fcv-step,.cv6-chat-popout,.chat-column-open,.room-options-trigger) { border-radius:50% !important; }
 [data-cv6] .ib.is-active { color:var(--accent); background:var(--accent-weak); border-color:var(--accent); }
-[data-cv6][data-screen="home-mobile"] .hlogo { width:64px; height:auto; margin-left:2px; flex:none; }
+[data-cv6][data-screen="home-mobile"] .hlogo { width:96px; height:auto; margin-left:2px; flex:none; }
 [data-app-theme="light"] [data-cv6] .hlogo { filter:brightness(0); }
+[data-cv6] .cv6-agent-prose {
+  font-size:inherit;
+  line-height:inherit;
+  color:inherit;
+}
+[data-cv6] .cv6-agent-prose :where(p,ul,ol) { margin-bottom:.55em; }
+[data-cv6] .cv6-agent-prose :where(p,ul,ol):last-child { margin-bottom:0; }
+[data-cv6] :where(.cv6-agent-prose,.cmr-inline) strong { color:var(--fg); font-weight:780; }
+[data-cv6] .cv6-agent-prose :where(h1,h2,h3,h4,h5,h6) {
+  margin:.7em 0 .32em;
+  color:var(--fg);
+  font-weight:780;
+  letter-spacing:-.012em;
+}
+[data-cv6] .cv6-agent-prose :where(h1,h2,h3,h4,h5,h6):first-child { margin-top:0; }
 [data-cv6][data-screen="home-desktop"] .chat-column-open { width:34px; height:34px; padding:0; flex:none; cursor:pointer; }
 [data-cv6] .cv6-chat-popout { width:38px; height:38px; padding:0 !important; display:flex; align-items:center; justify-content:center; flex:none; }
 

@@ -104,7 +104,33 @@ function AutoReplyStrip({ isDesktop }) {
   );
 }
 
-function AutoReplySettings() {
+// The Inbox no longer carries a second policy card. Its only global status lives
+// on the Auto-reply destination itself, so people can see On/Off at a glance and
+// open that tab for every actual control.
+function useAutoReplyTabStatus(enabled) {
+  const [status, setStatus] = useState({ label: '…', tone: 'loading' });
+  const load = useCallback(() => {
+    if (!enabled) return;
+    authFetch('/api/dashboard/support-autoreply?world=aom')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        const mode = data?.file_state?.mode;
+        if (!mode) setStatus({ label: '—', tone: 'unavailable' });
+        else if (mode === 'live' || mode === 'test') setStatus({ label: 'On', tone: 'on' });
+        else setStatus({ label: 'Off', tone: 'off' });
+      })
+      .catch(() => setStatus({ label: '—', tone: 'unavailable' }));
+  }, [enabled]);
+  useEffect(() => {
+    if (!enabled) return undefined;
+    load();
+    const timer = setInterval(load, 20000);
+    return () => clearInterval(timer);
+  }, [enabled, load]);
+  return { ...status, reload: load };
+}
+
+function AutoReplySettings({ onSaved }) {
   const [form, setForm] = useState(null);
   const [status, setStatus] = useState({ busy: false, message: '', error: false });
   const load = useCallback(() => {
@@ -129,6 +155,7 @@ function AutoReplySettings() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data?.error || 'Settings did not save.');
       setStatus({ busy: false, message: 'Saved. The mail watcher is applying this policy now.', error: false });
+      onSaved?.();
     } catch (error) { setStatus({ busy: false, message: error?.message || 'Settings did not save.', error: true }); }
   };
   if (!form) return <div className="cv6-autoreply-settings"><div className="room-settings-note">{status.message || 'Loading the live auto-reply policy…'}</div></div>;
@@ -157,21 +184,24 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
     try { sessionStorage.setItem(TAB_KEY, t); } catch { /* private mode */ }
   };
   const worldId = useWorldId();
+  const hasAutoReply = worldId === 'aom' || forceAutoReply;
+  const autoReplyStatus = useAutoReplyTabStatus(hasAutoReply);
 
-  const seg = (id, label) => (
+  const seg = (id, label, accessory = null) => (
     <button
       key={id}
       onClick={() => setTab(id)}
-      className={`cv6-email-tab${tab === id ? ' is-active' : ''}`}
+      className={`cv6-email-tab${tab === id ? ' is-active' : ''}${accessory ? ' has-status' : ''}`}
       aria-current={tab === id ? 'page' : undefined}
+      aria-label={label}
     >
-      {label}
+      <span className="cv6-email-tab-label">{label}</span>
+      {accessory}
     </button>
   );
 
-  const stripOn = tab === 'inbox' && (worldId === 'aom' || forceAutoReply);
   return (
-    <div className="cv6-email-shell" data-email-tab={tab} data-autoreply={stripOn ? '1' : undefined} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', flex: 1, position: 'relative' }}>
+    <div className="cv6-email-shell" data-email-tab={tab} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', flex: 1, position: 'relative' }}>
       {!isDesktop && tab !== 'inbox' && (
         <div className="mhdr">
           <button type="button" className="mback" aria-label="Back" onClick={onBack}>
@@ -188,16 +218,19 @@ export default function EmailShell({ isDesktop, inbox, onBack, onOpenNav, onSear
         <div className="cv6-email-tablist" role="navigation" aria-label="Email sections">
           {seg('inbox', 'Inbox')}
           {seg('campaign', 'Campaign')}
-          {(worldId === 'aom' || forceAutoReply) ? seg('autoreply', 'Auto-reply') : null}
+          {hasAutoReply ? seg('autoreply', 'Auto-reply', (
+            <span className="cv6-email-tab-status" data-tone={autoReplyStatus.tone} aria-hidden="true">
+              <i />{autoReplyStatus.label}
+            </span>
+          )) : null}
         </div>
       </div>
-      {stripOn ? <AutoReplyStrip isDesktop={isDesktop} /> : null}
       <div className="cv6-email-body" style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'inbox'
           ? inbox
           : tab === 'campaign'
             ? <Campaign isDesktop={isDesktop} worldId={worldId} onOpenInbox={() => setTab('inbox')} />
-            : <AutoReplySettings />}
+            : <AutoReplySettings onSaved={autoReplyStatus.reload} />}
       </div>
     </div>
   );

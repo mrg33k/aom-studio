@@ -232,6 +232,9 @@ test.describe('CV6 shared message renderer', () => {
 
     await expect(page.getByText('Summary')).toBeVisible()
     await expect(page.getByText('Quick question')).toBeVisible()
+    await expect(page.locator('.cblk.is-question strong').filter({ hasText: 'Choose the first pilot team' }).last()).toBeVisible()
+    await expect(page.locator('.csum strong').filter({ hasText: 'Expansion:' })).toBeVisible()
+    await expect(page.getByText(/\*\*Choose the first pilot team/)).toHaveCount(0)
     await expect(page.getByRole('button', { name: /Send as me/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /Confirm & send/ })).toBeVisible()
     await expect(page.getByText('Show code')).toBeVisible()

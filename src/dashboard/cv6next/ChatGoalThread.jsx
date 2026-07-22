@@ -13,6 +13,7 @@
 // different markup, which a single data-each loop can't express.
 
 import React, { useMemo, useState } from 'react';
+import ChatMessageRenderer, { ChatInlineRenderer } from '../components/ChatMessageRenderer.jsx';
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
@@ -43,13 +44,17 @@ export function buildSteps(blocks) {
   return [...byIndex.values()].sort((a, b) => a.index - b.index);
 }
 
+// Opener phrases shown on the active row before the first real step lands, cycled by a
+// wall-clock bucket so the strip reads as alive, not frozen on one static line.
+const LIVE_OPENERS = ['Reading your message', 'Getting started', 'Thinking it through', 'Getting to work'];
+
 // Live message-steps (the agent's real tool activity, polled while a reply is pending) ->
 // the same `blocks` shape buildSteps/GoalThreadBody render. This is what makes the thread
 // BUILD live instead of appearing all-at-once at the end: each real step shows as a done
 // row, the newest as the active (spinning) row, so steps tick in front of the user. Text is
-// already humanized at the API (message-steps.js). When no step has arrived yet we still show
-// one active "Getting started" row so the thread is born the instant you send and never looks
-// dead. Steps reconcile to the agent's final metadata.blocks once the reply lands.
+// already humanized at the API (message-steps.js). When no step has arrived yet we show one
+// active opener row (cycled, see LIVE_OPENERS) so the thread is born the instant you send and
+// never looks dead. Steps reconcile to the agent's final metadata.blocks once the reply lands.
 export function liveStepsToBlocks(liveSteps) {
   const real = (liveSteps || []).filter((s) => s && s.step_index !== 9999 && s.text && s.text !== 'settled');
   // Collapse to one row per step_index, keeping the latest text for that index.
@@ -61,7 +66,15 @@ export function liveStepsToBlocks(liveSteps) {
     if (!prev || t >= prev._t) byIdx.set(k, { text: s.text, _t: t });
   }
   const ordered = [...byIdx.values()].sort((a, b) => a._t - b._t);
-  if (!ordered.length) return [{ type: 'step', stepIndex: 0, title: 'Getting started', state: 'active' }];
+  // Before the first real step lands (send -> bridge's opener, ~1-2s), don't freeze on a
+  // single "Getting started" — the whole strip exists to show life, so cycle a few honest
+  // openers so it always reads as moving, never stuck. The working turn re-renders every
+  // ~1.5s (the step poll), so a wall-clock bucket advances the phrase on its own; the instant
+  // a real step arrives this branch is skipped and the agent's actual steps take over.
+  if (!ordered.length) {
+    const phrase = LIVE_OPENERS[Math.floor(Date.now() / 2500) % LIVE_OPENERS.length];
+    return [{ type: 'step', stepIndex: 0, title: phrase, state: 'active' }];
+  }
   const last = ordered.length - 1;
   return ordered.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: i === last ? 'active' : 'done' }));
 }
@@ -160,25 +173,25 @@ function StepRow({ step }) {
       </div>
       <div className="gsbody">
         {isNote ? (
-          <div className="gsnote" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{step.title}</div>
+          <div className="gsnote" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}><ChatMessageRenderer content={step.title} className="cv6-agent-prose" /></div>
         ) : (
           <div>
             {/* Suppress the title when it's trivially "Done" — the chip already says so; showing
                 both produces "Done. Done" which reads as escaped text, not a finished step. */}
             {!/^done\.?$/i.test((step.title || '').trim()) && (
-              <span className="gstitle">{step.title || 'Step'}</span>
+              <span className="gstitle"><ChatInlineRenderer content={step.title || 'Step'} /></span>
             )}
             <span className="gschip c-work">Working</span>
             <span className="gschip c-done">Done</span>
             <span className="gschip c-queued">Queued</span>
           </div>
         )}
-        {step.detail && !isNote ? <div className="gssub">{step.detail}</div> : null}
+        {step.detail && !isNote ? <div className="gssub"><ChatMessageRenderer content={step.detail} className="cv6-agent-prose" /></div> : null}
         {isActive ? (
           <div style={{ marginTop: 8, marginBottom: 6 }}>
             <div className={`cv6-live-progress${hasProgress ? ' is-determinate' : ' is-indeterminate'}`} style={{ position: 'relative', width: '100%', height: 22, borderRadius: 11, background: 'var(--surface-2)', overflow: 'hidden', border: '1px solid var(--hair)' }}>
               <i style={{ display: 'block', width: hasProgress ? `${progress}%` : '38%', height: '100%', background: 'var(--accent)', transition: 'width 0.3s ease' }} />
-              <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 9px', color: 'var(--fg)', fontSize: 10.5, fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 1px 2px var(--ground)' }}>{step.detail || step.title || 'Working'}</span>
+              <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 9px', color: 'var(--fg)', fontSize: 10.5, fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 1px 2px var(--ground)' }}><ChatInlineRenderer content={step.detail || step.title || 'Working'} /></span>
             </div>
           </div>
         ) : null}
@@ -198,9 +211,9 @@ function Result({ block }) {
       <div className="cblk is-success" style={{ marginTop: 4 }}>
         <div className="cblk-h">
           <span className="ci"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg></span>
-          <span className="ct">{block.title || 'Done'}</span>
+          <span className="ct"><ChatInlineRenderer content={block.title || 'Done'} /></span>
         </div>
-        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}>{block.detail}</div> : null}
+        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}><ChatMessageRenderer content={block.detail} className="cv6-agent-prose" /></div> : null}
       </div>
     );
   }
@@ -209,9 +222,9 @@ function Result({ block }) {
       <div className="cblk is-snag" style={{ marginTop: 4 }}>
         <div className="cblk-h">
           <span className="ci"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17v.01" /><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" /></svg></span>
-          <span className="ct">{block.title || 'Snag'}</span>
+          <span className="ct"><ChatInlineRenderer content={block.title || 'Snag'} /></span>
         </div>
-        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}>{block.detail}</div> : null}
+        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}><ChatMessageRenderer content={block.detail} className="cv6-agent-prose" /></div> : null}
       </div>
     );
   }
@@ -266,7 +279,7 @@ function EmailBlock({ block }) {
         </div>
         <span className="cmail-tag">Email</span>
       </div>
-      {block.quote ? <div className="cmail-q">{block.quote}</div> : null}
+      {block.quote ? <div className="cmail-q"><ChatMessageRenderer content={block.quote} className="cv6-agent-prose" /></div> : null}
       {atts.length ? (
         <div style={{ padding: '0 14px 12px' }}>
           {atts.map((f, i) => (
@@ -308,7 +321,7 @@ function SummaryBlock({ block }) {
           {bullets.map((b, i) => {
             const text = typeof b === 'string' ? b : (b.text || '');
             const warn = typeof b === 'object' && b.warn;
-            return <div key={i} className={`sbullet${warn ? ' is-warn' : ''}`}><span className="sd" /><div>{text}</div></div>;
+            return <div key={i} className={`sbullet${warn ? ' is-warn' : ''}`}><span className="sd" /><ChatMessageRenderer content={text} className="cv6-agent-prose" /></div>;
           })}
         </div>
         {actions.length ? (
@@ -320,7 +333,7 @@ function SummaryBlock({ block }) {
               return (
                 <div key={i} className={`aitem${done ? ' is-done' : ''}`}>
                   <span className="ck">{done ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: 1 }}><path d="m5 12 4 4L19 7" /></svg> : null}</span>
-                  <span style={done ? { color: 'var(--muted)', textDecoration: 'line-through' } : undefined}>{text}</span>
+                  <span style={done ? { color: 'var(--muted)', textDecoration: 'line-through' } : undefined}><ChatInlineRenderer content={text} /></span>
                 </div>
               );
             })}
@@ -382,7 +395,7 @@ function AudioBlock({ block }) {
         <div className="wave">{heights.map((h, i) => <i key={i} className={i < lit ? 'on' : ''} style={{ height: `${h}%` }} />)}</div>
         {block.duration ? <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', flex: 'none' }}>{block.duration}</span> : null}
       </div>
-      {block.transcript ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}>{block.transcript}</div> : null}
+      {block.transcript ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}><ChatMessageRenderer content={block.transcript} className="cv6-agent-prose" /></div> : null}
     </div>
   );
 }
@@ -458,7 +471,7 @@ function ChoiceBlock({ block }) {
   const send = useThreadSend();
   return (
     <div style={{ marginTop: 4 }}>
-      {block.prompt ? <div className="gssub" style={{ marginBottom: 6 }}>{block.prompt}</div> : null}
+      {block.prompt ? <div className="gssub" style={{ marginBottom: 6 }}><ChatMessageRenderer content={block.prompt} className="cv6-agent-prose" /></div> : null}
       <div className="chips">
         {choices.map((c) => (
           <button key={c.id} className={`chip-btn ${c.style === 'alt' ? '' : 'is-primary'}`}
@@ -478,9 +491,9 @@ function ChoiceEchoBlock({ block }) {
     <div className="cblk is-success" style={{ marginTop: 4 }}>
       <div className="cblk-h">
         <span className="ci"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg></span>
-        <span className="ct">{block.title || 'Your choice'}</span>
+        <span className="ct"><ChatInlineRenderer content={block.title || 'Your choice'} /></span>
       </div>
-      {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}>{block.detail}</div> : null}
+      {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}><ChatMessageRenderer content={block.detail} className="cv6-agent-prose" /></div> : null}
     </div>
   );
 }
@@ -496,7 +509,7 @@ function QuestionBlock({ block }) {
         <span className="ci"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.8.4-1 .8-1 1.6" /><path d="M12 17h.01" /></svg></span>
         <span className="ct">Quick question</span>
       </div>
-      <div className="cblk-b">{block.text}</div>
+      <div className="cblk-b"><ChatMessageRenderer content={block.text} className="cv6-agent-prose" /></div>
       {opts.length ? (
         <div className="chips">
           {opts.map((o) => <button key={o.id} className="chip-btn" onClick={() => send(o.label)}>{o.label}</button>)}
@@ -546,7 +559,7 @@ function CodeBlock({ block }) {
         </div>
         <pre>{block.code || ''}</pre>
       </div>
-      {block.explain ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}>{block.explain}</div> : null}
+      {block.explain ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}><ChatMessageRenderer content={block.explain} className="cv6-agent-prose" /></div> : null}
     </div>
   );
 }
@@ -569,7 +582,7 @@ function RepliesBlock({ block }) {
   const send = useThreadSend();
   return (
     <div style={{ marginTop: 4 }}>
-      {block.prompt ? <div className="bubble">{block.prompt}</div> : null}
+      {block.prompt ? <div className="bubble"><ChatMessageRenderer content={block.prompt} className="cv6-agent-prose" /></div> : null}
       <div className="chips">
         {opts.map((o, i) => {
           const label = typeof o === 'string' ? o : (o.label || '');
@@ -588,13 +601,13 @@ function ConfirmBlock({ block }) {
   return (
     <div style={{ marginTop: 4 }}>
       <div className="cblk" style={{ borderColor: 'var(--accent-weak)' }}>
-        {block.text ? <div className="cblk-b" style={{ marginBottom: 11 }}>{block.text}</div> : null}
+        {block.text ? <div className="cblk-b" style={{ marginBottom: 11 }}><ChatMessageRenderer content={block.text} className="cv6-agent-prose" /></div> : null}
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="chip-btn is-primary" style={{ flex: 1, justifyContent: 'center', height: 40 }} onClick={() => send(block.confirmLabel || 'Confirm and send')}>{block.confirmLabel || 'Confirm & send'}</button>
           <button className="chip-btn" style={{ flex: 'none', height: 40 }} onClick={() => send(block.cancelLabel || 'Cancel')}>{block.cancelLabel || 'Cancel'}</button>
         </div>
       </div>
-      {block.note ? <div style={{ fontSize: 11, color: 'var(--faint)', paddingLeft: 2, marginTop: 4 }}>{block.note}</div> : null}
+      {block.note ? <div style={{ fontSize: 11, color: 'var(--faint)', paddingLeft: 2, marginTop: 4 }}><ChatMessageRenderer content={block.note} className="cv6-agent-prose" /></div> : null}
     </div>
   );
 }
@@ -618,7 +631,7 @@ function GalleryBlock({ block }) {
           </div>
         ))}
       </div>
-      {block.caption ? <div className="gal-cap"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.6" /><path d="m21 15-5-5L5 21" /></svg><span>{block.caption}</span></div> : null}
+      {block.caption ? <div className="gal-cap"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.6" /><path d="m21 15-5-5L5 21" /></svg><span><ChatInlineRenderer content={block.caption} /></span></div> : null}
     </div>
   );
 }

@@ -11,6 +11,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { ReviewCtx } from './ChatGoalThread.jsx';
+import ChatMessageRenderer, { ChatInlineRenderer } from '../components/ChatMessageRenderer.jsx';
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
@@ -68,7 +69,7 @@ function EmailBlock({ block, onAction }) {
         </div>
         <span className="cmail-tag">Email</span>
       </div>
-      {block.quote ? <div className="cmail-q">{block.quote}</div> : null}
+      {block.quote ? <div className="cmail-q"><ChatMessageRenderer content={block.quote} className="cv6-agent-prose" /></div> : null}
       {atts.length ? (
         <div style={{ padding: '0 14px 12px' }}>
           {atts.map((f, i) => (
@@ -145,7 +146,7 @@ function SummaryBlock({ block, onAction }) {
             return (
               <div key={i} className={`sbullet${warn ? ' is-warn' : ''}`}>
                 <span className="sd" />
-                <div>{text}</div>
+                <ChatMessageRenderer content={text} className="cv6-agent-prose" />
               </div>
             );
           })}
@@ -175,7 +176,7 @@ function SummaryBlock({ block, onAction }) {
                       </svg>
                     ) : null}
                   </span>
-                  <span style={done ? { color: 'var(--muted)', textDecoration: 'line-through' } : undefined}>{text}</span>
+                  <span style={done ? { color: 'var(--muted)', textDecoration: 'line-through' } : undefined}><ChatInlineRenderer content={text} /></span>
                 </div>
               );
             })}
@@ -278,7 +279,7 @@ function AudioBlock({ block }) {
         <div className="wave">{heights.map((h, i) => <i key={i} className={i < lit ? 'on' : ''} style={{ height: `${h}%` }} />)}</div>
         {block.duration ? <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', flex: 'none' }}>{block.duration}</span> : null}
       </div>
-      {block.transcript ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}>{block.transcript}</div> : null}
+      {block.transcript ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}><ChatMessageRenderer content={block.transcript} className="cv6-agent-prose" /></div> : null}
     </div>
   );
 }
@@ -369,7 +370,7 @@ function ChoiceBlock({ block, onAction }) {
   const choices = Array.isArray(block.choices) ? block.choices : [];
   return (
     <div style={{ marginTop: 4 }}>
-      {block.prompt ? <div className="gssub" style={{ marginBottom: 6 }}>{block.prompt}</div> : null}
+      {block.prompt ? <div className="gssub" style={{ marginBottom: 6 }}><ChatMessageRenderer content={block.prompt} className="cv6-agent-prose" /></div> : null}
       <div className="chips">
         {choices.map((c) => (
           <button
@@ -399,7 +400,7 @@ function QuestionBlock({ block, onAction }) {
         </span>
         <span className="ct">Quick question</span>
       </div>
-      <div className="cblk-b">{block.text}</div>
+      <div className="cblk-b"><ChatMessageRenderer content={block.text} className="cv6-agent-prose" /></div>
       {opts.length ? (
         <div className="chips">
           {opts.map((o) => (
@@ -469,7 +470,7 @@ function CodeBlock({ block }) {
         </div>
         <pre>{block.code || ''}</pre>
       </div>
-      {block.explain ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}>{block.explain}</div> : null}
+      {block.explain ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}><ChatMessageRenderer content={block.explain} className="cv6-agent-prose" /></div> : null}
     </div>
   );
 }
@@ -493,7 +494,7 @@ function RepliesBlock({ block, onAction }) {
   const opts = Array.isArray(block.options) ? block.options : [];
   return (
     <div style={{ marginTop: 4 }}>
-      {block.prompt ? <div className="bubble">{block.prompt}</div> : null}
+      {block.prompt ? <div className="bubble"><ChatMessageRenderer content={block.prompt} className="cv6-agent-prose" /></div> : null}
       <div className="chips">
         {opts.map((o, i) => {
           const label = typeof o === 'string' ? o : (o.label || '');
@@ -514,7 +515,7 @@ function ConfirmBlock({ block, onAction }) {
   return (
     <div style={{ marginTop: 4 }}>
       <div className="cblk" style={{ borderColor: 'var(--accent-weak)' }}>
-        {block.text ? <div className="cblk-b" style={{ marginBottom: 11 }}>{block.text}</div> : null}
+        {block.text ? <div className="cblk-b" style={{ marginBottom: 11 }}><ChatMessageRenderer content={block.text} className="cv6-agent-prose" /></div> : null}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             className="chip-btn is-primary"
@@ -532,7 +533,7 @@ function ConfirmBlock({ block, onAction }) {
           </button>
         </div>
       </div>
-      {block.note ? <div style={{ fontSize: 11, color: 'var(--faint)', paddingLeft: 2, marginTop: 4 }}>{block.note}</div> : null}
+      {block.note ? <div style={{ fontSize: 11, color: 'var(--faint)', paddingLeft: 2, marginTop: 4 }}><ChatMessageRenderer content={block.note} className="cv6-agent-prose" /></div> : null}
     </div>
   );
 }
@@ -576,7 +577,7 @@ function GalleryBlock({ block }) {
             <circle cx="8.5" cy="8.5" r="1.6" />
             <path d="m21 15-5-5L5 21" />
           </svg>
-          <span>{block.caption}</span>
+          <span><ChatInlineRenderer content={block.caption} /></span>
         </div>
       ) : null}
     </div>
@@ -600,9 +601,9 @@ export function Result({ block, onAction }) {
               <path d="m5 13 4 4L19 7" />
             </svg>
           </span>
-          <span className="ct">{block.title || 'Done'}</span>
+          <span className="ct"><ChatInlineRenderer content={block.title || 'Done'} /></span>
         </div>
-        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}>{block.detail}</div> : null}
+        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}><ChatMessageRenderer content={block.detail} className="cv6-agent-prose" /></div> : null}
       </div>
     );
   }
@@ -616,9 +617,9 @@ export function Result({ block, onAction }) {
               <path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" />
             </svg>
           </span>
-          <span className="ct">{block.title || 'Snag'}</span>
+          <span className="ct"><ChatInlineRenderer content={block.title || 'Snag'} /></span>
         </div>
-        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}>{block.detail}</div> : null}
+        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}><ChatMessageRenderer content={block.detail} className="cv6-agent-prose" /></div> : null}
       </div>
     );
   }

@@ -16,7 +16,9 @@ test('Home exposes all projects, mobile logo, one theme control, and desktop Ema
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await expect(page.locator('[data-screen="home-mobile"] .mhdr .hlogo')).toBeVisible()
+  const mobileLogo = page.locator('[data-screen="home-mobile"] .mhdr .hlogo')
+  await expect(mobileLogo).toBeVisible()
+  expect((await mobileLogo.boundingBox()).width).toBeGreaterThanOrEqual(90)
   await page.screenshot({ path: '/tmp/corner-r10-home-mobile.png', fullPage: true })
 })
 

@@ -347,3 +347,18 @@ export default function ChatMessageRenderer({ content, className = '', style = {
     </div>
   )
 }
+
+// Structured room blocks (step titles, result-card headings, captions) need the
+// same Markdown cleanup as full chat bubbles, but cannot legally mount a block
+// <div> inside their inline labels. Keep one parser and expose its inline form so
+// agent emphasis never leaks as literal **asterisks** in those compact surfaces.
+export function ChatInlineRenderer({ content, className = '', style = {} }) {
+  injectStyles()
+  return (
+    <span
+      className={`cmr-inline ${className}`}
+      style={style}
+      dangerouslySetInnerHTML={{ __html: parseMarkdown(content).replace(/^<p>|<\/p>\s*$/g, '') }}
+    />
+  )
+}

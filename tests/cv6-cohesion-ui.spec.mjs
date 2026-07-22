@@ -34,7 +34,7 @@ test('desktop room spine and file rail keep context and attention honest', async
   await page.screenshot({ path: '/tmp/corner-m11-desktop.png', fullPage: true })
 })
 
-test('Email automation separates policy, watcher freshness, and control', async ({ page }) => {
+test('Email automation status lives in its policy tab', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 950 })
   await page.route('**/api/dashboard/support-autoreply**', (route) => route.fulfill({
     status: 200,
@@ -42,9 +42,11 @@ test('Email automation separates policy, watcher freshness, and control', async 
     body: JSON.stringify({ control: null, can_restore: true, file_state: { mode: 'live', answer_mode: 'send', threshold_min: 8, synced_at: new Date().toISOString() } }),
   }))
   await open(page, 'demo=email-autoreply')
-  await expect(page.getByText('Live', { exact: true })).toBeVisible()
-  await expect(page.getByText(/Watcher checked just now/)).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible()
+  const autoReplyTab = page.getByRole('button', { name: 'Auto-reply', exact: true })
+  await expect(autoReplyTab.locator('.cv6-email-tab-status')).toHaveText(/On/)
+  await expect(page.locator('.cv6-autoreply-strip')).toHaveCount(0)
+  await autoReplyTab.click()
+  await expect(page.getByRole('heading', { name: /Control the reply vibe/i })).toBeVisible()
   await page.screenshot({ path: '/tmp/corner-m11-email.png', fullPage: true })
 })
 
@@ -81,7 +83,7 @@ test('M12 mobile Home gives recent work and room types distinct visual homes', a
   await page.screenshot({ path: '/tmp/corner-m12-home.png', fullPage: true })
 })
 
-test('M12 mobile Email reserves clean geometry for tabs, policy, and filters', async ({ page }) => {
+test('M12 mobile Email gives the larger status tab clean exterior spacing', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.route('**/api/dashboard/support-autoreply**', (route) => route.fulfill({
     status: 200,
@@ -93,13 +95,17 @@ test('M12 mobile Email reserves clean geometry for tabs, policy, and filters', a
   await expect(page.getByText('People-first inbox')).toBeVisible()
   await expect(page.getByText('Needs a reply')).toBeVisible()
   await expect(page.locator('.needs-count')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible()
+  const autoReplyTab = page.getByRole('button', { name: 'Auto-reply', exact: true })
+  await expect(autoReplyTab.locator('.cv6-email-tab-status')).toHaveText(/On/)
+  await expect(page.locator('.cv6-autoreply-strip')).toHaveCount(0)
 
   const tabs = await page.locator('.cv6-email-tabs').boundingBox()
-  const policy = await page.locator('.cv6-autoreply-strip').boundingBox()
+  const tablist = await page.locator('.cv6-email-tablist').boundingBox()
   const filters = await page.locator('[data-screen="support-inbox"] .mhchips').boundingBox()
-  expect(tabs.y + tabs.height).toBeLessThanOrEqual(policy.y + 0.5)
-  expect(policy.y + policy.height).toBeLessThanOrEqual(filters.y + 0.5)
+  expect(tablist.y - tabs.y).toBeGreaterThanOrEqual(9)
+  expect(tabs.y + tabs.height - (tablist.y + tablist.height)).toBeGreaterThanOrEqual(9)
+  expect(tabs.y + tabs.height).toBeLessThanOrEqual(filters.y + 0.5)
+  expect(tablist.height).toBeGreaterThanOrEqual(52)
   expect(await page.locator('.email-assign').first().evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgba(0, 0, 0, 0)')
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   await page.screenshot({ path: '/tmp/corner-m12-email.png', fullPage: true })

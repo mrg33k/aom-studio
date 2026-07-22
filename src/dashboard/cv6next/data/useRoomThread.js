@@ -187,6 +187,12 @@ export function useRoomThread(worldId, room) {
   const [lastSentId, setLastSentId] = useState('');
   const lastSentTsRef = useRef(0);
   const [liveSteps, setLiveSteps] = useState([]);
+  // True once the bridge has emitted at least one real step for the message we're awaiting.
+  // When it has, the bridge is streaming live progress and OWNS the "stopped" signal via its
+  // settled sentinel — so we must NOT settle the bar off an interim reply timestamp (the agent
+  // flushes its in-progress thoughts as chat messages mid-turn; those would otherwise yank the
+  // bar off a still-running turn). Reset at the start of every new send/turn.
+  const sawLiveStepsRef = useRef(false);
   // Every turn's working steps, grouped by the user message they answered (parent_message_id),
   // so finished turns keep the steps that ticked while the agent worked (not just the live one).
   const [stepsByParent, setStepsByParent] = useState({});
@@ -253,6 +259,7 @@ export function useRoomThread(worldId, room) {
     // Show "working" the instant you send, so the thread never looks dead.
     setAwaiting(true);
     setLiveSteps([]);
+    sawLiveStepsRef.current = false;
     lastSentTsRef.current = now.getTime();
     try {
       const r = await authFetch('/api/dashboard/supabase-messages', {
@@ -323,6 +330,10 @@ export function useRoomThread(worldId, room) {
         // no guessing, so working-vs-stopped is honest (Patrik 2026-06-27).
         if (mine.some((s) => s.step_index === 9999 || s.text === 'settled')) { setAwaiting(false); return; }
         const renderable = mine.filter((s) => s.step_index !== 9999 && s.text !== 'settled').length;
+        // Once a real step lands, the bridge is streaming — from here the settled sentinel
+        // above (or the dead-bridge backstop) is the ONLY thing that stops the bar; interim
+        // reply bubbles must not (see the message-poll settle guard).
+        if (renderable > 0) sawLiveStepsRef.current = true;
         if (renderable !== lastCount) { lastCount = renderable; lastActivity = Date.now(); }
         // Dead-bridge insurance only: fully silent (no new step, no reply) for a long stretch.
         if (Date.now() - lastActivity > 180000) setAwaiting(false);
@@ -517,6 +528,7 @@ export function useRoomThread(worldId, room) {
             setLastSentId(String(newestUser.id));
             setAwaiting(true);
             setLiveSteps([]);
+            sawLiveStepsRef.current = false;
           }
         } else if (newestUser && tms(newestUser) > lastSentTsRef.current) {
           // A newer user message than anything we've tracked → the agent is now on it.
@@ -524,8 +536,13 @@ export function useRoomThread(worldId, room) {
           setLastSentId(String(newestUser.id));
           setAwaiting(true);
           setLiveSteps([]);
-        } else if (newestReply && tms(newestReply) >= lastSentTsRef.current && lastSentTsRef.current) {
-          // A reply at/after our last user message → settle.
+          sawLiveStepsRef.current = false;
+        } else if (!sawLiveStepsRef.current && newestReply && tms(newestReply) >= lastSentTsRef.current && lastSentTsRef.current) {
+          // A reply at/after our last user message → settle — but ONLY when the bridge is
+          // NOT streaming live steps for this turn. Once steps are flowing, the agent flushes
+          // its in-progress thoughts as interim reply messages; settling on those would yank
+          // the bar off a still-running turn (the exact "bar stops while it's still working"
+          // bug). With steps active, the settled sentinel (live-step poll) is the honest stop.
           setAwaiting(false);
         }
         setStatus(msgs.length ? 'ready' : 'empty');

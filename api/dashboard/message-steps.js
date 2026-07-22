@@ -27,12 +27,18 @@ function humanizeStep(raw) {
       ls: 'Looking through the files', find: 'Looking through the files', tree: 'Looking through the files',
       grep: 'Searching the project', rg: 'Searching the project', ag: 'Searching the project',
       cat: 'Reading the details', head: 'Reading the details', tail: 'Reading the details',
-      git: 'Checking the latest changes', npm: 'Running a quick build', npx: 'Running a quick build',
-      yarn: 'Running a quick build', pnpm: 'Running a quick build',
+      less: 'Reading the details', sed: 'Reading the details', awk: 'Reading the details',
+      git: 'Checking the latest changes', diff: 'Comparing the changes',
+      npm: 'Running a quick build', npx: 'Running a quick build',
+      yarn: 'Running a quick build', pnpm: 'Running a quick build', make: 'Running a quick build',
       node: 'Running a quick check', python3: 'Running a quick check', python: 'Running a quick check',
-      curl: 'Checking a live page', wget: 'Checking a live page',
+      pytest: 'Running the tests', jest: 'Running the tests', vitest: 'Running the tests', test: 'Running the tests',
+      curl: 'Checking a live page', wget: 'Checking a live page', ping: 'Checking a connection',
       mkdir: 'Setting things up', cp: 'Organizing files', mv: 'Organizing files', rm: 'Tidying up',
-      vercel: 'Checking the deployment', open: 'Opening a preview', echo: 'Noting something down',
+      chmod: 'Setting things up', touch: 'Setting things up', ln: 'Setting things up',
+      vercel: 'Checking the deployment', docker: 'Checking the deployment',
+      launchctl: 'Checking a background service', ps: 'Checking what is running', kill: 'Restarting a service',
+      open: 'Opening a preview', echo: 'Noting something down',
     }
     return byVerb[verb] || 'Working through the project'
   }
