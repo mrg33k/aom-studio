@@ -505,5 +505,9 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - Verification passed: focused multi-column + no-popup Playwright coverage (2/2), full desktop/mobile CV6 practical audit (2/2), `npm run test:tenant-context`, `npm run build`, and `git diff --check`.
   - Build retains pre-existing `OutreachTracker.jsx` duplicate-object-key notices and the existing large-chunk warning. No deploy, commit, push, schema/data mutation, external message, secret change, or stored login/world/member/data mutation.
 - 2026-07-21 production deployment authorized by the user. The validated R6b source is being committed and published through the existing `aom-studio` Vercel project that serves `aheadofmarket.com`; the checkout's separate `aom-studio-lab` link will not be used.
+- 2026-07-21 production deployment completed:
+  - Commit `c54f8394` (`feat(corner:truth-contracts): R6b deploy simple room columns`) was pushed to `main`.
+  - Vercel deployment `aom-studio-jiuqp6liz-aheads-projects-d2a4c70f.vercel.app` reached Ready and received the `aheadofmarket.com` and `www.aheadofmarket.com` aliases.
+  - The aliased production bundle was checked for the R6b `New project` control and labeled `Close <room>` column action.
 
-**Status:** production deployment in progress.
+**Status:** shipped, verified, and deployed to production.
