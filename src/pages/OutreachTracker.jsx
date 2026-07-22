@@ -49,6 +49,31 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10)
 }
 
+// Website warmth. A lead that HAS a site (even a bad/dated/broken one) is warmer
+// than one with no site at all: they already believe in having a web presence,
+// so there's less convincing. "No website" leads still score a high NEED because
+// the score counts the GAP, not whether they'd fill it — those are the cold
+// false-positives. This splits the two off the site_issue text so warm leads
+// can float to the top of the call list.
+const NO_SITE_RE = /no website|no real website|no web presence|zero web presence|no online presence|no website found|no website of any kind|almost no online presence|zero online footprint|no web presence found|invisible online|only third-party|directory listings only|only directory/i
+function hasWebsite(lead) {
+  const s = (lead && lead.site_issue) || ''
+  if (!s.trim()) return true // unknown → don't demote
+  return !NO_SITE_RE.test(s)
+}
+
+// Canonical call order: warmest first (has a site), then by NEED within each
+// bucket, then company. This is what changed on 2026-07-21 so "bad website"
+// ranks above "no website" — the top of the list is no longer the cold 7s.
+function warmthCompare(a, b) {
+  const wa = hasWebsite(a) ? 1 : 0
+  const wb = hasWebsite(b) ? 1 : 0
+  if (wa !== wb) return wb - wa                       // has-site first
+  const na = Number(a.need_score) || 0, nb = Number(b.need_score) || 0
+  if (na !== nb) return nb - na                       // higher NEED first
+  return (a.company || '').localeCompare(b.company || '')
+}
+
 function needScoreColor(score) {
   const s = Number(score) || 0
   if (s >= 7) return '#D95050' // red
@@ -549,6 +574,18 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                 NEED {score}
               </span>
             )}
+            <span style={{
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 600,
+              fontSize: '0.58rem',
+              letterSpacing: '0.08em',
+              padding: '0.1rem 0.35rem',
+              border: `1px solid ${hasWebsite(lead) ? '#3a3320' : '#242424'}`,
+              color: hasWebsite(lead) ? '#C4A46A' : '#555',
+              background: hasWebsite(lead) ? '#161206' : '#0c0c0c',
+            }}>
+              {hasWebsite(lead) ? 'HAS SITE' : 'NO SITE'}
+            </span>
           </div>
           {lead.contact_name && (
             <div style={{
@@ -1251,7 +1288,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
     const va = a[sort.key] ?? '', vb = b[sort.key] ?? ''
     if (va < vb) return -1 * sort.dir
     if (va > vb) return 1 * sort.dir
-    return (b.need_score || 0) - (a.need_score || 0)
+    return warmthCompare(a, b) // ties break warmest-first (has-site), then NEED
   })
   const th = {
     fontFamily: "'Inter', sans-serif",
@@ -1333,6 +1370,16 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                     }}>
                       {lead.need_score}
                     </span>
+                    <div style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: 600,
+                      fontSize: '0.54rem',
+                      letterSpacing: '0.07em',
+                      marginTop: '0.2rem',
+                      color: hasWebsite(lead) ? '#C4A46A' : '#555',
+                    }}>
+                      {hasWebsite(lead) ? 'HAS SITE' : 'NO SITE'}
+                    </div>
                   </td>
                   <td
                     title={lead.employees || ''}
@@ -1615,7 +1662,8 @@ export default function OutreachTracker() {
     if (err) {
       setError(err.message)
     } else {
-      setLeads(data || [])
+      // Re-order warmest-first (has a site) before NEED — see warmthCompare.
+      setLeads([...(data || [])].sort(warmthCompare))
     }
     setLoading(false)
   }, [])
