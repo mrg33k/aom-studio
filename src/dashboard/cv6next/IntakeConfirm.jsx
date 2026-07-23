@@ -59,7 +59,7 @@ export default function IntakeConfirm({ proposal, projects = [], error = '', bus
 
   return (
     <div className="cv6-intake-confirm" style={cardStyle}>
-      <div style={eyebrow}>Corner will start a new {creatingProject ? 'project' : 'mission'} — edit if this isn’t right</div>
+      <div style={eyebrow}>Corner will start a new {creatingProject ? 'project' : 'mission'}. Edit anything that’s off.</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -86,7 +86,7 @@ export default function IntakeConfirm({ proposal, projects = [], error = '', bus
         </div>
       ) : null}
       <div style={quoteLine}>“{pendingText}”</div>
-      {error ? <div style={errLine}>{error === 'offline' ? 'Corner couldn’t reach the router — set the destination and it’ll go.' : error}</div> : null}
+      {error ? <div style={errLine}>{error === 'offline' ? 'Corner couldn’t sort this automatically. Set the destination and it’ll go.' : error}</div> : null}
       <div style={rowBtns}>
         <button type="button" disabled={!canStart} onClick={start} style={{ ...primaryBtn, opacity: canStart ? 1 : 0.5 }}>
           {busy ? 'Starting…' : 'Start'}
@@ -97,13 +97,13 @@ export default function IntakeConfirm({ proposal, projects = [], error = '', bus
   );
 }
 
-const cardStyle = { width: '100%', maxWidth: 680, margin: '14px auto 0', padding: 18, borderRadius: 20, background: 'var(--surface-1, #16161b)', border: '1px solid var(--hair)', boxShadow: '0 22px 52px -26px rgba(0,0,0,.8)', fontFamily: 'var(--font-sans)' };
+const cardStyle = { width: '100%', maxWidth: 680, margin: '14px auto 0', padding: 18, borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--hair)', boxShadow: '0 22px 52px -26px rgba(0,0,0,.8)', fontFamily: 'var(--font-sans)' };
 const eyebrow = { fontSize: 12, color: 'var(--muted)', marginBottom: 10 };
 const pill = { fontSize: 11, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', borderRadius: 11, padding: '2px 9px' };
 const nameInput = { width: '100%', boxSizing: 'border-box', height: 44, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 16, fontWeight: 600, padding: '0 14px', outline: 'none', fontFamily: 'var(--font-sans)' };
 const selectStyle = { height: 34, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 13, padding: '0 8px', outline: 'none', fontFamily: 'var(--font-sans)', maxWidth: '100%' };
 const reasonLine = { fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 };
-const quoteLine = { fontSize: 12.5, color: 'var(--faint)', fontStyle: 'italic', marginTop: 12, borderLeft: '2px solid var(--hair)', paddingLeft: 10 };
+const quoteLine = { fontSize: 12.5, color: 'var(--muted)', fontStyle: 'italic', marginTop: 12, borderLeft: '2px solid var(--hair)', paddingLeft: 10 };
 const errLine = { fontSize: 12, color: 'var(--warn, #d9a441)', marginTop: 10 };
 const rowBtns = { display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, flexWrap: 'wrap' };
 const primaryBtn = { height: 40, padding: '0 20px', borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', font: '700 13px var(--font-sans)', cursor: 'pointer' };
