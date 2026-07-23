@@ -100,6 +100,10 @@
            action the left rail already binds, so picking up where you left off is one click.
            Falls back to the quiet glyph only when there is no recent activity at all. -->
       <div class="convo-rest2"><div class="restcol">
+        <!-- Front door (corner:front-door): React portals the IntakeComposer + editable
+             confirm into this host. data-cv6-keep grafts it back across every re-bind so
+             the portal target never re-points and typed text survives. -->
+        <div class="cv6-intake-host" data-cv6-intake data-cv6-keep="home-intake"></div>
         <div class="restlist" data-mod="is-:recent.has">
           <div class="subhdr" style="margin-bottom:12px;">Pick up where you left off</div>
           <div class="restrows">

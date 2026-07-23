@@ -35,6 +35,9 @@ import { useHome, useProjectMissions, shapeHome, shapeProjectState, createMissio
 import { savedRoomExists, missionTreesFromResponse } from './data/lastRoomValidation.js';
 import { roomProjectSlug, buildChecklistRoomOptions } from './data/roomKeys.js';
 import NewComposer from './NewComposer.jsx';
+import IntakeComposer from './IntakeComposer.jsx';
+import IntakeConfirm from './IntakeConfirm.jsx';
+import { useIntakeRoute } from './data/useIntakeRoute.js';
 import { supabase } from '../lib/supabase.js';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
@@ -417,6 +420,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const { refetch: refetchHomeData } = useDataContext();
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
+  // corner:front-door: the front-door composer's brain-to-room wiring. Type a
+  // task → route it (continue / existing / editable-new) → open + seed.
+  const intake = useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject });
 
   // ── R-TREE-MENU: right-click / long-press on the Rooms rail → Rename / Move ──
   // .projrow carries the project id, .missrow the full colon mission slug (both
@@ -847,6 +853,20 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     obs.observe(document.body, { childList: true, subtree: true });
     return () => obs.disconnect();
   }, [isDesktop]);
+  // Front-door intake host (corner:front-door): the [data-cv6-intake] node lives
+  // in BOTH the desktop convo column and the mobile Home screen. Tracked across
+  // template re-binds like the other hosts so the composer keeps its typed text.
+  const [intakeHost, setIntakeHost] = useState(null);
+  useEffect(() => {
+    const pick = () => {
+      const el = document.querySelector('[data-cv6-intake]');
+      setIntakeHost((prev) => (prev === el ? prev : (el || null)));
+    };
+    pick();
+    const obs = new MutationObserver(pick);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, []);
   // col3 quick-reply thread host: the message list is React (Cv6QuickThread) portaled into
   // the template's emptied .convo-thread, so attachments render as cards (same pattern as the
   // composer host). Tracked across template re-binds with a MutationObserver.
@@ -1521,6 +1541,23 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         onClose={() => setFilesOpen(false)}
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(knavOpenedRoom), missionSlug: roomMissionSlug(knavOpenedRoom), needsReview: true } : null); }}
       />
+      {intakeHost ? createPortal(
+        <>
+          <IntakeComposer busy={intake.mode === 'routing'} onSubmit={intake.submit} />
+          {(intake.mode === 'confirm' || intake.mode === 'creating') && intake.proposal ? (
+            <IntakeConfirm
+              proposal={intake.proposal}
+              projects={data.projects || []}
+              error={intake.error}
+              busy={intake.mode === 'creating'}
+              pendingText={intake.pendingText}
+              onCommit={intake.commitNew}
+              onCancel={intake.reset}
+            />
+          ) : null}
+        </>,
+        intakeHost,
+      ) : null}
       {trackerOverlay}
       {composerOverlay}
     </div>
@@ -3072,16 +3109,12 @@ export default function CornerCV6() {
   // An EXPLICIT ?view= (any value, home included) always wins over the seed —
   // and a seed saved under another tenant never replays here (xhigh findings 5+6).
   const explicitView = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('view');
-  const coldSeed = (() => {
-    if (chatWindowRoute) return null;
-    if (explicitView) return null;
-    try {
-      const saved = JSON.parse(localStorage.getItem('cv6.lastRoom') || 'null');
-      if (!saved || !saved.room || !saved.room.id) return null;
-      if (saved.worldId && worldId && saved.worldId !== worldId) return null;
-      return saved;
-    } catch { return null; }
-  })();
+  // corner:front-door: cold start no longer AUTO-OPENS the last room. The front
+  // door is the intake composer (mobile always lands on Home; desktop shows the
+  // composer with recents in the rail, the last room one click away). cv6.lastRoom
+  // is still written by onOpenRoom and read by the intake router as the primary
+  // "continue" candidate — it is just no longer replayed as a column on boot.
+  // Pop-out windows (chatWindowRoute) and explicit ?view= deep links still win.
   const routeSeed = chatWindowRoute ? { room: chatWindowRoute.room, worldId: null } : null;
   const [view, setView] = useState(() => {
     if (routeSeed || legacyEmailRequested) return 'home';
@@ -3089,7 +3122,7 @@ export default function CornerCV6() {
     if (v !== 'home' || explicitView) return v;
     return 'home';
   }); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
-  const initialChatSeed = routeSeed || (coldSeed ? { room: coldSeed.room, worldId: coldSeed.worldId } : null);
+  const initialChatSeed = routeSeed;
   const [openedRoom, setOpenedRoom] = useState(null); // retained for legacy history entries; live rooms are workspace columns
   const [workspaceColumns, setWorkspaceColumns] = useState(() => {
     const columns = [];
@@ -3099,7 +3132,7 @@ export default function CornerCV6() {
   });
   const [activeColumnId, setActiveColumnId] = useState(() => legacyEmailRequested ? 'email' : (initialChatSeed?.room ? `chat:${roomColumnKey(initialChatSeed.room)}` : ''));
   const workspaceCanvasRef = useRef(null);
-  const [restoredRoomPending, setRestoredRoomPending] = useState(() => Boolean(routeSeed || coldSeed));
+  const [restoredRoomPending, setRestoredRoomPending] = useState(() => Boolean(routeSeed));
   const [roomNotice, setRoomNotice] = useState('');
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
