@@ -2928,18 +2928,18 @@
       "path": "corner/users/aom/projects/content-engine/missions/pipeline-v1"
     },
     {
-      "slug": "corner:capabilities-deck",
-      "raw_slug": "capabilities-deck",
-      "folder_name": "capabilities-deck",
+      "slug": "corner:deck",
+      "raw_slug": "deck",
+      "folder_name": "deck",
       "parent_raw_slug": null,
       "depth": 0,
       "project_slug": "corner",
       "workstream": null,
-      "name": "Capabilities Deck",
+      "name": "Deck",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/corner/missions/capabilities-deck"
+      "path": "corner/users/aom/projects/corner/missions/deck"
     },
     {
       "slug": "health-app:app-buildout",
