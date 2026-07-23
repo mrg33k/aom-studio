@@ -79,10 +79,16 @@
   .replay{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-family:var(--ft);font-weight:700;
       font-size:14px;color:#F6F6F4;background:#000;border:1px solid #444;padding:8px 18px;border-radius:999px;cursor:pointer;letter-spacing:.05em}
   /* ===== Instagram mock (fills the frame, animates the point) ===== */
-  .igmock{margin:calc(40*var(--u)) auto 0;width:calc(486*var(--u));opacity:0;transform:translateY(calc(28*var(--u)))}
+  .igmock{margin:calc(26*var(--u)) auto 0;width:calc(524*var(--u));opacity:0;transform:translateY(calc(28*var(--u)))}
   .on .igmock{opacity:1;transform:none;transition:opacity .5s .45s ease,transform .5s .45s cubic-bezier(.2,.8,.2,1)}
   .ig-phone{background:#000;border-radius:calc(46*var(--u));padding:calc(18*var(--u));box-shadow:0 calc(34*var(--u)) calc(70*var(--u)) rgba(11,11,11,.22)}
-  .ig-screen{position:relative;height:calc(600*var(--u));border-radius:calc(30*var(--u));overflow:hidden;background:radial-gradient(120% 90% at 50% 20%,#3a3a37,#0B0B0B 80%)}
+  .ig-screen{position:relative;height:calc(812*var(--u));border-radius:calc(34*var(--u));overflow:hidden;background:radial-gradient(120% 90% at 50% 18%,#3a3a37,#0B0B0B 80%)}
+  .ig-shimmer{position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.05) 50%,transparent 60%);background-size:250% 100%;z-index:2}
+  .on .ig-shimmer{animation:shim 3.2s linear infinite}
+  @keyframes shim{from{background-position:120% 0}to{background-position:-120% 0}}
+  .ig-play{animation:none}
+  .on .igmock .ig-play{animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.08);opacity:1}}
   .ig-head{position:absolute;top:calc(26*var(--u));left:calc(26*var(--u));right:calc(26*var(--u));display:flex;align-items:center;gap:calc(16*var(--u));z-index:4}
   .ig-av{width:calc(58*var(--u));height:calc(58*var(--u));border-radius:50%;background:var(--gold);color:#1a1406;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:calc(32*var(--u))}
   .ig-name{color:#fff;font-family:var(--ft);font-weight:700;font-size:calc(30*var(--u))}
@@ -98,9 +104,11 @@
   .igmock[data-beat="1"] .ig-watch i{width:82%}
   .igmock[data-beat="1"] .ig-watch{box-shadow:0 0 0 calc(3*var(--u)) var(--gold)}
   .igmock[data-beat="2"] .ig-act.send{color:var(--gold);transform:scale(1.22)}
-  .igmock[data-beat="2"] .ig-act.send .ig-ico{filter:drop-shadow(0 0 calc(18*var(--u)) rgba(196,164,106,.9))}
+  .igmock[data-beat="2"] .ig-act.send .ig-ico{animation:glowgold 1.3s ease-in-out infinite}
+  @keyframes glowgold{0%,100%{filter:drop-shadow(0 0 calc(8*var(--u)) rgba(196,164,106,.55))}50%{filter:drop-shadow(0 0 calc(26*var(--u)) rgba(196,164,106,1))}}
   .igmock[data-beat="3"] .ig-act.like{color:#ff5a7a;transform:scale(1.22)}
-  .igmock[data-beat="3"] .ig-act.like .ig-ico{filter:drop-shadow(0 0 calc(18*var(--u)) rgba(255,90,122,.8))}
+  .igmock[data-beat="3"] .ig-act.like .ig-ico{animation:glowpink 1.3s ease-in-out infinite}
+  @keyframes glowpink{0%,100%{filter:drop-shadow(0 0 calc(8*var(--u)) rgba(255,90,122,.5))}50%{filter:drop-shadow(0 0 calc(26*var(--u)) rgba(255,90,122,.95))}}
   /* ===== redesigned closer typography ===== */
   .anim{opacity:0;transform:translateY(calc(24*var(--u)))}
   .on .anim{animation:rise .6s cubic-bezier(.2,.8,.2,1) forwards}
@@ -108,9 +116,25 @@
   .closer-rule{width:calc(88*var(--u));height:calc(5*var(--u));background:var(--gold);margin:calc(52*var(--u)) auto calc(40*var(--u))}
   .wordmark{font-family:var(--fd);font-weight:800;font-size:calc(66*var(--u));letter-spacing:-.02em;line-height:1;margin-top:calc(30*var(--u))}
   .handle{font-family:var(--ft);font-weight:600;font-size:calc(34*var(--u));color:var(--gold);letter-spacing:.03em;margin-top:calc(18*var(--u))}
+  /* ===== logo intro (beat 0) ===== */
+  .frame.intro{align-items:center;justify-content:center;text-align:center}
+  .logo-in{width:calc(300*var(--u));height:calc(300*var(--u));color:var(--paper);opacity:0;transform:translateY(calc(-160*var(--u))) scale(.5)}
+  .on .logo-in{animation:logodrop .9s cubic-bezier(.18,1.1,.3,1) forwards}
+  @keyframes logodrop{0%{opacity:0;transform:translateY(calc(-160*var(--u))) scale(.5)}60%{opacity:1}100%{opacity:1;transform:translateY(0) scale(1)}}
+  .logo-word{font-family:var(--fd);font-weight:800;font-size:calc(58*var(--u));color:var(--paper);letter-spacing:-.02em;margin-top:calc(30*var(--u));opacity:0}
+  .on .logo-word{animation:rise .5s .7s cubic-bezier(.2,.8,.2,1) forwards}
+  .logo-tag{font-family:var(--ft);font-weight:600;letter-spacing:.22em;text-transform:uppercase;font-size:calc(26*var(--u));color:var(--gold);margin-top:calc(16*var(--u));opacity:0}
+  .on .logo-tag{animation:rise .5s .95s forwards}
 </style></head>
 <body>
 <div class="stage" id="stage">
+
+  <!-- F0 LOGO INTRO -->
+  <div class="frame inverse intro" data-f="0">
+    <div class="logo-in" id="logoIn"></div>
+    <div class="logo-word">Ahead of Market</div>
+    <div class="logo-tag">The Shift · Ep. 03</div>
+  </div>
 
   <!-- F1 HOOK -->
   <div class="frame inverse" data-f="1">
@@ -138,11 +162,12 @@
     </div>
     <div class="igmock" data-beat="0" id="igmock">
       <div class="ig-phone"><div class="ig-screen">
+        <div class="ig-shimmer"></div>
         <div class="ig-head"><div class="ig-av">A</div><div class="ig-name">aheadofmarket</div><div class="ig-follow">Follow</div></div>
         <div class="ig-play">▶</div>
         <div class="ig-rail">
-          <div class="ig-act like"><span class="ig-ico">♥</span><span class="ig-ct">1,204</span></div>
-          <div class="ig-act send"><span class="ig-ico">➤</span><span class="ig-ct">3,540</span></div>
+          <div class="ig-act like"><span class="ig-ico">♥</span><span class="ig-ct" id="igLike">1,204</span></div>
+          <div class="ig-act send"><span class="ig-ico">➤</span><span class="ig-ct" id="igSend">3,540</span></div>
         </div>
         <div class="ig-watch"><i></i></div>
         <div class="ig-callout" id="igcallout">Ranked in real time</div>
@@ -244,29 +269,39 @@ const F=n=>stage.querySelector('[data-f="'+n+'"]');
 const vo=document.getElementById('vo'), prog=document.getElementById('prog');
 // timeline: [frameToShow, durationMs, voText, afterFn]
 let timers=[];
-function clearAll(){timers.forEach(clearTimeout);timers=[];stage.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));}
-function show(n){stage.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));const f=F(n);f.classList.add('on');
-  // retrigger kinetic animations
+let curF=-1;
+function clearAll(){timers.forEach(clearTimeout);timers=[];curF=-1;stage.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));}
+// A frame is shown ONCE; re-calling show() for the same frame is a no-op, so the
+// kinetic type never re-flashes (the bug). During a held frame, continuous motion
+// comes from counters/shimmer/bars — never from re-animating the headline.
+function show(n){ if(n===curF) return; curF=n;
+  stage.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));const f=F(n);f.classList.add('on');
   f.querySelectorAll('.line,.anim').forEach(l=>{l.style.animation='none';l.offsetHeight;l.style.animation='';});}
+function fmt(n){return Math.round(n).toLocaleString('en-US');}
+function tickCount(el,from,to,ms){ if(!el)return; if(window._static){el.textContent=fmt(to);return;}
+  const t0=performance.now();
+  (function step(t){const k=Math.min(1,(t-t0)/ms);el.textContent=fmt(from+(to-from)*k);if(k<1)requestAnimationFrame(step);})(t0);}
 const IG_CALLOUT=['Ranked in real time','Avg watch  0:09','Sent to 5 friends','Likes per reach'];
 function board(state){ // state: which rows live/big
   const b2=F(2); const rows=b2.querySelectorAll('.row');
   rows.forEach(r=>{r.classList.remove('live','big');});
   state.forEach(s=>{const r=b2.querySelector('[data-r="'+s.r+'"]');r.classList.add('live');if(s.big)r.classList.add('big');
      if(s.reveal){r.querySelector('.q')?.remove();}});
-  // drive the Instagram mock: beat = how many metrics revealed
   const beat=state.length; const ig=document.getElementById('igmock');
   if(ig){ig.setAttribute('data-beat',beat);document.getElementById('igcallout').textContent=IG_CALLOUT[beat]||IG_CALLOUT[0];}
+  if(beat===2) tickCount(document.getElementById('igSend'),3540,5210,6000); // sends climb under the long VO beat
+  if(beat===3) tickCount(document.getElementById('igLike'),1204,1580,2600);
 }
 function run(){
-  clearAll(); prog.style.transition='none'; prog.style.width='0';
+  window._static=false; clearAll(); prog.style.transition='none'; prog.style.width='0';
   const seq=[
-    {f:1,t:3500,vo:'“Nobody’s seeing your posts. Here’s the actual reason.”'},
-    {f:2,t:4000,vo:'“Instagram ranks every post on three numbers now — not followers, not likes.”',pre:()=>board([])},
-    {f:2,t:3500,vo:'“One: watch time. How long people actually stay.”',pre:()=>board([{r:1,reveal:true}])},
-    {f:2,t:4500,vo:'“Two — the big one: sends per reach. Shares to strangers move you 3–5×.”',pre:()=>board([{r:1,reveal:true},{r:2,big:true}])},
-    {f:2,t:3000,vo:'“Three: likes per reach — the tiebreaker.”',pre:()=>board([{r:1,reveal:true},{r:2,big:true},{r:3,reveal:true}])},
-    {f:6,t:5500,vo:'“We break a shift like this down every week. Follow so the next one doesn’t blindside you.”'}
+    {f:0,t:1500,vo:''},  // logo drop-in (audio: silence + stinger lead)
+    {f:1,t:3669,vo:'“Nobody’s seeing your posts. Here’s the actual reason.”'},
+    {f:2,t:5759,vo:'“Instagram ranks every post on three numbers now — not followers, not likes.”',pre:()=>board([])},
+    {f:2,t:4458,vo:'“One: watch time. How long people actually stay.”',pre:()=>board([{r:1,reveal:true}])},
+    {f:2,t:10681,vo:'“Two — the big one: sends per reach. A share moves you 3–5×.”',pre:()=>board([{r:1,reveal:true},{r:2,big:true}])},
+    {f:2,t:3669,vo:'“Three: likes per reach — the tiebreaker.”',pre:()=>board([{r:1,reveal:true},{r:2,big:true},{r:3,reveal:true}])},
+    {f:6,t:14861,vo:'“Would anyone send this? … Follow so the next one doesn’t blindside you.”'}
   ];
   const total=seq.reduce((a,s)=>a+s.t,0);
   let acc=0;
@@ -274,13 +309,11 @@ function run(){
     timers.push(setTimeout(()=>{ s.pre&&s.pre(); show(s.f); vo.textContent=s.vo; },acc));
     acc+=s.t;
   });
-  // progress bar
   prog.offsetHeight; requestAnimationFrame(()=>{prog.style.transition='width '+total+'ms linear';prog.style.width='100%';});
-  // loop
-  timers.push(setTimeout(run,total+400));
+  timers.push(setTimeout(run,total+400));  // loop for preview; capture build replaces this with _animDone
 }
-// inject monogram
-document.querySelector('.mono').innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+// inject monogram (closer + logo intro; logo gets a unique mask id to avoid dup)
+const MONO=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
 <mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
 <g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
 <path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0
@@ -349,16 +382,19 @@ document.querySelector('.mono').innerHTML=`<svg xmlns="http://www.w3.org/2000/sv
 </g></mask>
 <rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
 </svg>`;
-// QA / jump: #f1 hook, #f2 board-empty, #f3 watch, #f4 sends, #f5 likes, #f6 closer (static, pauses loop)
+document.querySelector('.mono').innerHTML=MONO;
+document.getElementById('logoIn').innerHTML=MONO.replace(/m_aom_monogram_svg/g,'m_logo');
+// QA / jump: #f0 logo, #f1 hook, #f2 board-empty, #f3 watch, #f4 sends, #f5 likes, #f6 closer (static, pauses loop)
 function jump(h){
-  clearAll();
-  if(h==='f1'){show(1);vo.textContent='';}
+  window._static=true; clearAll();
+  if(h==='f0'){show(0);vo.textContent='';}
+  else if(h==='f1'){show(1);vo.textContent='';}
   else if(h==='f6'){show(6);vo.textContent='';}
   else {const st={f2:[],f3:[{r:1,reveal:true}],f4:[{r:1,reveal:true},{r:2,big:true}],f5:[{r:1,reveal:true},{r:2,big:true},{r:3,reveal:true}]};
         board(st[h]||[]);show(2);vo.textContent='';}
   prog.style.transition='none';prog.style.width='100%';
 }
 const _h=location.hash.replace('#','');
-if(/^f[1-6]$/.test(_h)){ jump(_h); } else { run(); }
+if(/^f[0-6]$/.test(_h)){ jump(_h); } else { run(); }
 </script>
 </body></html>
