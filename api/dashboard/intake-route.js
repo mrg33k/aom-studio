@@ -24,8 +24,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const MODEL = 'gemini-2.5-flash'
 const DEFAULT_CLIENT_ID = 'aom'
 const GEMINI_TIMEOUT_MS = 7000
-const MAX_PROJECTS = 25
-const MAX_MISSIONS_PER_PROJECT = 5
+const MAX_PROJECTS = 18
+const MAX_MISSIONS_PER_PROJECT = 4
 
 // The routing doctrine is M14's (ChatDesktop.jsx promoteToMission), lifted here:
 // match an existing visible room FIRST; only propose a NEW project when nothing
@@ -38,7 +38,7 @@ const SYSTEM_PROMPT = `You are Corner's routing brain. A user typed a task or th
 DOCTRINE (do not violate):
 - Match to an existing visible room FIRST. Prefer the room the user was just in ("last room") when the message plausibly continues it.
 - Only propose creating a NEW project when nothing plausibly fits. Match the parent project from the candidate list; set is_new_project true ONLY when no existing project fits.
-- Propose a short, OUTCOME-BASED mission name of 3-6 words. Never a vague or generic name.
+- proposal.name is a short OUTCOME-BASED mission name of 3-6 words: a clean noun phrase naming the deliverable or goal (e.g. "Homepage hero redesign", "Q3 outreach push", "Pricing page rewrite"). NEVER copy a clause or fragment verbatim from the user's message, never echo their exact words, and never a full sentence or a first-person phrase.
 - For route "continue" or "existing", the match MUST reference a slug that appears in the candidate list — never invent one.
 - Be honest with confidence: lower it when the message is short/ambiguous or two candidates are close.
 
@@ -56,7 +56,9 @@ Return ONLY a JSON object, no markdown:
   "proposal": { "kind": "mission"|"project", "name": "<3-6 word outcome-based name>", "project_slug": "<matched existing parent, or a new slug>", "is_new_project": true|false, "task_breakdown": ["step", ...] } | null,
   "confidence": 0.0,
   "reasoning": "<one user-safe sentence>"
-}`
+}
+
+Example — message: "we need to redo the pricing section on the site and make it clearer". Good: proposal.name "Pricing section rewrite", matched to the best existing web/site project (or a new one only if none fits). Bad: proposal.name "redo the pricing section" (a verbatim fragment) — never do that.`
 
 function extractJson(text) {
   if (!text) return null

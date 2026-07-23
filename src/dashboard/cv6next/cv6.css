@@ -2699,6 +2699,26 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
 [data-cv6] [data-cv6-intake] { display:block; width:100%; margin-bottom:22px; }
 @keyframes cv6IntakeSpin { to { transform:rotate(360deg); } }
 [data-cv6] .cv6-intake-spin { animation:cv6IntakeSpin .7s linear infinite; }
+/* corner:front-door refine — breathing room from the top bar at the front door
+   (only the resting/no-room state; in-room quick-chat is untouched). */
+[data-cv6] .convo-ready.is-none .convo-rest2 { align-items:flex-start; }
+[data-cv6] .convo-ready.is-none .restcol { margin-top:7vh; }
+/* Recents digest slides away smoothly the moment you start composing. The host
+   gets .is-composing from IntakeComposer; the digest is its next sibling
+   (.restlist desktop, .mresume mobile). */
+[data-cv6] [data-cv6-intake] ~ .restlist,
+[data-cv6] [data-cv6-intake] ~ .restempty,
+[data-cv6] [data-cv6-intake] ~ .mresume {
+  max-height:1400px; overflow:hidden;
+  transition:max-height .4s cubic-bezier(.4,0,.2,1), opacity .26s ease, margin .4s cubic-bezier(.4,0,.2,1);
+}
+[data-cv6] [data-cv6-intake].is-composing ~ .restlist,
+[data-cv6] [data-cv6-intake].is-composing ~ .restempty,
+[data-cv6] [data-cv6-intake].is-composing ~ .mresume {
+  max-height:0; opacity:0; margin-top:0; margin-bottom:0; pointer-events:none;
+}
+/* Corner-logo thinking mark in the routing modal. */
+[data-cv6] .cv6-intake-thinking-mark { width:40px; height:40px; flex:none; }
 @media (max-width:899px) {
   [data-cv6] .cv6-workspace-canvas { scroll-snap-type:x mandatory; scrollbar-width:none; }
   [data-cv6] .cv6-workspace-canvas::-webkit-scrollbar { display:none; }

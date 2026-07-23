@@ -7,11 +7,24 @@
 // proposal as-is, edit the name, choose a different project, or (matched-room
 // case) open the existing room. Nothing is created until a button is pressed.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const NEW_PROJECT = '__new_project__';
+const NEW_MISSION = '__new_mission__';
+const bareSlug = (s) => (s && String(s).includes(':') ? String(s).split(':').pop() : String(s || ''));
 
-export default function IntakeConfirm({ proposal, projects = [], error = '', busy = false, pendingText = '', onCommit, onCancel }) {
+// Flatten a (possibly nested) missions tree into {slug(bare), name} rows.
+function flattenMissions(nodes, out = []) {
+  for (const m of (nodes || [])) {
+    if (!m) continue;
+    const slug = bareSlug(m.slug || m.folder_name || m.id);
+    if (slug) out.push({ slug, name: m.name || slug });
+    if (Array.isArray(m.children) && m.children.length) flattenMissions(m.children, out);
+  }
+  return out;
+}
+
+export default function IntakeConfirm({ proposal, projects = [], missionsByProject = {}, error = '', busy = false, pendingText = '', onCommit, onCancel }) {
   const isExisting = proposal?.kind === 'existing' && proposal?.matchedRoom;
   const [name, setName] = useState(proposal?.name || '');
   // Default the destination: matched/named existing project, else the first project.
@@ -20,7 +33,15 @@ export default function IntakeConfirm({ proposal, projects = [], error = '', bus
     if (proposal?.project_slug) return proposal.project_slug;
     return (projects[0]?.slug || projects[0]?.id || NEW_PROJECT);
   });
+  // Destination mission within the chosen project: a new one, or an existing mission
+  // to route into (Patrik: "wouldn't let me select a preexisting mission").
+  const [destMission, setDestMission] = useState(NEW_MISSION);
   useEffect(() => { setName(proposal?.name || ''); }, [proposal?.name]);
+  useEffect(() => { setDestMission(NEW_MISSION); }, [projectSlug]);
+  const projectMissions = useMemo(
+    () => (projectSlug && projectSlug !== NEW_PROJECT ? flattenMissions(missionsByProject[projectSlug]) : []),
+    [projectSlug, missionsByProject],
+  );
 
   if (!proposal) return null;
 
@@ -50,16 +71,25 @@ export default function IntakeConfirm({ proposal, projects = [], error = '', bus
   }
 
   const creatingProject = projectSlug === NEW_PROJECT;
-  const canStart = name.trim().length > 0 && !busy;
+  const routingToExisting = destMission !== NEW_MISSION && !creatingProject;
+  // A name is required to CREATE; routing into an existing mission doesn't need one.
+  const canStart = (routingToExisting || name.trim().length > 0) && !busy;
   const start = () => {
     if (!canStart) return;
-    if (creatingProject) onCommit?.({ type: 'create-project', name: name.trim() });
-    else onCommit?.({ type: 'create-mission', projectSlug, name: name.trim() });
+    if (creatingProject) { onCommit?.({ type: 'create-project', name: name.trim() }); return; }
+    if (routingToExisting) {
+      const m = projectMissions.find((x) => x.slug === destMission);
+      if (!m) return;
+      const missionSlug = `${projectSlug}:${m.slug}`;
+      onCommit?.({ type: 'existing', room: { id: m.slug, name: m.name, initials: (m.name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug, status: 'ready', statusText: '' } });
+      return;
+    }
+    onCommit?.({ type: 'create-mission', projectSlug, name: name.trim() });
   };
 
   return (
     <div className="cv6-intake-confirm" style={cardStyle}>
-      <div style={eyebrow}>Corner will start a new {creatingProject ? 'project' : 'mission'}. Edit anything that’s off.</div>
+      <div style={eyebrow}>{routingToExisting ? 'Corner will send this into an existing mission. Change it if that’s wrong.' : `Corner will start a new ${creatingProject ? 'project' : 'mission'}. Edit anything that’s off.`}</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -77,6 +107,17 @@ export default function IntakeConfirm({ proposal, projects = [], error = '', bus
           <option value={NEW_PROJECT}>＋ New project “{name.trim() || '…'}”</option>
         </select>
       </div>
+      {projectMissions.length ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>as</span>
+          <select value={destMission} onChange={(e) => setDestMission(e.target.value)} style={selectStyle}>
+            <option value={NEW_MISSION}>＋ New mission{name.trim() ? ` “${name.trim()}”` : ''}</option>
+            {projectMissions.map((m) => (
+              <option key={m.slug} value={m.slug}>Open: {m.name}</option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       {Array.isArray(proposal.task_breakdown) && proposal.task_breakdown.length ? (
         <div style={{ marginTop: 12 }}>
           <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--faint)', marginBottom: 6 }}>Corner sees these steps</div>
@@ -89,7 +130,7 @@ export default function IntakeConfirm({ proposal, projects = [], error = '', bus
       {error ? <div style={errLine}>{error === 'offline' ? 'Corner couldn’t sort this automatically. Set the destination and it’ll go.' : error}</div> : null}
       <div style={rowBtns}>
         <button type="button" disabled={!canStart} onClick={start} style={{ ...primaryBtn, opacity: canStart ? 1 : 0.5 }}>
-          {busy ? 'Starting…' : 'Start'}
+          {busy ? 'Starting…' : (routingToExisting ? 'Open mission' : 'Start')}
         </button>
         <button type="button" disabled={busy} onClick={onCancel} style={ghostBtn}>Cancel</button>
       </div>

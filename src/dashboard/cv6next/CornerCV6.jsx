@@ -1548,6 +1548,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
             <IntakeConfirm
               proposal={intake.proposal}
               projects={data.projects || []}
+              missionsByProject={missionsByProject}
               error={intake.error}
               busy={intake.mode === 'creating'}
               pendingText={intake.pendingText}
