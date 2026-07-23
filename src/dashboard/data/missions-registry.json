@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-23T05:34:52.368Z",
+  "generated_at": "2026-07-23T12:43:11.709Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -1458,6 +1458,20 @@
       "path": "corner/missions/review/missions/review-panel"
     },
     {
+      "slug": "corner:room-organizer",
+      "raw_slug": "room-organizer",
+      "folder_name": "room-organizer",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Room Organizer",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/room-organizer"
+    },
+    {
       "slug": "corner:state-board",
       "raw_slug": "state-board",
       "folder_name": "state-board",
@@ -2914,6 +2928,20 @@
       "path": "corner/users/aom/projects/content-engine/missions/pipeline-v1"
     },
     {
+      "slug": "corner:capabilities-deck",
+      "raw_slug": "capabilities-deck",
+      "folder_name": "capabilities-deck",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Capabilities Deck",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/corner/missions/capabilities-deck"
+    },
+    {
       "slug": "health-app:app-buildout",
       "raw_slug": "app-buildout",
       "folder_name": "app-buildout",
@@ -3757,8 +3785,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 118,
-      "in_flight": 118,
+      "total": 120,
+      "in_flight": 120,
       "done": 0
     },
     {
