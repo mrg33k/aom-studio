@@ -28,6 +28,11 @@ const MEDIA_WAIT_HTML = cornerLogoLoaderMarkup('Loading media…', {
   minHeight: 180,
 });
 const HIDE_MEDIA_WAIT = "var w=this.parentElement&&this.parentElement.querySelector('[data-media-wait]');if(w)w.style.display='none';";
+// On loadedmetadata: hide the overlay early AND nudge currentTime once so the
+// browser decodes + paints frame 0 (without this, preload="metadata" leaves the
+// canvas black because the browser never committed a frame to paint).
+// Guard with dataset.seeded so ReviewPins' scrub-bar seeks don't re-trigger it.
+const SEED_FIRST_FRAME = HIDE_MEDIA_WAIT + "if(!this.dataset.seeded){this.dataset.seeded=1;try{this.currentTime=Math.min(0.1,(this.duration||1)/100)}catch(e){}}";
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
@@ -154,7 +159,11 @@ export async function buildDeliverableBody(item) {
       // native controls) below the fold. Read as "videos never load." 52vh (not
       // 62) so video + caption + title + 46px bar ALSO fit the mobile read window
       // (~100dvh-250px) without scrolling; margin:auto centers the portrait.
-      return `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${src}" ${mediaAttrs(src, 'video')} onloadeddata="${HIDE_MEDIA_WAIT}" preload="metadata" playsinline style="position:relative;max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video></div>`;
+      // onloadedmetadata: hides the overlay AND nudges currentTime so the browser
+      // paints frame 0 (black-box fix — preload="metadata" alone never commits a frame).
+      // onloadeddata: re-hides in case loadedmetadata fired before the element was
+      // inserted into the DOM (edge-case where the overlay query returns null early).
+      return `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${src}" ${mediaAttrs(src, 'video')} onloadedmetadata="${SEED_FIRST_FRAME}" onloadeddata="${HIDE_MEDIA_WAIT}" preload="metadata" playsinline style="position:relative;max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video></div>`;
     }
     if (type === 'audio') {
       // Streams off the tunnel like video (Range-capable, CORS *). Native controls are
