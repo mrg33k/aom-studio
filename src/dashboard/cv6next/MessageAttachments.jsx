@@ -137,6 +137,34 @@ function SingleImage({ file, onReview }) {
   );
 }
 
+// Single video — plays INLINE in the chat bubble (native controls: play, scrub,
+// fullscreen), so an agent's video opens in place instead of the old dead file
+// card that only navigated to Review. "Review" still opens the frame-comment
+// surface (ReviewPins DS7 scrub bar) for commenting on a specific frame. If the
+// source can't load (expired tunnel URL), degrade to the typed file card so the
+// row is never worse than before. Width-capped to sit in the thread.
+function SingleVideo({ file, onReview }) {
+  const [failed, setFailed] = useState(false);
+  const src = fileHref(file.url);
+  if (failed || !hasUsableUrl(file)) return <SingleFile file={file} onReview={onReview} />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 560 }}>
+      <video
+        src={src}
+        controls
+        playsInline
+        preload="metadata"
+        onError={() => setFailed(true)}
+        style={{ maxWidth: '100%', maxHeight: 320, width: 'auto', height: 'auto', alignSelf: 'flex-start', borderRadius: 10, background: '#000' }}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => onReview?.(file)} title="Open in Review to comment on a frame" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 11px', borderRadius: 8, cursor: 'pointer' }}>Comment on frames</button>
+        <a {...downloadProps(file)} title="Download the video" aria-label="Download" className="mfile-dl" style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--hair)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{downloadGlyph()}</a>
+      </div>
+    </div>
+  );
+}
+
 // Gallery renderer: 3-col grid with first tile .span2, "+N" on last, caption.
 function ImageGallery({ files, onReview }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -340,15 +368,20 @@ export default function MessageAttachments({ attachments, onReview }) {
     kind: fileKind(a.name, a.mime),
   }));
 
-  // Split by type.
+  // Split by type. Video gets its own bucket (an inline player) instead of the
+  // generic file card, so an agent's video opens in place when tapped.
   const images = typed.filter((a) => a.kind === 'photo');
-  const files = typed.filter((a) => a.kind !== 'photo');
+  const videos = typed.filter((a) => a.kind === 'video');
+  const files = typed.filter((a) => a.kind !== 'photo' && a.kind !== 'video');
 
   return (
     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* Image single or gallery */}
       {images.length === 1 && <SingleImage file={images[0]} onReview={onReview} />}
       {images.length > 1 && <ImageGallery files={images} onReview={onReview} />}
+
+      {/* Video(s) — each plays inline */}
+      {videos.map((v, i) => <SingleVideo key={`v${i}`} file={v} onReview={onReview} />)}
 
       {/* File single or collection */}
       {files.length === 1 && <SingleFile file={files[0]} onReview={onReview} />}
