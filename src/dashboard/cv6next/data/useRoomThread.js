@@ -254,7 +254,11 @@ export function useRoomThread(worldId, room) {
     }]);
     const interactionMode = options?.interactionMode === 'plan' ? 'plan' : 'work';
     const payload = room.isMission
-      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || '').split(':').pop(), interaction_mode: interactionMode } }
+      // Send the CANONICAL "<project>:<mission>" slug (room.missionSlug), not the
+      // bare tail — write-message.js passes a slug containing ':' through untouched,
+      // so the mission never enters the bare-slug first-wins lottery (Bug 1). The
+      // bare room.id fallback is still canonicalized server-side against project.
+      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), interaction_mode: interactionMode } }
       : room.isProject
         ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } }
         : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } };
@@ -396,7 +400,12 @@ export function useRoomThread(worldId, room) {
     // everything else is an agent thread.
     // Agents store the BARE mission slug (e.g. "corner-ui-cv6"), but the room handle is the
     // colon-joined "project:mission" form. Query on the last segment so the thread isn't empty.
-    if (room.isMission) params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
+    if (room.isMission) {
+      params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
+      // Pass the mission's project so the reader canonicalizes the bare slug within
+      // the RIGHT project (Bug 1) instead of a foreign first-wins one.
+      if (room.projectSlug) params.set('project', room.projectSlug);
+    }
     // The PROJECT chat is the project-level conversation only. Mission-room messages
     // also carry project=<slug> (so they roll up under the project), but they belong to
     // their mission room, not the project chat — otherwise a message sent in Chat or

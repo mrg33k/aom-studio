@@ -148,7 +148,12 @@ export default async function handler(req, res) {
     const missionFilter = (() => {
       if (!req.query.mission_slug) return ''
       const raw = req.query.mission_slug
-      const canon = canonicalizeMissionSlug(raw, MISSION_SLUG_LOOKUP) || raw
+      // Project-aware canonicalization (corner:front-door Bug 1): when the caller
+      // passes the mission's project, a BARE slug canonicalizes within THAT project
+      // rather than under whichever project registered the bare slug first. The
+      // raw (bare) metadata arm below still matches legacy bare rows, so this only
+      // ADDS the correct-project match — no existing row stops rendering.
+      const canon = canonicalizeMissionSlug(raw, MISSION_SLUG_LOOKUP, req.query.project) || raw
       // Drift-rescue arm (qa-sweep 2026-07-17): writer lanes also stamp the
       // BARE mission slug into room_id (aom:mission:backend-hardening next to
       // the canonical aom:mission:corner:backend-hardening) — match both so a

@@ -29,9 +29,22 @@ export function buildSlugLookup(registry) {
   return { byRaw, canonicals }
 }
 
-export function canonicalizeMissionSlug(stored, registryOrLookup) {
+// `preferredProject` (optional): the project the row EXPLICITLY belongs to.
+// A mission slug is always "<its parent project>:<slug>" by construction, so a
+// row that carries project=X and a bare mission slug Y is, by definition, mission
+// X:Y — it must never be re-filed under whichever OTHER project happened to
+// register the bare slug Y first. Without this, a bare "social" under AOM was
+// deterministically canonicalized to "ambition-mechanical:social" (first-wins),
+// dragging every subsequent message + room_id + recency into the wrong project
+// and making an in-chat correction impossible to keep (corner:front-door Bug 1,
+// Patrik 2026-07-22). The global first-wins byRaw lookup stays as the fallback
+// for genuinely project-less legacy rows.
+export function canonicalizeMissionSlug(stored, registryOrLookup, preferredProject) {
   if (!stored || typeof stored !== 'string') return stored
   if (stored.includes(':')) return stored
+  if (preferredProject && String(preferredProject).trim()) {
+    return `${String(preferredProject).trim()}:${stored}`
+  }
   const lookup = registryOrLookup && registryOrLookup.byRaw
     ? registryOrLookup
     : buildSlugLookup(registryOrLookup)

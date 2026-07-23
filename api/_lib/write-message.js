@@ -94,8 +94,11 @@ export async function writeMessageRow({
     _missGuard(mission) ||
     (incomingMeta && _missGuard(incomingMeta.mission_slug)) ||
     null
+  // Project-aware canonicalization: this row's resolvedProject is the mission's
+  // true parent, so a bare slug canonicalizes within it and never re-files under
+  // a foreign project that registered the same bare slug first (Bug 1).
   const canonicalMission = rawMission
-    ? canonicalizeMissionSlug(rawMission, MISSION_SLUG_LOOKUP)
+    ? canonicalizeMissionSlug(rawMission, MISSION_SLUG_LOOKUP, resolvedProject)
     : null
   const mergedMeta = (canonicalMission || incomingMeta)
     ? {

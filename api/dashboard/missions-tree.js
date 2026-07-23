@@ -211,7 +211,9 @@ export default async function handler(req, res) {
         // Mission-level recency (only mission-tagged rows).
         const rawSlug = row?.metadata?.mission_slug
         if (rawSlug) {
-          const slug = canonicalizeMissionSlug(rawSlug, liveSlugLookup)
+          // Canonicalize within the row's own project (Bug 1) so a bare mission
+          // slug lights recency under its true parent, not a foreign project.
+          const slug = canonicalizeMissionSlug(rawSlug, liveSlugLookup, row?.project)
           if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)
         }
       }

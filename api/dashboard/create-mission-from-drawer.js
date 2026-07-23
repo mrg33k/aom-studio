@@ -16,6 +16,7 @@
 // Returns { ok, parent_slug, mission_slug, name, kickoff_posted }
 
 import { randomUUID } from 'node:crypto'
+import { deriveRoomId } from '../_lib/write-message.js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -175,9 +176,12 @@ async function upsertAgentStatusMission(agentKey, displayName, clientId) {
 }
 
 async function postKickoffMessage(clientId, parentSlug, missionSlug, displayName) {
-  // The greeting lands with metadata.mission_slug = bare slug so the
-  // ChatPanel's missionSlugsMatch filter picks it up when the user enters
-  // the mission room (conversationTarget.missionSlug = bare slug).
+  // Write the CANONICAL "<project>:<mission>" slug + room_id so the mission's very
+  // first row is unambiguous and never enters the bare-slug first-wins lottery
+  // (corner:front-door Bug 1). The reader matches both the bare metadata arm and
+  // the canonical room_id/metadata arms, so missionSlugsMatch still picks this up
+  // whether the room is entered with the bare or the canonical slug.
+  const canonicalSlug = `${parentSlug}:${missionSlug}`
   const body = {
     id: randomUUID(),
     role: 'assistant',
@@ -186,7 +190,8 @@ async function postKickoffMessage(clientId, parentSlug, missionSlug, displayName
     project: parentSlug,
     source: 'agent-kickoff',
     text: `This is **${displayName}**. What are you working on here? Tell me and I'll set the mission up around your answer.`,
-    metadata: { mission_slug: missionSlug, kickoff: true },
+    metadata: { mission_slug: canonicalSlug, kickoff: true },
+    room_id: deriveRoomId({ clientId, agent: 'ea', project: parentSlug, missionSlug: canonicalSlug }),
     timestamp: new Date().toISOString(),
   }
   const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {

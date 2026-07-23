@@ -192,7 +192,12 @@ export function useRoomCrossings(worldId, room) {
     setStatus('loading');
     const params = new URLSearchParams();
     params.set('client', worldId);
-    if (room.isMission) params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
+    if (room.isMission) {
+      params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
+      // Project so the reader canonicalizes the bare slug within the right project
+      // (Bug 1) — otherwise a correctly-canonicalized mission's crossings are missed.
+      if (room.projectSlug) params.set('project', room.projectSlug);
+    }
     else if (room.isProject) { params.set('project', room.id); params.set('project_only', '1'); }
     else params.set('agent', room.id);
     params.set('attachments', '1');

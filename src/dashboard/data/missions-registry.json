@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-15T13:12:21.328Z",
+  "generated_at": "2026-07-23T05:34:52.368Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -28,6 +28,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/aztc-post-behind-the-scene-storytelling"
+    },
+    {
+      "slug": "corner:backend-hardening",
+      "raw_slug": "backend-hardening",
+      "folder_name": "backend-hardening",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Backend Hardening",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/backend-hardening"
     },
     {
       "slug": "corner:bridge",
@@ -560,6 +574,34 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/command/missions/goal-ledger"
+    },
+    {
+      "slug": "corner:corner",
+      "raw_slug": "corner",
+      "folder_name": "corner",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Corner",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/corner"
+    },
+    {
+      "slug": "corner:front-door",
+      "raw_slug": "front-door",
+      "folder_name": "front-door",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Front Door",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/front-door"
     },
     {
       "slug": "corner:general",
@@ -2760,6 +2802,20 @@
       "path": "corner/users/aom/projects/barbara-o-neill/missions/cancer-is-a-fungus-baking-soda-treatment-this-is-h"
     },
     {
+      "slug": "ben:l10-meeting-tracker",
+      "raw_slug": "l10-meeting-tracker",
+      "folder_name": "l10-meeting-tracker",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "ben",
+      "workstream": null,
+      "name": "L10 Meeting Tracker",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ben/missions/l10-meeting-tracker"
+    },
+    {
       "slug": "blacknight:page-launch",
       "raw_slug": "page-launch",
       "folder_name": "page-launch",
@@ -3152,6 +3208,20 @@
       "path": "corner/users/aom/projects/kohrs/missions/social-content-pipeline"
     },
     {
+      "slug": "nabi:nabi-2026-shoot",
+      "raw_slug": "nabi-2026-shoot",
+      "folder_name": "nabi-2026-shoot",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "nabi",
+      "workstream": null,
+      "name": "Nabi 2026 Shoot",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/nabi/missions/nabi-2026-shoot"
+    },
+    {
       "slug": "pala:cinco-de-mayo-content",
       "raw_slug": "cinco-de-mayo-content",
       "folder_name": "cinco-de-mayo-content",
@@ -3164,6 +3234,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/pala/missions/cinco-de-mayo-content"
+    },
+    {
+      "slug": "rex:claude-motion-videos",
+      "raw_slug": "claude-motion-videos",
+      "folder_name": "claude-motion-videos",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "rex",
+      "workstream": null,
+      "name": "Claude Motion Videos",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/rex/missions/claude-motion-videos"
     },
     {
       "slug": "s3c:s3c-brand",
@@ -3673,8 +3757,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 115,
-      "in_flight": 115,
+      "total": 118,
+      "in_flight": 118,
       "done": 0
     },
     {
@@ -3727,6 +3811,12 @@
     },
     {
       "slug": "barbara-o-neill",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "ben",
       "total": 1,
       "in_flight": 1,
       "done": 0
@@ -3810,7 +3900,19 @@
       "done": 0
     },
     {
+      "slug": "nabi",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
       "slug": "pala",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "rex",
       "total": 1,
       "in_flight": 1,
       "done": 0

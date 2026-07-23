@@ -469,6 +469,10 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
         // the user actively worked in (not only ones with an inbox-ping).
         {
           const projRecency = {}
+          // Rollup keeps mission activity in the project FOLDER ordering (the intent
+          // in the comment above), but the SURFACED last_message/preview a project
+          // exposes to Recently Active excludes mission rows — see the loop below.
+          const projRollup = {}
           const missionRecency = {}
           // Per-agent recency for 1:1 chats: a direct agent thread is a message
           // carrying an agent but NO project and NO mission (those belong to the
@@ -495,8 +499,18 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
             if (isRoomActivityNoise(m)) continue
             const t = new Date(m.timestamp).getTime()
             if (Number.isNaN(t)) continue
-            if (m.project && (!projRecency[m.project] || t > projRecency[m.project].t)) projRecency[m.project] = { t, text: previewOf(m) }
+            // A message belongs to exactly ONE recency bucket, in the same
+            // precedence deriveRoomId uses: mission > project > agent. Previously a
+            // mission-tagged message ALSO bumped its parent project's SURFACED
+            // recency, so a child mission's reply floated the parent project into
+            // Recently Active wearing the child's preview — while the parent row's
+            // click-target (its project_only thread) opened the parent's own, older
+            // last message. Preview and destination disagreed (Patrik 2026-07-22,
+            // corner:front-door Bug 2). Rollup still tracks mission activity for the
+            // folder ORDERING; the surfaced last_message excludes missions.
             const ms = m.metadata && m.metadata.mission_slug
+            if (m.project && (!projRollup[m.project] || t > projRollup[m.project])) projRollup[m.project] = t
+            if (m.project && !ms && (!projRecency[m.project] || t > projRecency[m.project].t)) projRecency[m.project] = { t, text: previewOf(m) }
             if (ms) {
               if (!missionRecency[ms] || t > missionRecency[ms].ts) missionRecency[ms] = { ts: t, project: m.project || '', text: previewOf(m) }
             }
@@ -505,7 +519,10 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
             }
           }
           for (const p of merged) { const r = projRecency[p.slug]; p.last_message_at = r ? r.t : 0; p.last_message_text = r ? r.text : '' }
-          merged.sort((a, b) => (b.last_message_at - a.last_message_at) || (a.name || '').localeCompare(b.name || ''))
+          // Order by rollup recency (mission activity counts here, so a project the
+          // user is actively working inside a mission of still leads the folder list),
+          // then by the project's own surfaced recency, then alphabetical.
+          merged.sort((a, b) => ((projRollup[b.slug] || b.last_message_at || 0) - (projRollup[a.slug] || a.last_message_at || 0)) || (a.name || '').localeCompare(b.name || ''))
           // Expose mission recency so useHome can populate Recently Active without
           // waiting for an inbox ping. Stored as { slug, project, last_message_at }.
           const missionList = Object.entries(missionRecency).map(([slug, v]) => ({ slug, project: v.project, last_message_at: v.ts, last_message_text: v.text || '' }))
