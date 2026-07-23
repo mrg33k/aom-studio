@@ -48,8 +48,11 @@ export default function IntakeComposer({ onSubmit, busy = false, placeholder = '
   useEffect(() => { grow(inputRef.current); }, [input, grow]);
 
   // Composing signal → the host gets `is-composing`, and a sibling rule in cv6.css
-  // slides the recents digest away smoothly. Also on during the routing modal.
-  const composing = focused || input.trim().length > 0 || busy;
+  // slides the recents digest away smoothly. Tied to CONTENT (not focus): on
+  // mobile, collapsing on mere focus caused a layout jump right as the keyboard
+  // opened, which dismissed focus before you could type. So the digest only
+  // yields once you actually start typing.
+  const composing = input.trim().length > 0 || busy;
   useEffect(() => {
     const host = rootRef.current?.parentElement;
     if (host) host.classList.toggle('is-composing', composing);
@@ -74,7 +77,14 @@ export default function IntakeComposer({ onSubmit, busy = false, placeholder = '
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }, [send]);
 
-  useEffect(() => { if (!busy) { try { inputRef.current?.focus?.(); } catch { /* not mounted */ } } }, [busy]);
+  // Auto-focus on DESKTOP only. On mobile, programmatic focus just fights the
+  // keyboard (and never opens it without a gesture), so we leave the tap to the user.
+  useEffect(() => {
+    if (busy) return;
+    try {
+      if (typeof window !== 'undefined' && window.innerWidth >= 900) inputRef.current?.focus?.();
+    } catch { /* not mounted */ }
+  }, [busy]);
 
   const hasContent = input.trim().length > 0;
 
