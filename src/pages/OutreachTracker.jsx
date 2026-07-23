@@ -117,6 +117,11 @@ function buildLinkedInURL(lead) {
   return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(kw)}`
 }
 
+// Returns true only when a real confirmed profile URL is stored (not a search URL)
+function hasRealLinkedIn(lead) {
+  return !!(lead.linkedin && (lead.linkedin.includes('/in/') || lead.linkedin.includes('/company/')))
+}
+
 // Strip https://www. from a URL and return the bare domain (e.g. "hinkleci.com")
 function cleanDomain(url) {
   if (!url) return null
@@ -735,18 +740,20 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
               ) : null}
 
               <a
-                href={buildLinkedInURL(lead)}
+                href={hasRealLinkedIn(lead) ? lead.linkedin : buildLinkedInURL(lead)}
                 target="_blank"
                 rel="noreferrer"
                 onClick={e => e.stopPropagation()}
-                title={`Find ${lead.contact_name || lead.company} on LinkedIn`}
+                title={hasRealLinkedIn(lead)
+                  ? `View ${lead.contact_name || lead.company} on LinkedIn`
+                  : `Search for ${lead.contact_name || lead.company} on LinkedIn`}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.3rem',
-                  background: '#0A1622',
-                  border: '1px solid #1E4A6B',
-                  color: '#5EA9E0',
+                  background: hasRealLinkedIn(lead) ? '#0A1622' : 'transparent',
+                  border: hasRealLinkedIn(lead) ? '1px solid #1E4A6B' : '1px solid #2a2a2a',
+                  color: hasRealLinkedIn(lead) ? '#5EA9E0' : '#555',
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '0.72rem',
                   letterSpacing: '0.02em',
@@ -756,7 +763,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   boxSizing: 'border-box',
                 }}
               >
-                LinkedIn ↗
+                {hasRealLinkedIn(lead) ? 'LinkedIn ↗' : 'Search LinkedIn ⌕'}
               </a>
             </div>
           )}
@@ -1580,19 +1587,21 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       </a>
                     )}
                     <a
-                      href={buildLinkedInURL(lead)}
+                      href={hasRealLinkedIn(lead) ? lead.linkedin : buildLinkedInURL(lead)}
                       target="_blank" rel="noreferrer"
                       onClick={e => e.stopPropagation()}
-                      title={`Find ${lead.contact_name || lead.company} on LinkedIn`}
+                      title={hasRealLinkedIn(lead)
+                        ? `View ${lead.contact_name || lead.company} on LinkedIn`
+                        : `Search for ${lead.contact_name || lead.company} on LinkedIn`}
                       style={{
-                        color: '#5EA9E0',
+                        color: hasRealLinkedIn(lead) ? '#5EA9E0' : '#555',
                         textDecoration: 'none',
                         whiteSpace: 'nowrap',
                         display: 'block',
                         fontSize: '0.72rem',
                         marginTop: '0.15rem',
                       }}
-                    >LinkedIn ↗</a>
+                    >{hasRealLinkedIn(lead) ? 'LinkedIn ↗' : 'Search LinkedIn ⌕'}</a>
                   </td>
                   <td style={{ ...td, fontSize: '0.72rem', color: '#999' }}>
                     {lead.street_address
