@@ -40,12 +40,15 @@ export default function IntakeComposer({ onSubmit, busy = false, placeholder = '
   }, []);
 
   // Auto-grow: the box extends with the text so long input stays visible.
+  // Floor at one line: on mobile scrollHeight can read 0 before layout/fonts
+  // settle, which collapsed the textarea to 0px and made the whole box untappable
+  // (taps landed on the padding div, not the input). Never let it hit 0.
   const grow = useCallback((el) => {
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 24), 200)}px`;
   }, []);
-  useEffect(() => { grow(inputRef.current); }, [input, grow]);
+  useEffect(() => { const el = inputRef.current; grow(el); requestAnimationFrame(() => grow(el)); }, [input, grow]);
 
   // Composing signal → the host gets `is-composing`, and a sibling rule in cv6.css
   // slides the recents digest away smoothly. Tied to CONTENT (not focus): on
@@ -113,7 +116,7 @@ export default function IntakeComposer({ onSubmit, busy = false, placeholder = '
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
                 placeholder={placeholder}
-                style={{ flex: 1, minWidth: 0, resize: 'none', maxHeight: 200, overflowY: 'auto', background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 16, lineHeight: 1.45, fontFamily: 'var(--font-sans)' }}
+                style={{ flex: 1, minWidth: 0, resize: 'none', minHeight: 24, maxHeight: 200, overflowY: 'auto', background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 16, lineHeight: 1.45, fontFamily: 'var(--font-sans)' }}
               />
             </div>
             <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
