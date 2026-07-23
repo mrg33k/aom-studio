@@ -78,6 +78,36 @@
   .inverse~.vo{color:#a7a49b}
   .replay{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-family:var(--ft);font-weight:700;
       font-size:14px;color:#F6F6F4;background:#000;border:1px solid #444;padding:8px 18px;border-radius:999px;cursor:pointer;letter-spacing:.05em}
+  /* ===== Instagram mock (fills the frame, animates the point) ===== */
+  .igmock{margin:calc(40*var(--u)) auto 0;width:calc(486*var(--u));opacity:0;transform:translateY(calc(28*var(--u)))}
+  .on .igmock{opacity:1;transform:none;transition:opacity .5s .45s ease,transform .5s .45s cubic-bezier(.2,.8,.2,1)}
+  .ig-phone{background:#000;border-radius:calc(46*var(--u));padding:calc(18*var(--u));box-shadow:0 calc(34*var(--u)) calc(70*var(--u)) rgba(11,11,11,.22)}
+  .ig-screen{position:relative;height:calc(600*var(--u));border-radius:calc(30*var(--u));overflow:hidden;background:radial-gradient(120% 90% at 50% 20%,#3a3a37,#0B0B0B 80%)}
+  .ig-head{position:absolute;top:calc(26*var(--u));left:calc(26*var(--u));right:calc(26*var(--u));display:flex;align-items:center;gap:calc(16*var(--u));z-index:4}
+  .ig-av{width:calc(58*var(--u));height:calc(58*var(--u));border-radius:50%;background:var(--gold);color:#1a1406;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:calc(32*var(--u))}
+  .ig-name{color:#fff;font-family:var(--ft);font-weight:700;font-size:calc(30*var(--u))}
+  .ig-follow{margin-left:auto;color:#fff;font-family:var(--ft);font-weight:700;font-size:calc(25*var(--u));border:calc(2*var(--u)) solid rgba(255,255,255,.55);padding:calc(6*var(--u)) calc(20*var(--u));border-radius:calc(10*var(--u))}
+  .ig-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.9);font-size:calc(96*var(--u))}
+  .ig-rail{position:absolute;right:calc(26*var(--u));bottom:calc(128*var(--u));display:flex;flex-direction:column;gap:calc(30*var(--u));align-items:center;z-index:4}
+  .ig-act{display:flex;flex-direction:column;align-items:center;gap:calc(4*var(--u));color:#fff;transition:transform .4s cubic-bezier(.2,.8,.2,1),color .4s}
+  .ig-ico{font-size:calc(60*var(--u));line-height:1}
+  .ig-ct{font-family:var(--ft);font-weight:700;font-size:calc(25*var(--u))}
+  .ig-watch{position:absolute;left:calc(26*var(--u));right:calc(26*var(--u));bottom:calc(74*var(--u));height:calc(11*var(--u));background:rgba(255,255,255,.25);border-radius:999px;z-index:4}
+  .ig-watch i{display:block;height:100%;width:14%;background:#fff;border-radius:999px;transition:width 2.4s linear}
+  .ig-callout{position:absolute;left:calc(26*var(--u));bottom:calc(24*var(--u));color:#fff;font-family:var(--ft);font-weight:600;font-size:calc(27*var(--u));opacity:.92;z-index:4}
+  .igmock[data-beat="1"] .ig-watch i{width:82%}
+  .igmock[data-beat="1"] .ig-watch{box-shadow:0 0 0 calc(3*var(--u)) var(--gold)}
+  .igmock[data-beat="2"] .ig-act.send{color:var(--gold);transform:scale(1.22)}
+  .igmock[data-beat="2"] .ig-act.send .ig-ico{filter:drop-shadow(0 0 calc(18*var(--u)) rgba(196,164,106,.9))}
+  .igmock[data-beat="3"] .ig-act.like{color:#ff5a7a;transform:scale(1.22)}
+  .igmock[data-beat="3"] .ig-act.like .ig-ico{filter:drop-shadow(0 0 calc(18*var(--u)) rgba(255,90,122,.8))}
+  /* ===== redesigned closer typography ===== */
+  .anim{opacity:0;transform:translateY(calc(24*var(--u)))}
+  .on .anim{animation:rise .6s cubic-bezier(.2,.8,.2,1) forwards}
+  .on .a3{animation-delay:.85s}.on .a4{animation-delay:1.1s}.on .a5{animation-delay:1.35s}
+  .closer-rule{width:calc(88*var(--u));height:calc(5*var(--u));background:var(--gold);margin:calc(52*var(--u)) auto calc(40*var(--u))}
+  .wordmark{font-family:var(--fd);font-weight:800;font-size:calc(66*var(--u));letter-spacing:-.02em;line-height:1;margin-top:calc(30*var(--u))}
+  .handle{font-family:var(--ft);font-weight:600;font-size:calc(34*var(--u));color:var(--gold);letter-spacing:.03em;margin-top:calc(18*var(--u))}
 </style></head>
 <body>
 <div class="stage" id="stage">
@@ -106,16 +136,29 @@
       <div class="row" data-r="2"><span class="num">02</span><span class="ic">➤</span><span class="lb">Sends</span><span class="tag">3–5×</span></div>
       <div class="row" data-r="3"><span class="num">03</span><span class="ic">♥</span><span class="lb">Likes</span><span class="q" style="margin-left:auto">?</span></div>
     </div>
-    <div class="spring"></div>
+    <div class="igmock" data-beat="0" id="igmock">
+      <div class="ig-phone"><div class="ig-screen">
+        <div class="ig-head"><div class="ig-av">A</div><div class="ig-name">aheadofmarket</div><div class="ig-follow">Follow</div></div>
+        <div class="ig-play">▶</div>
+        <div class="ig-rail">
+          <div class="ig-act like"><span class="ig-ico">♥</span><span class="ig-ct">1,204</span></div>
+          <div class="ig-act send"><span class="ig-ico">➤</span><span class="ig-ct">3,540</span></div>
+        </div>
+        <div class="ig-watch"><i></i></div>
+        <div class="ig-callout" id="igcallout">Ranked in real time</div>
+      </div></div>
+    </div>
   </div>
 
   <!-- F3-F5 reuse the board via classes; F6 closer -->
   <div class="frame inverse center" data-f="6">
-    <div class="line sm d1" style="font-size:calc(88*var(--u))">Would anyone</div>
-    <div class="line sm d1" style="font-size:calc(88*var(--u))"><span class="red">send</span> this?</div>
-    <div class="sub d2" style="margin-top:calc(40*var(--u))">If the answer's no — that's why nobody's seeing it.</div>
-    <div class="spring" style="max-height:calc(120*var(--u))"></div>
-    <div class="mono d3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+    <div class="kicker" style="color:var(--gold)">The Shift · Ep. 03</div>
+    <div class="spring"></div>
+    <div class="line d1" style="font-size:calc(100*var(--u));line-height:.96">Would anyone</div>
+    <div class="line d1" style="font-size:calc(100*var(--u));line-height:.96"><span class="red">send</span> this?</div>
+    <div class="sub d2" style="margin-top:calc(30*var(--u));font-size:calc(42*var(--u))">If not — that's exactly why nobody's seeing it.</div>
+    <div class="closer-rule anim a3"></div>
+    <div class="mono anim a3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
 <mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
 <g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
 <path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0
@@ -184,8 +227,9 @@
 </g></mask>
 <rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
 </svg></div>
-    <div class="line sm d3" style="font-size:calc(54*var(--u));text-align:center">Follow the shift.</div>
-    <div class="sub d4">We break down a change like this every week — so the next one doesn't blindside you.</div>
+    <div class="wordmark anim a4">Follow the shift.</div>
+    <div class="handle anim a5">@aheadofmarket · a new one breaks every week</div>
+    <div class="spring"></div>
   </div>
 
   <div class="foot"><span class="dot"></span>Ahead of Market</div>
@@ -203,12 +247,16 @@ let timers=[];
 function clearAll(){timers.forEach(clearTimeout);timers=[];stage.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));}
 function show(n){stage.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));const f=F(n);f.classList.add('on');
   // retrigger kinetic animations
-  f.querySelectorAll('.line').forEach(l=>{l.style.animation='none';l.offsetHeight;l.style.animation='';});}
+  f.querySelectorAll('.line,.anim').forEach(l=>{l.style.animation='none';l.offsetHeight;l.style.animation='';});}
+const IG_CALLOUT=['Ranked in real time','Avg watch  0:09','Sent to 5 friends','Likes per reach'];
 function board(state){ // state: which rows live/big
   const b2=F(2); const rows=b2.querySelectorAll('.row');
   rows.forEach(r=>{r.classList.remove('live','big');});
   state.forEach(s=>{const r=b2.querySelector('[data-r="'+s.r+'"]');r.classList.add('live');if(s.big)r.classList.add('big');
      if(s.reveal){r.querySelector('.q')?.remove();}});
+  // drive the Instagram mock: beat = how many metrics revealed
+  const beat=state.length; const ig=document.getElementById('igmock');
+  if(ig){ig.setAttribute('data-beat',beat);document.getElementById('igcallout').textContent=IG_CALLOUT[beat]||IG_CALLOUT[0];}
 }
 function run(){
   clearAll(); prog.style.transition='none'; prog.style.width='0';
