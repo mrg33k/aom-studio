@@ -145,6 +145,36 @@ function FileGlyph({ kind, size = 20 }) {
 // sends folds to ONE card — a preview grid for images, a compact list for docs — with a
 // count and "Review all". Tapping any opens the look-only viewer below. Real files only.
 function FileGallery({ files, sender, onOpen, onReview }) {
+  // A lone video an agent sends reads as a VIDEO, not a grey "Documents" card:
+  // it plays INLINE in the bubble (tap play / scrub / fullscreen) so it visibly
+  // opens in place, and a one-tap "Comment on frames" jumps to the Review viewer
+  // where the scrub bar + pin a frame + comment live. (Before: a lone video fell
+  // into the docs list — allDocs === true — so it looked un-openable and the path
+  // to frame-commenting was buried. Patrik 2026-07-23.)
+  const onlyFile = files.length === 1 ? files[0] : null;
+  const loneVideoUrl = onlyFile && fileKind(onlyFile.fileName, onlyFile.fileMime) === 'video'
+    ? (onlyFile.attachmentUrl || onlyFile.url || '') : '';
+  if (onlyFile && loneVideoUrl) {
+    return (
+      <div className="turn" style={{ marginBottom: 14 }}>
+        <div className="tav" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>{sender?.agentInitials || '·'}</div>
+        <div className="tbody">
+          <div className="tname"><b>{sender?.agentName || 'Files'}</b><span className="tt">sent a video</span></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
+            <video src={loneVideoUrl} controls playsInline preload="metadata"
+              style={{ maxWidth: '100%', maxHeight: 440, width: 'auto', height: 'auto', alignSelf: 'flex-start', borderRadius: 12, background: '#000' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button className="fc-rev" onClick={() => onReview([onlyFile])}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /></svg>
+                Comment on frames
+              </button>
+              <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{onlyFile.fileName || 'video'}{onlyFile.fileSize ? ` · ${fmtSize(onlyFile.fileSize)}` : ''}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const images = files.filter((f) => fileKind(f.fileName, f.fileMime) === 'image');
   const allDocs = images.length === 0;
   const totalSize = files.reduce((s, f) => s + (f.fileSize || 0), 0);
