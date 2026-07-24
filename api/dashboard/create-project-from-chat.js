@@ -13,6 +13,7 @@
 // On collision: idempotent — returns existing project row.
 
 import { randomUUID } from 'node:crypto'
+import { findProjectSlugTwin } from '../_lib/projectDupGuard.js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -208,13 +209,47 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
-  const { slug, name, client_id, agent_slug } = req.body
+  const { slug, name, client_id, agent_slug, force, dry_run } = req.body
 
   if (!slug || !client_id) {
     return res.status(400).json({ error: 'slug and client_id required' })
   }
 
   try {
+    // corner:one-write-path R11 — a topic that already has a home (mission or
+    // near-name active project) must NOT be minted as a new project. This is
+    // how missions were "randomly turning themselves into projects": this
+    // endpoint only ever checked the projects table. force:true overrides
+    // (deliberate same-name project); dry_run:true probes without writing.
+    if (!force) {
+      const twin = await findProjectSlugTwin({
+        supabaseUrl: SUPABASE_URL,
+        headers: dbHeaders,
+        slug,
+        clientId: client_id,
+      })
+      if (twin) {
+        if (!dry_run) {
+          await postMessage({
+            role: 'assistant',
+            client_id,
+            agent: agent_slug || 'ea',
+            project: null, // pointer lands in the 1:1
+            source: 'project-dup-guard',
+            text: `That topic already lives in **${twin.slug}** — I didn't create a duplicate "${name || slug}" project. Continue there.`,
+            metadata: { dup_guard: true, existing: twin, requested: slug },
+            timestamp: new Date().toISOString(),
+          })
+        }
+        return res.status(409).json({ ok: false, reason: 'duplicate', existing: twin, requested: slug })
+      }
+      if (dry_run) {
+        return res.status(200).json({ ok: true, dry_run: true, would_create: slug })
+      }
+    } else if (dry_run) {
+      return res.status(200).json({ ok: true, dry_run: true, would_create: slug, forced: true })
+    }
+
     // Create or fetch existing project row
     const project = await createProjectRow(slug, name, client_id)
 

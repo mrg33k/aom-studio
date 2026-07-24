@@ -20,6 +20,7 @@
 // Returns { ok, entity_type, name, slug|mission_slug, parent_slug? }
 
 import { randomUUID } from 'node:crypto'
+import { findProjectSlugTwin } from '../_lib/projectDupGuard.js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -69,6 +70,30 @@ async function createProject(name, description, team, clientId, agentSlug) {
   const slug = toSlug(name)
   const displayName = name || titleFromSlug(slug)
   const agentSlugs = team ? team.split(',').map(s => s.trim()).filter(Boolean) : ['ea']
+
+  // corner:one-write-path R11 — same guard as create-project-from-chat: a
+  // topic that already has a home (mission or near-name active project) must
+  // not be minted as a new project from a voice call.
+  const twin = await findProjectSlugTwin({
+    supabaseUrl: SUPABASE_URL,
+    headers: dbHeaders,
+    slug,
+    clientId,
+  })
+  if (twin) {
+    const callerProj = agentSlug?.startsWith('project:') ? agentSlug.slice(8) : null
+    await postMessage({
+      role: 'assistant',
+      client_id: clientId,
+      agent: agentSlug || 'ea',
+      project: callerProj || null,
+      source: 'project-dup-guard',
+      text: `That topic already lives in **${twin.slug}** — I didn't create a duplicate "${displayName}" project. Continue there.`,
+      metadata: { dup_guard: true, existing: twin, requested: slug },
+      timestamp: new Date().toISOString(),
+    })
+    return { ok: false, reason: 'duplicate', existing: twin, requested: slug }
+  }
 
   // Upsert project row (idempotent on slug+client_id)
   const existing = await fetch(
