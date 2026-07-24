@@ -185,6 +185,21 @@ try {
   }
 } catch (e) { /* no users dir */ }
 
+// per-user WORLD-level missions: corner/users/<user>/missions/<slug>.
+// project = the user/world slug ('aom:socials', 'aom:outreach', ...) — the
+// same prefix convention the live agent_status truth already uses. Scanned
+// LAST so these never steal an existing project's first-wins raw-slug claim;
+// they only claim raws nobody else registered (one-write-path R7 depoison:
+// bare 'social'/'outreach' used to have ONLY wrong-project registrants, which
+// is how first-wins dragged AOM work under ambition-mechanical).
+try {
+  const usersDir = path.join(REPO_ROOT, 'corner', 'users')
+  for (const u of fs.readdirSync(usersDir, { withFileTypes: true })) {
+    if (!u.isDirectory()) continue
+    missions.push(...scanDir(path.join(usersDir, u.name), u.name))
+  }
+} catch (e) { /* no users dir */ }
+
 // Project rollup with counts
 const projectsMap = {}
 for (const m of missions) {
