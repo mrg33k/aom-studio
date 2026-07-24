@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-24T13:36:48.755Z",
+  "generated_at": "2026-07-24T14:11:54.794Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -2942,34 +2942,6 @@
       "path": "corner/users/aom/projects/corner/missions/deck"
     },
     {
-      "slug": "health-app:app-buildout",
-      "raw_slug": "app-buildout",
-      "folder_name": "app-buildout",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "health-app",
-      "workstream": null,
-      "name": "App Buildout",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/health-app/missions/app-buildout"
-    },
-    {
-      "slug": "health-app:design",
-      "raw_slug": "design",
-      "folder_name": "design",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "health-app",
-      "workstream": null,
-      "name": "Design",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/health-app/missions/design"
-    },
-    {
       "slug": "higher-orbits:documentary-scope",
       "raw_slug": "documentary-scope",
       "folder_name": "documentary-scope",
@@ -3052,6 +3024,34 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/holistic-balance/missions/health-app"
+    },
+    {
+      "slug": "holistic-balance:health-app-app-buildout",
+      "raw_slug": "health-app-app-buildout",
+      "folder_name": "app-buildout",
+      "parent_raw_slug": "health-app",
+      "depth": 1,
+      "project_slug": "holistic-balance",
+      "workstream": null,
+      "name": "App Buildout",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/holistic-balance/missions/health-app/missions/app-buildout"
+    },
+    {
+      "slug": "holistic-balance:health-app-design",
+      "raw_slug": "health-app-design",
+      "folder_name": "design",
+      "parent_raw_slug": "health-app",
+      "depth": 1,
+      "project_slug": "holistic-balance",
+      "workstream": null,
+      "name": "Design",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/holistic-balance/missions/health-app/missions/design"
     },
     {
       "slug": "holistic-balance:marketing",
@@ -4314,12 +4314,6 @@
       "done": 0
     },
     {
-      "slug": "health-app",
-      "total": 2,
-      "in_flight": 2,
-      "done": 0
-    },
-    {
       "slug": "higher-orbits",
       "total": 2,
       "in_flight": 2,
@@ -4327,8 +4321,8 @@
     },
     {
       "slug": "holistic-balance",
-      "total": 5,
-      "in_flight": 5,
+      "total": 7,
+      "in_flight": 7,
       "done": 0
     },
     {
