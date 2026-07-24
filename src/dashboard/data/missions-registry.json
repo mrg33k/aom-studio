@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-24T04:38:39.439Z",
+  "generated_at": "2026-07-24T13:36:48.755Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -3964,20 +3964,6 @@
       "path": "corner/users/aom/missions/command-deck"
     },
     {
-      "slug": "aom:design-hook",
-      "raw_slug": "design-hook",
-      "folder_name": "design-hook",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "aom",
-      "workstream": null,
-      "name": "Design Hook",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/missions/design-hook"
-    },
-    {
       "slug": "aom:digital-products",
       "raw_slug": "digital-products",
       "folder_name": "digital-products",
@@ -4018,20 +4004,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/missions/lead-dev-skills-stack"
-    },
-    {
-      "slug": "aom:live-scribe",
-      "raw_slug": "live-scribe",
-      "folder_name": "live-scribe",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "aom",
-      "workstream": null,
-      "name": "Live Scribe",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/missions/live-scribe"
     },
     {
       "slug": "aom:master-loop",
@@ -4445,8 +4417,8 @@
     },
     {
       "slug": "aom",
-      "total": 33,
-      "in_flight": 33,
+      "total": 31,
+      "in_flight": 31,
       "done": 0
     }
   ]
