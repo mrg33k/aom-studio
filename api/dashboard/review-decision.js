@@ -23,6 +23,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js';
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
+
+const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry);
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -123,7 +127,9 @@ async function createReviewTask(supabase, {
       repo: project || 'AOM-EA',
       created_via: 'review-decision.js',
       model: 'opus',
-      ...(mission ? { mission_slug: `${project}:${mission}` } : {}),
+      // one-write-path R8: canonicalize instead of blind `${project}:${mission}`
+      // (that template double-prefixed when mission was already composite).
+      ...(mission ? { mission_slug: canonicalizeMissionSlug(mission, MISSION_SLUG_LOOKUP, project) } : {}),
       review: {
         deliverable_id: deliverableId,
         source_path: sourcePath || null,
@@ -297,7 +303,8 @@ export default async function handler(req, res) {
         // (the thread's mission arms match metadata->>mission_slug; without it the
         // card lands only in the project room while the user sits in the mission
         // room watching nothing happen — corner:one-corner drop 2).
-        ...(mission ? { mission_slug: mission } : {}),
+        // one-write-path R8: canonical composite, never a raw passthrough.
+        ...(mission ? { mission_slug: canonicalizeMissionSlug(mission, MISSION_SLUG_LOOKUP, project) } : {}),
         title,
         ...(taskId ? { task_id: taskId } : {}),
       },
