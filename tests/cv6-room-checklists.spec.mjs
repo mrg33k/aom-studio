@@ -87,6 +87,7 @@ test('per-room checklist keeps drafts, persists lists, plays an item, and copies
     const circularActions = [
       'Create a new list',
       'Close checklist mode',
+      'Send Launch notes to agent',
       'Share Launch notes',
       'Delete Launch notes',
       'Complete item',
@@ -118,7 +119,7 @@ test('per-room checklist keeps drafts, persists lists, plays an item, and copies
   expect(visual.composerPaddingTop).toBeGreaterThanOrEqual(14);
   expect(visual.headingHeight).toBeGreaterThanOrEqual(58);
   expect(visual.panelGap).toBeGreaterThanOrEqual(13);
-  expect(visual.circles).toHaveLength(7);
+  expect(visual.circles).toHaveLength(8);
   for (const circle of visual.circles) {
     expect(circle.width).toBeGreaterThanOrEqual(38);
     expect(Math.abs(circle.width - circle.height)).toBeLessThan(0.1);
@@ -134,9 +135,19 @@ test('per-room checklist keeps drafts, persists lists, plays an item, and copies
   await page.getByLabel('Send Draft the intro to agent').click();
   await expect.poll(() => sent.filter((entry) => entry.text === 'Draft the intro').length).toBe(1);
   expect(sent.find((entry) => entry.text === 'Draft the intro')?.metadata?.interaction_mode).toBe('work');
+
+  await page.getByLabel('Send Launch notes to agent').click();
+  await expect.poll(() => sent.filter((entry) => String(entry.text || '').startsWith('Work order: "Launch notes"')).length).toBe(1);
+  const workOrder = sent.find((entry) => String(entry.text || '').startsWith('Work order: "Launch notes"'));
+  expect(workOrder.text).toContain('(1 open, 0 done)');
+  expect(workOrder.text).toContain('1. Draft the intro');
+  expect(workOrder.text).toContain('Report back on each item separately');
+  expect(workOrder.metadata?.interaction_mode).toBe('work');
+
   await page.getByLabel('Complete item').click();
   await expect(page.getByLabel('Reopen item')).toBeVisible();
   await expect(page.getByLabel('Checklist item')).toHaveCSS('text-decoration-line', 'line-through');
+  await expect(page.getByLabel('Send Launch notes to agent')).toBeDisabled();
 
   await page.getByLabel('Share Launch notes').click();
   await page.getByLabel('Destination room').selectOption({ label: 'Another Room · agent' });

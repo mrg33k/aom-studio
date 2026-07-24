@@ -44,6 +44,28 @@ import VoiceChat from '../components/VoiceChat.jsx';
 
 const READ_ONLY_COPY = 'Chat needs a connected workspace. Local mode is read-only.';
 
+// Turn a whole checklist into one work-order message. Plain numbered lines with
+// blank-line sections so it reads the same through the desktop markdown renderer
+// and the mobile pre-wrap bubble. Returns '' when there is nothing open to send.
+function formatChecklistWorkOrder(list) {
+  const items = Array.isArray(list?.items) ? list.items : [];
+  const open = items.filter((item) => !item.done && String(item.text || '').trim());
+  if (!open.length) return '';
+  const done = items.filter((item) => item.done && String(item.text || '').trim());
+  const title = String(list?.title || 'Checklist').trim() || 'Checklist';
+  const lines = [
+    `Work order: "${title}" (${open.length} open, ${done.length} done)`,
+    '',
+    'Open items, in order:',
+    ...open.map((item, index) => `${index + 1}. ${String(item.text).trim()}`),
+  ];
+  if (done.length) {
+    lines.push('', `Already done, no action needed: ${done.map((item) => String(item.text).trim()).join(', ')}`);
+  }
+  lines.push('', 'Work through the open items in order. Report back on each item separately as you finish it so I can check it off. If an item is blocked, say why and move to the next one.');
+  return lines.join('\n');
+}
+
 // Map a CV6 quick-room object -> the { selectedAgent, selectedProject } shape the
 // CV4 hooks expect. Project + mission rooms talk to the EA agent ('corner') but
 // carry project/mission scope; agent rooms map straight to the agent slug.
@@ -198,6 +220,18 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     finally { checklistSendingRef.current = false; }
   }, [quickSend, interactionMode]);
 
+  // Whole-list Play: one message carrying the list verbatim as a work order.
+  // Numbered plain lines read correctly on both renderers (desktop markdown,
+  // mobile pre-wrap). The list stays in the panel as the scoreboard; the agent
+  // is told to report per item so the user can check items off with confidence.
+  const playChecklistList = useCallback(async (list) => {
+    const message = formatChecklistWorkOrder(list);
+    if (!message || typeof quickSend !== 'function' || checklistSendingRef.current) return false;
+    checklistSendingRef.current = true;
+    try { return await quickSend(message, { interactionMode }); }
+    finally { checklistSendingRef.current = false; }
+  }, [quickSend, interactionMode]);
+
   // ── Voice slice ──
   const voiceChatRef = useRef(null);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -262,7 +296,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
               <ChatComposerProvider value={composerValue}>
                 <ChatSettingsProvider value={settingsValue}>
                   <ChatContextMenuProvider value={ctxMenuValue}>
-                    {isVoiceActive ? <VoiceModeBar /> : <Cv6InputBar onOpenFiles={onOpenFiles} room={room} worldId={worldId} roomOptions={roomOptions} onPlayChecklistItem={playChecklistItem} />}
+                    {isVoiceActive ? <VoiceModeBar /> : <Cv6InputBar onOpenFiles={onOpenFiles} room={room} worldId={worldId} roomOptions={roomOptions} onPlayChecklistItem={playChecklistItem} onPlayChecklistList={playChecklistList} />}
                     {isVoiceActive && (
                       <div style={{ display: 'none' }}>
                         <VoiceChat

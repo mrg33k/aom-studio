@@ -129,7 +129,7 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
   );
 }
 
-export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = [], onPlayChecklistItem }) {
+export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = [], onPlayChecklistItem, onPlayChecklistList }) {
   const { selectedAgent, selectedProject, chatInputFocused, setChatInputFocused } = useChatCore();
   const {
     input, setInput, inputRef,
@@ -192,7 +192,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
       <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
       <div style={{ position: 'relative' }}>
         {checklistOpen ? (
-          <RoomChecklistPanel room={room} worldId={worldId} roomOptions={roomOptions} onPlay={onPlayChecklistItem} onClose={() => setChecklistOpen(false)} />
+          <RoomChecklistPanel room={room} worldId={worldId} roomOptions={roomOptions} onPlay={onPlayChecklistItem} onPlayList={onPlayChecklistList} onClose={() => setChecklistOpen(false)} />
         ) : <div style={{ minWidth: 0, position: 'relative' }}>
           <SlashCommandAutocomplete value={input} setValue={setInput} inputRef={inputRef} caret={caret}
             onModalCommand={(name) => { if (name === '/integrations') setIntegrationsOpen(true); }} surface="1on1"

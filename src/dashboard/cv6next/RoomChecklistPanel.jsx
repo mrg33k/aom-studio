@@ -49,7 +49,7 @@ function EditableItem({ item, disabled, onEdit, onToggle, onDelete, onPlay }) {
   );
 }
 
-function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, onPlay, onNotice }) {
+function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, onPlay, onPlayList, onNotice }) {
   const [title, setTitle] = useState(list.title || 'New list');
   const [newItem, setNewItem] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
@@ -92,6 +92,12 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
           onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
           style={{ flex: 1, minWidth: 0, height: 40, border: 'none', background: 'transparent', color: 'var(--fg)', outline: 'none', font: '700 14px var(--font-sans)' }} />
         <span aria-label={`${openCount} open items`} style={{ font: '600 10.5px var(--font-mono)', color: 'var(--faint)', whiteSpace: 'nowrap' }}>{openCount} open</span>
+        <button type="button" aria-label={`Send ${list.title} to agent`} title={openCount ? 'Play: send the whole list to the agent' : 'Nothing open to send'} disabled={disabled || !openCount}
+          onClick={async () => {
+            const ok = await onPlayList(list);
+            onNotice(ok === false ? 'Could not reach the agent. The list is still here.' : `Sent “${list.title}” to the agent.`);
+          }}
+          style={{ ...circleButton(false), width: 38, height: 38, minWidth: 38, minHeight: 38, maxWidth: 38, maxHeight: 38, color: openCount ? 'var(--accent)' : 'var(--faint)' }}><Icon name="play" size={15}/></button>
         <button type="button" aria-label={`Share ${list.title}`} title="Copy or move this list" disabled={disabled} onClick={() => { setShareOpen((open) => !open); setDeleteArmed(false); }}
           style={{ ...circleButton(shareOpen), width: 38, height: 38, minWidth: 38, minHeight: 38, maxWidth: 38, maxHeight: 38 }}><Icon name="share" size={15}/></button>
         <button type="button" aria-label={deleteArmed ? `Confirm delete ${list.title}` : `Delete ${list.title}`} title={deleteArmed ? 'Press again to delete this list' : 'Delete list'} disabled={disabled}
@@ -146,7 +152,7 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
   );
 }
 
-export default function RoomChecklistPanel({ room, worldId, roomOptions = [], onPlay, onClose }) {
+export default function RoomChecklistPanel({ room, worldId, roomOptions = [], onPlay, onPlayList, onClose }) {
   const roomKey = roomChecklistKey(room);
   const { lists, status, error, mutate } = useRoomChecklists(worldId, roomKey);
   const [newListOpen, setNewListOpen] = useState(false);
@@ -204,7 +210,7 @@ export default function RoomChecklistPanel({ room, worldId, roomOptions = [], on
             Start a list for notes, reminders, or work you may send later.
           </button>
         ) : null}
-        {lists.map((list) => <ChecklistList key={list.id} list={list} roomOptions={options} currentRoomKey={roomKey} disabled={disabled} mutate={mutate} onPlay={onPlay} onNotice={setNotice} />)}
+        {lists.map((list) => <ChecklistList key={list.id} list={list} roomOptions={options} currentRoomKey={roomKey} disabled={disabled} mutate={mutate} onPlay={onPlay} onPlayList={onPlayList} onNotice={setNotice} />)}
       </div>
       {(error || notice || disabled) ? (
         <div aria-live="polite" style={{ color: error ? 'var(--danger, #e5484d)' : notice ? 'var(--accent)' : 'var(--faint)', font: '600 10.5px var(--font-sans)', padding: '0 3px' }}>
