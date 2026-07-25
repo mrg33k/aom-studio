@@ -27,6 +27,7 @@ import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
+import RunningTasksCard from './RunningTasksCard.jsx';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -636,6 +637,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               )}
             </>
           )}
+          {/* Background job card — appears only while ≥1 handed-off task is actively
+              running for this room; counts up from job start and vanishes the instant
+              the last job finishes (same logic as the ChatDesktop mount). */}
+          <RunningTasksCard room={fullRoom} />
           {/* A small tail marker only. Composer clearance comes from `.scrbody`; the former
               78vh pending spacer stranded live work above a blank page. */}
           <div style={{ height: 4 }} />
