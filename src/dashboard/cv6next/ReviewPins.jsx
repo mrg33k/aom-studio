@@ -29,7 +29,7 @@ function clampPos(px, py, wrap) {
   };
 }
 
-export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = true }) {
+export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = true, isMobile = false }) {
   // null | { mode:'compose', xFrac, yFrac, t, left, top } | { mode:'view', pinId, left, top }
   const [ui, setUi] = useState(null);
 
@@ -183,6 +183,12 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
     const enhance = (v) => {
       const host = v.parentElement;
       if (!host || host.querySelector('[data-vscrub]')) return;
+      // MOBILE: keep the native `controls` shipped in the markup — the DS7 scrub bar
+      // (a 46px sibling below the video) gets pushed below the fold on a tall 9:16
+      // video with no way to scroll to it, leaving no reachable play button. Native
+      // controls put a play button on the frame itself (Patrik 2026-07-25). Pin
+      // visibility/markers below still run; only the custom player chrome is skipped.
+      if (isMobile) return;
       v.removeAttribute('controls');
       v.style.borderRadius = '10px 10px 0 0';
       const bar = document.createElement('div');
@@ -245,7 +251,7 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
     // Same mobile re-attach as the click effect above: without `enabled` this ran
     // once against a null wrapper on the pick list and the scrub bar (the ONLY
     // play control — videos have no native controls) never built on mobile.
-  }, [wrapRef, enabled]);
+  }, [wrapRef, enabled, isMobile]);
 
   // Popover open/close changes which pin is force-shown — re-apply immediately.
   useEffect(() => { applyVisRef.current(); }, [ui]);

@@ -134,7 +134,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   // dies on TemplateScreen's first innerHTML rebuild) and use the design popover composer.
   const readRef = useRef(null);
   const { overlay: pinOverlay, openPinById } = useReviewPinUI({
-    wrapRef: readRef, pins, addPin, deletePin, enabled: screen === 'read',
+    wrapRef: readRef, pins, addPin, deletePin, enabled: screen === 'read', isMobile: true,
   });
   usePdfDocs(readRef, screen === 'read');
   useDocxDocs(readRef, screen === 'read');

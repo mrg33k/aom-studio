@@ -151,8 +151,14 @@ export async function buildDeliverableBody(item) {
       // Corner-path videos stream straight off the rag tunnel (Range-capable, CORS *).
       // The old blob path pulled the WHOLE file through the Vercel raw proxy, which
       // buffers in the lambda and dies on video-sized payloads — videos never loaded.
-      // No native controls: the DS7 scrub bar (ReviewPins useVideoScrub) is the player
-      // chrome — timeline with numbered comment markers, play button, mono times.
+      // Native `controls` ship in the markup so there is ALWAYS a reachable play
+      // button (the center overlay + iOS-native bar on the frame itself). On DESKTOP,
+      // ReviewPins.enhance strips them and mounts the DS7 scrub bar (numbered comment
+      // markers, frame-accurate pins) — the tall viewer has room for it. On MOBILE,
+      // ReviewPins leaves the native controls (isMobile gate) because the 46px scrub
+      // sibling gets shoved below the fold on a 9:16 video with no way to scroll to it
+      // (Patrik 2026-07-25: "can't scroll down to press play" — true even for a playable
+      // MP4). Native controls match the chat viewer (useOrganize.js), which works.
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
       // max-height caps vertical 9:16 drafts: at natural size they filled 1300px+
       // of a ~800px viewport, shoving the scrub bar (the ONLY play control — no
@@ -163,7 +169,7 @@ export async function buildDeliverableBody(item) {
       // paints frame 0 (black-box fix — preload="metadata" alone never commits a frame).
       // onloadeddata: re-hides in case loadedmetadata fired before the element was
       // inserted into the DOM (edge-case where the overlay query returns null early).
-      return `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${src}" ${mediaAttrs(src, 'video')} onloadedmetadata="${SEED_FIRST_FRAME}" onloadeddata="${HIDE_MEDIA_WAIT}" preload="metadata" playsinline style="position:relative;max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video></div>`;
+      return `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${src}" ${mediaAttrs(src, 'video')} onloadedmetadata="${SEED_FIRST_FRAME}" onloadeddata="${HIDE_MEDIA_WAIT}" preload="metadata" playsinline controls style="position:relative;max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video></div>`;
     }
     if (type === 'audio') {
       // Streams off the tunnel like video (Range-capable, CORS *). Native controls are

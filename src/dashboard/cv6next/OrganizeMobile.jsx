@@ -192,7 +192,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
 
   const { pins, addPin, deletePin } = usePins(openReviewId, worldId);
   const { overlay: pinOverlay, openPinById } = useReviewPinUI({
-    wrapRef, pins, addPin, deletePin, enabled: !!pickedFileId,
+    wrapRef, pins, addPin, deletePin, enabled: !!pickedFileId, isMobile: true,
   });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
   useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)
