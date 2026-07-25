@@ -2040,13 +2040,11 @@ export default function OutreachTracker() {
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   textDecoration: 'none',
-                  display: 'inline-block',
-                  minHeight: 36,
-                  lineHeight: '36px',
-                  boxSizing: 'border-box',
-                  lineHeight: 'normal',
                   display: 'flex',
                   alignItems: 'center',
+                  minHeight: 36,
+                  lineHeight: 'normal',
+                  boxSizing: 'border-box',
                 }}
               >
                 Open Route
