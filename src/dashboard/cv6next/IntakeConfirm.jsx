@@ -101,7 +101,7 @@ export default function IntakeConfirm({ proposal, projects = [], missionsByProje
 
   return (
     <div className="cv6-intake-confirm" style={cardStyle}>
-      <div style={eyebrow}>{unset ? ‘Not sure where this goes — pick a room below to continue.’ : routingToExisting ? ‘Corner will send this into an existing mission. Change it if that’s wrong.’ : `Corner will start a new ${creatingProject ? ‘project’ : ‘mission’}. Edit anything that’s off.`}</div>
+      <div style={eyebrow}>{unset ? ‘Not sure where this goes — pick a room below to continue.’ : routingToExisting ? "Corner will send this into an existing mission. Change it if that’s wrong." : `Corner will start a new ${creatingProject ? ‘project’ : ‘mission’}. Edit anything that’s off.`}</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
