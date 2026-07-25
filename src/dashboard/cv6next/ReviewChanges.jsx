@@ -35,14 +35,10 @@ export function ReviewChangesOverlay({ pins = [], title = '', onSendBack = () =>
   const isMobile = VIEWPORT < 640;
 
   // WD40-R3: typed notes alongside pin comments — no prompt() needed.
+  // R19 (Patrik 2026-07-24): the prebuilt "Optional checklist" (3 canned items) is gone —
+  // Changes must open FRESH every time, just the empty notes field + whatever real pins exist.
   const [notes, setNotes] = useState('');
-  const [checks, setChecks] = useState([
-    { id: 'request', label: 'Matches the original request', checked: false },
-    { id: 'accuracy', label: 'Details and claims are accurate', checked: false },
-    { id: 'finish', label: 'Ready for the next pass', checked: false },
-  ]);
-  const checklistNotes = checks.filter((item) => item.checked).map((item) => `- [x] ${item.label}`).join('\n');
-  const canSend = pins.length > 0 || notes.trim().length > 0 || checklistNotes.length > 0;
+  const canSend = pins.length > 0 || notes.trim().length > 0;
   const pinCount = pins.length;
   const hasTyped = notes.trim().length > 0;
 
@@ -88,15 +84,6 @@ export function ReviewChangesOverlay({ pins = [], title = '', onSendBack = () =>
     </div>
   );
 
-  const checklist = (
-    <div style={{ marginTop: 12 }}>
-      <div className="eyebrow" style={{ marginBottom: 8 }}>Optional checklist</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-        {checks.map((item) => <button type="button" key={item.id} className={`review-default-check${item.checked ? ' is-on' : ''}`} onClick={() => setChecks((current) => current.map((row) => row.id === item.id ? { ...row, checked: !row.checked } : row))}><span>{item.checked ? '✓' : ''}</span>{item.label}</button>)}
-      </div>
-    </div>
-  );
-
   const header = (
     <div style={{ marginBottom: 14, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -114,7 +101,7 @@ export function ReviewChangesOverlay({ pins = [], title = '', onSendBack = () =>
   const footer = (
     <div style={{ display: 'flex', gap: 10, marginTop: 16, flexDirection: isMobile ? 'column' : 'row' }}>
       <button
-        onClick={() => { onSendBack([checklistNotes ? `Checklist:\n${checklistNotes}` : '', notes.trim()].filter(Boolean).join('\n\n')); }}
+        onClick={() => { onSendBack(notes.trim()); }}
         disabled={!canSend}
         style={{ flex: 1, padding: isMobile ? '12px 14px' : '10px 14px', background: 'var(--accent)', border: 'none', borderRadius: 10, color: '#fff', fontSize: isMobile ? 14 : 13, fontWeight: 600, cursor: canSend ? 'pointer' : 'not-allowed', opacity: canSend ? 1 : 0.5, fontFamily: 'var(--font-sans)' }}
       >
@@ -136,7 +123,6 @@ export function ReviewChangesOverlay({ pins = [], title = '', onSendBack = () =>
         <aside aria-label="Review checklist and comments" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(440px, 92vw)', boxSizing: 'border-box', overflowY: 'auto', background: 'var(--ground)', borderLeft: '1px solid var(--hair)', padding: 22, zIndex: 41, boxShadow: '-24px 0 48px -20px rgba(0,0,0,0.55)' }}>
           {header}
           {list}
-          {checklist}
           {notesInput}
           {footer}
         </aside>
@@ -150,7 +136,6 @@ export function ReviewChangesOverlay({ pins = [], title = '', onSendBack = () =>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 41, background: 'var(--ground)', borderRadius: '20px 20px 0 0', border: '1px solid var(--hair)', borderBottom: 'none', padding: '16px 16px calc(16px + env(safe-area-inset-bottom))', maxHeight: '82vh', overflowY: 'auto', boxShadow: '0 -12px 30px rgba(0,0,0,0.4)' }}>
         {header}
         {list}
-        {checklist}
         {notesInput}
         {footer}
       </div>
