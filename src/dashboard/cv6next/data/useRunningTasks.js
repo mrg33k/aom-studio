@@ -19,6 +19,10 @@ function roomProjectSlug(room) {
   if (!room) return null;
   if (room.isProject) return room.slug || room.id || null;
   if (room.isMission) {
+    // Mission room objects carry the parent project in `projectSlug` (verified across
+    // every mission-room construction in CornerCV6). Fall back to an explicit `project`
+    // field, then to the slug-before-':' only as a last resort.
+    if (room.projectSlug) return room.projectSlug;
     if (room.project) return room.project;
     const ms = String(room.missionSlug || room.id || '');
     if (ms.includes(':')) return ms.split(':')[0];
@@ -50,6 +54,9 @@ export function useRunningTasks(room) {
 
   useEffect(() => {
     if (!worldId) { setTasks([]); return undefined; }
+    // Clear on every scope change (world or room switch) so the new room never
+    // flashes the previous room's jobs during the fetch round-trip.
+    setTasks([]);
     fetchNow();
     const poll = setInterval(fetchNow, 30000);
     let debounce = null;

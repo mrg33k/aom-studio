@@ -49,17 +49,21 @@ export default async function handler(req, res) {
     throw err;
   }
 
+  const optProject = (req.query.project && String(req.query.project).trim())
+    ? String(req.query.project).trim()
+    : null;
+
   const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
+  // Scope by project in the QUERY, not after — otherwise limit=25 is applied to the
+  // whole world first and a project's running job can fall off the page when many jobs
+  // run at once, leaving the card empty for a room that genuinely has work in flight.
+  const projectFilter = optProject ? `&project=eq.${encodeURIComponent(optProject)}` : '';
   const select = 'select=id,title,text,description,agent,agent_identity,builder,project,created_at,started_at,status,metadata';
   // started_at first (set by task-runner on claim) so the freshest job leads; nulls last.
   const rows = await supabaseGet(
     'tasks',
-    `status=in.(building,running)&order=started_at.desc.nullslast,created_at.desc&limit=25${clientFilter}&${select}`,
+    `status=in.(building,running)${projectFilter}&order=started_at.desc.nullslast,created_at.desc&limit=25${clientFilter}&${select}`,
   );
-
-  const optProject = (req.query.project && String(req.query.project).trim())
-    ? String(req.query.project).trim()
-    : null;
 
   const tasks = (Array.isArray(rows) ? rows : [])
     .map((t) => {
