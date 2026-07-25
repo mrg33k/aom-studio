@@ -17,6 +17,7 @@ import { buildChecklistRoomOptions } from './data/roomKeys.js';
 import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
+import RunningTasksCard from './RunningTasksCard.jsx';
 import NewComposer from './NewComposer.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import { useDataContext } from './providers/DataContext.jsx';
@@ -840,6 +841,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         ticking pending → working → done like the step-thread kit animation. */}
                     <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />
                     {awaiting ? <WorkingTurn room={selected} liveSteps={liveSteps} goal={askGoal} /> : null}
+                    <RunningTasksCard room={selected} />
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>
