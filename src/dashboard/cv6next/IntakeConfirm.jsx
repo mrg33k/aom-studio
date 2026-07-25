@@ -140,7 +140,7 @@ export default function IntakeConfirm({ proposal, projects = [], missionsByProje
         </div>
       ) : null}
       <div style={quoteLine}>“{pendingText}”</div>
-      {error ? <div style={errLine}>{error === 'offline' ? 'Corner couldn't sort this automatically. Set the destination and it'll go.' : error}</div> : null}
+      {error ? <div style={errLine}>{error === 'offline' ? "Corner couldn't sort this automatically. Set the destination and it'll go." : error}</div> : null}
       <div style={rowBtns}>
         <button type="button" disabled={!canStart} onClick={start} style={{ ...primaryBtn, opacity: canStart ? 1 : 0.5 }}>
           {busy ? 'Starting…' : (routingToExisting ? 'Open mission' : 'Start')}
