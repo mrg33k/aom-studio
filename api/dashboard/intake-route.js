@@ -38,9 +38,10 @@ const SYSTEM_PROMPT = `You are Corner's routing brain. A user typed a task or th
 DOCTRINE (do not violate):
 - Match to an existing visible room FIRST. Prefer the room the user was just in ("last room") when the message plausibly continues it.
 - Only propose creating a NEW project when nothing plausibly fits. Match the parent project from the candidate list; set is_new_project true ONLY when no existing project fits.
-- proposal.name is a short OUTCOME-BASED mission name of 3-6 words: a clean noun phrase naming the deliverable or goal (e.g. "Homepage hero redesign", "Q3 outreach push", "Pricing page rewrite"). NEVER copy a clause or fragment verbatim from the user's message, never echo their exact words, and never a full sentence or a first-person phrase.
+- proposal.name is a short OUTCOME-BASED mission name of 3-6 words: a clean noun phrase naming the deliverable or goal (e.g. "Homepage hero redesign", "Q3 outreach push", "Pricing page rewrite"). NEVER copy a clause or fragment verbatim from the user's message, never echo their exact words, and never a full sentence or a first-person phrase. If you cannot think of a good outcome name, return an empty string — the server will synthesize one.
 - For route "continue" or "existing", the match MUST reference a slug that appears in the candidate list — never invent one.
 - Be honest with confidence: lower it when the message is short/ambiguous or two candidates are close.
+- Requests ABOUT or INVOLVING the Corner platform itself — the dashboard, the front-door composer, rooms, the routing brain, chat UI, intake flow, recents, mission trees — belong to the Corner platform project. If a project with slug "corner" or a project whose name contains "Corner" appears in the candidate list, route there. Do NOT spawn a new mission under an unrelated project for platform-level feedback or improvement requests.
 
 ROUTES:
 - "continue": the message extends the last room, or a candidate that matches very strongly. Return "match".
@@ -90,6 +91,17 @@ function fallbackDecision(reason) {
 }
 
 const bareSlug = (s) => (s && String(s).includes(':') ? String(s).split(':').pop() : String(s || ''))
+
+// Strip stop words and take the first 5 content-bearing words as a clean outcome name.
+// Only runs when the LLM returned an empty proposal.name.
+const STOP_WORDS = new Set(['i','we','the','a','an','to','for','on','in','at','of','and','or','but','it','is','are','was','were','be','been','being','have','has','had','do','does','did','that','this','these','those','with','from','by','as','not','no','my','your','our','their','its','can','could','will','would','should','about','into','up','out','if','so','what','when','how','why','who','which','just','now','also','some','any','all','very','too','more','most','than','then','them','they','there','here','get','got','make','need','want','use','dont','doesnt','cant','wont','isnt'])
+function synthesizeName(message) {
+  const words = String(message || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean)
+  const content = words.filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+  const chosen = content.slice(0, 5)
+  if (!chosen.length) return ''
+  return chosen.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
 
 // Compact + rank candidates so the prompt stays small even in an 84-project world.
 export function rankCandidates(candidates) {
@@ -157,14 +169,17 @@ export function buildTarget(clientId, match, index) {
 // Normalize the LLM's `new` proposal against the real project list: attach the
 // display name, and force is_new_project true when the named parent doesn't
 // exist (so the confirm UI never claims a project that isn't there).
-function normalizeProposal(proposal, index) {
+// If the model returned an empty name, synthesize a clean outcome name from
+// the original message so the client never needs the verbatim firstWords fallback.
+function normalizeProposal(proposal, index, message) {
   const p = proposal || {}
   const kind = p.kind === 'project' ? 'project' : 'mission'
   const projSlug = p.project_slug || ''
   const existing = projSlug ? index.projectBySlug.get(projSlug) : null
+  const rawName = String(p.name || '').trim()
   return {
     kind,
-    name: String(p.name || '').trim(),
+    name: rawName || synthesizeName(message || ''),
     project_slug: existing ? existing.slug : projSlug,
     project_name: existing ? existing.name : '',
     is_new_project: kind === 'project' ? true : (!existing),
@@ -174,6 +189,7 @@ function normalizeProposal(proposal, index) {
 
 function candidateBlock(ranked, lastRoom, recentRooms) {
   const lines = []
+  const hint = (h) => (h && String(h).trim() ? ` — recent: "${String(h).trim().slice(0, 100)}"` : '')
   const roomLine = (r) => {
     if (!r) return ''
     if (r.isMission) return `[mission] ${r.projectSlug || ''}:${bareSlug(r.missionSlug || r.id)} — "${r.name || ''}"`
@@ -189,9 +205,9 @@ function candidateBlock(ranked, lastRoom, recentRooms) {
   for (const a of ranked.agents) lines.push(`  [agent] ${a.slug} — "${a.name || a.title || a.slug}"`)
   lines.push('PROJECTS (and their recent missions):')
   for (const p of ranked.rankedProjects) {
-    lines.push(`  [project] ${p.slug} — "${p.name || p.slug}"`)
+    lines.push(`  [project] ${p.slug} — "${p.name || p.slug}"${hint(p.hint)}`)
     for (const m of (ranked.missionsByProject[p.slug] || [])) {
-      lines.push(`    [mission] ${p.slug}:${bareSlug(m.slug)} — "${m.name || bareSlug(m.slug)}"`)
+      lines.push(`    [mission] ${p.slug}:${bareSlug(m.slug)} — "${m.name || bareSlug(m.slug)}"${hint(m.hint)}`)
     }
   }
   return lines.join('\n')
@@ -286,13 +302,13 @@ export default async function handler(req, res) {
     if (!target) {
       // Hallucinated / stale slug — never open a room that isn't real. Downgrade
       // to an editable new draft, preserving any proposal the model offered.
-      const proposal = llm.proposal ? normalizeProposal(llm.proposal, index) : fallbackDecision('unmatched').proposal
+      const proposal = llm.proposal ? normalizeProposal(llm.proposal, index, message) : fallbackDecision('unmatched').proposal
       return res.status(200).json({ route: 'new', target: null, proposal, confidence, reasoning, source: 'llm', degraded: true })
     }
     return res.status(200).json({ route: llm.route, target, proposal: null, confidence, reasoning, source: 'llm', degraded: false })
   }
 
   // route === 'new' (or anything unexpected → treat as new)
-  const proposal = normalizeProposal(llm.proposal, index)
+  const proposal = normalizeProposal(llm.proposal, index, message)
   return res.status(200).json({ route: 'new', target: null, proposal, confidence, reasoning, source: 'llm', degraded: false })
 }

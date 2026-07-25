@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const NEW_PROJECT = '__new_project__';
 const NEW_MISSION = '__new_mission__';
+const UNSET = '__unset__'; // No project matched — user must pick before proceeding.
 const bareSlug = (s) => (s && String(s).includes(':') ? String(s).split(':').pop() : String(s || ''));
 
 // Flatten a (possibly nested) missions tree into {slug(bare), name} rows.
@@ -27,19 +28,28 @@ function flattenMissions(nodes, out = []) {
 export default function IntakeConfirm({ proposal, projects = [], missionsByProject = {}, error = '', busy = false, pendingText = '', onCommit, onCancel }) {
   const isExisting = proposal?.kind === 'existing' && proposal?.matchedRoom;
   const [name, setName] = useState(proposal?.name || '');
-  // Default the destination: matched/named existing project, else the first project.
+  // Default the destination: matched/named existing project.
+  // When no project match came from the router, default to UNSET so the user is
+  // prompted to choose — never silently default to the most-recent project.
   const [projectSlug, setProjectSlug] = useState(() => {
     if (proposal?.is_new_project) return NEW_PROJECT;
     if (proposal?.project_slug) return proposal.project_slug;
-    return (projects[0]?.slug || projects[0]?.id || NEW_PROJECT);
+    return UNSET;
   });
   // Destination mission within the chosen project: a new one, or an existing mission
   // to route into (Patrik: "wouldn't let me select a preexisting mission").
   const [destMission, setDestMission] = useState(NEW_MISSION);
   useEffect(() => { setName(proposal?.name || ''); }, [proposal?.name]);
+  // Sync projectSlug when the proposal changes (e.g. user clicks "Start something new
+  // instead" — the proposal swaps without unmounting the component).
+  useEffect(() => {
+    if (proposal?.is_new_project) { setProjectSlug(NEW_PROJECT); return; }
+    if (proposal?.project_slug) { setProjectSlug(proposal.project_slug); return; }
+    setProjectSlug(UNSET);
+  }, [proposal?.project_slug, proposal?.is_new_project]);
   useEffect(() => { setDestMission(NEW_MISSION); }, [projectSlug]);
   const projectMissions = useMemo(
-    () => (projectSlug && projectSlug !== NEW_PROJECT ? flattenMissions(missionsByProject[projectSlug]) : []),
+    () => (projectSlug && projectSlug !== NEW_PROJECT && projectSlug !== UNSET ? flattenMissions(missionsByProject[projectSlug]) : []),
     [projectSlug, missionsByProject],
   );
 
@@ -71,9 +81,11 @@ export default function IntakeConfirm({ proposal, projects = [], missionsByProje
   }
 
   const creatingProject = projectSlug === NEW_PROJECT;
-  const routingToExisting = destMission !== NEW_MISSION && !creatingProject;
+  const unset = projectSlug === UNSET; // No project matched — user must pick.
+  const routingToExisting = destMission !== NEW_MISSION && !creatingProject && !unset;
   // A name is required to CREATE; routing into an existing mission doesn't need one.
-  const canStart = (routingToExisting || name.trim().length > 0) && !busy;
+  // When no project is chosen yet (UNSET), Start is disabled regardless.
+  const canStart = !unset && (routingToExisting || name.trim().length > 0) && !busy;
   const start = () => {
     if (!canStart) return;
     if (creatingProject) { onCommit?.({ type: 'create-project', name: name.trim() }); return; }
@@ -89,7 +101,7 @@ export default function IntakeConfirm({ proposal, projects = [], missionsByProje
 
   return (
     <div className="cv6-intake-confirm" style={cardStyle}>
-      <div style={eyebrow}>{routingToExisting ? 'Corner will send this into an existing mission. Change it if that’s wrong.' : `Corner will start a new ${creatingProject ? 'project' : 'mission'}. Edit anything that’s off.`}</div>
+      <div style={eyebrow}>{unset ? ‘Not sure where this goes — pick a room below to continue.’ : routingToExisting ? ‘Corner will send this into an existing mission. Change it if that’s wrong.’ : `Corner will start a new ${creatingProject ? ‘project’ : ‘mission’}. Edit anything that’s off.`}</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -101,6 +113,7 @@ export default function IntakeConfirm({ proposal, projects = [], missionsByProje
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>in</span>
         <select value={projectSlug} onChange={(e) => setProjectSlug(e.target.value)} style={selectStyle}>
+          {unset && <option value={UNSET} disabled>— pick a room —</option>}
           {projects.map((p) => (
             <option key={p.slug || p.id} value={p.slug || p.id}>{p.name || p.slug || p.id}</option>
           ))}

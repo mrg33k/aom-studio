@@ -23,26 +23,46 @@ const ROUTE_TIMEOUT_MS = 8000;
 const live = () => !!supabase || demoFixtureActive();
 const bareSlug = (s) => (s && String(s).includes(':') ? String(s).split(':').pop() : String(s || ''));
 const initialsOf = (s) => (String(s || '?').trim().slice(0, 2) || '?').toUpperCase();
-const firstWords = (s, n = 6) => String(s || '').trim().split(/\s+/).slice(0, n).join(' ');
 
 // Recursively flatten a missions tree/list into flat candidate rows.
-function flattenMissions(nodes, projectSlug, out) {
+// hintMap: { "projectSlug:bareSlug" → preview string } for semantic context.
+function flattenMissions(nodes, projectSlug, out, hintMap) {
   for (const m of (nodes || [])) {
     if (!m) continue;
     const slug = bareSlug(m.slug || m.folder_name || m.id);
-    if (slug) out.push({ slug, project_slug: projectSlug, name: m.name || slug, last_message_at: m.last_message_at || 0 });
-    if (Array.isArray(m.children) && m.children.length) flattenMissions(m.children, projectSlug, out);
+    if (slug) out.push({
+      slug,
+      project_slug: projectSlug,
+      name: m.name || slug,
+      last_message_at: m.last_message_at || 0,
+      hint: String((hintMap && hintMap[`${projectSlug}:${slug}`]) || m.last_message_text || '').trim().slice(0, 120),
+    });
+    if (Array.isArray(m.children) && m.children.length) flattenMissions(m.children, projectSlug, out, hintMap);
   }
   return out;
 }
 
 // Build the compact candidate set + recent-room list the brain ranks against,
 // straight from the data Home already holds in memory (no extra fetch).
+// Attaches a short `hint` (recent message preview) to each project/mission so
+// the router has semantic context beyond just the room name.
 export function assembleCandidates(data, missionsByProject) {
+  // Build a preview map for missions keyed by "projectSlug:bareSlug".
+  // data.recent[] carries the normalised preview text for recently active rooms.
+  const previewByMission = {};
+  for (const r of (data?.recent || [])) {
+    if (r.kind === 'mission' && (r.missionSlug || r.id)) {
+      const bare = bareSlug(r.missionSlug || r.id);
+      const proj = r.project || r.projectSlug || '';
+      if (proj && bare) previewByMission[`${proj}:${bare}`] = String(r.preview || '').slice(0, 120);
+    }
+  }
   const projects = (data?.projects || []).map((p) => ({
     slug: p.slug || p.id,
     name: p.name || p.slug || p.id,
     last_message_at: p.last_message_at || 0,
+    // last_message_text is the raw preview text on the projectRooms shape.
+    hint: String(p.last_message_text || '').trim().slice(0, 120),
   })).filter((p) => p.slug);
   const agents = (data?.agents || []).map((a) => ({
     slug: a.id || a.slug,
@@ -50,7 +70,7 @@ export function assembleCandidates(data, missionsByProject) {
   })).filter((a) => a.slug);
   const missions = [];
   for (const [projectSlug, nodes] of Object.entries(missionsByProject || {})) {
-    flattenMissions(nodes, projectSlug, missions);
+    flattenMissions(nodes, projectSlug, missions, previewByMission);
   }
   const recent_rooms = (data?.recent || []).map((r) => {
     if (r.kind === 'mission') return { id: bareSlug(r.missionSlug || r.id), name: r.name, isMission: true, isProject: false, missionSlug: r.missionSlug || '', projectSlug: r.project || '' };
@@ -151,10 +171,12 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
       }
 
       // route 'new' (or degraded/no-decision) → editable new-mission draft.
+      // Server guarantees a non-verbatim name via synthesizeName; never use
+      // firstWords(body) which would paste the raw user message as the title.
       const p = (decision && decision.proposal) || {};
       toConfirm({
         kind: p.kind === 'project' ? 'project' : 'mission',
-        name: p.name || firstWords(body),
+        name: p.name || '',
         project_slug: p.project_slug || '',
         project_name: p.project_name || '',
         is_new_project: !!p.is_new_project,
@@ -163,7 +185,8 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
       }, decision?.degraded ? 'offline' : '');
     } catch (e) {
       // Never lose the text: fall to the editable new-mission draft.
-      toConfirm({ kind: 'mission', name: firstWords(body), project_slug: '', is_new_project: false, task_breakdown: [] }, 'offline');
+      // Leave name empty — the user will see "Name this work…" placeholder and type it.
+      toConfirm({ kind: 'mission', name: '', project_slug: '', is_new_project: false, task_breakdown: [] }, 'offline');
     } finally {
       inFlight.current = false;
     }
@@ -179,7 +202,8 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
     setError('');
     if (decision?.type === 'to-new') {
       // User rejected the matched room — offer an editable new-mission draft.
-      setProposal({ kind: 'mission', name: firstWords(text), project_slug: '', is_new_project: false, task_breakdown: [] });
+      // Empty name so the user is prompted via the "Name this work…" placeholder.
+      setProposal({ kind: 'mission', name: '', project_slug: '', is_new_project: false, task_breakdown: [] });
       setMode('confirm');
       return;
     }
