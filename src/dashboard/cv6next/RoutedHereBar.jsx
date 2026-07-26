@@ -140,21 +140,26 @@ function RoutedHereBarBody({ rec, onGone, worldId, projects: projectsProp, missi
 
   return (
     <div data-cv6-routed-here="" style={wrap}>
+      {/* Buttons sit on their OWN row, never beside the text. The chat column is ~370px on
+          a 1440 desktop, and two buttons alongside left the sentence a ~150px gutter that
+          ran ten lines tall — a one-line strip rendering as a 235px block. */}
       <div style={topRow}>
         <span aria-hidden="true" style={dot} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={line}>
             Corner sent this to <strong style={{ color: 'var(--fg)', fontWeight: 650 }}>{rec.roomName || 'this room'}</strong>
           </div>
+          {/* The router's reason earns two lines at most. It is supporting evidence for a
+              decision already made, not the message. */}
           {rec.reasoning ? <div style={why}>{rec.reasoning}</div> : null}
         </div>
-        {!picking ? (
-          <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
-            <button type="button" onClick={() => setPicking(true)} style={changeBtn}>Wrong room</button>
-            <button type="button" onClick={dismiss} style={ghostBtn} aria-label="Dismiss">Got it</button>
-          </div>
-        ) : null}
       </div>
+      {!picking ? (
+        <div style={btnRow}>
+          <button type="button" onClick={() => setPicking(true)} style={changeBtn}>Wrong room</button>
+          <button type="button" onClick={dismiss} style={ghostBtn} aria-label="Dismiss">Got it</button>
+        </div>
+      ) : null}
 
       {picking ? (
         <div style={pickRow}>
@@ -200,7 +205,13 @@ const topRow = { display: 'flex', alignItems: 'flex-start', gap: 12 };
 // the working indicator, and two identical dots meaning different things is worse than none.
 const dot = { width: 8, height: 8, flex: 'none', marginTop: 4, borderRadius: '50%', border: '1.5px solid var(--accent)' };
 const line = { fontSize: 14, color: 'var(--muted)', lineHeight: 1.4 };
-const why = { fontSize: 12, color: 'var(--faint, var(--muted))', marginTop: 2, lineHeight: 1.4 };
+// Clamped to two lines: the reason is evidence, not the headline, and an unbounded model
+// sentence is what turned this strip into a 235px block in the first live shot.
+const why = {
+  fontSize: 12, color: 'var(--faint, var(--muted))', marginTop: 4, lineHeight: 1.4,
+  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+};
+const btnRow = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' };
 const pickRow = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' };
 const selectStyle = { height: 32, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 13, padding: '0 8px', outline: 'none', fontFamily: 'var(--font-sans)', maxWidth: '100%' };
 const primaryBtn = { height: 32, padding: '0 16px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', font: '700 13px var(--font-sans)', cursor: 'pointer', flex: 'none' };
