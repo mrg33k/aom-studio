@@ -90,7 +90,9 @@ export default function RunningTasksCard({ room }) {
       ))}
 
       {promises.length ? (
-        <SectionHeader label="Coming back to you" count={promises.length} dim />
+        // `spaced` only when a section precedes it: a SECTION break must out-weigh a ROW
+        // break, otherwise the two groups read as one undifferentiated list.
+        <SectionHeader label="Coming back to you" count={promises.length} dim spaced={tasks.length > 0} />
       ) : null}
       {promises.map((p) => {
         const due = p.due ? new Date(p.due).getTime() : NaN;
@@ -118,9 +120,9 @@ export default function RunningTasksCard({ room }) {
   );
 }
 
-function SectionHeader({ label, count, dim }) {
+function SectionHeader({ label, count, dim, spaced }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: spaced ? 8 : 0 }}>
       <span
         aria-hidden="true"
         style={{
