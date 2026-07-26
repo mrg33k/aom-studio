@@ -26,18 +26,21 @@ const initialsOf = (s) => (String(s || '?').trim().slice(0, 2) || '?').toUpperCa
 
 // Recursively flatten a missions tree/list into flat candidate rows.
 // hintMap: { "projectSlug:bareSlug" → preview string } for semantic context.
-function flattenMissions(nodes, projectSlug, out, hintMap) {
+function flattenMissions(nodes, projectSlug, out, hintMap, activity) {
   for (const m of (nodes || [])) {
     if (!m) continue;
     const slug = bareSlug(m.slug || m.folder_name || m.id);
+    // The tree these nodes come from (useProjectMissions) is folders on disk — it carries no
+    // message data at all, so recency/preview have to be joined in from missionActivity.
+    const act = (activity && activity[`${projectSlug}:${slug}`]) || null;
     if (slug) out.push({
       slug,
       project_slug: projectSlug,
       name: m.name || slug,
-      last_message_at: m.last_message_at || 0,
-      hint: String((hintMap && hintMap[`${projectSlug}:${slug}`]) || m.last_message_text || '').trim().slice(0, 120),
+      last_message_at: m.last_message_at || (act && act.at) || 0,
+      hint: String((hintMap && hintMap[`${projectSlug}:${slug}`]) || m.last_message_text || (act && act.text) || '').trim().slice(0, 120),
     });
-    if (Array.isArray(m.children) && m.children.length) flattenMissions(m.children, projectSlug, out, hintMap);
+    if (Array.isArray(m.children) && m.children.length) flattenMissions(m.children, projectSlug, out, hintMap, activity);
   }
   return out;
 }
@@ -69,8 +72,9 @@ export function assembleCandidates(data, missionsByProject) {
     name: a.name || a.title || a.id,
   })).filter((a) => a.slug);
   const missions = [];
+  const activity = data?.missionActivity || {};
   for (const [projectSlug, nodes] of Object.entries(missionsByProject || {})) {
-    flattenMissions(nodes, projectSlug, missions, previewByMission);
+    flattenMissions(nodes, projectSlug, missions, previewByMission, activity);
   }
   const recent_rooms = (data?.recent || []).map((r) => {
     if (r.kind === 'mission') return { id: bareSlug(r.missionSlug || r.id), name: r.name, isMission: true, isProject: false, missionSlug: r.missionSlug || '', projectSlug: r.project || '' };

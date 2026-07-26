@@ -96,6 +96,14 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     id: p.id || p.slug, databaseId: p.id || '', slug: p.slug, name: p.name || p.slug || 'Project',
     // no real item-count source on this list (tasks not loaded here) -> blank, not a fake 0.
     tint: tintFor(p.name || p.id), count: (p.tasks?.length || p.taskCount || '') || '',
+    // Recency + last line ride along. They are not rendered here — the front-door router
+    // (assembleCandidates -> /api/dashboard/intake-route) ranks and disambiguates rooms with
+    // them. Dropping them in this .map is what silently broke composer routing: every
+    // candidate reached the router with last_message_at 0, so its "most recent 18 projects"
+    // sort was a no-op and the cut fell alphabetically — every project from CSC to Wolfpack
+    // was invisible to the router and could never be matched, only proposed as new.
+    last_message_at: p.last_message_at || 0,
+    last_message_text: p.last_message_text || '',
   }));
 
   // inboxItems shape (from useDataPipe): { agent, project, missionSlug, roomKey, text, timestamp, id }.
@@ -217,10 +225,28 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
 
   // honest convo column: real header off the first agent room, empty goal body.
   const lead = agentRooms[0] || { name: '', initials: '' };
+  // Mission recency, keyed "project:missionSlug", for the front-door router only.
+  // `recent` holds just the top 6 rooms, and the mission tree the composer walks
+  // (useProjectMissions) is folders on disk with no message data — so without this map
+  // every mission candidate reached the router at timestamp 0 with no preview, leaving it
+  // to match on mission NAMES alone. That is how "the text is too big on the reel" landed
+  // in AZ Tech Council's "Summit Highlight Reel" at 0.95 confidence: a shared word.
+  const missionActivity = {};
+  for (const mr of missionRooms || []) {
+    if (!mr.slug) continue;
+    const bare = String(mr.slug).includes(':') ? String(mr.slug).split(':').pop() : String(mr.slug);
+    const key = `${mr.project || ''}:${bare}`;
+    const ts = mr.last_message_at ? new Date(mr.last_message_at).getTime() : 0;
+    const prev = missionActivity[key];
+    if (prev && prev.ts >= ts) continue;
+    missionActivity[key] = { ts, at: mr.last_message_at || 0, text: normalizePreview(mr.last_message_text) || '' };
+  }
+
   const data = {
     rooms: { total: agentRooms.length + projects.length },
     agents: agentRooms,
     recent,
+    missionActivity,
     projects,
     catchUp,
     room: { name: lead.name || 'Your rooms', initials: lead.initials || '·', count: '', statusText: '', project: '', mission: '' },

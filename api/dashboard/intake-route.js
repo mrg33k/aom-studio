@@ -33,15 +33,18 @@ const MAX_MISSIONS_PER_PROJECT = 4
 // candidate (kind+slug), never free-form room fields — the server reconstructs
 // the authoritative target from the candidate list so a hallucinated name/id
 // can never reach the client.
-const SYSTEM_PROMPT = `You are Corner's routing brain. A user typed a task or thought into the front-door composer. You are given the message plus the rooms they can see (projects, missions, agents) with recency. Decide where the message belongs.
+export const SYSTEM_PROMPT = `You are Corner's routing brain. A user typed a task or thought into the front-door composer. You are given the message plus the rooms they can see (projects, missions, agents) with recency. Decide where the message belongs.
 
 DOCTRINE (do not violate):
 - Match to an existing visible room FIRST. Prefer the room the user was just in ("last room") when the message plausibly continues it.
+- A room's \`recent:\` hint is what that room is actually ABOUT and is far stronger evidence than its name. Match on subject matter, not on vocabulary.
+- A word shared between the message and a room's NAME is NOT a match. If the only thing connecting them is a common word (reel, deck, site, logo, game, print), that is a coincidence — keep looking, and if nothing else supports it, do not match.
+- If the message clearly belongs to a project but no specific mission fits, route to that PROJECT room. Proposing a new mission is the LAST resort, not the fallback for "no mission matched".
 - Only propose creating a NEW project when nothing plausibly fits. Match the parent project from the candidate list; set is_new_project true ONLY when no existing project fits.
 - proposal.name is a short OUTCOME-BASED mission name of 3-6 words: a clean noun phrase naming the deliverable or goal (e.g. "Homepage hero redesign", "Q3 outreach push", "Pricing page rewrite"). NEVER copy a clause or fragment verbatim from the user's message, never echo their exact words, and never a full sentence or a first-person phrase. If you cannot think of a good outcome name, return an empty string — the server will synthesize one.
 - For route "continue" or "existing", the match MUST reference a slug that appears in the candidate list — never invent one.
-- Be honest with confidence: lower it when the message is short/ambiguous or two candidates are close.
-- Requests ABOUT or INVOLVING the Corner platform itself — the dashboard, the front-door composer, rooms, the routing brain, chat UI, intake flow, recents, mission trees — belong to the Corner platform project. If a project with slug "corner" or a project whose name contains "Corner" appears in the candidate list, route there. Do NOT spawn a new mission under an unrelated project for platform-level feedback or improvement requests.
+- Confidence decides whether the room opens automatically, so calibrate it honestly. Use 0.9+ only when the room's hint or subject matter makes it unambiguous. Use 0.6-0.8 when it is the best fit but a reasonable person could pick another room. Use 0.5 or less when your reason is mostly a shared keyword, when the message is a short continuation ("keep the map anyway", "that feels small") that could belong to several rooms, or when two candidates are close. A wrong room opened silently is worse than asking.
+- Route to the Corner platform project ONLY when Corner itself is the thing being changed or reported on: the dashboard, the front-door composer, rooms, the routing brain, chat UI, intake flow, recents, mission trees. Corner is the workspace the user is standing in, so it gets MENTIONED constantly — "did you put it in the room files", "that room disappeared", "I have the project open" are asides, not Corner work. Above all, the work done INSIDE a room (design, copy, video, decks, outreach, a client's site) belongs to that work's own project, never to Corner, even when the user describes it in interface words like screen, page, header, layout or button.
 
 ROUTES:
 - "continue": the message extends the last room, or a candidate that matches very strongly. Return "match".
@@ -104,13 +107,13 @@ function synthesizeName(message) {
 }
 
 // Compact + rank candidates so the prompt stays small even in an 84-project world.
-export function rankCandidates(candidates) {
+export function rankCandidates(candidates, maxProjects = MAX_PROJECTS, maxMissions = MAX_MISSIONS_PER_PROJECT) {
   const projects = Array.isArray(candidates?.projects) ? candidates.projects : []
   const missions = Array.isArray(candidates?.missions) ? candidates.missions : []
   const agents = Array.isArray(candidates?.agents) ? candidates.agents : []
   const rankedProjects = [...projects]
     .sort((a, b) => ageMs(b.last_message_at) - ageMs(a.last_message_at))
-    .slice(0, MAX_PROJECTS)
+    .slice(0, maxProjects)
   const missionsByProject = {}
   for (const m of missions) {
     const p = m.project_slug || m.project || ''
@@ -120,7 +123,7 @@ export function rankCandidates(candidates) {
   for (const p of Object.keys(missionsByProject)) {
     missionsByProject[p] = missionsByProject[p]
       .sort((a, b) => ageMs(b.last_message_at) - ageMs(a.last_message_at))
-      .slice(0, MAX_MISSIONS_PER_PROJECT)
+      .slice(0, maxMissions)
   }
   return { rankedProjects, missionsByProject, agents }
 }
@@ -187,7 +190,7 @@ function normalizeProposal(proposal, index, message) {
   }
 }
 
-function candidateBlock(ranked, lastRoom, recentRooms) {
+export function candidateBlock(ranked, lastRoom, recentRooms) {
   const lines = []
   const hint = (h) => (h && String(h).trim() ? ` — recent: "${String(h).trim().slice(0, 100)}"` : '')
   const roomLine = (r) => {
@@ -236,7 +239,18 @@ async function callGemini(message, interactionMode, ranked, lastRoom, recentRoom
       body: JSON.stringify({
         systemInstruction: { role: 'system', parts: [{ text: SYSTEM_PROMPT }] },
         contents: [{ role: 'user', parts: [{ text: userText }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+          // gemini-2.5-flash thinks by default, and on this prompt it burned ~1,500 thinking
+          // tokens per call for a pure classification — measured median 5.8s, worst 15.6s,
+          // against a 7s budget. 38% of real sends therefore timed out and fell through to
+          // fallbackDecision, which is the "it just takes a sentence from my prompt and
+          // attaches it randomly" the user reported: a degraded `new` draft named off their
+          // own words. Thinking off: median 0.92s, worst 1.31s, zero timeouts, and accuracy
+          // went UP (it was losing to the clock, not reasoning its way to better answers).
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
       signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
     }
