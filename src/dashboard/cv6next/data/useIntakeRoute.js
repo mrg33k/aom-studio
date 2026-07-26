@@ -159,14 +159,24 @@ function roomFromTarget(t) {
 
 // Post the user's text into a room with the correct scope + Work/Plan mode,
 // replicating useRoomThread.send's payloads so the room's poll surfaces it.
-async function seedRoom(worldId, room, text, interactionMode) {
+// `auto` (the router's own decision, or null when the user picked the room) is stamped onto
+// the row as provenance. Until R11 nothing on a message said where it came from, so a room
+// the router GUESSED into was indistinguishable from one the user typed in — and
+// room-activity happily digested the guess into that room's description, which is what let
+// a single misroute teach the router to repeat itself (R10's closing note).
+//
+// The absence of `routed.accepted` IS the pending state; there is no `accepted: false`. A
+// room the user chose in the confirm card carries no stamp at all, because a choice they
+// made needs no confirming.
+async function seedRoom(worldId, room, text, interactionMode, auto) {
   if (!live()) return true; // read-only/local: opening the room is enough
   const mode = interactionMode === 'plan' ? 'plan' : 'work';
+  const meta = { interaction_mode: mode, ...(auto ? { routed: { auto: true, confidence: Number(auto.confidence) || 0 } } : {}) };
   const payload = room.isMission
-    ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), interaction_mode: mode } }
+    ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), ...meta } }
     : room.isProject
-      ? { client_id: worldId, agent: 'corner', project: room.id, text, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: mode } }
-      : { client_id: worldId, agent: room.id, text, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: mode } };
+      ? { client_id: worldId, agent: 'corner', project: room.id, text, role: 'user', source: 'corner-dashboard', metadata: meta }
+      : { client_id: worldId, agent: room.id, text, role: 'user', source: 'corner-dashboard', metadata: meta };
   try {
     // authFetch only rejects on a network failure, so a 4xx/5xx resolves normally —
     // without this check the composer reports a successful seed for a message the room
@@ -194,7 +204,7 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
     onOpenRoom(room, worldId);
     // Carry the door's Work/Plan choice into the room's own composer.
     try { localStorage.setItem(`cv6.chatMode.${room.isMission ? bareSlug(room.missionSlug || room.id) : room.id}`, interactionMode === 'plan' ? 'plan' : 'work'); } catch { /* private mode */ }
-    const seeded = await seedRoom(worldId, room, text, interactionMode);
+    const seeded = await seedRoom(worldId, room, text, interactionMode, auto);
     if (auto && seeded?.id) {
       recordRoutedHere({
         room, messageId: seeded.id, text, worldId,

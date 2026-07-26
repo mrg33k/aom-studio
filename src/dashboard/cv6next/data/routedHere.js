@@ -15,6 +15,8 @@
 // Only ever written for an AUTOMATIC route. A room the user picked themselves needs no
 // second-guessing, and a bar that appears when you already chose reads as noise.
 
+import { authFetch } from '../../lib/authFetch';
+
 const KEY = 'cv6.routedHere';
 // A correction is something you make right after sending. Past this the room has moved on
 // and retracting the message would be more surprising than leaving it.
@@ -73,4 +75,30 @@ export function readRoutedHere(room, worldId) {
 
 export function clearRoutedHere() {
   try { localStorage.removeItem(KEY); } catch { /* private mode */ }
+}
+
+// Accept the route DURABLY, then forget the local record.
+//
+// corner:front-door R11. Until now "Got it" was clearRoutedHere() alone — the acceptance
+// existed for as long as the tab did and never reached the row. That mattered because an
+// auto-routed message is otherwise indistinguishable from one typed in the room, so
+// room-activity digested every guess straight into the room's description and taught the
+// router to make the same guess again (R10's "the rule protects a room exactly once").
+// Accepting has to land on the row itself, because the row is what the digest reads.
+//
+// Order is deliberate: clear locally FIRST so the strip disappears on the tap rather than on
+// the round-trip, then write. If the write fails the row simply stays pending — it keeps
+// shaping nothing, which is the safe direction to fail in. The alternative (assume accepted
+// on error) would restore the exact loop this exists to break.
+export async function acceptRoutedHere({ worldId, messageId }) {
+  clearRoutedHere();
+  if (!messageId) return false;
+  try {
+    const res = await authFetch('/api/dashboard/route-accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: worldId, message_id: messageId }),
+    });
+    return !!(res && res.ok);
+  } catch { return false; }
 }

@@ -45,6 +45,11 @@ const HINT_CHARS = 200;
 // "reel.qa.json" file names that identify it.
 const HINT_SOURCES = 14;
 const HINT_PART_CHARS = 80;
+// Raw rows buffered per room before the pending-route quarantine runs. Wider than
+// HINT_SOURCES so a quarantined exchange costs the digest nothing — it just reaches further
+// down for real material. A pending route OLDER than this buffer is invisible to the walk,
+// which is acceptable: a room with 40 newer messages has already drowned out one bad line.
+const RAW_SOURCES = 40;
 
 async function supabaseGet(params) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/messages?${params}`, {
@@ -71,7 +76,7 @@ async function supabaseGet(params) {
 const DROP_RE = /^(<<|\[|picking this up|logged\.?$|got it\b|on it\b|standing by)/i;
 const FILE_RE = /^(?:attached (?:file|\d+ files)|shared a file)\s*:?\s*(.+)$/i;
 
-function digestOf(texts) {
+export function digestOf(texts) {
   const parts = [];
   const seen = new Set();
   let total = 0;
@@ -99,6 +104,53 @@ function digestOf(texts) {
 
 const bareSlug = (s) => (String(s || '').includes(':') ? String(s).split(':').pop() : String(s || ''));
 
+// ── Pending-route quarantine (corner:front-door R11) ─────────────────────────────────
+//
+// A room's hint is what teaches the router what that room is about. So when the router
+// GUESSES a room and guesses wrong, the misrouted message lands there and — before R11 —
+// went straight into that room's hint, which meant the room now genuinely looked like it
+// was about the thing it never was. On the next identical send the R10 cap correctly did
+// not fire (the room has a description now) and it auto-opened again. R10 measured this
+// live and named it: "the rule protects a room exactly once."
+//
+// So a message the front door routed on its own shapes NOTHING until the user accepts it
+// (taps "Got it", or keeps talking in the room). Rejection needs no handling here —
+// move-message deletes the row outright.
+//
+// The quarantine covers the whole EXCHANGE, not just the user's message. room-activity has
+// no role filter, so the agent's answer is digested with equal weight, and the agent
+// answers a misrouted question in the misrouted question's language. Measured while
+// planning R11: az-tech-council:summit-highlight-reel held exactly one message in the
+// window — an assistant reply — and that single sentence was the room's entire
+// description. Filtering only the user's row would have left the room still advertising
+// itself in the wrong topic's words.
+const isPendingRoute = (m) => {
+  const r = m?.metadata?.routed;
+  return !!(r && r.auto === true && r.accepted !== true);
+};
+
+// rows: newest-first, as they arrive from PostgREST. Returns surviving texts, newest-first.
+export function acceptedTexts(rows) {
+  // The quarantine window runs FORWARD in time (a pending question, then the replies it
+  // draws), so the walk has to go oldest-first even though everything else here is
+  // newest-first.
+  const keep = [];
+  let quarantined = false;
+  for (const m of rows.slice().reverse()) {
+    // Every user turn opens or closes the window: a pending auto-route opens it, and any
+    // message the user sent themselves closes it — including the one that closes it by
+    // being the accepted version of the same route.
+    if (m.role === 'user') quarantined = isPendingRoute(m);
+    if (quarantined) continue;
+    keep.push(m.text);
+  }
+  // A pending exchange at the head of a room can empty its hint completely. That is the
+  // intent, not a bug: an empty hint re-arms undescribedNameMatch in intake-route, so the
+  // next message that matches only this room's NAME gets asked about instead of silently
+  // auto-opened. Failing toward "ask" is the safe direction.
+  return keep.reverse();
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -121,7 +173,9 @@ export default async function handler(req, res) {
     for (let offset = 0; offset < WINDOW_ROWS; offset += PAGE) {
       // eslint-disable-next-line no-await-in-loop -- pages must be sequential; PostgREST has no cursor here.
       const rows = await supabaseGet(
-        `client_id=eq.${encodeURIComponent(clientId)}&select=project,metadata,text,timestamp`
+        // `role` is here for the quarantine walk: it needs to tell the user's turns from
+        // the agent's to know where a pending exchange ends.
+        `client_id=eq.${encodeURIComponent(clientId)}&select=project,metadata,text,timestamp,role`
         + `&order=timestamp.desc&limit=${PAGE}&offset=${offset}`
       );
       if (!Array.isArray(rows) || !rows.length) break;
@@ -139,15 +193,23 @@ export default async function handler(req, res) {
         const bucket = missionSlug ? missions : projects;
         // Rows arrive newest-first, so the first sighting of a room is its last activity;
         // the next few supply the material the hint is distilled from.
-        const prev = bucket[key] || (bucket[key] = { last_message_at: ts, texts: [] });
-        if (prev.texts.length < HINT_SOURCES) prev.texts.push(m.text);
+        // Buffer more rows than the hint will use. The quarantine drops whole exchanges, so
+        // filtering has to happen BEFORE the HINT_SOURCES cut or one pending question and
+        // its reply could starve the digest of everything real underneath them.
+        const prev = bucket[key] || (bucket[key] = { last_message_at: ts, rows: [] });
+        if (prev.rows.length < RAW_SOURCES) prev.rows.push({ text: m.text, role: m.role, metadata: m.metadata });
       }
       if (rows.length < PAGE) break;
     }
     for (const bucket of [projects, missions]) {
       for (const key of Object.keys(bucket)) {
         const b = bucket[key];
-        bucket[key] = { last_message_at: b.last_message_at, last_message_text: digestOf(b.texts) };
+        // `last_message_at` is deliberately NOT filtered — a pending message still counts as
+        // activity. Recency only affects which rooms make the candidate cut, not what the
+        // router believes a room is about, and the composer prefers Home's own poll for
+        // recency anyway (useIntakeRoute assembleCandidates), so filtering it here would be
+        // half-effective at best. Semantic contamination is the defect; ranking is not.
+        bucket[key] = { last_message_at: b.last_message_at, last_message_text: digestOf(acceptedTexts(b.rows).slice(0, HINT_SOURCES)) };
       }
     }
   } catch (err) {

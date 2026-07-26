@@ -19,7 +19,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { authFetch } from '../lib/authFetch';
-import { readRoutedHere, clearRoutedHere, ROUTED_HERE_EVENT } from './data/routedHere.js';
+import { readRoutedHere, clearRoutedHere, acceptRoutedHere, ROUTED_HERE_EVENT } from './data/routedHere.js';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 
 const bare = (s) => (String(s || '').includes(':') ? String(s).split(':').pop() : String(s || ''));
@@ -86,6 +86,16 @@ function RoutedHereBarBody({ rec, onGone, worldId, projects: projectsProp, missi
     [dest, missionsByProject],
   );
 
+  // Two different "Got it"s, and they must not share a handler.
+  //
+  //  * `accept` — the one on the live strip. The user is confirming the router's choice, so
+  //    the row is marked accepted and is allowed to shape this room's description from then
+  //    on (R11). Not awaited: the strip should vanish on the tap, and the write failing
+  //    just leaves the message pending, which harms nothing.
+  //  * `dismiss` — the one on the post-move confirmation. By then move-message has DELETEd
+  //    the row; there is nothing left to accept, and calling accept would 404 on a message
+  //    the user explicitly said was in the wrong place.
+  const accept = () => { acceptRoutedHere({ worldId, messageId: rec.messageId }); onGone?.(); };
   const dismiss = () => { clearRoutedHere(); onGone?.(); };
 
   // Opening the picker makes the strip taller, and it sits at the very bottom of the
@@ -185,7 +195,7 @@ function RoutedHereBarBody({ rec, onGone, worldId, projects: projectsProp, missi
       {!picking ? (
         <div style={btnRow}>
           <button type="button" onClick={openPicker} style={changeBtn}>Wrong room</button>
-          <button type="button" onClick={dismiss} style={ghostBtn} aria-label="Dismiss">Got it</button>
+          <button type="button" onClick={accept} style={ghostBtn} aria-label="Dismiss">Got it</button>
         </div>
       ) : null}
 

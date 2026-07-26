@@ -269,7 +269,10 @@ export function candidateBlock(ranked, lastRoom, recentRooms) {
   return lines.join('\n')
 }
 
-async function callGemini(message, interactionMode, ranked, lastRoom, recentRooms) {
+// Exported for scripts/replay-intake-route.mjs. The replay has to exercise the REAL prompt
+// and the real generation config — a harness with its own copy measures a router that does
+// not exist, and drifts silently the first time this one is retuned.
+export async function callGemini(message, interactionMode, ranked, lastRoom, recentRooms) {
   const userText = [
     `interaction_mode: ${interactionMode}`,
     '',

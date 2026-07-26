@@ -24,6 +24,7 @@ import { demoFixtureActive } from '../lib/fixtureClient.js';
 // composer so the send path stays browser-testable (Playwright owns the POSTs).
 const composerLive = () => !!supabase || demoFixtureActive();
 import { authFetch } from '../lib/authFetch.js';
+import { readRoutedHere, acceptRoutedHere } from './data/routedHere.js';
 import {
   ChatCoreProvider,
   ChatMessagesProvider,
@@ -159,6 +160,23 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   // R3 send-feel contract: the input clears the instant you send (restored only on
   // an explicit failure), and repeat Enter during the in-flight window is a no-op
   // so a fast double-tap can never post twice.
+  // ── Implicit accept of a front-door route (corner:front-door R11) ──
+  //
+  // If Corner picked this room for you and you then keep talking IN it, that is a
+  // confirmation it picked right — a stronger one than the "Got it" tap, because almost
+  // nobody taps "Got it". Without this, an auto-routed message stays pending forever and
+  // is quarantined out of the room's description permanently, which would starve rooms
+  // the user only ever reaches through the front door of any self-description at all.
+  //
+  // Deliberately NOT a timeout. Fifteen minutes passing means the user walked away, not
+  // that they agreed, and accepting on a timer would just re-arm the magnet more slowly.
+  // This fires on a real action or not at all.
+  const acceptIfRouted = useCallback(() => {
+    if (!worldId || !room) return;
+    const rec = readRoutedHere(room, worldId);   // already scoped to this room + world + TTL
+    if (rec?.messageId) acceptRoutedHere({ worldId, messageId: rec.messageId });
+  }, [worldId, room]);
+
   const sendingRef = useRef(false);
   const handleSend = useCallback(async () => {
     const base = input.trim();
@@ -183,6 +201,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
           if (url) {
             const att = { url, mime: 'image/png', name: `${tool}-image.png` };
             await postToRoom(`Generated image (${tool}): ${text}\n${url}`, 'user', { attachment: att, image_tool: tool });
+            acceptIfRouted();
           }
         } catch (_) { /* surfaced by the thread poll / toast */ }
         return;
@@ -192,6 +211,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       // Keep the caret in the box: sending is a conversation beat, not an exit.
       try { inputRef.current?.focus?.(); } catch { /* portal not mounted yet */ }
       const ok = typeof quickSend === 'function' ? await quickSend(text, { interactionMode }) : false;
+      if (ok !== false) acceptIfRouted();
       if (ok === false) {
         // Honest failure: put the words back so nothing typed is ever lost — but
         // never clobber something newly typed during the in-flight window
@@ -202,7 +222,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     } finally {
       sendingRef.current = false;
     }
-  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode]);
+  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode, acceptIfRouted]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
