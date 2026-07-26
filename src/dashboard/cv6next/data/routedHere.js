@@ -1,0 +1,69 @@
+// routedHere — the handoff between "the front door chose a room for you" and the room
+// itself, so the room can say so and offer to move the message.
+//
+// corner:front-door R8 (2026-07-25). The router auto-opens a room whenever it claims
+// confidence >= 0.85. On a 74-message replay of Patrik's own history it reports ~0.9 almost
+// regardless of how thin its reasoning is, so that bar gates very little: roughly one in five
+// sends still lands somewhere he did not mean, and lands there SILENTLY. Tightening the
+// number was tried and barely moved it — a model's self-reported confidence is not a
+// measurement. So the fix is not a better guess, it is telling the user what was guessed.
+//
+// Deliberately NOT React state: the composer writes this on the Home screen and the room
+// reads it after navigating, which unmounts everything between them. localStorage survives
+// that (and a reload, which is when someone comes back and asks "wait, where did that go").
+//
+// Only ever written for an AUTOMATIC route. A room the user picked themselves needs no
+// second-guessing, and a bar that appears when you already chose reads as noise.
+
+const KEY = 'cv6.routedHere';
+// A correction is something you make right after sending. Past this the room has moved on
+// and retracting the message would be more surprising than leaving it.
+export const ROUTED_HERE_TTL_MS = 15 * 60 * 1000;
+
+const bare = (s) => (String(s || '').includes(':') ? String(s).split(':').pop() : String(s || ''));
+
+// Stable identity for a room across the composer's target shape and the chat's own room
+// object. Mission first, then project, then a 1:1 agent thread — the same precedence
+// deriveRoomId uses server-side, so the two can never disagree about which room this is.
+export function roomKeyOf(room) {
+  if (!room) return '';
+  if (room.isMission) return `m:${room.projectSlug || ''}:${bare(room.missionSlug || room.id)}`;
+  if (room.isProject) return `p:${room.id || room.projectSlug || ''}`;
+  return `a:${room.id || room.agent || ''}`;
+}
+
+export function recordRoutedHere({ room, messageId, text, worldId, confidence, reasoning, interactionMode }) {
+  if (!room || !messageId) return;   // without the row id the move has nothing to retract
+  try {
+    localStorage.setItem(KEY, JSON.stringify({
+      roomKey: roomKeyOf(room),
+      roomName: room.name || '',
+      worldId: worldId || '',
+      messageId,
+      text: String(text || '').slice(0, 2000),
+      confidence: Number(confidence) || 0,
+      reasoning: String(reasoning || '').slice(0, 240),
+      interactionMode: interactionMode === 'plan' ? 'plan' : 'work',
+      at: Date.now(),
+    }));
+  } catch { /* private mode — the bar just won't show */ }
+}
+
+// Returns the record only if it is for THIS room, this world, and still fresh. Anything
+// else is stale and is cleared on read so it can never surface in an unrelated room later.
+export function readRoutedHere(room, worldId) {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return null;
+    const rec = JSON.parse(raw);
+    if (!rec?.roomKey || !rec?.messageId) return null;
+    if (Date.now() - (rec.at || 0) > ROUTED_HERE_TTL_MS) { clearRoutedHere(); return null; }
+    if (worldId && rec.worldId && rec.worldId !== worldId) return null;
+    if (rec.roomKey !== roomKeyOf(room)) return null;
+    return rec;
+  } catch { return null; }
+}
+
+export function clearRoutedHere() {
+  try { localStorage.removeItem(KEY); } catch { /* private mode */ }
+}

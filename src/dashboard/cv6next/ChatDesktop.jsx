@@ -18,6 +18,7 @@ import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import RunningTasksCard from './RunningTasksCard.jsx';
+import RoutedHereBar from './RoutedHereBar.jsx';
 import NewComposer from './NewComposer.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import { useDataContext } from './providers/DataContext.jsx';
@@ -842,6 +843,16 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />
                     {awaiting ? <WorkingTurn room={selected} liveSteps={liveSteps} goal={askGoal} /> : null}
                     <RunningTasksCard room={selected} />
+                    {/* Only renders when the FRONT DOOR chose this room automatically — names
+                        the destination the user never got to see, and moves the message in one
+                        tap if it guessed wrong (corner:front-door R8). */}
+                    <RoutedHereBar
+                      room={selected}
+                      worldId={worldId}
+                      projects={projects}
+                      missionsByProject={missionsByProject}
+                      onOpenRoom={(r) => { if (onOpenRoomColumn) onOpenRoomColumn(r, worldId); else setPicked(r); }}
+                    />
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>

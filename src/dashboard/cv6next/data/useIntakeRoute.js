@@ -16,6 +16,7 @@ import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase.js';
 import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { createMissionInProject, createProjectFromHome } from './useHomeData.js';
+import { recordRoutedHere, clearRoutedHere } from './routedHere.js';
 
 const AUTO_ROUTE_CONFIDENCE = 0.85;
 const ROUTE_TIMEOUT_MS = 8000;
@@ -160,8 +161,12 @@ async function seedRoom(worldId, room, text, interactionMode) {
     // without this check the composer reports a successful seed for a message the room
     // never received.
     const res = await authFetch('/api/dashboard/supabase-messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    return !!(res && res.ok);
-  } catch { return false; }
+    if (!res || !res.ok) return null;
+    // The row's id is what makes the destination correctable: moving the message later
+    // needs to know which row to retract from the room the router picked.
+    const d = await res.json().catch(() => null);
+    return { id: d?.message?.id || null };
+  } catch { return null; }
 }
 
 export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject }) {
@@ -171,11 +176,23 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
   const pendingRef = useRef({ text: '', mode: 'work' });
   const inFlight = useRef(false);
 
-  const openAndSeed = useCallback(async (room, text, interactionMode) => {
+  // `auto` marks a room CORNER chose rather than one the user picked. Only those leave a
+  // routedHere record, so the room can name the destination and offer to move it — the
+  // whole point being that an automatic choice is the one the user never got to see.
+  const openAndSeed = useCallback(async (room, text, interactionMode, auto) => {
     onOpenRoom(room, worldId);
     // Carry the door's Work/Plan choice into the room's own composer.
     try { localStorage.setItem(`cv6.chatMode.${room.isMission ? bareSlug(room.missionSlug || room.id) : room.id}`, interactionMode === 'plan' ? 'plan' : 'work'); } catch { /* private mode */ }
-    await seedRoom(worldId, room, text, interactionMode);
+    const seeded = await seedRoom(worldId, room, text, interactionMode);
+    if (auto && seeded?.id) {
+      recordRoutedHere({
+        room, messageId: seeded.id, text, worldId,
+        confidence: auto.confidence, reasoning: auto.reasoning, interactionMode,
+      });
+    } else {
+      // A room the user chose supersedes any earlier automatic pick still on record.
+      clearRoutedHere();
+    }
   }, [onOpenRoom, worldId]);
 
   // Drop into the editable confirm with a proposal (never loses the text).
@@ -226,7 +243,11 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
 
       if (autoRoute) {
         const room = roomFromTarget(decision.target);
-        if (room) { await openAndSeed(room, body, pendingRef.current.mode); setMode('idle'); return; }
+        if (room) {
+          await openAndSeed(room, body, pendingRef.current.mode, { confidence: decision.confidence, reasoning: decision.reasoning });
+          setMode('idle');
+          return;
+        }
       }
 
       if (decision && (decision.route === 'continue' || decision.route === 'existing') && decision.target) {
