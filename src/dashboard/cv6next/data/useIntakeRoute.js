@@ -19,6 +19,8 @@ import { createMissionInProject, createProjectFromHome } from './useHomeData.js'
 import { recordRoutedHere, clearRoutedHere } from './routedHere.js';
 
 const AUTO_ROUTE_CONFIDENCE = 0.85;
+// Matches HINT_CHARS in api/dashboard/room-activity.js — the room digests are built there.
+const HINT_CHARS = 200;
 const ROUTE_TIMEOUT_MS = 8000;
 
 const live = () => !!supabase || demoFixtureActive();
@@ -39,7 +41,8 @@ function flattenMissions(nodes, projectSlug, out, hintMap, activity) {
       project_slug: projectSlug,
       name: m.name || slug,
       last_message_at: m.last_message_at || (act && act.last_message_at) || 0,
-      hint: String((hintMap && hintMap[`${projectSlug}:${slug}`]) || m.last_message_text || (act && act.last_message_text) || '').trim().slice(0, 120),
+      // room-activity's digest FIRST: hintMap and the tree node both carry a single line.
+      hint: String((act && act.last_message_text) || (hintMap && hintMap[`${projectSlug}:${slug}`]) || m.last_message_text || '').trim().slice(0, HINT_CHARS),
     });
     if (Array.isArray(m.children) && m.children.length) flattenMissions(m.children, projectSlug, out, hintMap, activity);
   }
@@ -77,7 +80,8 @@ export function assembleCandidates(data, missionsByProject, roomActivity) {
       name: p.name || p.slug || p.id,
       last_message_at: p.last_message_at || act?.last_message_at || 0,
       // last_message_text is the raw preview text on the projectRooms shape.
-      hint: String(p.last_message_text || act?.last_message_text || '').trim().slice(0, 120),
+      // room-activity's digest FIRST: projectRooms only ever carries a single last line.
+      hint: String(act?.last_message_text || p.last_message_text || '').trim().slice(0, HINT_CHARS),
     };
   }).filter((p) => p.slug);
   const agents = (data?.agents || []).map((a) => ({
@@ -85,9 +89,16 @@ export function assembleCandidates(data, missionsByProject, roomActivity) {
     name: a.name || a.title || a.id,
   })).filter((a) => a.slug);
   const missions = [];
-  // Home's own missionActivity wins (it is the live poll); room-activity backfills the
-  // long tail the 100-message window never sees.
-  const activity = { ...actMissions, ...(data?.missionActivity || {}) };
+  // Recency from Home when it has it (that is the live poll, so it is fresher), but the HINT
+  // always from room-activity. Home only ever knows a room's single last line, and a single
+  // line is a lottery ticket as a description of what a room is about — letting it win here
+  // would overwrite the multi-message digest with exactly the noise the digest exists to
+  // survive. See room-activity.js for the day-3-reel case that proved it.
+  const activity = {};
+  for (const [k, v] of Object.entries(actMissions)) activity[k] = v;
+  for (const [k, v] of Object.entries(data?.missionActivity || {})) {
+    activity[k] = { ...v, last_message_text: actMissions[k]?.last_message_text || v.last_message_text };
+  }
   for (const [projectSlug, nodes] of Object.entries(missionsByProject || {})) {
     flattenMissions(nodes, projectSlug, missions, previewByMission, activity);
   }

@@ -37,7 +37,11 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_P
 const DEFAULT_CLIENT_ID = 'aom';
 const WINDOW_ROWS = 6000;
 const PAGE = 1000;
-const HINT_CHARS = 120;
+const HINT_CHARS = 200;
+// How many recent messages a room's hint may be distilled from. One is a lottery (see below);
+// a handful is a description.
+const HINT_SOURCES = 6;
+const HINT_PART_CHARS = 110;
 
 async function supabaseGet(params) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/messages?${params}`, {
@@ -47,14 +51,43 @@ async function supabaseGet(params) {
   return res.json();
 }
 
-// A hint has to describe what the room is ABOUT. Structured payloads, file-drop notices and
-// session markers describe the plumbing instead, and the router would happily match on them.
-const NOISE_RE = /^(attached (?:file|\d+ files)|shared a file|<<|\[)/i;
-function previewOf(text) {
-  const t = String(text || '').replace(/\s+/g, ' ').trim();
-  if (!t || t.startsWith('{') || t.startsWith('[')) return '';
-  if (NOISE_RE.test(t)) return '';
-  return t.slice(0, HINT_CHARS);
+// A hint has to describe what the room is ABOUT, and ONE message is a lottery ticket for that.
+// Measured against the live table: aom:socials — where the Day 3 reel actually lives —
+// advertised itself as "Nudge sent — told it to save the v4 edits first, then run the
+// readability gate", which never says "reel", while the very next message down reads "Day 3
+// profile-audit reel v4 is mid-build". So "tighten the timing on the day 3 reel" had nothing
+// to match on there, and the only line in the entire candidate block containing the word
+// "reel" was AZ Tech Council's "Summit Highlight Reel" — a room name. The router picked it at
+// 0.9 and opened it. That was not the model being careless; given what it was shown, it was
+// the only defensible answer.
+//
+// So the hint is a DIGEST of several recent lines, and file names are kept rather than
+// discarded — "reel.mp4", "reel.qa.json", "story-cut-brief.md" are among the most
+// discriminative things a media room ever says about itself. The old filter threw them away
+// as noise, which is how the room lost the one word that identified it.
+const DROP_RE = /^(<<|\[|picking this up|logged\.?$|got it\b|on it\b|standing by)/i;
+const FILE_RE = /^(?:attached (?:file|\d+ files)|shared a file)\s*:?\s*(.+)$/i;
+
+function digestOf(texts) {
+  const parts = [];
+  const seen = new Set();
+  let total = 0;
+  for (const raw of texts) {
+    let t = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!t || t.startsWith('{')) continue;      // structured payloads describe plumbing
+    const f = FILE_RE.exec(t);
+    if (f) t = f[1].trim();                     // keep the FILENAME, drop the wrapper
+    else if (DROP_RE.test(t)) continue;         // acknowledgements say nothing about the work
+    if (!t) continue;
+    t = t.slice(0, HINT_PART_CHARS);
+    const key = t.toLowerCase().slice(0, 40);
+    if (seen.has(key)) continue;                // rooms repeat themselves; the hint should not
+    seen.add(key);
+    if (total + t.length > HINT_CHARS) break;
+    parts.push(t);
+    total += t.length + 3;
+  }
+  return parts.join(' · ').slice(0, HINT_CHARS);
 }
 
 const bareSlug = (s) => (String(s || '').includes(':') ? String(s).split(':').pop() : String(s || ''));
@@ -97,13 +130,18 @@ export default async function handler(req, res) {
         const key = missionSlug ? `${project}:${bareSlug(missionSlug)}` : project;
         if (!key) continue;
         const bucket = missionSlug ? missions : projects;
-        const prev = bucket[key];
-        // Rows arrive newest-first, so the first sighting of a room is its last activity.
-        // Later rows can still supply the hint when that newest message was noise.
-        if (!prev) bucket[key] = { last_message_at: ts, last_message_text: previewOf(m.text) };
-        else if (!prev.last_message_text) prev.last_message_text = previewOf(m.text);
+        // Rows arrive newest-first, so the first sighting of a room is its last activity;
+        // the next few supply the material the hint is distilled from.
+        const prev = bucket[key] || (bucket[key] = { last_message_at: ts, texts: [] });
+        if (prev.texts.length < HINT_SOURCES) prev.texts.push(m.text);
       }
       if (rows.length < PAGE) break;
+    }
+    for (const bucket of [projects, missions]) {
+      for (const key of Object.keys(bucket)) {
+        const b = bucket[key];
+        bucket[key] = { last_message_at: b.last_message_at, last_message_text: digestOf(b.texts) };
+      }
     }
   } catch (err) {
     // Never fail the caller: the composer must still be able to send. An empty map means
