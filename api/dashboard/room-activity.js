@@ -44,7 +44,7 @@ const HINT_CHARS = 200;
 // live digest for aom:socials came back as a single line and never reached the "reel.mp4" /
 // "reel.qa.json" file names that identify it.
 const HINT_SOURCES = 14;
-const HINT_PART_CHARS = 110;
+const HINT_PART_CHARS = 80;
 
 async function supabaseGet(params) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/messages?${params}`, {
@@ -86,7 +86,11 @@ function digestOf(texts) {
     const key = t.toLowerCase().slice(0, 40);
     if (seen.has(key)) continue;                // rooms repeat themselves; the hint should not
     seen.add(key);
-    if (total + t.length > HINT_CHARS) break;
+    // continue, NOT break: one long line must not end the digest. That bug is why the live
+    // digest for aom:socials stayed a single sentence — the next candidate overflowed the
+    // budget, the loop exited, and the short high-signal items further down ("reel.mp4",
+    // "reel.qa.json") never got a chance. Skip what does not fit and keep looking.
+    if (total + t.length > HINT_CHARS) continue;
     parts.push(t);
     total += t.length + 3;
   }
