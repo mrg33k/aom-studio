@@ -17,7 +17,7 @@
 // up looking like the message was never sent there. A correction that leaves a mess behind
 // only gets used once.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { authFetch } from '../lib/authFetch';
 import { readRoutedHere, clearRoutedHere, ROUTED_HERE_EVENT } from './data/routedHere.js';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
@@ -88,6 +88,17 @@ function RoutedHereBarBody({ rec, onGone, worldId, projects: projectsProp, missi
 
   const dismiss = () => { clearRoutedHere(); onGone?.(); };
 
+  // Opening the picker makes the strip taller, and it sits at the very bottom of the
+  // thread — so the new row lands under the fixed composer and "Move it" is unreachable
+  // (seen live). Scroll it back into view on the next frame, once it has grown.
+  const wrapRef = useRef(null);
+  const openPicker = () => {
+    setPicking(true);
+    requestAnimationFrame(() => {
+      try { wrapRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' }); } catch { /* older browsers */ }
+    });
+  };
+
   const move = async () => {
     if (!dest || busy) return;
     setBusy(true);
@@ -102,6 +113,20 @@ function RoutedHereBarBody({ rec, onGone, worldId, projects: projectsProp, missi
       const d = res && res.ok ? await res.json() : null;
       if (!d?.ok) { setErr((d && d.error) || 'Could not move it. It is still here.'); setBusy(false); return; }
       clearRoutedHere();
+      // Second pass, later. The server can only sweep replies that already exist, and the
+      // agent in the wrong room is usually mid-answer at the moment you tap — so its reply
+      // lands just after and survives, leaving an orphan under no question. Deliberately not
+      // awaited and deliberately not tied to this component: the user is navigating away
+      // and the cleanup should finish regardless.
+      if (d.sweep_for) {
+        setTimeout(() => {
+          authFetch('/api/dashboard/move-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_id: worldId, sweep_for: d.sweep_for }),
+          }).catch(() => {});
+        }, 25000);
+      }
       const chosen = destMission
         ? { id: destMission, name: (destMissions.find((m) => m.slug === destMission)?.name) || destMission, initials: (destMission || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: `${dest}:${destMission}`, projectSlug: dest, status: 'ready', statusText: '' }
         : { id: dest, name: (projects.find((p) => (p.slug || p.id) === dest)?.name) || dest, initials: (dest || '?').slice(0, 2).toUpperCase(), isProject: true, status: 'ready', statusText: 'project chat' };
@@ -139,7 +164,7 @@ function RoutedHereBarBody({ rec, onGone, worldId, projects: projectsProp, missi
   }
 
   return (
-    <div data-cv6-routed-here="" style={wrap}>
+    <div data-cv6-routed-here="" ref={wrapRef} style={wrap}>
       {/* Buttons sit on their OWN row, never beside the text. The chat column is ~370px on
           a 1440 desktop, and two buttons alongside left the sentence a ~150px gutter that
           ran ten lines tall — a one-line strip rendering as a 235px block. */}
@@ -156,7 +181,7 @@ function RoutedHereBarBody({ rec, onGone, worldId, projects: projectsProp, missi
       </div>
       {!picking ? (
         <div style={btnRow}>
-          <button type="button" onClick={() => setPicking(true)} style={changeBtn}>Wrong room</button>
+          <button type="button" onClick={openPicker} style={changeBtn}>Wrong room</button>
           <button type="button" onClick={dismiss} style={ghostBtn} aria-label="Dismiss">Got it</button>
         </div>
       ) : null}

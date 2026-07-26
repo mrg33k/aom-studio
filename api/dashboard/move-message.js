@@ -72,6 +72,35 @@ export default async function handler(req, res) {
     throw err;
   }
 
+  // Sweep-only pass. The reply sweep below can only remove what EXISTS when the move runs,
+  // and the agent in the wrong room is typically mid-reply at that moment — so its answer
+  // lands a second later and survives, leaving an orphan reply under no question. (Found by
+  // the Front Door room auditing its own transcript after a live test, 2026-07-25.) The
+  // client fires this second pass a little later to collect exactly that straggler.
+  if (body.sweep_for) {
+    const s = body.sweep_for;
+    const after = String(s.after || '').trim();
+    if (!after) return res.status(400).json({ error: 'sweep_for.after required' });
+    if (Date.now() - new Date(after).getTime() > MOVE_WINDOW_MS) {
+      return res.status(200).json({ ok: true, removed_count: 0, reason: 'outside the correction window' });
+    }
+    const filter = s.mission_slug
+      ? `metadata->>mission_slug=eq.${encodeURIComponent(s.mission_slug)}`
+      : s.project
+        ? `project=eq.${encodeURIComponent(s.project)}&metadata->>mission_slug=is.null`
+        : `agent=eq.${encodeURIComponent(s.agent || '')}&project=is.null`;
+    const rows = await sb('GET',
+      `messages?client_id=eq.${encodeURIComponent(clientId)}&${filter}`
+      + `&role=neq.user&timestamp=gt.${encodeURIComponent(after)}&select=id&order=timestamp.asc&limit=20`);
+    let n = 0;
+    for (const r of (Array.isArray(rows.json) ? rows.json : [])) {
+      // eslint-disable-next-line no-await-in-loop -- a handful of rows at most.
+      const d = await sb('DELETE', `messages?id=eq.${encodeURIComponent(r.id)}`);
+      if (d.ok) n += 1;
+    }
+    return res.status(200).json({ ok: true, removed_count: n, sweep_only: true });
+  }
+
   const messageId = String(body.message_id || '').trim();
   const to = body.to || {};
   const text = String(body.text || '').trim();
@@ -152,5 +181,13 @@ export default async function handler(req, res) {
     message: inserted.row || null,
     removed_count: removed.length,
     swept_replies: withinWindow,
+    // Everything the client needs to run the follow-up sweep for a reply that was still
+    // being written when this pass ran.
+    sweep_for: {
+      project: original.project || null,
+      mission_slug: original?.metadata?.mission_slug || null,
+      agent: original.agent || null,
+      after: original.timestamp,
+    },
   });
 }
