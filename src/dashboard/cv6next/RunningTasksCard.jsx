@@ -38,14 +38,28 @@ function fmtElapsed(ms) {
   return h > 0 ? `${h}:${pad(m)}:${pad(ss)}` : `${m}:${pad(ss)}`;
 }
 
-// "due 3m ago" / "due in 4m" — an overdue come-back must READ as overdue, since a promise
-// silently sailing past its own deadline is the exact failure Patrik called out.
+// "4m" / "2h 5m" / "3d" — minutes only past an hour reads absurd ("due in 359m").
+function fmtSpan(totalMin) {
+  const m = Math.abs(totalMin);
+  if (m < 60) return `${m}m`;
+  if (m < 1440) {
+    const h = Math.floor(m / 60);
+    const rem = m % 60;
+    return rem ? `${h}h ${rem}m` : `${h}h`;
+  }
+  const d = Math.floor(m / 1440);
+  const remH = Math.floor((m % 1440) / 60);
+  return remH ? `${d}d ${remH}h` : `${d}d`;
+}
+
+// "due 3m ago" / "due in 2h 5m" — an overdue come-back must READ as overdue, since a
+// promise silently sailing past its own deadline is the exact failure Patrik called out.
 function fmtDue(dueMs, nowMs) {
   if (!Number.isFinite(dueMs)) return '';
   const diffMin = Math.round((dueMs - nowMs) / 60000);
-  if (diffMin <= -1) return `due ${Math.abs(diffMin)}m ago`;
+  if (diffMin <= -1) return `due ${fmtSpan(diffMin)} ago`;
   if (diffMin <= 0) return 'due now';
-  return `due in ${diffMin}m`;
+  return `due in ${fmtSpan(diffMin)}`;
 }
 
 export default function RunningTasksCard({ room }) {
@@ -103,6 +117,7 @@ export default function RunningTasksCard({ room }) {
             }`}
             right={p.since ? fmtElapsed(now - new Date(p.since).getTime()) : ''}
             subTone={overdue ? 'var(--accent)' : 'var(--muted)'}
+            wrap
           />
         );
       })}
@@ -141,21 +156,31 @@ function SectionHeader({ label, count, dim }) {
   );
 }
 
-function Row({ title, sub, right, subTone }) {
+function Row({ title, sub, right, subTone, wrap }) {
+  // A dispatched job's title is a short label, so one ellipsised line is right. A promise's
+  // title is the sentence the agent actually said — truncating it mid-word throws away the
+  // commitment, which is the whole reason the row is on screen. Those wrap to two lines.
+  const titleStyle = wrap
+    ? {
+      fontSize: 13.5,
+      color: 'var(--fg)',
+      display: '-webkit-box',
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: 'vertical',
+      overflow: 'hidden',
+      lineHeight: 1.35,
+    }
+    : {
+      fontSize: 13.5,
+      color: 'var(--fg)',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    };
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{ display: 'flex', alignItems: wrap ? 'flex-start' : 'center', gap: 10 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 13.5,
-            color: 'var(--fg)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {title}
-        </div>
+        <div style={titleStyle}>{title}</div>
         <div style={{ fontSize: 11.5, color: subTone || 'var(--muted)', marginTop: 1 }}>{sub}</div>
       </div>
       {right ? (
