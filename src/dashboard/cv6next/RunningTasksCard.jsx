@@ -79,15 +79,17 @@ export default function RunningTasksCard({ room }) {
   return (
     <div
       data-cv6-running-tasks=""
+      // Spacing is on the 4/8 scale (design-gate R3 / spacing-density-standard). v1 shipped
+      // 14px margin, 11px 13px padding and gap 9 -- eyeballed values, none on the scale.
       style={{
-        margin: '14px 0 4px',
+        margin: '16px 0 4px',
         border: '1px solid var(--hair)',
         background: 'var(--surface)',
         borderRadius: 14,
-        padding: '11px 13px',
+        padding: '12px 16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 9,
+        gap: 8,
       }}
     >
       {tasks.length ? (
@@ -142,7 +144,7 @@ function SectionHeader({ label, count, dim }) {
       />
       <span
         style={{
-          fontSize: 11.5,
+          fontSize: 12,
           fontWeight: 600,
           letterSpacing: '.04em',
           textTransform: 'uppercase',
@@ -162,7 +164,7 @@ function Row({ title, sub, right, subTone, wrap }) {
   // commitment, which is the whole reason the row is on screen. Those wrap to two lines.
   const titleStyle = wrap
     ? {
-      fontSize: 13.5,
+      fontSize: 14,
       color: 'var(--fg)',
       display: '-webkit-box',
       WebkitLineClamp: 2,
@@ -171,17 +173,17 @@ function Row({ title, sub, right, subTone, wrap }) {
       lineHeight: 1.35,
     }
     : {
-      fontSize: 13.5,
+      fontSize: 14,
       color: 'var(--fg)',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
     };
   return (
-    <div style={{ display: 'flex', alignItems: wrap ? 'flex-start' : 'center', gap: 10 }}>
+    <div style={{ display: 'flex', alignItems: wrap ? 'flex-start' : 'center', gap: 12 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={titleStyle}>{title}</div>
-        <div style={{ fontSize: 11.5, color: subTone || 'var(--muted)', marginTop: 1 }}>{sub}</div>
+        <div style={{ fontSize: 12, color: subTone || 'var(--muted)', marginTop: 2 }}>{sub}</div>
       </div>
       {right ? (
         <span
