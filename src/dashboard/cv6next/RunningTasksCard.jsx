@@ -89,7 +89,10 @@ export default function RunningTasksCard({ room }) {
         padding: '12px 16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        // 12 between siblings vs 2 inside a row (title -> meta). With both at 8 you could
+        // not tell at a glance which meta line belonged to which promise; separation
+        // between items must beat separation within one.
+        gap: 12,
       }}
     >
       {tasks.length ? (
