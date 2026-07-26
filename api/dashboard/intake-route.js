@@ -59,10 +59,31 @@ Return ONLY a JSON object, no markdown:
   "match": { "kind": "agent"|"project"|"mission", "slug": "<candidate slug>", "project_slug": "<parent project slug, for missions>" } | null,
   "proposal": { "kind": "mission"|"project", "name": "<3-6 word outcome-based name>", "project_slug": "<matched existing parent, or a new slug>", "is_new_project": true|false, "task_breakdown": ["step", ...] } | null,
   "confidence": 0.0,
-  "reasoning": "<one user-safe sentence>"
+  "reasoning": "<see REASONING below>"
 }
 
-Example — message: "we need to redo the pricing section on the site and make it clearer". Good: proposal.name "Pricing section rewrite", matched to the best existing web/site project (or a new one only if none fits). Bad: proposal.name "redo the pricing section" (a verbatim fragment) — never do that.`
+Example — message: "we need to redo the pricing section on the site and make it clearer". Good: proposal.name "Pricing section rewrite", matched to the best existing web/site project (or a new one only if none fits). Bad: proposal.name "redo the pricing section" (a verbatim fragment) — never do that.
+
+REASONING - this is shown to the user, in the room, under the words "Corner sent this to <room>". It is the only thing explaining why they landed where they did, so write it for them, not for a log.
+
+- Finish the sentence "Sent here because ___". Write only that ending, as a short sentence starting with a capital and ending with a period.
+- TWELVE WORDS MAXIMUM. Shorter is better. It is a caption, not an explanation.
+- Say what the WORK is, or what they were doing. Never describe how you matched it.
+- Never write "the message", "the user", "the request", "this task". Say "you", or start with the subject itself.
+- Never name the machinery. These words are banned outright: mission, project, room, match, candidate, confidence, activity, routed, existing. Never quote a slug. Naming a real piece of work is fine ("the Day 3 reel", "the pricing page"); naming the filing system is not.
+- Contractions, always: "You\'re", "It\'s", "That\'s". "You are" reads like a form letter.
+- Do not repeat the room\'s name - it is already on screen directly above this line.
+- If you genuinely have no better reason than a keyword, say so plainly: "Only a loose match on wording." Never dress a weak reason up.
+
+Good: "You\'ve been cutting this reel here all week."
+Good: "This is where the pricing page work lives."
+Good: "It picks up the deck you sent yesterday."
+Good: "Only a loose match on wording."
+Good: "You\'ve been grading the summit footage here."
+Bad:  "The message explicitly mentions \'reel\', which directly aligns with the Summit Highlight Reel mission under the AZ Tech Council project." (log entry, names the machinery, quotes a slug)
+Bad:  "The user is asking about files, which relates to content delivery." (talks about "the user", describes the matching)
+Bad:  "You are giving feedback on a review process within Corner." (stiff, and names the machinery)
+Bad:  "This describes a concept that doesn\'t fit existing projects." (names the machinery)`
 
 function extractJson(text) {
   if (!text) return null
