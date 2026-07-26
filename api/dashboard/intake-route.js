@@ -116,6 +116,38 @@ function fallbackDecision(reason) {
 
 const bareSlug = (s) => (s && String(s).includes(':') ? String(s).split(':').pop() : String(s || ''))
 
+// Ceiling applied when a room won on its NAME and has never described itself. Must stay below
+// the composer's AUTO_ROUTE_CONFIDENCE (0.85) — that is the whole mechanism: the room still
+// opens, the user is just asked first.
+const UNVERIFIED_NAME_CONFIDENCE = 0.6
+const NAME_STOP = new Set('the a an and or but for with from this that these those you your our their have has can could will would should about into out over under more most just now also some any all very too then them they there here get got make made need want use using new please thanks okay lets let does did done what when how why who which its his her been being were was are is'.split(' '))
+const contentWords = (s) => new Set(
+  String(s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/)
+    .filter((w) => w.length >= 4 && !NAME_STOP.has(w))
+)
+
+// Find the candidate row the target came from, so we can read the hint the model was shown.
+function candidateFor(target, candidates) {
+  if (!target) return null
+  if (target.isMission) {
+    const bare = bareSlug(target.missionSlug || target.id)
+    return (candidates?.missions || []).find((m) => m.project_slug === target.projectSlug && bareSlug(m.slug) === bare) || null
+  }
+  if (target.isProject) return (candidates?.projects || []).find((p) => p.slug === target.id) || null
+  return null   // agents carry no hint by design; they are picked by name on purpose
+}
+
+// True when the chosen room has NO description at all and the only link to the message is a
+// word in its name. That is a match nothing can corroborate.
+export function undescribedNameMatch(message, target, candidates) {
+  const cand = candidateFor(target, candidates)
+  if (!cand) return false
+  if (String(cand.hint || '').trim()) return false     // it described itself — judge on that
+  const msg = contentWords(message)
+  for (const w of contentWords(cand.name)) if (msg.has(w)) return true
+  return false
+}
+
 // Strip stop words and take the first 5 content-bearing words as a clean outcome name.
 // Only runs when the LLM returned an empty proposal.name.
 const STOP_WORDS = new Set(['i','we','the','a','an','to','for','on','in','at','of','and','or','but','it','is','are','was','were','be','been','being','have','has','had','do','does','did','that','this','these','those','with','from','by','as','not','no','my','your','our','their','its','can','could','will','would','should','about','into','up','out','if','so','what','when','how','why','who','which','just','now','also','some','any','all','very','too','more','most','than','then','them','they','there','here','get','got','make','need','want','use','dont','doesnt','cant','wont','isnt'])
@@ -339,6 +371,32 @@ export default async function handler(req, res) {
       // to an editable new draft, preserving any proposal the model offered.
       const proposal = llm.proposal ? normalizeProposal(llm.proposal, index, message) : fallbackDecision('unmatched').proposal
       return res.status(200).json({ route: 'new', target: null, proposal, confidence, reasoning, source: 'llm', degraded: true })
+    }
+    // The keyword magnet, caught deterministically instead of asked about.
+    //
+    // "Can you tighten the timing on the day 3 reel" kept auto-opening AZ Tech Council's
+    // "Summit Highlight Reel" — a room with no traffic and therefore no hint, whose NAME was
+    // the only occurrence of the word "reel" anywhere in the candidate block. Even once
+    // aom:socials advertised "Day 3 profile-audit reel v4 is mid-build", the bare name still
+    // won, and the model reported 0.9 either way.
+    //
+    // A room that has never said anything about itself cannot corroborate a name match, so it
+    // does not get to open silently on one. Confidence is capped below the client's auto bar
+    // and the user is asked. Rooms that DO describe themselves are untouched — they are judged
+    // on the description, which is the whole point of the hint.
+    //
+    // Measured on 74 real messages: costs one right auto-open and removes one wrong one
+    // (30/15 -> 29/14). Near-neutral on aggregate, but it removes the case we cannot verify
+    // and the one that compounds — a misroute becomes part of the wrong room's hint and makes
+    // the same misroute likelier next time.
+    const capped = undescribedNameMatch(message, target, candidates)
+    if (capped) {
+      return res.status(200).json({
+        route: llm.route, target, proposal: null,
+        confidence: Math.min(confidence, UNVERIFIED_NAME_CONFIDENCE),
+        reasoning: reasoning || 'Only a loose match on wording.',
+        source: 'llm', degraded: false, name_match_only: true,
+      })
     }
     return res.status(200).json({ route: llm.route, target, proposal: null, confidence, reasoning, source: 'llm', degraded: false })
   }
