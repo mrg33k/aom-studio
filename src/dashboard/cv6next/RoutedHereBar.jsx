@@ -89,13 +89,16 @@ function RoutedHereBarBody({ rec, onGone, worldId, projects: projectsProp, missi
   const dismiss = () => { clearRoutedHere(); onGone?.(); };
 
   // Opening the picker makes the strip taller, and it sits at the very bottom of the
-  // thread — so the new row lands under the fixed composer and "Move it" is unreachable
-  // (seen live). Scroll it back into view on the next frame, once it has grown.
+  // thread — so the new row lands under the fixed composer and "Move it" is unreachable.
+  // CENTER, not 'end': the composer is an overlay pinned to the bottom of the thread, so
+  // aligning the strip's bottom to the container's bottom puts it exactly under the
+  // composer. Measured live — with 'end', elementFromPoint over "Move it" returned the
+  // composer's Work button; with 'center' it returns the button itself.
   const wrapRef = useRef(null);
   const openPicker = () => {
     setPicking(true);
     requestAnimationFrame(() => {
-      try { wrapRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' }); } catch { /* older browsers */ }
+      try { wrapRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch { /* older browsers */ }
     });
   };
 
