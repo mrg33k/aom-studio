@@ -27,17 +27,9 @@ function titleCaseName(s) {
   return v ? v.replace(/\b\w/g, (c) => c.toUpperCase()) : 'Agent';
 }
 
-function fmtElapsed(ms) {
-  let n = ms;
-  if (!Number.isFinite(n) || n < 0) n = 0;
-  const s = Math.floor(n / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const ss = s % 60;
-  const pad = (x) => String(x).padStart(2, '0');
-  return h > 0 ? `${h}:${pad(m)}:${pad(ss)}` : `${m}:${pad(ss)}`;
-}
-
+// Durations are written as durations ("running 8m", "waiting 5m", "overdue 12m"), never
+// as a bare clock. The card used to show m:ss ("4:57") and a design critic read it as a
+// wall-clock timestamp — if the reviewer misreads it, every user will too.
 // "4m" / "2h 5m" / "3d" — minutes only past an hour reads absurd ("due in 359m").
 function fmtSpan(totalMin) {
   const m = Math.abs(totalMin);
@@ -50,16 +42,6 @@ function fmtSpan(totalMin) {
   const d = Math.floor(m / 1440);
   const remH = Math.floor((m % 1440) / 60);
   return remH ? `${d}d ${remH}h` : `${d}d`;
-}
-
-// "due 3m ago" / "due in 2h 5m" — an overdue come-back must READ as overdue, since a
-// promise silently sailing past its own deadline is the exact failure Patrik called out.
-function fmtDue(dueMs, nowMs) {
-  if (!Number.isFinite(dueMs)) return '';
-  const diffMin = Math.round((dueMs - nowMs) / 60000);
-  if (diffMin <= -1) return `due ${fmtSpan(diffMin)} ago`;
-  if (diffMin <= 0) return 'due now';
-  return `due in ${fmtSpan(diffMin)}`;
 }
 
 export default function RunningTasksCard({ room }) {
@@ -102,8 +84,8 @@ export default function RunningTasksCard({ room }) {
         <Row
           key={t.id}
           title={t.title}
-          sub={`${titleCaseName(t.who)}${t.project ? ` · ${t.project}` : ''}`}
-          right={t.since ? fmtElapsed(now - new Date(t.since).getTime()) : ''}
+          who={titleCaseName(t.who)}
+          right={t.since ? `running ${fmtSpan(minsSince(t.since, now))}` : ''}
         />
       ))}
 
@@ -113,15 +95,21 @@ export default function RunningTasksCard({ room }) {
       {promises.map((p) => {
         const due = p.due ? new Date(p.due).getTime() : NaN;
         const overdue = Number.isFinite(due) && due < now;
+        // ONE time per row, in the loud slot, always the most decision-relevant one:
+        // how long you have been waiting -- or, once it breaks its own deadline, by how
+        // much. The due countdown used to ALSO sit in the meta line; two co-equal times
+        // meant neither read as THE number (Steffen, design-gate R3).
+        const waited = minsSince(p.since, now);
+        const right = overdue
+          ? `overdue ${fmtSpan(Math.round((now - due) / 60000))}`
+          : (p.since ? `waiting ${fmtSpan(waited)}` : '');
         return (
           <Row
             key={p.id}
             title={p.title}
-            sub={`${titleCaseName(p.who)}${p.project ? ` · ${p.project}` : ''}${
-              p.due ? ` · ${fmtDue(due, now)}` : ''
-            }`}
-            right={p.since ? fmtElapsed(now - new Date(p.since).getTime()) : ''}
-            subTone={overdue ? 'var(--accent)' : 'var(--muted)'}
+            who={titleCaseName(p.who)}
+            right={right}
+            rightTone={overdue ? 'var(--accent)' : 'var(--muted)'}
             wrap
           />
         );
@@ -161,7 +149,13 @@ function SectionHeader({ label, count, dim }) {
   );
 }
 
-function Row({ title, sub, right, subTone, wrap }) {
+function minsSince(iso, nowMs) {
+  const t = iso ? new Date(iso).getTime() : NaN;
+  if (!Number.isFinite(t)) return 0;
+  return Math.max(0, Math.round((nowMs - t) / 60000));
+}
+
+function Row({ title, who, right, rightTone, wrap }) {
   // A dispatched job's title is a short label, so one ellipsised line is right. A promise's
   // title is the sentence the agent actually said — truncating it mid-word throws away the
   // commitment, which is the whole reason the row is on screen. Those wrap to two lines.
@@ -186,16 +180,21 @@ function Row({ title, sub, right, subTone, wrap }) {
     <div style={{ display: 'flex', alignItems: wrap ? 'flex-start' : 'center', gap: 12 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={titleStyle}>{title}</div>
-        <div style={{ fontSize: 12, color: subTone || 'var(--muted)', marginTop: 2 }}>{sub}</div>
+        {/* The ACTOR is the answer to "by whom", so it carries body colour and weight
+            rather than sitting muted behind the sentence. The room slug that used to
+            trail here is gone: the card is already scoped to this room, so it was both
+            redundant and an internal slug in a user-facing line (rule 4). */}
+        <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 600, marginTop: 2 }}>{who}</div>
       </div>
       {right ? (
         <span
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 12,
-            color: 'var(--muted)',
+            color: rightTone || 'var(--muted)',
             flex: 'none',
             fontVariantNumeric: 'tabular-nums',
+            whiteSpace: 'nowrap',
           }}
         >
           {right}
