@@ -37,8 +37,8 @@ function flattenMissions(nodes, projectSlug, out, hintMap, activity) {
       slug,
       project_slug: projectSlug,
       name: m.name || slug,
-      last_message_at: m.last_message_at || (act && act.at) || 0,
-      hint: String((hintMap && hintMap[`${projectSlug}:${slug}`]) || m.last_message_text || (act && act.text) || '').trim().slice(0, 120),
+      last_message_at: m.last_message_at || (act && act.last_message_at) || 0,
+      hint: String((hintMap && hintMap[`${projectSlug}:${slug}`]) || m.last_message_text || (act && act.last_message_text) || '').trim().slice(0, 120),
     });
     if (Array.isArray(m.children) && m.children.length) flattenMissions(m.children, projectSlug, out, hintMap, activity);
   }
@@ -49,7 +49,15 @@ function flattenMissions(nodes, projectSlug, out, hintMap, activity) {
 // straight from the data Home already holds in memory (no extra fetch).
 // Attaches a short `hint` (recent message preview) to each project/mission so
 // the router has semantic context beyond just the room name.
-export function assembleCandidates(data, missionsByProject) {
+// `roomActivity` is /api/dashboard/room-activity's payload — { projects: {slug: {…}},
+// missions: {"project:slug": {…}} } — and it is what makes ranking real. Home's own
+// projectRooms only learn recency from supabase-status's `limit=100` message window, which
+// on live data covered ONE project: without this overlay every candidate arrives at
+// timestamp 0 with no hint, the router's recency sort is a no-op, and its top-18 cut falls
+// alphabetically. Optional on purpose — if the fetch fails the composer still sends.
+export function assembleCandidates(data, missionsByProject, roomActivity) {
+  const actProjects = roomActivity?.projects || {};
+  const actMissions = roomActivity?.missions || {};
   // Build a preview map for missions keyed by "projectSlug:bareSlug".
   // data.recent[] carries the normalised preview text for recently active rooms.
   const previewByMission = {};
@@ -60,19 +68,25 @@ export function assembleCandidates(data, missionsByProject) {
       if (proj && bare) previewByMission[`${proj}:${bare}`] = String(r.preview || '').slice(0, 120);
     }
   }
-  const projects = (data?.projects || []).map((p) => ({
-    slug: p.slug || p.id,
-    name: p.name || p.slug || p.id,
-    last_message_at: p.last_message_at || 0,
-    // last_message_text is the raw preview text on the projectRooms shape.
-    hint: String(p.last_message_text || '').trim().slice(0, 120),
-  })).filter((p) => p.slug);
+  const projects = (data?.projects || []).map((p) => {
+    const slug = p.slug || p.id;
+    const act = actProjects[slug] || null;
+    return {
+      slug,
+      name: p.name || p.slug || p.id,
+      last_message_at: p.last_message_at || act?.last_message_at || 0,
+      // last_message_text is the raw preview text on the projectRooms shape.
+      hint: String(p.last_message_text || act?.last_message_text || '').trim().slice(0, 120),
+    };
+  }).filter((p) => p.slug);
   const agents = (data?.agents || []).map((a) => ({
     slug: a.id || a.slug,
     name: a.name || a.title || a.id,
   })).filter((a) => a.slug);
   const missions = [];
-  const activity = data?.missionActivity || {};
+  // Home's own missionActivity wins (it is the live poll); room-activity backfills the
+  // long tail the 100-message window never sees.
+  const activity = { ...actMissions, ...(data?.missionActivity || {}) };
   for (const [projectSlug, nodes] of Object.entries(missionsByProject || {})) {
     flattenMissions(nodes, projectSlug, missions, previewByMission, activity);
   }
@@ -82,6 +96,35 @@ export function assembleCandidates(data, missionsByProject) {
     return { id: r.agent || r.id, name: r.name, isMission: false, isProject: false, missionSlug: '', projectSlug: '' };
   }).filter((r) => r.id).slice(0, 6);
   return { candidates: { projects, missions, agents }, recent_rooms };
+}
+
+// Per-tab memo: the payload is edge-cached and describes "which rooms were active lately",
+// so re-fetching it on every keystroke-to-send would be waste. Refreshed on a short TTL so
+// a room the user just worked in still climbs the ranking within the same session.
+const ACTIVITY_TTL_MS = 120000;
+const ACTIVITY_TIMEOUT_MS = 2500;
+let activityCache = { worldId: '', at: 0, value: null };
+
+async function fetchRoomActivity(worldId) {
+  const now = Date.now();
+  if (activityCache.value && activityCache.worldId === worldId && (now - activityCache.at) < ACTIVITY_TTL_MS) {
+    return activityCache.value;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ACTIVITY_TIMEOUT_MS);
+  try {
+    const res = await authFetch(`/api/dashboard/room-activity?client=${encodeURIComponent(worldId)}`, { signal: controller.signal });
+    const value = res && res.ok ? await res.json() : null;
+    if (value && (value.projects || value.missions)) {
+      activityCache = { worldId, at: now, value };
+      return value;
+    }
+    return null;
+  } catch {
+    return null;   // ranking degrades to Home's own data; the send still goes through
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function readLastRoom(worldId) {
@@ -113,8 +156,11 @@ async function seedRoom(worldId, room, text, interactionMode) {
       ? { client_id: worldId, agent: 'corner', project: room.id, text, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: mode } }
       : { client_id: worldId, agent: room.id, text, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: mode } };
   try {
-    await authFetch('/api/dashboard/supabase-messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    return true;
+    // authFetch only rejects on a network failure, so a 4xx/5xx resolves normally —
+    // without this check the composer reports a successful seed for a message the room
+    // never received.
+    const res = await authFetch('/api/dashboard/supabase-messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    return !!(res && res.ok);
   } catch { return false; }
 }
 
@@ -147,15 +193,31 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
     setError('');
     setMode('routing');
     try {
-      const { candidates, recent_rooms } = assembleCandidates(data, missionsByProject);
+      // Real per-room recency + last line for the router to rank on. Edge-cached, so this
+      // is normally a few ms; capped short and swallowed on failure because a slow or dead
+      // activity lookup must never hold up the user's send — worst case the router ranks
+      // on what Home already had.
+      const roomActivity = await fetchRoomActivity(worldId);
+      const { candidates, recent_rooms } = assembleCandidates(data, missionsByProject, roomActivity);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), ROUTE_TIMEOUT_MS);
       let decision = null;
       try {
-        decision = await authFetch('/api/dashboard/intake-route', {
+        // authFetch resolves to a Response, NOT parsed JSON — it is a thin wrapper that
+        // only attaches the bearer token. This await was being treated as the decision
+        // object itself, so `decision.route`, `.target`, `.confidence` and `.proposal`
+        // were ALL undefined on every send since the composer shipped: autoRoute could
+        // never be true, and control fell straight through to the editable new-mission
+        // draft with an empty proposal. The router was answering correctly the whole
+        // time and nothing was reading it — the "it doesn't place the project properly,
+        // it just takes a sentence from my prompt and attaches it randomly" report.
+        // Verified against the live endpoint: the Response carried route "existing" with
+        // a real target while the object the composer inspected was {}.
+        const res = await authFetch('/api/dashboard/intake-route', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
           body: JSON.stringify({ client_id: worldId, message: body, interaction_mode: pendingRef.current.mode, last_room: readLastRoom(worldId), recent_rooms, candidates }),
         });
+        decision = res && res.ok ? await res.json() : null;
       } finally { clearTimeout(timer); }
 
       const autoRoute = decision && (decision.route === 'continue' || decision.route === 'existing')

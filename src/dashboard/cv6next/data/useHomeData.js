@@ -239,7 +239,8 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     const ts = mr.last_message_at ? new Date(mr.last_message_at).getTime() : 0;
     const prev = missionActivity[key];
     if (prev && prev.ts >= ts) continue;
-    missionActivity[key] = { ts, at: mr.last_message_at || 0, text: normalizePreview(mr.last_message_text) || '' };
+    // Same field names as /api/dashboard/room-activity so the two merge without a shim.
+    missionActivity[key] = { ts, last_message_at: mr.last_message_at || 0, last_message_text: normalizePreview(mr.last_message_text) || '' };
   }
 
   const data = {
