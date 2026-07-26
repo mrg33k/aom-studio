@@ -32,6 +32,12 @@ export function roomKeyOf(room) {
   return `a:${room.id || room.agent || ''}`;
 }
 
+// The room opens BEFORE the message is posted (that is what makes the send feel instant),
+// so the record cannot exist yet when the room first mounts and reads it. Without a signal
+// the bar reads null, has no reason to look again, and never appears at all. Verified live:
+// the record was written correctly and the bar stayed out of the DOM.
+export const ROUTED_HERE_EVENT = 'cv6:routed-here';
+
 export function recordRoutedHere({ room, messageId, text, worldId, confidence, reasoning, interactionMode }) {
   if (!room || !messageId) return;   // without the row id the move has nothing to retract
   try {
@@ -46,6 +52,7 @@ export function recordRoutedHere({ room, messageId, text, worldId, confidence, r
       interactionMode: interactionMode === 'plan' ? 'plan' : 'work',
       at: Date.now(),
     }));
+    try { window.dispatchEvent(new CustomEvent(ROUTED_HERE_EVENT)); } catch { /* no window */ }
   } catch { /* private mode — the bar just won't show */ }
 }
 

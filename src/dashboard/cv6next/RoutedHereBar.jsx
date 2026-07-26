@@ -19,7 +19,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { authFetch } from '../lib/authFetch';
-import { readRoutedHere, clearRoutedHere } from './data/routedHere.js';
+import { readRoutedHere, clearRoutedHere, ROUTED_HERE_EVENT } from './data/routedHere.js';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 
 const bare = (s) => (String(s || '').includes(':') ? String(s).split(':').pop() : String(s || ''));
@@ -40,7 +40,16 @@ function flattenMissions(nodes, out = []) {
 // what lets the mobile room (whose parent holds neither) drop this in with no prop threading.
 export default function RoutedHereBar({ room, worldId, projects, missionsByProject, onOpenRoom }) {
   const [rec, setRec] = useState(() => readRoutedHere(room, worldId));
-  useEffect(() => { setRec(readRoutedHere(room, worldId)); }, [room, worldId]);
+  useEffect(() => {
+    const reread = () => setRec(readRoutedHere(room, worldId));
+    reread();
+    // The room opens before the message finishes posting, so on a fresh auto-route this
+    // component mounts a beat BEFORE the record exists. Without listening we would read
+    // null once and never look again — which is exactly what happened in the first live
+    // test: record written correctly, bar absent.
+    window.addEventListener(ROUTED_HERE_EVENT, reread);
+    return () => window.removeEventListener(ROUTED_HERE_EVENT, reread);
+  }, [room, worldId]);
   if (!rec) return null;
   return (
     <RoutedHereBarBody
