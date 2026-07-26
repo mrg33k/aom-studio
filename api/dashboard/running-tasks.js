@@ -1,11 +1,26 @@
 // GET /api/dashboard/running-tasks?client=<world>[&project=<slug>]
 //
-// The chat "working in the background" card's data source. Returns ONLY the tasks a
-// background agent is ACTIVELY executing right now (status building | running) for the
-// tenant — the honest set behind an elapsed count-up timer. Deliberately excludes
-// queued/planning (not started yet, no real elapsed) and done/failed (finished — the
-// card must vanish). Slim shape; scoped by client_id for multi-tenant isolation and,
-// optionally, narrowed to one project.
+// The chat "working in the background" card's data source. Two DIFFERENT kinds of
+// in-flight work, because covering only the first is what made the card useless:
+//
+//   tasks[]    — dispatched jobs a background worker is ACTIVELY executing right now
+//                (status building | running). Excludes queued/planning (not started, no
+//                real elapsed) and done/failed (finished — the card must vanish).
+//   promises[] — pending come-backs (`followups` rows, status pending): an agent said in
+//                the room that it would report back and has not yet.
+//
+// WHY promises were added (2026-07-25). The card shipped reading ONLY the tasks table, and
+// Patrik still asked "how long has the build been running / is it actually running" eight
+// times that day. The reason: work started INSIDE a room turn never creates a task row, and
+// the room's own live step strip only renders while `awaiting` is true — the moment the
+// agent replies "it's building in the background now", the strip disappears and the tasks
+// table is empty, so the UI goes silent exactly when the user starts wondering. A pending
+// followup is the one durable record that survives past that reply, so it is the honest
+// signal for "something is still coming".
+//
+// Honesty rule (no fake UI): a pending followup means an agent COMMITTED to come back, not
+// that a process is provably burning CPU. The two are returned as separate arrays and the
+// card labels them differently — never merge them into one "working" claim.
 //
 // Caller passes Authorization: Bearer <jwt>; verifyTenant gates by tenant. Same auth +
 // supabaseGet idiom as supabase-status.js.
@@ -79,5 +94,31 @@ export default async function handler(req, res) {
     })
     .filter((t) => !optProject || t.project === optProject);
 
-  return res.status(200).json({ tasks, count: tasks.length });
+  // Pending come-backs for this room. `trigger_ref` carries the ISO due time the
+  // registrar stamped (created + FOLLOWUP_DEFAULT_DELAY_MIN); `promise_context` is the
+  // sentence the agent actually said, so the card can show the commitment verbatim
+  // rather than a generic "working" line.
+  const followupSelect = 'select=id,agent,project,mission,promise_context,trigger_ref,created_at,status';
+  const followupRows = await supabaseGet(
+    'followups',
+    `status=eq.pending${projectFilter}&order=created_at.desc&limit=25${clientFilter}&${followupSelect}`,
+  );
+
+  const promises = (Array.isArray(followupRows) ? followupRows : [])
+    .map((f) => ({
+      id: f.id,
+      title: String(f.promise_context || '').trim() || 'Coming back with an update',
+      who: f.agent || 'agent',
+      project: f.project || null,
+      mission: f.mission || null,
+      since: f.created_at || null,
+      due: f.trigger_ref || null,
+    }))
+    .filter((p) => !optProject || p.project === optProject);
+
+  return res.status(200).json({
+    tasks,
+    promises,
+    count: tasks.length + promises.length,
+  });
 }

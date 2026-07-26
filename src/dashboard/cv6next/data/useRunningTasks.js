@@ -1,11 +1,19 @@
-// cv6next — room-scoped feed of background jobs a handed-off agent is running RIGHT NOW.
+// cv6next — room-scoped feed of work that is still in flight for this room.
 //
 // Powers the chat "working in the background" card (Patrik 2026-07-25: "no way for a user
 // to know a background task is actively running" — show a card with an elapsed timer that
-// appears only while it runs, then vanishes). Fetches only actively-executing tasks
-// (building | running) for the viewer's world, narrowed to the room's project when the
-// room maps to one. Refetches on any tasks realtime change (debounced) with a slow poll
-// fallback — the same realtime-first pattern useDataPipe uses for the HUD.
+// appears only while it runs, then vanishes).
+//
+// TWO kinds, because tasks alone left the card blank exactly when it was needed:
+//   tasks    — dispatched jobs actively executing (tasks table, building | running)
+//   promises — pending come-backs (followups table): an agent said it would report back
+//              and hasn't. This is the only signal that survives past the agent's reply,
+//              which is when the room's `awaiting` step strip disappears and the user
+//              starts asking "is it actually running?".
+//
+// Both are scoped to the viewer's world and narrowed to the room's project when the room
+// maps to one. Refetches on tasks OR followups realtime changes (debounced) with a slow
+// poll fallback — the same realtime-first pattern useDataPipe uses for the HUD.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
@@ -30,33 +38,40 @@ function roomProjectSlug(room) {
   return null;
 }
 
+const EMPTY = { tasks: [], promises: [] };
+
 export function useRunningTasks(room) {
   const worldId = useWorldId();
-  const [tasks, setTasks] = useState([]);
+  const [state, setState] = useState(EMPTY);
   const projectSlug = roomProjectSlug(room);
   // Read the freshest scope inside the stable fetch closure without re-creating it.
   const projRef = useRef(projectSlug);
   projRef.current = projectSlug;
 
   const fetchNow = useCallback(async () => {
-    if (!worldId) { setTasks([]); return; }
+    if (!worldId) { setState(EMPTY); return; }
     try {
       const qs = new URLSearchParams({ client: worldId });
       if (projRef.current) qs.set('project', projRef.current);
       const res = await authFetch(`/api/dashboard/running-tasks?${qs.toString()}`);
       if (!res.ok) return;
       const data = await res.json();
-      setTasks(Array.isArray(data.tasks) ? data.tasks : []);
+      setState({
+        tasks: Array.isArray(data.tasks) ? data.tasks : [],
+        // `promises` is absent on an older deployed endpoint — treat as empty, never
+        // crash the card during a rolling deploy.
+        promises: Array.isArray(data.promises) ? data.promises : [],
+      });
     } catch {
       // transient network/poll error — keep the last known set, next tick recovers
     }
   }, [worldId]);
 
   useEffect(() => {
-    if (!worldId) { setTasks([]); return undefined; }
+    if (!worldId) { setState(EMPTY); return undefined; }
     // Clear on every scope change (world or room switch) so the new room never
     // flashes the previous room's jobs during the fetch round-trip.
-    setTasks([]);
+    setState(EMPTY);
     fetchNow();
     const poll = setInterval(fetchNow, 30000);
     let debounce = null;
@@ -69,6 +84,10 @@ export function useRunningTasks(room) {
       ch = supabase
         .channel(`running-tasks-${worldId}-${Math.random().toString(36).slice(2, 7)}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, schedule)
+        // followups flip pending -> fired the moment a come-back lands, so the card
+        // must clear on that too; without this the promise row would linger until the
+        // 30s poll and read as "still waiting" after the answer already arrived.
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'followups' }, schedule)
         .subscribe();
     }
     return () => {
@@ -78,5 +97,5 @@ export function useRunningTasks(room) {
     };
   }, [worldId, projectSlug, fetchNow]);
 
-  return tasks;
+  return state;
 }
