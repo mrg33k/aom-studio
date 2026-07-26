@@ -394,7 +394,13 @@ export default async function handler(req, res) {
       return res.status(200).json({
         route: llm.route, target, proposal: null,
         confidence: Math.min(confidence, UNVERIFIED_NAME_CONFIDENCE),
-        reasoning: reasoning || 'Only a loose match on wording.',
+        // ALWAYS overrides the model's sentence here, never falls back to it. When the
+        // match is a bare name with nothing corroborating it, the model still writes a
+        // confident caption — live it produced "You've been cutting this reel here all
+        // week." for a room that had never held a single message. A capped route must not
+        // be narrated as a certainty, and the honest line is the one the prompt already
+        // specifies for exactly this case and never volunteers on its own.
+        reasoning: 'Only a loose match on wording.',
         source: 'llm', degraded: false, name_match_only: true,
       })
     }
