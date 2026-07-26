@@ -24,6 +24,7 @@
 // earlier message in a busy room is never collected.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { writeMessageRow } from '../_lib/write-message.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -93,25 +94,33 @@ export default async function handler(req, res) {
 
   // 1. Write into the destination FIRST. If this fails the user still has their message
   //    where it was, which is recoverable; deleting first could lose it outright.
+  //
+  // Goes through writeMessageRow, the same writer supabase-messages uses, rather than a
+  // hand-rolled insert: it mints the row id (the table has no default — a direct insert
+  // fails 23502 on a null id), derives room_id, and canonicalizes the mission slug. A
+  // moved message has to be indistinguishable from one sent to that room in the first
+  // place, and reusing the canonical writer is the only way to keep that true as the row
+  // shape changes.
   const mode = body.interaction_mode === 'plan' ? 'plan' : 'work';
-  const payload = {
-    client_id: clientId,
+  const inserted = await writeMessageRow({
+    supabaseUrl: SUPABASE_URL,
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
     text,
     role: 'user',
     source: 'corner-dashboard',
     agent: to.agent || 'corner',
+    clientId,
     project: to.mission_slug ? (to.project || String(to.mission_slug).split(':')[0]) : (to.project || null),
+    mission: to.mission_slug ? String(to.mission_slug) : null,
     metadata: {
       interaction_mode: mode,
-      ...(to.mission_slug ? { mission_slug: String(to.mission_slug) } : {}),
       // Provenance: this message was re-homed by the user after the router guessed wrong.
       // Keeps the routing miss auditable instead of silently disappearing.
       moved_from: { project: original.project || null, mission_slug: original?.metadata?.mission_slug || null, agent: original.agent || null },
     },
-  };
-  const inserted = await sb('POST', 'messages', payload);
+  });
   if (!inserted.ok) {
-    return res.status(inserted.status || 500).json({ error: `could not write to the new room: ${String(inserted.text).slice(0, 160)}` });
+    return res.status(inserted.status || 500).json({ error: `could not write to the new room: ${String(inserted.error || '').slice(0, 160)}` });
   }
 
   // 2. Remove the original, and the reply it drew, from the room it should never have
@@ -138,10 +147,9 @@ export default async function handler(req, res) {
     }
   }
 
-  const newRow = Array.isArray(inserted.json) ? inserted.json[0] : inserted.json;
   return res.status(200).json({
     ok: true,
-    message: newRow || null,
+    message: inserted.row || null,
     removed_count: removed.length,
     swept_replies: withinWindow,
   });
