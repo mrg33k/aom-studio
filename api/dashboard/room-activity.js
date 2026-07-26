@@ -39,8 +39,11 @@ const WINDOW_ROWS = 6000;
 const PAGE = 1000;
 const HINT_CHARS = 200;
 // How many recent messages a room's hint may be distilled from. One is a lottery (see below);
-// a handful is a description.
-const HINT_SOURCES = 6;
+// a handful is a description. 14 rather than 6 because a busy room's newest half-dozen lines
+// are usually acknowledgements ("Picking this up", "Logged.") that the filter drops — at 6 the
+// live digest for aom:socials came back as a single line and never reached the "reel.mp4" /
+// "reel.qa.json" file names that identify it.
+const HINT_SOURCES = 14;
 const HINT_PART_CHARS = 110;
 
 async function supabaseGet(params) {
