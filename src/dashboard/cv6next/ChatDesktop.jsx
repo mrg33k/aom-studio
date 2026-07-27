@@ -143,7 +143,15 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
         // and "not reviewed" truncated to "not revie…", which is worse than
         // saying nothing. Deliberately neutral, so it never reads as the amber
         // "Review" call to action.
-        <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--faint)', background: 'var(--chip)', border: '1px solid var(--divider)', padding: '5px 8px', borderRadius: 8, flex: 'none', whiteSpace: 'nowrap' }}>Not reviewed</span>
+        //
+        // The chevron STAYS. This panel exists so the user can open a file that
+        // crossed the chat, and the chevron is what says "this row opens". A
+        // status note must not cost the row its affordance — dropping it made
+        // ungated files look less tappable than their neighbours.
+        <>
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--faint)', background: 'var(--chip)', border: '1px solid var(--divider)', padding: '5px 8px', borderRadius: 8, flex: 'none', whiteSpace: 'nowrap' }}>Not reviewed</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="m9 18 6-6-6-6" /></svg>
+        </>
       ) : (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="m9 18 6-6-6-6" /></svg>
       )}
