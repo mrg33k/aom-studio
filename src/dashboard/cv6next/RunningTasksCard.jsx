@@ -131,6 +131,7 @@ export default function RunningTasksCard({ room }) {
             // every row and cost a line each (the room slug was deleted from this same
             // line earlier for exactly that reason). The freed line now earns its keep.
             who={split.more}
+            whoQuiet
             right={right}
             rightTone={overdue ? 'var(--accent)' : 'var(--muted)'}
             wrap
@@ -286,7 +287,7 @@ function minsSince(iso, nowMs) {
   return Math.max(0, Math.round((nowMs - t) / 60000));
 }
 
-function Row({ title, who, right, rightTone, wrap, actions, separated }) {
+function Row({ title, who, whoQuiet, right, rightTone, wrap, actions, separated }) {
   // A dispatched job's title is a short label, so one ellipsised line is right. A promise's
   // title is the sentence the agent actually said — truncating it mid-word throws away the
   // commitment, which is the whole reason the row is on screen. Those wrap to two lines.
@@ -317,7 +318,17 @@ function Row({ title, who, right, rightTone, wrap, actions, separated }) {
             trail here is gone: the card is already scoped to this room, so it was both
             redundant and an internal slug in a user-facing line (rule 4). */}
           {who ? (
-            <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, marginTop: 4 }}>{who}</div>
+            <div
+              style={whoQuiet
+                // A promise's meta is a COUNT — supporting detail, deliberately quiet.
+                ? { fontSize: 12, color: 'var(--muted)', fontWeight: 500, marginTop: 4 }
+                // A dispatched job's meta is the ACTOR — the answer to "by whom" — so it
+                // keeps body colour and weight rather than sitting muted behind the
+                // sentence. Flattening both to muted weakened the job rows.
+                : { fontSize: 12, color: 'var(--fg)', fontWeight: 600, marginTop: 2 }}
+            >
+              {who}
+            </div>
           ) : null}
         </div>
         {right ? (
