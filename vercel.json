@@ -611,11 +611,5 @@
       "destination": "/higherorbits",
       "permanent": true
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/blacknight/refresh",
-      "schedule": "0 13 * * *"
-    }
   ]
 }
