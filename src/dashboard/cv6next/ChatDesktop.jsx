@@ -132,15 +132,18 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
       <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
-        <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-          {itemMeta(it)}
-          {/* Delivered without an independent critic pass. It still arrives —
-              the user judges it — but the card never pretends it was checked. */}
-          {it.gateStatus === 'fail' ? <span style={{ color: 'var(--faint)' }}>{' · not reviewed'}</span> : null}
-        </div>
+        <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>{itemMeta(it)}</div>
       </div>
       {waiting ? (
         <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--warn)', background: 'var(--warn-weak)', border: '1px solid rgba(251,191,36,.3)', padding: '5px 8px', borderRadius: 8, flex: 'none', whiteSpace: 'nowrap' }}>Review</span>
+      ) : it.gateStatus === 'fail' ? (
+        // Delivered without an independent critic pass. It still arrives — the
+        // user judges it — but the card never pretends it was checked. Its own
+        // chip, not appended to the meta line: at 340px the meta line ellipsises
+        // and "not reviewed" truncated to "not revie…", which is worse than
+        // saying nothing. Deliberately neutral, so it never reads as the amber
+        // "Review" call to action.
+        <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--faint)', background: 'var(--chip)', border: '1px solid var(--divider)', padding: '5px 8px', borderRadius: 8, flex: 'none', whiteSpace: 'nowrap' }}>Not reviewed</span>
       ) : (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="m9 18 6-6-6-6" /></svg>
       )}
