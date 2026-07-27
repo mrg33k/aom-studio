@@ -19,8 +19,23 @@
 // reply, and showing it also makes the promise itself accountable (his other complaint the
 // same day: "agents say they will follow up but they never do").
 
-import React, { useState, useEffect } from 'react';
+// 2026-07-27 — the card stopped being a counter you watch.
+//
+// Patrik: "how does tracking them help? how would the user ever get the job started?"
+// He was right, and the card was the proof: zero onClick, zero <button>, and a GET-only
+// endpoint. You could watch a number climb and do nothing about it. Meanwhile the
+// follow-up machine behind it only ever posted a chat message and closed the record, so
+// four of five come-backs that day came back asking his permission and nothing shipped.
+//
+// So every outstanding promise now carries the two actions that were missing. This needs
+// no endpoint and no new state: the card is already mounted INSIDE SendCtx.Provider on
+// both surfaces (ChatLifecycle / ChatDesktop), so a tap posts a real user message into
+// the room — the exact same path as tapping a chip. The instruction is visible in the
+// thread afterwards, which is the point: no invisible side effects, no fake UI.
+
+import React, { useState, useEffect, useContext } from 'react';
 import { useRunningTasks } from './data/useRunningTasks.js';
+import { SendCtx } from './ChatGoalThread.jsx';
 
 function titleCaseName(s) {
   const v = String(s || '').replace(/[-_]/g, ' ').trim();
@@ -113,6 +128,7 @@ export default function RunningTasksCard({ room }) {
             right={right}
             rightTone={overdue ? 'var(--accent)' : 'var(--muted)'}
             wrap
+            actions={<PromiseActions title={p.title} />}
           />
         );
       })}
@@ -151,13 +167,77 @@ function SectionHeader({ label, count, dim, spaced }) {
   );
 }
 
+// The two things you can actually do about a promise that has stalled.
+//
+// Both post a real user message via the room's own send(), the same path a chip tap
+// takes (ChatGoalThread's HandoffBtn is the precedent — "Posts a real instruction
+// message into the room"). Nothing hidden happens.
+//
+// Neither is a filled primary on purpose. A card can hold several stalled promises, and
+// five accent-filled buttons stacked down the chat column reads as an alarm rather than
+// a set of choices; the outline still makes "Start it" the obvious move without shouting.
+function PromiseActions({ title }) {
+  const send = useContext(SendCtx);
+  const [tapped, setTapped] = useState('');
+  const one = String(title || '').split('\n')[0].trim();
+  if (!one) return null;
+
+  const fire = (kind, text) => {
+    // Guard the double-tap: send() is optimistic and there is no per-row busy state to
+    // hang a spinner on, so the honest affordance is to disable and say what was sent.
+    if (tapped) return;
+    setTapped(kind);
+    try { send(text); } catch { setTapped(''); }
+  };
+
+  if (tapped) {
+    return (
+      <div style={{ ...btnRow, color: 'var(--muted)', fontSize: 12 }}>
+        {tapped === 'start' ? 'Told them to start it.' : 'Asked where they are.'}
+      </div>
+    );
+  }
+  return (
+    <div style={btnRow}>
+      <button
+        type="button"
+        style={startBtn}
+        onClick={() => fire('start', `Go ahead and start this now: ${one}`)}
+      >
+        Start it
+      </button>
+      <button
+        type="button"
+        style={ghostBtn}
+        onClick={() => fire('chase', `Where are you on this? ${one}`)}
+      >
+        Chase it
+      </button>
+    </div>
+  );
+}
+
+// Buttons get their OWN row, never beside the text: the chat column is ~370px on a
+// 1440 desktop and a promise title already wraps to two lines there.
+const btnRow = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 8 };
+const startBtn = {
+  height: 32, padding: '0 16px', borderRadius: 10, border: '1px solid var(--accent)',
+  background: 'transparent', color: 'var(--accent)', font: '600 13px var(--font-sans)',
+  cursor: 'pointer',
+};
+const ghostBtn = {
+  height: 32, padding: '0 16px', borderRadius: 10, border: '1px solid var(--hair)',
+  background: 'transparent', color: 'var(--muted)', font: '600 13px var(--font-sans)',
+  cursor: 'pointer',
+};
+
 function minsSince(iso, nowMs) {
   const t = iso ? new Date(iso).getTime() : NaN;
   if (!Number.isFinite(t)) return 0;
   return Math.max(0, Math.round((nowMs - t) / 60000));
 }
 
-function Row({ title, who, right, rightTone, wrap }) {
+function Row({ title, who, right, rightTone, wrap, actions }) {
   // A dispatched job's title is a short label, so one ellipsised line is right. A promise's
   // title is the sentence the agent actually said — truncating it mid-word throws away the
   // commitment, which is the whole reason the row is on screen. Those wrap to two lines.
@@ -179,29 +259,32 @@ function Row({ title, who, right, rightTone, wrap }) {
       textOverflow: 'ellipsis',
     };
   return (
-    <div style={{ display: 'flex', alignItems: wrap ? 'flex-start' : 'center', gap: 12 }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={titleStyle}>{title}</div>
+    <div>
+      <div style={{ display: 'flex', alignItems: wrap ? 'flex-start' : 'center', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={titleStyle}>{title}</div>
         {/* The ACTOR is the answer to "by whom", so it carries body colour and weight
             rather than sitting muted behind the sentence. The room slug that used to
             trail here is gone: the card is already scoped to this room, so it was both
             redundant and an internal slug in a user-facing line (rule 4). */}
-        <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 600, marginTop: 2 }}>{who}</div>
+          <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 600, marginTop: 2 }}>{who}</div>
+        </div>
+        {right ? (
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              color: rightTone || 'var(--muted)',
+              flex: 'none',
+              fontVariantNumeric: 'tabular-nums',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {right}
+          </span>
+        ) : null}
       </div>
-      {right ? (
-        <span
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            color: rightTone || 'var(--muted)',
-            flex: 'none',
-            fontVariantNumeric: 'tabular-nums',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {right}
-        </span>
-      ) : null}
+      {actions || null}
     </div>
   );
 }
