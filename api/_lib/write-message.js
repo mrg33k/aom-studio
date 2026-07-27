@@ -25,6 +25,9 @@
 //   5. Project SCOPE authorization: the resolved project must be one the
 //      caller's world can already reach. See the block comment on
 //      makeProjectScopeAuthorizer below — this is the r4 root fix.
+//   6. World stamping: world_id is ALWAYS written, derived from the verified
+//      tenant, never left to the DB default. See the block comment on
+//      deriveRowWorld below — this is the r5 root fix.
 //
 // Tenant AUTH and IDENTITY stay in the endpoints — they verify the caller
 // server-side (verifyTenant / callerIdentity) and pass a trusted clientId +
@@ -178,6 +181,86 @@ export function makeProjectScopeAuthorizer({ req, clientId }) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// WORLD STAMPING (r5, 2026-07-27) — messages.world_id must RECORD something.
+//
+// MEASURED over all 45,219 live message rows, which is what makes this a data
+// repair and not a style preference:
+//     world_id = 'aom' ................................. 45,202  (99.96%)
+//     world_id = anything else .............................. 17
+//     ...and all 17 are byte-identical to that row's OWN client_id.
+//     world_id differing from BOTH 'aom' and client_id ........ 0
+// The column has DB DEFAULT 'aom', and in 45,219 rows it has never once carried
+// a value that client_id did not already carry. 6,472 rows sit in a NON-aom
+// tenant while claiming world 'aom'. That is the default, printed as a fact.
+//
+// This column is what the r3/r4 participation floor in verifyTenant.js reads as
+// PROOF OF BELONGING, so the defect is not cosmetic — it is simultaneously:
+//   UNDER-ADMITTING every non-aom world about its OWN rooms (Karen's
+//     karens-world rows carry 'aom', so a floor asking "has karens-world been
+//     here" answers no about Karen's own conversation), and
+//   OVER-ADMITTING 'aom' into every room in the system on a column default.
+//
+// THE WRITER'S CONTRACT:
+//   1. world_id is ALWAYS on the payload. Never `...(worldId ? {…} : {})` — an
+//      omitting caller silently inherits the default, and that is the whole
+//      defect. chat-bridge.js (3 call sites) and move-message.js omit it today;
+//      this derivation fixes every one of their non-shared rooms at the writer,
+//      without waiting on their call sites.
+//   2. A PLAIN world tenant IS the world, derived here from the VERIFIED tenant.
+//      An explicit `worldId` that DISAGREES with it is refused and logged, not
+//      honoured: the tenant survived verifyTenant, a body-supplied world did
+//      not. This is what makes world_id non-forgeable on a normal room, and it
+//      is a precondition for the gate ever trusting the column again.
+//   3. A `shared:<slug>` tenant is in NO world's namespace, so the author's own
+//      world is the only answer and the endpoint must pass it (derived from the
+//      JWT via callerIdentity). When it is missing we write NULL — honest
+//      absence — and NEVER 'aom'. Verified safe: the live PostgREST schema lists
+//      messages.required as id/role/text/room_id only (world_id is nullable),
+//      RLS on messages keys on client_id not world_id (migrations 035/029), and
+//      the only reader of the column in the app (CV4 CommandTracker) already ORs
+//      it with client_id arms for exactly these legacy rows.
+//   4. A world string that is itself a ROOM ('shared:*') is refused. Not
+//      hypothetical: 3 live rows carry world_id='shared:space-rising', so a
+//      writer has already put a room name in the world column once.
+//   5. Anything unresolved is stamped metadata.world_unresolved AND logged, so
+//      the gap is visible in the DATA. Silence is how this survived four rounds.
+// ---------------------------------------------------------------------------
+
+// NO NAMED DEFAULT WORLD LIVES HERE, deliberately (r6, 2026-07-27). r5 briefly
+// exported `DEFAULT_WORLD_STAMP = 'aom'` to label the DB default in one log
+// line. Nothing read it to decide anything — but an EXPORTED constant meaning
+// "the world to use when you don't have one" is a `worldId || DEFAULT_...` that
+// hasn't been written yet, which is precisely the defaulting r4 and r5 exist to
+// delete. The value is also about to stop being true: migrations/
+// 039_messages_world_id_truth.sql §1 drops that column default. So the slug is
+// not named in code at all; the measured history lives in that migration and in
+// the block comment above. Every world in this file comes from deriveRowWorld —
+// the verified tenant, the author, or null. There is no fourth answer.
+
+// Resolve the world a row is actually being written from.
+// Returns { world, via, overrode? } — `world` is null ONLY when it is genuinely
+// unknowable, which is a shared room whose caller passed no author world.
+//   via 'tenant'     derived from the verified tenant (a plain world)
+//   via 'author'     the author's own world, for a shared room
+//   via 'unresolved' shared room, no author world supplied — writes NULL
+export function deriveRowWorld({ clientId, worldId }) {
+  const tenant = String(clientId || '').trim().toLowerCase()
+  const claimed = String(worldId || '').trim().toLowerCase()
+  if (!tenant) return { world: null, via: 'unresolved' }
+
+  if (!tenant.startsWith(SHARED_PREFIX)) {
+    // The verified tenant IS the world. A conflicting claim loses — see 2 above.
+    if (claimed && claimed !== tenant) return { world: tenant, via: 'tenant', overrode: claimed }
+    return { world: tenant, via: 'tenant' }
+  }
+
+  // shared:<slug> — a room, not a world. Only the author answers this, and the
+  // answer must be a world, never another room name.
+  if (claimed && !claimed.startsWith(SHARED_PREFIX)) return { world: claimed, via: 'author' }
+  return { world: null, via: 'unresolved', ...(claimed ? { overrode: claimed } : {}) }
+}
+
 // Canonical room identity (corner:one-write-path R2). ONE rule, mirrored by
 // scripts/backfill-room-id.py in AOM-EA — change them together:
 //   shared rooms:   client_id itself ('shared:<slug>')
@@ -291,6 +374,23 @@ export async function writeMessageRow({
   // author by definition, so they are not marked.
   const unattributed = role === 'user' && !authorId && !authorName;
 
+  // --- 1c. World stamping (r5 root fix) — always derived, never defaulted ----
+  // See the deriveRowWorld block comment. Both branches below are LOUD on
+  // purpose: a silent default is exactly what made this invisible for four
+  // rounds, and neither of these can be seen in the row alone.
+  const stampedWorld = deriveRowWorld({ clientId, worldId });
+  if (stampedWorld.overrode && stampedWorld.world) {
+    console.warn(
+      `[write-message] world_id claim "${stampedWorld.overrode}" REFUSED: the verified tenant "${clientId}" is this row's world (source=${source})`,
+    );
+  }
+  if (stampedWorld.via === 'unresolved') {
+    console.warn(
+      `[write-message] world UNRESOLVED for tenant "${clientId}" (source=${source}): writing world_id NULL explicitly rather than omitting the column and letting the database fill it in. ` +
+      `A shared room is in no world's namespace — pass worldId (the AUTHOR's own world, from callerIdentity) at this call site.`,
+    );
+  }
+
   // --- 2. Mission canonicalization (both `mission` and metadata.mission_slug) ---
   // Guard: the JS string "undefined" is a serialization of a missing value — treat it as null.
   // Without this guard a partial mission object (slug missing) serializes to mission="undefined",
@@ -319,7 +419,8 @@ export async function writeMessageRow({
   // the drop above.
   const baseMeta = incomingMeta ? { ...incomingMeta } : null
   if (scopeDenied && baseMeta) delete baseMeta.mission_slug
-  const mergedMeta = (canonicalMission || baseMeta || unattributed || scopeDenied)
+  const worldUnresolved = stampedWorld.via === 'unresolved'
+  const mergedMeta = (canonicalMission || baseMeta || unattributed || scopeDenied || worldUnresolved)
     ? {
         ...(baseMeta || {}),
         ...(canonicalMission ? { mission_slug: canonicalMission } : {}),
@@ -328,6 +429,9 @@ export async function writeMessageRow({
         // scope it could not reach says so, which is also the detection signal
         // for someone probing this boundary.
         ...(scopeDenied ? { project_scope_denied: scopeDenied } : {}),
+        // Same reasoning for the world: a NULL world_id is honest but silent, and
+        // "which call site failed to pass one" is the thing you actually need.
+        ...(worldUnresolved ? { world_unresolved: { tenant: String(clientId), source } } : {}),
       }
     : null
 
@@ -347,7 +451,11 @@ export async function writeMessageRow({
     }),
     ...(resolvedProject ? { project: resolvedProject } : {}),
     ...(senderRole ? { sender_role: senderRole } : {}),
-    ...(worldId ? { world_id: worldId } : {}),
+    // UNCONDITIONAL (r5). Never `...(worldId ? {…} : {})`: an omitted key takes
+    // the DB DEFAULT 'aom', which is a false claim of AOM participation on every
+    // other world's row. An explicit null is honest absence and is accepted —
+    // the column is nullable.
+    world_id: stampedWorld.world,
     ...(authorId ? { user_id: authorId } : {}),
     ...(authorName ? { user_name: authorName } : {}),
     ...(attachmentUrl ? { attachment_url: attachmentUrl } : {}),

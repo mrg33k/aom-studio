@@ -136,70 +136,198 @@ async function hasProjectAccessGrant(projectId, callerWorld) {
 
 // ---------------------------------------------------------------------------
 // PARTICIPATION EVIDENCE — the floor BOTH gates in this file fall back to
-// (2026-07-27 r2, generalised r3).
+// (2026-07-27 r2, generalised r3, RE-BASED r5).
 //
 // THE RULE, stated once so the two gates cannot drift apart again: a world that
-// already has messages in the room / under the project is a PARTICIPANT and may
-// keep reading and writing it. Every other world is refused. Merely holding a
-// valid session is NOT evidence — 19 auth users are live across 10 worlds (plus
-// 4 legacy accounts carrying no world at all), and a JWT proves only which of
-// them you are, never that you belong in this room.
+// has demonstrably taken part in this room / under this project is a
+// PARTICIPANT and may keep reading and writing it. Every other world is refused.
+// Merely holding a valid session is NOT evidence — 19 auth users are live across
+// 10 worlds (plus 4 legacy accounts carrying no world at all), and a JWT proves
+// only which of them you are, never that you belong in this room.
 //
-// Read off `messages.world_id`, which records the world the message was WRITTEN
-// from, not the world that holds the project: shared:sourcing is arsenal-held
-// and every one of its 387 rows carries the AOM world. That is exactly the
-// signal we want. The column is NOT NULL on all 45,192 live rows, so an empty
-// result is real absence, never a data gap.
+// r5 — WHAT COUNTS AS EVIDENCE CHANGED, because the column r2/r3 read was never
+// evidence. Measured over all 45,219 live message rows on 2026-07-27:
+//     world_id = 'aom' ................................. 45,202  (99.96%)
+//     world_id = anything else .............................. 17
+//     ...and all 17 are byte-identical to that row's OWN client_id.
+//     world_id differing from BOTH 'aom' and client_id ........ 0
+// messages.world_id has DB DEFAULT 'aom' and almost no writer sets it, so
+// `world_id=eq.<callerWorld>` never asked "has this world been here". It asked
+// "is this world called aom" — TRUE against all 45,202 rows no matter whose room
+// they are in, and FALSE for every other world almost everywhere. ONE filter,
+// BOTH failure modes at once:
+//   OVER-ADMITTED  'aom' into every shared room in the system on nothing but a
+//                  column default, including ~15 it holds no grant on. The r3
+//                  comment that stood here read shared:sourcing's 387
+//                  aom-stamped rows as proof AOM participates. They are the
+//                  default: 385 of them carry no author at all.
+//   UNDER-ADMITTED every other world about its OWN rooms. Karen in her own
+//                  karens-world/agent-work room — her rows, carrying the default
+//                  'aom' — made hasProjectPresence('agent-work','karens-world')
+//                  return 0, verifyProjectAccess 403, and first-claim refuse
+//                  because the slug is claimed. Her message loses its room, and
+//                  because Patrik returns on the super-admin bypass long before
+//                  any of this runs, he structurally cannot see it.
 //
-// Deliberately conservative in one direction: a room / project with no messages
-// at all has no evident participants, so nobody but the super-admin passes. That
-// is not a dead end and not a lockout, because the floor is only ever reached
-// after the holder-world and project_access arms have already said no:
+// So the floor NO LONGER READS world_id AT ALL. It reads the two columns that
+// cannot be a default:
+//
+//   (A) client_id — the row's OWN tenancy. It is the tenant the endpoint already
+//       verified before the write, writeMessageRow refuses to write without it,
+//       every read query filters on it and RLS enforces it (migrations 035/029).
+//       A row whose client_id is world W is W's row whatever the world column
+//       claims. This is the corroboration arm, and it is what fixes the
+//       under-admit: a defaulted 'aom' sitting on a karens-world row is refused
+//       as the default it is, and Karen's own room counts as Karen's.
+//   (B) user_id — the AUTHOR: a Supabase auth uid written from a verified JWT
+//       (identity-attribution fix, 2026-07-27), never defaulted, never
+//       client-supplied. Resolving it to that human's world is what keeps SHARED
+//       rooms working honestly, because a shared room's client_id is
+//       'shared:<slug>' and carries no world at all, so (A) can never fire there
+//       and authorship is the only truthful signal that remains. Live effect:
+//       shared:sourcing (arsenal-held, ungranted, AOM-trafficked) keeps working
+//       for Ash and Courtney because rows there carry a real AOM uid — not
+//       because 387 rows inherited a default.
+//
+// DELIBERATELY NOT AN ARM: world_id, including a non-'aom' value. Once
+// write-message.js stamps it truthfully those values start to mean something,
+// but a truthful stamp of 'aom' is still indistinguishable BY VALUE from the
+// 45,202 defaulted rows until migrations/039 drops the default and backfills. A
+// gate that cannot tell a fact from a default must not read that column, and the
+// single world the ambiguity favours is the one already over-admitted. Re-add it
+// only after 039 has run and the defaulted rows read NULL.
+//
+// SIMULATED against every live (world, room) and (world, project) pair this
+// floor can be asked about, before vs after: 9 pairs flip admit->deny, 2 flip
+// deny->admit, 91 unchanged. All 9 denials are 'aom' into phantom shared rooms
+// that have NO projects row and ZERO human authors — crosspost / task-completion
+// debris that stopped being generated the day R-CROSSPOST-SCOPE landed
+// (2026-07-01). Both new admissions are karens-world into its own traffic. Ash,
+// Courtney, Karen and Ben each reach every room they have ever spoken in via
+// holder-world or own-world, never via this floor, so not one of them moves.
+//
+// Still deliberately conservative in one direction: a room / project with no
+// messages has no evident participants, so nobody but the super-admin passes.
+// That is not a lockout, because the floor is only ever reached after the
+// holder-world and project_access arms have already said no:
 //   - inviting a world to a project writes a project_access row
 //     (api/dashboard/project-invite.js), so a freshly shared, still-silent room
 //     is admitted by the GRANT, never by this floor;
 //   - a project created the supported way gets a projects row with a holder
-//     world (api/dashboard/create-project-from-chat.js) and never lands here;
-//   - and a disk-scaffolded slug with no row and no traffic self-heals the
-//     moment its first message lands, which goes through the world gate above,
-//     not through this one.
-// Verified live 2026-07-27: all 4 unregistered projects carry traffic, and every
-// shared room that anyone has actually used carries traffic by definition.
+//     world (api/dashboard/create-project-from-chat.js) and never lands here.
+//
+// RESIDUAL, stated plainly: arm (A) counts a row a world tagged with a FOREIGN
+// project slug in its own room, which was possible before r4 gated the write.
+// Live that is 2 pairs (karens-world into 'agent-work' and 'aheadofmarket'),
+// both holder-less projects where that world already has real traffic, and both
+// in the ADMIT direction. r4 stops new ones being minted; clearing the old ones
+// is a data job, not a tighter guess here.
 //
 // Returns false on any error; the caller falls through to its existing 403.
 // ---------------------------------------------------------------------------
-async function worldHasMessages(filter, callerWorld, label) {
-  if (!callerWorld || !SUPABASE_URL || !SUPABASE_KEY) return false;
+
+// Auth uid -> world slug (or null when the user carries none / is gone). Auth
+// users change rarely, and this only runs on the floor path, which is already
+// the cold path — the cache stops a caller probing a room with many authors
+// from turning one gate check into a burst of admin round trips.
+const USER_WORLD_CACHE = new Map();
+// Distinct authors we will resolve for one check. Rooms have a handful; the cap
+// bounds the work against a room deliberately stuffed with many authors.
+const MAX_AUTHOR_LOOKUPS = 12;
+
+// The world of a verified author, from the same user_metadata.world every other
+// path in this file reads. Returns null (uncached) on a transient failure, so a
+// blip cannot poison the cache into a persistent denial.
+async function worldOfUser(userId) {
+  if (!userId) return null;
+  if (USER_WORLD_CACHE.has(userId)) return USER_WORLD_CACHE.get(userId);
+  let world = null;
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?${filter}&world_id=eq.${encodeURIComponent(callerWorld)}&select=id&limit=1`,
+      `${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
       { headers: serviceHeaders() }
     );
-    if (!r.ok) return false;
-    const rows = await r.json();
-    const present = Array.isArray(rows) && rows.length > 0;
-    if (!present) {
-      console.log(`[verifyTenant] no participation evidence: world "${callerWorld}" has no messages ${label} — denied`);
+    if (r.ok) {
+      const u = await r.json();
+      world = String(u?.user_metadata?.world || '').toLowerCase() || null;
+    } else if (r.status === 404) {
+      world = null; // deleted account — a real, cacheable "no world"
+    } else {
+      return null;  // transient: answer no, but do NOT remember it
     }
-    return present;
+  } catch {
+    return null;
+  }
+  USER_WORLD_CACHE.set(userId, world);
+  return world;
+}
+
+// Does `callerWorld` have participation evidence under `filter`?
+// `checkTenancy` is false for a shared room, where client_id IS the room string
+// and can never equal a world — the arm would be a guaranteed-empty round trip.
+async function worldHasMessages(filter, callerWorld, label, { checkTenancy = true } = {}) {
+  const world = String(callerWorld || '').trim().toLowerCase();
+  if (!world || !SUPABASE_URL || !SUPABASE_KEY) return false;
+  // A shared room is not a world. Not hypothetical: 3 live rows carry
+  // world_id='shared:space-rising', so this shape exists in the data, and
+  // letting a room name act as a tenant would hand a room to itself.
+  if (world.startsWith('shared:')) return false;
+  try {
+    // (A) The row's own tenancy — one indexed equality, and the answer in every
+    // non-shared case. A failure here falls THROUGH to (B) rather than denying
+    // outright: (B) is an evidence check in its own right, so trying it cannot
+    // admit anyone (A) would not have, and short-circuiting would turn one blip
+    // into a lockout.
+    if (checkTenancy) {
+      const own = await fetch(
+        `${SUPABASE_URL}/rest/v1/messages?${filter}&client_id=eq.${encodeURIComponent(world)}&select=id&limit=1`,
+        { headers: serviceHeaders() }
+      );
+      if (own.ok) {
+        const ownRows = await own.json();
+        if (Array.isArray(ownRows) && ownRows.length > 0) return true;
+      }
+    }
+
+    // (B) A verified author from this world. Only the authors actually present
+    // under this scope are resolved — bounded by the room, not by the user table.
+    const authored = await fetch(
+      `${SUPABASE_URL}/rest/v1/messages?${filter}&user_id=not.is.null&select=user_id&limit=200`,
+      { headers: serviceHeaders() }
+    );
+    if (!authored.ok) return false;
+    const authorRows = await authored.json();
+    const uids = [...new Set((Array.isArray(authorRows) ? authorRows : [])
+      .map((r) => r.user_id)
+      .filter(Boolean))].slice(0, MAX_AUTHOR_LOOKUPS);
+    for (const uid of uids) {
+      // eslint-disable-next-line no-await-in-loop -- a handful of distinct authors per room.
+      if ((await worldOfUser(uid)) === world) return true;
+    }
+
+    console.log(`[verifyTenant] no participation evidence: world "${world}" has no rows of its own and no verified author ${label} — denied`);
+    return false;
   } catch {
     return false;
   }
 }
 
-// Has the caller's world already spoken in this shared room? Room-scoped:
+// Has the caller's world already taken part in this shared room? Room-scoped:
 // presence in the room is presence, whether or not the slug has a projects row.
+// Tenancy arm OFF — client_id here is the room ('shared:<slug>'), so verified
+// AUTHORSHIP is the only truthful evidence a shared room can carry.
 function hasSharedRoomPresence(sharedTenant, callerWorld) {
   return worldHasMessages(
     `client_id=eq.${encodeURIComponent(sharedTenant)}`,
     callerWorld,
-    `in shared room "${sharedTenant}"`
+    `in shared room "${sharedTenant}"`,
+    { checkTenancy: false }
   );
 }
 
-// Has the caller's world already spoken under this project? Project-scoped, so
-// it counts traffic in the project's own room AND in its shared room — messages
-// carry `project` on both (live: shared:pala rows carry project 'pala').
+// Has the caller's world already taken part under this project? Project-scoped,
+// so it counts traffic in the project's own room AND in its shared room —
+// messages carry `project` on both (live: shared:pala rows carry project 'pala').
 function hasProjectPresence(projectSlug, callerWorld) {
   return worldHasMessages(
     `project=eq.${encodeURIComponent(projectSlug)}`,
@@ -217,12 +345,18 @@ function hasProjectPresence(projectSlug, callerWorld) {
 // version reached it only via `if (!project) return ...`, so a shared room that
 // DOES have a projects row but no grant fell through all three arms to 403.
 // That is a live regression, not a hypothetical: shared:sourcing is
-// arsenal-held, carries 387 messages every one of which was written from the AOM
-// world, and has no AOM project_access grant. Before this change set the shared
-// branch was requireJwtOnly and the room worked. After it, Ash and Courtney get
-// 403 while Patrik sails through on the super-admin bypass three lines earlier
-// and never sees the break — the exact asymmetry this file keeps re-introducing.
-// shared:s3c is in the same state (arsenal-held, ungranted, AOM traffic).
+// arsenal-held, carries 387 messages, and has no AOM project_access grant.
+// Before this change set the shared branch was requireJwtOnly and the room
+// worked. After it, Ash and Courtney get 403 while Patrik sails through on the
+// super-admin bypass three lines earlier and never sees the break — the exact
+// asymmetry this file keeps re-introducing. shared:s3c is in the same state
+// (arsenal-held, ungranted, AOM traffic).
+//
+// r5 CORRECTION to the sentence that used to sit here. It claimed all 387 rows
+// "were written from the AOM world". They were not: 385 of them carry no author
+// and inherited world_id's DB DEFAULT of 'aom'. The room still admits AOM, but
+// now on evidence — rows carrying a verified AOM auth uid — instead of on a
+// default that would equally have admitted AOM to every other world's rooms.
 //
 // Presence in the room is presence. Whether a projects row exists is a fact
 // about the registry, not about who is in the conversation.

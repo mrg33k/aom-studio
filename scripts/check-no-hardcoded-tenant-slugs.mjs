@@ -51,6 +51,25 @@ const uppercaseTenantConstantPattern = new RegExp(
   String.raw`\b[A-Z0-9_]*(?:CLIENT|TENANT|WORLD)[A-Z0-9_]*\s*=\s*['"](?:${PROHIBITED.join('|')})['"]`,
 )
 
+// Same defect, any casing (added r6, 2026-07-27 — for cause, not on spec).
+// r5 shipped `export const DEFAULT_WORLD_STAMP = 'aom'` into write-message.js,
+// the file whose entire job that round was to STOP treating 'aom' as a default
+// world. The SHOUTY_CASE arm above caught it, which is the system working. But
+// the identical constant written `const defaultWorld = 'aom'` walks straight
+// through both patterns: the arm above requires all-caps, and the tenantPattern
+// needs `world` to end on a word boundary immediately before the `=`, which
+// `defaultWorld`/`worldStamp` never do. A guard that catches one spelling of a
+// regression teaches the next author to change the spelling.
+//
+// Scoped to declarations (const/let/var) with a prohibited slug as the whole
+// literal, so `const worlds = ['aom', ...]` and `const world = resolve()` stay
+// clean. Measured before landing: zero new hits across all 779 scanned files,
+// so this costs nothing today and only bites on the next rebirth.
+const declaredTenantConstantPattern = new RegExp(
+  String.raw`\b(?:const|let|var)\s+[A-Za-z0-9_$]*(?:CLIENT|TENANT|WORLD)[A-Za-z0-9_$]*\s*=\s*['"](?:${PROHIBITED.join('|')})['"]`,
+  'i',
+)
+
 function walk(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.git') continue
@@ -116,7 +135,11 @@ const hits = (rawLines) => {
   const found = []
   stripComments(rawLines).forEach((line, idx) => {
     if (!line.trim()) return
-    if (tenantPattern.test(line) || uppercaseTenantConstantPattern.test(line)) {
+    if (
+      tenantPattern.test(line) ||
+      uppercaseTenantConstantPattern.test(line) ||
+      declaredTenantConstantPattern.test(line)
+    ) {
       // Report the RAW line: the stripped one is what matched, but the raw one
       // is what the engineer has to go find and fix.
       found.push(`${idx + 1}: ${rawLines[idx].trim()}`)

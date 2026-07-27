@@ -24,7 +24,9 @@
 // earlier message in a busy room is never collected.
 
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
-import { writeMessageRow } from '../_lib/write-message.js';
+import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js';
+
+const SHARED_PREFIX = 'shared:';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -82,9 +84,11 @@ export default async function handler(req, res) {
 
   const body = req.body || {};
   let clientId;
+  let verified;
   try {
     const requested = await scopeWorld(body.client_id, req);
-    ({ tenant: clientId } = await verifyTenant(requested, req));
+    verified = await verifyTenant(requested, req);
+    clientId = verified.tenant;
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     throw err;
@@ -148,6 +152,17 @@ export default async function handler(req, res) {
   // moved message has to be indistinguishable from one sent to that room in the first
   // place, and reusing the canonical writer is the only way to keep that true as the row
   // shape changes.
+  //
+  // `to.project` / `to.mission_slug` are DESTINATION slugs typed by the caller —
+  // nothing above validates them, and the tenant gate only proved which world
+  // the caller may act in. So the move door minted exactly the same evidence the
+  // chat door did: move your own message into a project you do not hold, and
+  // `messages.project` (a column with no foreign key, and one of the two the
+  // participation floor reads as proof of belonging) says you were there. Same
+  // authorizer as chat-bridge and supabase-messages, built from the VERIFIED
+  // tenant. A refused destination drops the scope and the message lands in the
+  // agent room — it is never rejected, so a mis-typed slug can't eat the text
+  // this endpoint is about to delete from its old room.
   const mode = body.interaction_mode === 'plan' ? 'plan' : 'work';
   const inserted = await writeMessageRow({
     supabaseUrl: SUPABASE_URL,
@@ -159,6 +174,18 @@ export default async function handler(req, res) {
     clientId,
     project: to.mission_slug ? (to.project || String(to.mission_slug).split(':')[0]) : (to.project || null),
     mission: to.mission_slug ? String(to.mission_slug) : null,
+    authorizeProjectScope: makeProjectScopeAuthorizer({ req, clientId }),
+    // The world that wrote it. Without this the column's DB default stamped
+    // every moved row 'aom', so a move in any other world crossposted into
+    // AOM-granted shared rooms wearing AOM's identity.
+    worldId: clientId.startsWith(SHARED_PREFIX) ? (verified.world || null) : clientId,
+    // The mover is the verified session, and it is the same person whose row is
+    // about to be deleted from the other room. Carrying it across keeps the
+    // moved message attributed instead of silently becoming an authorless row
+    // that downstream code has historically filled in as the founder.
+    userId: verified.userId || null,
+    userName: verified.userName || null,
+    senderRole: verified.userId ? 'human' : null,
     metadata: {
       interaction_mode: mode,
       // Provenance: this message was re-homed by the user after the router guessed wrong.

@@ -10,7 +10,7 @@
 //   BRIDGE_ENABLED     -- Kill switch (default: true)
 
 import crypto from 'crypto'
-import { writeMessageRow } from '../_lib/write-message.js'
+import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt, callerIdentity } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
@@ -23,6 +23,37 @@ const BRIDGE_ENABLED = process.env.BRIDGE_ENABLED !== 'false'
 const LOCAL_BRIDGE_URL = process.env.LOCAL_BRIDGE_URL || 'http://localhost:3002'
 const BRIDGE_TUNNEL_URL = process.env.BRIDGE_TUNNEL_URL || ''
 const BRIDGE_TIMEOUT = 3000 // ms to wait for bridge before fallback
+
+const SHARED_PREFIX = 'shared:'
+
+// One scope verdict per slug per request.
+//
+// makeProjectScopeAuthorizer costs a few Supabase round trips, and a single send
+// through this file asks about the SAME slug up to three times (the message row,
+// the chain card, the task rows). This memoizes the promise, so every asker gets
+// exactly the authorizer's own answer. It is a CACHE, not a second authorization
+// model — it can only ever return a verdict the authorizer produced, and never
+// admits anything the authorizer refused. A drifting second model is how r2 and
+// r3 each shipped a lockout; this must not become one.
+//
+// Keyed on the RAW slug, not a lowercased one: the authorizer's first-claim arm
+// is case-sensitive on purpose (PostgREST `eq` is), so 'REX' and 'rex' are two
+// different questions and must not share an answer.
+function onceProjectScope(authorize) {
+  const seen = new Map()
+  return (slug) => {
+    const key = String(slug == null ? '' : slug)
+    if (!seen.has(key)) {
+      const p = authorize(key)
+      // Mark the stored promise handled so a denial that is awaited later never
+      // surfaces as an unhandled rejection; the stored promise itself is
+      // untouched, so the real verdict (including a throw) still reaches callers.
+      p.catch(() => {})
+      seen.set(key, p)
+    }
+    return seen.get(key)
+  }
+}
 
 function getBridgeUrl() {
   // Prefer tunnel URL for production (remote access)
@@ -47,6 +78,10 @@ const UNNAMED_SENDER = 'Unidentified sender'
 async function resolveSender(req, verified) {
   let userId = verified?.userId || null
   let userName = null
+  // The sender's OWN world, straight off the same verified session. Carried
+  // because a row in a SHARED room must record the world that wrote it, not the
+  // world that holds the room — see rowWorldId in the POST handler.
+  let world = verified?.world || null
   // verifyTenant resolves the user from the JWT already and carries the identity
   // on its result, so the common path costs ZERO extra round trips — that call
   // is the known hot spot here (see the timing note in verifyTenant.js). The
@@ -59,6 +94,7 @@ async function resolveSender(req, verified) {
     if (ident) {
       userId = userId || ident.userId || null
       userName = ident.userName || ident.email || null
+      world = world || ident.world || null
     }
   }
   const name = (userName == null ? '' : String(userName)).trim() || null
@@ -70,6 +106,7 @@ async function resolveSender(req, verified) {
     // What the live agent sees. Truthful in both directions.
     bridgeName: name || UNNAMED_SENDER,
     identified: Boolean(name),
+    world: world || null,
   }
 }
 
@@ -82,13 +119,13 @@ function supabaseHeaders() {
   }
 }
 
-async function writeFallbackToSupabase(body, sender) {
+async function writeFallbackToSupabase(body, sender, scope) {
   // Thin wrapper over the single write path (corner:one-write-path R1).
   // Routing policy — project resolution (explicit > room > tag, never fuzzy),
-  // mission canonicalization, collaborator-gated crosspost — lives in
-  // api/_lib/write-message.js. This wrapper only marshals the chat-send body:
-  // the ONE thing it knows that the module can't is the room the sender is
-  // standing in (`project:<slug>` room → that slug IS the project).
+  // scope authorization, mission canonicalization, collaborator-gated crosspost
+  // — lives in api/_lib/write-message.js. This wrapper only marshals the
+  // chat-send body: the ONE thing it knows that the module can't is the room the
+  // sender is standing in (`project:<slug>` room → that slug IS the project).
   const room = (body.room || '').trim()
   const roomProject = room.startsWith('project:')
     ? room.slice('project:'.length).trim() || null
@@ -106,6 +143,16 @@ async function writeFallbackToSupabase(body, sender) {
     project: body.project,
     roomProject,
     mission: body.mission,
+    // r5: all THREE routing arms this endpoint feeds the writer — the explicit
+    // `project` field, the `project:<slug>` room, and an inline [project:slug]
+    // tag in the text — converge on one resolved slug inside writeMessageRow,
+    // and this gates that slug. Built from the VERIFIED tenant in the handler.
+    authorizeProjectScope: scope?.authorizeProjectScope,
+    // The world that WROTE this message. Omitting it let the column's DB default
+    // stamp every row 'aom' — including Karen's and Ben's — which is exactly the
+    // evidence crosspost.js and the participation floor read as proof of
+    // belonging (r5 exploit 2).
+    worldId: scope?.worldId || null,
     metadata: body.metadata,
     // Author comes from the JWT, not the body. When the name can't be resolved
     // it stays null and write-message.js marks the row unattributed.
@@ -120,7 +167,7 @@ async function writeFallbackToSupabase(body, sender) {
 //   1. tasks: N rows linked by metadata.chain_id (first 'queued', rest 'waiting')
 //   2. messages: the original user prompt so it stays in chat history
 //   3. messages: a chain-card assistant message so the UI shows the chain inline
-async function maybeCreateChain(body, sender) {
+async function maybeCreateChain(body, sender, scope) {
   const message = (body.message || '').trim()
   if (!message.includes('>>')) return null
 
@@ -130,14 +177,40 @@ async function maybeCreateChain(body, sender) {
   const chain_id = crypto.randomUUID()
   const total = parts.length
   const agent = (body.agent || 'elon').trim()
-  const project = (body.project || '').trim()
+  let project = (body.project || '').trim()
   const now = new Date().toISOString()
   const client_id = body.client_id || 'aom'
+
+  // Scope-gate the chain's project ONCE, with the same authorizer the writer
+  // uses (memoized, so the two writeMessageRow calls below reuse this verdict at
+  // no extra cost). It has to happen HERE and not only inside the writer,
+  // because this path also mints `tasks` rows: tasks.project and metadata.repo
+  // steer which repo task-runner.sh checks a worker out into, so an
+  // unauthorized slug here is the same escalation wearing a different hat.
+  // Same failure mode as the writer's, deliberately: drop the scope, never drop
+  // the work.
+  if (project && typeof scope?.authorizeProjectScope === 'function') {
+    let verdict
+    try {
+      verdict = await scope.authorizeProjectScope(project)
+    } catch (e) {
+      verdict = { ok: false, reason: String((e && e.message) || e) }  // fail closed
+    }
+    if (!verdict || !verdict.ok) {
+      console.warn(
+        `[chat-bridge] chain project scope DENIED: tenant "${client_id}" may not queue tasks under project "${project}" — ${verdict?.reason || 'not reachable from this world'}; queueing unscoped`,
+      )
+      project = ''
+    }
+  }
+
   // task-runner.sh requires metadata.repo to spawn a worker. Without it the row
   // gets failed immediately with "metadata.repo missing; front desk must set it".
   // Chain tasks come straight from the dashboard (no front desk classification),
   // so we infer the repo from project slug -> aom-studio default.
   // normalize_repo() in task-runner.sh maps corner/aom-website/arsenal-directory/aom -> aom-studio.
+  // Reads the AUTHORIZED `project`, so a refused slug cannot steer the checkout
+  // through this arm. (body.repo is still caller-supplied — see escalations.)
   const repo = (body.repo || project || 'aom-studio').trim() || 'aom-studio'
 
   // 1) Persist the user's original chain prompt so reload still shows what they asked.
@@ -155,6 +228,11 @@ async function maybeCreateChain(body, sender) {
     source: 'corner-dashboard',
     clientId: client_id,
     project: project || null,
+    // Already authorized above; passed again so the writer re-checks the slug it
+    // finally resolves (an inline [project:slug] tag in the chain prompt takes
+    // the same gate). Memoized — the explicit slug costs nothing twice.
+    authorizeProjectScope: scope?.authorizeProjectScope,
+    worldId: scope?.worldId || null,
     userId: sender?.userId || null,
     userName: sender?.userName || null,
     metadata: { chain_id, chain_total: total },
@@ -219,6 +297,8 @@ async function maybeCreateChain(body, sender) {
     source: 'chain-card',
     clientId: client_id,
     project: project || null,
+    authorizeProjectScope: scope?.authorizeProjectScope,
+    worldId: scope?.worldId || null,
     // The chain card is the assistant's own summary row, not the human's — it
     // carries no user_name. user_id stays so the card is traceable to the
     // session that triggered it.
@@ -341,6 +421,33 @@ export default async function handler(req, res) {
     // founder. An unknown sender now reads as unknown, all the way down.
     const sender = await resolveSender(req, verified)
 
+    // ---- Project SCOPE authorization (r5 — finish r4's wiring) --------------
+    // The tenant gate above answers "may this caller act inside this ROOM". It
+    // says nothing about the project slug, which arrives here by THREE routes —
+    // `body.project`, a `project:<slug>` room, and an inline [project:slug] tag
+    // — and lands in `messages.project`, one of the two columns the
+    // participation floor in verifyTenant.js reads as proof of belonging. Until
+    // now this endpoint passed all three straight through, so the busiest write
+    // door in the product was the one that let a world mint its own evidence:
+    // tag a message with an AOM-only slug from your own world, and the next
+    // request walks through the gate on the row you just wrote.
+    //
+    // Same one line supabase-messages.js uses, built from the VERIFIED tenant
+    // and never a body field. Deliberately NOT a second authorization model —
+    // the decision stays verifyProjectAccess inside makeProjectScopeAuthorizer,
+    // because a drifting second copy is how r2 and r3 each shipped a lockout.
+    const authorizeProjectScope = onceProjectScope(
+      makeProjectScopeAuthorizer({ req, clientId: verified.tenant }),
+    )
+    // The world this row is written FROM. In a normal room that is the room's
+    // own world; in a SHARED room the message sits in neither world's namespace,
+    // so it carries the AUTHOR's world — otherwise Ben's message in an AOM-held
+    // shared project reads as AOM's. Identical rule to supabase-messages.js.
+    const rowWorldId = String(verified.tenant).startsWith(SHARED_PREFIX)
+      ? (sender.world || null)
+      : verified.tenant
+    const scope = { authorizeProjectScope, worldId: rowWorldId }
+
     // Project-owned rooms route to the owner's EA, not the default AOM dispatcher.
     // Patrik is a guest in Ben's rooms — the host agent answers, not Elon.
     // AOM internal projects stay on Elon.
@@ -363,7 +470,7 @@ export default async function handler(req, res) {
     // Chain operator (>>): create N linked tasks, return chain summary,
     // skip bridge dispatch since the runner picks up the first task itself.
     if (message.includes('>>')) {
-      const chain = await maybeCreateChain(body, sender).catch((e) => ({ ok: false, error: String(e) }))
+      const chain = await maybeCreateChain(body, sender, scope).catch((e) => ({ ok: false, error: String(e) }))
       if (chain && chain.ok) {
         return res.status(200).json({
           // messageId points at the user's chain prompt so the frontend can
@@ -384,8 +491,24 @@ export default async function handler(req, res) {
     }
 
     // Always persist to Supabase (history + fallback receiver)
-    const supabaseResult = await writeFallbackToSupabase(body, sender).catch(() => null)
+    const supabaseResult = await writeFallbackToSupabase(body, sender, scope).catch(() => null)
     const messageId = supabaseResult?.message?.id || body.id || crypto.randomUUID()
+
+    // The writer's scope verdict, READ BACK off the row it actually wrote —
+    // never recomputed here, so the bridge and the database can never disagree
+    // about which room this message belongs to.
+    //
+    // A refused slug must not reach the live agent either. The tmux bridge
+    // routes on `project` / `room` / `mission`, so forwarding a denied scope
+    // would seat the sender in the very room the row was just kept out of — and
+    // put their text in front of the agent whose CONTEXT.md is the canon every
+    // other agent reads fresh. This is the SAME verdict, applied to the second
+    // consumer; it is not a second gate.
+    //
+    // On every non-denied send (i.e. all ordinary chat) the payload below is
+    // byte-identical to before this change, including when Supabase is
+    // unreachable — supabaseResult is null there, which is not a denial.
+    const scopeDenied = supabaseResult?.message?.metadata?.project_scope_denied || null
 
     // Try the bridge
     if (!BRIDGE_ENABLED) {
@@ -405,12 +528,17 @@ export default async function handler(req, res) {
           id: messageId,
           message,
           agent,
-          room: body.room || agent,
-          project: body.project || '',
+          // Only a `project:<slug>` room is dropped on denial, and only then —
+          // any other room string the caller was already entitled to is passed
+          // through untouched.
+          room: (scopeDenied && /^project:/i.test(String(body.room || ''))) ? agent : (body.room || agent),
+          project: scopeDenied ? '' : (body.project || ''),
           // R3 corner:mission-rooms — forward mission scope so bridge.py
           // can load mission CONTEXT/VISION/BUILD into the SDK system prompt.
           // DEF-14 guard: reject the string "undefined" — it is a JS serialization of a missing value.
-          ...(body.mission && String(body.mission).trim() !== 'undefined' && String(body.mission).trim() !== 'null' ? (() => { const canon = canonicalizeMissionSlug(String(body.mission).trim(), MISSION_SLUG_LOOKUP); return { mission: canon, metadata: { mission_slug: canon } } })() : {}),
+          // A mission always hangs off a project, so a denied project takes its
+          // mission with it — the same rule writeMessageRow applies to the row.
+          ...(!scopeDenied && body.mission && String(body.mission).trim() !== 'undefined' && String(body.mission).trim() !== 'null' ? (() => { const canon = canonicalizeMissionSlug(String(body.mission).trim(), MISSION_SLUG_LOOKUP); return { mission: canon, metadata: { mission_slug: canon } } })() : {}),
           // The live agent's only identity signal. Always non-empty on purpose:
           // scripts/sse-bridge.py falls back to "Patrik" on a missing/blank
           // user_name, so sending the honest label here is what actually stops
