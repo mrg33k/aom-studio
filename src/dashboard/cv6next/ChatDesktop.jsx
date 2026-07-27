@@ -132,7 +132,12 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
       <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
-        <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>{itemMeta(it)}</div>
+        <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+          {itemMeta(it)}
+          {/* Delivered without an independent critic pass. It still arrives —
+              the user judges it — but the card never pretends it was checked. */}
+          {it.gateStatus === 'fail' ? <span style={{ color: 'var(--faint)' }}>{' · not reviewed'}</span> : null}
+        </div>
       </div>
       {waiting ? (
         <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--warn)', background: 'var(--warn-weak)', border: '1px solid rgba(251,191,36,.3)', padding: '5px 8px', borderRadius: 8, flex: 'none', whiteSpace: 'nowrap' }}>Review</span>
@@ -215,7 +220,11 @@ export function useRoomCrossings(worldId, room) {
           const who = isUser ? 'You' : titleForAgent(m.agent || room.name);
           for (const att of rowAttachments(m).attachments) {
             if (!att?.url || !att?.name) continue;
-            out.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime || '', ts: m.timestamp || null, who, size: att.size || 0, isUser, messageId: m.id || '' });
+            // gateStatus rides on the attachment (share-file.py stamps it there,
+            // not on the parent row) so a file delivered without its critic pass
+            // can say so on the card. Patrik 2026-07-27: always deliver, mark it
+            // — the gate annotates the work now instead of silently eating it.
+            out.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime || '', ts: m.timestamp || null, who, size: att.size || 0, isUser, messageId: m.id || '', gateStatus: att.gate_status || '' });
           }
         }
         out.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
@@ -233,7 +242,10 @@ export function useRoomCrossings(worldId, room) {
       })
       .catch(() => { if (alive) setStatus((s) => (s === 'ready' ? s : 'error')); });
     load();
-    const t = setInterval(load, 25000);
+    // 5s, not 25s: a file that takes half a minute to show up reads as a lie
+    // even when the delivery was correct, and "it's in your Files panel" landing
+    // before the card does is exactly the complaint this panel exists to answer.
+    const t = setInterval(load, 5000);
     return () => { alive = false; clearInterval(t); };
   }, [worldId, room?.id, room?.isMission, room?.isProject, room?.missionSlug]); // eslint-disable-line react-hooks/exhaustive-deps
   const fromAgent = useMemo(() => items.filter((i) => !i.isUser), [items]);
