@@ -120,19 +120,21 @@ export default function RunningTasksCard({ room }) {
         const right = overdue
           ? `overdue ${fmtSpan(Math.round((now - due) / 60000))}`
           : (p.since ? `waiting ${fmtSpan(waited)}` : '');
+        const split = splitCount(p.title);
         return (
           <Row
             key={p.id}
-            title={p.title}
-            // No actor line here. On a dispatched job "who" answers a real question —
-            // which worker has it. On a promise it is always this room's own agent, so
-            // it printed "Corner" identically down every row and cost a line each. The
-            // room slug was removed from this same line earlier for exactly this reason;
-            // the agent slug is the same mistake wearing a different field name.
+            title={split.title}
+            // The meta slot carries the GROUP COUNT, not an actor. On a dispatched job
+            // "who" answers a real question — which worker has it. On a promise it is
+            // always this room's own agent, so it printed "Corner" identically down
+            // every row and cost a line each (the room slug was deleted from this same
+            // line earlier for exactly that reason). The freed line now earns its keep.
+            who={split.more}
             right={right}
             rightTone={overdue ? 'var(--accent)' : 'var(--muted)'}
             wrap
-            actions={<PromiseActions title={p.title} />}
+            actions={<PromiseActions title={split.title} />}
             // Items must separate more than the parts inside one item. With buttons in
             // the row that stopped being true at gap 12 — a row's buttons sat as close
             // to the NEXT promise as to their own title, and the list read as one blur.
@@ -263,6 +265,21 @@ const ghostBtn = {
   cursor: 'pointer',
 };
 
+// A grouped promise arrives as "<the promise> · +N more here" (written by
+// scripts/promise-reconcile.py, which owns the other half of this convention).
+// Jamming the count into the sentence made it wrap badly — "One soft check still
+// holding it · +18 more" broke so that "more here" dangled alone on line two, which
+// is the widow the design standard calls a FAIL. Split it out so the title is a clean
+// sentence and the count becomes its own quiet line, in the slot the redundant actor
+// label used to waste. Unmatched text passes straight through untouched.
+const GROUPED = / · \+(\d+) more here$/;
+function splitCount(title) {
+  const t = String(title || '');
+  const m = t.match(GROUPED);
+  return m ? { title: t.replace(GROUPED, ''), more: `+${m[1]} more in this room` }
+           : { title: t, more: '' };
+}
+
 function minsSince(iso, nowMs) {
   const t = iso ? new Date(iso).getTime() : NaN;
   if (!Number.isFinite(t)) return 0;
@@ -300,7 +317,7 @@ function Row({ title, who, right, rightTone, wrap, actions, separated }) {
             trail here is gone: the card is already scoped to this room, so it was both
             redundant and an internal slug in a user-facing line (rule 4). */}
           {who ? (
-            <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 600, marginTop: 2 }}>{who}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, marginTop: 4 }}>{who}</div>
           ) : null}
         </div>
         {right ? (
