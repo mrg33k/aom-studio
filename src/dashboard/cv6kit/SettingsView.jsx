@@ -8,7 +8,9 @@ import React, { useState } from 'react';
  *
  * Props (all required for real wiring; defaults provided for CV6KitTest sample preview):
  *   theme: 'dark' | 'light' | 'glass' — the active theme
- *   user: { full_name, email }
+ *   user: the signed-in person. Accepts either a plain { full_name, email } or the raw
+ *         Supabase auth user (name on user_metadata.full_name) — see accountName below.
+ *         Whoever is signed in is who renders; no person is ever a fallback.
  *   agents: [ { id, role, initials, toneBg }, ... ] — agents + their autonomy toggles
  *   connections: { [name]: boolean } — Email, GitHub, Calendar, Slack, Drive connect state
  *   scope: { [name]: string } — 'All rooms' | 'N rooms' | 'Private' per connection
@@ -66,6 +68,51 @@ const ICONS = {
     </svg>
   ),
 };
+
+/**
+ * Identity helpers — the signed-in person, resolved from whatever the caller
+ * hands us, and NEVER another human's real name or address as a fallback.
+ *
+ * Why these exist: the aom world holds three humans (Patrik, Ash, Courtney),
+ * each with their own login, and Ben/Karen have worlds of their own. The old
+ * `user?.full_name || 'Patrik'` was wrong twice over — CornerVG passes the raw
+ * Supabase auth user, whose display name lives on `user_metadata.full_name`,
+ * NOT on `full_name`, so the fallback fired for everyone. Ash opened Settings
+ * and read Patrik's name and Patrik's email as her own account.
+ *
+ * Read both shapes, then the email local-part, then a neutral placeholder.
+ * Exported so SettingsLive's desktop layout resolves identity identically.
+ */
+function rawName(user) {
+  const n = user?.full_name || user?.user_metadata?.full_name || user?.name;
+  return typeof n === 'string' ? n.trim() : '';
+}
+
+export function accountEmail(user) {
+  const e = user?.email || user?.user_metadata?.email;
+  return typeof e === 'string' ? e.trim() : '';
+}
+
+export function accountName(user) {
+  const named = rawName(user);
+  if (named) return named;
+  const email = accountEmail(user);
+  if (email) return email.split('@')[0];
+  // Session not resolved (signing in, signed out, profile still loading).
+  // A neutral placeholder is the honest answer; a person's name is not.
+  return 'Your account';
+}
+
+export function accountInitial(user) {
+  const src = rawName(user) || accountEmail(user);
+  const ch = src.replace(/[^A-Za-z0-9]/g, '')[0];
+  return ch ? ch.toUpperCase() : '·';
+}
+
+// Design-kit preview payload only (CV6KitTest renders SettingsView with no
+// props). Deliberately NOT a real person: the live surface always passes the
+// signed-in user down through SettingsLive.
+const SAMPLE_USER = { full_name: 'Sample User', email: 'you@example.com' };
 
 const SECTIONS = [
   { id: 'env', label: 'Environment', icon: 'env', title: 'Environment', sub: 'Everything your agents can see and act on. This is the master surface.' },
@@ -259,7 +306,7 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
                   <div style={{ padding: '0 14px 14px', borderTop: '1px solid var(--divider)', marginTop: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                       <span style={{ fontSize: 12, color: 'var(--muted)', flex: 1 }}>Account</span>
-                      <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)' }}>{user?.email || 'user@corner.so'}</span>
+                      <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)' }}>{accountEmail(user) || 'Unknown'}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                       <span style={{ fontSize: 12, color: 'var(--muted)', flex: 1 }}>Visible in</span>
@@ -417,11 +464,11 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
         <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, marginBottom: 18, overflow: 'hidden' }}>
           <div className="row" style={{ borderBottom: 'none' }}>
             <span className="av" style={{ fontSize: 17, fontWeight: 700, flex: 'none' }}>
-              {user?.full_name?.[0] || 'P'}
+              {accountInitial(user)}
             </span>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{user?.full_name || 'Patrik'}</div>
-              <div className="ds">{user?.email || 'patrik@corner.so'}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{accountName(user)}</div>
+              {accountEmail(user) ? <div className="ds">{accountEmail(user)}</div> : null}
             </div>
             {!live && (
               <button className="conn" style={{ marginLeft: 'auto', flex: 'none' }}>
@@ -476,7 +523,7 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
 export function SettingsView({
   theme = 'dark',
   live = false, // true = real live surface: hide controls/data not wired to a real backend
-  user = { full_name: 'Patrik', email: 'patrik@corner.so' },
+  user = SAMPLE_USER,
   agents = [
     { id: 'Elon', initials: 'EL', role: 'Engineering · drives missions', tone: 'var(--success)', toneBg: 'rgba(52,211,153,.2)' },
     { id: 'Rex', initials: 'RX', role: 'Writing · drafts & digests', tone: 'var(--lime-400)', toneBg: 'rgba(163,230,53,.2)' }
@@ -521,11 +568,11 @@ export function SettingsView({
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '6px 4px 20px' }}>
             <span className="av" style={{ fontSize: 17, fontWeight: 700, flex: 'none' }}>
-              {user?.full_name?.[0] || 'P'}
+              {accountInitial(user)}
             </span>
             <div style={{ minWidth: 0 }}>
-              <div className="nm" style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em' }}>{user?.full_name || 'Patrik'}</div>
-              <div className="ds">{user?.email || 'patrik@corner.so'}</div>
+              <div className="nm" style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em' }}>{accountName(user)}</div>
+              {accountEmail(user) ? <div className="ds">{accountEmail(user)}</div> : null}
             </div>
           </div>
 

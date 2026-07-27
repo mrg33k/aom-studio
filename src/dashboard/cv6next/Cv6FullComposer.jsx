@@ -143,17 +143,42 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const setMessages = useCallback((updater) => { setBridgeMessages(updater); }, []);
 
   // ── Post helper: drop a real row into the opened room, scoped like quickSend. ──
-  const postToRoom = useCallback((text, role, metadata) => {
+  //
+  // corner:voice-chat 2026-07-27 — two attribution defects closed here:
+  //
+  //   * THE AUTHOR RIDES ALONG. userIdentity is derived from the live Supabase
+  //     session a few lines up, and this path dropped it — so every row it wrote
+  //     (voice turns, generated images) landed with a null author and downstream
+  //     defaults filled in "Patrik". A human turn now carries the real person.
+  //     An AGENT turn deliberately carries none: stamping the caller onto the
+  //     agent's own words would say the person said what the agent said.
+  //
+  //   * THE CALLER'S SOURCE WINS. `source` was pinned to 'corner-dashboard' and
+  //     the caller's { source: 'voice' } was buried inside metadata, so spoken
+  //     messages were indistinguishable from typed ones in the permanent record
+  //     — and, because 'corner-dashboard' is on supabase-listener's executable
+  //     allowlist and 'voice' is not, every mid-call fragment was also being
+  //     re-fired at the agent as fresh user input. The other two voice hosts
+  //     (cv3 thread + project chat) have always written source:'voice'; this
+  //     brings CV6 in line with them.
+  const postToRoom = useCallback((text, role, options) => {
     if (!worldId || !room) return Promise.resolve();
+    const { source: sourceOverride, ...rest } = options || {};
+    const source = sourceOverride || 'corner-dashboard';
+    const extraMeta = Object.keys(rest).length ? rest : null;
+    const author = role === 'user' && userIdentity.user_id
+      ? { user_id: userIdentity.user_id, ...(userIdentity.user_name ? { user_name: userIdentity.user_name } : {}) }
+      : {};
+    const base = { client_id: worldId, text, role, source, ...author };
     const payload = room.isMission
-      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text, role, source: 'corner-dashboard', metadata: { mission_slug: room.missionSlug || room.id, ...(metadata || {}) } }
+      ? { ...base, agent: 'corner', project: room.projectSlug, metadata: { mission_slug: room.missionSlug || room.id, ...(extraMeta || {}) } }
       : room.isProject
-        ? { client_id: worldId, agent: 'corner', project: room.id, text, role, source: 'corner-dashboard', metadata }
-        : { client_id: worldId, agent: room.id, text, role, source: 'corner-dashboard', metadata };
+        ? { ...base, agent: 'corner', project: room.id, ...(extraMeta ? { metadata: extraMeta } : {}) }
+        : { ...base, agent: room.id, ...(extraMeta ? { metadata: extraMeta } : {}) };
     return authFetch('/api/dashboard/supabase-messages', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     });
-  }, [worldId, room]);
+  }, [worldId, room, userIdentity]);
 
   // ── Send: image-gen branch when a tool is pinned, else plain text via the
   // thread's own send (keeps the col3 optimistic bubble). ──
@@ -322,6 +347,11 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
                         <VoiceChat
                           ref={voiceChatRef}
                           agentSlug={selectedAgent?.slug || 'corner'}
+                          // Only an agent room has a real agent NAME. In a project
+                          // or mission room selectedAgent.name is the ROOM's name
+                          // (mapRoom above), which would mislabel the speaker — so
+                          // those fall back to the slug.
+                          agentName={(room?.isProject || room?.isMission) ? null : (selectedAgent?.name || null)}
                           agentColor={selectedAgent?.color || '#3B82F6'}
                           clientId={worldId}
                           projectSlug={selectedProject?.slug}
@@ -331,7 +361,16 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
                           onVoiceChange={settings.selectVoice}
                           onStatusChange={setVoiceStatus}
                           onVolumeChange={setVoiceVolume}
-                          onTranscript={(role, text) => {
+                          // (text, role) — NOT (role, text). VoiceChat.jsx calls
+                          // onTranscript?.(text, role) at all nine of its call
+                          // sites. This handler had the two reversed, so it posted
+                          // the literal word "user"/"model" as the message body,
+                          // never wrote a spoken word, and compared a whole
+                          // sentence against 'model' — which is never true, so
+                          // EVERY turn including the agent's own replies was filed
+                          // as the human. That is why CV6 voice rooms read as one
+                          // person talking to themselves. (2026-07-27)
+                          onTranscript={(text, role) => {
                             setVoiceTranscriptText(text);
                             postToRoom(text, role === 'model' ? 'agent' : 'user', { source: 'voice' });
                           }}

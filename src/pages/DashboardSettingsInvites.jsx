@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../dashboard/lib/supabase.js'
+import { authFetch } from '../dashboard/lib/authFetch.js'
 import { getClientId } from '../dashboard/lib/clientConfig.js'
 
 const C = {
@@ -76,7 +77,11 @@ export default function DashboardSettingsInvites() {
     setInviteUrl('')
     setInviteToken('')
     try {
-      const resp = await fetch('/api/dashboard/invite-create', {
+      // authFetch, not fetch: invite-create runs verifyTenant on world_slug and
+      // records invited_by from the JWT. Any member of the world can still
+      // invite at 'member' role — the admin ceiling only applies to
+      // owner/admin invites — so this stays open to Ash and Courtney.
+      const resp = await authFetch('/api/dashboard/invite-create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

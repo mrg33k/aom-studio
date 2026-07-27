@@ -25,7 +25,7 @@
 //   - text references `--mission <project>:<slug>` (legacy briefs)
 // Otherwise it lands in unfiled_tasks under the project.
 
-import { extractJwt } from '../_lib/verifyTenant.js'
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
@@ -98,10 +98,18 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'method not allowed' })
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' })
 
-  const jwt = extractJwt(req)
-  if (!jwt) return res.status(401).json({ error: 'jwt required' })
-
-  const clientId = String(req.query.client || 'aom').trim().toLowerCase()
+  // corner:identity-attribution 2026-07-27 — this used to check only that SOME
+  // valid JWT was present and then take the world straight off ?client=, so any
+  // signed-in user of any world could enumerate another world's whole project +
+  // mission tree. verifyTenant is the gate that was already imported here but
+  // never called.
+  let clientId
+  try {
+    ({ tenant: clientId } = await verifyTenant(String(req.query.client || 'aom'), req))
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    throw err
+  }
 
   // Live-first mission registry (see loadRegistry above). bust=1 skips the 30s
   // cache — the dashboard sends it on the refetch right after a rename/move so
@@ -140,9 +148,17 @@ export default async function handler(req, res) {
     }
   } catch { /* on failure archived rooms over-show; safer than hiding live ones */ }
 
+  // The message namespaces this viewer may draw recency from: their own world
+  // plus the shared rooms they hold a project_access grant into. A shared room
+  // is ONE room whose rows carry client_id='shared:<slug>' — it belongs to
+  // neither world's namespace, which is why it has to be listed explicitly.
+  //
+  // 2026-07-27: removed `if (clientId === 'aom') clientIds.push('ben')`. Ben has
+  // his OWN world; it reaches an AOM viewer through an explicit project_access
+  // grant (already collected in sharedSlugs above) or not at all. The hardcode
+  // contradicted the world model and it is the same one-liner that still exists
+  // at src/dashboard/hooks/useTasks.js:141.
   const clientIds = [clientId, ...sharedSlugs.map(s => `shared:${s}`)]
-  // Mirror the Path A widen from useTasks.js so aom viewers see Ben tasks.
-  if (clientId === 'aom') clientIds.push('ben')
 
   // R3-isolation — build the set of project slugs this client owns so the
   // registry loop below can skip missions from other worlds. AOM is the
@@ -196,8 +212,15 @@ export default async function handler(req, res) {
   const projectLastSeenAt = new Map()
   try {
     const sinceIso = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+    // Scope the recency scan to namespaces this viewer is entitled to (own world
+    // + granted shared rooms). It used to read the newest 2000 rows across EVERY
+    // world, which both leaked "which rooms are hot" and let a noisy world starve
+    // a quiet one out of the window. Legacy rows with a null client_id predate
+    // multi-tenancy and stay included so nothing that renders today disappears.
+    const inList = clientIds.map(c => `"${String(c).replace(/"/g, '')}"`).join(',')
+    const recencyScope = `&or=(client_id.in.(${inList}),client_id.is.null)`
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?select=timestamp,project,metadata&timestamp=gte.${encodeURIComponent(sinceIso)}&order=timestamp.desc&limit=2000`,
+      `${SUPABASE_URL}/rest/v1/messages?select=timestamp,project,metadata&timestamp=gte.${encodeURIComponent(sinceIso)}${recencyScope}&order=timestamp.desc&limit=2000`,
       { headers: supabaseHeaders() },
     )
     if (r.ok) {

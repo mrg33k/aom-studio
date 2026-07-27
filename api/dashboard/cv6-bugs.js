@@ -12,7 +12,7 @@
 // POST add:      { action:'add', page, title, expected, severity, owner?, world? } -> { ok, id }
 // POST update:   { action:'update', id, status?, ...fields, world? }              -> { ok }
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
 import { stateGetWithLegacy, stateSet } from '../_lib/stateStore.js';
 
 const KIND = 'dash_cv6_bugs';
@@ -56,12 +56,22 @@ export default async function handler(req, res) {
 
   // Writes are tenant-gated (same posture as command-deck-action).
   const { action, world } = req.body || {};
+  let verified = null;
   try {
-    await verifyTenant((world || 'aom').toString(), req);
+    verified = await verifyTenant((world || 'aom').toString(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     return res.status(500).json({ error: 'Auth verification failed' });
   }
+
+  // Who filed / edited this, from the JWT. Three people share the AOM world, so
+  // "the reporter" is a variable — it used to be stamped 'patrik' regardless.
+  // verifyTenant already resolved the user, so the common path costs no extra
+  // auth round trip; callerIdentity is the fallback for a shape without identity.
+  const reporter = (verified && 'userName' in verified)
+    ? verified
+    : await callerIdentity(req).catch(() => null);
+  const reporterName = clean(reporter?.userName || reporter?.email || '', 40) || null;
 
   let bugs = await loadBugs(world);
 
@@ -78,11 +88,15 @@ export default async function handler(req, res) {
       severity: ALLOWED_STATUS.includes(req.body.severity) ? req.body.severity : (clean(req.body.severity, 12) || 'Medium'),
       priority: (pr >= 1 && pr <= 5) ? pr : 3,
       status: ALLOWED_STATUS.includes(req.body.status) ? req.body.status : 'Open',
-      owner: clean(req.body.owner, 24) || 'Patrik',
+      // Unassigned beats mis-assigned: an un-owned bug reads as un-owned in the
+      // Tracker (`b.owner || ''`) instead of silently landing on Patrik's plate.
+      owner: clean(req.body.owner, 24) || '',
       attachments: Array.isArray(req.body.attachments)
         ? req.body.attachments.slice(0, 12).map((a) => ({ name: clean(a && a.name, 200), path: clean(a && a.path, 400) })).filter((a) => a.name)
         : [],
-      added_by: 'patrik',
+      // The verified filer, or nothing. Never a stand-in name.
+      added_by: reporterName,
+      added_by_user_id: reporter?.userId || null,
     });
     const ok = await saveBugs(world, bugs);
     if (!ok) return res.status(500).json({ error: 'write failed' });
@@ -100,6 +114,10 @@ export default async function handler(req, res) {
     // Assign-to-agent stamps the bug's owner (R-ASSIGN 2026-07-06; add already took owner, update didn't).
     if (req.body.owner != null) bug.owner = clean(req.body.owner, 24);
     if (req.body.priority != null) { const pr = parseInt(req.body.priority, 10); if (pr >= 1 && pr <= 5) bug.priority = pr; }
+    // Trail of who last touched it — verified, never body-supplied.
+    bug.updated_by = reporterName;
+    bug.updated_by_user_id = reporter?.userId || null;
+    bug.updated_at = new Date().toISOString();
     const ok = await saveBugs(world, bugs);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true });

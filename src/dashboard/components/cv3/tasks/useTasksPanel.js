@@ -719,7 +719,10 @@ export function useTasksPanel() {
     if (!task?.id) return
     setRetryingTaskIds(prev => { const next = new Set(prev); next.add(task.id); return next })
     try {
-      const resp = await fetch('/api/dashboard/retry-task', {
+      // authFetch, not fetch: retry-task gates on verifyTenant against the
+      // OWNING world of the failed row, so the request must carry the session
+      // JWT. Any member of that world (not just the super-admin) passes.
+      const resp = await authFetch('/api/dashboard/retry-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId: task.id }),

@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { SettingsView } from './SettingsView';
+import { SettingsView, accountName, accountEmail, accountInitial } from './SettingsView';
 import { CvgDesktopChrome } from './CvgDesktopChrome';
 import { authFetch } from '../lib/authFetch';
 import { supabase } from '../lib/supabase';
 
 /**
  * SettingsLive — wires the CV6 Settings screen (SettingsView) to REAL data:
- *  - user: current auth user (full_name, email) from supabase.auth.user()
+ *  - user: current auth user from supabase.auth.user(). NOTE the real shape —
+ *    the display name is on user_metadata.full_name, not full_name — which is why
+ *    every profile row goes through accountName/accountEmail/accountInitial rather
+ *    than reading user.full_name directly. Whoever is signed in is who renders:
+ *    Ash sees Ash, Courtney sees Courtney, and an unresolved session shows a
+ *    neutral placeholder, never another person's name or address.
  *  - theme: passed by integrator; onThemeChange updates it live
  *  - connections: GET /api/integrations/list (slug -> connected status)
  *  - scope: connection visibility scope (read-only for now; UI shows 'All rooms' | 'Private')
@@ -561,11 +566,11 @@ export function SettingsLive({
             <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, marginBottom: 18, overflow: 'hidden' }}>
               <div style={rowStyle}>
                 <span style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--avatar,var(--accent))', color: '#fff', fontSize: 17, fontWeight: 700, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {user?.full_name?.[0] || 'P'}
+                  {accountInitial(user)}
                 </span>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{user?.full_name || 'Patrik'}</div>
-                  <div style={dsStyle}>{user?.email || 'patrik@corner.so'}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{accountName(user)}</div>
+                  {accountEmail(user) ? <div style={dsStyle}>{accountEmail(user)}</div> : null}
                 </div>
               </div>
             </div>
@@ -603,7 +608,7 @@ export function SettingsLive({
 
     return (
       <div data-cv6kit data-theme={theme} style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
-        <CvgDesktopChrome activeTool="settings" onNav={onNav} user={{ initial: user?.full_name?.[0] || 'P' }} />
+        <CvgDesktopChrome activeTool="settings" onNav={onNav} user={{ initial: accountInitial(user) }} />
         <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
           <div style={{ width: 236, flex: 'none', borderRight: '1px solid var(--divider)', padding: '18px 14px', overflowY: 'auto' }}>
             {SECTIONS_DESKTOP.map((s) => (

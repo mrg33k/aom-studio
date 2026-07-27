@@ -27,7 +27,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
 
 const AOM_EA_ENV = process.env.AOM_EA_ROOT;
 const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
@@ -86,6 +86,38 @@ async function writeDeliverable(name, content) {
   }
 }
 
+// ── Who tapped the button ──────────────────────────────────────────────────────
+// Resolved SERVER-SIDE from the JWT. The deck's answers get written into
+// needs-patrik.md and room-goals.json, which the master loop reads back and acts
+// on, so an answer credited to the wrong person is an instruction credited to the
+// wrong authority (identity-attribution audit, 2026-07-27).
+//
+// NOTE on the `source: 'patrik'` value further down: that string is a MACHINE
+// SENTINEL, not an identity claim. scripts/goal-notetaker.py keys its
+// never-overwrite guard on `source == 'patrik'` / `goal_source == 'patrik'`
+// (lines 270, 278, 958) — it means "a human set this, don't clobber it". It is
+// deliberately left alone; the real human is recorded alongside it in the new
+// `answered_by` / `edited_by` fields.
+//
+// `verified` is verifyTenant's result, which already carries the identity it
+// resolved from the JWT — no second /auth/v1/user round trip on the common path.
+async function resolveActor(req, verified) {
+  const ident = (verified && 'userName' in verified)
+    ? verified
+    : await callerIdentity(req).catch(() => null);
+  const raw = ident?.userName || ident?.email || '';
+  const name = String(raw).replace(/\s+/g, ' ').trim().slice(0, 80) || null;
+  return {
+    userId: ident?.userId || null,
+    name,
+    // Written into the deliverable next to the answer. "Unattributed" is the
+    // honest rendering — the loop must not read an unknown answer as the
+    // founder's decision.
+    label: name || 'Unattributed',
+    identified: Boolean(name),
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -103,9 +135,9 @@ export default async function handler(req, res) {
   // super-admin so any valid world passes). Earlier this called verifyTenant(req)
   // with no world, which always 400'd "tenant required" — the reason no action
   // ever worked.
-  let tenantId = null;
+  let verified = null;
   try {
-    tenantId = await verifyTenant((world || 'aom').toString(), req);
+    verified = await verifyTenant((world || 'aom').toString(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) {
       return res.status(err.status).json({ error: err.message });
@@ -117,6 +149,9 @@ export default async function handler(req, res) {
   // used `callId`. Accept either.
   const callKey = callId || lineMatch;
 
+  // The verified human behind this tap. Never body-supplied, never defaulted.
+  const actor = await resolveActor(req, verified);
+
   // ── Validate action ────────────────────────────────────────────────────────
   if (!action || !['mark_call_done', 'answer_question', 'clear_question', 'keeper_decision', 'set_room_status', 'dismiss', 'edit_goal', 'touch_room'].includes(action)) {
     return res.status(400).json({ error: 'Invalid action' });
@@ -124,27 +159,28 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'mark_call_done') {
-      // `answer` (optional) is the decision Patrik tapped; recorded inline so the
-      // loop acts on it. Absent = a plain "handled" with no decision text.
-      return await markCallDone(callKey, answer, res);
+      // `answer` (optional) is the decision the caller tapped; recorded inline
+      // with their name so the loop acts on it. Absent = a plain "handled" with
+      // no decision text.
+      return await markCallDone(callKey, answer, actor, res);
     } else if (action === 'answer_question') {
-      return await answerQuestion(room, answer, res);
+      return await answerQuestion(room, answer, actor, res);
     } else if (action === 'clear_question') {
       // The goal-ledger answer card (wd40 R2): Patrik answered the room's open
       // question IN the room (via the chat send path), so clear the question and
       // record the answer WITHOUT touching the goal — unlike answer_question,
       // whose CommandDeck-era semantics overwrite the goal with the answer.
-      return await clearQuestion(room, answer, res);
+      return await clearQuestion(room, answer, actor, res);
     } else if (action === 'keeper_decision') {
-      return await keeperDecision(proposalId, answer, res);
+      return await keeperDecision(proposalId, answer, actor, res);
     } else if (action === 'set_room_status') {
       // Room-status cards now carry decide chips ("Looks good" / "Pause it").
       // This flips a room's status + bumps last_reviewed so the loop sees the
       // steer next tick. `answer` (optional) records a short note inline.
-      return await setRoomStatus(room, status, answer, res);
+      return await setRoomStatus(room, status, answer, actor, res);
     } else if (action === 'edit_goal') {
-      // Patrik edits the room's one-line goal directly in the Command Center.
-      return await editGoal(room, goal, res);
+      // The caller edits the room's one-line goal directly in the Command Center.
+      return await editGoal(room, goal, actor, res);
     } else if (action === 'touch_room') {
       // A quick reply in the Command Center counts as just-touched: bump the
       // room's timer so its check-in countdown restarts and it sorts to the top.
@@ -153,7 +189,7 @@ export default async function handler(req, res) {
       // Generalized "clear it from the deck" across card types. Where a real
       // server-side state exists (hard call, question, keeper) we persist it so
       // it never resurfaces; client-only kinds (room/stuck/activity) just hide.
-      return await dismissItem(kind, { callKey, room, proposalId }, res);
+      return await dismissItem(kind, { callKey, room, proposalId, actor }, res);
     }
   } catch (err) {
     console.error('[command-deck-action] Error:', err);
@@ -163,7 +199,7 @@ export default async function handler(req, res) {
 
 // ── Action handlers ────────────────────────────────────────────────────────────
 
-async function markCallDone(callId, answer, res) {
+async function markCallDone(callId, answer, actor, res) {
   if (!callId || typeof callId !== 'string') {
     return res.status(400).json({ error: 'callId required' });
   }
@@ -183,7 +219,10 @@ async function markCallDone(callId, answer, res) {
       if (!found && /^- \[ \] /.test(lines[i]) && lines[i].includes(callId)) {
         lines[i] = lines[i].replace('[ ]', '[x]');
         if (answer && typeof answer === 'string' && answer.trim()) {
-          lines[i] += `  → Patrik: ${answer.trim()}`;
+          // Name the actual answerer. The master loop reads this line back and
+          // acts on it, so "→ Patrik:" on someone else's answer handed a
+          // teammate's words the founder's authority.
+          lines[i] += `  → ${actor?.label || 'Unattributed'}: ${answer.trim()}`;
         }
         found = true;
       }
@@ -206,7 +245,7 @@ async function markCallDone(callId, answer, res) {
   }
 }
 
-async function answerQuestion(room, answer, res) {
+async function answerQuestion(room, answer, actor, res) {
   if (!room || typeof room !== 'string') {
     return res.status(400).json({ error: 'room required' });
   }
@@ -243,11 +282,17 @@ async function answerQuestion(room, answer, res) {
     goals.rooms[room] = {
       ...goals.rooms[room],
       goal: answer,
+      // 'patrik' here is goal-notetaker.py's "a human set this, never clobber
+      // it" sentinel, NOT a claim about who answered. The real answerer is
+      // recorded in answered_by / answered_by_user_id below.
       source: 'patrik',
       status: 'active',
       confidence: 'clear',
       open_question: null,
       last_answer: answer,
+      answered_by: actor?.name || null,
+      answered_by_user_id: actor?.userId || null,
+      ...(actor?.identified ? {} : { answered_by_unattributed: true }),
       last_reviewed: new Date().toISOString(),
     };
 
@@ -272,7 +317,7 @@ async function answerQuestion(room, answer, res) {
 // Records a Keeper proposal decision into keeper-decisions.json. The Keeper skips
 // any proposal id present here, so a resolved tidy-up never resurfaces. We record
 // the choice; acting on it (archive / merge) is a separate, careful step.
-async function keeperDecision(proposalId, answer, res) {
+async function keeperDecision(proposalId, answer, actor, res) {
   if (!proposalId || typeof proposalId !== 'string') {
     return res.status(400).json({ error: 'proposalId required' });
   }
@@ -285,7 +330,13 @@ async function keeperDecision(proposalId, answer, res) {
     if (raw) {
       try { decisions = JSON.parse(raw) || {}; } catch { decisions = {}; }
     }
-    decisions[proposalId] = { answer: answer.trim(), ts: new Date().toISOString() };
+    decisions[proposalId] = {
+      answer: answer.trim(),
+      ts: new Date().toISOString(),
+      decided_by: actor?.name || null,
+      decided_by_user_id: actor?.userId || null,
+      ...(actor?.identified ? {} : { unattributed: true }),
+    };
     const ok = await writeDeliverable('keeper-decisions.json', JSON.stringify(decisions, null, 2) + '\n');
     if (!ok) return res.status(500).json({ error: 'Failed to write keeper-decisions.json' });
     return res.status(200).json({ success: true, action: 'keeper_decision', proposalId });
@@ -301,7 +352,7 @@ async function keeperDecision(proposalId, answer, res) {
 // Clear a room's open question after the answer was delivered into the room
 // (goal-ledger answer card). Non-destructive: goal / status / source stay intact;
 // only open_question clears, with the answer recorded for the loop's next tick.
-async function clearQuestion(room, answer, res) {
+async function clearQuestion(room, answer, actor, res) {
   if (!room || typeof room !== 'string') {
     return res.status(400).json({ error: 'room required' });
   }
@@ -318,7 +369,14 @@ async function clearQuestion(room, answer, res) {
       ...goals.rooms[room],
       open_question: null,
       last_reviewed: new Date().toISOString(),
-      ...(answer && typeof answer === 'string' && answer.trim() ? { last_answer: answer.trim() } : {}),
+      ...(answer && typeof answer === 'string' && answer.trim()
+        ? {
+            last_answer: answer.trim(),
+            answered_by: actor?.name || null,
+            answered_by_user_id: actor?.userId || null,
+            ...(actor?.identified ? {} : { answered_by_unattributed: true }),
+          }
+        : {}),
     };
     const ok = await writeDeliverable('room-goals.json', JSON.stringify(goals, null, 2) + '\n');
     if (!ok) return res.status(500).json({ error: 'Failed to write room-goals.json' });
@@ -329,7 +387,7 @@ async function clearQuestion(room, answer, res) {
   }
 }
 
-async function setRoomStatus(room, status, note, res) {
+async function setRoomStatus(room, status, note, actor, res) {
   if (!room || typeof room !== 'string') {
     return res.status(400).json({ error: 'room required' });
   }
@@ -348,7 +406,11 @@ async function setRoomStatus(room, status, note, res) {
     goals.rooms[room] = {
       ...goals.rooms[room],
       status,
+      // Sentinel, not an identity — see the note on resolveActor.
       source: 'patrik',
+      status_set_by: actor?.name || null,
+      status_set_by_user_id: actor?.userId || null,
+      ...(actor?.identified ? {} : { status_set_by_unattributed: true }),
       last_reviewed: new Date().toISOString(),
       ...(note && typeof note === 'string' && note.trim() ? { last_answer: note.trim() } : {}),
     };
@@ -361,9 +423,10 @@ async function setRoomStatus(room, status, note, res) {
   }
 }
 
-// Patrik edits a room's one-line goal directly from the Command Center spreadsheet.
-// Read-modify-write room-goals.json so the loop sees the new goal next tick.
-async function editGoal(room, goal, res) {
+// A human edits a room's one-line goal directly from the Command Center
+// spreadsheet. Read-modify-write room-goals.json so the loop sees the new goal
+// next tick, with the editor's real name attached.
+async function editGoal(room, goal, actor, res) {
   if (!room || typeof room !== 'string') {
     return res.status(400).json({ error: 'room required' });
   }
@@ -385,10 +448,15 @@ async function editGoal(room, goal, res) {
       goal: clean,
       // BOTH spellings: goal_source is the CommandDeck-era field, but the
       // goal-notetaker's never-overwrite guard reads `source` — without it the
-      // next 20-min sweep clobbered Patrik's stated goal (fixed 2026-07-06,
+      // next 20-min sweep clobbered the stated goal (fixed 2026-07-06,
       // wd40-ledger R5, alongside the daemon-side guard now reading both).
+      // The literal 'patrik' is that guard's sentinel for "human-set"; the human
+      // who actually typed it is recorded in goal_edited_by.
       source: 'patrik',
       goal_source: 'patrik',
+      goal_edited_by: actor?.name || null,
+      goal_edited_by_user_id: actor?.userId || null,
+      ...(actor?.identified ? {} : { goal_edited_by_unattributed: true }),
       goal_edited_at: now,
       last_reviewed: now,
       last_touched: now, // editing the goal counts as activity so the row re-sorts
@@ -431,11 +499,11 @@ async function touchRoom(room, res) {
 // Generalized "clear it from the deck". For server-backed items we persist the
 // dismissal so the loop doesn't resurface it; for client-only kinds we return
 // success and the deck hides the card locally.
-async function dismissItem(kind, { callKey, room, proposalId }, res) {
+async function dismissItem(kind, { callKey, room, proposalId, actor }, res) {
   try {
     if (kind === 'hard_call') {
       // Flip the checkbox to handled (no decision text) — same path as Mark done.
-      return await markCallDone(callKey, null, res);
+      return await markCallDone(callKey, null, actor, res);
     }
     if (kind === 'question') {
       // Flip the open-questions.md checkbox without writing a goal answer.
@@ -457,7 +525,7 @@ async function dismissItem(kind, { callKey, room, proposalId }, res) {
     }
     if (kind === 'keeper') {
       // Record a skip so the Keeper never re-proposes it.
-      return await keeperDecision(proposalId, 'dismissed', res);
+      return await keeperDecision(proposalId, 'dismissed', actor, res);
     }
     // Client-only kinds (room, stuck, activity): nothing to persist server-side.
     return res.status(200).json({ success: true, action: 'dismiss', kind: kind || 'local', clientOnly: true });

@@ -12,9 +12,16 @@
 //
 // Props:
 //   agentSlug   - agent identifier ("rex", "bobby", etc.)
+//   agentName   - optional display name for the agent; falls back to agentSlug.
+//                 Drives the transcript speaker label — it used to be the
+//                 literal string "REX" for every agent on every call.
 //   agentColor  - hex color for UI accents
 //   clientId    - tenant ID
-//   onTranscript(text, role) - called when transcript arrives
+//   onTranscript(text, role) - called when transcript arrives.
+//                 TEXT FIRST, ROLE SECOND. Every call site in this file passes
+//                 (text, role); a host that destructures (role, text) posts the
+//                 word "user"/"model" as the message body and files every turn
+//                 as the human (the CV6 bug found 2026-07-27).
 //   onStatusChange(status)   - 'idle' | 'connecting' | 'listening' | 'speaking' | 'error'
 
 // Voice pipeline verified working 2026-04-07.
@@ -126,7 +133,7 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange }, ref) {
+const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -180,25 +187,13 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     setTranscript(prev => [...prev, { role: 'system', text, id: Date.now() + Math.random() }])
   }, [])
 
-  const saveTranscript = useCallback((role, text) => {
-    if (!text?.trim() || !sessionIdRef.current) return
-    // Terminal rooms get ONE consolidated summary+transcript message on call end
-    // (via /api/dashboard/voice-summary), not a stream of per-chunk writes. Skipping
-    // here prevents noisy fragment messages from flooding the terminal agent's inbox
-    // during the call itself.
-    if (TERMINAL_AGENTS.has(agentSlug)) return
-    authFetch('/api/dashboard/supabase-messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: clientId,
-        agent: agentSlug,
-        role: role,
-        text: text.trim(),
-        source: 'voice',
-      }),
-    }).catch(() => {})
-  }, [clientId, agentSlug])
+  // NOTE (corner:voice-chat, 2026-07-27): a dead `saveTranscript` helper used to
+  // live here. It wrote voice turns straight to /api/dashboard/supabase-messages
+  // with NO author — and nothing called it, so it was a landmine waiting for
+  // someone to wire it up and reintroduce unattributed rows. Removed. Persisting
+  // a turn is the HOST's job, through onTranscript: the host is the only layer
+  // that knows who is on the call (see ProjectVoiceChatHost / VoiceChatHost /
+  // Cv6FullComposer, all of which attach the signed-in user's identity).
 
   const toggleMute = useCallback(() => {
     setIsMuted(prev => {
@@ -220,7 +215,10 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     }
     setPreviewLoading(true)
     try {
-      const sessionRes = await fetch('/api/dashboard/voice-session', {
+      // authFetch: voice-session verifies the caller's tenant and names the
+      // speaker from the JWT. A bare fetch reads as an unverified caller and
+      // gets a deliberately context-free session back.
+      const sessionRes = await authFetch('/api/dashboard/voice-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: agentSlug, client_id: clientId, voice: settings.voice }),
@@ -399,7 +397,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
 
         // Terminal rooms: fire-and-forget the richer Haiku summary in parallel.
         if (TERMINAL_AGENTS.has(agentSlug)) {
-          fetch('/api/dashboard/voice-summary', {
+          authFetch('/api/dashboard/voice-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -412,8 +410,14 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
         }
 
         // Awaited: the guaranteed handoff. Tear-down does NOT race ahead.
+        //
+        // authFetch, NOT bare fetch (corner:voice-chat, 2026-07-27). This POST
+        // writes a row the receiving agent EXECUTES, so the endpoint now
+        // requires a real session and derives the speaker from the JWT rather
+        // than believing a name in the body. Without the Authorization header
+        // the call 401s and the agent never hears the call.
         try {
-          const resp = await fetch('/api/dashboard/voice-handoff', {
+          const resp = await authFetch('/api/dashboard/voice-handoff', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -426,6 +430,9 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
               // instead of falling back to a 1:1 with the agent.
               ...(projectSlug ? { project: projectSlug } : {}),
               ...(missionSlug ? { mission_slug: missionSlug } : {}),
+              // NOTE: no user_id / user_name here on purpose. The speaker is
+              // resolved server-side from the session — a client-supplied
+              // author would be a claim, not an identity.
             }),
           })
           if (!resp.ok) {
@@ -476,8 +483,15 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     updateStatus('connecting')
 
     try {
-      // 1. Fetch session config from our API
-      const sessionRes = await fetch('/api/dashboard/voice-session', {
+      // 1. Fetch session config from our API.
+      //
+      // authFetch, NOT bare fetch (corner:voice-chat, 2026-07-27). voice-session
+      // now derives BOTH the caller's tenant (verifyTenant) and the speaker's
+      // name (callerIdentity) from this request's JWT. Without the header the
+      // endpoint correctly treats the call as unverified and hands back a
+      // session with NO workspace context and no speaker name — the agent would
+      // pick up the phone knowing nothing and no one.
+      const sessionRes = await authFetch('/api/dashboard/voice-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -721,7 +735,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
 
               if (call.name === 'lookup_context') {
                 try {
-                  const resp = await fetch(`/api/dashboard/voice-context-lookup?q=${encodeURIComponent(args.query || '')}`)
+                  const resp = await authFetch(`/api/dashboard/voice-context-lookup?q=${encodeURIComponent(args.query || '')}`)
                   const data = await resp.json()
                   if (data.results?.length) {
                     addSystemMessage(`Found ${data.count} relevant items for "${args.query}"`)
@@ -742,7 +756,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                     let ragResp = null
                     let fetchErr = null
                     try {
-                      ragResp = await fetch(`${window.location.protocol}//${window.location.host}/api/dashboard/voice-context-update`, {
+                      ragResp = await authFetch(`${window.location.protocol}//${window.location.host}/api/dashboard/voice-context-update`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ slug: projSlug, section: args.section, content: args.content, action: args.action || 'append' }),
@@ -781,7 +795,11 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 const prevStatus = status
                 updateStatus('creating')
                 try {
-                  const resp = await fetch('/api/dashboard/voice-create-entity', {
+                  // authFetch on every voice tool call: these create real
+                  // projects/missions and edit project context. They must carry
+                  // the caller's credential so the server can gate them and
+                  // record who asked, not accept an anonymous request.
+                  const resp = await authFetch('/api/dashboard/voice-create-entity', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -889,7 +907,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
       updateStatus('error')
       stopSession()
     }
-  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, saveTranscript])
+  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage])
 
   const toggleSession = useCallback(() => {
     if (status === 'idle' || status === 'error') startSession()
@@ -908,6 +926,11 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   }), [startSession, stopSession, toggleMute])
 
   const formatSecs = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
+
+  // Who the agent side of the live transcript is labelled as. Was hardcoded
+  // 'REX' for every agent on every call (corner:voice-chat, 2026-07-27) — a
+  // call with Bobby read as a call with Rex. Real identity, always.
+  const agentLabel = String(agentName || agentSlug || 'agent').toUpperCase()
 
   const isActive = status !== 'idle' && status !== 'error'
   const statusColor = { idle: '#4B5563', connecting: '#F59E0B', listening: '#60A5FA', speaking: '#34D399', error: '#F87171' }[status] || agentColor
@@ -1225,7 +1248,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 </span>
               ) : (<>
                 <span style={{ color: (entry.role === 'model' || entry.role === 'model-text') ? agentColor : 'rgba(100,130,180,0.7)', fontSize: 9, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0, paddingTop: 2, minWidth: 26 }}>
-                  {(entry.role === 'model' || entry.role === 'model-text') ? 'REX' : 'YOU'}
+                  {(entry.role === 'model' || entry.role === 'model-text') ? agentLabel : 'YOU'}
                 </span>
                 <span style={{ color: (entry.role === 'model' || entry.role === 'model-text') ? 'rgba(210,225,255,0.9)' : 'rgba(150,175,220,0.7)', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>
                   {entry.text}

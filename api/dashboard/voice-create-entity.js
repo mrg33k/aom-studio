@@ -19,11 +19,45 @@
 //
 // Returns { ok, entity_type, name, slug|mission_slug, parent_slug? }
 
+// AUTH (corner:identity-attribution, 2026-07-27). Unauthenticated this created
+// projects and missions in any world named by the body, and the mission branch
+// wrote six scaffold_file rows whose markdown is later served to agents as room
+// CANON. verifyTenant now gates it and the verified tenant — never the body —
+// is what the rows are written against. CORS is the dashboard origins.
+
 import { randomUUID } from 'node:crypto'
 import { findProjectSlugTwin } from '../_lib/projectDupGuard.js'
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/lab\.aheadofmarket\.com$/i,
+  /^https:\/\/([a-z0-9-]+\.)?aheadofmarket\.com$/i,
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i,
+  /^http:\/\/localhost(:\d+)?$/i,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/i,
+]
+
+function isAllowedOrigin(origin) {
+  if (!origin || typeof origin !== 'string') return false
+  const extra = (process.env.CORNER_ALLOWED_ORIGINS || '')
+    .split(',').map(s => s.trim()).filter(Boolean)
+  if (extra.includes(origin)) return true
+  return ALLOWED_ORIGIN_PATTERNS.some(re => re.test(origin))
+}
+
+function applyCors(req, res) {
+  const origin = req.headers?.origin
+  if (isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+  }
+  res.setHeader('Vary', 'Origin')
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+}
 
 const dbHeaders = {
   apikey: SUPABASE_KEY,
@@ -66,7 +100,7 @@ async function postMessage(row) {
 }
 
 // ---- Project creation ----
-async function createProject(name, description, team, clientId, agentSlug) {
+async function createProject(name, description, team, clientId, agentSlug, createdByName) {
   const slug = toSlug(name)
   const displayName = name || titleFromSlug(slug)
   const agentSlugs = team ? team.split(',').map(s => s.trim()).filter(Boolean) : ['ea']
@@ -151,6 +185,7 @@ async function createProject(name, description, team, clientId, agentSlug) {
       entity_name: displayName,
       entity_slug: slug,
       description: description || '',
+      created_by_name: createdByName || null,
     },
     timestamp: new Date().toISOString(),
   })
@@ -159,17 +194,20 @@ async function createProject(name, description, team, clientId, agentSlug) {
 }
 
 // ---- Mission creation ----
-async function createMission(name, projectSlug, description, clientId, agentSlug) {
+async function createMission(name, projectSlug, description, clientId, agentSlug, createdByName) {
   const missionSlug = toSlug(name)
   const displayName = name || titleFromSlug(missionSlug)
   const d = today()
+  // "Created via voice call" used to be the whole provenance line. Name the
+  // actual caller when we know them; say we don't when we don't (RULE 2).
+  const by = createdByName ? ` by ${createdByName}` : ' (caller not identified)'
 
   const stubs = {
-    'VISION.md': `# ${displayName} — Mission Vision\n\n**Mission path:** \`${projectSlug}:${missionSlug}\`\n\n---\n\n## What this mission IS\n\n${description || '_TBD_'}\n\n## Change log\n\n- **${d}** — Created via voice call.\n`,
+    'VISION.md': `# ${displayName} — Mission Vision\n\n**Mission path:** \`${projectSlug}:${missionSlug}\`\n\n---\n\n## What this mission IS\n\n${description || '_TBD_'}\n\n## Change log\n\n- **${d}** — Created via voice call${by}.\n`,
     'RESEARCH.md': `# ${displayName} — Mission Research\n\n**Started:** ${d}\n\n## Index\n\n_No research yet._\n`,
     'BUILD.md': `# ${displayName} — Mission Build Plan\n\n**Started:** ${d}\n**Mission path:** \`${projectSlug}:${missionSlug}\`\n\n## Rounds\n\n### M1 — Vision interview\n\n**Status:** queued.\n`,
-    'CONTEXT.md': `# ${displayName} — Mission Context\n\n**Mission path:** \`${projectSlug}:${missionSlug}\`\n**Status:** NEW\n**Created:** ${d}\n\n## Current State\n\nMission created from voice call. ${description ? 'Intent: ' + description : 'No description yet.'}\n`,
-    'last-conversation.md': `# ${displayName} — Last Conversation\n\n**Empty tape.** Created ${d} via voice call.\n\nMission path: \`${projectSlug}:${missionSlug}\`\n`,
+    'CONTEXT.md': `# ${displayName} — Mission Context\n\n**Mission path:** \`${projectSlug}:${missionSlug}\`\n**Status:** NEW\n**Created:** ${d}\n\n## Current State\n\nMission created from voice call${by}. ${description ? 'Intent: ' + description : 'No description yet.'}\n`,
+    'last-conversation.md': `# ${displayName} — Last Conversation\n\n**Empty tape.** Created ${d} via voice call${by}.\n\nMission path: \`${projectSlug}:${missionSlug}\`\n`,
     'research/README.md': `# ${displayName} Mission Research\n\nDrop research artifacts here as dated markdown files.\n\nCreated ${d}.\n`,
   }
 
@@ -236,6 +274,7 @@ async function createMission(name, projectSlug, description, clientId, agentSlug
       entity_slug: missionSlug,
       parent_slug: projectSlug,
       description: description || '',
+      created_by_name: createdByName || null,
     },
     timestamp: new Date().toISOString(),
   })
@@ -245,9 +284,7 @@ async function createMission(name, projectSlug, description, clientId, agentSlug
 
 // ---- Handler ----
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  applyCors(req, res)
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
@@ -272,12 +309,25 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'project (slug) required for entity_type=mission' })
   }
 
+  // The world these rows land in is the VERIFIED tenant, not the body string.
+  let verified
+  try {
+    verified = await verifyTenant(client_id, req)
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    throw err
+  }
+  const tenant = verified.tenant
+  // Recorded so the room can say who created it. Never defaulted to a person.
+  const identity = await callerIdentity(req).catch(() => null)
+  const createdByName = identity?.userName || null
+
   try {
     if (entity_type === 'project') {
-      const result = await createProject(name, description, team, client_id, agent_slug)
+      const result = await createProject(name, description, team, tenant, agent_slug, createdByName)
       return res.status(200).json(result)
     } else {
-      const result = await createMission(name, project, description, client_id, agent_slug)
+      const result = await createMission(name, project, description, tenant, agent_slug, createdByName)
       return res.status(200).json(result)
     }
   } catch (err) {

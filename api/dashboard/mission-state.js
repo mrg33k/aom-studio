@@ -7,7 +7,7 @@
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { extractJwt } from '../_lib/verifyTenant.js'
+import { extractJwt, verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -142,6 +142,30 @@ export default async function handler(req, res) {
   const missionSlug = String(req.query.mission || '').trim()
   if (!projectSlug || !missionSlug) {
     return res.status(400).json({ error: 'project and mission required' })
+  }
+
+  // corner:identity-attribution 2026-07-27 — verifyTenant was imported here but
+  // never called, so any signed-in user of any world could read any mission's
+  // CONTEXT.md headline, next line and activity stats.
+  //
+  // r2: the gate is PROJECT access, not world equality. The first pass used
+  // verifyTenant(holderWorld, req), which never reads the project_access grant
+  // table for a plain world string — so Ash or Courtney (world 'aom', not
+  // super-admins) opening any Space Rising mission got a 403, because
+  // space-rising is arsenal-held and AOM reaches it through a grant. Patrik
+  // returned on the super-admin bypass and never saw it.
+  //
+  // verifyProjectAccess admits the holder world, any world holding a
+  // project_access grant, the holder world's admins, and the super-admin. A
+  // project with no projects row (blacknight, bridge-smoke, pala, rex are live
+  // examples) is registry/disk-only — no holder world exists to check, so it
+  // keeps the verified-session floor rather than 403-ing a room that renders
+  // fine everywhere else.
+  try {
+    await verifyProjectAccess(projectSlug, req)
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    throw err
   }
 
   const entry = resolveMission(projectSlug, missionSlug)

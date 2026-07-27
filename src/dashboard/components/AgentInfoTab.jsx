@@ -9,6 +9,7 @@ import { ChevronDown, ChevronRight, Pencil, Check, X } from 'lucide-react'
 import { getAgentKnowledge } from '../agentKnowledge.js'
 import agentProfiles from '../../data/agent-profiles.js'
 import { getClientId } from '../lib/clientConfig'
+import { authFetch } from '../lib/authFetch.js'
 
 // ---- Per-agent taglines -------------------------------------------------------
 
@@ -424,10 +425,17 @@ function AgentNameEditor({ agentSlug, currentName, accentColor, isDaytime, onRen
     setSaving(true)
     try {
       const clientId = getClientId()
+      // agent-status PATCH is world-scoped and verified now. A null world would
+      // go out as the literal "null" tenant: 403 for a normal member, and a
+      // silent match-nothing rename for a super-admin. Bail instead.
+      if (!clientId) { setSaving(false); setEditing(false); return }
       // EAs write to display_name (user-provided, sticky); other agents write to name.
       const paramKey = isEa ? 'display_name' : 'name'
       const params = new URLSearchParams({ slug: agentSlug, [paramKey]: trimmed, client_id: clientId })
-      const resp = await fetch(`/api/dashboard/agent-status?${params}`, { method: 'PATCH' })
+      // authFetch, not fetch: the endpoint runs verifyTenant on client_id.
+      // Membership of that world is the gate, not the super-admin id — Ash and
+      // Courtney rename aom agents exactly as Patrik does.
+      const resp = await authFetch(`/api/dashboard/agent-status?${params}`, { method: 'PATCH' })
       if (resp.ok) onRenamed?.(trimmed)
     } catch { /* ignore */ }
     setSaving(false)

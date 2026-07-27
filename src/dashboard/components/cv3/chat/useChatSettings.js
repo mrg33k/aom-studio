@@ -110,7 +110,10 @@ export default function useChatSettings({
       if (selectedProject?.id) {
         setInviteEmail('')
         setInviteMsg(null)
-        fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
+        // authFetch, not fetch: the collaborator list is now behind the
+        // holder-world gate on project-invite (it exposes teammate emails).
+        // Membership of the owning world is enough — no admin role required.
+        authFetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
           .then(r => r.json())
           .then(data => { if (data.collaborators) setCollaborators(data.collaborators) })
           .catch(() => {})
@@ -148,10 +151,17 @@ export default function useChatSettings({
   const saveRoomName = useCallback((name) => {
     const trimmed = name.trim()
     if (!trimmed || !currentChatKey) return
+    // Every agent-status PATCH is world-scoped and verified now. Without a
+    // resolved world we'd send the literal string "undefined" as the tenant,
+    // which 403s for a normal member and silently renames nothing for a
+    // super-admin. Wait for auth instead of firing a request that cannot work.
+    if (!worldId) return
     const slug = currentChatKey.startsWith('project:')
       ? currentChatKey.replace('project:', '')
       : currentChatKey
-    fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(slug)}&name=${encodeURIComponent(trimmed)}&client_id=${encodeURIComponent(worldId)}`, {
+    // authFetch, not fetch: the rename runs verifyTenant on this world. Any
+    // member of it passes — Ash and Courtney rename aom rooms like Patrik does.
+    authFetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(slug)}&name=${encodeURIComponent(trimmed)}&client_id=${encodeURIComponent(worldId)}`, {
       method: 'PATCH',
     }).catch(() => {})
   }, [currentChatKey, worldId])

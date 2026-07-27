@@ -6,14 +6,48 @@
 //
 // Body: { taskId: <failed-row-uuid> }
 // Returns: { ok: true, newTask: {...} }
+//
+// AUTH (corner:identity-attribution, 2026-07-27). A retry re-queues a brief that
+// a live Claude Code worker then executes, and explicitly wakes the runner. Task
+// UUIDs leak through several read surfaces, so the UUID is not a secret. The
+// task's own client_id is now resolved first and verifyTenant runs against it,
+// so only someone in the owning world can re-run the work. CORS is the dashboard
+// origins rather than `*`.
+
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/lab\.aheadofmarket\.com$/i,
+  /^https:\/\/([a-z0-9-]+\.)?aheadofmarket\.com$/i,
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i,
+  /^http:\/\/localhost(:\d+)?$/i,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/i,
+];
+
+function isAllowedOrigin(origin) {
+  if (!origin || typeof origin !== 'string') return false;
+  const extra = (process.env.CORNER_ALLOWED_ORIGINS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  if (extra.includes(origin)) return true;
+  return ALLOWED_ORIGIN_PATTERNS.some(re => re.test(origin));
+}
+
+function applyCors(req, res) {
+  const origin = req.headers?.origin;
+  if (isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+}
+
+export default async function handler(req, res) {
+  applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
@@ -36,6 +70,17 @@ export default async function handler(req, res) {
     const failed = Array.isArray(rows) && rows[0];
     if (!failed) return res.status(404).json({ error: 'task not found' });
 
+    // Gate on the world that OWNS the task, read off the row — never on
+    // anything the caller supplied.
+    let verified;
+    try {
+      verified = await verifyTenant(failed.client_id || 'aom', req);
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+    const identity = await callerIdentity(req).catch(() => null);
+
     const prevMeta = (failed.metadata && typeof failed.metadata === 'object') ? failed.metadata : {};
     const crypto = await import('crypto');
     const now = new Date().toISOString();
@@ -48,7 +93,7 @@ export default async function handler(req, res) {
       description: failed.description || null,
       status: 'queued',
       source: 'retry',
-      client_id: failed.client_id || 'aom',
+      client_id: verified.tenant,
       created_by: failed.created_by || null,
       project: failed.project || null,
       agent: failed.agent || null,
@@ -63,6 +108,9 @@ export default async function handler(req, res) {
         retry_count: retryCount,
         retry_of_error: failed.error || null,
         requested_by_agent: prevMeta.requested_by_agent || null,
+        // Who pressed retry — verified, and null rather than a borrowed name.
+        retried_by: identity?.userId || verified.userId || null,
+        retried_by_name: identity?.userName || null,
       },
     };
 

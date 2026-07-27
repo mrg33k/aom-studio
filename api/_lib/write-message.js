@@ -18,9 +18,16 @@
 //      gate inside crosspost.js decides (only projects with a real
 //      project_access collaborator have shared threads). Idempotent by
 //      deterministic row id, so racing reconcile-shared-rooms is safe.
+//   4. Authorship: recorded exactly as given, NEVER defaulted. A human-role
+//      row with no verified author is stamped metadata.unattributed = true
+//      so the gap is visible in the data instead of silently blank
+//      (identity-attribution audit, 2026-07-27).
 //
-// Tenant AUTH stays in the endpoints — they verify the caller and pass a
-// trusted clientId in. This module never reads the request.
+// Tenant AUTH and IDENTITY stay in the endpoints — they verify the caller
+// server-side (verifyTenant / callerIdentity) and pass a trusted clientId +
+// userId/userName in. This module never reads the request, and it never
+// invents an author: no `|| 'Patrik'`, no fallback name, ever. "Patrik said X"
+// is an authorization signal in this system; only a verified JWT may produce it.
 
 import crypto from 'crypto'
 import { detectProjectTag, crossPostToProjectThread } from './crosspost.js'
@@ -83,6 +90,24 @@ export async function writeMessageRow({
     detectProjectTag(messageText) ||
     null
 
+  // --- 1b. Authorship (recorded as given; never defaulted, never invented) ---
+  // Whitespace-only is the same as absent — it used to slip through the `?:`
+  // guards below and land as a blank author that read like a real one.
+  const _author = (v) => {
+    const s = (v == null ? '' : String(v)).trim();
+    return s || null;
+  };
+  const authorId = _author(userId);
+  const authorName = _author(userName);
+  // A human-role row that arrives with no verified author is marked EXPLICITLY
+  // unattributed. Half the historical record (5,006 of 10,307 `role='user'`
+  // rows) has no author, and downstream code filled that hole with "Patrik" —
+  // a forged authorization signal. Leaving the columns null AND stamping the
+  // gap means an agent (or a query) can see "we do not know who said this"
+  // instead of inferring the founder. Assistant/system rows have no human
+  // author by definition, so they are not marked.
+  const unattributed = role === 'user' && !authorId && !authorName;
+
   // --- 2. Mission canonicalization (both `mission` and metadata.mission_slug) ---
   // Guard: the JS string "undefined" is a serialization of a missing value — treat it as null.
   // Without this guard a partial mission object (slug missing) serializes to mission="undefined",
@@ -100,10 +125,11 @@ export async function writeMessageRow({
   const canonicalMission = rawMission
     ? canonicalizeMissionSlug(rawMission, MISSION_SLUG_LOOKUP, resolvedProject)
     : null
-  const mergedMeta = (canonicalMission || incomingMeta)
+  const mergedMeta = (canonicalMission || incomingMeta || unattributed)
     ? {
         ...(incomingMeta || {}),
         ...(canonicalMission ? { mission_slug: canonicalMission } : {}),
+        ...(unattributed ? { unattributed: true } : {}),
       }
     : null
 
@@ -124,8 +150,8 @@ export async function writeMessageRow({
     ...(resolvedProject ? { project: resolvedProject } : {}),
     ...(senderRole ? { sender_role: senderRole } : {}),
     ...(worldId ? { world_id: worldId } : {}),
-    ...(userId ? { user_id: userId } : {}),
-    ...(userName ? { user_name: userName } : {}),
+    ...(authorId ? { user_id: authorId } : {}),
+    ...(authorName ? { user_name: authorName } : {}),
     ...(attachmentUrl ? { attachment_url: attachmentUrl } : {}),
     ...(fileMimeType ? { file_mime_type: fileMimeType } : {}),
     ...(fileSize != null ? { file_size: fileSize } : {}),

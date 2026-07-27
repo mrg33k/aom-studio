@@ -1,14 +1,78 @@
 // PATCH /api/dashboard/agent-status?slug=bobby&status=active&current_task=Responding...
 // PATCH /api/dashboard/agent-status?table=tasks&id=xxx&status=active  (task update mode)
 // Combined endpoint: updates agent_status OR tasks table in Supabase.
+//
+// AUTH (corner:identity-attribution, 2026-07-27). Both verbs wrote into a
+// world-scoped surface with no credential: POST inserted a tasks row into any
+// world named by the body, PATCH mutated any agent_status or tasks row by id.
+// Every write path now resolves a tenant and runs verifyTenant against it, and
+// CORS is the dashboard origins rather than `*`.
+
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/lab\.aheadofmarket\.com$/i,
+  /^https:\/\/([a-z0-9-]+\.)?aheadofmarket\.com$/i,
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i,
+  /^http:\/\/localhost(:\d+)?$/i,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/i,
+];
+
+function isAllowedOrigin(origin) {
+  if (!origin || typeof origin !== 'string') return false;
+  const extra = (process.env.CORNER_ALLOWED_ORIGINS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  if (extra.includes(origin)) return true;
+  return ALLOWED_ORIGIN_PATTERNS.some(re => re.test(origin));
+}
+
+function applyCors(req, res) {
+  const origin = req.headers?.origin;
+  if (isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'PATCH,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+}
+
+// Verify the caller against `tenant`; on failure writes the response and
+// returns null. On success returns the verified tenant string.
+async function gate(tenant, req, res) {
+  try {
+    const { tenant: verified } = await verifyTenant(tenant, req);
+    return verified;
+  } catch (err) {
+    if (err instanceof TenantAuthError) {
+      res.status(err.status).json({ error: err.message });
+      return null;
+    }
+    throw err;
+  }
+}
+
+// Look up the owning world of a row so PATCH can be gated on it.
+async function clientIdOfRow(table, id) {
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=client_id&limit=1`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const c = Array.isArray(rows) ? rows[0]?.client_id : null;
+    return c ? String(c).toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function handler(req, res) {
+  applyCors(req, res);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -16,9 +80,19 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { agent, text, project, status: taskStatus = 'todo', client_id } = req.body || {};
     if (!text) return res.status(400).json({ error: 'text required' });
+    const resolvedClientId = await gate(client_id || 'aom', req, res);
+    if (!resolvedClientId) return;
+    const identity = await callerIdentity(req).catch(() => null);
     const crypto = await import('crypto');
-    const resolvedClientId = (client_id && client_id.trim()) ? client_id.trim().toLowerCase() : 'aom';
-    const payload = { id: crypto.randomUUID(), agent: agent || 'elon', text: text.trim(), project: project || null, status: taskStatus, client_id: resolvedClientId };
+    const payload = {
+      id: crypto.randomUUID(),
+      agent: agent || 'elon',
+      text: text.trim(),
+      project: project || null,
+      status: taskStatus,
+      client_id: resolvedClientId,
+      created_by: identity?.userId || null,
+    };
     try {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
         method: 'POST',
@@ -46,13 +120,29 @@ export default async function handler(req, res) {
 
   const { table, slug, status, current_task, id, agent } = req.query;
 
+  // Every PATCH mode is world-scoped now. `client_id` in the query is the
+  // REQUESTED world; verifyTenant turns it into a verified one, and the verified
+  // value is what goes into the row filter — so a slug-only PATCH can no longer
+  // rewrite the same-named row in every world at once.
+  const requestedClient = (req.query.client_id && String(req.query.client_id).trim())
+    ? String(req.query.client_id).trim().toLowerCase()
+    : 'aom';
+
   // Task update mode: PATCH tasks table
   if (table === 'tasks') {
     if (!status) return res.status(400).json({ error: 'status required' });
     const body = { status };
     if (status === 'done') body.completed_at = new Date().toISOString();
-    const filter = id ? `id=eq.${encodeURIComponent(id)}` : agent ? `agent=eq.${encodeURIComponent(agent)}&status=eq.todo` : null;
-    if (!filter) return res.status(400).json({ error: 'id or agent required' });
+    if (!id && !agent) return res.status(400).json({ error: 'id or agent required' });
+    // Prefer the ROW's own world when we're given an id — the caller shouldn't
+    // get to name the tenant of a row they're mutating.
+    const rowWorld = id ? await clientIdOfRow('tasks', id) : null;
+    const tenant = await gate(rowWorld || requestedClient, req, res);
+    if (!tenant) return;
+    const scope = `&client_id=eq.${encodeURIComponent(tenant)}`;
+    const filter = id
+      ? `id=eq.${encodeURIComponent(id)}${rowWorld ? scope : ''}`
+      : `agent=eq.${encodeURIComponent(agent)}&status=eq.todo${scope}`;
     try {
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}`, { method: 'PATCH', headers, body: JSON.stringify(body) });
       return res.status(resp.ok ? 200 : 500).json({ ok: resp.ok });
@@ -64,7 +154,11 @@ export default async function handler(req, res) {
   // Default: agent_status update
   // Supports: status, current_task, name (rename), display_name (EA user-set name),
   //           last_naming_nudge_at (EA cadence tracking), client_id scoping
-  const { name, display_name, last_naming_nudge_at, client_id: clientIdParam } = req.query;
+  const { name, display_name, last_naming_nudge_at } = req.query;
+
+  // All agent_status modes below share one gate + one scope.
+  const clientIdParam = await gate(requestedClient, req, res);
+  if (!clientIdParam) return;
 
   // Rename-only mode: slug + name, no status required.
   // The same slug may refer to either an agent or a project (the chat
@@ -73,18 +167,14 @@ export default async function handler(req, res) {
   // which keeps the call cheap and correct in both cases.
   if (slug && name && !status) {
     const trimmedName = name.trim();
-    const filter = clientIdParam
-      ? `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
-      : `slug=eq.${encodeURIComponent(slug)}`;
+    const filter = `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`;
     try {
       // Update agent_status name (no-op if slug is a project)
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {
         method: 'PATCH', headers, body: JSON.stringify({ name: trimmedName }),
       });
       // Also update rooms table name so canvas label updates via Realtime
-      const roomFilter = clientIdParam
-        ? `id=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
-        : `id=eq.${encodeURIComponent(slug)}`;
+      const roomFilter = `id=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`;
       await fetch(`${SUPABASE_URL}/rest/v1/rooms?${roomFilter}`, {
         method: 'PATCH', headers, body: JSON.stringify({ name: trimmedName }),
       }).catch(() => {});
@@ -104,9 +194,7 @@ export default async function handler(req, res) {
   // Called by the EA settings UI — slug + display_name, no status.
   if (slug && display_name !== undefined && !status && !name) {
     const trimmedName = display_name.trim();
-    const filter = clientIdParam
-      ? `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
-      : `slug=eq.${encodeURIComponent(slug)}`;
+    const filter = `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`;
     try {
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {
         method: 'PATCH', headers, body: JSON.stringify({ display_name: trimmedName || null }),
@@ -121,9 +209,7 @@ export default async function handler(req, res) {
   // slug + last_naming_nudge_at (ISO string or 'now'), no status.
   if (slug && last_naming_nudge_at !== undefined && !status && !name && display_name === undefined) {
     const ts = last_naming_nudge_at === 'now' ? new Date().toISOString() : last_naming_nudge_at;
-    const filter = clientIdParam
-      ? `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
-      : `slug=eq.${encodeURIComponent(slug)}`;
+    const filter = `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`;
     try {
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {
         method: 'PATCH', headers, body: JSON.stringify({ last_naming_nudge_at: ts }),
@@ -141,11 +227,8 @@ export default async function handler(req, res) {
   const body = { status };
   if (current_task !== undefined) body.current_task = current_task;
 
-  // Multi-tenant: scope agent_status update by client_id
-  const clientId = (clientIdParam && clientIdParam.trim())
-    ? clientIdParam.trim().toLowerCase()
-    : 'aom';
-  const filter = `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientId)}`;
+  // Multi-tenant: scope agent_status update by the VERIFIED client_id
+  const filter = `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`;
 
   try {
     const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {

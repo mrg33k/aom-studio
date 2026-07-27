@@ -10,6 +10,7 @@
 // any future agent surface -- the component is source-of-truth.
 import { useCallback, useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 function truncate(s, n = 140) {
   const t = String(s || '').replace(/\s+/g, ' ').trim()
@@ -31,7 +32,9 @@ export default function AgentFailureSurface({ failedTask, onRetried }) {
     setRetrying(true)
     setRetryError(null)
     try {
-      const resp = await fetch('/api/dashboard/retry-task', {
+      // authFetch, not fetch: retry-task gates on verifyTenant against the
+      // failed row's OWN world, so the session has to travel with the request.
+      const resp = await authFetch('/api/dashboard/retry-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId: failedTask.id }),

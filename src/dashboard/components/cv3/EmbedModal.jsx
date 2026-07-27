@@ -14,6 +14,7 @@
 // stays available for power-users / git-checked-in embeds.
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { C } from '../../lib/cv3Colors.js'
+import { authFetch } from '../../lib/authFetch.js'
 
 const FONT_OPTIONS = [
   { value: '', label: 'Default (Hanken Grotesk)' },
@@ -235,7 +236,12 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
     setShipError(null)
     const payload = buildPayload(result.embed_id)
     try {
-      const resp = await fetch('/api/embed/create', {
+      // authFetch, not fetch: /api/embed/create now runs verifyTenant on the
+      // world this embed routes into, and stamps the creator from the JWT.
+      // /api/embed/preview above is still unauthenticated (it writes nothing),
+      // so it stays on plain fetch. Any member of the owning world can ship —
+      // the gate is world membership, not admin.
+      const resp = await authFetch('/api/embed/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

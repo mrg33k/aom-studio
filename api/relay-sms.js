@@ -10,6 +10,20 @@
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //   GEMINI_API_KEY
 //   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER
+//   TWILIO_WEBHOOK_URL (optional) — the exact URL configured in the Twilio
+//     console, used for signature validation when the proxy headers don't
+//     reconstruct it byte-for-byte.
+//
+// AUTH (corner:identity-attribution, 2026-07-27). This had NO X-Twilio-Signature
+// check, so any anonymous POST was treated as an inbound text: it burned Gemini
+// on Patrik's key, sent a real billable SMS to a caller-chosen number, and wrote
+// role='user' rows into the aom world with no author at all. Two fixes here:
+//   1. the Twilio HMAC is validated before anything else happens (toll fraud),
+//   2. every stored row carries an explicit non-human author — the E.164 number
+//      as user_name and sender_role='sms-visitor' — so an inbound text can never
+//      be mistaken for Patrik by a display layer or an agent reading the record.
+
+import crypto from 'node:crypto';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -24,6 +38,61 @@ const CLIENT_ID = 'aom';
 const IMESSAGE_SYSTEM_INSTRUCTION = `You are an AI agent on the AOM team, responding to a user via iMessage/SMS. AOM (Ahead of Market) is a creative studio that builds Corner, an AI-powered business operating system.
 
 Keep responses concise and SMS-friendly (under 300 characters when possible). Be direct and human. If someone has a business inquiry, let them know the team will follow up. Never say you're an AI or that you can't help. Always have a path forward.`;
+
+// ── Twilio request signature ──────────────────────────────────────────────────
+//
+// https://www.twilio.com/docs/usage/security#validating-signatures
+// signature = base64(HMAC-SHA1(auth_token, url + concat(sorted(k + v))))
+// where the params are the POST form fields.
+
+// Twilio signs the EXACT url it was configured with. Behind a proxy we can only
+// reconstruct it, so we try the handful of forms that reconstruction can produce
+// and accept the request if any of them verifies. Set TWILIO_WEBHOOK_URL to the
+// console value to skip the guessing entirely. Trying several candidate URLs
+// does not weaken the check — the HMAC still has to match one of them.
+function candidateWebhookUrls(req) {
+  const configured = (process.env.TWILIO_WEBHOOK_URL || '').trim();
+  if (configured) return [configured];
+  const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toString().split(',')[0].trim();
+  if (!host) return [];
+  const path = req.url || '/api/relay-sms';
+  const pathNoQuery = path.split('?')[0];
+  const out = new Set();
+  for (const proto of ['https', 'http']) {
+    out.add(`${proto}://${host}${path}`);
+    out.add(`${proto}://${host}${pathNoQuery}`);
+  }
+  return [...out];
+}
+
+function twilioSignatureFor(url, params, authToken) {
+  let data = url;
+  for (const key of Object.keys(params || {}).sort()) {
+    const v = params[key];
+    data += key + (v == null ? '' : String(v));
+  }
+  return crypto.createHmac('sha1', authToken).update(Buffer.from(data, 'utf-8')).digest('base64');
+}
+
+function timingSafeEqual(a, b) {
+  const ba = Buffer.from(String(a || ''), 'utf-8');
+  const bb = Buffer.from(String(b || ''), 'utf-8');
+  if (ba.length !== bb.length || ba.length === 0) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
+
+// Fail CLOSED. No auth token configured means we cannot tell Twilio from a
+// stranger, and a stranger here costs real money and pollutes the record.
+function isValidTwilioRequest(req) {
+  if (!TWILIO_AUTH_TOKEN) return false;
+  const provided = req.headers['x-twilio-signature'];
+  if (!provided || typeof provided !== 'string') return false;
+  const params = (req.body && typeof req.body === 'object') ? req.body : {};
+  for (const url of candidateWebhookUrls(req)) {
+    if (timingSafeEqual(provided, twilioSignatureFor(url, params, TWILIO_AUTH_TOKEN))) return true;
+  }
+  return false;
+}
 
 // ── Supabase helpers ─────────────────────────────────────────────────────────
 
@@ -65,6 +134,12 @@ async function findOrCreateConversation(fromNumber) {
 
 async function storeMessage(fromNumber, text, role, agentSlug) {
   const { randomUUID } = await import('crypto');
+  // Attribution (RULE 2). An inbound text is a real turn by a real, UNKNOWN
+  // person. Leaving user_name null made it render as "You" and read as Patrik
+  // anywhere a `|| 'Patrik'` default applied. The phone number IS the identity
+  // we have, so it is the identity we record — and sender_role marks it as a
+  // visitor over SMS, not a Corner member.
+  const isInbound = role === 'user';
   await sbFetch('/rest/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
@@ -77,6 +152,7 @@ async function storeMessage(fromNumber, text, role, agentSlug) {
       client_id: CLIENT_ID,
       // store phone in project_path so outbound routing can retrieve it
       project_path: fromNumber,
+      ...(isInbound ? { user_name: fromNumber, sender_role: 'sms-visitor' } : {}),
     }),
   });
 }
@@ -164,6 +240,15 @@ export default async function handler(req, res) {
     console.error('[relay-sms] Missing required env vars');
     res.setHeader('Content-Type', 'text/xml');
     return res.status(200).send('<?xml version="1.0"?><Response></Response>');
+  }
+
+  // Prove this really came from Twilio BEFORE spending a Gemini call, a billable
+  // outbound SMS, or a row in the permanent record. 403 (not empty TwiML) so a
+  // forged request gets nothing back and Twilio's own retries are unaffected —
+  // a genuine Twilio POST never lands here.
+  if (!isValidTwilioRequest(req)) {
+    console.warn('[relay-sms] rejected: bad or missing X-Twilio-Signature');
+    return res.status(403).json({ error: 'invalid signature' });
   }
 
   try {

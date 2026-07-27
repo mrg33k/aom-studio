@@ -1247,6 +1247,16 @@ function MessageList({ roomType = 'agent' }) {
           // Voice transcript (agent and project rooms).
           if (msg.source === 'voice') {
             const isVoiceUser = msg.role === 'user'
+            // Whoever actually spoke, per the row. This label used to read
+            // "Patrik (voice)" for every human turn, which is how a call taken
+            // by Courtney was filed and later read back as a call with Patrik.
+            // Voice rows written before authorship was persisted carry no
+            // user_name — those stay UNATTRIBUTED. Never the founder's name,
+            // and never the viewer's own name either: the person reading the
+            // thread is not evidence of who was on the call.
+            const voiceSpeaker = isVoiceUser
+              ? `${msg.user_name || 'Someone'} (voice)`
+              : 'Gemini (voice)'
             const voiceBadge = isProject
               ? 'voice session'
               : `not sent to ${selectedAgent?.name || 'agent'}`
@@ -1269,7 +1279,7 @@ function MessageList({ roomType = 'agent' }) {
                       textTransform: 'uppercase', letterSpacing: '0.1em',
                       fontFamily: "'JetBrains Mono', monospace",
                     }}>
-                      {isVoiceUser ? 'Patrik (voice)' : 'Gemini (voice)'}
+                      {voiceSpeaker}
                     </span>
                     <span style={{
                       fontSize: 7, fontWeight: 700, color: 'rgba(129,140,248,0.6)',

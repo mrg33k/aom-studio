@@ -1096,7 +1096,10 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               </div>
             )}
 
-            {/* SET BY — "Name · time ago" format */}
+            {/* SET BY — "Who · time ago". `last_touched_label` is whatever actually
+                moved the goal (a person, "loop review", a commit subject). When the
+                ledger recorded nobody, the row says Unknown — it does not credit the
+                workspace owner for work that has no recorded author. */}
             <div
               style={{
                 fontSize: 12.5,
@@ -1107,7 +1110,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 minWidth: 0,
               }}
             >
-              {row.lastActivity ? `${row.last_touched_label || 'Patrik'} · ${relativeTime(row.lastActivity)}` : '—'}
+              {row.lastActivity ? `${row.last_touched_label || 'Unknown'} · ${relativeTime(row.lastActivity)}` : '—'}
             </div>
 
             {/* STATUS */}

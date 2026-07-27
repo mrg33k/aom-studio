@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import IntegrationsModal from '../IntegrationsModal.jsx'
 import EmbedModal from '../EmbedModal.jsx'
@@ -29,7 +30,7 @@ export default function ProjectInputBar() {
     setInlineProject, onBack,
     chatInputFocused, setChatInputFocused,
     prefillMessage, setPrefillMessage,
-    worldId, currentUser,
+    worldId,
   } = useChatCore()
   const { sending, sendProjectText } = useChatSendCtx()
   const {
@@ -52,14 +53,21 @@ export default function ProjectInputBar() {
       // R21c uses /api/dashboard/create-project-task (service-role) so the
       // insert isn't blocked by RLS on dependent tables. Client-direct
       // createTaskWithRex failed on the events trigger in prod.
-      const resp = await fetch('/api/dashboard/create-project-task', {
+      // authFetch, not fetch: create-project-task queues a row a live worker
+      // executes, so it now requires a session and runs verifyTenant on the
+      // world (owner world OR a world holding a project_access grant — a
+      // granted collaborator is still admitted).
+      //
+      // userId is no longer sent: the server derives created_by from the JWT
+      // and ignores any body-supplied author. Sending it would only invite
+      // someone to wire it back up.
+      const resp = await authFetch('/api/dashboard/create-project-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
           projectSlug: selectedProject.slug,
           clientId: worldId || 'aom',
-          userId: currentUser?.id || null,
         }),
       })
       const data = await resp.json().catch(() => ({}))
@@ -68,7 +76,7 @@ export default function ProjectInputBar() {
     } catch (err) {
       console.error('[R21c] create-task error:', err)
     }
-  }, [input, selectedProject, currentUser, worldId, setInput])
+  }, [input, selectedProject, worldId, setInput])
 
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)

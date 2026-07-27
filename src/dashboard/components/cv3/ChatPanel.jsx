@@ -272,7 +272,11 @@ export default function ChatPanel() {
         || getProjectEA(selectedProject, agents)
         || 'elon'
       const resolvedProject = selectedProject?.slug || null
-      fetch('/api/dashboard/session-handoff', {
+      // authFetch, not fetch: session-handoff writes a user message the agent
+      // acts on, so it now runs verifyTenant on world_id and names the author
+      // from the JWT. Gate is world membership — Ash and Courtney pass on the
+      // aom world exactly as Patrik does.
+      authFetch('/api/dashboard/session-handoff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

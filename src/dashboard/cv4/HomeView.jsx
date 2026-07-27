@@ -1688,7 +1688,7 @@ function trackerColTrack(name) {
   return 'minmax(120px, 1fr)'
 }
 
-function TrackerToolOverlay({ projects, missionsByProject, agents }) {
+function TrackerToolOverlay({ projects, missionsByProject, agents, user }) {
   const firstProj = (projects || [])[0]
   // Custom trackers PERSIST via /api/dashboard/trackers (Patrik 2026-06-19: "wire so
   // trackers actually save"). They load from the store on mount; the real trackers
@@ -1863,7 +1863,11 @@ function TrackerToolOverlay({ projects, missionsByProject, agents }) {
     setSaving(true)
     try {
       if (cur.id === 'cv6-bugs') {
-        const r = await authFetch('/api/dashboard/cv6-bugs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', world: 'aom', page: draft.page, title, expected: draft.expected, severity: draft.severity, priority: draft.priority, owner: draft.assignee || 'Patrik', attachments: draft.attachments }) })
+        // owner = whoever the filer actually picked. No default: an unassigned bug
+        // lands unassigned (the API stores ''), it does not land on one person's
+        // plate because nobody chose. Sending a default here would also re-supply
+        // the one the API deliberately stopped applying.
+        const r = await authFetch('/api/dashboard/cv6-bugs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', world: 'aom', page: draft.page, title, expected: draft.expected, severity: draft.severity, priority: draft.priority, owner: draft.assignee || '', attachments: draft.attachments }) })
         if (r.ok) { setComposing(false); await pullBugs() }
       } else {
         const sc = TRACKER_TEMPLATES[cur.template].statusCol
@@ -2001,7 +2005,13 @@ function TrackerToolOverlay({ projects, missionsByProject, agents }) {
      const sc = TRACKER_TEMPLATES[sel.template].statusCol
      const hasPriority = isBug
      const hasSeverity = isBug || sel.columns.includes('Severity')
-     const people = Array.from(new Set(['Patrik', ...((agents || []).map(a => a && a.name).filter(Boolean))])).slice(0, 12)
+     // Assignees = YOU (the signed-in person) + this world's agents. The human
+     // entry used to be the literal 'Patrik', so Ash and Courtney could not
+     // assign anything to themselves and every world saw the same one name.
+     // Resolve it from the session instead; if there is no session, the list is
+     // just the agents rather than a person nobody verified.
+     const meName = String(user?.user_metadata?.full_name || user?.full_name || user?.email?.split('@')[0] || '').trim()
+     const people = Array.from(new Set([...(meName ? [meName] : []), ...((agents || []).map(a => a && a.name).filter(Boolean))])).slice(0, 12)
      const cycleSeverity = () => setDraft(d => ({ ...d, severity: { Low: 'Medium', Medium: 'High', High: 'Low' }[d.severity] || 'Medium' }))
      const cyclePriority = () => setDraft(d => ({ ...d, priority: (d.priority % 5) + 1 }))
      const cycleStatus = () => setDraft(d => ({ ...d, status: { 'Open': 'In progress', 'In progress': 'Done', 'Done': 'Open' }[d.status] || 'Open' }))
@@ -5805,6 +5815,7 @@ export default function HomeView({
                     projects={[...(recentProjects || []), ...(allProjects || [])]}
                     missionsByProject={missionsByProject}
                     agents={visibleAgents}
+                    user={user}
                   />
                 )}
 

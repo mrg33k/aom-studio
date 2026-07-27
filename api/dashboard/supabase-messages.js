@@ -8,22 +8,57 @@
 // Default client_id = 'aom'. Pass ?client= on GET or client_id in POST body.
 
 import { writeMessageRow } from '../_lib/write-message.js'
-import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
+import { verifyTenant, TenantAuthError, extractJwt, callerIdentity } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 
 const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 
-// Shared project rooms (`shared:<slug>`) are cross-tenant by design — a thread
-// any participating tenant can post to. Tenant equality doesn't apply, but we
-// still require a valid JWT so anonymous callers can't read or write. Per-room
-// membership is a follow-up; for Patrik-only today, JWT-required is the floor.
+// Shared project rooms (`shared:<slug>`) used to take a JWT-presence check only
+// ("per-room membership is a follow-up"). That follow-up shipped: for a
+// `shared:` tenant verifyTenant() admits the HOLDER world of the project and any
+// world holding a project_access row, and refuses everyone else. Shared rooms
+// are precisely where two worlds' people sit in one thread, so any-JWT was the
+// one place the cross-world boundary actually leaked.
+// (corner:identity-attribution, 2026-07-27.)
+//
+// r2: 11 of the 35 live shared rooms have no projects row at all — they predate
+// the projects table (aheadofmarket, ambition, aom-studio, chat-all-rooms,
+// google-ads-launch, home-all-rooms, lab-bridge-r5, organize, pala, sys,
+// trading-agent). The first pass 403'd every one of them, which meant Courtney
+// opening the shared aheadofmarket thread got a wall while Patrik sailed through
+// on the super-admin bypass. verifyTenant now falls back to the room's own
+// traffic for those: a world that already has messages in the room is a
+// participant, every other world is refused. Narrower than any-JWT, and it does
+// not lock out the people who are actually in the room. Full reasoning lives on
+// hasLegacySharedRoomPresence() in api/_lib/verifyTenant.js — do not re-tighten
+// this without reading it.
+//
+// NOTE for anyone copying this gate: verifyTenant reads project_access ONLY for
+// a tenant literally spelled `shared:<slug>`. If you are gating a PROJECT by its
+// holder world, use verifyProjectAccess() instead — verifyTenant(holderWorld)
+// refuses every granted collaborator world.
 const SHARED_PREFIX = 'shared:'
 
 async function requireJwtOnly(req, res) {
   const jwt = extractJwt(req)
   if (!jwt) { res.status(401).json({ error: 'jwt required' }); return false }
   return true
+}
+
+// Resolve the tenant for a request and 4xx on the response if it fails.
+// Returns the verified tenant string, or null when a response was already sent.
+async function resolveTenant(requestedClient, req, res) {
+  try {
+    const { tenant } = await verifyTenant(requestedClient, req)
+    return tenant
+  } catch (err) {
+    if (err instanceof TenantAuthError) {
+      res.status(err.status).json({ error: err.message })
+      return null
+    }
+    throw err
+  }
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -65,19 +100,13 @@ export default async function handler(req, res) {
     const requestedClient = (req.query.client && req.query.client.trim())
       ? req.query.client.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
-    let clientId
-    if (requestedClient.startsWith(SHARED_PREFIX)) {
-      // Shared project room — JWT-required, no tenant equality.
-      if (!(await requireJwtOnly(req, res))) return
-      clientId = requestedClient
-    } else {
-      try {
-        ({ tenant: clientId } = await verifyTenant(requestedClient, req))
-      } catch (err) {
-        if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
-        throw err
-      }
-    }
+    // One gate for every tenant shape. For `shared:<slug>` verifyTenant runs the
+    // owner-or-grant check (hasSharedProjectAccess, incl. the legacy-room
+    // fallback); for a plain world it runs world equality / world-admin. Ash and
+    // Courtney are world 'aom', so every aom room and every aom-granted shared
+    // room passes on world equality / grant — no super-admin needed.
+    const clientId = await resolveTenant(requestedClient, req, res)
+    if (!clientId) return
 
     // Always filter by client_id for multi-tenant isolation.
     // Requires: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
@@ -201,10 +230,23 @@ export default async function handler(req, res) {
     if (!id || !status) return res.status(400).json({ error: 'id and status required' })
     const allowed = ['sent', 'delivered', 'read', 'composing']
     if (!allowed.includes(status)) return res.status(400).json({ error: 'invalid status' })
-    // Read-receipt is low blast-radius (status enum only) but still needs a
-    // valid JWT so anonymous tampering is denied. Per-message tenant binding
-    // is a follow-up — would require a row lookup per PATCH.
+    // Per-message tenant binding (the "follow-up" this comment used to promise):
+    // read the row's client_id and run the same gate the room itself runs. A row
+    // with no client_id predates multi-tenancy — those keep the JWT-only floor
+    // rather than 400-ing on an empty tenant and breaking read receipts.
     if (!(await requireJwtOnly(req, res))) return
+    {
+      const rowRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/messages?id=eq.${encodeURIComponent(id)}&select=client_id&limit=1`,
+        { headers: supabaseHeaders() },
+      )
+      const rowJson = rowRes.ok ? await rowRes.json().catch(() => null) : null
+      const rowClient = Array.isArray(rowJson) ? rowJson[0]?.client_id : null
+      if (rowClient) {
+        const okTenant = await resolveTenant(String(rowClient), req, res)
+        if (!okTenant) return
+      }
+    }
 
     const url = `${SUPABASE_URL}/rest/v1/messages?id=eq.${encodeURIComponent(id)}`
     const sbRes = await fetch(url, {
@@ -222,32 +264,46 @@ export default async function handler(req, res) {
   // ---- POST: write a new message (user send from dashboard) ---------------
   if (req.method === 'POST') {
     const {
-      agent, text, role = 'user', source = 'corner-dashboard', client_id, sender_role, world_id, project,
-      // User identity (multi-user support)
-      user_id, user_name,
+      agent, text, role = 'user', source = 'corner-dashboard', client_id, project,
       // Attachment fields (optional)
       attachment_url, file_mime_type, file_size,
       // Threading + context-menu metadata (right-click Follow-up / verify / research / crosspost)
       reply_to, metadata,
     } = req.body || {}
+    // NOTE: user_id, user_name, world_id and sender_role are DELIBERATELY not
+    // destructured from the body any more. They are the permanent author of the
+    // row, "Patrik said X" is the de facto authorization token in this system,
+    // and a client-supplied display name is privilege escalation wearing a
+    // display-name costume. Identity is derived from the JWT below (RULE 1).
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
     // Resolve client_id: prefer body field, else default to 'aom'
     const requestedClientId = (client_id && client_id.trim())
       ? client_id.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
-    let resolvedClientId
-    if (requestedClientId.startsWith(SHARED_PREFIX)) {
-      if (!(await requireJwtOnly(req, res))) return
-      resolvedClientId = requestedClientId
-    } else {
-      try {
-        ({ tenant: resolvedClientId } = await verifyTenant(requestedClientId, req))
-      } catch (err) {
-        if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
-        throw err
-      }
-    }
+    // Same single gate as GET — shared rooms included (owner-or-grant).
+    const resolvedClientId = await resolveTenant(requestedClientId, req, res)
+    if (!resolvedClientId) return
+
+    // ---- Server-side identity (corner:identity-attribution, 2026-07-27) -----
+    // verifyTenant already proved the JWT; callerIdentity turns it into a name.
+    // If the name cannot be resolved we write NO user_name — an unattributed
+    // message must read as unattributed, never as the founder (RULE 2).
+    const identity = await callerIdentity(req).catch(() => null)
+    const isHumanTurn = String(role || 'user') === 'user'
+    const authorUserId = isHumanTurn ? (identity?.userId || null) : null
+    const authorUserName = isHumanTurn ? (identity?.userName || null) : null
+    // sender_role is a server-side classification, not a body field. Only
+    // asserted when we actually verified a person — an unknown caller is left
+    // unclassified rather than declared human.
+    const authorSenderRole = (isHumanTurn && authorUserId) ? 'human' : null
+    // world_id. In a NORMAL room the row belongs to the room's world. In a
+    // SHARED room the message is in neither world's namespace, so it carries the
+    // AUTHOR's own world instead of inheriting the holder world's identity —
+    // otherwise a Ben message in an AOM-held shared project reads as AOM's.
+    const rowWorldId = resolvedClientId.startsWith(SHARED_PREFIX)
+      ? (identity?.world || null)
+      : resolvedClientId
 
     // Single write path (corner:one-write-path R1): project resolution
     // (explicit field > [project:slug] tag, NEVER fuzzy — R-CROSSPOST-SCOPE),
@@ -264,10 +320,10 @@ export default async function handler(req, res) {
       clientId: resolvedClientId,  // verified above -- multi-tenant isolation
       project,
       metadata,
-      userId: user_id,
-      userName: user_name,
-      senderRole: sender_role,
-      worldId: world_id,
+      userId: authorUserId,
+      userName: authorUserName,
+      senderRole: authorSenderRole,
+      worldId: rowWorldId,
       attachmentUrl: attachment_url,
       fileMimeType: file_mime_type,
       fileSize: file_size,
@@ -288,13 +344,8 @@ export default async function handler(req, res) {
       // Safety guard: never allow bulk-delete for aom world
       return res.status(400).json({ error: 'client required and must not be aom' })
     }
-    let clientId
-    try {
-      ({ tenant: clientId } = await verifyTenant(requestedClient, req))
-    } catch (err) {
-      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
-      throw err
-    }
+    const clientId = await resolveTenant(requestedClient, req, res)
+    if (!clientId) return
     const url = `${SUPABASE_URL}/rest/v1/messages?client_id=eq.${encodeURIComponent(clientId)}`
     const sbRes = await fetch(url, {
       method: 'DELETE',

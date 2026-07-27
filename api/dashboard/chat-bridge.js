@@ -11,7 +11,7 @@
 
 import crypto from 'crypto'
 import { writeMessageRow } from '../_lib/write-message.js'
-import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
+import { verifyTenant, TenantAuthError, extractJwt, callerIdentity } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
@@ -30,6 +30,49 @@ function getBridgeUrl() {
   return LOCAL_BRIDGE_URL
 }
 
+// What the agent is told when the sender can't be named. NEVER a person's name:
+// the bridge turns user_name into "You are talking to **X**", and "Patrik" there
+// is an authorization signal agents act on. An honest label makes the absence
+// visible to the agent instead of papering it over (identity audit 2026-07-27).
+const UNNAMED_SENDER = 'Unidentified sender'
+
+// Who is actually sending this message. Derived SERVER-SIDE from the JWT — the
+// client-supplied body.user_name / body.user_id are ignored for attribution
+// (they are caller-controlled and therefore forgeable). Every caller of this
+// endpoint already goes through verifyTenant, so a JWT is always present; the
+// null cases below are network failure against Supabase auth, not anonymity.
+//
+// `verified` carries the userId we got straight out of verifyTenant, so even a
+// failed name lookup still lands a real, queryable author id on the row.
+async function resolveSender(req, verified) {
+  let userId = verified?.userId || null
+  let userName = null
+  // verifyTenant resolves the user from the JWT already and carries the identity
+  // on its result, so the common path costs ZERO extra round trips — that call
+  // is the known hot spot here (see the timing note in verifyTenant.js). The
+  // fallback only fires for a result shape without identity; callerIdentity uses
+  // the same derivation, so one human reads the same either way.
+  if (verified && 'userName' in verified) {
+    userName = verified.userName || verified.email || null
+  } else {
+    const ident = await callerIdentity(req).catch(() => null)
+    if (ident) {
+      userId = userId || ident.userId || null
+      userName = ident.userName || ident.email || null
+    }
+  }
+  const name = (userName == null ? '' : String(userName)).trim() || null
+  return {
+    userId: userId || null,
+    // null, never a substituted name — write-message.js records the row as
+    // explicitly unattributed rather than crediting anyone.
+    userName: name,
+    // What the live agent sees. Truthful in both directions.
+    bridgeName: name || UNNAMED_SENDER,
+    identified: Boolean(name),
+  }
+}
+
 function supabaseHeaders() {
   return {
     'apikey': SUPABASE_KEY,
@@ -39,7 +82,7 @@ function supabaseHeaders() {
   }
 }
 
-async function writeFallbackToSupabase(body) {
+async function writeFallbackToSupabase(body, sender) {
   // Thin wrapper over the single write path (corner:one-write-path R1).
   // Routing policy — project resolution (explicit > room > tag, never fuzzy),
   // mission canonicalization, collaborator-gated crosspost — lives in
@@ -64,8 +107,10 @@ async function writeFallbackToSupabase(body) {
     roomProject,
     mission: body.mission,
     metadata: body.metadata,
-    userId: body.user_id,
-    userName: body.user_name,
+    // Author comes from the JWT, not the body. When the name can't be resolved
+    // it stays null and write-message.js marks the row unattributed.
+    userId: sender?.userId || null,
+    userName: sender?.userName || null,
   })
   return { ok: result.ok, message: result.row }
 }
@@ -75,7 +120,7 @@ async function writeFallbackToSupabase(body) {
 //   1. tasks: N rows linked by metadata.chain_id (first 'queued', rest 'waiting')
 //   2. messages: the original user prompt so it stays in chat history
 //   3. messages: a chain-card assistant message so the UI shows the chain inline
-async function maybeCreateChain(body) {
+async function maybeCreateChain(body, sender) {
   const message = (body.message || '').trim()
   if (!message.includes('>>')) return null
 
@@ -110,13 +155,15 @@ async function maybeCreateChain(body) {
     source: 'corner-dashboard',
     clientId: client_id,
     project: project || null,
-    userId: body.user_id,
-    userName: body.user_name,
+    userId: sender?.userId || null,
+    userName: sender?.userName || null,
     metadata: { chain_id, chain_total: total },
   }).catch(() => {})
 
   // tasks table has no user_id / user_name columns (messages does). Stash the
-  // submitter in metadata so we keep the trail without triggering PGRST204.
+  // JWT-verified submitter in metadata so we keep the trail without triggering
+  // PGRST204. A worker reading this task can tell "requested by Courtney" from
+  // "requester unknown" — it must never read as Patrik by default.
   const rows = parts.map((title, i) => ({
     id: crypto.randomUUID(),
     title,
@@ -136,8 +183,9 @@ async function maybeCreateChain(body) {
       created_via: 'chain-operator',
       model: 'sonnet',
       repo,
-      ...(body.user_id ? { user_id: body.user_id } : {}),
-      ...(body.user_name ? { user_name: body.user_name } : {}),
+      ...(sender?.userId ? { user_id: sender.userId } : {}),
+      ...(sender?.userName ? { user_name: sender.userName } : {}),
+      ...(sender?.identified ? {} : { requester_unattributed: true }),
     },
   }))
 
@@ -171,7 +219,10 @@ async function maybeCreateChain(body) {
     source: 'chain-card',
     clientId: client_id,
     project: project || null,
-    userId: body.user_id,
+    // The chain card is the assistant's own summary row, not the human's — it
+    // carries no user_name. user_id stays so the card is traceable to the
+    // session that triggered it.
+    userId: sender?.userId || null,
     metadata: {
       chain_id,
       chain_total: total,
@@ -274,14 +325,21 @@ export default async function handler(req, res) {
     // JWT-gate: verify caller can write to client_id before any bridge dispatch
     // or Supabase write. Replaces the previously-trusted body.client_id with
     // the verified tenant for downstream code paths.
-    let verifiedTenant
+    let verified
     try {
-      ({ tenant: verifiedTenant } = await verifyTenant(requestedTenant, req))
+      verified = await verifyTenant(requestedTenant, req)
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
       throw err
     }
-    body.client_id = verifiedTenant
+    body.client_id = verified.tenant
+
+    // WHO is sending, resolved from the same verified session. Everything below
+    // attributes to this and only this — body.user_name / body.user_id are never
+    // read again. Before 2026-07-27 an absent name became `|| 'Patrik'`, which is
+    // how a second person in the AOM world (Courtney) reached agents as the
+    // founder. An unknown sender now reads as unknown, all the way down.
+    const sender = await resolveSender(req, verified)
 
     // Project-owned rooms route to the owner's EA, not the default AOM dispatcher.
     // Patrik is a guest in Ben's rooms — the host agent answers, not Elon.
@@ -305,7 +363,7 @@ export default async function handler(req, res) {
     // Chain operator (>>): create N linked tasks, return chain summary,
     // skip bridge dispatch since the runner picks up the first task itself.
     if (message.includes('>>')) {
-      const chain = await maybeCreateChain(body).catch((e) => ({ ok: false, error: String(e) }))
+      const chain = await maybeCreateChain(body, sender).catch((e) => ({ ok: false, error: String(e) }))
       if (chain && chain.ok) {
         return res.status(200).json({
           // messageId points at the user's chain prompt so the frontend can
@@ -326,7 +384,7 @@ export default async function handler(req, res) {
     }
 
     // Always persist to Supabase (history + fallback receiver)
-    const supabaseResult = await writeFallbackToSupabase(body).catch(() => null)
+    const supabaseResult = await writeFallbackToSupabase(body, sender).catch(() => null)
     const messageId = supabaseResult?.message?.id || body.id || crypto.randomUUID()
 
     // Try the bridge
@@ -353,8 +411,15 @@ export default async function handler(req, res) {
           // can load mission CONTEXT/VISION/BUILD into the SDK system prompt.
           // DEF-14 guard: reject the string "undefined" — it is a JS serialization of a missing value.
           ...(body.mission && String(body.mission).trim() !== 'undefined' && String(body.mission).trim() !== 'null' ? (() => { const canon = canonicalizeMissionSlug(String(body.mission).trim(), MISSION_SLUG_LOOKUP); return { mission: canon, metadata: { mission_slug: canon } } })() : {}),
-          user_name: body.user_name || 'Patrik',
-          user_id: body.user_id || '',
+          // The live agent's only identity signal. Always non-empty on purpose:
+          // scripts/sse-bridge.py falls back to "Patrik" on a missing/blank
+          // user_name, so sending the honest label here is what actually stops
+          // an unknown sender from being narrated as the founder downstream.
+          // `user_verified` lets the bridge distinguish "signed in but unnamed"
+          // from "named" once it learns to read it (see escalations).
+          user_name: sender.bridgeName,
+          user_id: sender.userId || '',
+          user_verified: sender.identified,
           thread_id: body.thread_id || body.client_id || '',
           // corner:gemini-workers R10 — per-message model override from the
           // /cvg Gemini workbench surface. Absent on /dashboard sends.

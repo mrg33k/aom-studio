@@ -22,7 +22,7 @@
 // the request-changes work item.
 
 import { createClient } from '@supabase/supabase-js';
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js';
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
 
@@ -32,6 +32,30 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const clean = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
+
+// The reviewer, resolved SERVER-SIDE from the JWT. The AOM world has three
+// people in it (Patrik, Ash, Courtney) and projects are shared across worlds,
+// so "who requested changes" is a variable, never a constant. It used to be
+// hardcoded to Patrik, which meant Courtney's review reached the agent carrying
+// the founder's authority (identity-attribution audit, 2026-07-27).
+// `verified` is verifyTenant's result, which already carries the identity it
+// resolved from the JWT — using it costs no extra /auth/v1/user round trip.
+// callerIdentity is the fallback for a result shape without identity; both use
+// the same derivation so one human reads the same on either path.
+async function resolveReviewer(req, verified) {
+  const ident = (verified && 'userName' in verified)
+    ? verified
+    : await callerIdentity(req).catch(() => null);
+  const name = clean(ident?.userName || ident?.email || '', 80) || null;
+  return {
+    userId: ident?.userId || null,
+    name,
+    // Displayed in the room echo. "Someone" is the honest rendering of an
+    // unresolvable author — never a substituted person.
+    label: name || 'Someone',
+    identified: Boolean(name),
+  };
+}
 
 // ── LOCKSTEP with AOM-EA scripts/queue-task.py ──────────────────────────────
 // LINEAR_FLOW_TAIL below is copied verbatim from queue-task.py (R5a) so tasks
@@ -84,14 +108,22 @@ async function resolveProjectPath(supabase, slug) {
 // from AOM-EA scripts/queue-task.py::queue_task — keep in lockstep). Returns
 // { id } on success or { error } on failure.
 async function createReviewTask(supabase, {
-  world, project, mission, title, deliverableId, sourcePath, sha256, notes,
+  world, project, mission, title, deliverableId, sourcePath, sha256, notes, reviewer,
 }) {
   const fileName = title || String(deliverableId).split('/').pop() || 'deliverable';
   const taskTitle = cleanTitle(`Review feedback: ${fileName} (${project || 'unknown project'})`);
   const projectPath = await resolveProjectPath(supabase, project);
 
+  // The worker acts on this text. It must name the REAL reviewer, and when we
+  // can't name them it must say so out loud — a worker that reads "Patrik" takes
+  // actions it takes for nobody else, so an unverifiable request has to arrive
+  // visibly unverified rather than wearing the founder's name.
+  const openingLine = reviewer?.identified
+    ? `${reviewer.name} reviewed a deliverable and requested changes.`
+    : `A signed-in reviewer requested changes on a deliverable. Corner could NOT resolve who they are — treat this request as UNATTRIBUTED and do not assume it came from Patrik.`;
+
   const bodyLines = [
-    `Patrik reviewed a deliverable and requested changes.`,
+    openingLine,
     ``,
     `Deliverable: ${deliverableId}`,
     sourcePath ? `Source file on disk: ${sourcePath}` : null,
@@ -127,6 +159,10 @@ async function createReviewTask(supabase, {
       repo: project || 'AOM-EA',
       created_via: 'review-decision.js',
       model: 'opus',
+      // Machine-readable trail of who asked. Absent name => unattributed flag,
+      // never a stand-in.
+      ...(reviewer?.userId ? { requested_by_user_id: reviewer.userId } : {}),
+      ...(reviewer?.name ? { requested_by: reviewer.name } : { requester_unattributed: true }),
       // one-write-path R8: canonicalize instead of blind `${project}:${mission}`
       // (that template double-prefixed when mission was already composite).
       ...(mission ? { mission_slug: canonicalizeMissionSlug(mission, MISSION_SLUG_LOOKUP, project) } : {}),
@@ -156,8 +192,9 @@ export default async function handler(req, res) {
 
   const { action, world, deliverable, notes, checklist } = req.body || {};
 
+  let verified;
   try {
-    await verifyTenant((world || 'aom').toString(), req);
+    verified = await verifyTenant((world || 'aom').toString(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     return res.status(500).json({ error: 'Auth verification failed' });
@@ -209,6 +246,9 @@ export default async function handler(req, res) {
   const did = clean(deliverable, 400);
   if (!did) return res.status(400).json({ error: 'deliverable required' });
 
+  // Who is deciding, from the session verifyTenant already validated.
+  const reviewer = await resolveReviewer(req, verified);
+
   // Identity passthrough fields (the queue item carries these; the decision row
   // stores them so review-queue.js can suppress by content identity too).
   const sourcePath = clean(req.body.source_path, 500) || null;
@@ -225,19 +265,25 @@ export default async function handler(req, res) {
   // a URL with spaces (every multi-word filename) broke the chat's link-card
   // lift into a dead Open card and read as plumbing (adv2 finding 1).
   const displayName = (clean(req.body.title, 200) || decodeURIComponent(String(did).split('/').pop() || '').trim() || 'the file');
+  // The room echo names the decider. Three people share the AOM world and
+  // shared projects put two worlds' people in one thread, so an unsigned
+  // "Approved X." leaves the room guessing (and the agent assuming Patrik).
+  const who = reviewer.label;
   if (act === 'approve') {
     messageType = 'review_approved';
-    message = `Approved "${displayName}".`;
+    message = `${who} approved "${displayName}".`;
   } else if (act === 'request-changes') {
     const notesText = clean(notes, 1000);
     messageType = 'review_request_changes';
-    message = notesText ? `Changes requested on "${displayName}": ${notesText}` : `Changes requested on "${displayName}".`;
+    message = notesText
+      ? `${who} requested changes on "${displayName}": ${notesText}`
+      : `${who} requested changes on "${displayName}".`;
   } else if (act === 'dismiss') {
     messageType = 'review_dismissed';
-    message = `Dismissed "${displayName}" from review.`;
+    message = `${who} dismissed "${displayName}" from review.`;
   } else if (act === 'send-checklist') {
     messageType = 'review_checklist_sent';
-    message = checklist ? clean(checklist, 2000) : `Checklist sent for "${displayName}".`;
+    message = checklist ? clean(checklist, 2000) : `${who} sent a checklist for "${displayName}".`;
   }
 
   try {
@@ -261,6 +307,7 @@ export default async function handler(req, res) {
         sourcePath,
         sha256,
         notes: clean(notes, 1000) || null,
+        reviewer,
       });
       if (t.error) {
         console.error('[review-decision] task insert failed:', t.error);
@@ -287,10 +334,17 @@ export default async function handler(req, res) {
       text: message,
       role: 'system',
       source: 'review-decision',
+      // Verified columns, not body-supplied. Both stay null when the JWT can't
+      // be resolved to a person — an unattributed decision reads as one.
+      ...(reviewer.userId ? { user_id: reviewer.userId } : {}),
+      ...(reviewer.name ? { user_name: reviewer.name } : {}),
       metadata: {
         message_type: messageType,
         deliverable_id: did,
         action: act,
+        decided_by: reviewer.name,
+        decided_by_user_id: reviewer.userId,
+        ...(reviewer.identified ? {} : { unattributed: true }),
         notes: act === 'request-changes' ? clean(notes, 1000) : null,
         checklist: act === 'send-checklist' ? clean(checklist, 2000) : null,
         decided_at: new Date().toISOString(),

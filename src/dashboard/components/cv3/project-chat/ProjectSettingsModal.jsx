@@ -1,4 +1,5 @@
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 import { TYPE, LH, LS } from '../../../lib/typeScale.js'
 import { useChatCore, useChatSettingsCtx } from '../chat/ChatPanelContext.jsx'
 import AvatarUploader from '../shared/AvatarUploader.jsx'
@@ -359,7 +360,11 @@ export default function ProjectSettingsModal() {
                     if (e.key === 'Enter' && inviteEmail.trim() && !inviteLoading) {
                       setInviteLoading(true)
                       setInviteMsg(null)
-                      fetch('/api/dashboard/project-invite', {
+                      // authFetch on BOTH verbs: project-invite now gates GET
+                      // and POST on membership of the world that HOLDS the
+                      // project (projects.client_id). Any member of the holder
+                      // world can grant and list — it is not an admin gate.
+                      authFetch('/api/dashboard/project-invite', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ project_id: selectedProject.id, email: inviteEmail.trim() }),
@@ -370,7 +375,7 @@ export default function ProjectSettingsModal() {
                             setInviteMsg({ type: 'ok', text: `Invited ${data.invited.display_name || data.invited.email}` })
                             setInviteEmail('')
                             // Refresh collaborators
-                            fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
+                            authFetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
                               .then(r => r.json()).then(d => { if (d.collaborators) setCollaborators(d.collaborators) })
                           } else {
                             if (data?.error && /no corner account/i.test(data.error)) {
@@ -404,7 +409,8 @@ export default function ProjectSettingsModal() {
                     if (!inviteEmail.trim() || inviteLoading) return
                     setInviteLoading(true)
                     setInviteMsg(null)
-                    fetch('/api/dashboard/project-invite', {
+                    // Same gate as the Enter-key path above — send the session.
+                    authFetch('/api/dashboard/project-invite', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ project_id: selectedProject.id, email: inviteEmail.trim() }),
@@ -414,7 +420,7 @@ export default function ProjectSettingsModal() {
                         if (data.ok) {
                           setInviteMsg({ type: 'ok', text: `Invited ${data.invited.display_name || data.invited.email}` })
                           setInviteEmail('')
-                          fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
+                          authFetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
                             .then(r => r.json()).then(d => { if (d.collaborators) setCollaborators(d.collaborators) })
                         } else {
                           if (data?.error && /no corner account/i.test(data.error)) {
