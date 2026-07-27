@@ -149,7 +149,11 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
         // status note must not cost the row its affordance — dropping it made
         // ungated files look less tappable than their neighbours.
         <>
-          <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--faint)', background: 'var(--chip)', border: '1px solid var(--divider)', padding: '5px 8px', borderRadius: 8, flex: 'none', whiteSpace: 'nowrap' }}>Not reviewed</span>
+          {/* One word, tight padding: at 340px the chip plus chevron pushed the
+              meta line into truncating mid-unit ("88…", "1.4 M…"), which reads
+              as a bug rather than a decision. "Unreviewed" says the same thing
+              and buys the size back. */}
+          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--faint)', background: 'var(--chip)', border: '1px solid var(--divider)', padding: '4px 7px', borderRadius: 7, flex: 'none', whiteSpace: 'nowrap' }}>Unreviewed</span>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="m9 18 6-6-6-6" /></svg>
         </>
       ) : (
