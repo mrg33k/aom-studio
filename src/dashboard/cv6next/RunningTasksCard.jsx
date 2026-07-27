@@ -260,8 +260,20 @@ const startBtn = {
   background: 'transparent', color: 'var(--accent)', font: '600 13px var(--font-sans)',
   cursor: 'pointer',
 };
+// "Chase it" is deliberately BORDERLESS — a quiet text button, not a second chip.
+//
+// Sent back by the design critic 2026-07-27 and correct: with two bordered controls per
+// row the card showed six buttons of equal mass, so "Start it" led only by colour and the
+// row read as a choice between equals rather than one obvious move. Light theme exposed
+// it — an 8%-black hairline on white is nearly invisible, so the button was already
+// half-asking to lose its border. One bordered accent control per row now wins outright.
+//
+// This DIVERGES from RoutedHereBar, which keeps two bordered buttons, and the divergence
+// is intentional: there the two are co-equal outcomes (move it / leave it), here they are
+// primary and secondary. Different intent earns different weight — do not "fix" it back.
+// Height stays 32 for the tap target; padding tightens to 8 with no border box to balance.
 const ghostBtn = {
-  height: 32, padding: '0 16px', borderRadius: 10, border: '1px solid var(--hair)',
+  height: 32, padding: '0 8px', borderRadius: 10, border: 'none',
   background: 'transparent', color: 'var(--muted)', font: '600 13px var(--font-sans)',
   cursor: 'pointer',
 };
@@ -309,7 +321,10 @@ function Row({ title, who, whoQuiet, right, rightTone, wrap, actions, separated 
       textOverflow: 'ellipsis',
     };
   return (
-    <div style={separated ? { paddingBottom: 16, borderBottom: '1px solid var(--hair)' } : undefined}>
+    // 12 below the rule to match the card's own 12 gap above the next title, so the
+    // hairline sits equidistant between the two items it separates. At 16/12 it leaned
+    // toward the row below and read as belonging to it (critic's craft-pass note).
+    <div style={separated ? { paddingBottom: 12, borderBottom: '1px solid var(--hair)' } : undefined}>
       <div style={{ display: 'flex', alignItems: wrap ? 'flex-start' : 'center', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={titleStyle}>{title}</div>
