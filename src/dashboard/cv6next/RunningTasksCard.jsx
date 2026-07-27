@@ -109,7 +109,7 @@ export default function RunningTasksCard({ room }) {
         // break, otherwise the two groups read as one undifferentiated list.
         <SectionHeader label="Coming back to you" count={promises.length} dim spaced={tasks.length > 0} />
       ) : null}
-      {promises.map((p) => {
+      {promises.map((p, idx) => {
         const due = p.due ? new Date(p.due).getTime() : NaN;
         const overdue = Number.isFinite(due) && due < now;
         // ONE time per row, in the loud slot, always the most decision-relevant one:
@@ -124,11 +124,19 @@ export default function RunningTasksCard({ room }) {
           <Row
             key={p.id}
             title={p.title}
-            who={titleCaseName(p.who)}
+            // No actor line here. On a dispatched job "who" answers a real question —
+            // which worker has it. On a promise it is always this room's own agent, so
+            // it printed "Corner" identically down every row and cost a line each. The
+            // room slug was removed from this same line earlier for exactly this reason;
+            // the agent slug is the same mistake wearing a different field name.
             right={right}
             rightTone={overdue ? 'var(--accent)' : 'var(--muted)'}
             wrap
             actions={<PromiseActions title={p.title} />}
+            // Items must separate more than the parts inside one item. With buttons in
+            // the row that stopped being true at gap 12 — a row's buttons sat as close
+            // to the NEXT promise as to their own title, and the list read as one blur.
+            separated={idx < promises.length - 1}
           />
         );
       })}
@@ -179,15 +187,31 @@ function SectionHeader({ label, count, dim, spaced }) {
 function PromiseActions({ title }) {
   const send = useContext(SendCtx);
   const [tapped, setTapped] = useState('');
+  const [failed, setFailed] = useState(false);
   const one = String(title || '').split('\n')[0].trim();
   if (!one) return null;
 
-  const fire = (kind, text) => {
+  const fire = async (kind, text) => {
     // Guard the double-tap: send() is optimistic and there is no per-row busy state to
     // hang a spinner on, so the honest affordance is to disable and say what was sent.
     if (tapped) return;
     setTapped(kind);
-    try { send(text); } catch { setTapped(''); }
+    setFailed(false);
+    // CONFIRM ONLY WHAT LANDED. `send` RESOLVES false on a failure (rejected POST,
+    // read-only surface, missing room) — it does not throw, so the original bare
+    // `try { send(text) } catch {}` could never see it and the card announced
+    // "Told them to start it." over a send that never left the browser. Caught live
+    // on production 2026-07-27 by intercepting the message POST with a 503: the
+    // request failed and the card still claimed success.
+    //
+    // That is this card's own disease — a stated commitment with nothing behind it —
+    // reproduced inside the fix for it, and in the worst spot: the user reads
+    // "told them", walks away, and no one was ever told. `!== true` (not `=== false`)
+    // so the no-op default context value, which resolves undefined, also reverts
+    // instead of lying.
+    let ok = false;
+    try { ok = await send(text); } catch { ok = false; }
+    if (ok !== true) { setTapped(''); setFailed(true); }
   };
 
   if (tapped) {
@@ -198,21 +222,29 @@ function PromiseActions({ title }) {
     );
   }
   return (
-    <div style={btnRow}>
-      <button
-        type="button"
-        style={startBtn}
-        onClick={() => fire('start', `Go ahead and start this now: ${one}`)}
-      >
-        Start it
-      </button>
-      <button
-        type="button"
-        style={ghostBtn}
-        onClick={() => fire('chase', `Where are you on this? ${one}`)}
-      >
-        Chase it
-      </button>
+    <div>
+      {failed ? (
+        // Restores the buttons rather than dead-ending, so the retry is one tap away.
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--error, #F87171)' }}>
+          That didn’t send. Try again.
+        </div>
+      ) : null}
+      <div style={btnRow}>
+        <button
+          type="button"
+          style={startBtn}
+          onClick={() => fire('start', `Go ahead and start this now: ${one}`)}
+        >
+          Start it
+        </button>
+        <button
+          type="button"
+          style={ghostBtn}
+          onClick={() => fire('chase', `Where are you on this? ${one}`)}
+        >
+          Chase it
+        </button>
+      </div>
     </div>
   );
 }
@@ -237,7 +269,7 @@ function minsSince(iso, nowMs) {
   return Math.max(0, Math.round((nowMs - t) / 60000));
 }
 
-function Row({ title, who, right, rightTone, wrap, actions }) {
+function Row({ title, who, right, rightTone, wrap, actions, separated }) {
   // A dispatched job's title is a short label, so one ellipsised line is right. A promise's
   // title is the sentence the agent actually said — truncating it mid-word throws away the
   // commitment, which is the whole reason the row is on screen. Those wrap to two lines.
@@ -259,7 +291,7 @@ function Row({ title, who, right, rightTone, wrap, actions }) {
       textOverflow: 'ellipsis',
     };
   return (
-    <div>
+    <div style={separated ? { paddingBottom: 16, borderBottom: '1px solid var(--hair)' } : undefined}>
       <div style={{ display: 'flex', alignItems: wrap ? 'flex-start' : 'center', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={titleStyle}>{title}</div>
@@ -267,7 +299,9 @@ function Row({ title, who, right, rightTone, wrap, actions }) {
             rather than sitting muted behind the sentence. The room slug that used to
             trail here is gone: the card is already scoped to this room, so it was both
             redundant and an internal slug in a user-facing line (rule 4). */}
-          <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 600, marginTop: 2 }}>{who}</div>
+          {who ? (
+            <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 600, marginTop: 2 }}>{who}</div>
+          ) : null}
         </div>
         {right ? (
           <span
