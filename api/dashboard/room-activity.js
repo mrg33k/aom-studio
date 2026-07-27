@@ -29,12 +29,11 @@
 // window are simply absent; the caller leaves them at 0, which is the correct ranking for
 // a dormant room rather than a lie about it.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-const DEFAULT_CLIENT_ID = 'aom';
 const WINDOW_ROWS = 6000;
 const PAGE = 1000;
 const HINT_CHARS = 200;
@@ -151,6 +150,27 @@ export function acceptedTexts(rows) {
   return keep.reverse();
 }
 
+// The world this request is scoped to. An explicit value wins; otherwise the world is
+// resolved from the VERIFIED JWT — never a hardcoded default.
+//
+// This read `DEFAULT_CLIENT_ID = 'aom'` (2026-07-27 audit): one world hardcoded in place
+// of the one that should be resolved. Invisible to the people most likely to test it —
+// Patrik, Ash and Courtney are all world 'aom' — and silently wrong for every other
+// world, whose world-less request was filed against Patrik's namespace and then refused
+// for the wrong reason. useIntakeRoute already sends ?client=<worldId>, so this only
+// changes a request that omits it.
+//
+// No session → 401. A verified session whose account carries no world → an explicit 400
+// naming the fix, never a silent fallback into another world.
+async function scopeWorld(explicit, req) {
+  const given = explicit == null ? '' : String(explicit).trim();
+  if (given) return given.toLowerCase();
+  const who = await callerIdentity(req);
+  if (!who) throw new TenantAuthError('jwt required', 401);
+  if (!who.world) throw new TenantAuthError('this account is not in a world; send an explicit world', 400);
+  return who.world;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -158,9 +178,13 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  const requested = (req.query.client || req.query.client_id || DEFAULT_CLIENT_ID).toString().trim().toLowerCase();
+  // Whether the world was named IN THE URL decides whether this response may be edge
+  // cached at all — see the Cache-Control note at the bottom. Read it before touching
+  // either line: they are one mechanism, not two.
+  const fromUrl = (req.query.client || req.query.client_id || '').toString().trim();
   let clientId;
   try {
+    const requested = await scopeWorld(fromUrl, req);
     ({ tenant: clientId } = await verifyTenant(requested, req));
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
@@ -221,7 +245,19 @@ export default async function handler(req, res) {
 
   // Edge-cached: "which rooms were active lately" tolerates minutes of staleness, and this
   // is read on the send path where latency is felt.
-  res.setHeader('Cache-Control', 's-maxage=180, stale-while-revalidate=600');
+  //
+  // ONLY when the world was named in the URL. The shared edge cache is keyed by URL and
+  // does NOT include the Authorization header, so a response whose world came from the
+  // JWT would sit at a URL that is byte-identical for every world — and the first
+  // caller's room digests (message text, file names, what each room is about) would be
+  // served to the next caller from a different world for up to 180s. That did not exist
+  // while the fallback was a hardcoded world, because then every world-less request
+  // returned the SAME world's data; making the fallback correct is exactly what makes the
+  // cache key insufficient. The live UI always sends ?client=<worldId>, so it keeps the
+  // full 180s cache; only the param-less request pays, and it pays with correctness.
+  res.setHeader('Cache-Control', fromUrl
+    ? 's-maxage=180, stale-while-revalidate=600'
+    : 'private, no-store');
   return res.status(200).json({
     projects,
     missions,

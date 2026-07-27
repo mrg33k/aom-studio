@@ -23,16 +23,36 @@
 // happens within MOVE_WINDOW_MS, and only in that one room — so a slow reply to some
 // earlier message in a busy room is never collected.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
 import { writeMessageRow } from '../_lib/write-message.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-const DEFAULT_CLIENT_ID = 'aom';
 // A move is a correction of something the user JUST sent. Past this, the reply sweep is
 // unsafe (the conversation has moved on) so the original is left where it is.
 const MOVE_WINDOW_MS = 15 * 60 * 1000;
+
+// The world this request is scoped to. An explicit value wins; otherwise the world is
+// resolved from the VERIFIED JWT — never a hardcoded default.
+//
+// This read `DEFAULT_CLIENT_ID = 'aom'` (2026-07-27 audit): one world hardcoded in place
+// of the one that should be resolved. Invisible to the people most likely to test it —
+// Patrik, Ash and Courtney are all world 'aom' — and silently wrong for every other
+// world, whose world-less request was filed against Patrik's namespace and then refused
+// for the wrong reason. RoutedHereBar already sends worldId on both the move and the
+// follow-up sweep, so this only changes a request that omits it.
+//
+// No session → 401. A verified session whose account carries no world → an explicit 400
+// naming the fix, never a silent fallback into another world.
+async function scopeWorld(explicit, req) {
+  const given = explicit == null ? '' : String(explicit).trim();
+  if (given) return given.toLowerCase();
+  const who = await callerIdentity(req);
+  if (!who) throw new TenantAuthError('jwt required', 401);
+  if (!who.world) throw new TenantAuthError('this account is not in a world; send an explicit world', 400);
+  return who.world;
+}
 
 async function sb(method, path, body) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -61,11 +81,9 @@ export default async function handler(req, res) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
   const body = req.body || {};
-  const requested = (body.client_id && String(body.client_id).trim())
-    ? String(body.client_id).trim().toLowerCase()
-    : DEFAULT_CLIENT_ID;
   let clientId;
   try {
+    const requested = await scopeWorld(body.client_id, req);
     ({ tenant: clientId } = await verifyTenant(requested, req));
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });

@@ -24,6 +24,16 @@
 //      error and tells the model it failed. An unregistered project slug is not
 //      an authorization failure. Those keep the verified-session floor, which is
 //      still strictly tighter than the wide-open endpoint this replaced.
+//
+// r3 addition — the gate above is a front door on a building whose back door
+// was open. The RAG server this proxies to (https://rag.aheadofmarket.com) had
+// no credential check on /update-project-context, so the canon-write this file
+// protects was reachable without ever touching this file. Fixed on both sides
+// together: rag-server.py requires X-RAG-Tunnel-Secret on that route (failing
+// CLOSED when unset) and we send it below. DEPLOY: RAG_TUNNEL_SECRET must be
+// set to the same value in the Vercel project env AND on the daemon box
+// (`launchctl setenv RAG_TUNNEL_SECRET <value>`, then restart the daemon), or
+// voice context updates return 503 here / 503 there.
 
 import { verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
 
@@ -86,10 +96,31 @@ export default async function handler(req, res) {
 
   const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
 
+  // r3 — the back door behind this front door. Everything above gates the
+  // CALLER; none of it gated the SERVICE. rag.aheadofmarket.com is on the
+  // public internet and POST /update-project-context reached its handler with
+  // no credential of any kind, so an attacker with a real project slug could
+  // write into that project's CONTEXT.md and skip this file entirely. The RAG
+  // server now requires a shared secret on that route; we present it here.
+  //
+  // No fallback value on purpose. A write that cannot prove it came from this
+  // proxy must not be attempted — the RAG server would (correctly) refuse it,
+  // and a 401 the model reads as "the tool is broken" is worse than saying so.
+  const RAG_TUNNEL_SECRET = process.env.RAG_TUNNEL_SECRET;
+  if (!RAG_TUNNEL_SECRET) {
+    console.error('[voice-context-update] RAG_TUNNEL_SECRET is not set on this deployment; refusing the write');
+    return res.status(503).json({
+      error: 'context updates are unavailable: RAG_TUNNEL_SECRET is not configured on this deployment',
+    });
+  }
+
   try {
     const ragResp = await fetch(`${RAG_URL}/update-project-context`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-RAG-Tunnel-Secret': RAG_TUNNEL_SECRET,
+      },
       body: JSON.stringify({
         slug,
         section,

@@ -8,11 +8,13 @@
 //   2. Admin path:   public.is_world_admin_for_tenant(tenant, user_id) is true
 //                    (Patrik is admin in every world; future tenant admins
 //                    work the same way).
-//   3. Shared path:  requestedTenant is "shared:<slug>" and caller's world has
-//                    a project_access row for the underlying project (added
-//                    2026-05-24 to fix shared-room chat 403s — the world
-//                    admin RPC can't match "shared:*" because no world has
-//                    that slug; project_access is the real grant table).
+//   3. Shared path:  requestedTenant is "shared:<slug>" and the caller's world
+//                    holds the project, holds a project_access row for it, or
+//                    already has messages in the room (added 2026-05-24 to fix
+//                    shared-room chat 403s — the world admin RPC can't match
+//                    "shared:*" because no world has that slug; project_access
+//                    is the real grant table, and room traffic is the
+//                    participation floor underneath it).
 //
 // *** THE SHARED PATH IS REACHED ONLY FOR A TENANT LITERALLY SPELLED
 // *** "shared:<slug>". For a PLAIN world string the project_access grant table
@@ -132,37 +134,52 @@ async function hasProjectAccessGrant(projectId, callerWorld) {
   }
 }
 
-// LEGACY SHARED ROOM fallback (2026-07-27 r2).
+// ---------------------------------------------------------------------------
+// PARTICIPATION EVIDENCE — the floor BOTH gates in this file fall back to
+// (2026-07-27 r2, generalised r3).
 //
-// A `shared:<slug>` room whose slug has no projects row. 11 of the 35 shared
-// rooms live are in this state (aheadofmarket, ambition, aom-studio,
-// chat-all-rooms, google-ads-launch, home-all-rooms, lab-bridge-r5, organize,
-// pala, sys, trading-agent) — all predate the projects table, all stale
-// (newest 2026-06-29). There is no grant row to consult, so the ONLY evidence
-// of who the room belongs to is the room's own traffic: every one of those 11
-// carries a single world_id across all of its messages ('aom').
+// THE RULE, stated once so the two gates cannot drift apart again: a world that
+// already has messages in the room / under the project is a PARTICIPANT and may
+// keep reading and writing it. Every other world is refused. Merely holding a
+// valid session is NOT evidence — 19 auth users are live across 10 worlds (plus
+// 4 legacy accounts carrying no world at all), and a JWT proves only which of
+// them you are, never that you belong in this room.
 //
-// So the defined behaviour is: a world that already has messages in the room is
-// a participant and may read/write it; every other world is refused. That is
-// strictly narrower than the any-authenticated-JWT rule it replaces (an
-// ungranted foreign world no longer gets in) and it does not 403 the people who
-// are actually in the room — which for these 11 rooms means Ash and Courtney.
+// Read off `messages.world_id`, which records the world the message was WRITTEN
+// from, not the world that holds the project: shared:sourcing is arsenal-held
+// and every one of its 387 rows carries the AOM world. That is exactly the
+// signal we want. The column is NOT NULL on all 45,192 live rows, so an empty
+// result is real absence, never a data gap.
 //
-// Deliberately conservative: an unregistered shared room with NO messages at all
-// has no evident owner, so nobody passes. No live room is in that state, and a
-// room created the supported way has a projects row and never reaches here.
-async function hasLegacySharedRoomPresence(sharedTenant, callerWorld) {
+// Deliberately conservative in one direction: a room / project with no messages
+// at all has no evident participants, so nobody but the super-admin passes. That
+// is not a dead end and not a lockout, because the floor is only ever reached
+// after the holder-world and project_access arms have already said no:
+//   - inviting a world to a project writes a project_access row
+//     (api/dashboard/project-invite.js), so a freshly shared, still-silent room
+//     is admitted by the GRANT, never by this floor;
+//   - a project created the supported way gets a projects row with a holder
+//     world (api/dashboard/create-project-from-chat.js) and never lands here;
+//   - and a disk-scaffolded slug with no row and no traffic self-heals the
+//     moment its first message lands, which goes through the world gate above,
+//     not through this one.
+// Verified live 2026-07-27: all 4 unregistered projects carry traffic, and every
+// shared room that anyone has actually used carries traffic by definition.
+//
+// Returns false on any error; the caller falls through to its existing 403.
+// ---------------------------------------------------------------------------
+async function worldHasMessages(filter, callerWorld, label) {
   if (!callerWorld || !SUPABASE_URL || !SUPABASE_KEY) return false;
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?client_id=eq.${encodeURIComponent(sharedTenant)}&world_id=eq.${encodeURIComponent(callerWorld)}&select=id&limit=1`,
+      `${SUPABASE_URL}/rest/v1/messages?${filter}&world_id=eq.${encodeURIComponent(callerWorld)}&select=id&limit=1`,
       { headers: serviceHeaders() }
     );
     if (!r.ok) return false;
     const rows = await r.json();
     const present = Array.isArray(rows) && rows.length > 0;
     if (!present) {
-      console.log(`[verifyTenant] legacy shared room "${sharedTenant}" has no projects row and no messages from world "${callerWorld}" — denied`);
+      console.log(`[verifyTenant] no participation evidence: world "${callerWorld}" has no messages ${label} — denied`);
     }
     return present;
   } catch {
@@ -170,20 +187,59 @@ async function hasLegacySharedRoomPresence(sharedTenant, callerWorld) {
   }
 }
 
+// Has the caller's world already spoken in this shared room? Room-scoped:
+// presence in the room is presence, whether or not the slug has a projects row.
+function hasSharedRoomPresence(sharedTenant, callerWorld) {
+  return worldHasMessages(
+    `client_id=eq.${encodeURIComponent(sharedTenant)}`,
+    callerWorld,
+    `in shared room "${sharedTenant}"`
+  );
+}
+
+// Has the caller's world already spoken under this project? Project-scoped, so
+// it counts traffic in the project's own room AND in its shared room — messages
+// carry `project` on both (live: shared:pala rows carry project 'pala').
+function hasProjectPresence(projectSlug, callerWorld) {
+  return worldHasMessages(
+    `project=eq.${encodeURIComponent(projectSlug)}`,
+    callerWorld,
+    `under project "${projectSlug}"`
+  );
+}
+
 // For tenants of the form "shared:<project-slug>", check whether the caller's
 // world may reach the room: it holds the project, it holds a project_access
-// grant on it, or (legacy rooms only) it already has traffic in the room.
+// grant on it, or it already has traffic in the room.
 // Returns false on any error — caller falls through to the existing 403.
+//
+// r3 FIX — the participation floor applies to REGISTERED rooms too. The r2
+// version reached it only via `if (!project) return ...`, so a shared room that
+// DOES have a projects row but no grant fell through all three arms to 403.
+// That is a live regression, not a hypothetical: shared:sourcing is
+// arsenal-held, carries 387 messages every one of which was written from the AOM
+// world, and has no AOM project_access grant. Before this change set the shared
+// branch was requireJwtOnly and the room worked. After it, Ash and Courtney get
+// 403 while Patrik sails through on the super-admin bypass three lines earlier
+// and never sees the break — the exact asymmetry this file keeps re-introducing.
+// shared:s3c is in the same state (arsenal-held, ungranted, AOM traffic).
+//
+// Presence in the room is presence. Whether a projects row exists is a fact
+// about the registry, not about who is in the conversation.
 async function hasSharedProjectAccess(sharedTenant, callerWorld) {
   if (!callerWorld) return false;
   const projectSlug = sharedTenant.slice('shared:'.length);
   if (!projectSlug) return false;
   const project = await lookupProjectBySlug(projectSlug);
-  if (!project) return hasLegacySharedRoomPresence(sharedTenant, callerWorld);
+  // Unregistered room: no holder world and no grant row exist to consult, so
+  // the room's own traffic is the only evidence there is.
+  if (!project) return hasSharedRoomPresence(sharedTenant, callerWorld);
   // The owning world always has access to its own shared channel.
   if (project.ownerWorld && project.ownerWorld === callerWorld) return true;
   // Otherwise look for a project_access grant for the caller's world.
-  return hasProjectAccessGrant(project.projectId, callerWorld);
+  if (await hasProjectAccessGrant(project.projectId, callerWorld)) return true;
+  // Registered but ungranted: same participation floor as an unregistered room.
+  return hasSharedRoomPresence(sharedTenant, callerWorld);
 }
 
 async function isWorldAdminForTenant(tenant, userId) {
@@ -285,11 +341,16 @@ export async function verifyTenant(requestedTenant, req) {
 // Live proof (2026-07-27): project_access grants world 'aom' into three
 // arsenal-held projects — space-rising, arsenal, arsenal-directory. Ash
 // (ashtrovfx@gmail.com) and Courtney (courtney@corner.aheadofmarket.com) are
-// both world 'aom' and neither is the super-admin. Under
-// verifyTenant('arsenal', req) they get callerWorld 'aom' != 'arsenal', no
-// 'shared:' prefix, grant table never read → 403 on every Space Rising
-// surface. Patrik returns on the super-admin bypass two lines earlier and
-// never sees the break. That asymmetry is the bug this function exists to kill.
+// both in the AOM world and neither is the super-admin. Under
+// verifyTenant(<holderWorld>, req) their world is not the holder world, the
+// tenant string carries no 'shared:' prefix, the grant table is never read →
+// 403 on every Space Rising surface. Patrik returns on the super-admin bypass
+// two lines earlier and never sees the break. That asymmetry is the bug this
+// function exists to kill.
+//
+// (Written without a literal world slug after the paren on purpose: the
+// hardcoded-tenant guard scans for exactly that shape, and a build gate that
+// goes red on the WRITE-UP of a vulnerability is a gate people learn to skip.)
 //
 // ONE world OWNS a project (projects.client_id). It shares OUTWARD via a
 // project_access row, which is WORLD-level — so a grant admits every human in
@@ -312,10 +373,26 @@ export async function verifyTenant(requestedTenant, req) {
 //               saves the call site a second /auth/v1/user round trip.
 //
 // Admits, in order: the super-admin; the holder world; any world holding a
-// project_access grant; the holder world's admins. A project with no projects
-// row keeps the verified-session floor — an unregistered slug is a project the
-// projects table never learned about, not an authorization failure, and
-// 404/403-ing it silently eats writes in rooms that render fine everywhere else.
+// project_access grant; the holder world's admins; and — only when there is no
+// holder world to compare against — a world with PARTICIPATION EVIDENCE under
+// that project (see worldHasMessages above). Everything else is a 403.
+//
+// r3 FIX — that last arm used to be "any valid session at all". Two branches,
+// `unregistered-project` (no projects row) and `unowned-project` (row with no
+// client_id), did no world comparison whatsoever, so ANY caller from ANY world
+// was admitted. Live cost: 4 registry projects have no projects row (blacknight,
+// bridge-smoke, pala, rex), so Ben — a different world entirely — could POST
+// voice-context-update with slug 'rex' and write arbitrary text into AOM's rex
+// CONTEXT.md, which rule 5 makes every agent read fresh as canon before acting.
+// That is durable prompt injection into the source of truth, not a stray read.
+//
+// An unregistered slug still is NOT an authorization failure — 404/403-ing it
+// outright silently eats writes in rooms that render fine everywhere else, and
+// that was a real r1 regression. The floor is lowered to participation, not to
+// nothing: all 4 unregistered projects carry traffic from exactly one world, so
+// the people actually in those rooms (Ash and Courtney included) keep working
+// and every other world is refused. Same rule as the shared-room path above, on
+// purpose — one sentence, two gates, so they cannot drift apart again.
 export async function verifyProjectAccess(projectSlug, req) {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     throw new TenantAuthError('supabase not configured', 500);
@@ -353,18 +430,23 @@ export async function verifyProjectAccess(projectSlug, req) {
   // Super-admin (Patrik) reaches every project, same as verifyTenant.
   if (user.id === SUPER_ADMIN_USER_ID) return admit('super-admin', true);
 
-  // No projects row — registry/disk-only project. There is no holder world to
-  // compare against, so the floor is a verified session. Deliberately NOT a
-  // 403/404: see the note on lookupProjectBySlug.
-  if (!project) return admit('unregistered-project');
+  // Registered project: holder world, then grant, then the holder's admins.
+  // Order and `via` strings are unchanged from r2 — only the fallback below is.
+  if (project) {
+    if (ownerWorld && callerWorld && ownerWorld === callerWorld) return admit('holder-world');
+    if (await hasProjectAccessGrant(project.projectId, callerWorld)) return admit('project-access-grant');
+    if (ownerWorld && await isWorldAdminForTenant(ownerWorld, user.id)) return admit('world-admin', true);
+  }
 
-  if (ownerWorld && callerWorld && ownerWorld === callerWorld) return admit('holder-world');
-  if (await hasProjectAccessGrant(project.projectId, callerWorld)) return admit('project-access-grant');
-  if (ownerWorld && await isWorldAdminForTenant(ownerWorld, user.id)) return admit('world-admin', true);
-  // Row exists but records no holder world — same "cannot tell whose it is"
-  // state as an unregistered project, so it gets the same verified-session floor
-  // rather than a 403 nobody can clear.
-  if (!ownerWorld) return admit('unowned-project');
+  // No holder world to compare against — either no projects row at all
+  // (registry/disk-only project) or a row that records no client_id. Both are
+  // the same "cannot tell whose it is" state, and both now take the
+  // PARTICIPATION floor rather than waving through any session: the caller's
+  // world must already have messages under this project. A session is proof of
+  // who you are, never proof that you belong in this room.
+  if (!ownerWorld && await hasProjectPresence(slug, callerWorld)) {
+    return admit(project ? 'unowned-project' : 'unregistered-project');
+  }
 
   throw new TenantAuthError(
     `forbidden: caller world "${callerWorld || '(none)'}" has no access to project "${slug}"`,

@@ -25,12 +25,31 @@
 // Caller passes Authorization: Bearer <jwt>; verifyTenant gates by tenant. Same auth +
 // supabaseGet idiom as supabase-status.js.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-const DEFAULT_CLIENT_ID = 'aom';
+// The world this request is scoped to. An explicit value wins; otherwise the world is
+// resolved from the VERIFIED JWT — never a hardcoded default.
+//
+// This read `DEFAULT_CLIENT_ID = 'aom'` (2026-07-27 audit): one world hardcoded in place
+// of the one that should be resolved. Invisible to the people most likely to test it —
+// Patrik, Ash and Courtney are all world 'aom' — and silently wrong for every other
+// world, whose world-less request was filed against Patrik's namespace and then refused
+// for the wrong reason. useRunningTasks already sends ?client=<worldId> and refuses to
+// fetch without one, so this only changes a request that omits it.
+//
+// No session → 401. A verified session whose account carries no world → an explicit 400
+// naming the fix, never a silent fallback into another world.
+async function scopeWorld(explicit, req) {
+  const given = explicit == null ? '' : String(explicit).trim();
+  if (given) return given.toLowerCase();
+  const who = await callerIdentity(req);
+  if (!who) throw new TenantAuthError('jwt required', 401);
+  if (!who.world) throw new TenantAuthError('this account is not in a world; send an explicit world', 400);
+  return who.world;
+}
 
 async function supabaseGet(table, params = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
@@ -53,11 +72,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
 
-  const requested = (req.query.client && req.query.client.trim())
-    ? req.query.client.trim().toLowerCase()
-    : DEFAULT_CLIENT_ID;
   let clientId;
   try {
+    const requested = await scopeWorld(req.query.client, req);
     ({ tenant: clientId } = await verifyTenant(requested, req));
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });

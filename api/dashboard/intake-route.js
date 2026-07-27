@@ -17,12 +17,11 @@
 // Stays on Gemini by design — NO Anthropic API from any endpoint (hard rule,
 // scripts/check-no-anthropic-api.cjs). Same model + JSON pattern as call-scribe.js.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
 import { deriveRoomId } from '../_lib/write-message.js'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const MODEL = 'gemini-2.5-flash'
-const DEFAULT_CLIENT_ID = 'aom'
 const GEMINI_TIMEOUT_MS = 7000
 const MAX_PROJECTS = 18
 const MAX_MISSIONS_PER_PROJECT = 4
@@ -320,6 +319,33 @@ export async function callGemini(message, interactionMode, ranked, lastRoom, rec
   return extractJson(text)
 }
 
+// The world this request is scoped to. An explicit value wins; otherwise the
+// world is resolved from the VERIFIED JWT — never a hardcoded default.
+//
+// WHY (2026-07-27). This read `DEFAULT_CLIENT_ID = 'aom'`, which is the same bug
+// class the whole endpoint family was audited for: one world hardcoded in place
+// of the one that should be resolved. It is structurally invisible to the person
+// most likely to test it — Patrik's own world IS 'aom', and he is super-admin on
+// top of that — while every other world got its request filed against Patrik's
+// namespace and then refused for the wrong reason. Ash and Courtney are world
+// 'aom' too, so they could not surface it either; only Ben or Karen would, and
+// only as an unexplainable 403.
+//
+// Resolving from the JWT is a no-op for the live UI: every caller of these
+// endpoints (useIntakeRoute, useRunningTasks, RoutedHereBar, routedHere) already
+// sends its worldId explicitly. It only changes the request that omits it.
+//
+// No session → 401. A verified session whose account carries no world → an
+// explicit 400 naming the fix, never a silent fallback into another world.
+async function scopeWorld(explicit, req) {
+  const given = explicit == null ? '' : String(explicit).trim()
+  if (given) return given.toLowerCase()
+  const who = await callerIdentity(req)
+  if (!who) throw new TenantAuthError('jwt required', 401)
+  if (!who.world) throw new TenantAuthError('this account is not in a world; send an explicit world', 400)
+  return who.world
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
@@ -330,12 +356,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
   const body = req.body || {}
-  const requested = (body.client_id && String(body.client_id).trim())
-    ? String(body.client_id).trim().toLowerCase()
-    : DEFAULT_CLIENT_ID
   let clientId
   try {
-    ({ tenant: clientId } = await verifyTenant(requested, req))
+    const requested = await scopeWorld(body.client_id, req)
+    ;({ tenant: clientId } = await verifyTenant(requested, req))
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
     throw err

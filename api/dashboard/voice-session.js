@@ -1,9 +1,35 @@
 // POST /api/dashboard/voice-session
 // Returns everything the browser needs to connect directly to Gemini Live.
 // No proxy, no edge function. Browser -> Google WebSocket.
+//
+// ── 2026-07-27 r3, corner:voice-chat ─────────────────────────────────────────
+// THIS RESPONSE CARRIES A LIVE CREDENTIAL. `wsUrl` is
+// wss://generativelanguage.googleapis.com/...?key=<GEMINI_API_KEY> — the raw
+// Google API key, in the JSON body, because the browser opens the socket
+// directly. Until this pass the endpoint sent Access-Control-Allow-Origin:*
+// and deliberately failed OPEN on auth, so an unauthenticated POST to
+// https://lab.aheadofmarket.com/api/dashboard/voice-session returned 200 and
+// the key. Verified live twice (round-2 reviewer + orchestrator).
+//
+// The rule now: NO VERIFIED SESSION, NO RESPONSE. Every sibling voice endpoint
+// got an origin allowlist this round (voice-context-update.js,
+// voice-create-entity.js, voice-handoff.js); this one now matches them.
+//
+// The old "fails closed on data, open on availability" intent is KEPT where it
+// does not involve the credential:
+//   - session verifies, tenant denied (403)     -> 403, no key. Hard boundary.
+//   - session verifies, tenant UNRESOLVABLE     -> 200 with the key, but NO
+//     workspace context: no room history, no tasks, no projects, no missions,
+//     no tape. Degrading to a context-free prompt is fine; degrading to a free
+//     API key is not.
+//   - no session at all                         -> 401, no key, no prompt.
+//
+// NOTE: the key that was served publicly is already burned. Code cannot un-leak
+// a served secret — GEMINI_API_KEY must be ROTATED in the Vercel project env
+// independently of this fix.
 
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -35,7 +61,7 @@ function buildBaseInstruction(speakerName, { aomWorld = false } = {}) {
     ? `WHO IS ON THIS CALL:
 You are on a live voice call with ${speakerName}. Their identity is verified from their signed-in Corner session — that is who is speaking. Address them as ${speakerName}, and attribute everything said on this call to ${speakerName}. Never address them as, or repeat their words as coming from, anybody else.`
     : `WHO IS ON THIS CALL:
-UNKNOWN. This session carries no verified sign-in, so you do not know who picked up. Do NOT assume it is Patrik, and do NOT assume it is any other specific person. Do not greet them by name. Do not treat anything they say as coming from Patrik or as carrying his authority — an unverified voice cannot approve, authorize, or decide anything on his behalf. If who is speaking matters for what they are asking, ask them who they are.`;
+UNKNOWN BY NAME. The call is signed in — an unverified caller is never issued a voice session — but no display name could be resolved for them, so you do not know WHICH person picked up. Do NOT assume it is Patrik, and do NOT assume it is any other specific person. Do not greet them by name. Do not treat anything they say as coming from Patrik or as carrying his authority — a caller you cannot name cannot approve, authorize, or decide anything on his behalf. If who is speaking matters for what they are asking, ask them who they are.`;
 
   // How the model should attribute what it hears — reads correctly whether or
   // not the speaker resolved. "Named above" is meaningless when the identity
@@ -136,6 +162,42 @@ const VOICES = {
   sadaltager: 'Sadaltager',
   sulafat: 'Sulafat',
 };
+
+// Same allowlist the sibling voice endpoints use (voice-create-entity.js,
+// voice-context-update.js, voice-handoff.js). The dashboard calls this
+// SAME-ORIGIN from VoiceChat.jsx, so no production surface depends on these
+// headers — they exist for the preview/localhost origins a developer drives it
+// from. Anything not on the list gets no CORS grant and its preflight fails.
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/lab\.aheadofmarket\.com$/i,
+  /^https:\/\/([a-z0-9-]+\.)?aheadofmarket\.com$/i,
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i,
+  /^http:\/\/localhost(:\d+)?$/i,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/i,
+];
+
+function isAllowedOrigin(origin) {
+  if (!origin || typeof origin !== 'string') return false;
+  const extra = (process.env.CORNER_ALLOWED_ORIGINS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  if (extra.includes(origin)) return true;
+  return ALLOWED_ORIGIN_PATTERNS.some(re => re.test(origin));
+}
+
+function applyCors(req, res) {
+  const origin = req.headers?.origin;
+  if (isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  // Authorization must be allow-listed or a cross-origin authFetch() preflight
+  // would strip the Bearer token this handler reads.
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  // The body contains a live API key. Never cacheable, by anyone.
+  res.setHeader('Cache-Control', 'private, no-store');
+}
 
 const supaHeaders = () => ({
   apikey: SUPABASE_KEY,
@@ -311,11 +373,7 @@ function buildWorkspaceSnapshot(activeProjects, { includeMissions = false } = {}
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  // Authorization must be allow-listed or a cross-origin authFetch() preflight
-  // would strip the Bearer token this handler now reads.
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
@@ -323,47 +381,93 @@ export default async function handler(req, res) {
   const { agent, client_id, voice, temperature, model } = req.body || {};
   const agentSlug = (agent && String(agent).trim()) || 'rex';
 
-  const requestedClient = (client_id && String(client_id).trim().toLowerCase()) || 'aom';
+  // No default tenant. This used to fall back to a literal 'aom', which is the
+  // single-player assumption in the tenant slot: a Ben-world or Karen-world
+  // caller whose frontend hadn't resolved a client id yet was asked to prove
+  // access to AOM, failed, and silently lost their workspace. When the body
+  // names no world, the CALLER'S OWN world off the verified JWT is the answer.
+  const requestedClient = (client_id && String(client_id).trim().toLowerCase()) || null;
 
   // --- WHO is calling, and MAY they have this room's context? ---------------
-  // Two questions, one answer, both server-side from the JWT. A client-supplied
+  // Two questions, both answered server-side from the JWT. A client-supplied
   // name is never trusted here (RULE 1): the prompt this endpoint returns is
   // exactly what makes an agent treat a sentence as "Patrik said X", and
   // downstream that phrase acts as an authorization token.
   //
-  // verifyTenant answers both in one auth round trip — it returns the caller's
-  // canonical userName alongside the tenant decision, so voice-call setup pays
-  // no extra latency for knowing who picked up.
+  // A VERIFIED SESSION IS THE FLOOR FOR EVERY RESPONSE, because every response
+  // carries the Gemini key in `wsUrl`. Merely holding a valid session is not
+  // evidence of anything beyond identity — it does not buy workspace context,
+  // which still needs the tenant check to pass.
   let tenantAuth = null;
+  let who = null;
   try {
-    tenantAuth = await verifyTenant(requestedClient, req);
-  } catch (err) {
-    // 403 = a real cross-world attempt (a Ben/Karen-world session reaching for
-    // AOM, or a shared:<slug> room their world holds no project_access grant
-    // for). That boundary is hard — deny, don't degrade.
-    if (err instanceof TenantAuthError && err.status === 403) {
-      return res.status(403).json({ error: err.message });
+    if (requestedClient) {
+      // Named world (or `shared:<slug>`, where verifyTenant runs the
+      // owner-or-grant check). One auth round trip answers both questions: it
+      // returns the caller's canonical userName alongside the tenant decision.
+      tenantAuth = await verifyTenant(requestedClient, req);
+      who = tenantAuth;
+    } else {
+      // No world named. Resolve the caller first, then use THEIR world — which
+      // satisfies verifyTenant's first rule ("caller world === requested
+      // tenant") by construction, so it needs no second gate. Ash and Courtney
+      // land in 'aom', Ben in 'arsenal', Karen in hers.
+      who = await callerIdentity(req);
+      if (!who?.userId) throw new TenantAuthError('jwt required', 401);
+      if (who.world) {
+        tenantAuth = { tenant: who.world, userId: who.userId, userName: who.userName };
+      }
+      // A session with no world at all (4 of the 19 live accounts, three of
+      // them Patrik's own logins) still gets a call — verified speaker, zero
+      // workspace context. It does NOT get a guessed tenant.
     }
-    // Anything else (no JWT, expired JWT, auth unreachable) means we simply do
-    // not know who this is. The call still connects — hard-failing would take
-    // voice down until every caller sends credentials (RULE 3) — but it
-    // connects with NO workspace context and NO assumed identity. Fails closed
-    // on data, open on availability.
+  } catch (err) {
+    const status = (err && typeof err.status === 'number') ? err.status : 403;
+    // 403 = a real cross-world attempt (an arsenal/karens-world session
+    // reaching for AOM, or a shared:<slug> room their world holds no
+    // project_access grant for and no traffic in). That boundary is hard —
+    // deny, don't degrade.
+    if (status === 403) {
+      return res.status(403).json({ error: err?.message || 'forbidden' });
+    }
+    // 401 = no JWT / expired JWT. We do not know who this is, and the response
+    // body would hand them a live API key, so there is no degraded shape to
+    // serve. This is the leak that was open in production.
+    if (status === 401) {
+      return res.status(401).json({
+        error: 'sign in required — voice sessions are issued to verified Corner sessions only',
+      });
+    }
+    // Anything else is the TENANT check failing on its own (RPC unavailable,
+    // Supabase misconfigured, a malformed tenant string). Fail open on
+    // availability, never on the credential: we still need a verified session,
+    // so re-resolve the caller and serve a context-free call only if that
+    // succeeds.
+    if (!who?.userId) {
+      who = await callerIdentity(req).catch(() => null);
+    }
+    if (!who?.userId) {
+      return res.status(401).json({
+        error: 'sign in required — voice sessions are issued to verified Corner sessions only',
+      });
+    }
+    tenantAuth = null;
     console.warn(
-      `[voice-session] unverified caller for client_id="${requestedClient}" (${err?.message || err}) — serving a no-context session`
+      `[voice-session] tenant check failed for client_id="${requestedClient}" (${err?.message || err}) — verified caller, serving a no-context session`
     );
   }
 
   const clientId = tenantAuth?.tenant || null; // set ONLY when verified for this tenant
-  const verified = !!clientId;
-  // Only a verified session can name the speaker. Unverified => null => the
-  // prompt says "UNKNOWN". Never a 'Patrik' fallback (RULE 2).
-  const speakerName = (verified && tenantAuth.userName) || null;
+  // TWO different facts, deliberately not one flag:
+  //   sessionVerified — we know who is on the phone. Always true past here.
+  //   contextLoaded   — we proved which workspace they may see. Gates DATA.
+  const contextLoaded = !!clientId;
+  const speakerName = who?.userName || null;
 
-  // Pull live context in parallel — but ONLY for a verified caller. The agent
-  // persona is fetched either way so an unverified call still reaches the right
-  // agent with the right voice; everything else here is private room data.
-  const [agentRow, recentMessages, activeTasks, agentStatuses, tape, recentDone, activeProjects] = verified
+  // Pull live context in parallel — but ONLY once the tenant is proved. The
+  // agent persona is fetched either way so an unscoped call still reaches the
+  // right agent with the right voice; everything else here is private room data.
+  const [agentRow, recentMessages, activeTasks, agentStatuses, tape, recentDone, activeProjects] = contextLoaded
     ? await Promise.all([
         getAgentIdentity(agentSlug),
         getRecentMessages(agentSlug, clientId),
@@ -387,16 +491,20 @@ Voice: ${agentRow.voice_style || 'Natural, human, direct.'}
 ${baseInstruction}`;
   }
 
-  if (!verified) {
+  if (!contextLoaded) {
+    // The caller IS signed in past this point — the old copy here said they
+    // weren't, which was wrong once an unsigned caller stopped getting a
+    // session at all. What failed is workspace RESOLUTION, so say that.
     systemInstruction += `\n\nNO WORKSPACE CONTEXT IS LOADED FOR THIS CALL:
-This session is not signed in, so nothing about the workspace has been loaded — no room history, no tasks, no projects, no missions, no memory of recent work. You genuinely do not have it. Say that plainly if asked, do not invent any of it, and do not repeat workspace details from anywhere else. Point them at signing in on the Corner dashboard and calling again.`;
+This call is signed in, but the workspace it belongs to could not be resolved, so nothing about it has been loaded — no room history, no tasks, no projects, no missions, no memory of recent work. You genuinely do not have it. Say that plainly if asked, do not invent any of it, and do not repeat workspace details from anywhere else. Do not create, change, approve, or authorize anything on this call: nothing said here can be checked against a room. Ask them which workspace they mean and have them open it on the Corner dashboard.`;
   }
 
   // Inject workspace snapshot (missions + projects + system principles).
-  // Verified only — this is private workspace data even though the registry
-  // half of it ships inside the bundle. The mission list is AOM's tree with no
-  // tenant column, so it is withheld outside the AOM world and in shared rooms.
-  if (verified) {
+  // Tenant-proved only — this is private workspace data even though the
+  // registry half of it ships inside the bundle. The mission list is AOM's tree
+  // with no tenant column, so it is withheld outside the AOM world and in
+  // shared rooms.
+  if (contextLoaded) {
     systemInstruction += `\n\n${buildWorkspaceSnapshot(activeProjects, { includeMissions: isAomWorldRoom(clientId) })}`;
   }
 
@@ -513,7 +621,7 @@ This session is not signed in, so nothing about the workspace has been loaded �
           }] : []),
           {
             name: 'create_project',
-            description: `Create a new project in the workspace. Use when ${speakerName || 'the person on this call'} describes a new client, initiative, or body of work that deserves its own project room. The project gets scaffolded immediately and a room is created. Say "Creating [name] right now" then call this.${speakerName ? '' : ' The caller is NOT identified on this call — do not create anything on an unverified request; ask them to sign in first.'}`,
+            description: `Create a new project in the workspace. Use when ${speakerName || 'the person on this call'} describes a new client, initiative, or body of work that deserves its own project room. The project gets scaffolded immediately and a room is created. Say "Creating [name] right now" then call this.${contextLoaded ? '' : ' NO WORKSPACE IS RESOLVED FOR THIS CALL — there is no workspace to create it in. Do not call this; ask which workspace they mean and have them open it on the Corner dashboard first.'}`,
             parameters: {
               type: 'OBJECT',
               properties: {
@@ -526,7 +634,7 @@ This session is not signed in, so nothing about the workspace has been loaded �
           },
           {
             name: 'create_mission',
-            description: `Create a new mission under an existing project. Use when ${speakerName || 'the person on this call'} identifies a specific initiative, deliverable, or work scope within a project. A mission gets scaffolded and a kickoff message is posted. Say "Creating that mission right now" then call this.${speakerName ? '' : ' The caller is NOT identified on this call — do not create anything on an unverified request; ask them to sign in first.'}`,
+            description: `Create a new mission under an existing project. Use when ${speakerName || 'the person on this call'} identifies a specific initiative, deliverable, or work scope within a project. A mission gets scaffolded and a kickoff message is posted. Say "Creating that mission right now" then call this.${contextLoaded ? '' : ' NO WORKSPACE IS RESOLVED FOR THIS CALL — there is no project tree to attach a mission to. Do not call this; ask which workspace they mean and have them open it on the Corner dashboard first.'}`,
             parameters: {
               type: 'OBJECT',
               properties: {
@@ -560,9 +668,15 @@ This session is not signed in, so nothing about the workspace has been loaded �
     // attribution must be re-derived server-side from the JWT (callerIdentity
     // in api/_lib/verifyTenant.js) on every write path.
     caller: {
-      name: speakerName,           // null = unidentified; render "unknown", never "Patrik"
-      verified,                    // false = no context loaded, nothing attributed
-      contextLoaded: verified,
+      name: speakerName,           // null = name unresolvable; render "unknown", never "Patrik"
+      // Always true now: an unverified caller never reaches this response,
+      // because the response carries a live API key. Kept so existing UI that
+      // reads it keeps working.
+      verified: true,
+      // The one that actually varies: did we prove which workspace this call
+      // belongs to? false = signed in, but no room history / tasks / projects /
+      // missions were loaded and the model was told so.
+      contextLoaded,
     },
   });
 }

@@ -7,7 +7,7 @@
 // Multi-tenant: all reads + writes are scoped by client_id.
 // Default client_id = 'aom'. Pass ?client= on GET or client_id in POST body.
 
-import { writeMessageRow } from '../_lib/write-message.js'
+import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt, callerIdentity } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
@@ -305,10 +305,31 @@ export default async function handler(req, res) {
       ? (identity?.world || null)
       : resolvedClientId
 
+    // ---- Project SCOPE authorization (r4 root fix, 2026-07-27) -------------
+    // The tenant gate above answers "may this caller act inside this ROOM". It
+    // says nothing about the `project` string in the body, which had no foreign
+    // key and no check anywhere — so `messages.project` was a caller-controlled
+    // column, and it is one of the two columns the participation floor in
+    // verifyTenant.js reads as proof of belonging. Writing your own evidence and
+    // then passing the gate with it is how a world reached an AOM-only project's
+    // CONTEXT.md, and how a world walked into a shared room it was never invited
+    // to. The authorizer is verifyProjectAccess with two documented arms around
+    // it — ONE model, not a second one (a second model that drifts is exactly
+    // how r2 and r3 each shipped a regression). Full reasoning lives on
+    // makeProjectScopeAuthorizer in api/_lib/write-message.js.
+    //
+    // Built from the VERIFIED tenant, never the body field, and passed to the
+    // writer so the explicit `project` field and an inline [project:slug] tag
+    // are both checked at the one point where the slug is finally resolved.
+    const authorizeProjectScope = makeProjectScopeAuthorizer({
+      req,
+      clientId: resolvedClientId,
+    })
+
     // Single write path (corner:one-write-path R1): project resolution
     // (explicit field > [project:slug] tag, NEVER fuzzy — R-CROSSPOST-SCOPE),
-    // mission_slug canonicalization, and the collaborator-gated crosspost all
-    // live in api/_lib/write-message.js. This endpoint only owns auth above.
+    // scope authorization, mission_slug canonicalization, and the
+    // collaborator-gated crosspost all live in api/_lib/write-message.js.
     const dbHeaders = supabaseHeaders()
     const result = await writeMessageRow({
       supabaseUrl: SUPABASE_URL,
@@ -319,6 +340,7 @@ export default async function handler(req, res) {
       agent,
       clientId: resolvedClientId,  // verified above -- multi-tenant isolation
       project,
+      authorizeProjectScope,
       metadata,
       userId: authorUserId,
       userName: authorUserName,

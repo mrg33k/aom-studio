@@ -71,30 +71,46 @@ export async function detectProjectFromText({ text, supabaseUrl, headers }) {
   return null
 }
 
-// True when <project> is a real shared room: an active projects row with at
-// least one project_access collaborator from a world other than the owner's.
-// This is the SAME room set reconcile-shared-rooms.py serves, so a missed
-// write-time crosspost self-heals within minutes. Fail-closed: on any lookup
-// error, report no collaborators — a skipped crosspost is recoverable
-// (reconcile), a junk shared:<slug> thread is forever.
-async function projectHasCollaborators({ supabaseUrl, headers, project }) {
+// Who is entitled to be in <project>'s shared room, straight from the two
+// tables that define it: the holder world (projects.client_id) and every world
+// holding a project_access grant. Returns null when the project has no row, and
+// on ANY lookup error — fail-closed, because a skipped crosspost is recoverable
+// (reconcile-shared-rooms.py serves the same room set and self-heals within
+// minutes) while a junk or foreign-stamped shared:<slug> row is forever.
+//
+// Same three facts verifyTenant.js::hasSharedProjectAccess reads, in the same
+// order of authority. Deliberately does NOT include the participation floor:
+// that floor reads messages.world_id, and the whole r4 defect is that this
+// function is one of the things that WRITES messages.world_id. A gate that
+// consults evidence it also mints is the self-service loop rounds 2 and 3 kept
+// re-shipping.
+async function sharedRoomWorlds({ supabaseUrl, headers, project }) {
   try {
     const pr = await fetch(
       `${supabaseUrl}/rest/v1/projects?slug=eq.${encodeURIComponent(project)}&select=id,client_id&limit=1`,
       { headers }
     )
-    if (!pr.ok) return false
+    if (!pr.ok) return null
     const [row] = await pr.json()
-    if (!row?.id) return false
+    if (!row?.id) return null
     const ar = await fetch(
-      `${supabaseUrl}/rest/v1/project_access?project_id=eq.${encodeURIComponent(row.id)}&select=client_id&limit=10`,
+      `${supabaseUrl}/rest/v1/project_access?project_id=eq.${encodeURIComponent(row.id)}&select=client_id&limit=50`,
       { headers }
     )
-    if (!ar.ok) return false
+    if (!ar.ok) return null
     const access = await ar.json()
-    return access.some(a => a.client_id && a.client_id !== row.client_id)
+    const ownerWorld = row.client_id ? String(row.client_id).toLowerCase() : null
+    const granted = new Set(
+      access.map(a => (a.client_id ? String(a.client_id).toLowerCase() : null)).filter(Boolean)
+    )
+    // A shared room only exists when someone OTHER than the holder was invited.
+    // Unconditional crossposting spawned phantom threads for missions and
+    // fuzzy-tagged slugs (corner:chat R-CROSSPOST-SCOPE, 2026-07-01).
+    const hasCollaborator = [...granted].some(w => w !== ownerWorld)
+    if (!hasCollaborator) return null
+    return { ownerWorld, granted }
   } catch (_) {
-    return false
+    return null
   }
 }
 
@@ -105,6 +121,16 @@ async function projectHasCollaborators({ supabaseUrl, headers, project }) {
 // shared threads for missions and fuzzy-tagged slugs — user messages piled up
 // there with no replies and read as agents going silent). Safe to call on
 // retries — duplicate inserts collide on PK.
+//
+// r4 (2026-07-27) — AND no-op when the source message's world is not entitled to
+// that room. This row is the ONLY thing that decides what world_id a shared room
+// sees, and world_id is what hasSharedRoomPresence() reads as proof of
+// membership. Copying it blind made this function an escalation primitive: tag a
+// message in your own world with a project you do not hold, and the crosspost
+// stamps YOUR world into a room you were never invited to — after which the
+// presence check lets you in for real, full read and write, executable
+// voice-handoff rows included. write-message.js now refuses that tag at source;
+// this is the second lock, so no future writer can re-open it from another door.
 export async function crossPostToProjectThread({
   supabaseUrl,
   headers,
@@ -116,7 +142,22 @@ export async function crossPostToProjectThread({
   const targetClientId = `shared:${project}`
   if (sourceMessage.client_id === targetClientId) return
   if (!sourceMessage.id) return // need source id for idempotent row id
-  if (!(await projectHasCollaborators({ supabaseUrl, headers, project }))) return
+  const room = await sharedRoomWorlds({ supabaseUrl, headers, project })
+  if (!room) return
+
+  // A world may only be stamped into a room it holds or has been granted. A
+  // source carrying NO world is not a threat and is not blocked — it stamps
+  // nothing, so it cannot mint presence for anyone (the agent-side and legacy
+  // writers are mostly in this shape).
+  const sourceWorld = sourceMessage.world_id
+    ? String(sourceMessage.world_id).trim().toLowerCase()
+    : null
+  if (sourceWorld && sourceWorld !== room.ownerWorld && !room.granted.has(sourceWorld)) {
+    console.warn(
+      `[crosspost] refusing to mirror into "${targetClientId}": source world "${sourceWorld}" neither holds nor is granted this project`,
+    )
+    return
+  }
 
   const payload = {
     id: crosspostRowId(sourceMessage.id, project),
