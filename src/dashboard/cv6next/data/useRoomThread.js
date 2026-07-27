@@ -135,7 +135,12 @@ export function rowAttachments(m) {
   }
   if (metaAttach) {
     return {
-      attachments: [{ url: metaAttach.url || '', name: metaAttach.name || fileName || 'File', mime: metaAttach.mime || '', size: metaAttach.size || 0 }],
+      // gate_status must survive this hop: the panel only ever receives the
+      // objects this function returns, so anything dropped here is invisible
+      // downstream no matter what the row carries. A file delivered without its
+      // critic pass is stamped "not reviewed" on the card (Patrik 2026-07-27,
+      // "always deliver, mark it") and that stamp died right here until fixed.
+      attachments: [{ url: metaAttach.url || '', name: metaAttach.name || fileName || 'File', mime: metaAttach.mime || '', size: metaAttach.size || 0, gate_status: metaAttach.gate_status || '' }],
       pure: true, fileName,
     };
   }
