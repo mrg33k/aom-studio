@@ -27,7 +27,6 @@ import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
-import RunningTasksCard from './RunningTasksCard.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
@@ -638,10 +637,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               )}
             </>
           )}
-          {/* Background job card — appears only while ≥1 handed-off task is actively
-              running for this room; counts up from job start and vanishes the instant
-              the last job finishes (same logic as the ChatDesktop mount). */}
-          <RunningTasksCard room={fullRoom} />
+          {/* In-flight background work left the thread (corner:one-corner M19): it lives
+              in the Background work window, reached from the drawer menu. */}
           {/* Only renders when the FRONT DOOR chose this room automatically. No projects /
               missions props here: this parent holds neither, so the bar fetches its own
               once it has something to show (corner:front-door R8). */}

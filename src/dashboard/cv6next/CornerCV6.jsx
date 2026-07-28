@@ -21,6 +21,7 @@ import ChatDesktop, { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { normalizeLinks } from './SupportDesktop.jsx';
 import EmailShell from './EmailShell.jsx';
+import WorkersShell from './WorkersShell.jsx';
 import SupportThread from './SupportThread.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import Organize from './Organize.jsx';
@@ -3293,9 +3294,19 @@ export default function CornerCV6() {
     return true;
   }, []);
 
+  // Background work opens exactly the way Email does — its own workspace column,
+  // pinned in the rail (corner:one-corner M19). It stopped living inside chat
+  // threads: the in-room card followed the user into every chat with no way out.
+  const onOpenWorkersColumn = useCallback(() => {
+    setWorkspaceColumns((columns) => columns.some((column) => column.id === 'workers') ? columns : [...columns, { id: 'workers', type: 'workers' }]);
+    setActiveColumnId('workers');
+    return true;
+  }, []);
+
   const onNav = useCallback((target, arg) => {
     if (target === 'back') { back(); return; }
     if (target === 'support') { onOpenEmailColumn(); return; }
+    if (target === 'workers') { onOpenWorkersColumn(); return; }
     // Legacy 'review' navs (any straggler call site) land in Files with the
     // needs-review filter on — the Review tool is a mode of Files now.
     if (target === 'review') {
@@ -3319,7 +3330,7 @@ export default function CornerCV6() {
     // "See all" rooms (Home All Rooms header) routes to the same full rooms list (was a
     // dead 'rooms' target that fell through to nothing).
     else if (target === 'chat' || target === 'rooms') goTo('chatlist', null);
-  }, [back, goTo, onOpenEmailColumn]);
+  }, [back, goTo, onOpenEmailColumn, onOpenWorkersColumn]);
   // Open a project's home (missions + general chat) on the Home surface.
   const onOpenProject = useCallback((proj) => {
     const id = proj?.id || proj;
@@ -3372,7 +3383,7 @@ export default function CornerCV6() {
   if (isDesktop && view === 'chatlist') {
     body = <ChatDesktop worldId={worldId}
       initialRoom={null}
-      onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoomColumn={onOpenRoom} onOpenEmailColumn={onOpenEmailColumn} windowMode={false} persistSelection
+      onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoomColumn={onOpenRoom} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} windowMode={false} persistSelection
       onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })}
       onReviewFile={(f, proj, mission) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', missionSlug: mission || '', needsReview: true } : null); }} />;
     viewKey = 'chatdesktop:list';
@@ -3447,8 +3458,10 @@ export default function CornerCV6() {
           </ScreenBoundary>
         </div>
         {workspaceColumns.map((column) => (
-          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} aria-label={column.type === 'email' ? 'Email column' : `${column.room?.name || 'Chat'} chat column`}>
-            {column.type === 'email' ? (
+          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} aria-label={column.type === 'email' ? 'Email column' : column.type === 'workers' ? 'Background work column' : `${column.room?.name || 'Chat'} chat column`}>
+            {column.type === 'workers' ? (
+              <WorkersShell onClose={() => closeWorkspaceColumn(column.id)} />
+            ) : column.type === 'email' ? (
               <EmailShell
                 isDesktop={false}
                 inbox={<SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Dispatch email', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })} worldId={worldId} />}

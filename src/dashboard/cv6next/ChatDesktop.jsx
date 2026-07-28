@@ -17,7 +17,7 @@ import { buildChecklistRoomOptions } from './data/roomKeys.js';
 import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
-import RunningTasksCard from './RunningTasksCard.jsx';
+import { useRunningTasks } from './data/useRunningTasks.js';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import NewComposer from './NewComposer.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
@@ -417,11 +417,15 @@ function PlainThread({ messages, onSend, localReadOnly = false }) {
   );
 }
 
-export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onSearch, onReviewFile, onAssignEmail, onOpenRoomColumn, onOpenEmailColumn, windowMode = false, persistSelection = true }) {
+export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onSearch, onReviewFile, onAssignEmail, onOpenRoomColumn, onOpenEmailColumn, onOpenWorkersColumn, windowMode = false, persistSelection = true }) {
   const { data: list } = useChatList();
   const [titleOverrides, setTitleOverrides] = useState({});
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [headerMoreOpen, setHeaderMoreOpen] = useState(false);
+  // World-wide in-flight count for the pinned Background work row (M19). room=null
+  // deliberately: this badge answers "is anything running anywhere?".
+  const { tasks: bgTasks, promises: bgPromises } = useRunningTasks(null);
+  const backgroundCount = bgTasks.length + bgPromises.length;
   const roomTitleKey = useCallback((room) => room?.isMission ? `m:${room.missionSlug || room.id}` : room?.isProject ? `p:${room.id}` : `a:${room?.id}`, []);
   // Stable refs so the memoized composer below doesn't re-mount on every list poll.
   const agents = useMemo(() => (list?.agents || []).map((a) => titleOverrides[`a:${a.id}`] ? { ...a, name: titleOverrides[`a:${a.id}`], initials: titleOverrides[`a:${a.id}`].slice(0, 2).toUpperCase(), hasCustomTitle: true } : a), [list, titleOverrides]);
@@ -812,6 +816,17 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No projects yet.</div>}
             </div>
             <div style={{ flex: 'none', borderTop: '1px solid var(--divider)', padding: '8px 12px' }}>
+              {/* Background work, pinned like Email (corner:one-corner M19): the one
+                  window for running jobs + owed come-backs, instead of a card that
+                  followed the user into every chat thread. Count = world-wide items
+                  in flight — quiet, muted: in-flight is information, amber stays
+                  reserved for "waiting on you". */}
+              <div className="room" role="button" onClick={() => onOpenWorkersColumn?.()}
+                style={{ cursor: 'pointer' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+                <span className="rn" style={{ fontWeight: 600 }}>Background work</span>
+                {backgroundCount ? <span style={{ marginLeft: 'auto', fontSize: 11.5, fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>{backgroundCount}</span> : null}
+              </div>
               <div className="room" role="button" onClick={() => onOpenEmailColumn?.()}
                 style={{ cursor: 'pointer' }}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
@@ -869,7 +884,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         ticking pending → working → done like the step-thread kit animation. */}
                     <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />
                     {awaiting ? <WorkingTurn room={selected} liveSteps={liveSteps} goal={askGoal} /> : null}
-                    <RunningTasksCard room={selected} />
+                    {/* In-flight background work left the thread (corner:one-corner M19): it
+                        lives in the Background work window, pinned in the rail below. */}
                     {/* Only renders when the FRONT DOOR chose this room automatically — names
                         the destination the user never got to see, and moves the message in one
                         tap if it guessed wrong (corner:front-door R8). */}
