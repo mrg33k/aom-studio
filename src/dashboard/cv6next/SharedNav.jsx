@@ -113,7 +113,7 @@ function ThemeCycle({ theme, onTheme, compact }) {
 }
 
 // --- DESKTOP: the top tool bar -------------------------------------------------
-export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn, onOpenProfile, userInitials = 'P', badges = {}, theme, onTheme }) {
+export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn, onOpenWorkersColumn, onOpenProfile, userInitials = 'P', badges = {}, theme, onTheme }) {
   return (
     <div className="topbar">
       <div className="tgreet" style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -140,6 +140,12 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn,
       </div>
       <div className="topbar-actions">
         <ThemeCycle theme={theme} onTheme={onTheme} compact />
+        {/* Background work sits beside Email — same window mechanic, same entry point
+            (corner:one-corner M19). On Home there is no rooms rail, so this icon is
+            the desktop front door to the window. */}
+        {onOpenWorkersColumn ? (
+          <button type="button" className="ib" onClick={() => onOpenWorkersColumn?.() || onPick?.('workers')} aria-label="Open Background work" title="Open Background work"><Icon id="workers" size={18} /></button>
+        ) : null}
         <button type="button" className={`ib${current === 'support' ? ' is-active' : ''}`} onClick={() => onOpenEmailColumn?.() || onPick?.('support')} aria-label="Open Email column" title="Open Email column"><Icon id="support" size={18} /></button>
         <button type="button" className="ib" onClick={() => onOpenCommandK?.()} aria-label="Search"><SearchGlyph /></button>
         <button type="button" className="av" onClick={() => onOpenProfile?.()} aria-label="Profile">{userInitials}</button>
