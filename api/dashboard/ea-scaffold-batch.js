@@ -18,8 +18,30 @@
 //
 // Partial failures are returned per-item; a successful row is never rolled back
 // when a later row fails. Tenant gating runs once at the top.
+//
+// ── 2026-07-27 r7, corner:tenant-isolation — THE THIRD CREATION DOOR ─────────
+// r5 hardened create-project-from-chat.js; r7 hardened voice-create-entity.js.
+// This is the same job a third time and had neither guard: verifyTenant proved
+// the WORLD, then ensureProjectRow() inserted projects{slug, client_id:<tenant>}
+// with a caller-chosen slug.
+//
+//   ARSENAL_MEMBER POSTs {tenant:'arsenal', items:[{name:'Rex'}]}
+//   -> projects{slug:'rex', client_id:'arsenal'} INSERTED   (replayed: HTTP 200)
+//
+// projects.client_id IS the holder world the whole authorization model reads,
+// there is no unique index on projects.slug, and lookupProjectBySlug() takes
+// limit=1 with no client filter — so that one row can flip the holder of AOM's
+// rex (54 live rows) to another world, admitting the attacker via holder-world
+// AND 403-ing the real members out. Both failure modes, one request, invisible
+// to the super-admin who returns on the bypass before any of it runs.
+//
+// Closed with the same two guards the siblings carry, and nothing else:
+// makeProjectScopeAuthorizer (may this tenant claim this slug) and the
+// held-by-another-world 409. Refusal is PER ITEM — this endpoint's contract is
+// partial success, so one denied item must not fail a legitimate batch.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { verifyTenant, TenantAuthError, lookupProjectBySlug } from '../_lib/verifyTenant.js'
+import { makeProjectScopeAuthorizer } from '../_lib/write-message.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -304,7 +326,13 @@ async function ensureProjectRow({ slug, name, tenant }) {
 // tool for dispatcher agents without re-implementing the orchestration. The
 // tenantId is taken on trust here — verifyTenant is the boundary gate at the
 // HTTP endpoint; in-process callers pass the verified value through.
-export async function scaffoldOneItem({ item, tenantId }) {
+//
+// `authorizeProjectScope` is NOT optional (r7). A projects row IS the holder
+// world, so an unauthorized slug claim has no safe degraded form — omitting the
+// authorizer therefore DENIES, loudly, instead of silently writing. There is no
+// live in-process caller today, so this costs nothing and cannot be forgotten by
+// the next one.
+export async function scaffoldOneItem({ item, tenantId, authorizeProjectScope }) {
   const rawName = (item?.name || '').toString().trim()
   if (!rawName) return { ok: false, error: 'name required' }
 
@@ -319,6 +347,55 @@ export async function scaffoldOneItem({ item, tenantId }) {
 
   const description = (item?.description || '').toString().trim() || null
   const projectName = rawName.slice(0, 80)
+
+  // MAY THIS TENANT CLAIM THIS SLUG? Before ANY write for this item — the stub
+  // scaffold is canon an agent reads as truth, so a denied item writes nothing
+  // at all, not just no projects row.
+  if (typeof authorizeProjectScope !== 'function') {
+    console.warn(
+      `[ea-scaffold-batch] DENIED: no authorizeProjectScope supplied for tenant "${tenantId}" slug "${slug}" — refusing rather than claiming the slug ungated`
+    )
+    return { ok: false, slug, name: projectName, error: 'project scope authorizer missing' }
+  }
+  let scope
+  try {
+    scope = await authorizeProjectScope(slug)
+  } catch (err) {
+    // Fail closed: an authorizer that threw decided nothing.
+    scope = { ok: false, reason: String((err && err.message) || err) }
+  }
+  if (!scope || !scope.ok) {
+    console.warn(
+      `[ea-scaffold-batch] DENIED: world "${tenantId}" may not claim project "${slug}" — ${scope?.reason || 'not reachable from this world'}`
+    )
+    return {
+      ok: false,
+      slug,
+      name: projectName,
+      reason: 'project-belongs-to-another-world',
+      error: `project "${slug}" belongs to another world`,
+    }
+  }
+
+  // A GRANT LETS YOU REACH ANOTHER WORLD'S PROJECT. IT DOES NOT LET YOU MINT A
+  // SECOND `projects` ROW FOR ITS SLUG — with no unique index on projects.slug
+  // and lookupProjectBySlug() reading limit=1 unfiltered, a duplicate makes the
+  // holder a coin flip. Zero cross-world duplicate slugs exist live (2026-07-27),
+  // so this refuses nothing that works today.
+  const heldElsewhere = await lookupProjectBySlug(slug)
+  if (heldElsewhere?.ownerWorld && heldElsewhere.ownerWorld !== tenantId) {
+    console.warn(
+      `[ea-scaffold-batch] DENIED: world "${tenantId}" may not mint a second projects row for "${slug}" (held by "${heldElsewhere.ownerWorld}")`
+    )
+    return {
+      ok: false,
+      slug,
+      name: projectName,
+      reason: 'held-by-another-world',
+      holder: heldElsewhere.ownerWorld,
+      error: `project "${slug}" already exists in another world — open it there instead of creating a second one`,
+    }
+  }
 
   // Best-effort projects-table row (UI convenience; idempotent).
   const projectRow = await ensureProjectRow({ slug, name: projectName, tenant: tenantId })
@@ -424,10 +501,13 @@ export default async function handler(req, res) {
     throw err
   }
 
+  // ONE authorizer for the whole batch, built from the VERIFIED tenant.
+  const authorizeProjectScope = makeProjectScopeAuthorizer({ req, clientId: tenantId })
+
   const results = []
   for (const item of items) {
     try {
-      results.push(await scaffoldOneItem({ item, tenantId }))
+      results.push(await scaffoldOneItem({ item, tenantId, authorizeProjectScope }))
     } catch (err) {
       results.push({ ok: false, name: item?.name || null, error: err?.message || String(err) })
     }

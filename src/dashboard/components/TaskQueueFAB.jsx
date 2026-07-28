@@ -37,8 +37,11 @@ async function taskAction(taskId, action, body = {}) {
   return resp.json()
 }
 
+// r7:open-agent-surface — /api/dashboard/v2-task-update now verifies the caller
+// against the task's own world, so this has to carry the session like its
+// sibling taskAction() above already did. A bare fetch() 401s in production.
 async function taskUpdate(taskId, fields) {
-  const resp = await fetch(`${API_BASE}/api/dashboard/v2-task-update`, {
+  const resp = await authFetch(`${API_BASE}/api/dashboard/v2-task-update`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ taskId, ...fields }),

@@ -14,6 +14,8 @@
 import fs from 'fs';
 import path from 'path';
 import { stateGet, stateSet } from '../_lib/stateStore.js';
+import { callerIdentity } from '../_lib/verifyTenant.js';
+import { applyCors } from '../_lib/originAllowlist.js';
 
 const AOM_EA_ENV = process.env.AOM_EA_ROOT;
 const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
@@ -37,13 +39,21 @@ async function readSource() {
   return null;
 }
 
+// AUTH (r7:open-agent-surface, 2026-07-27). Unauthenticated with
+// `Access-Control-Allow-Origin: *`. It reads a FIXED path — the master-loop
+// room-goals deliverable off disk (or via the RAG tunnel) — so there is no
+// traversal here, but the contents are AOM's live goals per room, which is not
+// something to hand to anonymous callers. Both callers
+// (cv6next/data/useCommandTracker.js, cv6next/data/useRoomThread.js) already
+// use authFetch, so this costs no caller anything.
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Cache-Control', 'no-cache');
+  applyCors(req, res, 'GET');
+  res.setHeader('Cache-Control', 'private, no-store');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+  const who = await callerIdentity(req);
+  if (!who) return res.status(401).json({ error: 'sign in required' });
 
   const world = String(req.query.world || 'aom').slice(0, 60) || 'aom';
 

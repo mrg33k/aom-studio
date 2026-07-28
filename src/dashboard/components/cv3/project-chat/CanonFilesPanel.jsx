@@ -6,6 +6,8 @@
 // ROADMAP and wired the distinct-icon set so the panel matches the
 // canonical project shape across the app.
 import { useState } from 'react'
+// r7:open-agent-surface — file-content is world-gated now; send the session.
+import { authFetch } from '../../../lib/authFetch.js'
 import { C } from '../../../lib/cv3Colors.js'
 import { useChatCore, useChatSettingsCtx } from '../chat/ChatPanelContext.jsx'
 import { CANON_ICONS } from '../tasks/FilesSection.jsx'
@@ -37,7 +39,7 @@ export default function CanonFilesPanel() {
     try {
       let url = `/api/dashboard/file-content?project=${encodeURIComponent(projectSlug)}&filename=${encodeURIComponent(entry.filename)}`
       if (worldId) url += `&client_id=${encodeURIComponent(worldId)}`
-      const res = await fetch(url)
+      const res = await authFetch(url)
       if (res.ok) {
         const data = await res.json()
         setFileHtml(data.content || '')

@@ -17,12 +17,13 @@ const PROHIBITED = ['aom', 'ben', 'arsenal']
 // real defect ends up permanently invisible.
 const ALLOWLIST = new Set([
   'api/_lib/mailNoise.js',
-  'api/dashboard/reset-agent.js',
+  // reset-agent.js / poke-agent.js / agent-customize.js were dropped 2026-07-27
+  // (r7:open-agent-surface): all three now take the world from the request and
+  // verifyTenant it instead of assuming one, so the literal is gone and the
+  // exemption was covering nothing but future regressions.
   'api/dashboard/mission-folders.js',
-  'api/dashboard/poke-agent.js',
   'api/dashboard/project-summary.js',
   'api/dashboard/voice-session.js',
-  'api/dashboard/agent-customize.js',
   'api/dashboard/active-agents.js',
   // Intentional AOM operator boundary: this endpoint controls the single local
   // support watcher, not a tenant-selectable dashboard resource. The UI is

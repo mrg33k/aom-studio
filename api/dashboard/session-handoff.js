@@ -21,8 +21,40 @@
 // CONTEXT.md and last-conversation.md. Unauthenticated it was world-choosing,
 // identity-spoofing (`user_id` came straight off the body) and a free DoS on any
 // room. Now: verifyTenant on world_id, author from the JWT, dashboard CORS.
+//
+// ── 2026-07-27 r7, corner:tenant-isolation — TWO HOLES LEFT BY THAT PASS ─────
+// verifyTenant(world_id) proves only WHICH WORLD the caller may act in. It says
+// nothing about a PROJECT (it consults project_access only for a tenant spelled
+// 'shared:<slug>' — see the SCOPE WARNING in _lib/verifyTenant.js), and this
+// endpoint took `project` raw from body.project or from chat_key='project:<slug>'
+// and wrote it onto the row.
+//
+//   KARENS_MEMBER POSTs {world_id:'karens-world', chat_key:'project:rex'}
+//   -> row lands client_id='karens-world', project='rex'   (replayed: HTTP 200)
+//
+// rex has no projects row, so on the NEXT request arm (A) of the participation
+// floor sees a karens-world row under project 'rex' and verifyProjectAccess
+// admits her via 'unregistered-project' — and she writes AOM's rex CONTEXT.md,
+// the file rule 5 makes every AOM agent read fresh as canon. That is the r3
+// durable-prompt-injection exploit verbatim, through a door r4/r5 never wired,
+// because this endpoint POSTs to /rest/v1/messages DIRECTLY and never touches
+// writeMessageRow (where the r4 gate lives).
+//
+// Second hole, same row: world_id was never written at all, so the column took
+// its DB DEFAULT. That is the exact defect r5 called the root fix — a defaulted
+// 'aom' on a karens-world row over-admits AOM and under-admits Karen.
+//
+// Both closed with the EXISTING model, nothing invented: makeProjectScopeAuthorizer
+// (the r4 decision function, same one create-project-from-chat.js and
+// create-mission-from-drawer.js reuse) and deriveRowWorld (the r5 derivation).
+// FAILURE MODE matches writeMessageRow rather than the create endpoints: a denied
+// scope DROPS the project tag and still writes the trigger, because losing the
+// handoff means an agent's session state is never written down. There is nothing
+// dangerous left in an unscoped row — with no `project` column there is no
+// presence evidence to mint.
 import crypto from 'crypto'
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
+import { makeProjectScopeAuthorizer, deriveRowWorld } from '../_lib/write-message.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -104,12 +136,61 @@ export default async function handler(req, res) {
 
   const agentSlug = resolveAgentFromChatKey(chat_key, agentParam)
   // Project slug: prefer explicit field, else parse from chat_key
-  const projectSlug = (projectParam && typeof projectParam === 'string' && projectParam.trim())
+  const requestedProject = (projectParam && typeof projectParam === 'string' && projectParam.trim())
     ? projectParam.trim()
     : (chat_key.startsWith('project:') ? chat_key.slice('project:'.length) : null)
 
   // Tenant comes from verifyTenant, not from the body string.
   const clientId = verified.tenant
+
+  // MAY THIS TENANT TAG THIS PROJECT? The r4 authorizer, reused — the same
+  // decision writeMessageRow makes about a project tag on a chat row, which is
+  // exactly what this row is (role='user', source='corner-dashboard'). It admits
+  // the shared-room tenant, the holder world, a project_access grant, the
+  // holder's world admins, a world with participation evidence under the slug,
+  // and first-claim on a slug nobody has ever spoken in.
+  //
+  // DROP, don't refuse: a denied tag writes the handoff trigger unscoped into
+  // the caller's own 1:1 with the agent instead of failing the click. The drop
+  // is stamped on the row (metadata.project_scope_denied) so it is visible in
+  // the data, which is also the detection signal for someone probing here.
+  let projectSlug = requestedProject
+  let scopeDenied = null
+  if (projectSlug) {
+    let verdict
+    try {
+      verdict = await makeProjectScopeAuthorizer({ req, clientId })(projectSlug)
+    } catch (e) {
+      // Fail closed. An authorizer that threw decided nothing, and an unchecked
+      // project tag is the whole vulnerability.
+      verdict = { ok: false, via: 'error', reason: String((e && e.message) || e) }
+    }
+    if (!verdict || !verdict.ok) {
+      scopeDenied = {
+        requested: projectSlug,
+        via: (verdict && verdict.via) || 'denied',
+        reason: (verdict && verdict.reason) || 'not reachable from this world',
+      }
+      console.warn(
+        `[session-handoff] project scope DENIED: tenant "${clientId}" may not tag project "${projectSlug}" — ${scopeDenied.reason}; writing the handoff trigger unscoped`,
+      )
+      projectSlug = null
+    }
+  }
+
+  // world_id is DERIVED and always written — never left to the column default.
+  // Borrowed from the writer (deriveRowWorld) rather than repeated here, for the
+  // same reason create-project-from-chat.js borrows it: a rule copied by hand is
+  // a rule that drifts, and a 'shared:<slug>' tenant is a ROOM, not a world, so
+  // stamping the tenant raw would put a room name in the world column. There the
+  // author's own world answers; when even that is unknown the column is written
+  // NULL — honest absence, never somebody else's world.
+  const stampedWorld = deriveRowWorld({ clientId, worldId: identity?.world || verified.world || null })
+  if (stampedWorld.via === 'unresolved') {
+    console.warn(
+      `[session-handoff] world unresolved for tenant "${clientId}" — writing world_id NULL rather than letting the database default it`,
+    )
+  }
 
   const supabaseHeaders = {
     apikey: SUPABASE_KEY,
@@ -127,7 +208,10 @@ export default async function handler(req, res) {
       world_id: clientId,
       chat_key,
       agent: agentSlug,
+      // The RESOLVED slug — null when the scope was refused, so the audit trail
+      // records where the row actually landed, not what was asked for.
       project: projectSlug || null,
+      ...(scopeDenied ? { project_scope_denied: scopeDenied } : {}),
       user_id: authorUserId,
       user_name: authorUserName,
       source: 'handoff-nudge',
@@ -155,7 +239,14 @@ export default async function handler(req, res) {
     text: HANDOFF_TRIGGER_TEXT,
     source: 'corner-dashboard',
     client_id: clientId,
+    // Only ever the SCOPE-AUTHORIZED slug. A refused tag is dropped, which also
+    // removes the presence evidence the read-side floor would later be asked to
+    // trust — that is the whole point of gating the write.
     ...(projectSlug ? { project: projectSlug } : {}),
+    // UNCONDITIONAL (r5 contract): an omitted key takes the DB DEFAULT, which is
+    // a false claim of AOM participation on every other world's row. Explicit
+    // null is honest absence and the column is nullable.
+    world_id: stampedWorld.world,
     // Verified author. Both fields, or neither — a half-identity renders as
     // "You" to everyone and reads as Patrik to any agent downstream.
     ...(authorUserId ? { user_id: authorUserId } : {}),
@@ -166,6 +257,8 @@ export default async function handler(req, res) {
       chat_key,
       initiated_by: 'handoff-nudge',
       requested_by_name: authorUserName,
+      // Observable in the DATA, not only in a log line nobody tails.
+      ...(scopeDenied ? { project_scope_denied: scopeDenied } : {}),
     },
     timestamp: new Date().toISOString(),
   }

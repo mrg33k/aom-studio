@@ -1,9 +1,17 @@
 import { useState } from 'react'
 import { RESETTABLE_AGENTS } from './threadConstants.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 // Hard-reset an agent's tmux session via the Control tab.
 // Routes through /api/dashboard/reset-agent -> supabase -> relay-keepalive.
-export default function useThreadResetAgent(selectedAgent) {
+//
+// r7:open-agent-surface (2026-07-27) — /api/dashboard/reset-agent now verifies
+// the caller may act in the agent's world before it queues a tmux kill-session.
+// This call therefore has to carry the session (authFetch) and say WHICH world
+// it means (worldId); a bare fetch() would 401 in production. Passing the
+// world through instead of assuming one is what keeps the button working for
+// every world's operator rather than only the dashboard's primary one.
+export default function useThreadResetAgent(selectedAgent, worldId) {
   const [resetState, setResetState] = useState({ phase: 'idle', message: '' })
 
   async function handleResetAgent() {
@@ -12,7 +20,9 @@ export default function useThreadResetAgent(selectedAgent) {
     if (resetState.phase === 'confirming') {
       try {
         setResetState({ phase: 'resetting', message: 'Killing tmux session...' })
-        const resp = await fetch(`/api/dashboard/reset-agent?agent=${encodeURIComponent(slug)}`, { method: 'POST' })
+        const world = worldId || selectedAgent?.client_id || ''
+        const qs = `agent=${encodeURIComponent(slug)}${world ? `&world=${encodeURIComponent(world)}` : ''}`
+        const resp = await authFetch(`/api/dashboard/reset-agent?${qs}`, { method: 'POST' })
         const data = await resp.json().catch(() => ({}))
         if (!resp.ok || !data.ok) {
           setResetState({ phase: 'error', message: data.error || `HTTP ${resp.status}` })

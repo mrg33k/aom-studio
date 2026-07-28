@@ -12,6 +12,7 @@
 import crypto from 'crypto'
 import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt, callerIdentity } from '../_lib/verifyTenant.js'
+import { makeTaskProjectAuthorizer } from '../_lib/taskScope.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
@@ -25,6 +26,11 @@ const BRIDGE_TUNNEL_URL = process.env.BRIDGE_TUNNEL_URL || ''
 const BRIDGE_TIMEOUT = 3000 // ms to wait for bridge before fallback
 
 const SHARED_PREFIX = 'shared:'
+
+// The repo a projectless chain used to fall back to unconditionally. It is now
+// a CANDIDATE, not a default: it goes through the same task-scope gate as any
+// other slug, so only a world that can actually reach it gets it (r7).
+const DEFAULT_CHAIN_REPO = 'aom-studio'
 
 // One scope verdict per slug per request.
 //
@@ -204,14 +210,57 @@ async function maybeCreateChain(body, sender, scope) {
     }
   }
 
+  // r7 — the TASK rows take a stricter verdict than the message rows, because
+  // they steer a checkout rather than a thread. Two variables, not one, so the
+  // extra strictness cannot leak back into chat: `project` keeps the message
+  // policy above (and writeMessageRow re-checks it), `taskProject` is what the
+  // `tasks` rows and the repo below are allowed to use. The only case where
+  // they differ is a first-claim slug — see api/_lib/taskScope.js for why a
+  // never-spoken slug may name a room but must not name a working directory.
+  let taskProject = project
+  if (taskProject) {
+    const taskVerdict = await scope.authorizeTaskProject(taskProject).catch(() => ({ ok: false }))
+    if (!taskVerdict || !taskVerdict.ok) {
+      console.warn(
+        `[chat-bridge] chain TASK scope DENIED: tenant "${client_id}" may not queue work under project "${taskProject}" — ${taskVerdict?.reason || 'not reachable from this world'}; the chat message keeps its room, the tasks do not get the checkout`,
+      )
+      taskProject = ''
+    }
+  }
+
   // task-runner.sh requires metadata.repo to spawn a worker. Without it the row
   // gets failed immediately with "metadata.repo missing; front desk must set it".
-  // Chain tasks come straight from the dashboard (no front desk classification),
-  // so we infer the repo from project slug -> aom-studio default.
+  //
+  // r7 — body.repo IS GONE, and so is the unconditional aom-studio default.
+  // Two separate escalations lived on the line that used to be here:
+  //
+  //   1. `body.repo || …` was caller-supplied and never checked. The r5 comment
+  //      above admits it in its own parenthesis. KARENS_MEMBER sending
+  //      `do X >> do Y` with body.repo='aom-studio' got a worker dispatched into
+  //      AOM's checkout — VERIFIED: two rows landed carrying metadata.repo
+  //      'aom-studio' from a karens-world session.
+  //   2. `|| 'aom-studio'` was the SAME escalation without needing a body field.
+  //      Any world whose chain carried no project — or whose project the gate
+  //      above just refused — fell through to a hardcoded AOM repo slug.
+  //
+  // So the repo is derived from the AUTHORIZED project and nothing else, and the
+  // fallback slug faces the same gate the project did. A world that can reach
+  // neither gets NO repo, and task-runner.sh fails that row loudly rather than
+  // guessing a checkout. Losing the work is recoverable; running it in someone
+  // else's repository is not.
+  //
   // normalize_repo() in task-runner.sh maps corner/aom-website/arsenal-directory/aom -> aom-studio.
-  // Reads the AUTHORIZED `project`, so a refused slug cannot steer the checkout
-  // through this arm. (body.repo is still caller-supplied — see escalations.)
-  const repo = (body.repo || project || 'aom-studio').trim() || 'aom-studio'
+  let repo = taskProject
+  if (!repo) {
+    const fallbackVerdict = await scope.authorizeTaskProject(DEFAULT_CHAIN_REPO).catch(() => ({ ok: false }))
+    if (fallbackVerdict && fallbackVerdict.ok) {
+      repo = DEFAULT_CHAIN_REPO
+    } else {
+      console.warn(
+        `[chat-bridge] chain has no authorized project and tenant "${client_id}" cannot reach the default repo — queueing with no repo; task-runner will fail it loudly rather than pick a checkout`,
+      )
+    }
+  }
 
   // 1) Persist the user's original chain prompt so reload still shows what they asked.
   // Without this, the chat thread looks empty after refresh because the bridge
@@ -250,7 +299,8 @@ async function maybeCreateChain(body, sender, scope) {
     agent,
     source: 'corner-dashboard',
     client_id,
-    ...(project ? { project } : {}),
+    // The task's project is the EXEC-authorized one, never the chat one.
+    ...(taskProject ? { project: taskProject } : {}),
     created_at: now,
     metadata: {
       chain_id,
@@ -260,7 +310,10 @@ async function maybeCreateChain(body, sender, scope) {
       requested_by_agent: agent,
       created_via: 'chain-operator',
       model: 'sonnet',
-      repo,
+      // Omitted, never blank-defaulted, when no repo was authorized. An absent
+      // key is what makes task-runner.sh fail the row with "metadata.repo
+      // missing" instead of resolving an empty slug to somebody's checkout.
+      ...(repo ? { repo } : {}),
       ...(sender?.userId ? { user_id: sender.userId } : {}),
       ...(sender?.userName ? { user_name: sender.userName } : {}),
       ...(sender?.identified ? {} : { requester_unattributed: true }),
@@ -446,7 +499,11 @@ export default async function handler(req, res) {
     const rowWorldId = String(verified.tenant).startsWith(SHARED_PREFIX)
       ? (sender.world || null)
       : verified.tenant
-    const scope = { authorizeProjectScope, worldId: rowWorldId }
+    // The EXEC verdict, built on the SAME memoized authorizer so the stricter
+    // question costs no extra round trips and can never disagree with the
+    // looser one about anything except the first-claim arm (r7).
+    const authorizeTaskProject = makeTaskProjectAuthorizer(authorizeProjectScope)
+    const scope = { authorizeProjectScope, authorizeTaskProject, worldId: rowWorldId }
 
     // Project-owned rooms route to the owner's EA, not the default AOM dispatcher.
     // Patrik is a guest in Ben's rooms — the host agent answers, not Elon.

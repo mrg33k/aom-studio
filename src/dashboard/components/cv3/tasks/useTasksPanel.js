@@ -388,7 +388,7 @@ export function useTasksPanel() {
         const slug = brief.slug || (brief.filename || '').replace('.md', '')
         url = `/api/dashboard/file-content?slug=${encodeURIComponent(slug)}`
       }
-      const res = await fetch(url)
+      const res = await authFetch(url)
       if (res.ok) {
         const data = await res.json()
         setBriefHtml(data.content || '')

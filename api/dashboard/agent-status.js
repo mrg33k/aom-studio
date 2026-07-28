@@ -9,6 +9,7 @@
 // CORS is the dashboard origins rather than `*`.
 
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
+import { authorizeTaskProject } from '../_lib/taskScope.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -84,11 +85,25 @@ export default async function handler(req, res) {
     if (!resolvedClientId) return;
     const identity = await callerIdentity(req).catch(() => null);
     const crypto = await import('crypto');
+    // r7 — `project` was taken straight off the body. This row lands status
+    // 'todo' by default so task-runner does not claim it directly, but
+    // task-action.js requeue/resume flips exactly this row to 'queued', and
+    // tasks.project is what task-runner.sh normalizes into a checkout. Gate it
+    // like every other task writer. Denied => the task is still created,
+    // unscoped: nothing is lost, it just steers no repo.
+    let taskProject = (project || '').toString().trim().toLowerCase() || null;
+    if (taskProject) {
+      const verdict = await authorizeTaskProject({ req, clientId: resolvedClientId, projectSlug: taskProject });
+      if (!verdict.ok) {
+        console.warn(`[agent-status] task project DENIED: tenant "${resolvedClientId}" slug "${taskProject}" — ${verdict.reason}`);
+        taskProject = null;
+      }
+    }
     const payload = {
       id: crypto.randomUUID(),
       agent: agent || 'elon',
       text: text.trim(),
-      project: project || null,
+      project: taskProject,
       status: taskStatus,
       client_id: resolvedClientId,
       created_by: identity?.userId || null,

@@ -7,6 +7,9 @@
 // /api/dashboard/file-content?project=<slug>&filename=<filename> and
 // extracting leading bullets.
 //
+// r7:open-agent-surface — file-content is world-gated now; send the session.
+import { authFetch } from '../../../lib/authFetch.js'
+//
 // Click a bullet -> opens the full file inline via the existing
 // handleBriefClick overlay (same mechanism FilesSection uses). Project with
 // no matching scaffold row -> returns null (no placeholder per R31 spec).
@@ -54,7 +57,7 @@ export default function TaskDrawerFileFAQ({ filename, label, testid, iconColor }
     if (html || error) return
     let cancelled = false
     setLoading(true)
-    fetch(`/api/dashboard/file-content?project=${encodeURIComponent(projectSlug)}&filename=${encodeURIComponent(filename)}`)
+    authFetch(`/api/dashboard/file-content?project=${encodeURIComponent(projectSlug)}&filename=${encodeURIComponent(filename)}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
         if (cancelled) return

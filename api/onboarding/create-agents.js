@@ -3,6 +3,9 @@
 // Writes agents to Supabase agent_status for immediate dashboard visibility.
 // Also queues the workspace creation for Mac-side file system execution.
 
+import { callerIdentity } from '../_lib/verifyTenant.js'
+import { applyCors } from '../_lib/originAllowlist.js'
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -44,10 +47,8 @@ async function supabaseFetch(url, method, body, headers = {}) {
 
 export default async function handler(req, res) {
   // CORS
+  applyCors(req, res, 'POST')
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*')
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     return res.status(200).end()
   }
 
@@ -55,12 +56,54 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  res.setHeader('Access-Control-Allow-Origin', '*')
-
   const { clientId, plan } = req.body
 
   if (!clientId || !plan) {
     return res.status(400).json({ error: 'clientId and plan are required' })
+  }
+
+  // ── AUTH (r7:open-agent-surface, 2026-07-27) ────────────────────────────
+  // This was unauthenticated with `Access-Control-Allow-Origin: *`. It writes
+  // `agent_status` rows into whatever world the body names AND queues an
+  // `onboarding_queue` row whose `plan` is executed Mac-side, so an anonymous
+  // POST could bolt agents onto an existing world's roster and hand a local
+  // runner a plan it did not ask for.
+  //
+  // The gate is deliberately NOT verifyTenant. Onboarding runs BEFORE the user
+  // has a world — user_metadata.world is set by the frontend a few lines after
+  // this call returns — so verifyTenant would refuse every legitimate signup
+  // and this endpoint would only ever work for people who no longer need it.
+  // That is the over-correction shape this round exists to avoid.
+  //
+  // Instead: a verified session is required (no anonymous signups), and a
+  // clientId that names an ALREADY-CLAIMED world is refused unless the caller
+  // is in it. Creating your own new world stays open; joining yourself onto
+  // somebody else's does not.
+  const who = await callerIdentity(req)
+  if (!who) return res.status(401).json({ error: 'sign in required' })
+
+  const targetWorld = String(clientId).trim().toLowerCase()
+  if (targetWorld !== String(who.userId).toLowerCase() && targetWorld !== (who.world || '')) {
+    // Not the caller's own uid and not their own world — allowed only if the
+    // world does not exist yet (a genuinely new workspace).
+    let claimed = false
+    try {
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/worlds?or=(slug.eq.${encodeURIComponent(targetWorld)},client_id.eq.${encodeURIComponent(targetWorld)})&select=slug&limit=1`,
+        { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
+      )
+      if (r.ok) {
+        const rows = await r.json()
+        claimed = Array.isArray(rows) && rows.length > 0
+      } else {
+        claimed = true // cannot tell -> refuse rather than hand over a world
+      }
+    } catch {
+      claimed = true
+    }
+    if (claimed) {
+      return res.status(403).json({ error: 'that workspace already exists' })
+    }
   }
 
   if (!plan.user_profile || !Array.isArray(plan.projects) || !Array.isArray(plan.agents)) {

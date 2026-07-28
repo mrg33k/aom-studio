@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+// r7:open-agent-surface — file-content is world-gated now; send the session.
+import { authFetch } from '../../../lib/authFetch.js'
 import { C } from '../../../lib/cv3Colors.js'
 import AvatarUploader from '../shared/AvatarUploader.jsx'
 import { useChatCore } from '../chat/ChatPanelContext.jsx'
@@ -31,7 +33,7 @@ function useFileContent(agentSlug, filename) {
     if (!agentSlug || !filename) return
     let cancelled = false
     setState(s => ({ ...s, loading: true, error: false }))
-    fetch(`/api/dashboard/file-content?project=${encodeURIComponent(agentSlug)}&filename=${encodeURIComponent(filename)}`)
+    authFetch(`/api/dashboard/file-content?project=${encodeURIComponent(agentSlug)}&filename=${encodeURIComponent(filename)}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => { if (!cancelled) setState({ loading: false, html: data.content || '', error: false }) })
       .catch(() => { if (!cancelled) setState({ loading: false, html: '', error: true }) })

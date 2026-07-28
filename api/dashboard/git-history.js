@@ -1,9 +1,23 @@
 // GET /api/dashboard/git-history?path=src/dashboard/CornerV3.jsx
 // Returns git commit history for a given file path in the repo.
 // Each commit includes: hash, author, email, date, message.
+//
+// AUTH (r7:open-agent-surface, 2026-07-27). Unauthenticated with
+// `Access-Control-Allow-Origin: *`. The command construction is genuinely safe
+// (execFileSync, argv array, no shell, path validated) — the problem was never
+// injection, it was that the OUTPUT is the repo's development history handed to
+// anonymous callers: commit messages, author names and the EMAIL ADDRESS of
+// every contributor, plus file-existence probing across the whole tree.
+//
+// The gate is a verified session, not a tenant check: git history is a property
+// of this repo, not of any world, so there is nothing to scope it to and
+// pretending otherwise would just lock out whichever world guessed wrong.
+// Zero callers in src/ or scripts/, so nothing to convert.
 
 import { execFileSync } from 'child_process';
 import path from 'path';
+import { callerIdentity } from '../_lib/verifyTenant.js';
+import { applyCors } from '../_lib/originAllowlist.js';
 
 const REPO_ROOT = process.cwd();
 
@@ -40,13 +54,14 @@ function parseGitLog(output) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Cache-Control', 'no-store, no-cache');
+  applyCors(req, res, 'GET');
+  res.setHeader('Cache-Control', 'private, no-store');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+  const who = await callerIdentity(req);
+  if (!who) return res.status(401).json({ error: 'sign in required' });
 
   const { path: filePath, limit } = req.query;
 

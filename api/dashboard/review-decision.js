@@ -23,6 +23,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
+import { authorizeTaskProject, taskScopeDenialMessage } from '../_lib/taskScope.js';
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js';
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
 
@@ -290,8 +291,45 @@ export default async function handler(req, res) {
     // The project slug is derived from the deliverable path (…/projects/<slug>/…)
     // when the caller doesn't pass one explicitly.
     const pathMatch = did.match(/projects\/([a-z0-9][a-z0-9-_.]*)\//i);
-    const projectSlug = clean(req.body.project, 80) || (pathMatch ? pathMatch[1] : null);
-    const worldId = clean(world || 'aom', 60) || 'aom';
+    let projectSlug = clean(req.body.project, 80) || (pathMatch ? pathMatch[1] : null);
+    // Stamp the VERIFIED tenant, not the raw body string — verifyTenant already
+    // lowercased and validated it, and the task/message rows below both key off it.
+    const worldId = String(verified?.tenant || clean(world || 'aom', 60) || 'aom');
+
+    // --- PROJECT SCOPE (r7) -------------------------------------------------
+    // verifyTenant above proved the caller may act inside `world`. It proved
+    // nothing about `projectSlug`, which arrives either straight off the body or
+    // scraped out of the deliverable path — and on the request-changes branch it
+    // becomes tasks.project, metadata.repo AND project_path (resolved out of
+    // projects.repo_path for that slug, whoever holds it). VERIFIED: an arsenal
+    // session posting {world:'arsenal', project:'corner'} produced a queued row
+    // pointing at AOM's aom-studio checkout with the reviewer's own `notes`
+    // carried into the worker's brief.
+    //
+    // ONE verdict, and each surface keeps the failure mode it already had:
+    //   request-changes -> REFUSE (403). It creates a task; a task that runs in
+    //                      the wrong checkout is the vulnerability, and this
+    //                      branch already 500s when the task can't be queued, so
+    //                      the UI is built to surface the failure and keep the item.
+    //   everything else -> DROP the tag. Those branches only record a `messages`
+    //                      row, and dropping a denied project tag is exactly what
+    //                      api/_lib/write-message.js does on every other message
+    //                      path. A review decision must never vanish.
+    if (projectSlug) {
+      const verdict = await authorizeTaskProject({ req, clientId: worldId, projectSlug });
+      if (!verdict.ok) {
+        console.warn(
+          `[review-decision] project scope DENIED: world "${worldId}" slug "${projectSlug}" — ${verdict.reason}`,
+        );
+        if (act === 'request-changes') {
+          return res.status(403).json({
+            error: taskScopeDenialMessage({ clientId: worldId, projectSlug, reason: verdict.reason }),
+            code: 'PROJECT_SCOPE_DENIED',
+          });
+        }
+        projectSlug = null;
+      }
+    }
 
     // request-changes: create the work item FIRST — if it can't be queued, the
     // decision must NOT be recorded (else the item vanishes from the queue with

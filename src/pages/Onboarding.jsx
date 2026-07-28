@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../dashboard/lib/supabase.js'
+import { authFetch } from '../dashboard/lib/authFetch.js'
 
 // Ordered list of integrations the new-user onboarding walks through, one card
 // at a time. R1 ships Google (gmail) only; later rounds extend this list.
@@ -321,7 +322,11 @@ export default function Onboarding() {
       )
       if (!clientId) clientId = isQaMode ? `qa-${worldSlug}` : worldSlug
 
-      const res = await fetch('/api/onboarding/create-agents', {
+      // r7:open-agent-surface — /api/onboarding/create-agents requires a
+      // verified session now (it writes agent rows and queues a Mac-side plan).
+      // The user is already signed in at this point — getUser() above depends
+      // on it — so authFetch just carries the token that was always there.
+      const res = await authFetch('/api/onboarding/create-agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId, plan: architectPlan }),

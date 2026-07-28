@@ -1,5 +1,24 @@
 // AOM Dashboard -> Claude Code relay API
 // Reads/writes JSONL relay files in mrg33k/AOM-EA via GitHub API
+//
+// AUTH (r7:open-agent-surface, 2026-07-27). Unauthenticated with
+// `Access-Control-Allow-Origin: *`, and what it writes is the AGENT RELAY: POST
+// appends an entry to context/relay-inbox.jsonl in the mrg33k/AOM-EA repo,
+// which is the queue super agents read and act on, and it additionally forges a
+// row into conversations/agents/<agent>.jsonl stamped `sender: 'patrik'` —
+// hardcoded, from an anonymous request. "Patrik said X" is treated as authority
+// by every agent in this system, so an open endpoint that mints it is an
+// instruction-injection channel with a credential (the GitHub token) attached.
+// GET was an equally free read of both relay files.
+//
+// This path is LEGACY — production chat moved to
+// /api/dashboard/supabase-messages in 2026-03 (commit 62bbbe2) and there are
+// zero callers left in src/ or scripts/. It is gated rather than deleted
+// because deleting a route is not this lane's call; a verified session is now
+// required, and the forged sender is replaced by the real one.
+
+import { callerIdentity } from './_lib/verifyTenant.js'
+import { applyCors } from './_lib/originAllowlist.js'
 
 const GITHUB_TOKEN = process.env.VITE_GITHUB_TOKEN
 const REPO = 'mrg33k/AOM-EA'
@@ -48,11 +67,14 @@ async function writeGitHubFile(path, content, sha, message) {
 }
 
 export default async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  applyCors(req, res, 'GET,POST')
   if (req.method === 'OPTIONS') return res.status(200).end()
+
+  // Both verbs require a session: POST drives agents, GET returns the whole
+  // relay conversation. Neither is world-scoped (the relay files are a single
+  // AOM-internal queue), so the gate is identity, not tenancy.
+  const who = await callerIdentity(req)
+  if (!who) return res.status(401).json({ error: 'sign in required' })
 
   if (!GITHUB_TOKEN) {
     return res.status(500).json({ error: 'GITHUB_TOKEN not configured' })
@@ -96,7 +118,11 @@ export default async function handler(req, res) {
             id: `dash-${id.slice(0, 12)}`,
             timestamp: entry.timestamp,
             role: 'user',
-            sender: 'patrik',
+            // The VERIFIED speaker. This was the literal string 'patrik' on
+            // every write, which handed anonymous callers his authority.
+            // Unknown reads as unattributed, never as somebody's name.
+            sender: who.userName || null,
+            user_id: who.userId,
             text: cleanMsg,
             source: 'corner-dashboard',
             agent,

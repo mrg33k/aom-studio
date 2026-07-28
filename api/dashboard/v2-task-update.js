@@ -1,5 +1,20 @@
 // PATCH /api/dashboard/v2-task-update
 // Updates a v2 task in Supabase via REST API with state-machine enforcement.
+//
+// AUTH (r7:open-agent-surface, 2026-07-27). Unauthenticated with
+// `Access-Control-Allow-Origin: *`. Task UUIDs are not secret — they surface on
+// several read paths — so anyone holding one could drive another world's task
+// through the state machine: flip a `queued` row to `running` so the runner
+// never claims it, mark live work `failed`, or write `result`/`error`/`qa_notes`
+// that a human then reads as the agent's own report. The state machine bounded
+// WHICH transitions were legal, never WHO could make them.
+//
+// Gated on the TASK'S OWN client_id, resolved from the row before any write —
+// the same shape retry-task.js and foreman-pause.js use. A member of the owning
+// world passes without being an admin; every other world is refused.
+
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { applyCors, sendAuthError } from '../_lib/originAllowlist.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -154,9 +169,7 @@ function toNumberIfFinite(value) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'PATCH,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  applyCors(req, res, 'PATCH');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'PATCH') return res.status(405).json({ error: 'PATCH only' });
@@ -180,10 +193,27 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'taskId (UUID) required' });
   }
 
+  let current;
   try {
-    const current = await supabaseGetTask(taskId);
-    if (!current) return res.status(404).json({ error: 'task not found' });
+    current = await supabaseGetTask(taskId);
+  } catch (err) {
+    return res.status(502).json({ error: `task lookup failed: ${err.message}` });
+  }
+  if (!current) return res.status(404).json({ error: 'task not found' });
 
+  // Authorize against the task's own world before touching anything.
+  const taskWorld = String(current.client_id || '').trim().toLowerCase();
+  if (!taskWorld) {
+    return res.status(409).json({ error: 'task has no client_id; cannot authorize' });
+  }
+  try {
+    await verifyTenant(taskWorld, req);
+  } catch (err) {
+    if (err instanceof TenantAuthError) return sendAuthError(res, err);
+    return res.status(500).json({ error: err?.message || 'auth check failed' });
+  }
+
+  try {
     const updateBody = {};
 
     if (hasField(body, 'priority')) updateBody.priority = toNumberIfFinite(body.priority);

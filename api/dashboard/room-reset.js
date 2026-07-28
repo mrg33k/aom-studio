@@ -1,9 +1,24 @@
 // Archive the visible room session and clear only the agent's transient working context.
 // Message rows are never deleted: the room_reset marker is the boundary used by CV6's
 // History view, while clear_context is consumed by the room bridge/session reset worker.
+//
+// ── 2026-07-27 r7, corner:tenant-isolation ───────────────────────────────────
+// verifyTenant proves WHICH WORLD the caller may act in and nothing about a
+// PROJECT. `project` and `mission_slug` came off the body onto both rows:
+//
+//   KARENS_MEMBER POSTs {client_id:'karens-world', agent:'elon', project:'rex'}
+//   -> two rows land client_id='karens-world', project='rex'  (replayed: 200)
+//
+// Those rows are the participation evidence arm (A) of the read-side floor reads
+// as proof of belonging, so an endpoint whose whole job is bookkeeping quietly
+// mints a claim on another world's project — the r4 exploit, through a writer
+// that never goes near writeMessageRow. Closed with the same authorizer, and
+// world_id is now stamped (it was omitted, so both rows took the DB default).
+// A denied tag is DROPPED, not refused: the reset must still archive the room.
 
 import { randomUUID } from 'crypto'
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
+import { makeProjectScopeAuthorizer, deriveRowWorld } from '../_lib/write-message.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -46,8 +61,51 @@ export default async function handler(req, res) {
     throw error
   }
 
-  const metadata = missionSlug ? { mission_slug: missionSlug, room_reset: true } : { room_reset: true }
-  const base = { agent, client_id: tenant, ...(project ? { project } : {}) }
+  // MAY THIS TENANT TAG THIS PROJECT? The r4 authorizer, reused. A mission hangs
+  // off a project, so a refused project takes metadata.mission_slug with it —
+  // that key is its own routing arm in the read queries and would otherwise still
+  // file the rows into the mission's room. DROP, don't refuse: the archive marker
+  // is the point of the request and must still land.
+  let scopedProject = project
+  let scopedMission = missionSlug
+  let scopeDenied = null
+  if (scopedProject) {
+    let verdict
+    try {
+      verdict = await makeProjectScopeAuthorizer({ req, clientId: tenant })(scopedProject)
+    } catch (e) {
+      verdict = { ok: false, via: 'error', reason: String((e && e.message) || e) }
+    }
+    if (!verdict || !verdict.ok) {
+      scopeDenied = {
+        requested: scopedProject,
+        via: (verdict && verdict.via) || 'denied',
+        reason: (verdict && verdict.reason) || 'not reachable from this world',
+      }
+      console.warn(
+        `[room-reset] project scope DENIED: tenant "${tenant}" may not tag project "${scopedProject}" — ${scopeDenied.reason}; archiving the room unscoped`,
+      )
+      scopedProject = ''
+      scopedMission = ''
+    }
+  }
+
+  // world_id derived from the verified tenant, never left to the DB default (r5).
+  // A 'shared:<slug>' tenant is a room, so the AUTHOR's own world answers there.
+  const identity = await callerIdentity(req).catch(() => null)
+  const stampedWorld = deriveRowWorld({ clientId: tenant, worldId: identity?.world || null })
+
+  const metadata = {
+    room_reset: true,
+    ...(scopedMission ? { mission_slug: scopedMission } : {}),
+    ...(scopeDenied ? { project_scope_denied: scopeDenied } : {}),
+  }
+  const base = {
+    agent,
+    client_id: tenant,
+    world_id: stampedWorld.world,
+    ...(scopedProject ? { project: scopedProject } : {}),
+  }
   const now = Date.now()
   const rows = [
     {
@@ -56,7 +114,11 @@ export default async function handler(req, res) {
     },
     {
       ...base, id: randomUUID(), role: 'system', source: 'clear_context',
-      text: agent, metadata: missionSlug ? { mission_slug: missionSlug } : {},
+      text: agent,
+      metadata: {
+        ...(scopedMission ? { mission_slug: scopedMission } : {}),
+        ...(scopeDenied ? { project_scope_denied: scopeDenied } : {}),
+      },
       timestamp: new Date(now + 50).toISOString(),
     },
   ]

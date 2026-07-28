@@ -4,6 +4,8 @@
 // R75-e3 MVP slice.
 
 import { useState, useEffect } from 'react'
+// r7:open-agent-surface — file-content is world-gated now; send the session.
+import { authFetch } from '../../../lib/authFetch.js'
 import { C } from '../../../lib/cv3Colors.js'
 import { useChatCore } from '../chat/ChatPanelContext.jsx'
 
@@ -21,7 +23,7 @@ export default function FileArticleReader({ filename, onClose }) {
       try {
         let url = `/api/dashboard/file-content?project=${encodeURIComponent(projectSlug)}&filename=${encodeURIComponent(filename)}`
         if (worldId) url += `&client_id=${encodeURIComponent(worldId)}`
-        const res = await fetch(url)
+        const res = await authFetch(url)
         if (res.ok) {
           const data = await res.json()
           setContent(data.content || '')

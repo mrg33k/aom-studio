@@ -243,7 +243,9 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
     if (IS_LOCAL) {
       // LOCAL: read from filesystem APIs (punch-list only -- status comes from Supabase)
       try {
-        const punchRes = await fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null)
+        // r7:open-agent-surface — /api/local/file requires a session now (it
+        // reads straight off the AOM-EA repo), so send one.
+        const punchRes = await authFetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null)
         const punchContent = punchRes?.content || ''
 
         // Right Now: Supabase is the ONLY source of truth.

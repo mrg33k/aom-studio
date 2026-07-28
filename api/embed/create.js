@@ -21,6 +21,32 @@
 //
 // NOTE this is the CREATE door only. /api/embed/chat is the public widget door
 // and keeps its wide CORS; its own origin-allowlist gate is a separate fix.
+//
+// ── 2026-07-27 r7, corner:tenant-isolation — THE WORLD WAS GATED, THE PROJECT
+//    WAS NOT ────────────────────────────────────────────────────────────────
+// routing.client_id is overwritten with the verified tenant above. routing.project
+// (and routing.mission_slug) came straight out of buildConfig(body) and were
+// never scope-checked — and api/embed/chat.js:1424 then writes rows carrying
+// BOTH of them from a PUBLIC, unauthenticated, wildcard-CORS endpoint, with
+// source='corner-dashboard', which supabase-listener.py dispatches to the agent.
+//
+//   KARENS_MEMBER POSTs {agent:'elon', project:'rex', client_id:'karens-world'}
+//   -> embed_configs row created                            (replayed: HTTP 200)
+//   -> from then on ANY anonymous visitor POSTing to /api/embed/chat with that
+//      embed_id writes messages{client_id:'karens-world', project:'rex'} with
+//      no JWT, forever.
+//
+// So ONE authenticated setup step installed an UNAUTHENTICATED evidence pump
+// against another world's project. Everything r4/r5 did to gate the write path
+// is bypassed, because the write happens later, from a door that has no caller.
+//
+// The scope check therefore has to happen HERE, at the only moment there IS a
+// verified caller. Same decision function as every other create door
+// (makeProjectScopeAuthorizer), run on routing.project and on the ROOT project of
+// routing.mission_slug. REFUSE rather than degrade: an embed silently created
+// without the routing it was asked for would answer in the wrong room.
+//
+// Create-time only, on purpose — existing embed_configs rows are untouched.
 
 import {
   validatePayload,
@@ -29,6 +55,7 @@ import {
 } from '../../lib/embed-shape.js'
 import { getEmbed, insertEmbed } from '../../lib/embed-registry.js'
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
+import { makeProjectScopeAuthorizer } from '../_lib/write-message.js'
 
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https:\/\/lab\.aheadofmarket\.com$/i,
@@ -81,6 +108,45 @@ export default async function handler(req, res) {
 
   const config = buildConfig(body)
   config.routing.client_id = verified.tenant
+
+  // MAY THIS TENANT ROUTE INTO THIS PROJECT? The r4 authorizer, reused — the same
+  // decision the message write path makes about a project tag, made once here
+  // because the writes themselves (api/embed/chat.js) carry no caller at all.
+  //
+  // The mission's ROOT project is what is checked, never the colon-joined slug:
+  // no projects row and no messages.project ever carries the colon form, so
+  // gating the path itself would 403 every mission-scoped embed. Both fields are
+  // optional — an embed with neither is unchanged by this.
+  const scopeTargets = [
+    ...(config.routing.project ? [String(config.routing.project).trim().toLowerCase()] : []),
+    ...(config.routing.mission_slug
+      ? [String(config.routing.mission_slug).split(':')[0].trim().toLowerCase()]
+      : []),
+  ].filter((s, i, a) => s && a.indexOf(s) === i)
+
+  if (scopeTargets.length) {
+    const authorizeProjectScope = makeProjectScopeAuthorizer({ req, clientId: verified.tenant })
+    for (const slug of scopeTargets) {
+      let verdict
+      try {
+        verdict = await authorizeProjectScope(slug)
+      } catch (err) {
+        if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+        // Fail closed: an authorizer that threw decided nothing, and an
+        // unchecked routing target is the whole vulnerability.
+        verdict = { ok: false, reason: String((err && err.message) || err) }
+      }
+      if (!verdict || !verdict.ok) {
+        console.warn(
+          `[embed/create] DENIED: world "${verified.tenant}" may not route an embed into project "${slug}" — ${verdict?.reason || 'not reachable from this world'}`,
+        )
+        return res.status(403).json({
+          error: `project "${slug}" belongs to another world`,
+          reason: verdict?.reason || 'not reachable from this world',
+        })
+      }
+    }
+  }
 
   // Reject duplicates so a typo in Advanced doesn't silently overwrite an
   // existing embed. Modal's submit auto-suggests embed_id when blank.

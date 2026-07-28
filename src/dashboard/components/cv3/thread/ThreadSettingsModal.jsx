@@ -30,7 +30,7 @@ export default function ThreadSettingsModal() {
     keySaveMsg, setKeySaveMsg,
     saveEnvKey, deleteEnvKey,
   } = useChatSettingsCtx()
-  const { resetState, handleResetAgent } = useThreadResetAgent(selectedAgent)
+  const { resetState, handleResetAgent } = useThreadResetAgent(selectedAgent, worldId)
 
   const isResettable = RESETTABLE_AGENTS.has(selectedAgent?.slug)
   const settingsTabs = isResettable

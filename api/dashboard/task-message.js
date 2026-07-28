@@ -23,7 +23,7 @@
 // Returns: { ok: true, message: <inserted row> } on success.
 
 import crypto from 'crypto'
-import { extractJwt } from '../_lib/verifyTenant.js'
+import { extractJwt, verifyTenant, verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -82,6 +82,47 @@ export default async function handler(req, res) {
   const agent = taskRow?.agent_identity || taskRow?.agent || `task:${taskId}`
   const taskStatus = taskRow?.status || null
   const taskClientId = taskRow?.client_id || clientId
+
+  // --- WORLD GATE (r7) ------------------------------------------------------
+  // Until now the only check on this endpoint was "is there a JWT", and the
+  // header comment above still describes that as the floor ("Per-room
+  // membership is a follow-up"). It is not a follow-up: with `terminal: true`
+  // this endpoint MINTS A QUEUED TASK further down, copying the target task's
+  // project, project_path and metadata (including metadata.repo) and embedding
+  // the caller's own `text` in the brief under "## New ask". VERIFIED: a
+  // karens-world session posted terminal=true against an AOM-owned task id and
+  // produced a status='queued' row carrying AOM's project and repo with
+  // attacker-authored brief text. Task UUIDs are not secrets — they leak
+  // through several read surfaces — so the uuid alone authorized code execution
+  // in another world's checkout.
+  //
+  // Gate on the world that OWNS the task, read off the row (never a body
+  // field) — the same shape retry-task.js already uses. When the task carries a
+  // project, a world holding a project_access grant on it is admitted too, via
+  // verifyProjectAccess: the sharing model says a granted world may work on the
+  // project, and refusing them here would be the r2/r3 lockout again, invisible
+  // to the super-admin who returns before either check.
+  let verifiedTenant = null
+  try {
+    ({ tenant: verifiedTenant } = await verifyTenant(taskClientId, req))
+  } catch (err) {
+    if (!(err instanceof TenantAuthError)) throw err
+    let grantOk = false
+    if (taskRow?.project) {
+      try {
+        await verifyProjectAccess(taskRow.project, req)
+        grantOk = true
+      } catch (e2) {
+        if (!(e2 instanceof TenantAuthError)) throw e2
+      }
+    }
+    if (!grantOk) {
+      return res.status(err.status).json({
+        error: `forbidden: this task belongs to world "${taskClientId}" and your session cannot reach it${taskRow?.project ? ` or its project "${taskRow.project}"` : ''}`,
+      })
+    }
+    verifiedTenant = taskClientId
+  }
 
   const payload = {
     id: crypto.randomUUID(),            // messages.id is NOT NULL with no DB default

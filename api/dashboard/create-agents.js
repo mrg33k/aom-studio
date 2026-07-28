@@ -6,6 +6,9 @@
 // Body: { clientId: 'uuid', plan: { user_profile, projects, agents } }
 // Returns: { ok: true, agents: [...slugs created] }
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { applyCors, sendAuthError } from '../_lib/originAllowlist.js'
+
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
@@ -164,10 +167,19 @@ function generateAgentsJson(agents, clientId) {
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
+// AUTH (r7:open-agent-surface, 2026-07-27). This endpoint was unauthenticated
+// with `Access-Control-Allow-Origin: *`, and it does two things you do not want
+// an anonymous caller doing: it COMMITS FILES to the agent repo through a
+// GitHub token (workspaces/<clientId>/**, including each agent's own .md
+// identity file, which agents read as canon), and it creates `agent_status`
+// rows in whatever world the body names. Between them that is arbitrary content
+// authored into an agent's instructions plus a roster the dashboard renders.
+//
+// Gated with verifyTenant on the body's clientId: you may build a team in a
+// world you belong to, and nowhere else. Deliberately NOT admin-only — an
+// ordinary member of a world setting up their own agents is the normal case.
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  applyCors(req, res, 'POST')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
@@ -175,6 +187,14 @@ export default async function handler(req, res) {
   const { clientId, plan } = req.body || {}
 
   if (!clientId) return res.status(400).json({ error: 'clientId required' })
+
+  try {
+    await verifyTenant(String(clientId).trim().toLowerCase(), req)
+  } catch (err) {
+    if (err instanceof TenantAuthError) return sendAuthError(res, err)
+    return res.status(500).json({ error: err?.message || 'auth check failed' })
+  }
+
   if (!plan || !plan.user_profile || !Array.isArray(plan.projects) || !Array.isArray(plan.agents)) {
     return res.status(400).json({ error: 'plan with user_profile, projects, and agents required' })
   }

@@ -6,6 +6,8 @@
 // components/files-panel.html. Replaces the older CanonFilesPanel.jsx.
 // Mission: corner:files-in-app (R-FIP-1, 2026-05-18).
 import { useState, useEffect, useMemo } from 'react'
+// r7:open-agent-surface — file-content is world-gated now; send the session.
+import { authFetch } from '../../../lib/authFetch.js'
 import { C } from '../../../lib/cv3Colors.js'
 import { useChatCore, useChatSettingsCtx } from '../chat/ChatPanelContext.jsx'
 
@@ -236,7 +238,7 @@ export default function CornerFilesPanel() {
       const filename = entry.filename || entry.subName || ''
       let url = `/api/dashboard/file-content?project=${encodeURIComponent(projectSlug)}&filename=${encodeURIComponent(filename)}`
       if (worldId) url += `&client_id=${encodeURIComponent(worldId)}`
-      const res = await fetch(url)
+      const res = await authFetch(url)
       if (res.ok) {
         const data = await res.json()
         setFileHtml(data.content || '')

@@ -6,9 +6,29 @@
 // All writes go to the Supabase `tasks` table.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { authorizeTaskProject, taskScopeDenialMessage } from '../_lib/taskScope.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// The world that OWNS a task row. Read off the row, never from the caller —
+// same shape agent-status.js already uses (clientIdOfRow). Returns null when
+// the row is missing or unreadable.
+async function clientIdOfTask(taskId) {
+  if (!taskId || !SUPABASE_URL || !SUPABASE_KEY) return null;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}&select=client_id&limit=1`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const c = Array.isArray(rows) ? rows[0]?.client_id : null;
+    return c ? String(c).toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
 
 async function supabasePatch(filter, body) {
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}`, {
@@ -100,9 +120,26 @@ export default async function handler(req, res) {
   const { action, taskText, taskId, agent, payload, clientId: rawClientId, project } = req.body || {};
   const requestedTenant = (rawClientId || 'aom').toString().trim().toLowerCase();
 
+  // --- WORLD GATE (r7) ------------------------------------------------------
+  // The gate used to run against the tenant the CALLER named, while the row
+  // filter below was `id=eq.<uuid>` with no client_id at all. So passing your
+  // own world plus somebody else's task uuid was a full cross-world write:
+  //   editText  -> rewrite the brief a worker executes
+  //   requeue   -> flip that row back to 'queued' so task-runner claims it
+  //   resume    -> same, through the checkpoint path
+  //   moveToProject -> repoint tasks.project at another world's checkout
+  // VERIFIED live: an arsenal session PATCHed {text} then {status:'queued'} onto
+  // an AOM-owned task id and both writes went through. editText + requeue is
+  // arbitrary brief execution inside AOM's repo from an ordinary cross-world
+  // login — the same escalation as create-project-task, one endpoint over.
+  //
+  // Fix: when the caller names a task id, the world that owns THAT ROW is the
+  // world we gate on, and the verified world is pinned onto the row filter so
+  // the PATCH cannot reach outside it even if the gate is ever loosened.
+  const rowWorld = (taskId && /^[0-9a-f-]{36}$/i.test(taskId)) ? await clientIdOfTask(taskId) : null;
   let clientId;
   try {
-    ({ tenant: clientId } = await verifyTenant(requestedTenant, req));
+    ({ tenant: clientId } = await verifyTenant(rowWorld || requestedTenant, req));
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     throw err;
@@ -136,9 +173,14 @@ export default async function handler(req, res) {
 
       // 2. Reclaim stale tasks: stuck in building/qa/classifying/planning for >10 minutes
       //    Reset them to queued so the runner picks them up again.
+      //    r7: SCOPED to the verified world. Unscoped, this reset every stale
+      //    task in EVERY world to 'queued' — one authenticated click from any
+      //    world re-dispatching workers across the whole system. Nothing about
+      //    "my runner is stuck" justifies touching another world's queue.
       const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const staleScope = `&client_id=eq.${encodeURIComponent(clientId)}`;
       const staleResp = await fetch(
-        `${SUPABASE_URL}/rest/v1/tasks?status=in.(building,qa,classifying,planning)&updated_at=lt.${tenMinAgo}&select=id,title,status`,
+        `${SUPABASE_URL}/rest/v1/tasks?status=in.(building,qa,classifying,planning)&updated_at=lt.${tenMinAgo}${staleScope}&select=id,title,status`,
         {
           headers: {
             'apikey': SUPABASE_KEY,
@@ -154,7 +196,7 @@ export default async function handler(req, res) {
         if (staleTasks.length > 0) {
           const ids = staleTasks.map(t => t.id).join(',');
           await fetch(
-            `${SUPABASE_URL}/rest/v1/tasks?id=in.(${ids})`,
+            `${SUPABASE_URL}/rest/v1/tasks?id=in.(${ids})${staleScope}`,
             {
               method: 'PATCH',
               headers: {
@@ -182,7 +224,12 @@ export default async function handler(req, res) {
     // Build filter: prefer taskId (UUID) when available, fall back to text match
     let filter;
     if (taskId && /^[0-9a-f-]{36}$/i.test(taskId)) {
-      filter = `id=eq.${encodeURIComponent(taskId)}`;
+      // World-scoped, always. `clientId` is the verified tenant, and when the
+      // row was found it IS that row's own world — so this is a no-op for every
+      // legitimate call and a hard stop for a borrowed uuid. When the row could
+      // not be read at all, the scope falls back to the caller's verified world,
+      // which is strictly narrower than the unscoped filter that stood here.
+      filter = `id=eq.${encodeURIComponent(taskId)}&client_id=eq.${encodeURIComponent(clientId)}`;
     } else if (taskText) {
       filter = `text=eq.${encodeURIComponent(taskText)}&client_id=eq.${encodeURIComponent(clientId)}`;
     } else {
@@ -223,7 +270,20 @@ export default async function handler(req, res) {
       case 'moveToProject': {
         // payload = project section slug
         if (!payload) return res.status(400).json({ error: 'payload (project) required for moveToProject' });
-        const result = await supabasePatch(filter, { project: payload });
+        // tasks.project is a checkout selector, not a label: task-runner.sh
+        // normalizes it to a repo and project_activity.py writes into that
+        // project's CONTEXT.md. So the destination has to be a project this
+        // world already reaches — same gate as creating the task there.
+        const destSlug = String(payload).trim().toLowerCase();
+        const verdict = await authorizeTaskProject({ req, clientId, projectSlug: destSlug });
+        if (!verdict.ok) {
+          console.warn(`[task-action] moveToProject DENIED: tenant "${clientId}" slug "${destSlug}" — ${verdict.reason}`);
+          return res.status(403).json({
+            error: taskScopeDenialMessage({ clientId, projectSlug: destSlug, reason: verdict.reason }),
+            code: 'PROJECT_SCOPE_DENIED',
+          });
+        }
+        const result = await supabasePatch(filter, { project: destSlug });
         return res.status(200).json({ ok: true, action: 'moveToProject', result });
       }
 
@@ -243,7 +303,20 @@ export default async function handler(req, res) {
         } else {
           // Task doesn't exist in Supabase yet -- create it as active
           const crypto = await import('crypto');
-          const projectSlug = (project || '').trim().toLowerCase() || null
+          let projectSlug = (project || '').trim().toLowerCase() || null
+          // Same gate as every other task writer. This row lands status='active'
+          // rather than 'queued', so the runner does not claim it directly — but
+          // `requeue`/`resume` above will flip exactly this row to 'queued', so
+          // an ungated project here is a two-request version of the same
+          // escalation. Denied => the task is still created, just unscoped
+          // (nothing is lost, it simply has no checkout to steer).
+          if (projectSlug) {
+            const verdict = await authorizeTaskProject({ req, clientId, projectSlug })
+            if (!verdict.ok) {
+              console.warn(`[task-action] addToRightNow project DENIED: tenant "${clientId}" slug "${projectSlug}" — ${verdict.reason}`)
+              projectSlug = null
+            }
+          }
           const newTask = {
             id: crypto.randomUUID(),
             text: taskText,

@@ -77,8 +77,34 @@
 // caller's own session, so a granted outside caller reads as themselves, never
 // as the holder.
 
+// ── 2026-07-27 r7, corner:tenant-isolation ───────────────────────────────────
+// r3 fixed the TENANT on this endpoint and stopped there. `project` and
+// `mission_slug` still came straight off the body onto the row, with no scope
+// check anywhere — and this is the executable write path ('voice-handoff' is in
+// supabase-listener.py's allowed_sources).
+//
+//   KARENS_MEMBER POSTs {agent:'elon', client_id:'karens-world', project:'rex',
+//                        mission_slug:'corner:one-corner', transcript:[…]}
+//   -> row lands client_id='karens-world', project='rex'   (replayed: HTTP 200)
+//
+// Her own-world write is legitimate; the TAG is not. rex has no projects row, so
+// that row then answers hasProjectPresence('rex','karens-world') and
+// verifyProjectAccess admits her to AOM's rex — the r4 self-service-evidence
+// exploit, through a writer that never goes near writeMessageRow (where the r4
+// gate lives). Same for the mission arm: metadata.mission_slug is its own routing
+// arm in the read queries.
+//
+// Closed with makeProjectScopeAuthorizer (the r4 decision function) and
+// deriveRowWorld (the r5 world stamp, which this file also never wrote).
+// FAILURE MODE, deliberately the writer's and not the create endpoints': a denied
+// scope DROPS the tag and the transcript still lands. A voice call that was
+// actually made must never be thrown away — that is the regression note 4 above
+// exists to undo — and an unscoped row mints no evidence, so dropping is fully
+// sufficient. Every drop is stamped on the row and logged.
+
 import crypto from 'crypto'
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
+import { makeProjectScopeAuthorizer, deriveRowWorld } from '../_lib/write-message.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -216,7 +242,10 @@ function formatTranscript(transcript, speakerLabel) {
   return lines.join('\n')
 }
 
-async function writeMessage({ agent, text, client_id, user_id, user_name, project, mission_slug, unattributed }) {
+async function writeMessage({
+  agent, text, client_id, user_id, user_name, project, mission_slug, unattributed,
+  authorWorld, scopeDenied,
+}) {
   const metadata = {
     ...(mission_slug ? { mission_slug } : {}),
     // Mirrors api/_lib/write-message.js: a human-role row with no verified
@@ -224,7 +253,18 @@ async function writeMessage({ agent, text, client_id, user_id, user_name, projec
     // silently blank. `world_unresolved` says WHY: we had a session but no
     // workspace to file it under.
     ...(unattributed ? { unattributed: true, world_unresolved: true } : {}),
+    // A row that asked for a scope it could not reach says so in the DATA, which
+    // is also the detection signal for someone probing this boundary.
+    ...(scopeDenied ? { project_scope_denied: scopeDenied } : {}),
   }
+  // world_id is DERIVED and written whenever a tenant was proved — never left to
+  // the DB default, which is a false claim of AOM participation on every other
+  // world's row (r5). Borrowed from the writer so the two cannot drift: a
+  // 'shared:<slug>' tenant is a ROOM, so the AUTHOR's own world answers there,
+  // and NULL when it is genuinely unknowable. On the no-tenant fallback path
+  // below there is nothing to stamp and the column is left alone, matching the
+  // row's deliberate refusal to assert a workspace it cannot demonstrate.
+  const stampedWorld = client_id ? deriveRowWorld({ clientId: client_id, worldId: authorWorld || null }) : null
   const payload = {
     id: crypto.randomUUID(),
     agent,
@@ -245,6 +285,10 @@ async function writeMessage({ agent, text, client_id, user_id, user_name, projec
     // The real cure is a data fix, not a code one: the four live accounts with
     // no user_metadata.world need one set.
     ...(client_id ? { client_id } : {}),
+    ...(stampedWorld ? { world_id: stampedWorld.world } : {}),
+    // Only ever the SCOPE-AUTHORIZED slug — a refused tag was already dropped by
+    // the handler, which also removes the presence evidence the read-side floor
+    // would otherwise be asked to trust.
     ...(project ? { project } : {}),
     ...(Object.keys(metadata).length ? { metadata } : {}),
     // Server-derived only. An absent author stays absent — never defaulted.
@@ -416,6 +460,61 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, skipped: 'no usable text' })
   }
 
+  // ---- PROJECT / MISSION SCOPE (r7) --------------------------------------
+  // Runs only when a tenant was actually proved: with no client_id the row
+  // asserts no workspace at all, so there is no verified tenant to authorize a
+  // project against and nothing to authorize it FOR — the tag is dropped
+  // outright rather than checked against a world we do not have.
+  let scopedProject = (project && String(project).trim()) ? String(project).trim() : null
+  let scopedMission = (mission_slug && String(mission_slug).trim()) ? String(mission_slug).trim() : null
+  let scopeDenied = null
+  if (scopedProject || scopedMission) {
+    if (!resolvedClientId) {
+      scopeDenied = {
+        requested: scopedProject || scopedMission,
+        via: 'no-verified-tenant',
+        reason: 'the call could not be scoped to a workspace, so it cannot be scoped to a project',
+      }
+    } else {
+      // The mission's ROOT project is what gets checked — the colon-joined form
+      // appears in no projects row and no messages.project, so gating the path
+      // itself would refuse every legitimate mission-scoped call.
+      const targets = [
+        ...(scopedProject ? [scopedProject.toLowerCase()] : []),
+        ...(scopedMission ? [scopedMission.split(':')[0].trim().toLowerCase()] : []),
+      ].filter((s, i, a) => s && a.indexOf(s) === i)
+      const authorizeProjectScope = makeProjectScopeAuthorizer({ req, clientId: resolvedClientId })
+      for (const slug of targets) {
+        let verdict
+        try {
+          verdict = await authorizeProjectScope(slug)
+        } catch (e) {
+          // Fail closed — an authorizer that threw decided nothing.
+          verdict = { ok: false, via: 'error', reason: String((e && e.message) || e) }
+        }
+        if (!verdict || !verdict.ok) {
+          scopeDenied = {
+            requested: slug,
+            via: (verdict && verdict.via) || 'denied',
+            reason: (verdict && verdict.reason) || 'not reachable from this world',
+          }
+          break
+        }
+      }
+    }
+    if (scopeDenied) {
+      console.warn(
+        `[voice-handoff] project scope DENIED: tenant "${resolvedClientId || '(none)'}" may not tag "${scopeDenied.requested}" — ${scopeDenied.reason}; keeping the transcript, dropping the routing`,
+      )
+      // A mission always hangs off a project. If the project scope is refused the
+      // mission room cannot be authorized either, so both arms go together —
+      // metadata.mission_slug is its own routing arm in the read queries and
+      // would otherwise still file the row into that mission's room.
+      scopedProject = null
+      scopedMission = null
+    }
+  }
+
   const turn_count = transcript.filter(
     (t) => t && (t.role === 'user' || t.role === 'model' || t.role === 'model-text'),
   ).length
@@ -432,9 +531,13 @@ export default async function handler(req, res) {
       user_id: speaker?.userId || verifiedUserId || null,
       // Withheld when the workspace could not be resolved — see writeMessage.
       user_name: tenantResolved ? speakerName : null,
-      project,
-      mission_slug,
+      project: scopedProject,
+      mission_slug: scopedMission,
       unattributed: !tenantResolved,
+      // The AUTHOR's own world — the only answer for a 'shared:<slug>' tenant,
+      // which is a room and not a world.
+      authorWorld: speaker?.world || null,
+      scopeDenied,
     })
     return res.status(200).json({
       ok: true,

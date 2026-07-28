@@ -17,6 +17,7 @@
 //   - CORS is the dashboard origins, not `*`.
 
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
+import { authorizeTaskProject, taskScopeDenialMessage } from '../_lib/taskScope.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -101,6 +102,35 @@ export default async function handler(req, res) {
   if (!slug) return res.status(400).json({ error: 'projectSlug is required' });
   if (!/^[a-z0-9][a-z0-9-_]{0,64}$/.test(slug)) {
     return res.status(400).json({ error: 'invalid projectSlug' });
+  }
+
+  // --- PROJECT SCOPE (r7) ---------------------------------------------------
+  // verifyTenant above answered "may this caller act inside their own WORLD".
+  // It says NOTHING about `slug`, and until now nothing else did either: the
+  // shape regex was the only check the slug ever faced. Everything the slug
+  // then steers is execution — `project` and `metadata.repo` pick the checkout
+  // task-runner.sh cds into, `project_path` is read straight out of
+  // projects.repo_path FOR THAT SLUG regardless of which world holds it, and
+  // `text` becomes a fresh sub-agent's brief.
+  //
+  // VERIFIED live: POST {clientId:'arsenal', projectSlug:'corner'} passed
+  // verifyTenant (genuinely arsenal's own world) and produced a queued row with
+  // project_path = AOM's aom-studio checkout. That is arbitrary agent execution
+  // in another world's repository from an ordinary cross-world login.
+  //
+  // Same decision as every message writer (verifyProjectAccess, reached through
+  // makeProjectScopeAuthorizer) — see api/_lib/taskScope.js for the one rule
+  // that path adds and why. REFUSING, not dropping: a task stripped of its
+  // project still runs, and "runs somewhere else" is the bug.
+  const scopeVerdict = await authorizeTaskProject({ req, clientId: verified.tenant, projectSlug: slug });
+  if (!scopeVerdict.ok) {
+    console.warn(
+      `[create-project-task] project scope DENIED: tenant "${verified.tenant}" slug "${slug}" — ${scopeVerdict.reason}`,
+    );
+    return res.status(403).json({
+      error: taskScopeDenialMessage({ clientId: verified.tenant, projectSlug: slug, reason: scopeVerdict.reason }),
+      code: 'PROJECT_SCOPE_DENIED',
+    });
   }
 
   const missionSlug = (rawMission || '').toString().trim() || null;

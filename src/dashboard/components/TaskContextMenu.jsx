@@ -958,8 +958,11 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks, 
     supabasePatchTaskStatus(task, 'completed')
     supabaseTaskAction('markDone', task)
     try {
-      fetch('/api/dashboard/v2-task-update', {
+      // r7:open-agent-surface — v2-task-update is world-gated now; send the
+      // session (and the Content-Type this call was missing).
+      authFetch('/api/dashboard/v2-task-update', {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId: task.id, status: 'done' }),
       }).catch(() => {})
     } catch {}
@@ -1000,7 +1003,8 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks, 
     // API fallback: handles tasks not yet in Supabase (text-only, creates them)
     supabaseTaskAction('addToRightNow', task)
     try {
-      fetch('/api/dashboard/v2-task-update', {
+      // r7:open-agent-surface — world-gated; send the session.
+      authFetch('/api/dashboard/v2-task-update', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId: task.id, status: 'building' }),
