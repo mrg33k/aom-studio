@@ -185,7 +185,9 @@ export default async function handler(req, res) {
     // that downstream code has historically filled in as the founder.
     userId: verified.userId || null,
     userName: verified.userName || null,
-    senderRole: verified.userId ? 'human' : null,
+    // 'user', not 'human' — messages_sender_role_check allows only
+    // (admin|user|owner|NULL). See the note in dashboard/supabase-messages.js.
+    senderRole: verified.userId ? 'user' : null,
     metadata: {
       interaction_mode: mode,
       // Provenance: this message was re-homed by the user after the router guessed wrong.

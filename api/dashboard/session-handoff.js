@@ -251,7 +251,9 @@ export default async function handler(req, res) {
     // "You" to everyone and reads as Patrik to any agent downstream.
     ...(authorUserId ? { user_id: authorUserId } : {}),
     ...(authorUserName ? { user_name: authorUserName } : {}),
-    ...(authorUserId ? { sender_role: 'human' } : {}),
+    // 'user', not 'human' — messages_sender_role_check allows only
+    // (admin|user|owner|NULL). See the note in dashboard/supabase-messages.js.
+    ...(authorUserId ? { sender_role: 'user' } : {}),
     metadata: {
       handoff_trigger: true,
       chat_key,

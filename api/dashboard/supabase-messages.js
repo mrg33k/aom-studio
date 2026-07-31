@@ -296,7 +296,15 @@ export default async function handler(req, res) {
     // sender_role is a server-side classification, not a body field. Only
     // asserted when we actually verified a person — an unknown caller is left
     // unclassified rather than declared human.
-    const authorSenderRole = (isHumanTurn && authorUserId) ? 'human' : null
+    //
+    // The value is 'user', not 'human'. messages_sender_role_check has allowed
+    // only (admin|user|owner|NULL) since May; the identity-attribution round
+    // shipped 'human' with no migration, so EVERY human send 400'd on the check
+    // constraint from 2026-07-28 00:33Z until this fix — chat took no messages
+    // for two and a half days. Nothing reads 'human' (it is write-only), and
+    // 'user' already carries exactly this meaning in the column's vocabulary.
+    // Do not reintroduce a value without widening the constraint first.
+    const authorSenderRole = (isHumanTurn && authorUserId) ? 'user' : null
     // world_id. In a NORMAL room the row belongs to the room's world. In a
     // SHARED room the message is in neither world's namespace, so it carries the
     // AUTHOR's own world instead of inheriting the holder world's identity —
