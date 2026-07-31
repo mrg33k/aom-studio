@@ -1,0 +1,111 @@
+{
+  "_readme": "Fixture for the Client Engine screen. Shape defined in ../contract.md. Codex builds against THIS FILE; swapping it for the live endpoint is a one-line change. Wolfpack states are lifted from aom-commercial-trades-engine.html (2026-07-30) and every one is confidence:guessed because the doc itself says to turn the guesses into facts. Ambition is unaudited. Kohrs' program is proposed, not ratified.",
+  "generated_at": "2026-07-30T00:00:00Z",
+
+  "programs": [
+    {
+      "id": "trades-engine",
+      "label": "Commercial Trades Engine",
+      "steps": [
+        { "id": "find-portfolio", "order": 1, "label": "Find the portfolio", "blurb": "Every high-value account is a portfolio: one relationship, many properties, recurring work." },
+        { "id": "manufacture-meeting", "order": 2, "label": "Manufacture the meeting", "blurb": "A reverse trade show seats you across a table for about $150. You are buying an appointment, not an impression." },
+        { "id": "win-walkaway", "order": 3, "label": "Win the walk away", "blurb": "You do not get the contract in the room. You get it in the 48 hours after." },
+        { "id": "prove-with-their-work", "order": 4, "label": "Prove it with their own work", "blurb": "One shoot day gives a year of material." },
+        { "id": "report-their-numbers", "order": 5, "label": "Report in their numbers", "blurb": "Lead with the metric the owner already watches. Never a marketing metric they have to be taught to care about." }
+      ],
+      "coverage": [
+        { "id": "google-name",   "order": 1, "label": "Google the company name",              "bar": "One company, not two. Complete profile, commercial photos, real hours." },
+        { "id": "reviews",       "order": 2, "label": "Glance at the reviews",                "bar": "Enough of them, recent, naming commercial work and the city." },
+        { "id": "website",       "order": 3, "label": "Click through to the site",            "bar": "Management team, commercial proof, named clients, credentials, works on a phone." },
+        { "id": "person",        "order": 4, "label": "Look up the person they met",          "bar": "Real photo, right title, company linked, posts that are not from 2019." },
+        { "id": "company-page",  "order": 5, "label": "Check the company page",               "bar": "Active, branded, the meet-the-team videos living there." },
+        { "id": "leave-behind",  "order": 6, "label": "Look at whatever they were handed",    "bar": "A capability folder that answers the vendor questions, not a business card." },
+        { "id": "follow-up",     "order": 7, "label": "Wait for a follow up",                 "bar": "An email inside 24 hours, specific to what was discussed, credentials attached." },
+        { "id": "credentials",   "order": 8, "label": "Ask for insurance and licensing",      "bar": "Certificate, license and W-9 inside the hour, correctly named." },
+        { "id": "ask-around",    "order": 9, "label": "Ask around, or ask an AI",             "bar": "Named references who will take the call. Turning up in answers about Phoenix commercial work." }
+      ]
+    },
+    {
+      "id": "content-retainer",
+      "label": "Social Content Retainer",
+      "draft": true,
+      "steps": [],
+      "coverage": [
+        { "id": "footage-on-hand",  "order": 1, "label": "Is there footage to cut",      "bar": "Unedited job-site footage in hand, logged and proxied." },
+        { "id": "edit-backlog",     "order": 2, "label": "Is the edit backlog current",  "bar": "No delivered shoot waiting more than two weeks for its edit pass." },
+        { "id": "approval-flow",    "order": 3, "label": "Is approval moving",           "bar": "Nothing sitting unapproved with the client for more than five days." },
+        { "id": "posting-cadence",  "order": 4, "label": "Is it actually posting",       "bar": "Live on Instagram, TikTok and LinkedIn at the agreed cadence." },
+        { "id": "next-shoot",       "order": 5, "label": "Is the next shoot booked",     "bar": "A date on the calendar before the current footage runs out." },
+        { "id": "reporting",        "order": 6, "label": "Does the owner see results",   "bar": "A report in the owner's own numbers, on a schedule they expect." }
+      ]
+    }
+  ],
+
+  "clients": [
+    {
+      "id": "wolfpack",
+      "name": "Wolfpack",
+      "program": "trades-engine",
+      "trade": "Commercial plumbing and hydro jetting",
+      "owner": "gary",
+      "step": "win-walkaway",
+      "gate": {
+        "locked": true,
+        "rule": "Do not book a single meeting until the surfaces are green. Paying $150 a seat to send a property manager to a placeholder website converts a warm introduction into a documented reason to say no.",
+        "blocking": ["google-name", "reviews", "website", "person", "company-page", "leave-behind", "follow-up", "credentials", "ask-around"]
+      },
+      "cells": [
+        { "coverage_id": "google-name",  "state": "in_progress", "note": "Consolidating under the Wolfpack parent brand.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": "gary", "action": { "label": "Finish the brand consolidation and complete the profile", "dispatchable": true, "brief": "Audit and consolidate Wolfpack's Google Business Profile under the parent brand. One company, not two. Verify commercial photos and real hours. Record what you found with timestamps." } },
+        { "coverage_id": "reviews",      "state": "not_ready",   "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Build the review engine and seed recent commercial reviews", "dispatchable": false, "brief": null } },
+        { "coverage_id": "website",      "state": "not_ready",   "note": "Placeholder. 5 inquiries in two years.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": "bobby", "action": { "label": "Rebuild the site against the commercial-proof bar", "dispatchable": true, "brief": "Rebuild wolfpack site: management team, commercial proof, named clients, credentials, mobile-first. Bar is in the trades engine doc." } },
+        { "coverage_id": "person",       "state": "unknown",     "note": "Doc says audit. Never actually checked.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Audit the owner's LinkedIn against the bar", "dispatchable": true, "brief": "Open the Wolfpack owner's LinkedIn. Check: real photo, right title, company linked, posts newer than 2019. Report state plus evidence." } },
+        { "coverage_id": "company-page", "state": "unknown",     "note": "Doc says audit. Never actually checked.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Audit the company page against the bar", "dispatchable": true, "brief": "Open Wolfpack's LinkedIn company page. Check: active, branded, meet-the-team videos present. Report state plus evidence." } },
+        { "coverage_id": "leave-behind", "state": "not_started", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": "steffen", "action": { "label": "Design the capability folder", "dispatchable": true, "brief": "Design a Wolfpack capability folder that answers the vendor questions a property manager asks. Not a business card." } },
+        { "coverage_id": "follow-up",    "state": "not_started", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": "jacob", "action": { "label": "Write the 24-hour follow-up template with credentials attached", "dispatchable": true, "brief": "Write the post-meeting follow-up email template for Wolfpack. Inside 24 hours, specific to what was discussed, credentials attached." } },
+        { "coverage_id": "credentials",  "state": "not_ready",   "note": "Held, not packaged.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Package certificate, license and W-9 for one-hour turnaround", "dispatchable": false, "brief": null } },
+        { "coverage_id": "ask-around",   "state": "not_ready",   "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Line up named references and get into AI answers for Phoenix commercial jetting", "dispatchable": false, "brief": null } }
+      ]
+    },
+    {
+      "id": "ambition",
+      "name": "Ambition Mechanical",
+      "program": "trades-engine",
+      "trade": "Commercial HVAC and refrigeration",
+      "owner": "gary",
+      "step": "find-portfolio",
+      "gate": {
+        "locked": true,
+        "rule": "Do not book a single meeting until the surfaces are green.",
+        "blocking": ["google-name", "reviews", "website", "person", "company-page", "leave-behind", "follow-up", "credentials", "ask-around"]
+      },
+      "cells": [
+        { "coverage_id": "google-name",  "state": "unknown", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Run the nine-surface audit", "dispatchable": true, "brief": "Audit Ambition Mechanical's Google Business Profile against the bar. Report state plus evidence." } },
+        { "coverage_id": "reviews",      "state": "unknown", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Run the nine-surface audit", "dispatchable": true, "brief": "Audit Ambition Mechanical's reviews against the bar. Report state plus evidence." } },
+        { "coverage_id": "website",      "state": "unknown", "note": "Doc says real and rebuilt. Not verified against the commercial-proof bar.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Verify the rebuilt site against the bar", "dispatchable": true, "brief": "Check ambitionmechanical site against the bar: management team, commercial proof, named clients, credentials, mobile. Report state plus evidence." } },
+        { "coverage_id": "person",       "state": "unknown", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Run the nine-surface audit", "dispatchable": true, "brief": "Audit the Ambition owner's LinkedIn against the bar. Report state plus evidence." } },
+        { "coverage_id": "company-page", "state": "unknown", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Run the nine-surface audit", "dispatchable": true, "brief": "Audit Ambition's LinkedIn company page against the bar. Report state plus evidence." } },
+        { "coverage_id": "leave-behind", "state": "unknown", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Run the nine-surface audit", "dispatchable": true, "brief": "Determine whether Ambition has a capability folder. Report state plus evidence." } },
+        { "coverage_id": "follow-up",    "state": "unknown", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Run the nine-surface audit", "dispatchable": true, "brief": "Determine whether Ambition has a post-meeting follow-up in place. Report state plus evidence." } },
+        { "coverage_id": "credentials",  "state": "unknown", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Run the nine-surface audit", "dispatchable": true, "brief": "Determine whether Ambition can produce certificate, license and W-9 inside the hour. Report state plus evidence." } },
+        { "coverage_id": "ask-around",   "state": "unknown", "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Run the nine-surface audit", "dispatchable": true, "brief": "Check named references and AI answer presence for Ambition in Phoenix commercial HVAC. Report state plus evidence." } }
+      ]
+    },
+    {
+      "id": "kohrs",
+      "name": "Kohrs",
+      "program": "content-retainer",
+      "trade": "Demolition and home renovation",
+      "owner": "cleo",
+      "step": null,
+      "gate": null,
+      "cells": [
+        { "coverage_id": "footage-on-hand", "state": "unknown",     "note": "Notes claimed April footage in hand, but that claim is three months old and nobody has re-checked.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": "kohrs CONTEXT.md, 2026-04-30" }, "owner": "cleo", "action": { "label": "Confirm footage is present, logged and proxied", "dispatchable": true, "brief": "Verify Kohrs April footage is present, logged and proxied. Report state plus evidence." } },
+        { "coverage_id": "edit-backlog",    "state": "not_ready",   "note": "April footage still pending its edit pass since 2026-04-30.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": "kohrs CONTEXT.md, 2026-04-30" }, "owner": "cleo", "action": { "label": "Run the April edit pass", "dispatchable": true, "brief": "Cut the Kohrs April footage per the documented briefs. AOM-quality: branded, serious, authentic." } },
+        { "coverage_id": "approval-flow",   "state": "unknown",     "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Check what is sitting with Leigh", "dispatchable": true, "brief": "Check the Kohrs pending-content approval queue. Report anything unapproved more than five days." } },
+        { "coverage_id": "posting-cadence", "state": "unknown",     "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Check live posting on all three platforms", "dispatchable": true, "brief": "Check Kohrs Instagram, TikTok and LinkedIn for last post date and cadence. Report state plus evidence." } },
+        { "coverage_id": "next-shoot",      "state": "unknown",     "note": null, "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Book the next shoot day", "dispatchable": false, "brief": null } },
+        { "coverage_id": "reporting",       "state": "not_started", "note": "No report format agreed with Leigh.", "evidence": { "confidence": "guessed", "checked_at": null, "checked_by": null, "source": null }, "owner": null, "action": { "label": "Agree the owner's number and build the report", "dispatchable": false, "brief": null } }
+      ]
+    }
+  ]
+}

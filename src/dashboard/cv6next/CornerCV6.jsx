@@ -32,6 +32,7 @@ import LiveScribe from './LiveScribe.jsx';
 import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
+import { ClientEngineView } from '../cv6kit/ClientEngineView.jsx';
 import { useHome, useProjectMissions, shapeHome, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { savedRoomExists, missionTreesFromResponse } from './data/lastRoomValidation.js';
 import { roomProjectSlug, buildChecklistRoomOptions } from './data/roomKeys.js';
@@ -2420,7 +2421,7 @@ function initialViewFromUrl() {
     // permissions, and goal controls. Route that legacy deep link to the honest
     // Settings surface; the real account onboarding remains /onboarding/voice.
     if (v === 'onboarding') return 'settings';
-    if (['home', 'support', 'organize', 'command', 'tracker', 'settings', 'livescribe'].includes(v)) return v;
+    if (['home', 'support', 'organize', 'command', 'tracker', 'settings', 'livescribe', 'client-engine'].includes(v)) return v;
   } catch { /* no window */ }
   return 'home';
 }
@@ -3123,7 +3124,7 @@ export default function CornerCV6() {
     const v = initialViewFromUrl();
     if (v !== 'home' || explicitView) return v;
     return 'home';
-  }); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
+  }); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker' | 'client-engine'
   const initialChatSeed = routeSeed;
   const [openedRoom, setOpenedRoom] = useState(null); // retained for legacy history entries; live rooms are workspace columns
   const [workspaceColumns, setWorkspaceColumns] = useState(() => {
@@ -3319,7 +3320,7 @@ export default function CornerCV6() {
       setRoomReview(arg);
       return;
     }
-    if (['home', 'command', 'tracker', 'organize', 'settings', 'livescribe'].includes(target)) {
+    if (['home', 'command', 'tracker', 'organize', 'settings', 'livescribe', 'client-engine'].includes(target)) {
       // Carry a "Review this file" target into Files; a plain toolbar nav('organize')
       // passes no arg and clears any prior target.
       if (target === 'organize') setFilesTarget(arg && typeof arg === 'object' ? arg : null);
@@ -3391,13 +3392,14 @@ export default function CornerCV6() {
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} theme={theme} onTheme={changeTheme} />; viewKey = 'settings'; }
   else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'livescribe'; }
+  else if (view === 'client-engine') { body = <ClientEngineView worldId={worldId} theme={theme} onBack={back} onOpenNav={onOpenNav} />; viewKey = 'client-engine'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={onSearch} />; viewKey = 'chatlist'; }
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = view === 'chatlist' ? 'chat' : view;
-  const parkedLabel = { organize: 'Files', command: 'Command', tracker: 'Tracker', livescribe: 'Scribe' }[view] || '';
+  const parkedLabel = { organize: 'Files', command: 'Command', tracker: 'Tracker', livescribe: 'Scribe', 'client-engine': 'Client Engine' }[view] || '';
   // Nav badges retired with the bar (drop 4): "waiting on you" now lives as amber
   // badges on the room rows themselves — the signal sits where the work is.
   const navBadges = {};
