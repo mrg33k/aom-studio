@@ -13,6 +13,14 @@
   },
   "rewrites": [
     {
+      "source": "/moguls",
+      "destination": "https://moguls-nine.vercel.app/"
+    },
+    {
+      "source": "/moguls/:path*",
+      "destination": "https://moguls-nine.vercel.app/:path*"
+    },
+    {
       "source": "/embed",
       "destination": "/embed.html"
     },
