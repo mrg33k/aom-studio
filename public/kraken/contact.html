@@ -1,0 +1,639 @@
+<title>K.R.A.K.E.N. Corps / Contact</title>
+
+<style>
+  /* ============================================================
+     K.R.A.K.E.N. CORPS - Contact, built to design-set-v1 05.
+     Foundations (tokens, font, sheet furniture, header, theme JS,
+     title block) are copied verbatim from kraken-what-we-do.html -
+     one system, not a re-derivation. Display face is Bebas Neue
+     (SIL OFL), subset and inlined, because the artifact CSP blocks
+     font CDNs and a silent fallback to a system sans would lose
+     the headline. Everything that is not display type is monospace,
+     the way a drawing sheet letters everything in one stencil face.
+     The form is a technical data-entry sheet: hairline boxes,
+     monospace labels, a visible grid - filled in, not decorated.
+     ============================================================ */
+
+  @font-face {
+    font-family: "KKCDisplay";
+    src: url("data:font/woff2;base64,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") format("woff2");
+    font-weight: 400; font-style: normal; font-display: block;
+  }
+
+  :root {
+    --octo: url("data:image/png;base64,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");
+
+    --ground:  #010A12;
+    --sheet:   #03121F;
+    --ink:     #E8E6E1;
+    --ink-dim: #9A9894;
+    --rule:    rgba(232, 230, 225, 0.52);
+    --hair:    rgba(232, 230, 225, 0.30);
+    --grid:    rgba(232, 230, 225, 0.045);
+    --accent:  #B03230;
+    --flare:   #37D2EA;
+
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "DejaVu Sans Mono", Consolas, monospace;
+    --disp: "KKCDisplay", "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+
+    --s1: 4px;  --s2: 8px;  --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px;
+  }
+
+  :root[data-theme="dark"] {
+    --ground:#010A12; --sheet:#03121F; --ink:#E8E6E1; --ink-dim:#9A9894;
+    --rule:rgba(232,230,225,.52); --hair:rgba(232,230,225,.30);
+    --grid:rgba(232,230,225,.045); --accent:#B03230; --flare:#37D2EA;
+  }
+  :root[data-theme="light"] {
+    --ground:#D9D5C8; --sheet:#EFEDE6; --ink:#0B1024; --ink-dim:#5A6080;
+    --rule:rgba(11,16,36,.55); --hair:rgba(11,16,36,.32); --grid:rgba(11,16,36,.055);
+    --accent:#A41818; --flare:#0E7C90;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { overflow-x: hidden; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--mono); font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- the drawing sheet ---------- */
+
+  .sheet {
+    position: relative;
+    padding: var(--s3);
+    background: var(--sheet);
+    cursor: crosshair;
+  }
+
+  /* corner registration crosses, outside the frame rule */
+  .reg { position: absolute; width: 22px; height: 22px; pointer-events: none; }
+  .reg::before, .reg::after { content: ""; position: absolute; background: var(--rule); }
+  .reg::before { width: 22px; height: 1px; top: 11px; }
+  .reg::after  { height: 22px; width: 1px; left: 11px; }
+  .reg.tl { top: 2px; left: 2px; }  .reg.tr { top: 2px; right: 2px; }
+  .reg.bl { bottom: 2px; left: 2px; } .reg.br { bottom: 2px; right: 2px; }
+
+  /* the frame rule the whole drawing sits inside */
+  .frame {
+    position: relative;
+    border: 1px solid transparent;   /* holds layout; the rules below are what you see */
+    padding: 0 20px var(--s2);
+  }
+  /* The sheet plots itself rather than fading in. Rules draw outward from the
+     corners, which is what a pen plotter actually does and what no template does. */
+  .fr { position: absolute; background: var(--rule); pointer-events: none; }
+  .fr.t, .fr.b { left: -1px; right: -1px; height: 1px; transform: scaleX(0); }
+  .fr.l, .fr.r { top: -1px; bottom: -1px; width: 1px; transform: scaleY(0); }
+  .fr.t { top: -1px; transform-origin: left center; }
+  .ticks { position: absolute; left: 0; right: 0; height: 6px; pointer-events: none; opacity: 0; }
+  .plot .ticks { opacity: 1; transition: opacity .4s ease .5s; }
+  .ticks.t { top: -1px; } .ticks.b { bottom: -1px; }
+  .ticks i { position: absolute; top: 0; width: 1px; height: 6px; background: var(--rule); }
+  .ticks.b i { top: auto; bottom: 0; }
+  .fr.b { bottom: -1px; transform-origin: right center; }
+  .fr.l { left: -1px; transform-origin: center top; }
+  .fr.r { right: -1px; transform-origin: center bottom; }
+  .plot .fr { transform: scale(1); transition: transform .62s cubic-bezier(.22,.61,.36,1); }
+  .plot .fr.l, .plot .fr.r { transition-delay: .10s; }
+  .plot .rows b { opacity: 1; }
+  .plot .omark, .plot .spine { opacity: 1; }
+  .rows b.hot { color: var(--ink); }            /* tracks where you are on the sheet */
+  .rows b.hot::before { background: var(--accent); }
+
+  /* row letters down both edges, with a tick across the rule */
+  .rows { position: absolute; inset: 0; pointer-events: none; }
+  .rows b {
+    opacity: 0; transition: opacity .3s ease, color .35s ease;
+    position: absolute; font-family: var(--mono); font-size: 11px; color: var(--ink-dim);
+    letter-spacing: .08em;
+  }
+  .rows b::before { content: ""; position: absolute; top: 50%; width: 8px; height: 1px; background: var(--rule); }
+  .rows b.l { left: -17px; } .rows b.l::before { left: 11px; }
+  .rows b.r { right: -17px; } .rows b.r::before { right: 11px; }
+
+  /* the registration circle that sits on the top and bottom rule */
+  .omark { opacity: 0; transform-origin: center; transition: opacity .4s ease .5s;
+           position: absolute; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+  .omark.top { top: 0; } .omark.bot { top: 100%; }
+
+  /* vertical spine annotations */
+  .spine {
+    opacity: 0; transition: opacity .4s ease .55s;
+    display: block;
+    position: absolute; top: 50%; font-family: var(--mono); font-size: 9px;
+    color: var(--ink-dim); letter-spacing: .16em; white-space: nowrap;
+    pointer-events: none;
+  }
+  .spine.l { left: 3px; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl; }
+  .spine.r { right: 3px; transform: translateY(-50%); writing-mode: vertical-rl; }
+
+  .cross { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s; z-index: 6; }
+  .sheet:hover .cross { opacity: 1; }
+  .cross i { position: absolute; background: var(--accent); opacity: .45; }
+  .cross .cx { width: 1px; top: 0; bottom: 0; }
+  .cross .cy { height: 1px; left: 0; right: 0; }
+
+  /* ---------- header ---------- */
+
+  .head {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    gap: var(--s3); padding: var(--s3) 0;
+    border-bottom: 1px solid var(--rule);
+    margin: 0 calc(var(--s3) * -1 - 6px) 0;
+    padding-left: var(--s3); padding-right: var(--s3);
+  }
+  .mark { font-family: var(--mono); font-size: clamp(12px, 3.87vw, 16px); line-height: 1;
+          font-weight: 400; letter-spacing: .06em; margin: 0; white-space: nowrap; }
+
+  nav {
+    display: none; order: 3; width: 100%; flex-direction: column; gap: 0;
+    margin-top: var(--s3); border-top: 1px solid var(--hair);
+  }
+  nav.open { display: flex; }
+  nav a { padding: var(--s3) 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
+  nav a {
+    color: var(--ink-dim); text-decoration: none; font-size: 12px; letter-spacing: .08em;
+    padding-bottom: 2px; border-bottom: 1px solid transparent; transition: color .18s, border-color .18s;
+  }
+  nav a:hover, nav a:focus-visible { color: var(--ink); border-bottom-color: var(--accent); }
+  nav a:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
+  /* the page you are on carries the red underline, as on the comp */
+  nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+  .print {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    background: none; border: 1px solid var(--hair); cursor: pointer;
+    padding: var(--s1) var(--s2); margin-left: auto; line-height: 0;
+  }
+  .print svg { stroke: var(--ink-dim); stroke-width: 1.5; transition: stroke .25s; }
+  .print svg.on { stroke: var(--accent); }
+  .print:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+
+  .burger { display: block; background: none; border: none; padding: var(--s1); cursor: pointer; line-height: 0; }
+  .burger i { display: block; width: 20px; height: 1px; background: var(--ink-dim); }
+  .burger i + i { margin-top: 4px; }
+  .burger:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
+
+  /* ---------- contact ---------- */
+
+  /* Mobile comp insets the content 17px off the frame rule where the frame
+     padding gives 20; the block pulls itself 4px outward, same move the
+     what-we-do page makes. Desktop adds 4, also per its comp. */
+  .contact { margin: 0 calc(var(--s1) * -1); }
+
+  h1 .ln { display: block; overflow: hidden; }
+  h1 .ln i {
+    display: block; font-style: normal;
+    transform: translateY(102%);
+    transition: transform .66s cubic-bezier(.22,.61,.36,1);
+  }
+  .plot h1 .ln i { transform: translateY(0); }
+  .plot h1 .ln:nth-child(1) i { transition-delay: .30s; }
+
+  /* Comp cap heights: 39.4px on the 390 comp, 101px on the 1440 comp.
+     Bebas cap ratio ~.73 puts the face at ~54px and ~139px. */
+  h1 {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(54px, 13.9vw, 139px);
+    line-height: .90; letter-spacing: .005em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  /* the monospace details ledger under the heading */
+  .details { margin: 0; }
+  .drow {
+    display: grid; grid-template-columns: 42% 1fr; gap: var(--s2);
+    border-top: 1px solid var(--rule);
+    padding: var(--s1) 0;
+    font-size: 10px; line-height: 1.4;
+  }
+  .drow:last-child { border-bottom: 1px solid var(--rule); }
+  .drow dt { margin: 0; font-weight: 400; }
+  .drow dd { margin: 0; }
+  .drow a { color: var(--ink); text-decoration: none; }
+  .drow a:hover { color: var(--accent); }
+  .drow a:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- the form as a data-entry sheet ---------- */
+
+  .fbox {
+    position: relative;
+    border: 1px solid var(--hair);
+    padding: var(--s2);
+    margin: var(--s2) 0 0;
+  }
+  .flab {
+    display: block; font-family: var(--mono); font-size: 10px; line-height: 1;
+    letter-spacing: .08em; color: var(--ink);
+    margin: var(--s2) 0 var(--s1);
+  }
+  .flab:first-child { margin-top: 0; }
+  .fin {
+    display: block; width: 100%; height: 24px;
+    background: none; border: 1px solid var(--hair); border-radius: 0;
+    color: var(--ink); font-family: var(--mono); font-size: 13px;
+    padding: 0 var(--s2);
+  }
+  textarea.fin { height: 64px; padding: var(--s2); resize: vertical; line-height: 1.5; }
+  .fin:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+  /* subject chips: real toggles, hairline outlines, flare when pressed */
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2); margin-top: var(--s2); }
+  .chip {
+    background: none; cursor: pointer;
+    border: 1px solid var(--hair); border-radius: 0;
+    color: var(--ink); font-family: var(--mono); font-size: 9px;
+    height: 20px; padding: 0 var(--s1);
+    transition: color .18s, border-color .18s;
+  }
+  .chip:hover { border-color: var(--rule); }
+  .chip[aria-pressed="true"] { border-color: var(--flare); color: var(--flare); }
+  .chip:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+  /* the phone comp keeps NETWORKING on its own line; not a natural wrap */
+  .cbr { flex-basis: 100%; height: 0; }
+
+  .send {
+    display: flex; align-items: center; justify-content: center; gap: var(--s2);
+    width: 100%; height: 24px; margin-top: var(--s2); padding: 0 var(--s2);
+    background: none; border: 1px solid var(--accent); border-radius: 0;
+    color: var(--accent); font-family: var(--mono); font-size: 11px;
+    letter-spacing: .35em; text-indent: .35em; cursor: pointer;
+    transition: background-color .18s, color .18s;
+  }
+  .send svg { display: none; stroke: currentColor; stroke-width: 1.5; fill: none; }
+  .send:hover { background: var(--accent); color: var(--sheet); }
+  .send:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+
+  /* no backend yet: the button reveals the wiring note, sends nothing */
+  .wire { display: none; margin: var(--s2) 0 0; font-size: 10px; letter-spacing: .04em;
+          color: var(--ink-dim); }
+  .wire.on { display: block; }
+
+  /* the octopus in the corner - monogram ink, masked, quiet (desktop comp only) */
+  .octo {
+    display: none; position: absolute; right: -16px; top: calc(100% - 72px);
+    width: 168px; height: 188px; pointer-events: none;
+    background-color: var(--ink); opacity: .38;
+    -webkit-mask-image: var(--octo); mask-image: var(--octo);
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  }
+
+  /* ---------- title block ---------- */
+
+  /* Three groups will not sit in one row on a phone without going illegible,
+     so it becomes a 2x2 block. Still one deliberate unit, not a sprawl. */
+  .titleblock {
+    display: grid; grid-template-columns: 1fr 1fr; align-items: start;
+    gap: var(--s3) var(--s2);
+    border-top: 1px solid var(--rule);
+    margin: var(--s4) calc(var(--s3) * -1) 0; padding: var(--s3);
+  }
+  .tb { font-family: var(--mono); font-size: 9px; line-height: 1.6; white-space: nowrap;
+        margin: 0;
+        color: var(--ink-dim); letter-spacing: .06em; }
+  .tb b { color: var(--ink); font-weight: 400; }
+  .tb.slabel { margin: 0 0 var(--s1); }
+  .tb.readout { grid-column: 1 / -1; font-variant-numeric: tabular-nums;
+                border-top: 1px solid var(--hair); padding-top: var(--s2); }
+  .tbgroup { display: flex; align-items: flex-start; gap: var(--s2); min-width: 0; }
+  .tb.unit { display: none; align-self: flex-end; margin: 0 0 8px; }
+  @media (min-width: 900px) { .tb.unit { display: block; } }
+  .titleblock svg { max-width: 100%; height: auto; }
+  /* Patrik: keep the graphical version everywhere. Symbols scale down, never hide. */
+  @media (max-width: 899px) {
+    .titleblock { grid-template-columns: 1fr; }
+    .titleblock .tb { white-space: normal; }
+    .titleblock > .tbgroup > svg { width: 28px; height: 28px; }
+    .titleblock .tbgroup > div > svg { width: 130px; height: 18px; }
+    .tbgroup:nth-of-type(3) svg { width: 52px; height: 23px; }
+  }
+  .titleblock svg { flex: none; }
+  @media (min-width: 900px) {
+    .titleblock { grid-template-columns: auto auto auto 1fr; gap: var(--s3) var(--s6); }
+    .tb { font-size: 11px; line-height: 1.7; }
+    .tb.readout { grid-column: auto; justify-self: end; text-align: right;
+                  border-top: none; padding-top: 0; }
+  }
+  .rulerwrap { display: flex; align-items: flex-end; gap: var(--s2); }
+
+  /* ---------- desktop ---------- */
+
+  @media (min-width: 900px) {
+    .burger { display: none; }
+    .mark { font-size: 16px; letter-spacing: .18em; }
+    nav {
+      display: flex; order: 0; width: auto; flex-direction: row; gap: var(--s4);
+      margin-top: 0; border-top: none;
+    }
+    nav a { padding: 0 0 2px; border-bottom: 1px solid transparent; font-size: 12px; }
+    .spine { display: block; }
+    .sheet { padding: var(--s6); }
+    .frame { padding: 0 var(--s6) var(--s4); }
+    .head { gap: var(--s4); padding-top: var(--s4); padding-bottom: var(--s4); }
+    .head { margin: 0 calc(var(--s6) * -1) 0; padding-left: var(--s6); padding-right: var(--s6); }
+    .titleblock { margin: var(--s4) calc(var(--s6) * -1) 0; padding: var(--s4) var(--s6); }
+
+    /* Comp: form box owns 64% of the content width; the empty band below the
+       box (112px on the comp) is where the octopus hangs off the corner. */
+    .contact {
+      display: grid; grid-template-columns: 9fr 16fr; align-items: start;
+      margin: 0; padding: var(--s2) var(--s1) 112px;
+    }
+    h1 { margin: var(--s7) 0 0; }
+    .details { margin: var(--s4) 22% 0 0; }
+    .drow { grid-template-columns: 1fr 1fr; font-size: 16px; line-height: 1;
+            padding: var(--s3) 0; }
+    .fbox { margin: var(--s3) 0 0; padding: var(--s3); }
+    .flab { font-size: 11px; margin: var(--s3) 0 var(--s2); }
+    .flab:first-child { margin-top: 0; }
+    .fin { height: 40px; }
+    textarea.fin { height: 128px; }
+    .chips { gap: var(--s2); margin-top: var(--s3); }
+    .chip { flex: 1 1 auto; height: 32px; font-size: 10px; }
+    .cbr { display: none; }
+    .send { display: inline-flex; width: auto; height: 44px; margin-top: var(--s3);
+            padding: 0 var(--s4); font-size: 13px; }
+    .send svg { display: block; }
+    .wire { font-size: 11px; }
+    .octo { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition-duration: .01ms !important; }
+    .fr { transform: scale(1) !important; }
+    h1 .ln i { transform: none !important; }
+    .rows b, .omark, .spine { opacity: 1 !important; }
+  }
+</style>
+
+<main class="sheet" id="sheet">
+  <i class="reg tl"></i><i class="reg tr"></i><i class="reg bl"></i><i class="reg br"></i>
+  <div class="cross"><i class="cx" id="cx"></i><i class="cy" id="cy"></i></div>
+
+  <div class="frame" id="frame">
+    <i class="fr t"></i><i class="fr r"></i><i class="fr b"></i><i class="fr l"></i>
+    <div class="ticks t" id="ticksT"></div><div class="ticks b" id="ticksB"></div>
+    <div class="rows" id="rows"></div>
+    <svg class="omark top" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" fill="var(--sheet)" stroke="var(--rule)"/>
+      <path d="M11 1v20M1 11h20" stroke="var(--rule)"/>
+    </svg>
+    <svg class="omark bot" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" fill="var(--sheet)" stroke="var(--rule)"/>
+      <path d="M11 1v20M1 11h20" stroke="var(--rule)"/>
+    </svg>
+    <span class="spine l">DWG. KKC-005-A</span>
+    <span class="spine r">EST. GLENDALE, ARIZONA</span>
+
+    <header class="head">
+      <p class="mark">K.R.A.K.E.N. CORPS</p>
+      <button class="print" id="printToggle" type="button"
+              aria-label="Switch between day and night print">
+        <svg data-v="light" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="5" fill="none"/>
+          <path d="M12 1v4M12 19v4M1 12h4M19 12h4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M19.8 4.2L17 7M7 17l-2.8 2.8"/>
+        </svg>
+        <svg data-v="dark" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill="none"/>
+        </svg>
+      </button>
+      <button class="burger" id="burger" aria-expanded="false" aria-controls="nav" aria-label="Menu">
+        <i></i><i></i><i></i>
+      </button>
+      <nav id="nav">
+        <a href="./">Home</a>
+        <a href="what-we-do.html">What We Do</a>
+        <a href="about.html">About</a>
+        <a href="mentorship.html">Mentorship</a>
+        <a href="#" aria-current="page">Contact</a>
+      </nav>
+    </header>
+
+    <div class="contact">
+      <div class="cleft">
+        <h1><span class="ln"><i>Contact</i></span></h1>
+
+        <dl class="details">
+          <div class="drow"><dt>TELEPHONE</dt><dd>+1 (623) 296-1416</dd></div>
+          <div class="drow"><dt>EMAIL</dt>
+            <dd><a href="mailto:mmcdonald@krakenhq.co">mmcdonald@krakenhq.co</a></dd></div>
+          <div class="drow"><dt>LOCATION</dt><dd>GLENDALE, ARIZONA</dd></div>
+          <div class="drow"><dt>CLASSIFICATION</dt><dd>SDVOSB</dd></div>
+        </dl>
+      </div>
+
+      <form class="fbox" id="cform">
+        <label class="flab" for="f-name">NAME</label>
+        <input class="fin" id="f-name" name="name" type="text" autocomplete="name">
+
+        <label class="flab" for="f-company">COMPANY</label>
+        <input class="fin" id="f-company" name="company" type="text" autocomplete="organization">
+
+        <label class="flab" for="f-telephone">TELEPHONE</label>
+        <input class="fin" id="f-telephone" name="telephone" type="tel" autocomplete="tel">
+
+        <label class="flab" for="f-email">EMAIL</label>
+        <input class="fin" id="f-email" name="email" type="email" autocomplete="email">
+
+        <div class="chips" id="chips" role="group" aria-label="Subject of enquiry">
+          <button class="chip" type="button" aria-pressed="false">PARTNERING OPPORTUNITIES</button>
+          <button class="chip" type="button" aria-pressed="false">NETWORKING AND COLLABORATION</button>
+          <i class="cbr" aria-hidden="true"></i>
+          <button class="chip" type="button" aria-pressed="false">REQUEST FOR PROPOSAL</button>
+          <button class="chip" type="button" aria-pressed="false">GOVERNMENT CONTRACTING</button>
+          <button class="chip" type="button" aria-pressed="false">GENERAL ENQUIRY</button>
+        </div>
+
+        <label class="flab" for="f-message">MESSAGE</label>
+        <textarea class="fin" id="f-message" name="message"></textarea>
+
+        <button class="send" type="submit">SEND
+          <svg width="24" height="10" viewBox="0 0 24 10" aria-hidden="true">
+            <path d="M0 5h22M18 1l4 4-4 4"/>
+          </svg>
+        </button>
+        <p class="wire" id="wire" aria-live="polite">FORM WIRING PENDS HOSTING &mdash; DIRECT: mmcdonald@krakenhq.co</p>
+
+        <i class="octo" aria-hidden="true"></i>
+      </form>
+    </div>
+
+    <div class="titleblock">
+      <div class="tbgroup">
+        <svg width="30" height="30" viewBox="0 0 46 46" aria-hidden="true">
+          <circle cx="23" cy="23" r="13" fill="none" stroke="var(--rule)"/>
+          <path d="M23 4v38M4 23h38" stroke="var(--rule)"/>
+        </svg>
+        <p class="tb">K.R.A.K.E.N. = KNOWLEDGE / RESOURCES<br>ACCESSIBILITY / KEYSTONE<br>EDUCATION / NETWORKING</p>
+      </div>
+
+      <div class="tbgroup">
+        <div>
+          <p class="tb slabel">SCALE: 1:2</p>
+          <svg width="150" height="22" viewBox="0 0 188 26" aria-hidden="true">
+            <path d="M2 2v12M48 6v8M94 6v8M140 6v8M186 2v12M2 8h184" stroke="var(--rule)" fill="none"/>
+            <text class="co" x="2"   y="25" text-anchor="middle">0</text>
+            <text class="co" x="48"  y="25" text-anchor="middle">1</text>
+            <text class="co" x="94"  y="25" text-anchor="middle">2</text>
+            <text class="co" x="140" y="25" text-anchor="middle">3</text>
+            <text class="co" x="186" y="25" text-anchor="middle">4</text>
+          </svg>
+        </div>
+        <p class="tb unit">IN</p>
+      </div>
+
+      <div class="tbgroup">
+        <p class="tb">THIRD ANGLE<br>PROJECTION</p>
+        <svg width="62" height="28" viewBox="0 0 96 42" aria-hidden="true">
+          <circle cx="20" cy="21" r="14" fill="none" stroke="var(--rule)"/>
+          <circle cx="20" cy="21" r="5"  fill="none" stroke="var(--rule)"/>
+          <path d="M20 3v36M2 21h36" stroke="var(--rule)" fill="none"/>
+          <path d="M54 8l34 6v14l-34 6z" fill="none" stroke="var(--rule)"/>
+        </svg>
+        <p class="tb">DRAWN: <b>AOM</b><br>CHECKED: <b>QA</b><br>APPROVED: <b>M. MCDONALD, CEO</b></p>
+      </div>
+
+      <p class="tb readout">CURSOR <b id="coords">0000 , 0000</b>
+        &nbsp;&nbsp; CONTACT <b>+1 (623) 296-1416</b></p>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* A phone lays out at 980px and scales down without this, which kills every
+     breakpoint below. The head is supplied by the host, so it goes in here. */
+  if (!document.querySelector('meta[name="viewport"]')) {
+    var mv = document.createElement("meta");
+    mv.name = "viewport";
+    mv.content = "width=device-width, initial-scale=1, viewport-fit=cover";
+    document.head.appendChild(mv);
+  }
+
+  /* interval ticks along the top and bottom rules - the small marks that make
+     a drawing sheet read as an instrument rather than a border */
+  ["ticksT", "ticksB"].forEach(function (id) {
+    var rail = document.getElementById(id);
+    [9, 91].forEach(function (pc) {          // comp: one tick just inside each corner
+      var t = document.createElement("i");
+      t.style.left = pc + "%";
+      t.style.height = "5px";
+      rail.appendChild(t);
+    });
+  });
+
+  /* row letters A-F, evenly down both edges */
+  var rows = document.getElementById("rows");
+  ["A", "B", "C", "D", "E", "F"].forEach(function (letter, i) {
+    var y = ((i + 0.5) / 6 * 100).toFixed(2) + "%";
+    ["l", "r"].forEach(function (side) {
+      var b = document.createElement("b");
+      b.className = side;
+      b.style.top = y;
+      b.textContent = letter;
+      rows.appendChild(b);
+    });
+  });
+
+  /* Patrik 2026-08-02: whiteprint during the day, blueprint from 16:00.
+     The clock sets the default; the sun/moon control overrides it, and a manual
+     pick holds only for the rest of that day-part so the rhythm resumes. */
+  var themeBtn = document.getElementById("printToggle");
+  function dayPart() {
+    var h = new Date().getHours();
+    var night = (h >= 16 || h < 6);           // day runs 06:00-16:00
+    var d = new Date();
+    return (night ? "night-" : "day-") + d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+  }
+  function clockTheme() { return dayPart().indexOf("night") === 0 ? "dark" : "light"; }
+  function setTheme(t, manual) {
+    document.documentElement.setAttribute("data-theme", t);
+    if (manual) {
+      try { localStorage.setItem("kkc-theme", JSON.stringify({ t: t, p: dayPart() })); } catch (e) {}
+    }
+    if (themeBtn) themeBtn.querySelectorAll("svg").forEach(function (ic) {
+      ic.classList.toggle("on", ic.dataset.v === t);
+    });
+  }
+  var boot = clockTheme();
+  try {
+    var st = JSON.parse(localStorage.getItem("kkc-theme") || "null");
+    if (st && st.p === dayPart()) boot = st.t;   // a pick made this day-part still stands
+  } catch (e) {}
+  /* ?theme=dark|light pins the print for QA screenshots; never persisted */
+  var qp = new URLSearchParams(location.search).get("theme");
+  if (qp === "dark" || qp === "light") boot = qp;
+  setTheme(boot, false);
+  if (themeBtn) themeBtn.addEventListener("click", function () {
+    setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark", true);
+  });
+
+  /* plot the sheet once, on load */
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { document.body.classList.add("plot"); });
+  });
+
+  /* the row letters read the sheet back to you as you move down it */
+  var rowEls = rows.querySelectorAll("b");
+  var frameEl = document.getElementById("frame");
+  var ticking = false;
+  function trackRows() {
+    var fr = frameEl.getBoundingClientRect();
+    var mid = innerHeight / 2;
+    var t = (mid - fr.top) / fr.height;              // 0..1 down the sheet
+    var idx = Math.max(0, Math.min(5, Math.floor(t * 6)));
+    Array.prototype.forEach.call(rowEls, function (b, i) {
+      b.classList.toggle("hot", Math.floor(i / 2) === idx);
+    });
+    ticking = false;
+  }
+  addEventListener("scroll", function () {
+    if (!ticking) { ticking = true; requestAnimationFrame(trackRows); }
+  }, { passive: true });
+  addEventListener("resize", trackRows, { passive: true });
+  trackRows();
+
+  /* menu */
+  var burger = document.getElementById("burger"), nav = document.getElementById("nav");
+  burger.addEventListener("click", function () {
+    var open = nav.classList.toggle("open");
+    burger.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  nav.addEventListener("click", function (e) {
+    if (e.target.tagName === "A") { nav.classList.remove("open"); burger.setAttribute("aria-expanded", "false"); }
+  });
+
+  /* subject chips: press to select, press again to clear; several may be on */
+  document.getElementById("chips").addEventListener("click", function (e) {
+    var chip = e.target.closest(".chip");
+    if (!chip) return;
+    chip.setAttribute("aria-pressed", chip.getAttribute("aria-pressed") === "true" ? "false" : "true");
+  });
+
+  /* No backend and hosting undecided, so the form sends NOTHING and says so.
+     Submit reveals the wiring note with the direct address instead. */
+  document.getElementById("cform").addEventListener("submit", function (e) {
+    e.preventDefault();
+    document.getElementById("wire").classList.add("on");
+  });
+
+  /* crosshair + coordinate readout */
+  var sheet = document.getElementById("sheet"), cx = document.getElementById("cx"),
+      cy = document.getElementById("cy"), coords = document.getElementById("coords");
+  sheet.addEventListener("pointermove", function (ev) {
+    var r = sheet.getBoundingClientRect();
+    var x = Math.round(ev.clientX - r.left), y = Math.round(ev.clientY - r.top);
+    cx.style.left = x + "px"; cy.style.top = y + "px";
+    coords.textContent = String(x).padStart(4, "0") + " , " + String(y).padStart(4, "0");
+  });
+  sheet.addEventListener("pointerleave", function () { coords.textContent = "0000 , 0000"; });
+})();
+</script>
