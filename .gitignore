@@ -13,6 +13,8 @@ dist
 test-screenshots/
 *.png
 !public/images/**/*.png
+# favicon system (aom:favicon-system) — brand marks must ship
+!public/brand/**/*.png
 !public/mission-water/**/*.png
 !public/ssg/**/*.png
 
