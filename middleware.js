@@ -303,6 +303,12 @@ export const config = {
     '/dashboard/:path*',
     '/cv4',
     '/cv4/:path*',
+    // CV6 is the live Corner surface; CVG its sibling. Without these the
+    // PAGE_META entries below never run and a share falls back to the AOM card.
+    '/cv6',
+    '/cv6/:path*',
+    '/cvg',
+    '/cvg/:path*',
     '/brand/:path*',
     '/brands/:path*',
     '/case-study',
