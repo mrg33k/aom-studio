@@ -150,12 +150,13 @@
     margin-top: var(--s3); border-top: 1px solid var(--hair);
   }
   nav.open { display: flex; }
+  a.mark { text-decoration: none; color: var(--ink); }
   nav a { padding: var(--s3) 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
   nav a {
-    color: var(--ink-dim); text-decoration: none; font-size: 12px; letter-spacing: .08em;
+    color: var(--ink); text-decoration: none; font-size: 12px; letter-spacing: .08em;
     padding-bottom: 2px; border-bottom: 1px solid transparent; transition: color .18s, border-color .18s;
   }
-  nav a:hover, nav a:focus-visible { color: var(--ink); border-bottom-color: var(--accent); }
+  nav a:hover, nav a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
   nav a:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
 
   .print {
@@ -425,7 +426,7 @@
     <span class="spine r">EST. GLENDALE, ARIZONA</span>
 
     <header class="head">
-      <p class="mark">K.R.A.K.E.N. CORPS</p>
+      <a class="mark" href="./">K.R.A.K.E.N. CORPS</a>
       <button class="print" id="printToggle" type="button"
               aria-label="Switch between day and night print">
         <svg data-v="light" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
@@ -452,7 +453,7 @@
       <div>
         <h1><span class="ln"><i>Precision manufacturing,</i></span><span class="ln"><i>medical devices, and</i></span><span class="ln"><i>business strategy</i></span><span class="ln"><i>under one command.</i></span></h1>
         <p class="cred">SDVOSB / GLENDALE, ARIZONA /<br>U.S. NAVY SUBMARINE FORCE</p>
-        <a class="cta" href="what-we-do.html">What We Do <span>&rarr;</span></a>
+        <a class="cta" href="#cards">What We Do <span>&rarr;</span></a>
       </div>
 
       <div class="plate">
@@ -633,6 +634,10 @@
     [lab, g].forEach(function (el) {
       el.addEventListener("mouseenter", function () { raise(c.card, true); });
       el.addEventListener("mouseleave", function () { raise(c.card, false); });
+      el.addEventListener("click", function () {
+        location.href = ["silent-service.html", "brk.html",
+                         "red-dragon.html", "platypus.html"][c.card];
+      });
     });
   });
 
@@ -744,12 +749,19 @@
 
   /* the creature answers when a company is raised */
   var cards = document.querySelectorAll(".card");
+  var DETAIL = ["silent-service.html", "brk.html",
+                "red-dragon.html", "platypus.html"];
   Array.prototype.forEach.call(cards, function (card, i) {
     ["mouseenter", "focus"].forEach(function (ev) {
       card.addEventListener(ev, function () { raise(i, true); });
     });
     ["mouseleave", "blur"].forEach(function (ev) {
       card.addEventListener(ev, function () { raise(i, false); });
+    });
+    card.setAttribute("role", "link");
+    card.addEventListener("click", function () { location.href = DETAIL[i]; });
+    card.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); location.href = DETAIL[i]; }
     });
   });
 

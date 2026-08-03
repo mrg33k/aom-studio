@@ -155,12 +155,16 @@
     margin-top: var(--s3); border-top: 1px solid var(--hair);
   }
   nav.open { display: flex; }
+  a.mark { text-decoration: none; color: var(--ink); }
+  .entrylink { color: inherit; text-decoration: none; }
+  .entrylink:hover, .entrylink:focus-visible { color: var(--accent); }
+  .entrylink:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
   nav a { padding: var(--s3) 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
   nav a {
-    color: var(--ink-dim); text-decoration: none; font-size: 12px; letter-spacing: .08em;
+    color: var(--ink); text-decoration: none; font-size: 12px; letter-spacing: .08em;
     padding-bottom: 2px; border-bottom: 1px solid transparent; transition: color .18s, border-color .18s;
   }
-  nav a:hover, nav a:focus-visible { color: var(--ink); border-bottom-color: var(--accent); }
+  nav a:hover, nav a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
   nav a:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
   /* the page you are on carries the red underline, as on the comp */
   nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
@@ -252,6 +256,9 @@
   .arm-4 { width: 115%; }
 
   .etext { min-width: 0; }
+  .entrylink { color: inherit; text-decoration: none; }
+  .entrylink:hover, .entrylink:focus-visible { color: var(--accent); }
+  .entrylink:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
   .entry h2 {
     font-family: var(--disp); font-weight: 400;
     font-size: 16px; line-height: 1.1; letter-spacing: .01em;
@@ -375,7 +382,7 @@
     <span class="spine r">EST. GLENDALE, ARIZONA</span>
 
     <header class="head">
-      <p class="mark">K.R.A.K.E.N. CORPS</p>
+      <a class="mark" href="./">K.R.A.K.E.N. CORPS</a>
       <button class="print" id="printToggle" type="button"
               aria-label="Switch between day and night print">
         <svg data-v="light" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
@@ -391,7 +398,7 @@
       </button>
       <nav id="nav">
         <a href="./">Home</a>
-        <a href="#" aria-current="page">What We Do</a>
+        <a href="what-we-do.html" aria-current="page">What We Do</a>
         <a href="about.html">About</a>
         <a href="mentorship.html">Mentorship</a>
         <a href="contact.html">Contact</a>
@@ -416,7 +423,7 @@
             <text class="co" x="68" y="20">01</text>
           </svg>
           <div class="etext">
-            <h2><span class="eno">01</span> Silent Service 3D Printing, LLC</h2>
+            <h2><a class="entrylink" href="silent-service.html"><span class="eno">01</span> Silent Service 3D Printing, LLC</a></h2>
             <p>Industrial and defence additive manufacturing. Large-format printing, high-resolution scanning, tight tolerances, prototype through production.</p>
             <p class="efor">FOR: aerospace and defence engineers, primes, manufacturers.</p>
           </div>
@@ -432,7 +439,7 @@
             <text class="co" x="68" y="20">02</text>
           </svg>
           <div class="etext">
-            <h2><span class="eno">02</span> BRK, LLC (Blue Ringed Kraken)</h2>
+            <h2><a class="entrylink" href="brk.html"><span class="eno">02</span> BRK, LLC (Blue Ringed Kraken)</a></h2>
             <p>Medical devices and custom prosthetics. Biomechanical expertise and advanced manufacturing, built to each patient.</p>
             <p class="efor">FOR: clinicians, distributors, patients.</p>
           </div>
@@ -448,7 +455,7 @@
             <text class="co" x="68" y="20">03</text>
           </svg>
           <div class="etext">
-            <h2><span class="eno">03</span> Red Dragon Consulting, LLC</h2>
+            <h2><a class="entrylink" href="red-dragon.html"><span class="eno">03</span> Red Dragon Consulting, LLC</a></h2>
             <p>Business and brand development grounded in psychology. Turns customer and team behaviour into positioning and growth.</p>
             <p class="efor">FOR: small businesses, veteran-owned firms.</p>
           </div>
@@ -464,7 +471,7 @@
             <text class="co" x="68" y="20">04</text>
           </svg>
           <div class="etext">
-            <h2><span class="eno">04</span> Platypus Psychological Engineering</h2>
+            <h2><a class="entrylink" href="platypus.html"><span class="eno">04</span> Platypus Psychological Engineering</a></h2>
             <p>501(c)(3) research nonprofit. Research into psychological frameworks for veterans, their families, and neurodivergent people.</p>
             <p class="efor">FOR: research and clinical partners.</p>
           </div>

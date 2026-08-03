@@ -154,12 +154,13 @@
     margin-top: var(--s3); border-top: 1px solid var(--hair);
   }
   nav.open { display: flex; }
+  a.mark { text-decoration: none; color: var(--ink); }
   nav a { padding: var(--s3) 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
   nav a {
-    color: var(--ink-dim); text-decoration: none; font-size: 12px; letter-spacing: .08em;
+    color: var(--ink); text-decoration: none; font-size: 12px; letter-spacing: .08em;
     padding-bottom: 2px; border-bottom: 1px solid transparent; transition: color .18s, border-color .18s;
   }
-  nav a:hover, nav a:focus-visible { color: var(--ink); border-bottom-color: var(--accent); }
+  nav a:hover, nav a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
   nav a:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
   /* the page you are on carries the red underline, as on the comp */
   nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
@@ -392,7 +393,7 @@
     <span class="spine r">EST. GLENDALE, ARIZONA</span>
 
     <header class="head">
-      <p class="mark">K.R.A.K.E.N. CORPS</p>
+      <a class="mark" href="./">K.R.A.K.E.N. CORPS</a>
       <button class="print" id="printToggle" type="button"
               aria-label="Switch between day and night print">
         <svg data-v="light" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
@@ -411,7 +412,7 @@
         <a href="what-we-do.html">What We Do</a>
         <a href="about.html">About</a>
         <a href="mentorship.html">Mentorship</a>
-        <a href="#" aria-current="page">Contact</a>
+        <a href="contact.html" aria-current="page">Contact</a>
       </nav>
     </header>
 
