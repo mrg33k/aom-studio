@@ -133,7 +133,7 @@
   .co { font-family: var(--mono); font-size: 11px; fill: var(--ink-dim); letter-spacing: .06em; }
 
   .cross { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s; z-index: 6; }
-  .sheet:hover .cross { opacity: 1; }
+  .cross.shot { opacity: 1; }
   .cross i { position: absolute; background: var(--accent); opacity: .45; }
   .cross .cx { width: 1px; top: 0; bottom: 0; }
   .cross .cy { height: 1px; left: 0; right: 0; }
@@ -150,18 +150,42 @@
   .mark { font-family: var(--mono); font-size: clamp(13px, 3.87vw, 16px); line-height: 1;
           font-weight: 400; letter-spacing: .06em; margin: 0; white-space: nowrap; }
 
+  /* full-screen menu (2026-08-03): same inks, its own surface, a fade you can
+     feel; the burger becomes the close */
   nav {
-    display: none; order: 3; width: 100%; flex-direction: column; gap: 0;
-    margin-top: var(--s3); border-top: 1px solid var(--hair);
+    position: fixed; inset: 0; z-index: 40;
+    display: flex; flex-direction: column; justify-content: center;
+    padding-left: clamp(24px, 14vw, 220px); gap: var(--s4);
+    background: var(--ground);
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s ease;
   }
-  nav.open { display: flex; }
+  nav::before {
+    content: ""; position: absolute; inset: 16px;
+    border: 1px solid var(--hair); pointer-events: none;
+  }
+  nav.open { opacity: 1; pointer-events: auto; }
   a.mark { text-decoration: none; color: var(--ink); }
-  nav a { padding: var(--s3) 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
   nav a {
-    color: var(--ink); text-decoration: none; font-size: 13px; letter-spacing: .08em;
-    padding-bottom: 2px; border-bottom: 1px solid transparent; transition: color .18s, border-color .18s;
+    font-family: var(--disp); font-size: clamp(36px, 7.1vw, 102px);
+    line-height: 1.04; letter-spacing: .01em; text-transform: uppercase;
+    color: var(--ink); text-decoration: none; width: fit-content;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity .3s ease, transform .3s ease, color .2s;
   }
-  nav a:hover, nav a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+  nav.open a { opacity: 1; transform: none; transition-delay: calc(var(--i) * 55ms); }
+  nav a:hover, nav a:focus-visible { color: var(--accent); }
+  nav a[aria-current="page"] { color: var(--ink-dim); }
+  nav a[aria-current="page"]::after {
+    content: ""; display: inline-block; width: 10px; height: 10px;
+    background: var(--accent); margin-left: 16px; vertical-align: middle;
+  }
+  nav a:focus-visible { outline: 1px solid var(--accent); outline-offset: 8px; }
+  body.menu-open { overflow: hidden; }
+  .burger.x i:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+  .burger.x i:nth-child(2) { opacity: 0; }
+  .burger.x i:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
+
   nav a:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
   /* the page you are on carries the red underline, as on the comp */
   nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
@@ -175,8 +199,9 @@
   .print svg.on { stroke: var(--accent); }
   .print:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
-  .burger { display: block; background: none; border: none; padding: var(--s1); cursor: pointer; line-height: 0; }
-  .burger i { display: block; width: 20px; height: 1px; background: var(--ink-dim); }
+  .burger { display: block; position: relative; z-index: 41; background: none; border: none; padding: var(--s1); cursor: pointer; line-height: 0; }
+  .burger i { display: block; width: 20px; height: 1px; background: var(--ink);
+              transition: transform .3s ease, opacity .2s ease; }
   .burger i + i { margin-top: 4px; }
   .burger:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
 
@@ -373,13 +398,7 @@
   /* ---------- desktop ---------- */
 
   @media (min-width: 900px) {
-    .burger { display: none; }
     .mark { font-size: 16px; letter-spacing: .18em; }
-    nav {
-      display: flex; order: 0; width: auto; flex-direction: row; gap: var(--s4);
-      margin-top: 0; border-top: none;
-    }
-    nav a { padding: 0 0 2px; border-bottom: 1px solid transparent; font-size: 13px; }
     .spine { display: block; }
     .sheet { padding: var(--s6); }
     .frame { padding: 0 var(--s6) var(--s4); }
@@ -653,10 +672,21 @@
 
   /* menu */
   var burger = document.getElementById("burger"), nav = document.getElementById("nav");
-  burger.addEventListener("click", function () {
-    var open = nav.classList.toggle("open");
-    burger.setAttribute("aria-expanded", open ? "true" : "false");
-  });
+  if (burger && nav) {
+    Array.prototype.forEach.call(nav.querySelectorAll("a"), function (a, i) {
+      a.style.setProperty("--i", i);
+    });
+    var setMenu = function (open) {
+      nav.classList.toggle("open", open);
+      burger.classList.toggle("x", open);
+      document.body.classList.toggle("menu-open", open);
+      burger.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    burger.addEventListener("click", function () { setMenu(!nav.classList.contains("open")); });
+    nav.addEventListener("click", function (e) { if (e.target.tagName === "A") setMenu(false); });
+    addEventListener("keydown", function (e) { if (e.key === "Escape") setMenu(false); });
+    if (location.hash === "#menu") setMenu(true);
+  }
   nav.addEventListener("click", function (e) {
     if (e.target.tagName === "A") { nav.classList.remove("open"); burger.setAttribute("aria-expanded", "false"); }
   });
@@ -664,12 +694,16 @@
   /* crosshair + coordinate readout */
   var sheet = document.getElementById("sheet"), cx = document.getElementById("cx"),
       cy = document.getElementById("cy"), coords = document.getElementById("coords");
-  sheet.addEventListener("pointermove", function (ev) {
+  var crossEl = document.querySelector(".cross"), crossTimer = null;
+  sheet.addEventListener("pointerdown", function (ev) {
+    if (ev.target.closest("a, button, input, textarea, .card, .colabel")) return;
     var r = sheet.getBoundingClientRect();
     var x = Math.round(ev.clientX - r.left), y = Math.round(ev.clientY - r.top);
     cx.style.left = x + "px"; cy.style.top = y + "px";
-    coords.textContent = String(x).padStart(4, "0") + " , " + String(y).padStart(4, "0");
+    if (crossEl) crossEl.classList.add("shot");
+    if (coords) coords.textContent = String(x).padStart(4, "0") + " , " + String(y).padStart(4, "0");
+    clearTimeout(crossTimer);
+    crossTimer = setTimeout(function () { if (crossEl) crossEl.classList.remove("shot"); }, 900);
   });
-  sheet.addEventListener("pointerleave", function () { coords.textContent = "0000 , 0000"; });
 })();
 </script>
