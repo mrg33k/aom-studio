@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-24T14:11:54.794Z",
+  "generated_at": "2026-08-03T10:21:06.376Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -2634,6 +2634,20 @@
       "path": "corner/users/aom/projects/ambition-mechanical/missions/ambition-social-clips"
     },
     {
+      "slug": "ambition-mechanical:crunch-mesa-titles",
+      "raw_slug": "crunch-mesa-titles",
+      "folder_name": "crunch-mesa-titles",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "ambition-mechanical",
+      "workstream": null,
+      "name": "Crunch Mesa Titles",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/crunch-mesa-titles"
+    },
+    {
       "slug": "ambition-mechanical:facility-pipe-titles",
       "raw_slug": "facility-pipe-titles",
       "folder_name": "facility-pipe-titles",
@@ -2688,6 +2702,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/ambition-mechanical/missions/photo-bank"
+    },
+    {
+      "slug": "ambition-mechanical:recommendation-engine",
+      "raw_slug": "recommendation-engine",
+      "folder_name": "recommendation-engine",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "ambition-mechanical",
+      "workstream": null,
+      "name": "Recommendation Engine",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/recommendation-engine"
     },
     {
       "slug": "ambition-mechanical:seo-organic",
@@ -2786,6 +2814,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/az-tech-council/missions/aerospace-booth-flyer"
+    },
+    {
+      "slug": "az-tech-council:summit-highlight-reel",
+      "raw_slug": "summit-highlight-reel",
+      "folder_name": "summit-highlight-reel",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "az-tech-council",
+      "workstream": null,
+      "name": "Summit Highlight Reel",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/az-tech-council/missions/summit-highlight-reel"
     },
     {
       "slug": "aztacoboys:website",
@@ -3236,6 +3278,20 @@
       "path": "corner/users/aom/projects/kohrs/missions/social-content-pipeline"
     },
     {
+      "slug": "kraken-corps:website-rebuild",
+      "raw_slug": "website-rebuild",
+      "folder_name": "website-rebuild",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "kraken-corps",
+      "workstream": null,
+      "name": "Website Rebuild",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/kraken-corps/missions/website-rebuild"
+    },
+    {
       "slug": "nabi:nabi-2026-shoot",
       "raw_slug": "nabi-2026-shoot",
       "folder_name": "nabi-2026-shoot",
@@ -3642,6 +3698,20 @@
       "path": "corner/users/aom/projects/space-rising/missions/os-v3"
     },
     {
+      "slug": "space-rising:os-v4-screens",
+      "raw_slug": "os-v4-screens",
+      "folder_name": "os-v4-screens",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Os V4 Screens",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/os-v4-screens"
+    },
+    {
       "slug": "space-rising:podcast-pipeline",
       "raw_slug": "podcast-pipeline",
       "folder_name": "podcast-pipeline",
@@ -3654,6 +3724,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/space-rising/missions/podcast-pipeline"
+    },
+    {
+      "slug": "space-rising:profiles-admin-rebuild",
+      "raw_slug": "profiles-admin-rebuild",
+      "folder_name": "profiles-admin-rebuild",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "space-rising",
+      "workstream": "space-os",
+      "name": "Profiles Admin Rebuild",
+      "status": "ACTIVE",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/profiles-admin-rebuild"
     },
     {
       "slug": "space-rising:reports-page",
@@ -3936,6 +4020,20 @@
       "path": "corner/users/aom/missions/brand-identity-rewrite"
     },
     {
+      "slug": "aom:carousels",
+      "raw_slug": "carousels",
+      "folder_name": "carousels",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Carousels",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/carousels"
+    },
+    {
       "slug": "aom:chrome-mcp-reliability",
       "raw_slug": "chrome-mcp-reliability",
       "folder_name": "chrome-mcp-reliability",
@@ -3948,6 +4046,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/missions/chrome-mcp-reliability"
+    },
+    {
+      "slug": "aom:client-engine",
+      "raw_slug": "client-engine",
+      "folder_name": "client-engine",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Client Engine",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/client-engine"
     },
     {
       "slug": "aom:command-deck",
@@ -3964,6 +4076,34 @@
       "path": "corner/users/aom/missions/command-deck"
     },
     {
+      "slug": "aom:deck-vibe-overhaul",
+      "raw_slug": "deck-vibe-overhaul",
+      "folder_name": "deck-vibe-overhaul",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Deck Vibe Overhaul",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/deck-vibe-overhaul"
+    },
+    {
+      "slug": "aom:design-foundations",
+      "raw_slug": "design-foundations",
+      "folder_name": "design-foundations",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Design Foundations",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/design-foundations"
+    },
+    {
       "slug": "aom:digital-products",
       "raw_slug": "digital-products",
       "folder_name": "digital-products",
@@ -3978,6 +4118,20 @@
       "path": "corner/users/aom/missions/digital-products"
     },
     {
+      "slug": "aom:favicon-system",
+      "raw_slug": "favicon-system",
+      "folder_name": "favicon-system",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Favicon System",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/favicon-system"
+    },
+    {
       "slug": "aom:investor-pot",
       "raw_slug": "investor-pot",
       "folder_name": "investor-pot",
@@ -3990,6 +4144,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/missions/investor-pot"
+    },
+    {
+      "slug": "aom:label-this-mission-as-an-aerospace-event-i-want-",
+      "raw_slug": "label-this-mission-as-an-aerospace-event-i-want-",
+      "folder_name": "label-this-mission-as-an-aerospace-event-i-want-",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Label This Mission As An Aerospace Event I Want ",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/label-this-mission-as-an-aerospace-event-i-want-"
     },
     {
       "slug": "aom:lead-dev-skills-stack",
@@ -4090,6 +4258,20 @@
       "path": "corner/users/aom/missions/photo-membership"
     },
     {
+      "slug": "aom:portfolio-showcase",
+      "raw_slug": "portfolio-showcase",
+      "folder_name": "portfolio-showcase",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Portfolio Showcase",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/portfolio-showcase"
+    },
+    {
       "slug": "aom:rainbow-sherbert",
       "raw_slug": "rainbow-sherbert",
       "folder_name": "rainbow-sherbert",
@@ -4158,6 +4340,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/missions/socials"
+    },
+    {
+      "slug": "aom:support-desk",
+      "raw_slug": "support-desk",
+      "folder_name": "support-desk",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Support Desk",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/support-desk"
     },
     {
       "slug": "aom:video-hook",
@@ -4243,8 +4439,8 @@
     },
     {
       "slug": "ambition-mechanical",
-      "total": 9,
-      "in_flight": 9,
+      "total": 11,
+      "in_flight": 11,
       "done": 0
     },
     {
@@ -4261,8 +4457,8 @@
     },
     {
       "slug": "az-tech-council",
-      "total": 1,
-      "in_flight": 1,
+      "total": 2,
+      "in_flight": 2,
       "done": 0
     },
     {
@@ -4356,6 +4552,12 @@
       "done": 0
     },
     {
+      "slug": "kraken-corps",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
       "slug": "nabi",
       "total": 1,
       "in_flight": 1,
@@ -4387,8 +4589,8 @@
     },
     {
       "slug": "space-rising",
-      "total": 30,
-      "in_flight": 29,
+      "total": 32,
+      "in_flight": 31,
       "done": 1
     },
     {
@@ -4411,8 +4613,8 @@
     },
     {
       "slug": "aom",
-      "total": 31,
-      "in_flight": 31,
+      "total": 39,
+      "in_flight": 39,
       "done": 0
     }
   ]
