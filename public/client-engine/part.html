@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Google Business Profile · Wolfpack</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ede7dc;
+      --panel: #fefcf9;
+      --surface: #ffffff;
+      --surface-strong: #ffffff;
+      --surface-soft: #f5f0e8;
+      --text: #262823;
+      --muted: #6d7068;
+      --line: #ddd8ce;
+      --line-strong: #c9c3b7;
+      --accent: #176c61;
+      --accent-soft: #dbece7;
+      --accent-text: #0d5249;
+      --good: #26715b;
+      --good-soft: #e2f1eb;
+      --warn: #9b651b;
+      --warn-soft: #faecd3;
+      --bad: #a6473f;
+      --bad-soft: #f8e3df;
+      --quiet: #747870;
+      --quiet-soft: #ecece7;
+      --shadow: 0 12px 28px rgba(75, 58, 32, .08), 0 2px 8px rgba(75, 58, 32, .04);
+      --shadow-hover: 0 18px 38px rgba(75, 58, 32, .14), 0 5px 14px rgba(75, 58, 32, .07);
+      --panel-shadow: 0 28px 72px rgba(75, 58, 32, .13), 0 6px 20px rgba(75, 58, 32, .06);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --space-14: 56px;
+      --space-18: 72px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+    button { font: inherit; }
+
+    .shell {
+      width: min(calc(100% - 48px), 1320px);
+      min-height: calc(100vh - 48px);
+      margin: var(--space-6) auto;
+      padding: var(--space-14) clamp(var(--space-8), 4vw, var(--space-14)) var(--space-18);
+      border: 1px solid rgba(255, 255, 255, .7);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--panel-shadow);
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-6);
+      margin-bottom: var(--space-6);
+    }
+
+    .back {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--muted);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .back:hover { color: var(--text); }
+    .back svg { width: 18px; height: 18px; }
+
+    .breadcrumbs {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .breadcrumbs a { overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+    .breadcrumbs a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+    .breadcrumbs .current { color: var(--text); font-weight: 700; }
+    .crumb-separator { color: var(--line-strong); }
+
+    .switcher-block { margin-bottom: var(--space-10); }
+
+    .switcher-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-2);
+    }
+
+    .switcher-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .counter { color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+    .part-switcher {
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr) 40px;
+      align-items: center;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .switch-arrow {
+      display: grid;
+      width: 40px;
+      height: 52px;
+      padding: 0;
+      place-items: center;
+      border: 0;
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .switch-arrow:first-child { border-right: 1px solid var(--line); }
+    .switch-arrow:last-child { border-left: 1px solid var(--line); }
+    .switch-arrow:hover { background: var(--surface-soft); color: var(--accent); }
+    .switch-arrow svg { width: 18px; height: 18px; }
+
+    .part-strip {
+      display: flex;
+      gap: var(--space-1);
+      min-width: 0;
+      padding: var(--space-2);
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+    }
+
+    .part-strip::-webkit-scrollbar { display: none; }
+
+    .part-tab {
+      display: inline-flex;
+      flex: 0 0 auto;
+      height: 40px;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 0 var(--space-3);
+      border: 1px solid transparent;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .part-tab:hover { background: var(--surface-soft); color: var(--text); }
+    .part-tab.current { border-color: color-mix(in srgb, var(--warn) 28%, var(--line)); background: var(--warn-soft); color: var(--warn); }
+    .part-tab.current:has(.status-dot.blocked) { border-color: color-mix(in srgb, var(--bad) 28%, var(--line)); background: var(--bad-soft); color: var(--bad); }
+    .part-tab:has(.status-dot.unseen) { border-style: dashed; border-color: var(--line-strong); opacity: .58; }
+
+    .status-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--warn); }
+    .status-dot.blocked { background: var(--bad); }
+    .status-dot.unseen { background: var(--quiet); }
+
+    .part-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: var(--space-8);
+      margin-bottom: var(--space-6);
+    }
+
+    .eyebrow {
+      margin: 0 0 var(--space-2);
+      color: var(--bad);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .part-header .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-2);
+      border-radius: 999px;
+      background: var(--bad-soft);
+    }
+
+    .part-header .eyebrow::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+    }
+
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin: 0;
+      font-size: clamp(32px, 4vw, 42px);
+      line-height: 1.12;
+      letter-spacing: -.035em;
+    }
+
+    .part-glyph {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      place-items: center;
+      border-radius: 13px;
+      background: #e8f0fe;
+    }
+
+    .part-glyph svg { width: 24px; height: 24px; }
+    .header-copy { max-width: 720px; margin: var(--space-3) 0 0; color: var(--muted); font-size: 16px; }
+
+    .external-button,
+    .primary-button,
+    .claim-button,
+    .assistant-button {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-6);
+      border-radius: 999px;
+      font-weight: 750;
+      text-decoration: none;
+      transition: transform .18s, background .18s, border-color .18s, box-shadow .18s;
+    }
+
+    .external-button {
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .external-button:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--shadow); transform: translateY(-1px); }
+    .external-button svg { width: 16px; height: 16px; }
+
+    .consequence {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-3);
+      padding: var(--space-6) var(--space-6);
+      border: 1px solid color-mix(in srgb, var(--bad) 26%, var(--line));
+      border-radius: 16px;
+      background: var(--bad-soft);
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 760;
+      line-height: 1.3;
+      letter-spacing: -.015em;
+    }
+
+    .consequence-icon {
+      display: grid;
+      flex: 0 0 auto;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--bad);
+      color: #fff;
+      font-size: 20px;
+    }
+
+    .blocking {
+      margin: 0 0 var(--space-10);
+      padding: var(--space-4) var(--space-6);
+      border-left: 3px solid var(--warn);
+      border-radius: var(--space-1) var(--space-3) var(--space-3) var(--space-1);
+      background: var(--warn-soft);
+      color: color-mix(in srgb, var(--text) 86%, var(--warn));
+    }
+
+    .blocking strong { font-weight: 800; }
+    .blocking a { color: inherit; font-weight: 750; text-decoration-color: color-mix(in srgb, var(--warn) 60%, transparent); text-underline-offset: 3px; }
+    .blocking a:hover { color: var(--warn); }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      align-items: start;
+      gap: var(--space-6);
+    }
+
+    .main-column, .right-column { min-width: 0; }
+    .main-column { display: grid; grid-column: 1; grid-row: 1; gap: var(--space-6); }
+    .right-column { display: contents; }
+    .right-column > .side-card { grid-column: 2; grid-row: 1; }
+    .access-card { grid-column: 1 / -1; grid-row: 2; }
+
+    .panel {
+      padding: var(--space-6);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .section-heading { margin-bottom: var(--space-6); }
+    h2 { margin: 0; font-size: 20px; line-height: 1.25; letter-spacing: -.02em; }
+    .section-note { margin: var(--space-2) 0 0; color: var(--muted); font-size: 13px; }
+
+    .timeline { position: relative; display: grid; gap: var(--space-6); margin: 0; padding: 0; list-style: none; }
+    .timeline::before { position: absolute; top: 9px; bottom: 9px; left: 7px; width: 1px; background: var(--line-strong); content: ""; }
+
+    .timeline-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr);
+      gap: var(--space-4);
+    }
+
+    .timeline-dot {
+      z-index: 1;
+      width: 15px;
+      height: 15px;
+      margin-top: 3px;
+      border: 4px solid var(--surface);
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .event-line { margin: 0; font-size: 14px; }
+    .event-date { color: var(--muted); font-weight: 750; }
+    .event-copy { color: var(--text); font-weight: 650; }
+
+    .actor {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .actor-type {
+      padding: var(--space-1) var(--space-2);
+      border-radius: 999px;
+      background: var(--quiet-soft);
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .actor-type.assistant { background: var(--accent-soft); color: var(--accent-text); }
+
+    .action-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    .primary-button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(23, 108, 97, .2);
+    }
+
+    .primary-button:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(23, 108, 97, .26); }
+    .primary-button svg, .assistant-button svg { width: 17px; height: 17px; }
+
+    .claim-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: var(--space-4) 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .claim-state { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+    .claim-avatar { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--quiet-soft); color: var(--quiet); font-size: 12px; font-weight: 800; }
+    .claim-avatar.claimed { background: var(--accent-soft); color: var(--accent-text); }
+    .claim-label { color: var(--muted); font-size: 12px; }
+    .claim-owner { font-size: 14px; font-weight: 750; }
+
+    .claim-button {
+      min-height: 40px;
+      padding: var(--space-2) var(--space-4);
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .claim-button:hover { border-color: var(--accent); color: var(--accent); }
+
+    .assistant-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding-top: var(--space-6); }
+    .assistant-copy { min-width: 0; }
+    .assistant-copy strong { display: block; }
+    .assistant-copy span { display: block; margin-top: var(--space-1); color: var(--muted); font-size: 13px; }
+
+    .assistant-button {
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .assistant-button:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .assistant-button:disabled { cursor: wait; opacity: .72; transform: none; }
+
+    .checklist { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: var(--space-3);
+      padding: var(--space-4) 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .check-item:first-child { border-top: 0; padding-top: 0; }
+
+    .check-symbol {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--quiet-soft);
+      color: var(--quiet);
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .check-item[data-state="fail"] .check-symbol { background: var(--bad-soft); color: var(--bad); }
+    .check-item[data-state="pass"] .check-symbol { background: var(--good-soft); color: var(--good); }
+    .check-item[data-state="unknown"] .check-symbol { border: 1px dashed var(--line-strong); background: transparent; color: var(--quiet); }
+    .check-item[data-state="checking"] .check-symbol { background: var(--accent-soft); color: var(--accent); font-size: 0; }
+
+    .check-item[data-state="checking"] .check-symbol::after {
+      width: 12px;
+      height: 12px;
+      border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      content: "";
+      animation: spin .75s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .check-name { font-weight: 700; line-height: 1.35; }
+    .check-meta { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-1); color: var(--muted); font-size: 12px; }
+    .check-result { font-weight: 750; }
+    .check-item[data-state="fail"] .check-result { color: var(--bad); }
+    .check-item[data-state="pass"] .check-result { color: var(--good); }
+    .check-item[data-state="unknown"] .check-result { color: var(--quiet); }
+    .check-item[data-state="checking"] .check-result { color: var(--accent); }
+
+    .recheck-note { margin: var(--space-1) 0 0; padding-top: var(--space-4); border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+
+    .access-status {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: 999px;
+      background: var(--good-soft);
+      color: var(--good);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .access-status::before { width: 7px; height: 7px; border-radius: 50%; background: currentColor; content: ""; }
+    .access-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: var(--space-6); }
+    .access-card .access-status { margin-top: 0; }
+    .access-list { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin: var(--space-6) 0 0; }
+    .access-line { display: block; min-width: 0; padding: var(--space-3) 0 0; border-top: 1px solid var(--line); }
+    .access-line dt { color: var(--muted); font-size: 13px; }
+    .access-line dd { margin: var(--space-1) 0 0; font-weight: 700; }
+    .access-line dd.permits { font-weight: 550; }
+    .freshness-note { grid-column: 1 / -1; margin: var(--space-4) 0 0; padding: var(--space-3); border-radius: 12px; background: var(--surface-soft); color: var(--muted); font-size: 12px; }
+
+    .toast {
+      position: fixed;
+      right: var(--space-6);
+      bottom: var(--space-6);
+      z-index: 10;
+      max-width: min(360px, calc(100vw - 40px));
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      color: var(--text);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity .2s, transform .2s;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    button:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 34%, transparent); outline-offset: 2px; }
+
+    @media (max-width: 900px) {
+      .content-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+    }
+
+    @media (max-width: 760px) {
+      .shell { width: calc(100% - 32px); margin: var(--space-4) auto; padding: var(--space-10) var(--space-6) var(--space-14); border-radius: 24px; }
+      .switcher-block { margin-bottom: var(--space-8); }
+      .part-header { grid-template-columns: 1fr; align-items: start; gap: var(--space-6); }
+      .external-button { justify-self: start; }
+      .content-grid { grid-template-columns: 1fr; }
+      .main-column { display: contents; }
+      .evidence-panel { grid-column: 1; grid-row: 1; }
+      .right-column > .side-card { grid-column: 1; grid-row: 2; }
+      .actions-panel { grid-column: 1; grid-row: 3; }
+      .access-card { grid-column: 1; grid-row: 4; }
+      .access-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: calc(100% - 24px); margin: var(--space-3) auto; padding: var(--space-10) var(--space-6) var(--space-14); }
+      .top-row { display: block; margin-bottom: var(--space-6); }
+      .breadcrumbs { justify-content: flex-start; margin-top: var(--space-4); overflow: hidden; }
+      .breadcrumbs a:last-child { max-width: 154px; }
+      .switcher-meta { align-items: flex-end; }
+      .counter { white-space: normal; text-align: right; }
+      .part-switcher { grid-template-columns: 36px minmax(0, 1fr) 36px; }
+      .switch-arrow { width: 36px; }
+      .part-tab { padding: 0 var(--space-2); }
+      .header-copy { font-size: 14px; }
+      .consequence { align-items: flex-start; padding: var(--space-4); font-size: 16px; }
+      .consequence-icon { width: 28px; height: 28px; font-size: 16px; }
+      .blocking { margin-bottom: var(--space-8); padding: var(--space-3) var(--space-4); }
+      .action-top { align-items: flex-start; flex-direction: column; }
+      .primary-button { width: 100%; }
+      .claim-row { align-items: flex-start; }
+      .assistant-row { align-items: stretch; flex-direction: column; }
+      .assistant-button { width: 100%; white-space: normal; }
+      .access-list { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html, .part-strip { scroll-behavior: auto; }
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+
+      </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="top-row">
+      <a class="back" href="./">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        Back to client home
+      </a>
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="./">Clients</a><span class="crumb-separator">/</span>
+        <a href="./">Wolfpack</a><span class="crumb-separator">/</span>
+        <a class="current" href="part.html" aria-current="page">Google Business Profile</a>
+      </nav>
+    </div>
+
+    <section class="switcher-block" aria-labelledby="switcher-heading">
+      <div class="switcher-meta">
+        <span class="switcher-label" id="switcher-heading">Wolfpack parts</span>
+        <span class="counter">Part 1 of 19 · 13 need attention</span>
+      </div>
+      <div class="part-switcher">
+        <button class="switch-arrow" id="previous-parts" type="button" aria-label="Show previous parts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <nav class="part-strip" id="part-strip" aria-label="Switch Wolfpack part">
+          <a class="part-tab current" href="part.html" aria-current="page"><span class="status-dot blocked"></span>Google Business Profile</a>
+          <a class="part-tab" id="part-online-reviews" href="part.html"><span class="status-dot"></span>Online reviews</a>
+          <a class="part-tab" id="part-website" href="part.html"><span class="status-dot"></span>Website</a>
+          <a class="part-tab" id="part-yelp" href="part.html"><span class="status-dot unseen"></span>Yelp</a>
+          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Company LinkedIn</a>
+          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Owner's LinkedIn</a>
+          <a class="part-tab" id="part-ai-answers" href="part.html"><span class="status-dot"></span>AI answers</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Photography</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Video</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Case studies</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Capability folder</a>
+          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Field service software (Jobber)</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Recurring jobs</a>
+          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Lead follow-up</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Insurance and licence</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Target account list</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Association memberships</a>
+          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Cold outreach</a>
+          <a class="part-tab" href="part.html"><span class="status-dot"></span>Monthly report</a>
+        </nav>
+        <button class="switch-arrow" id="next-parts" type="button" aria-label="Show next parts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <header class="part-header">
+      <div>
+        <p class="eyebrow">Blocked</p>
+        <h1><span class="part-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.87h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.9A6 6 0 0 1 6.08 12c0-.66.11-1.3.32-1.9V7.51H3.06A10 10 0 0 0 2 12c0 1.61.38 3.14 1.06 4.49L6.4 13.9Z"/><path fill="#EA4335" d="M12 5.97c1.47 0 2.78.5 3.81 1.49l2.86-2.86A9.58 9.58 0 0 0 12 2a10 10 0 0 0-8.94 5.51L6.4 10.1C7.19 7.73 9.4 5.97 12 5.97Z"/></svg></span>Google Business Profile</h1>
+        <p class="header-copy">We manage this so buyers can find and contact the right Wolfpack listing in Phoenix.</p>
+      </div>
+      <a class="external-button" href="https://www.google.com/maps/search/?api=1&amp;query=Wolfpack%20Companies%20Phoenix%20Arizona" target="_blank" rel="noopener noreferrer">
+        Open actual profile
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8"/><path d="M18 13v6H5V6h6"/></svg>
+      </a>
+    </header>
+
+    <div class="consequence" role="status">
+      <span class="consequence-icon" aria-hidden="true">!</span>
+      <span>Calls and reviews are splitting between two listings.</span>
+    </div>
+
+    <p class="blocking"><strong>While this is open, 3 other parts cannot be fixed</strong> — <a href="#part-online-reviews">Online reviews</a>, <a href="#part-website">Website</a>, <a href="#part-ai-answers">AI answers</a>.</p>
+
+    <div class="content-grid">
+      <div class="main-column">
+        <section class="panel evidence-panel" aria-labelledby="evidence-heading">
+          <div class="section-heading">
+            <h2 id="evidence-heading">Evidence and history</h2>
+            <p class="section-note">What we found and who recorded it.</p>
+          </div>
+          <ol class="timeline">
+            <li class="timeline-item">
+              <span class="timeline-dot" aria-hidden="true"></span>
+              <div>
+                <p class="event-line"><span class="event-date">31 Jul</span> · <span class="event-copy">Confirmed we are a manager on the profile</span> · Gary</p>
+                <div class="actor"><span class="actor-type">Person</span></div>
+              </div>
+            </li>
+            <li class="timeline-item">
+              <span class="timeline-dot" aria-hidden="true"></span>
+              <div>
+                <p class="event-line"><span class="event-date">30 Jul</span> · <span class="event-copy">Found two listings under different names</span> · Assistant</p>
+                <div class="actor"><span class="actor-type assistant">Assistant</span></div>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <section class="panel actions-panel" aria-labelledby="actions-heading">
+          <div class="action-top">
+            <div><p class="eyebrow">Next action</p><h2 id="actions-heading">Consolidate under one name</h2></div>
+            <button class="primary-button" id="primary-action" type="button">
+              Consolidate under one name
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+
+          <div class="claim-row">
+            <div class="claim-state">
+              <span class="claim-avatar" id="claim-avatar">—</span>
+              <div><div class="claim-label">Owner</div><div class="claim-owner" id="claim-owner">Unclaimed</div></div>
+            </div>
+            <button class="claim-button" id="claim-button" type="button" aria-pressed="false">Claim this part</button>
+          </div>
+
+          <div class="assistant-row">
+            <div class="assistant-copy"><strong>Need fresher evidence?</strong><span>The checklist will show each line as it is checked.</span></div>
+            <button class="assistant-button" id="assistant-check" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 3 1.1 3.9L17 8l-3.9 1.1L12 13l-1.1-3.9L7 8l3.9-1.1ZM18 14l.7 2.3L21 17l-2.3.7L18 20l-.7-2.3L15 17l2.3-.7Z"/></svg>
+              <span>Ask the assistant to check again</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <aside class="right-column">
+        <section class="panel side-card" aria-labelledby="good-heading">
+          <div class="section-heading">
+            <h2 id="good-heading">What good looks like</h2>
+            <p class="section-note">Specific checks for this part.</p>
+          </div>
+          <ul class="checklist" id="checklist" aria-live="polite">
+            <li class="check-item" data-state="fail" data-settle="fail">
+              <span class="check-symbol" aria-hidden="true">×</span>
+              <div><div class="check-name">One company, not two</div><div class="check-meta"><span class="check-result">Failed</span><span>·</span><span class="check-stamp">Checked 31 Jul</span></div></div>
+            </li>
+            <li class="check-item" data-state="unknown" data-settle="unknown">
+              <span class="check-symbol" aria-hidden="true">?</span>
+              <div><div class="check-name">Real hours</div><div class="check-meta"><span class="check-result">Not checked</span></div></div>
+            </li>
+            <li class="check-item" data-state="unknown" data-settle="unknown">
+              <span class="check-symbol" aria-hidden="true">?</span>
+              <div><div class="check-name">Commercial plumbing and hydro jetting are listed</div><div class="check-meta"><span class="check-result">Not checked</span></div></div>
+            </li>
+            <li class="check-item" data-state="unknown" data-settle="unknown">
+              <span class="check-symbol" aria-hidden="true">?</span>
+              <div><div class="check-name">Phoenix service area is accurate</div><div class="check-meta"><span class="check-result">Not checked</span></div></div>
+            </li>
+            <li class="check-item" data-state="unknown" data-settle="unknown">
+              <span class="check-symbol" aria-hidden="true">?</span>
+              <div><div class="check-name">Calls and reviews reach one listing</div><div class="check-meta"><span class="check-result">Not checked</span></div></div>
+            </li>
+          </ul>
+          <p class="recheck-note">These are exactly what the assistant re-checks.</p>
+        </section>
+
+      </aside>
+
+      <section class="panel side-card access-card" aria-labelledby="access-heading">
+        <h2 id="access-heading">Access</h2>
+        <span class="access-status">Active</span>
+        <dl class="access-list">
+          <div class="access-line"><dt>Account held</dt><dd>Google Business Profile</dd></div>
+          <div class="access-line"><dt>Permission level</dt><dd>Manager</dd></div>
+          <div class="access-line"><dt>What it permits</dt><dd class="permits">Manage the profile while the owner keeps control.</dd></div>
+          <div class="access-line"><dt>Last verified</dt><dd>30 Jul</dd></div>
+        </dl>
+        <p class="freshness-note">Access freshness is separate from profile health. Manager access was accepted 30 Jul.</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const strip = document.getElementById('part-strip');
+    document.getElementById('previous-parts').addEventListener('click', () => strip.scrollBy({ left: -320, behavior: 'smooth' }));
+    document.getElementById('next-parts').addEventListener('click', () => strip.scrollBy({ left: 320, behavior: 'smooth' }));
+
+    let toastTimer;
+    const toast = document.getElementById('toast');
+    function showToast(message) {
+      window.clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      toastTimer = window.setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    document.getElementById('primary-action').addEventListener('click', () => {
+      showToast('Next action ready: consolidate under one name.');
+    });
+
+    const claimButton = document.getElementById('claim-button');
+    const claimOwner = document.getElementById('claim-owner');
+    const claimAvatar = document.getElementById('claim-avatar');
+    let claimed = false;
+
+    claimButton.addEventListener('click', () => {
+      claimed = !claimed;
+      claimButton.setAttribute('aria-pressed', String(claimed));
+      claimOwner.textContent = claimed ? 'You' : 'Unclaimed';
+      claimAvatar.textContent = claimed ? 'Y' : '—';
+      claimAvatar.classList.toggle('claimed', claimed);
+      claimButton.textContent = claimed ? 'Release claim' : 'Claim this part';
+      showToast(claimed ? 'This part is now claimed by you.' : 'This part is unclaimed.');
+    });
+
+    const assistantButton = document.getElementById('assistant-check');
+    const assistantButtonLabel = assistantButton.querySelector('span');
+    const checkItems = [...document.querySelectorAll('.check-item')];
+
+    assistantButton.addEventListener('click', () => {
+      if (assistantButton.disabled) return;
+      assistantButton.disabled = true;
+      assistantButtonLabel.textContent = 'Checking 0 of ' + checkItems.length + '…';
+
+      checkItems.forEach((item) => {
+        item.dataset.state = 'checking';
+        item.querySelector('.check-symbol').textContent = '';
+        const meta = item.querySelector('.check-meta');
+        meta.innerHTML = '<span class="check-result">Checking…</span>';
+      });
+
+      checkItems.forEach((item, index) => {
+        window.setTimeout(() => {
+          const failed = item.dataset.settle === 'fail';
+          item.dataset.state = failed ? 'fail' : 'unknown';
+          item.querySelector('.check-symbol').textContent = failed ? '×' : '?';
+          const meta = item.querySelector('.check-meta');
+          meta.innerHTML = '<span class="check-result">' + (failed ? 'Failed' : 'Not confirmed') + '</span><span>·</span><span class="check-stamp">Checked just now</span>';
+          assistantButtonLabel.textContent = 'Checking ' + (index + 1) + ' of ' + checkItems.length + '…';
+
+          if (index === checkItems.length - 1) {
+            assistantButton.disabled = false;
+            assistantButtonLabel.textContent = 'Ask the assistant to check again';
+            showToast('Check complete. Nothing unchecked has been marked good.');
+          }
+        }, 650 + (index * 480));
+      });
+    });
+  </script>
+</body>
+</html>

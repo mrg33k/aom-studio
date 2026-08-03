@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client parts</title>
+<style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ede7dc;
+      --sidebar: #ede7dc;
+      --panel: #fefcf9;
+      --surface: #ffffff;
+      --surface-strong: #ffffff;
+      --text: #262823;
+      --muted: #6d7068;
+      --line: #ddd8ce;
+      --line-strong: #c9c3b7;
+      --accent: #176c61;
+      --accent-soft: #dbece7;
+      --accent-text: #0d5249;
+      --good: #26715b;
+      --good-soft: #e2f1eb;
+      --warn: #9b651b;
+      --warn-soft: #faecd3;
+      --bad: #a6473f;
+      --bad-soft: #f8e3df;
+      --quiet: #747870;
+      --quiet-soft: #ecece7;
+      --shadow: 0 12px 28px rgba(75, 58, 32, .08), 0 2px 8px rgba(75, 58, 32, .04);
+      --shadow-hover: 0 18px 38px rgba(75, 58, 32, .14), 0 5px 14px rgba(75, 58, 32, .07);
+      --panel-shadow: 0 28px 72px rgba(75, 58, 32, .13), 0 6px 20px rgba(75, 58, 32, .06);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    button, input { font: inherit; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      align-items: start;
+      min-height: 100vh;
+      align-items: stretch;
+    }
+
+    .sidebar {
+      position: relative;
+      z-index: 1;
+      align-self: stretch;
+      padding: 32px 24px;
+      background: var(--sidebar);
+    }
+
+    .sidebar-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 4px 24px;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(23, 108, 97, .24);
+    }
+
+    .brand-mark svg { width: 20px; height: 20px; }
+
+    .brand-title { font-size: 16px; font-weight: 750; letter-spacing: -.01em; }
+    .brand-subtitle { color: var(--muted); font-size: 12px; }
+
+    .search-wrap { position: relative; margin-bottom: 24px; }
+
+    .search-wrap svg {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      width: 16px;
+      height: 16px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px 0 32px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      outline: none;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 13px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .search-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+    }
+
+    .side-label {
+      margin: 0 8px 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .client-list { display: grid; gap: 4px; }
+
+    .client {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: background .2s, color .2s, border-color .2s;
+    }
+
+    .client:hover { background: color-mix(in srgb, var(--surface) 62%, transparent); color: var(--text); }
+
+    .client.selected {
+      border-color: var(--line);
+      background: var(--surface-strong);
+      color: var(--text);
+      box-shadow: 0 4px 16px rgba(56, 45, 26, .05);
+    }
+
+    .avatar {
+      display: grid;
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 50%;
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .avatar.wolfpack { background: #176c61; }
+    .avatar.ambition { background: #a5613c; }
+    .avatar.kohrs { background: #6264a7; }
+    .client-name { font-weight: 650; line-height: 1.25; overflow-wrap: anywhere; }
+    .empty-clients { display: none; padding: 12px; color: var(--muted); font-size: 13px; }
+
+    main {
+      min-width: 0;
+      min-height: calc(100vh - 48px);
+      margin: 24px 24px 24px 0;
+      padding: 56px clamp(32px, 4vw, 56px) 72px;
+      border: 1px solid rgba(255, 255, 255, .7);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--panel-shadow);
+    }
+
+    .main-inner { max-width: 1320px; margin: 0 auto; }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 56px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 4vw, 42px);
+      line-height: 1.12;
+      letter-spacing: -.035em;
+    }
+
+    .hero-copy { margin: 12px 0 0; color: var(--muted); font-size: 16px; }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .summary span {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .summary strong { color: var(--text); }
+
+    .group { margin-top: 56px; scroll-margin-top: 24px; }
+
+    .group-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h2 { margin: 0; font-size: 20px; line-height: 1.25; letter-spacing: -.025em; }
+    .group-count { color: var(--muted); font-size: 13px; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .part-card {
+      position: relative;
+      display: flex;
+      min-height: 236px;
+      flex-direction: column;
+      padding: 24px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+    }
+
+    .part-card:hover {
+      z-index: 1;
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+
+    .part-card:focus-visible, .client:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      outline-offset: 2px;
+    }
+
+    .part-card.unseen {
+      border: 1px dashed var(--line-strong);
+      background: color-mix(in srgb, var(--surface) 76%, var(--bg));
+      box-shadow: none;
+      opacity: .62;
+    }
+
+    .part-card.unseen:hover { opacity: .92; }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .glyph {
+      display: grid;
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 0;
+      border-radius: 13px;
+    }
+
+    .glyph svg { width: 24px; height: 24px; }
+    .glyph.google { background: #e8f0fe; }
+    .glyph.reviews { background: #fff4cf; }
+    .glyph.website { background: #ecebff; }
+    .glyph.yelp { background: #fde8e8; }
+    .glyph.linkedin { background: #0a66c2; }
+    .glyph.ai { background: #f1e9ff; }
+    .glyph.photo { background: #dff7f4; }
+    .glyph.video { background: #ffe7ed; }
+    .glyph.case-study { background: #fff0cc; }
+    .glyph.folder { background: #ffead5; }
+    .glyph.jobber { background: #def5e7; }
+    .glyph.recurring { background: #dcf7fb; }
+    .glyph.follow-up { background: #e1f2ff; }
+    .glyph.insurance { background: #ddf7ec; }
+    .glyph.target { background: #ffe4dd; }
+    .glyph.memberships { background: #f0e7ff; }
+    .glyph.outreach { background: #e4efff; }
+    .glyph.report { background: #eff9d5; }
+
+    .health {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 8px;
+      border-radius: 999px;
+      background: var(--warn-soft);
+      color: var(--warn);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .health::before { width: 7px; height: 7px; border-radius: 50%; background: currentColor; content: ""; }
+    .health.blocked { background: var(--bad-soft); color: var(--bad); }
+    .health.unseen-health { background: var(--quiet-soft); color: var(--quiet); }
+
+    .part-card h3 { margin: 0 0 8px; font-size: 16px; line-height: 1.3; letter-spacing: -.01em; }
+
+    .status-line {
+      display: -webkit-box;
+      margin: 0 0 24px;
+      overflow: hidden;
+      color: var(--muted);
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+    }
+
+    .access-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .access-label { color: var(--muted); font-size: 12px; }
+
+    .access-pill {
+      white-space: nowrap;
+      display: inline-flex;
+      max-width: 75%;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--quiet-soft);
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.2;
+      text-align: right;
+    }
+
+    .access-pill.connected { background: var(--good-soft); color: var(--good); }
+    .access-pill.pending, .access-pill.expired, .access-pill.wrong { background: var(--warn-soft); color: var(--warn); }
+    .access-pill.never { background: var(--quiet-soft); color: var(--quiet); }
+
+    .arrow {
+      margin-left: 4px;
+      color: var(--accent);
+      font-size: 16px;
+      transition: transform .2s;
+    }
+
+    .part-card:hover .arrow { transform: translateX(3px); }
+
+    @media (max-width: 1180px) {
+      .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 720px) {
+      .app { display: block; }
+
+      .sidebar {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        height: auto;
+        padding: 16px;
+        border-right: 0;
+        border-bottom: 0;
+      }
+
+      .sidebar-head { margin: 0 0 16px; }
+      .search-wrap { margin-bottom: 12px; }
+      .side-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+      .client-list {
+        display: flex;
+        padding-bottom: 4px;
+        overflow-x: auto;
+        scrollbar-width: thin;
+      }
+
+      .client { flex: 0 0 auto; padding: 8px 12px; }
+      .avatar { width: 24px; height: 24px; }
+      main {
+        min-height: 0;
+        margin: 0 12px 12px;
+        padding: 40px 24px 56px;
+        border-radius: 24px;
+      }
+      .hero { display: block; margin-bottom: 32px; }
+      .summary { justify-content: flex-start; margin-top: 24px; }
+      .group { margin-top: 40px; }
+    }
+
+    @media (max-width: 560px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .part-card { min-height: 196px; }
+      .group-heading { align-items: center; }
+      .hero-copy { font-size: 14px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+
+      
+    /* ---- v2 additions ---- */
+    .meeting {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin: 0 0 24px; padding: 12px 16px; border-radius: 12px;
+      background: var(--accent-soft); color: var(--accent);
+      font-size: 13px; font-weight: 600;
+    }
+    .meeting .lbl { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; opacity: .8; }
+
+    .counts { display: flex; gap: 8px; flex-wrap: wrap; }
+    .access-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+    .access-pill { white-space: nowrap; }
+    .conn { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700;
+      white-space: nowrap; flex: none; }
+    .conn::before { content: ""; width: 8px; height: 8px; border-radius: 50%; }
+    .conn.yes { color: var(--good); } .conn.yes::before { background: var(--good); }
+    .conn.no { color: var(--warn); } .conn.no::before { background: var(--warn); }
+    .conn.na { color: var(--quiet); } .conn.na::before { background: var(--quiet); }
+
+    .health.completed { background: var(--good-soft); color: var(--good); }
+
+    .suggest {
+      margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed var(--line);
+      font-size: 13px; color: var(--text); font-weight: 600;
+    }
+    .suggest .k { display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+
+    .recheck-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 24px; }
+    .recheck-btn {
+      display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
+      padding: 12px 24px; border-radius: 999px; background: var(--accent); color: #fff;
+      font-size: 14px; font-weight: 700; font-family: inherit;
+    }
+    .recheck-btn[disabled] { opacity: .55; cursor: not-allowed; }
+    .recheck-note { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+    .progress-wrap { display: none; margin: 0 0 24px; }
+    .progress-wrap.on { display: block; }
+    .progress-track { height: 8px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
+    .progress-fill { height: 100%; width: 0%; border-radius: 999px; background: var(--accent);
+      transition: width .4s ease; }
+    .progress-line { margin: 8px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+
+    .summary { display: none; margin: 0 0 24px; padding: 16px; border-radius: 12px;
+      background: var(--good-soft); color: var(--good); font-size: 13px; font-weight: 600; }
+    .summary.on { display: block; }
+    .summary ul { margin: 8px 0 0; padding-left: 16px; font-weight: 600; }
+
+    @keyframes flash { 0% { box-shadow: 0 0 0 4px var(--accent-soft); } 100% { box-shadow: none; } }
+    .part-card.updated { animation: flash 2.4s ease-out; border-color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Clients">
+      <div class="sidebar-head">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7.5h14M5 12h9M5 16.5h6"/><circle cx="18" cy="16.5" r="2" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <div><div class="brand-title">Client parts</div><div class="brand-subtitle">Agency workspace</div></div>
+      </div>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <label for="client-search" class="side-label">Search clients</label>
+        <input id="client-search" type="search" placeholder="Search clients" autocomplete="off">
+      </div>
+      <p class="side-label">Clients</p>
+      <nav class="client-list">
+        <a class="client selected" href="#" data-client="wolfpack"><span class="avatar wolfpack">W</span><span class="client-name">Wolfpack</span></a>
+        <a class="client" href="#" data-client="ambition"><span class="avatar ambition">A</span><span class="client-name">Ambition Mechanical</span></a>
+        <a class="client" href="#" data-client="kohrs"><span class="avatar kohrs">K</span><span class="client-name">Kohrs</span></a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-head">
+        <p class="eyebrow">Client home</p>
+        <h1 id="hello">Hello, Wolfpack.</h1>
+        <p class="subtitle" id="trade"></p>
+        <div class="counts" id="counts"></div>
+      </header>
+
+      <div class="meeting"><span class="lbl">Next meeting</span><span id="meeting-text"></span></div>
+
+      <div class="recheck-bar">
+        <button class="recheck-btn" id="recheck" type="button">Re-check everything</button>
+        <span class="recheck-note" id="recheck-note"></span>
+      </div>
+
+      <div class="progress-wrap" id="progress">
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <p class="progress-line" id="progress-line"></p>
+      </div>
+
+      <div class="summary" id="summary"></div>
+
+      <div id="groups"></div>
+    </main>
+  </div>
+<script>
+  const CLIENTS = {"wolfpack": {"name": "Wolfpack", "trade": "Commercial plumbing and hydro jetting \u00b7 Phoenix", "meeting": "Thursday 7 Aug, 10:00am \u00b7 Ross, site walk", "html": "        <section class=\"group\">\n          <div class=\"group-head\"><h2>Found by buyers</h2><span class=\"group-count\">7 parts</span></div>\n          <div class=\"card-grid\">\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Google Business Profile\" data-state=\"blocked\">\n              <div class=\"card-top\"><span class=\"glyph google\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#4285F4\" d=\"M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.87h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z\"/><path fill=\"#34A853\" d=\"M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.59A10 10 0 0 0 12 22Z\"/><path fill=\"#FBBC05\" d=\"M6.4 13.9A6 6 0 0 1 6.08 12c0-.66.11-1.3.32-1.9V7.51H3.06A10 10 0 0 0 2 12c0 1.61.38 3.14 1.06 4.49L6.4 13.9Z\"/><path fill=\"#EA4335\" d=\"M12 5.97c1.47 0 2.78.5 3.81 1.49l2.86-2.86A9.58 9.58 0 0 0 12 2a10 10 0 0 0-8.94 5.51L6.4 10.1C7.19 7.73 9.4 5.97 12 5.97Z\"/></svg></span><span class=\"health blocked\">Blocked</span></div>\n              <h3>Google Business Profile</h3>\n              <p class=\"status-line\">Two listings exist under different names: Wolfpack Companies and Wolfpack General Contracting.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Request the merge so calls and reviews land on one listing.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Manager</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Online reviews\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph reviews\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#FBBC05\" d=\"m12 2.6 2.75 5.58 6.16.9-4.46 4.34 1.05 6.14L12 16.66l-5.5 2.9 1.05-6.14-4.46-4.34 6.16-.9L12 2.6Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Online reviews</h3>\n              <p class=\"status-line\">Too few, and none of them name commercial work.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Ask ten recent commercial customers for a review this week.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Via Google</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Website\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph website\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"18\" rx=\"3\" fill=\"#4F46E5\"/><path fill=\"#fff\" d=\"M2 8h20v2H2z\"/><circle cx=\"5.2\" cy=\"6\" r=\"1\" fill=\"#fff\"/><circle cx=\"8.2\" cy=\"6\" r=\"1\" fill=\"#fff\"/><rect x=\"5\" y=\"12\" width=\"14\" height=\"6\" rx=\"1.5\" fill=\"#fff\" opacity=\".9\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Website</h3>\n              <p class=\"status-line\">Placeholder site. Five enquiries in two years.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Rebuild it with the management team section Ross asked for.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Yelp\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph yelp\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#D32323\" d=\"M10.6 10.2 8.9 3.15A1.45 1.45 0 0 1 10.1 1.4l2.15-.34a1.45 1.45 0 0 1 1.66 1.58l-.75 7.42c-.12 1.16-2.28 1.28-2.56.14ZM14.35 10.95l4.72-2.8a1.45 1.45 0 0 1 2.1.74l.7 1.86a1.45 1.45 0 0 1-1.24 1.95l-5.72.24c-1.12.05-1.53-1.42-.56-2ZM14.26 14.42l4.56 2.94a1.45 1.45 0 0 1 .27 2.2l-1.4 1.44a1.45 1.45 0 0 1-2.3-.3l-2.56-4.9c-.5-.96.52-1.97 1.43-1.38ZM10.76 15.1l-1.5 5.44a1.45 1.45 0 0 1-1.93.96l-1.87-.75a1.45 1.45 0 0 1-.7-2.22l3.42-4.38c.67-.86 2.88-.1 2.58.95ZM8.4 11.6l-5.36-1.56a1.45 1.45 0 0 1-.93-1.98l.82-1.84a1.45 1.45 0 0 1 2.24-.64l4.25 3.57c.84.71.03 2.75-1.02 2.45Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Yelp</h3>\n              <p class=\"status-line\">Connected, but nobody has reviewed what is on there.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Run a check and fix the hours, photos and category.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card dim\" href=\"part.html\" data-part=\"Company LinkedIn\" data-state=\"cannot\">\n              <div class=\"card-top\"><span class=\"glyph linkedin\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#fff\" d=\"M6.15 8.55H2.9V19h3.25V8.55ZM4.53 3.35a1.89 1.89 0 1 0 0 3.78 1.89 1.89 0 0 0 0-3.78ZM18.47 8.3c-1.75 0-2.93.96-3.41 1.88h-.05V8.55H11.9V19h3.24v-5.17c0-1.36.26-2.68 1.95-2.68 1.66 0 1.68 1.55 1.68 2.77V19H22v-5.72c0-2.81-.61-4.98-3.53-4.98Z\"/></svg></span><span class=\"health cannot\">Cannot see</span></div>\n              <h3>Company LinkedIn</h3>\n              <p class=\"status-line\">We have never been given access to the company page.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Ask Robert to add us as a page admin.</p>\n              <div class=\"access-row\"><span class=\"conn no\">Not connected</span><span class=\"access-pill\">Not connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card dim\" href=\"part.html\" data-part=\"Owner's LinkedIn\" data-state=\"cannot\">\n              <div class=\"card-top\"><span class=\"glyph linkedin\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#fff\" d=\"M6.15 8.55H2.9V19h3.25V8.55ZM4.53 3.35a1.89 1.89 0 1 0 0 3.78 1.89 1.89 0 0 0 0-3.78ZM18.47 8.3c-1.75 0-2.93.96-3.41 1.88h-.05V8.55H11.9V19h3.24v-5.17c0-1.36.26-2.68 1.95-2.68 1.66 0 1.68 1.55 1.68 2.77V19H22v-5.72c0-2.81-.61-4.98-3.53-4.98Z\"/></svg></span><span class=\"health cannot\">Cannot see</span></div>\n              <h3>Owner's LinkedIn</h3>\n              <p class=\"status-line\">We have never been given access to Ross's profile.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Ask Ross to connect his profile, or walk it on a screen share.</p>\n              <div class=\"access-row\"><span class=\"conn no\">Not connected</span><span class=\"access-pill\">Not connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"AI answers\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph ai\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#7C3AED\" d=\"M12 1.5c.62 5.2 2.8 8.2 8.3 9.5-5.5 1.3-7.68 4.3-8.3 9.5-.62-5.2-2.8-8.2-8.3-9.5C9.2 9.7 11.38 6.7 12 1.5Z\"/><path fill=\"#A78BFA\" d=\"M19.1 15.2c.25 2.12 1.14 3.35 3.4 3.88-2.26.53-3.15 1.76-3.4 3.88-.25-2.12-1.14-3.35-3.4-3.88 2.26-.53 3.15-1.76 3.4-3.88Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>AI answers</h3>\n              <p class=\"status-line\">Assistants do not name Wolfpack for Phoenix commercial jetting.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Fix the Google listing first, then build the proof pages.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n          </div>\n        </section>\n        <section class=\"group\">\n          <div class=\"group-head\"><h2>Proof we make</h2><span class=\"group-count\">4 parts</span></div>\n          <div class=\"card-grid\">\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Photography\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph photo\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#0F9F95\" d=\"M4 6h3.4l1.45-2h6.3l1.45 2H20a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z\"/><circle cx=\"12\" cy=\"13\" r=\"4.2\" fill=\"#fff\"/><circle cx=\"12\" cy=\"13\" r=\"2.45\" fill=\"#0F9F95\"/><circle cx=\"18.5\" cy=\"8.8\" r=\"1\" fill=\"#fff\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Photography</h3>\n              <p class=\"status-line\">Nothing shot. Waiting on a date from the owner.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Chase Ross for a shoot day. Everything else waits on this.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Video\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph video\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#E84A6F\"/><path fill=\"#fff\" d=\"M9.3 7.8c0-.73.8-1.18 1.43-.8l7.05 4.2c.61.36.61 1.25 0 1.62l-7.05 4.18a.94.94 0 0 1-1.43-.8V7.8Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Video</h3>\n              <p class=\"status-line\">Fifteen short videos planned, none shot.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Book the same shoot day and film the crew answering buyer questions.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Case studies\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph case-study\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#D99A08\" d=\"M5 2h9l5 5v15H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z\"/><path fill=\"#fff\" opacity=\".9\" d=\"M14 2v5h5ZM7 11h8v2H7zM7 15h8v2H7zM7 19h5v2H7z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Case studies</h3>\n              <p class=\"status-line\">Their best account is worth $250k a year and is unwritten.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Ask permission to name Arizona Industrial, then write it up.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Capability folder\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph folder\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#F07A19\" d=\"M2 5.5A2.5 2.5 0 0 1 4.5 3H10l2.2 2.5h7.3A2.5 2.5 0 0 1 22 8v9.5a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-12Z\"/><path fill=\"#FFB36B\" d=\"M2 9h20l-2.25 9H4.25L2 9Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Capability folder</h3>\n              <p class=\"status-line\">Does not exist, and buyers ask for one.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Build the folder that answers the vendor questions.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n          </div>\n        </section>\n        <section class=\"group\">\n          <div class=\"group-head\"><h2>Work we run</h2><span class=\"group-count\">4 parts</span></div>\n          <div class=\"card-grid\">\n            <a class=\"part-card dim\" href=\"part.html\" data-part=\"Jobber\" data-state=\"cannot\">\n              <div class=\"card-top\"><span class=\"glyph jobber\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#12A150\" d=\"M8 3h9v12.1C17 19.5 14.55 22 10.45 22 7 22 4.75 20.1 4.3 16.8l4.2-.65c.2 1.35.78 2.05 1.8 2.05 1.28 0 1.9-.9 1.9-2.75V7H8V3Z\"/></svg></span><span class=\"health cannot\">Cannot see</span></div>\n              <h3>Jobber</h3>\n              <p class=\"status-line\">Not connected yet. The one invite we got was field crew level with no reporting.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Get set up at reporting level so we can read utilisation and revenue.</p>\n              <div class=\"access-row\"><span class=\"conn no\">Not connected</span><span class=\"access-pill\">Not connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Recurring jobs\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph recurring\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#06AFC7\" d=\"M12 3a9 9 0 0 1 7.15 3.53L21 4.7V11h-6.3l1.92-1.92A5.9 5.9 0 0 0 6.3 11H3.06A9 9 0 0 1 12 3Zm8.94 10A9 9 0 0 1 4.85 17.47L3 19.3V13h6.3l-1.92 1.92A5.9 5.9 0 0 0 17.7 13h3.24Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Recurring jobs</h3>\n              <p class=\"status-line\">65 recurring calls tracked by memory, not scheduled in their system.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Load the 65 into Jobber as real recurring jobs once we are in.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card dim\" href=\"part.html\" data-part=\"Lead follow-up\" data-state=\"cannot\">\n              <div class=\"card-top\"><span class=\"glyph follow-up\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#238FD0\"/><path fill=\"#fff\" d=\"M11 6h2v5.2l4 2.3-1 1.73-5-2.9V6Z\"/><circle cx=\"12\" cy=\"12\" r=\"1.45\" fill=\"#fff\"/></svg></span><span class=\"health cannot\">Cannot see</span></div>\n              <h3>Lead follow-up</h3>\n              <p class=\"status-line\">Never measured. We cannot see how fast leads get answered.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Measure it once by hand, then decide what to automate.</p>\n              <div class=\"access-row\"><span class=\"conn no\">Not connected</span><span class=\"access-pill\">Not connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Insurance and licence\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph insurance\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#14966D\" d=\"m12 1.5 9 3.85v6.1c0 5.7-3.52 9.3-9 11.05-5.48-1.75-9-5.35-9-11.05v-6.1L12 1.5Z\"/><path fill=\"#fff\" d=\"m7.5 11.8 2.72 2.72 6.35-7.02 1.78 1.6-8.04 8.9-4.5-4.5 1.69-1.7Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Insurance and licence</h3>\n              <p class=\"status-line\">Held, but not packaged to send inside an hour.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Put the certificate, licence and W-9 in one named folder.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n          </div>\n        </section>\n        <section class=\"group\">\n          <div class=\"group-head\"><h2>Work we win</h2><span class=\"group-count\">4 parts</span></div>\n          <div class=\"card-grid\">\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Target account list\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph target\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#F06449\"/><circle cx=\"12\" cy=\"12\" r=\"6.2\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"3.1\" fill=\"#F06449\"/><circle cx=\"12\" cy=\"12\" r=\"1.15\" fill=\"#fff\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Target account list</h3>\n              <p class=\"status-line\">Not built yet.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Build the named list of Phoenix property and facility managers.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Association memberships\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph memberships\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><circle cx=\"8\" cy=\"7.5\" r=\"4\" fill=\"#8247C9\"/><circle cx=\"17.2\" cy=\"8.2\" r=\"3.2\" fill=\"#A56DE8\"/><path fill=\"#8247C9\" d=\"M1.5 21c.2-5.25 2.35-8 6.5-8s6.3 2.75 6.5 8h-13Z\"/><path fill=\"#A56DE8\" d=\"M13.2 21c.15-4.35 1.65-6.7 4.8-6.7 2.9 0 4.38 2.35 4.5 6.7h-9.3Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Association memberships</h3>\n              <p class=\"status-line\">Two calls to make before anything is booked.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Call IREM about the plumbing slot and AMA about the trade show rate.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card dim\" href=\"part.html\" data-part=\"Cold outreach\" data-state=\"cannot\">\n              <div class=\"card-top\"><span class=\"glyph outreach\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"3\" fill=\"#3478D4\"/><path fill=\"#fff\" d=\"m3.15 6.3 8.85 7 8.85-7 1.25 1.6L12 15.9 1.9 7.9l1.25-1.6Z\" opacity=\".95\"/></svg></span><span class=\"health cannot\">Cannot see</span></div>\n              <h3>Cold outreach</h3>\n              <p class=\"status-line\">Not started, and no sending account is connected.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Connect a sending inbox, then load the named list.</p>\n              <div class=\"access-row\"><span class=\"conn no\">Not connected</span><span class=\"access-pill\">Not connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Monthly report\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph report\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"13\" width=\"5\" height=\"9\" rx=\"1.5\" fill=\"#84B91E\"/><rect x=\"9.5\" y=\"7\" width=\"5\" height=\"15\" rx=\"1.5\" fill=\"#6EA511\"/><rect x=\"17\" y=\"2\" width=\"5\" height=\"20\" rx=\"1.5\" fill=\"#568A08\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Monthly report</h3>\n              <p class=\"status-line\">No number agreed with the owner yet.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Agree jetter utilisation as the headline number with Ross.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n          </div>\n        </section>", "counts": {"total": 19, "attention": 14, "cannot": 5, "done": 0}}, "ambition": {"name": "Ambition Mechanical", "trade": "Commercial HVAC and refrigeration \u00b7 Phoenix", "meeting": "Tuesday 12 Aug, 2:00pm \u00b7 Mo, monthly review", "html": "        <section class=\"group\">\n          <div class=\"group-head\"><h2>Found by buyers</h2><span class=\"group-count\">7 parts</span></div>\n          <div class=\"card-grid\">\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Google Business Profile\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph google\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#4285F4\" d=\"M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.87h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z\"/><path fill=\"#34A853\" d=\"M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.59A10 10 0 0 0 12 22Z\"/><path fill=\"#FBBC05\" d=\"M6.4 13.9A6 6 0 0 1 6.08 12c0-.66.11-1.3.32-1.9V7.51H3.06A10 10 0 0 0 2 12c0 1.61.38 3.14 1.06 4.49L6.4 13.9Z\"/><path fill=\"#EA4335\" d=\"M12 5.97c1.47 0 2.78.5 3.81 1.49l2.86-2.86A9.58 9.58 0 0 0 12 2a10 10 0 0 0-8.94 5.51L6.4 10.1C7.19 7.73 9.4 5.97 12 5.97Z\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Google Business Profile</h3>\n              <p class=\"status-line\">One listing, complete, commercial photos and real hours.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Recheck on 1 Sep.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Manager</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Online reviews\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph reviews\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#FBBC05\" d=\"m12 2.6 2.75 5.58 6.16.9-4.46 4.34 1.05 6.14L12 16.66l-5.5 2.9 1.05-6.14-4.46-4.34 6.16-.9L12 2.6Z\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Online reviews</h3>\n              <p class=\"status-line\">Recent reviews naming commercial HVAC work in Phoenix.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Keep replying inside 48 hours.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Via Google</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Website\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph website\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"18\" rx=\"3\" fill=\"#4F46E5\"/><path fill=\"#fff\" d=\"M2 8h20v2H2z\"/><circle cx=\"5.2\" cy=\"6\" r=\"1\" fill=\"#fff\"/><circle cx=\"8.2\" cy=\"6\" r=\"1\" fill=\"#fff\"/><rect x=\"5\" y=\"12\" width=\"14\" height=\"6\" rx=\"1.5\" fill=\"#fff\" opacity=\".9\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Website</h3>\n              <p class=\"status-line\">Real and rebuilt. Banner Health, Din Tai Fung and Apple named on it.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Add two more marquee logos.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Yelp\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph yelp\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#D32323\" d=\"M10.6 10.2 8.9 3.15A1.45 1.45 0 0 1 10.1 1.4l2.15-.34a1.45 1.45 0 0 1 1.66 1.58l-.75 7.42c-.12 1.16-2.28 1.28-2.56.14ZM14.35 10.95l4.72-2.8a1.45 1.45 0 0 1 2.1.74l.7 1.86a1.45 1.45 0 0 1-1.24 1.95l-5.72.24c-1.12.05-1.53-1.42-.56-2ZM14.26 14.42l4.56 2.94a1.45 1.45 0 0 1 .27 2.2l-1.4 1.44a1.45 1.45 0 0 1-2.3-.3l-2.56-4.9c-.5-.96.52-1.97 1.43-1.38ZM10.76 15.1l-1.5 5.44a1.45 1.45 0 0 1-1.93.96l-1.87-.75a1.45 1.45 0 0 1-.7-2.22l3.42-4.38c.67-.86 2.88-.1 2.58.95ZM8.4 11.6l-5.36-1.56a1.45 1.45 0 0 1-.93-1.98l.82-1.84a1.45 1.45 0 0 1 2.24-.64l4.25 3.57c.84.71.03 2.75-1.02 2.45Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Yelp</h3>\n              <p class=\"status-line\">Live, but the service area and hours are out of date.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Update the service area and hours.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Company LinkedIn\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph linkedin\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#fff\" d=\"M6.15 8.55H2.9V19h3.25V8.55ZM4.53 3.35a1.89 1.89 0 1 0 0 3.78 1.89 1.89 0 0 0 0-3.78ZM18.47 8.3c-1.75 0-2.93.96-3.41 1.88h-.05V8.55H11.9V19h3.24v-5.17c0-1.36.26-2.68 1.95-2.68 1.66 0 1.68 1.55 1.68 2.77V19H22v-5.72c0-2.81-.61-4.98-3.53-4.98Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Company LinkedIn</h3>\n              <p class=\"status-line\">Branded and active, but no meet-the-team videos yet.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Post three project-proof pieces.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Editor</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card dim\" href=\"part.html\" data-part=\"Owner's LinkedIn\" data-state=\"cannot\">\n              <div class=\"card-top\"><span class=\"glyph linkedin\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#fff\" d=\"M6.15 8.55H2.9V19h3.25V8.55ZM4.53 3.35a1.89 1.89 0 1 0 0 3.78 1.89 1.89 0 0 0 0-3.78ZM18.47 8.3c-1.75 0-2.93.96-3.41 1.88h-.05V8.55H11.9V19h3.24v-5.17c0-1.36.26-2.68 1.95-2.68 1.66 0 1.68 1.55 1.68 2.77V19H22v-5.72c0-2.81-.61-4.98-3.53-4.98Z\"/></svg></span><span class=\"health cannot\">Cannot see</span></div>\n              <h3>Owner's LinkedIn</h3>\n              <p class=\"status-line\">Mo has not connected his profile.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Ask Mo to connect it or confirm on a call.</p>\n              <div class=\"access-row\"><span class=\"conn no\">Not connected</span><span class=\"access-pill\">Not connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"AI answers\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph ai\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#7C3AED\" d=\"M12 1.5c.62 5.2 2.8 8.2 8.3 9.5-5.5 1.3-7.68 4.3-8.3 9.5-.62-5.2-2.8-8.2-8.3-9.5C9.2 9.7 11.38 6.7 12 1.5Z\"/><path fill=\"#A78BFA\" d=\"M19.1 15.2c.25 2.12 1.14 3.35 3.4 3.88-2.26.53-3.15 1.76-3.4 3.88-.25-2.12-1.14-3.35-3.4-3.88 2.26-.53 3.15-1.76 3.4-3.88Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>AI answers</h3>\n              <p class=\"status-line\">Named sometimes, but behind two competitors.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Build the service-area proof pages.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n          </div>\n        </section>\n        <section class=\"group\">\n          <div class=\"group-head\"><h2>Proof we make</h2><span class=\"group-count\">4 parts</span></div>\n          <div class=\"card-grid\">\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Photography\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph photo\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#0F9F95\" d=\"M4 6h3.4l1.45-2h6.3l1.45 2H20a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z\"/><circle cx=\"12\" cy=\"13\" r=\"4.2\" fill=\"#fff\"/><circle cx=\"12\" cy=\"13\" r=\"2.45\" fill=\"#0F9F95\"/><circle cx=\"18.5\" cy=\"8.8\" r=\"1\" fill=\"#fff\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Photography</h3>\n              <p class=\"status-line\">Crew, trucks and facility shot in June.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Refresh in six months.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Video\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph video\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#E84A6F\"/><path fill=\"#fff\" d=\"M9.3 7.8c0-.73.8-1.18 1.43-.8l7.05 4.2c.61.36.61 1.25 0 1.62l-7.05 4.18a.94.94 0 0 1-1.43-.8V7.8Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Video</h3>\n              <p class=\"status-line\">Six clips sitting in the edit backlog.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Cut the boiler-room tour into three hooks.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Case studies\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph case-study\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#D99A08\" d=\"M5 2h9l5 5v15H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z\"/><path fill=\"#fff\" opacity=\".9\" d=\"M14 2v5h5ZM7 11h8v2H7zM7 15h8v2H7zM7 19h5v2H7z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Case studies</h3>\n              <p class=\"status-line\">Marquee logos, but no written story behind any of them.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Write the Banner Health story.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Capability folder\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph folder\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#F07A19\" d=\"M2 5.5A2.5 2.5 0 0 1 4.5 3H10l2.2 2.5h7.3A2.5 2.5 0 0 1 22 8v9.5a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-12Z\"/><path fill=\"#FFB36B\" d=\"M2 9h20l-2.25 9H4.25L2 9Z\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Capability folder</h3>\n              <p class=\"status-line\">Built, current, and sends in one click.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Recheck the insurance page on 1 Sep.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n          </div>\n        </section>\n        <section class=\"group\">\n          <div class=\"group-head\"><h2>Work we run</h2><span class=\"group-count\">4 parts</span></div>\n          <div class=\"card-grid\">\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Jobber\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph jobber\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#12A150\" d=\"M8 3h9v12.1C17 19.5 14.55 22 10.45 22 7 22 4.75 20.1 4.3 16.8l4.2-.65c.2 1.35.78 2.05 1.8 2.05 1.28 0 1.9-.9 1.9-2.75V7H8V3Z\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Jobber</h3>\n              <p class=\"status-line\">Connected, but read only. We can see jobs, not export reports.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Ask for reporting rights.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Read only</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Recurring jobs\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph recurring\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#06AFC7\" d=\"M12 3a9 9 0 0 1 7.15 3.53L21 4.7V11h-6.3l1.92-1.92A5.9 5.9 0 0 0 6.3 11H3.06A9 9 0 0 1 12 3Zm8.94 10A9 9 0 0 1 4.85 17.47L3 19.3V13h6.3l-1.92 1.92A5.9 5.9 0 0 0 17.7 13h3.24Z\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Recurring jobs</h3>\n              <p class=\"status-line\">Recurring maintenance is scheduled properly in their system.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Recheck monthly.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Read only</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Lead follow-up\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph follow-up\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#238FD0\"/><path fill=\"#fff\" d=\"M11 6h2v5.2l4 2.3-1 1.73-5-2.9V6Z\"/><circle cx=\"12\" cy=\"12\" r=\"1.45\" fill=\"#fff\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Lead follow-up</h3>\n              <p class=\"status-line\">Median reply time is just over four hours.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Get it under one hour on commercial enquiries.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Read only</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Insurance and licence\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph insurance\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path fill=\"#14966D\" d=\"m12 1.5 9 3.85v6.1c0 5.7-3.52 9.3-9 11.05-5.48-1.75-9-5.35-9-11.05v-6.1L12 1.5Z\"/><path fill=\"#fff\" d=\"m7.5 11.8 2.72 2.72 6.35-7.02 1.78 1.6-8.04 8.9-4.5-4.5 1.69-1.7Z\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Insurance and licence</h3>\n              <p class=\"status-line\">Packaged and ready to send inside the hour.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Renewal check on 1 Nov.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n          </div>\n        </section>\n        <section class=\"group\">\n          <div class=\"group-head\"><h2>Work we win</h2><span class=\"group-count\">4 parts</span></div>\n          <div class=\"card-grid\">\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Target account list\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph target\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#F06449\"/><circle cx=\"12\" cy=\"12\" r=\"6.2\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"3.1\" fill=\"#F06449\"/><circle cx=\"12\" cy=\"12\" r=\"1.15\" fill=\"#fff\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Target account list</h3>\n              <p class=\"status-line\">Shares the Phoenix property manager list with Wolfpack.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Add the general contractor tier.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Association memberships\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph memberships\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><circle cx=\"8\" cy=\"7.5\" r=\"4\" fill=\"#8247C9\"/><circle cx=\"17.2\" cy=\"8.2\" r=\"3.2\" fill=\"#A56DE8\"/><path fill=\"#8247C9\" d=\"M1.5 21c.2-5.25 2.35-8 6.5-8s6.3 2.75 6.5 8h-13Z\"/><path fill=\"#A56DE8\" d=\"M13.2 21c.15-4.35 1.65-6.7 4.8-6.7 2.9 0 4.38 2.35 4.5 6.7h-9.3Z\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Association memberships</h3>\n              <p class=\"status-line\">Current through January 2027.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Recheck the directory on 1 Sep.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Cold outreach\" data-state=\"needs\">\n              <div class=\"card-top\"><span class=\"glyph outreach\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"3\" fill=\"#3478D4\"/><path fill=\"#fff\" d=\"m3.15 6.3 8.85 7 8.85-7 1.25 1.6L12 15.9 1.9 7.9l1.25-1.6Z\" opacity=\".95\"/></svg></span><span class=\"health needs\">Needs work</span></div>\n              <h3>Cold outreach</h3>\n              <p class=\"status-line\">Sending inbox connected, but no sequence is live.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Approve the 27-account pilot.</p>\n              <div class=\"access-row\"><span class=\"conn yes\">Connected</span><span class=\"access-pill\">Connected</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n            <a class=\"part-card\" href=\"part.html\" data-part=\"Monthly report\" data-state=\"completed\">\n              <div class=\"card-top\"><span class=\"glyph report\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"13\" width=\"5\" height=\"9\" rx=\"1.5\" fill=\"#84B91E\"/><rect x=\"9.5\" y=\"7\" width=\"5\" height=\"15\" rx=\"1.5\" fill=\"#6EA511\"/><rect x=\"17\" y=\"2\" width=\"5\" height=\"20\" rx=\"1.5\" fill=\"#568A08\"/></svg></span><span class=\"health completed\">Completed</span></div>\n              <h3>Monthly report</h3>\n              <p class=\"status-line\">June was sent and opened. Notes resolved.</p>\n              <p class=\"suggest\"><span class=\"k\">Do next</span>Prepare the July recap.</p>\n              <div class=\"access-row\"><span class=\"conn na\">Not applicable</span><span class=\"access-pill\">Not applicable</span><span class=\"arrow\" aria-hidden=\"true\">\u2192</span></div>\n            </a>\n          </div>\n        </section>", "counts": {"total": 19, "attention": 9, "cannot": 1, "done": 9}}, "kohrs": {"name": "Kohrs", "trade": "Demolition and renovation \u00b7 Phoenix", "meeting": "Nothing booked", "html": "        <p class=\"status-line\">This client is not set up yet. Add the parts we look after and they will show here.</p>", "counts": {"total": 0, "attention": 0, "cannot": 0, "done": 0}}};
+  const COOLDOWN = 120000;
+  let lastRun = 0, running = false, current = 'wolfpack';
+
+  const $ = s => document.querySelector(s);
+  const groupsEl = $('#groups'), hello = $('#hello'), trade = $('#trade'),
+        meeting = $('#meeting-text'), counts = $('#counts'),
+        btn = $('#recheck'), note = $('#recheck-note'),
+        pWrap = $('#progress'), pFill = $('#progress-fill'), pLine = $('#progress-line'),
+        summary = $('#summary');
+
+  function render(key) {
+    const c = CLIENTS[key]; current = key;
+    hello.textContent = 'Hello, ' + c.name + '.';
+    trade.textContent = c.trade;
+    meeting.textContent = c.meeting;
+    groupsEl.innerHTML = c.html;
+    counts.innerHTML = '<span class="count-pill"><b>' + c.counts.total + '</b> parts</span>' +
+      '<span class="count-pill"><b>' + c.counts.attention + '</b> need attention</span>' +
+      '<span class="count-pill"><b>' + c.counts.cannot + '</b> cannot see</span>' +
+      '<span class="count-pill"><b>' + c.counts.done + '</b> completed</span>';
+    document.querySelectorAll('.client').forEach(a =>
+      a.classList.toggle('selected', a.dataset.client === key));
+    summary.classList.remove('on');
+  }
+
+  $('#client-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('.client').forEach(a => {
+      const hit = a.querySelector('.client-name').textContent.toLowerCase().includes(q);
+      a.style.display = hit ? '' : 'none';
+    });
+  });
+
+  document.querySelectorAll('.client').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault(); render(a.dataset.client);
+  }));
+
+  // Honest: parts we cannot get into report that they could not be reached.
+  const STEPS = [
+    ['Opening the Google Business Profile...', 900],
+    ['Reading both listings...', 900],
+    ['Searching our inbox for anything from Wolfpack...', 1100],
+    ['Opening the shared Google Drive folder...', 900],
+    ['Checking the website for changes since 28 Jul...', 1000],
+    ['Checking Yelp...', 800],
+    ['Could not check Company LinkedIn - no access', 700],
+    ['Could not check Jobber - not connected', 700],
+    ['Checking association directories...', 900],
+    ['Writing up what changed...', 800]
+  ];
+
+  function tick(msLeft) {
+    const s = Math.ceil(msLeft / 1000);
+    note.textContent = 'Just ran. You can check again in ' + s + 's.';
+    if (msLeft <= 0) { note.textContent = ''; btn.disabled = false; return; }
+    setTimeout(() => tick(msLeft - 1000), 1000);
+  }
+
+  btn.addEventListener('click', () => {
+    if (running) return;
+    const since = Date.now() - lastRun;
+    if (lastRun && since < COOLDOWN) { btn.disabled = true; tick(COOLDOWN - since); return; }
+    running = true; btn.disabled = true; summary.classList.remove('on');
+    pWrap.classList.add('on'); pFill.style.width = '0%'; note.textContent = '';
+    let i = 0;
+    (function step() {
+      if (i >= STEPS.length) return finish();
+      pLine.textContent = STEPS[i][0];
+      pFill.style.width = Math.round(((i + 1) / STEPS.length) * 100) + '%';
+      setTimeout(() => { i++; step(); }, STEPS[i][1]);
+    })();
+  });
+
+  function finish() {
+    running = false; lastRun = Date.now();
+    pWrap.classList.remove('on');
+    // only the cards that actually changed are highlighted -- and they really do change
+    const changed = {
+      'Website': 'Placeholder site. No change since 28 Jul. Five enquiries in two years.',
+      'Online reviews': 'Two new reviews since the last check. Neither names commercial work.',
+      'Yelp': 'Live, but the Saturday hours are wrong.'
+    };
+    Object.keys(changed).forEach(n => {
+      const el = document.querySelector('[data-part="' + n + '"]');
+      if (!el) return;
+      const line = el.querySelector('.status-line');
+      if (line) line.textContent = changed[n];
+      el.classList.add('updated');
+      setTimeout(() => el.classList.remove('updated'), 2600);
+    });
+    summary.innerHTML = '<b>Check finished.</b> 3 parts updated, 13 unchanged, 3 could not be reached.' +
+      '<ul><li>Website - no change since 28 Jul, still a placeholder</li>' +
+      '<li>Online reviews - two new reviews, neither names commercial work</li>' +
+      '<li>Yelp - hours are wrong for Saturdays</li>' +
+      '<li>Company LinkedIn, Owner\'s LinkedIn and Jobber could not be reached - no access</li></ul>';
+    summary.classList.add('on');
+    btn.disabled = true; tick(COOLDOWN);
+  }
+
+  render('wolfpack');
+</script>
+</body>
+</html>
