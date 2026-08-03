@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Favicon system — proof</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:500 13px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#e9e9e7;padding:36px;color:#111}
+h1{font-size:22px;font-weight:800;letter-spacing:-.01em}
+.sub{color:#666;margin:4px 0 26px;font-size:12px}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#888;margin:26px 0 10px}
+.card{background:#fff;border:1px solid #d8d8d5;border-radius:12px;padding:20px 22px}
+.row{display:flex;align-items:flex-end;gap:34px;flex-wrap:wrap}
+.spec{text-align:center}
+.spec img{display:block;margin:0 auto 7px}
+.spec b{font-size:10px;color:#999;font-weight:600}
+.tabstrip{background:#dee1e6;padding:9px 9px 0;border-radius:11px;border:1px solid #d5d5d2}
+.tabstrip.dark{background:#202124;border-color:#3c4043}
+.tab{background:#fff;display:inline-flex;align-items:center;gap:9px;padding:10px 18px 10px 13px;border-radius:10px 10px 0 0;font-size:12.5px;color:#3c4043;margin-right:3px}
+.tabstrip.dark .tab{background:#35363a;color:#e8eaed}
+.tab img{width:16px;height:16px}
+.apps{display:flex;gap:26px;align-items:center}
+.app{text-align:center}
+.app img{display:block;border-radius:22%;box-shadow:0 3px 10px rgba(0,0,0,.18);margin-bottom:8px}
+.app b{font-size:11px;color:#555}
+</style></head><body>
+<h1>Favicon system</h1>
+<div class="sub">aom:favicon-system &middot; three brands, one standard: a single bold shape, optically matched, on its own ground.</div>
+
+<h2>Browser tab — the size that actually ships</h2>
+<div class="card">
+  <div class="tabstrip"><span class="tab"><img src="aom.svg">Ahead of Market</span><span class="tab"><img src="corner.svg">Corner</span><span class="tab"><img src="moguls.svg">Moguls</span></div>
+  <div style="height:12px"></div>
+  <div class="tabstrip dark"><span class="tab"><img src="aom.svg">Ahead of Market</span><span class="tab"><img src="corner.svg">Corner</span><span class="tab"><img src="moguls.svg">Moguls</span></div>
+</div>
+
+<h2>Size ladder</h2>
+<div class="card"><div class="row">
+  <div class="spec"><img src="aom.svg" width="16" height="16"><b>AOM 16</b></div>
+  <div class="spec"><img src="aom.svg" width="32" height="32"><b>32</b></div>
+  <div class="spec"><img src="aom.svg" width="64" height="64"><b>64</b></div>
+  <div class="spec"><img src="corner.svg" width="16" height="16"><b>Corner 16</b></div>
+  <div class="spec"><img src="corner.svg" width="32" height="32"><b>32</b></div>
+  <div class="spec"><img src="corner.svg" width="64" height="64"><b>64</b></div>
+  <div class="spec"><img src="moguls.svg" width="16" height="16"><b>Moguls 16</b></div>
+  <div class="spec"><img src="moguls.svg" width="32" height="32"><b>32</b></div>
+  <div class="spec"><img src="moguls.svg" width="64" height="64"><b>64</b></div>
+</div></div>
+
+<h2>Home screen / app icon — full marks, detail intact</h2>
+<div class="card"><div class="apps">
+  <div class="app"><img src="aom-180.png" width="120" height="120"><b>Ahead of Market</b></div>
+  <div class="app"><img src="corner-180.png" width="120" height="120"><b>Corner</b></div>
+  <div class="app"><img src="moguls-180.png" width="120" height="120"><b>Moguls</b></div>
+</div></div>
+</body></html>

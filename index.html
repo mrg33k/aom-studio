@@ -17,15 +17,46 @@ document.head.appendChild(o)}initApollo();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700;1,800&family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&family=Hanken+Grotesk:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,500&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Hedvig+Letters+Serif:opsz@12..72&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230A0F1E'/%3E%3Ctext x='16' y='22' font-size='18' font-weight='800' font-family='system-ui' fill='%233B82F6' text-anchor='middle'%3EC%3C/text%3E%3C/svg%3E" />
+    <!-- Favicon system (aom:favicon-system). This one document serves three
+         brands, so the icon set below is the Ahead of Market default and the
+         script further down swaps the whole set by route. Never hardcode a
+         single brand's icon here again. -->
+    <link rel="icon" type="image/svg+xml" href="/brand/favicon/aom.svg" data-fav="icon" />
+    <link rel="alternate icon" type="image/x-icon" href="/brand/favicon/aom.ico" data-fav="ico" />
+    <link rel="apple-touch-icon" href="/brand/favicon/aom-180.png" data-fav="apple" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <link rel="manifest" href="/corner/manifest.json" />
-    <meta name="theme-color" content="#0A0F1E" />
+    <link rel="manifest" href="/brand/favicon/aom.webmanifest" data-fav="manifest" />
+    <meta name="theme-color" content="#0B0B0B" data-fav="theme" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Corner" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Ahead of Market" data-fav="title" />
+    <script>
+      /* Route -> brand identity. Runs before first paint, so the tab never
+         flashes the wrong mark. Add a surface here, not a second <link>. */
+      (function () {
+        var path = (window.location && window.location.pathname) || '';
+        var SURFACES = [
+          { re: /^\/(?:dashboard|cvg|cv6)(?:\/|$)/, slug: 'corner', theme: '#0A0F1E', title: 'Corner', manifest: '/corner/manifest.json' },
+          { re: /^\/moguls(?:\/|$)/,                slug: 'moguls', theme: '#050505', title: 'Moguls', manifest: '/brand/favicon/moguls.webmanifest' }
+        ];
+        var hit = null;
+        for (var i = 0; i < SURFACES.length; i++) {
+          if (SURFACES[i].re.test(path)) { hit = SURFACES[i]; break; }
+        }
+        if (!hit) return; /* stay on the Ahead of Market set */
+        function set(key, attr, val) {
+          var el = document.querySelector('[data-fav="' + key + '"]');
+          if (el) el.setAttribute(attr, val);
+        }
+        set('icon', 'href', '/brand/favicon/' + hit.slug + '.svg');
+        set('ico', 'href', '/brand/favicon/' + hit.slug + '.ico');
+        set('apple', 'href', '/brand/favicon/' + hit.slug + '-180.png');
+        set('manifest', 'href', hit.manifest);
+        set('theme', 'content', hit.theme);
+        set('title', 'content', hit.title);
+      })();
+    </script>
     <script>
       (function () {
         var path = window.location && window.location.pathname ? window.location.pathname : '';
