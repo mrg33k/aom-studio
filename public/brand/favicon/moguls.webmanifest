@@ -1,0 +1,14 @@
+{
+  "name": "Moguls",
+  "short_name": "Moguls",
+  "description": "The market for music fans.",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "start_url": "/moguls",
+  "scope": "/moguls",
+  "icons": [
+    { "src": "/brand/favicon/moguls-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/favicon/moguls-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

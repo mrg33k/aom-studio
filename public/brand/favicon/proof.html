@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Favicon system — proof</title><style>:root{
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+  --t-xs:11px; --t-sm:12px; --t-md:13px; --t-lg:16px; --t-xl:22px;
+  --obsidian:#0B0B0B; --ink:#11110F; --stone:#8B8982; --rule:#C9C6BE;
+  --paper:#F6F6F4; --paper-alt:#EEEDE8; --card:#FFFFFF; --gold:#B58A38;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:500 var(--t-md)/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--paper-alt);color:var(--ink);padding:var(--s6)}
+h1{font-size:var(--t-xl);font-weight:800;letter-spacing:-0.01em;color:var(--obsidian)}
+.sub{color:var(--stone);margin:var(--s1) 0 var(--s6);font-size:var(--t-sm);max-width:64ch}
+h2{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:0.09em;color:var(--stone);
+  margin:var(--s6) 0 var(--s3)}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:var(--s3);
+  padding:var(--s5);box-shadow:0 1px 2px rgba(11,11,10,.04),0 var(--s1) var(--s5) rgba(11,11,10,.06)}
+.strip{background:#DEE1E6;padding:var(--s2) var(--s2) 0;border-radius:var(--s3);
+  margin-bottom:var(--s3);box-shadow:inset 0 -1px 0 rgba(11,11,10,.08)}
+.strip.d{background:#202124}
+.strip.d .tab{background:#35363A;color:var(--paper)}
+.tab{background:var(--card);display:inline-flex;align-items:center;gap:var(--s2);
+  padding:var(--s2) var(--s4) var(--s2) var(--s3);border-radius:var(--s3) var(--s3) 0 0;
+  font-size:var(--t-sm);color:#3C4043;margin-right:var(--s1)}
+.tab img{width:16px;height:16px}
+img{display:block}
+.row{display:flex;flex-wrap:wrap;gap:var(--s6);align-items:flex-end}
+.item{display:flex;flex-direction:column;gap:var(--s2);align-items:flex-start}
+.item b{font-size:var(--t-sm);color:var(--obsidian)}
+.item i{font-style:normal;font-size:var(--t-xs);color:var(--stone)}
+.grid{display:flex;flex-wrap:wrap;gap:var(--s5)}
+.cell{display:flex;flex-direction:column;align-items:center;gap:var(--s2);width:112px}
+.cell b{font-size:var(--t-xs);font-weight:600;color:var(--ink);text-align:center;line-height:1.3}
+.ladder{display:flex;gap:var(--s5);align-items:flex-end}
+.ladder .item{align-items:center}
+.tile{border-radius:var(--s2);box-shadow:0 var(--s1) var(--s3) rgba(11,11,10,.14)}
+</style></head><body><h1>Favicon system</h1><div class="sub">Three brands, one standard: a single bold shape, drawn as paths, optically matched, on its own ground.</div><h2>Browser tab &mdash; the size that actually ships</h2><div class="card"><div class="strip"><span class="tab"><img src="aom.svg">Ahead of Market</span><span class="tab"><img src="corner.svg">Corner</span><span class="tab"><img src="moguls.svg">Moguls</span></div><div class="strip d"><span class="tab"><img src="aom.svg">Ahead of Market</span><span class="tab"><img src="corner.svg">Corner</span><span class="tab"><img src="moguls.svg">Moguls</span></div></div><h2>Size ladder</h2><div class="card"><div class="ladder"><div class="item"><img class="tile" src="aom.svg" width="16" height="16"><i>16px</i></div><div class="item"><img class="tile" src="aom.svg" width="32" height="32"><i>32px</i></div><div class="item"><img class="tile" src="aom.svg" width="64" height="64"><i>64px</i></div><div class="item"><img class="tile" src="corner.svg" width="16" height="16"><i>16px</i></div><div class="item"><img class="tile" src="corner.svg" width="32" height="32"><i>32px</i></div><div class="item"><img class="tile" src="corner.svg" width="64" height="64"><i>64px</i></div><div class="item"><img class="tile" src="moguls.svg" width="16" height="16"><i>16px</i></div><div class="item"><img class="tile" src="moguls.svg" width="32" height="32"><i>32px</i></div><div class="item"><img class="tile" src="moguls.svg" width="64" height="64"><i>64px</i></div></div></div><h2>Home screen &mdash; full marks, detail intact</h2><div class="card"><div class="row"><div class="item"><img class="tile" src="aom-180.png" width="112" height="112"><b>Ahead of Market</b><i>the monogram, gold on obsidian</i></div><div class="item"><img class="tile" src="corner-180.png" width="112" height="112"><b>Corner</b><i>its own mark, on navy</i></div><div class="item"><img class="tile" src="moguls-180.png" width="112" height="112"><b>Moguls</b><i>the thick Druk M</i></div></div></div></body></html>

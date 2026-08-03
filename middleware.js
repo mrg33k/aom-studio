@@ -84,6 +84,22 @@ const PAGE_META = {
     siteName: 'Corner by AOM',
     urlBase: 'https://www.aheadofmarket.com',
   },
+  // CV6 is the live Corner surface and CVG its sibling; both were missing here,
+  // so a share of either fell through to the AOM card. (aom:favicon-system)
+  '/cv6': {
+    title: 'Corner — Your AI Team in a Dashboard',
+    description: 'Corner is the AI-powered business dashboard by AOM. Agents that run video, social, outreach, and strategy — in one place, for businesses that move.',
+    image: 'https://www.aheadofmarket.com/corner-og.png',
+    siteName: 'Corner by AOM',
+    urlBase: 'https://www.aheadofmarket.com',
+  },
+  '/cvg': {
+    title: 'Corner — Your AI Team in a Dashboard',
+    description: 'Corner is the AI-powered business dashboard by AOM. Agents that run video, social, outreach, and strategy — in one place, for businesses that move.',
+    image: 'https://www.aheadofmarket.com/corner-og.png',
+    siteName: 'Corner by AOM',
+    urlBase: 'https://www.aheadofmarket.com',
+  },
   '/brand/v4': {
     title: 'AOM Brand Guidelines v4',
     description: 'The official AOM brand guide. Colors, typography, logo usage, and design system.',
