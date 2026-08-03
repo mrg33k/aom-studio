@@ -1,18 +1,10 @@
 <title>K.R.A.K.E.N. Corps</title>
 
 <style>
-  /* ============================================================
-     K.R.A.K.E.N. CORPS - home, built to design-set-v1.
-     Display face is Bebas Neue (SIL OFL), subset to the glyphs used and
-     inlined, because the artifact CSP blocks font CDNs and a silent
-     fallback to a system sans would lose the whole headline.
-     Everything that is not the headline is monospace, the way a
-     drawing sheet letters everything in one stencil face.
-     ============================================================ */
-
+  
   @font-face {
     font-family: "KKCDisplay";
-    src: url("data:font/woff2;base64,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") format("woff2");
+    src: url("data:font/woff2;base64,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") format("woff2");
     font-weight: 400; font-style: normal; font-display: block;
   }
 
@@ -56,8 +48,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ---------- the drawing sheet ---------- */
-
+  
   .sheet {
     position: relative;
     padding: var(--s3);
@@ -65,23 +56,18 @@
     cursor: crosshair;
   }
 
-  /* corner registration crosses, outside the frame rule */
-  .reg { position: absolute; width: 22px; height: 22px; pointer-events: none; }
+    .reg { position: absolute; width: 22px; height: 22px; pointer-events: none; }
   .reg::before, .reg::after { content: ""; position: absolute; background: var(--rule); }
   .reg::before { width: 22px; height: 1px; top: 11px; }
   .reg::after  { height: 22px; width: 1px; left: 11px; }
   .reg.tl { top: 2px; left: 2px; }  .reg.tr { top: 2px; right: 2px; }
   .reg.bl { bottom: 2px; left: 2px; } .reg.br { bottom: 2px; right: 2px; }
 
-  /* the frame rule the whole drawing sits inside */
-  .frame {
+    .frame {
     position: relative;
-    border: 1px solid transparent;   /* holds layout; the rules below are what you see */
-    padding: 0 20px var(--s2);
+    border: 1px solid transparent;       padding: 0 20px var(--s2);
   }
-  /* The sheet plots itself rather than fading in. Rules draw outward from the
-     corners, which is what a pen plotter actually does and what no template does. */
-  .fr { position: absolute; background: var(--rule); pointer-events: none; }
+    .fr { position: absolute; background: var(--rule); pointer-events: none; }
   .fr.t, .fr.b { left: -1px; right: -1px; height: 1px; transform: scaleX(0); }
   .fr.l, .fr.r { top: -1px; bottom: -1px; width: 1px; transform: scaleY(0); }
   .fr.t { top: -1px; transform-origin: left center; }
@@ -97,11 +83,9 @@
   .plot .fr.l, .plot .fr.r { transition-delay: .10s; }
   .plot .rows b { opacity: 1; }
   .plot .omark, .plot .spine { opacity: 1; }
-  .rows b.hot { color: var(--ink); }            /* tracks where you are on the sheet */
-  .rows b.hot::before { background: var(--accent); }
+  .rows b.hot { color: var(--ink); }              .rows b.hot::before { background: var(--accent); }
 
-  /* row letters down both edges, with a tick across the rule */
-  .rows { position: absolute; inset: 0; pointer-events: none; }
+    .rows { position: absolute; inset: 0; pointer-events: none; }
   .rows b {
     opacity: 0; transition: opacity .3s ease, color .35s ease;
     position: absolute; font-family: var(--mono); font-size: 11px; color: var(--ink-dim);
@@ -111,13 +95,11 @@
   .rows b.l { left: -17px; } .rows b.l::before { left: 11px; }
   .rows b.r { right: -17px; } .rows b.r::before { right: 11px; }
 
-  /* the registration circle that sits on the top and bottom rule */
-  .omark { opacity: 0; transform-origin: center; transition: opacity .4s ease .5s;
+    .omark { opacity: 0; transform-origin: center; transition: opacity .4s ease .5s;
            position: absolute; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
   .omark.top { top: 0; } .omark.bot { top: 100%; }
 
-  /* vertical spine annotations */
-  .spine {
+    .spine {
     opacity: 0; transition: opacity .4s ease .55s;
     display: block;
     position: absolute; top: 50%; font-family: var(--mono); font-size: 9px;
@@ -133,36 +115,36 @@
   .cross .cx { width: 1px; top: 0; bottom: 0; }
   .cross .cy { height: 1px; left: 0; right: 0; }
 
-  /* ---------- header ---------- */
-
+  
   .head {
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
-    gap: var(--s3); padding: var(--s3) 0;
-    border-bottom: 1px solid var(--rule);
-    margin: 0 calc(var(--s3) * -1 - 6px) 0;
+    gap: var(--s3); padding: var(--s2) 0;
+        margin: 0 calc(var(--s3) * -1 - 4px) 0;
     padding-left: var(--s3); padding-right: var(--s3);
   }
-  .mark { font-family: var(--mono); font-size: clamp(12px, 3.87vw, 16px); line-height: 1;
+  .mark { font-family: var(--mono); font-size: clamp(13px, 3.87vw, 16px); line-height: 1;
           font-weight: 400; letter-spacing: .06em; margin: 0; white-space: nowrap; }
 
-  /* full-screen menu (2026-08-03): same inks, its own surface, a fade you can
-     feel; the burger becomes the close */
-  nav {
+    nav {
     position: fixed; inset: 0; z-index: 40;
     display: flex; flex-direction: column; justify-content: center;
-    padding-left: clamp(24px, 14vw, 220px); gap: var(--s4);
+        padding-left: 36px; gap: var(--s4);
     background: var(--ground);
     opacity: 0; pointer-events: none;
     transition: opacity .35s ease;
   }
   nav::before {
-    content: ""; position: absolute; inset: 16px;
+    content: ""; position: absolute; inset: var(--s3);
     border: 1px solid var(--hair); pointer-events: none;
+  }
+  @media (min-width: 900px) {
+    nav { padding-left: 96px; }
+    nav::before { inset: var(--s6); }
   }
   nav.open { opacity: 1; pointer-events: auto; }
   a.mark { text-decoration: none; color: var(--ink); }
   nav a {
-    font-family: var(--disp); font-size: clamp(29px, 9.55vw, 45px);
+        font-family: var(--disp); font-size: clamp(36px, 9.2vw, 64px);
     line-height: 1.04; letter-spacing: .01em; text-transform: uppercase;
     color: var(--ink); text-decoration: none; width: fit-content;
     opacity: 0; transform: translateY(8px);
@@ -187,6 +169,7 @@
     display: inline-flex; align-items: center; gap: var(--s2);
     background: none; border: 1px solid var(--hair); cursor: pointer;
     padding: var(--s1) var(--s2); margin-left: auto; line-height: 0;
+        position: relative; z-index: 41;
   }
   .print svg { stroke: var(--ink-dim); stroke-width: 1.5; transition: stroke .25s; }
   .print svg.on { stroke: var(--accent); }
@@ -198,8 +181,7 @@
   .burger i + i { margin-top: 4px; }
   .burger:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
 
-  /* ---------- hero ---------- */
-
+  
   h1 .ln { display: block; overflow: hidden; }
   h1 .ln i {
     display: block; font-style: normal;
@@ -214,24 +196,23 @@
 
   h1 {
     font-family: var(--disp); font-weight: 400;
-    font-size: clamp(29px, 9.55vw, 45px);
-    line-height: .90; letter-spacing: .005em;
-    margin: var(--s4) 0 var(--s3);
+    font-size: clamp(29px, 7.5vw, 45px);       line-height: .90; letter-spacing: .005em;
+    margin: var(--s3) 0 var(--s3);
     text-transform: uppercase;
   }
   .cred {
-    font-size: clamp(9px, 2.29vw, 12px); letter-spacing: .04em; color: var(--ink-dim);
-    margin: 0 0 var(--s2); max-width: 40ch;
+    font-size: clamp(9px, 2.29vw, 11px); letter-spacing: .04em; color: var(--ink-dim);
+    margin: 0 0 var(--s4); max-width: 40ch;
   }
   .cred, .cta { opacity: 0; transition: opacity .5s ease; }
   .plot .cred { opacity: 1; transition-delay: .62s; }
   .plot .cta  { opacity: 1; transition-delay: .70s; }
   .cta {
     display: flex; align-items: center; justify-content: space-between; gap: var(--s4);
-    width: fit-content; min-width: 42%; padding: var(--s1) var(--s3); min-height: 0;
+    width: fit-content; padding: var(--s2) var(--s3); min-height: 0;
     color: var(--ink); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
     background: none;
-    font: inherit; font-size: clamp(11px, 2.5vw, 12px); letter-spacing: .16em;
+    font: inherit; font-size: 11px; letter-spacing: .16em;
     text-transform: uppercase;
     text-decoration: none; cursor: pointer; transition: background .2s, color .2s;
   }
@@ -241,15 +222,13 @@
   .cta:hover span, .cta:focus-visible span { color: var(--sheet); transform: scale(1.6) translateX(3px); }
   .cta:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
-  /* ---------- the plate ---------- */
-
+  
   .plate { position: relative; margin: var(--s2) 0 0; z-index: 0; }
   .cta { position: relative; z-index: 2; }
   .fx { position: absolute; width: 0; height: 0; pointer-events: none; }
   .creature {
     width: 68%; margin: 0 auto; aspect-ratio: 1300 / 1115;
-    filter: url(#drift);          /* animated turbulence - the arms undulate */
-    background-color: var(--ink); opacity: .92;
+    filter: url(#drift);              background-color: var(--ink); opacity: .92;
     -webkit-mask-image: var(--plate); mask-image: var(--plate);
     -webkit-mask-size: contain; mask-size: contain;
     -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
@@ -295,21 +274,23 @@
   .coline.live polyline { stroke: var(--flare); }
   .coline.live rect.pin { fill: var(--flare); }
 
-  /* ---------- company blocks ---------- */
-
+  
   .cards { display: grid; gap: var(--s1); margin: var(--s4) 0 0; }
   .card {
-    position: relative; display: flex; align-items: center; gap: var(--s2);
+    position: relative; display: grid; grid-template-columns: auto 1fr;
+    grid-template-areas: "no h2" "no p";
+    gap: var(--s1) var(--s2); align-items: start;
     border: 1px solid var(--hair); border-top-color: transparent;
     padding: var(--s1) var(--s2);
     cursor: pointer; text-align: left; color: inherit;
-    transition: border-color .25s, background .25s;
-  }
-  .card {
     opacity: 0; transform: translateX(10px);
     transition: opacity .42s ease, transform .42s cubic-bezier(.22,.61,.36,1),
                 border-color .25s, background .25s;
   }
+  .card .no { grid-area: no; }
+  .card h2 { grid-area: h2; min-width: 0; }
+  .card p { grid-area: p; min-width: 0; }
+    .cthumb { display: none; }
   .card.seen { opacity: 1; transform: none; }
   .card::after {
     content: ""; position: absolute; left: -1px; right: -1px; top: -1px; height: 1px;
@@ -328,45 +309,76 @@
     color: var(--accent); flex: none; min-width: 32px;
   }
   .card h2 { font-family: var(--mono); font-size: clamp(9px, 2.77vw, 13px); line-height: 1.3;
-             letter-spacing: .06em; margin: 0 0 2px; text-transform: uppercase; }
+             letter-spacing: .06em; margin: 0 0 2px; text-transform: uppercase;
+             border-bottom: 1px solid var(--hair); padding-bottom: var(--s1);
+             width: fit-content; }
   .card p { font-size: clamp(9px, 2.4vw, 11px); line-height: 1.3; color: var(--ink-dim); margin: 0; }
 
-  /* ---------- title block ---------- */
+  
+      .bd { display: none; }
+  .bm { display: inline; }
+  @media (min-width: 900px) { .bd { display: inline; } .bm { display: none; } }
 
-  /* Three groups will not sit in one row on a phone without going illegible,
-     so it becomes a 2x2 block. Still one deliberate unit, not a sprawl. */
   .titleblock {
-    display: grid; grid-template-columns: 1fr 1fr; align-items: start;
-    gap: var(--s3) var(--s2);
-    border-top: 1px solid var(--rule);
-    margin: var(--s4) calc(var(--s3) * -1) 0; padding: var(--s3);
+    display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
+    gap: 0;
+        border-top: 1px solid var(--rule);
+    margin: var(--s4) -20px calc(-1 * var(--s2)); padding: 0;
   }
   .tb { font-family: var(--mono); font-size: 9px; line-height: 1.6; white-space: nowrap;
         margin: 0;
         color: var(--ink-dim); letter-spacing: .06em; }
   .tb b { color: var(--ink); font-weight: 400; }
-  .tb.readout { grid-column: 1 / -1; font-variant-numeric: tabular-nums;
-                border-top: 1px solid var(--hair); padding-top: var(--s2); }
-  .tbgroup { display: flex; align-items: flex-start; gap: var(--s2); min-width: 0; }
-  .tb.unit { display: none; align-self: flex-end; margin: 0 0 8px; }
-  @media (min-width: 900px) { .tb.unit { display: block; } }
+  .tb.slabel { margin: 0 0 var(--s1); }
+  .tbgroup { display: flex; align-items: flex-start; gap: var(--s2); min-width: 0;
+             padding: var(--s2); }
+  .tbgroup:nth-child(odd) { border-right: 1px solid var(--rule); }
+  .tbgroup:nth-child(-n+2) { border-bottom: 1px solid var(--rule); }
+  .tb.unit { align-self: flex-end; margin: 0 0 8px; }
   .titleblock svg { max-width: 100%; height: auto; }
-  /* Patrik: keep the graphical version everywhere. Symbols scale down, never hide. */
-  @media (max-width: 899px) {
-    .titleblock { grid-template-columns: 1fr; }
-    .titleblock .tb { white-space: normal; }
+    @media (max-width: 899px) {
+        .titleblock { grid-template-columns: 58% 42%; }
+    .titleblock .tb { white-space: normal; letter-spacing: .02em; }
     .titleblock > .tbgroup > svg { width: 28px; height: 28px; }
-    .titleblock .tbgroup > div > svg { width: 130px; height: 18px; }
+    .titleblock .tbgroup > div > svg { width: 110px; height: 16px; }
     .tbgroup:nth-of-type(3) svg { width: 52px; height: 23px; }
   }
   .titleblock svg { flex: none; }
   @media (min-width: 900px) {
-    .titleblock { grid-template-columns: auto auto auto 1fr; gap: var(--s3) var(--s6); }
+    .titleblock { grid-template-columns: auto auto auto auto; justify-content: space-between;
+                  gap: var(--s3) var(--s6); border: none; border-top: 1px solid var(--rule); }
+    .tbgroup { padding: 0; }
+    .tbgroup:nth-child(odd) { border-right: none; }
+    .tbgroup:nth-child(-n+2) { border-bottom: none; }
     .tb { font-size: 11px; line-height: 1.7; }
-    .tb.readout { grid-column: auto; justify-self: end; text-align: right;
-                  border-top: none; padding-top: 0; }
   }
   .rulerwrap { display: flex; align-items: flex-end; gap: var(--s2); }
+
+    .titleblock.tbd { display: none; }
+  @media (min-width: 900px) {
+    .titleblock:not(.tbd) { display: none; }
+    .titleblock.tbd { display: grid; }
+    .tbd .tb { font-size: 13px; letter-spacing: .16em; }
+  }
+
+    .grad { position: absolute; top: -20px; left: 0; right: 0; height: 16px;
+          pointer-events: none; opacity: 0; transition: opacity .4s ease .5s; }
+  .plot .grad { opacity: 1; }
+  .grad i { position: absolute; bottom: 0; width: 1px; height: 4px; background: var(--rule); }
+  .grad i.ten { height: 7px; }
+  .grad b { position: absolute; bottom: 8px; transform: translateX(-50%);
+            font-family: var(--mono); font-weight: 400; font-size: 9px;
+            color: var(--ink-dim); letter-spacing: .06em; }
+
+    .drops { position: absolute; inset: 0; width: 100%; height: 100%;
+           pointer-events: none; z-index: 1; overflow: visible;
+           opacity: 0; transition: opacity .5s ease .6s; }
+  .plot .drops { opacity: 1; }
+  .drops polyline { stroke: var(--hair); stroke-width: 1; fill: none; }
+  .drops .dnode circle { fill: var(--sheet); stroke: var(--rule); }
+  .drops .dnode path { stroke: var(--rule); fill: none; }
+  .drops g.live polyline { stroke: var(--flare); }
+    @media (min-width: 900px) { .colabel, .callouts { display: none; } }
 
   .note {
     max-width: 62ch; margin: var(--s6) auto var(--s7); padding: 0 var(--s4);
@@ -375,28 +387,35 @@
   .note b { color: var(--ink); font-weight: 400; }
   .note p { margin: 0 0 var(--s4); }
 
-  /* ---------- desktop ---------- */
-
+  
   @media (min-width: 900px) {
-    .mark { font-size: 16px; letter-spacing: .18em; }
-    .creature { width: 60%; margin: 0 auto; }
+    .mark { font-size: 22px; letter-spacing: .18em; }
+    .creature { width: 100%; margin: 0; }
     .spine { display: block; }
     .sheet { padding: var(--s6); }
     .frame { padding: 0 var(--s6) var(--s4); }
     .head { gap: var(--s4); padding-top: var(--s4); padding-bottom: var(--s4); }
     h1 { margin-bottom: var(--s4); }
     .cred { margin-bottom: var(--s4); }
-    .cta { padding: var(--s3) var(--s4); }
+    .cta { padding: var(--s3) var(--s4); min-width: 192px; }
     .head { margin: 0 calc(var(--s6) * -1) 0; padding-left: var(--s6); padding-right: var(--s6); }
     .titleblock { margin: var(--s6) calc(var(--s6) * -1) 0; padding: var(--s4) var(--s6); }
 
-    .hero { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s7); align-items: center; }
+        .hero { display: grid; grid-template-columns: 38% 1fr; gap: 0; align-items: center; }
     h1 { font-size: clamp(44px, 3.6vw, 56px); margin-top: var(--s6); }
     .cred { max-width: 48ch; }
-    .plate { margin-top: 0; }
+    .plate { margin-top: 0; width: 92%; }
     .cards { grid-template-columns: repeat(2, 1fr); gap: var(--s3); }
   }
-  @media (min-width: 1240px) { .cards { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 900px) {
+        .card { grid-template-columns: auto 1fr auto; padding: var(--s3);
+            grid-template-areas: "no h2 h2" "no p thumb"; }
+    .card h2 { font-size: 11px; letter-spacing: .02em; }
+    .cthumb { grid-area: thumb; display: block; width: 84px; height: 76px; align-self: center; }
+    .cthumb ellipse, .cthumb circle, .cthumb path, .cthumb rect { stroke: var(--rule); fill: none; }
+    .card .no { font-size: 22px; min-width: 28px; }
+  }
+    @media (min-width: 1240px) { .cards { grid-template-columns: 1.05fr .99fr .93fr 1.03fr; } }
 
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition-duration: .01ms !important; }
@@ -433,6 +452,8 @@
     <i class="fr t"></i><i class="fr r"></i><i class="fr b"></i><i class="fr l"></i>
     <div class="ticks t" id="ticksT"></div><div class="ticks b" id="ticksB"></div>
     <div class="rows" id="rows"></div>
+    <svg class="drops" id="drops" aria-hidden="true"></svg>
+    <div class="grad" id="grad" aria-hidden="true"></div>
     <svg class="omark top" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
       <circle cx="11" cy="11" r="7" fill="var(--sheet)" stroke="var(--rule)"/>
       <path d="M11 1v20M1 11h20" stroke="var(--rule)"/>
@@ -442,7 +463,7 @@
       <path d="M11 1v20M1 11h20" stroke="var(--rule)"/>
     </svg>
     <span class="spine l">DWG. KKC-001-A</span>
-    <span class="spine r">EST. GLENDALE, ARIZONA</span>
+    <span class="spine r">DATE: 08-03-26</span>
 
     <header class="head">
       <a class="mark" href="./">K.R.A.K.E.N. CORPS</a>
@@ -486,31 +507,44 @@
     <div class="cards" id="cards">
       <article class="card" tabindex="0" data-card="0">
         <span class="no">01</span>
-        <div>
-          <h2>Silent Service 3D Printing, LLC</h2>
-          <p>Industrial and defence additive manufacturing</p>
-        </div>
+        <h2>Silent Service 3D Printing, LLC</h2>
+        <p>Industrial and defence additive manufacturing</p>
+        <svg class="cthumb" viewBox="0 0 96 84" aria-hidden="true">
+            <path d="M12 42 C24 22 42 16 58 16 A26 26 0 1 1 58 68 C42 68 24 62 12 42 Z"/>
+            <path d="M12 42 H 84 M 58 16 C 50 32 50 52 58 68 M 34 22 C 28 34 28 50 34 62"/>
+            <path d="M48 12 V 72"/>
+          </svg>
       </article>
       <article class="card" tabindex="0" data-card="1">
         <span class="no">02</span>
-        <div>
-          <h2>BRK, LLC</h2>
-          <p>Medical devices and custom prosthetics</p>
-        </div>
+        <h2>BRK, LLC</h2>
+        <p>Blue Ringed Kraken - Medical devices and custom prosthetics</p>
+        <svg class="cthumb" viewBox="0 0 96 84" aria-hidden="true">
+            <circle cx="48" cy="42" r="10"/><circle cx="48" cy="42" r="19"/><circle cx="48" cy="42" r="28"/>
+            <path d="M48 6v72M12 42h72"/>
+          </svg>
       </article>
       <article class="card" tabindex="0" data-card="2">
         <span class="no">03</span>
-        <div>
-          <h2>Red Dragon Consulting, LLC</h2>
-          <p>Business and brand development grounded in psychology</p>
-        </div>
+        <h2>Red Dragon Consulting, LLC</h2>
+        <p>Business and brand development grounded in psychology</p>
+        <svg class="cthumb" viewBox="0 0 96 84" aria-hidden="true">
+            <path d="M16 70 C22 40 44 22 80 20 M20 74 C28 46 48 30 82 28"/>
+            <rect x="22" y="56" width="12" height="9" transform="rotate(-32 28 60)"/>
+            <rect x="36" y="42" width="12" height="9" transform="rotate(-24 42 46)"/>
+            <rect x="52" y="32" width="12" height="9" transform="rotate(-14 58 36)"/>
+            <rect x="68" y="26" width="12" height="9" transform="rotate(-6 74 30)"/>
+          </svg>
       </article>
       <article class="card" tabindex="0" data-card="3">
         <span class="no">04</span>
-        <div>
-          <h2>Platypus Psychological Engineering</h2>
-          <p>501(c)(3) research nonprofit</p>
-        </div>
+        <h2>Platypus Psychological Engineering</h2>
+        <p>501(c)(3) research nonprofit</p>
+        <svg class="cthumb" viewBox="0 0 96 84" aria-hidden="true">
+            <circle cx="48" cy="42" r="12"/><circle cx="48" cy="42" r="24"/>
+            <circle cx="48" cy="42" r="3"/>
+            <path d="M48 4v76M8 42h80M30 24l36 36M66 24L30 60"/>
+          </svg>
       </article>
     </div>
 
@@ -520,12 +554,12 @@
           <circle cx="23" cy="23" r="13" fill="none" stroke="var(--rule)"/>
           <path d="M23 4v38M4 23h38" stroke="var(--rule)"/>
         </svg>
-        <p class="tb">K.R.A.K.E.N. = KNOWLEDGE / RESOURCES<br>ACCESSIBILITY / KEYSTONE<br>EDUCATION / NETWORKING</p>
+        <p class="tb">UNLESS OTHERWISE SPECIFIED:<br>DIMENSIONS ARE IN INCHES<br>ANGLES &#177;0.5&#176;</p>
       </div>
 
       <div class="tbgroup">
         <div>
-          <p class="tb" style="margin:0 0 4px">SCALE: 1:2</p>
+          <p class="tb slabel">SCALE: 1:2</p>
           <svg width="150" height="22" viewBox="0 0 188 26" aria-hidden="true">
             <path d="M2 2v12M48 6v8M94 6v8M140 6v8M186 2v12M2 8h184" stroke="var(--rule)" fill="none"/>
             <text class="co" x="2"   y="25" text-anchor="middle">0</text>
@@ -546,32 +580,47 @@
           <path d="M20 3v36M2 21h36" stroke="var(--rule)" fill="none"/>
           <path d="M54 8l34 6v14l-34 6z" fill="none" stroke="var(--rule)"/>
         </svg>
-        <p class="tb">DRAWN: <b>AOM</b><br>CHECKED: <b>QA</b><br>APPROVED: <b>M. MCDONALD, CEO</b></p>
       </div>
 
-      <p class="tb readout">CURSOR <b id="coords">0000 , 0000</b>
-        &nbsp;&nbsp; CONTACT <b>+1 (623) 296-1416</b></p>
+      <div class="tbgroup">
+        <p class="tb">DRAWN: <b>AOM</b><br>CHECKED: <b>QA</b><br>APPROVED:<br class="bm"> <b>M. MCDONALD, CEO</b></p>
+      </div>
+    </div>
+
+        <div class="titleblock tbd">
+      <div class="tbgroup">
+        <svg width="30" height="30" viewBox="0 0 46 46" aria-hidden="true">
+          <circle cx="23" cy="23" r="13" fill="none" stroke="var(--rule)"/>
+          <path d="M23 4v38M4 23h38" stroke="var(--rule)"/>
+        </svg>
+        <p class="tb">DWG <b>KKC-001</b></p>
+      </div>
+      <div class="tbgroup"><p class="tb">SDVOSB GLENDALE, AZ</p></div>
+      <div class="tbgroup"><p class="tb">+1 (623) 296-1416</p></div>
+      <div class="tbgroup">
+        <svg width="62" height="28" viewBox="0 0 96 42" aria-hidden="true">
+          <circle cx="20" cy="21" r="14" fill="none" stroke="var(--rule)"/>
+          <circle cx="20" cy="21" r="5"  fill="none" stroke="var(--rule)"/>
+          <path d="M20 3v36M2 21h36" stroke="var(--rule)" fill="none"/>
+          <path d="M54 8l34 6v14l-34 6z" fill="none" stroke="var(--rule)"/>
+        </svg>
+      </div>
     </div>
   </div>
 </main>
-
 
 <script>
 (function () {
   "use strict";
 
-  /* A phone lays out at 980px and scales down without this, which kills every
-     breakpoint below. The head is supplied by the host, so it goes in here. */
-  if (!document.querySelector('meta[name="viewport"]')) {
+    if (!document.querySelector('meta[name="viewport"]')) {
     var mv = document.createElement("meta");
     mv.name = "viewport";
     mv.content = "width=device-width, initial-scale=1, viewport-fit=cover";
     document.head.appendChild(mv);
   }
 
-  /* interval ticks along the top and bottom rules - the small marks that make
-     a drawing sheet read as an instrument rather than a border */
-  ["ticksT", "ticksB"].forEach(function (id) {
+    ["ticksT", "ticksB"].forEach(function (id) {
     var rail = document.getElementById(id);
     [9, 91].forEach(function (pc) {          // comp: one tick just inside each corner
       var t = document.createElement("i");
@@ -581,24 +630,37 @@
     });
   });
 
-  /* row letters A-F, evenly down both edges */
+      var ROWY_M = [0.101, 0.213, 0.347, 0.600, 0.730, 0.857];
   var rows = document.getElementById("rows");
-  ["A", "B", "C", "D", "E", "F"].forEach(function (letter, i) {
-    var y = ((i + 0.5) / 6 * 100).toFixed(2) + "%";
-    ["l", "r"].forEach(function (side) {
-      var b = document.createElement("b");
-      b.className = side;
-      b.style.top = y;
-      b.textContent = letter;
-      rows.appendChild(b);
+  var rowsMQ = matchMedia("(max-width: 899px)");
+  function placeRows() {
+    rows.textContent = "";
+    var fMax = null;
+    if (rowsMQ.matches) {
+      var tb = document.querySelector(".titleblock");
+      if (tb && rows.offsetHeight) {
+        fMax = (tb.getBoundingClientRect().top - rows.getBoundingClientRect().top - 14)
+               / rows.offsetHeight;
+      }
+    }
+    ["A", "B", "C", "D", "E", "F"].forEach(function (letter, i) {
+      var f = rowsMQ.matches ? ROWY_M[i] : (i + 0.5) / 6;
+      if (fMax !== null && f > fMax) f = fMax;
+      ["l", "r"].forEach(function (side) {
+        var b = document.createElement("b");
+        b.className = side;
+        b.style.top = (f * 100).toFixed(2) + "%";
+        b.textContent = letter;
+        rows.appendChild(b);
+      });
     });
-  });
+  }
+  placeRows();
+  rowsMQ.addEventListener("change", placeRows);
 
-  /* part callouts, positioned in percent so they hold at any width */
-  var NS = "http://www.w3.org/2000/svg";
+    var NS = "http://www.w3.org/2000/svg";
   var CALLOUTS = [
-    /* pin = % of the CREATURE, not the plate, so it stays on the anatomy */
-    { pin: [24, 52], turn: [3, 34], text: [1, 30], anchor: "end",  card: 0,
+        { pin: [24, 52], turn: [3, 34], text: [1, 30], anchor: "end",  card: 0,
       no: "01", lines: ["SILENT SERVICE", "ADDITIVE MFG"] },
     { pin: [70, 26], turn: [87, 8],  text: [89, 4],  anchor: "start", card: 1,
       no: "02", lines: ["BRK, LLC", "MEDICAL DEVICES"] },
@@ -621,8 +683,7 @@
     document.body.classList.toggle("alert", on);
   }
 
-  /* creature box as a fraction of the plate, so a creature pin becomes a plate pin */
-  function toPlate(px, py) {
+    function toPlate(px, py) {
     var cw = plate.querySelector(".creature").getBoundingClientRect();
     var pl = plate.getBoundingClientRect();
     if (!pl.width || !pl.height) return [px, py];
@@ -649,8 +710,7 @@
     g.dataset.card = c.card;
     plate.appendChild(lab);
 
-    /* the callout and its block are the same company, so they light together */
-    [lab, g].forEach(function (el) {
+        [lab, g].forEach(function (el) {
       el.addEventListener("mouseenter", function () { raise(c.card, true); });
       el.addEventListener("mouseleave", function () { raise(c.card, false); });
       el.addEventListener("click", function () {
@@ -660,12 +720,60 @@
     });
   });
 
+    var TIPS = [[28.6, 98.6], [57.5, 91.2], [80, 78]];
+  var DROPX_D = [0.410, 0.554, 0.739], DROPX_M = [0.249, 0.443, 0.664];
+  var dropsSvg = document.getElementById("drops");
+  var frameEl = document.getElementById("frame");
+  function renderDrops() {
+    if (!dropsSvg || !frameEl) return;
+    dropsSvg.textContent = "";
+    var fr = frameEl.getBoundingClientRect();
+    var cwEl = plate && plate.querySelector(".creature");
+    var cardsEl = document.getElementById("cards");
+    if (!fr.width || !cwEl || !cardsEl) return;
+    var cw = cwEl.getBoundingClientRect();
+    var cr = cardsEl.getBoundingClientRect();
+    var desk = matchMedia("(min-width: 900px)").matches;
+    var xs = desk ? DROPX_D : DROPX_M;
+    dropsSvg.setAttribute("viewBox", "0 0 " + fr.width + " " + fr.height);
+    var nodeY = desk ? (cr.top - fr.top) : (cw.bottom - fr.top + 20);
+    TIPS.forEach(function (tp, i) {
+      var tx = cw.left - fr.left + tp[0] / 100 * cw.width;
+      var ty = cw.top - fr.top + tp[1] / 100 * cw.height;
+      var nx = xs[i] * fr.width;
+      var jog = nodeY - 40;
+      var g = el("g", { "data-card": i + 1 });
+      g.appendChild(el("polyline", { points: tx + "," + ty + " " + tx + "," + jog + " " +
+                                             nx + "," + jog + " " + nx + "," + (nodeY - 8) }));
+      var node = el("g", { "class": "dnode" });
+      node.appendChild(el("circle", { cx: nx, cy: nodeY, r: 7 }));
+      node.appendChild(el("path", { d: "M" + (nx - 12) + " " + nodeY + "H" + (nx + 12) +
+                                       "M" + nx + " " + (nodeY - 12) + "V" + (nodeY + 12) }));
+      g.appendChild(node);
+      dropsSvg.appendChild(g);
+    });
+  }
+  renderDrops();
+  addEventListener("resize", renderDrops);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderDrops);
+
+    var grad = document.getElementById("grad");
+  if (grad) for (var gi = 0; gi <= 100; gi += 2) {
+    var gt = document.createElement("i");
+    if (gi % 10 === 0) gt.className = "ten";
+    gt.style.left = gi + "%";
+    grad.appendChild(gt);
+    if (gi % 10 === 0 && gi > 0) {
+      var gn = document.createElement("b");
+      gn.style.left = gi + "%";
+      gn.textContent = gi;
+      grad.appendChild(gn);
+    }
+  }
+
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* Patrik 2026-08-02: whiteprint during the day, blueprint from 16:00.
-     The clock sets the default; the sun/moon control overrides it, and a manual
-     pick holds only for the rest of that day-part so the rhythm resumes. */
-  var themeBtn = document.getElementById("printToggle");
+    var themeBtn = document.getElementById("printToggle");
   function dayPart() {
     var h = new Date().getHours();
     var night = (h >= 16 || h < 6);           // day runs 06:00-16:00
@@ -692,19 +800,15 @@
     setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark", true);
   });
 
-  /* leader lines need their own length before they can be drawn */
-  Array.prototype.forEach.call(svg.querySelectorAll("polyline"), function (pl) {
+    Array.prototype.forEach.call(svg.querySelectorAll("polyline"), function (pl) {
     pl.style.setProperty("--len", pl.getTotalLength().toFixed(0));
   });
 
-  /* plot the sheet once, on load */
-  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
     requestAnimationFrame(function () { document.body.classList.add("plot"); });
   });
 
-  /* blocks and the plate settle as they arrive; nothing slides far enough to
-     make you wait for it */
-  var io = new IntersectionObserver(function (entries) {
+    var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
       if (!e.isIntersecting) return;
       e.target.classList.add("seen");
@@ -719,8 +823,7 @@
   var plateEl = document.querySelector(".plate");
   if (reduce) { plateEl.classList.add("seen"); } else { io.observe(plateEl); }
 
-  /* the row letters read the sheet back to you as you move down it */
-  var rowEls = rows.querySelectorAll("b");
+    var rowEls = rows.querySelectorAll("b");
   var frameEl = document.getElementById("frame");
   var ticking = false;
   function trackRows() {
@@ -739,8 +842,7 @@
   addEventListener("resize", trackRows, { passive: true });
   trackRows();
 
-  /* the pin is anatomy, so it has to follow the creature when it resizes */
-  function repin() {
+    function repin() {
     CALLOUTS.forEach(function (c, i) {
       var g = svg.querySelectorAll("g.coline")[i];
       if (!g) return;
@@ -756,8 +858,7 @@
   addEventListener("load", repin);
   requestAnimationFrame(repin);
 
-  /* menu */
-  var burger = document.getElementById("burger"), nav = document.getElementById("nav");
+    var burger = document.getElementById("burger"), nav = document.getElementById("nav");
   if (burger && nav) {
     Array.prototype.forEach.call(nav.querySelectorAll("a"), function (a, i) {
       a.style.setProperty("--i", i);
@@ -777,8 +878,7 @@
     if (e.target.tagName === "A") { nav.classList.remove("open"); burger.setAttribute("aria-expanded", "false"); }
   });
 
-  /* the creature answers when a company is raised */
-  var cards = document.querySelectorAll(".card");
+    var cards = document.querySelectorAll(".card");
   var DETAIL = ["silent-service.html", "brk.html",
                 "red-dragon.html", "platypus.html"];
   Array.prototype.forEach.call(cards, function (card, i) {
@@ -795,8 +895,7 @@
     });
   });
 
-  /* crosshair + coordinate readout */
-  var sheet = document.getElementById("sheet"), cx = document.getElementById("cx"),
+    var sheet = document.getElementById("sheet"), cx = document.getElementById("cx"),
       cy = document.getElementById("cy"), coords = document.getElementById("coords");
   var crossEl = document.querySelector(".cross"), crossTimer = null;
   sheet.addEventListener("pointerdown", function (ev) {

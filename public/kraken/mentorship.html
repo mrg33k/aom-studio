@@ -2,22 +2,10 @@
 <title>K.R.A.K.E.N. Corps / Mentorship</title>
 
 <style>
-  /* ============================================================
-     K.R.A.K.E.N. CORPS - Mentorship, built to design-set-v1 04.
-     Foundations (tokens, font, sheet furniture, header, theme JS,
-     title block) are copied verbatim from kraken-what-we-do.html -
-     one system, not a re-derivation. Display face is Bebas Neue
-     (SIL OFL), subset and inlined, because the artifact CSP blocks
-     font CDNs and a silent fallback to a system sans would lose
-     the headline. Everything that is not display type is monospace,
-     the way a drawing sheet letters everything in one stencil face.
-     The intro slot is drafting furniture, not copy: the client has
-     never supplied the program description, so the sheet says so.
-     ============================================================ */
-
+  
   @font-face {
     font-family: "KKCDisplay";
-    src: url("data:font/woff2;base64,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") format("woff2");
+    src: url("data:font/woff2;base64,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") format("woff2");
     font-weight: 400; font-style: normal; font-display: block;
   }
 
@@ -61,8 +49,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ---------- the drawing sheet ---------- */
-
+  
   .sheet {
     position: relative;
     padding: var(--s3);
@@ -70,23 +57,18 @@
     cursor: crosshair;
   }
 
-  /* corner registration crosses, outside the frame rule */
-  .reg { position: absolute; width: 22px; height: 22px; pointer-events: none; }
+    .reg { position: absolute; width: 22px; height: 22px; pointer-events: none; }
   .reg::before, .reg::after { content: ""; position: absolute; background: var(--rule); }
   .reg::before { width: 22px; height: 1px; top: 11px; }
   .reg::after  { height: 22px; width: 1px; left: 11px; }
   .reg.tl { top: 2px; left: 2px; }  .reg.tr { top: 2px; right: 2px; }
   .reg.bl { bottom: 2px; left: 2px; } .reg.br { bottom: 2px; right: 2px; }
 
-  /* the frame rule the whole drawing sits inside */
-  .frame {
+    .frame {
     position: relative;
-    border: 1px solid transparent;   /* holds layout; the rules below are what you see */
-    padding: 0 20px var(--s2);
+    border: 1px solid transparent;       padding: 0 20px var(--s2);
   }
-  /* The sheet plots itself rather than fading in. Rules draw outward from the
-     corners, which is what a pen plotter actually does and what no template does. */
-  .fr { position: absolute; background: var(--rule); pointer-events: none; }
+    .fr { position: absolute; background: var(--rule); pointer-events: none; }
   .fr.t, .fr.b { left: -1px; right: -1px; height: 1px; transform: scaleX(0); }
   .fr.l, .fr.r { top: -1px; bottom: -1px; width: 1px; transform: scaleY(0); }
   .fr.t { top: -1px; transform-origin: left center; }
@@ -102,11 +84,9 @@
   .plot .fr.l, .plot .fr.r { transition-delay: .10s; }
   .plot .rows b { opacity: 1; }
   .plot .omark, .plot .spine { opacity: 1; }
-  .rows b.hot { color: var(--ink); }            /* tracks where you are on the sheet */
-  .rows b.hot::before { background: var(--accent); }
+  .rows b.hot { color: var(--ink); }              .rows b.hot::before { background: var(--accent); }
 
-  /* row letters down both edges, with a tick across the rule */
-  .rows { position: absolute; inset: 0; pointer-events: none; }
+    .rows { position: absolute; inset: 0; pointer-events: none; }
   .rows b {
     opacity: 0; transition: opacity .3s ease, color .35s ease;
     position: absolute; font-family: var(--mono); font-size: 11px; color: var(--ink-dim);
@@ -116,13 +96,11 @@
   .rows b.l { left: -17px; } .rows b.l::before { left: 11px; }
   .rows b.r { right: -17px; } .rows b.r::before { right: 11px; }
 
-  /* the registration circle that sits on the top and bottom rule */
-  .omark { opacity: 0; transform-origin: center; transition: opacity .4s ease .5s;
+    .omark { opacity: 0; transform-origin: center; transition: opacity .4s ease .5s;
            position: absolute; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
   .omark.top { top: 0; } .omark.bot { top: 100%; }
 
-  /* vertical spine annotations */
-  .spine {
+    .spine {
     opacity: 0; transition: opacity .4s ease .55s;
     display: block;
     position: absolute; top: 50%; font-family: var(--mono); font-size: 9px;
@@ -138,36 +116,35 @@
   .cross .cx { width: 1px; top: 0; bottom: 0; }
   .cross .cy { height: 1px; left: 0; right: 0; }
 
-  /* ---------- header ---------- */
-
+  
   .head {
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
-    gap: var(--s3); padding: var(--s3) 0;
-    border-bottom: 1px solid var(--rule);
-    margin: 0 calc(var(--s3) * -1 - 6px) 0;
-    padding-left: var(--s3); padding-right: var(--s3);
+    gap: var(--s3); padding: var(--s2) 0;
+        margin: 0 calc(var(--s3) * -1 - 4px) 0;       padding-left: var(--s3); padding-right: var(--s3);
   }
-  .mark { font-family: var(--mono); font-size: clamp(12px, 3.87vw, 16px); line-height: 1;
+  .mark { font-family: var(--mono); font-size: clamp(13px, 3.87vw, 16px); line-height: 1;
           font-weight: 400; letter-spacing: .06em; margin: 0; white-space: nowrap; }
 
-  /* full-screen menu (2026-08-03): same inks, its own surface, a fade you can
-     feel; the burger becomes the close */
-  nav {
+    nav {
     position: fixed; inset: 0; z-index: 40;
     display: flex; flex-direction: column; justify-content: center;
-    padding-left: clamp(24px, 14vw, 220px); gap: var(--s4);
+        padding-left: 36px; gap: var(--s4);
     background: var(--ground);
     opacity: 0; pointer-events: none;
     transition: opacity .35s ease;
   }
   nav::before {
-    content: ""; position: absolute; inset: 16px;
+    content: ""; position: absolute; inset: var(--s3);
     border: 1px solid var(--hair); pointer-events: none;
+  }
+  @media (min-width: 900px) {
+    nav { padding-left: 96px; }
+    nav::before { inset: var(--s6); }
   }
   nav.open { opacity: 1; pointer-events: auto; }
   a.mark { text-decoration: none; color: var(--ink); }
   nav a {
-    font-family: var(--disp); font-size: clamp(40px, 14.4vw, 80px);
+        font-family: var(--disp); font-size: clamp(36px, 9.2vw, 64px);
     line-height: 1.04; letter-spacing: .01em; text-transform: uppercase;
     color: var(--ink); text-decoration: none; width: fit-content;
     opacity: 0; transform: translateY(8px);
@@ -187,13 +164,13 @@
   .burger.x i:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
 
   nav a:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
-  /* the page you are on carries the red underline, as on the comp */
-  nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
+    nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
 
   .print {
     display: inline-flex; align-items: center; gap: var(--s2);
     background: none; border: 1px solid var(--hair); cursor: pointer;
     padding: var(--s1) var(--s2); margin-left: auto; line-height: 0;
+        position: relative; z-index: 41;
   }
   .print svg { stroke: var(--ink-dim); stroke-width: 1.5; transition: stroke .25s; }
   .print svg.on { stroke: var(--accent); }
@@ -205,12 +182,8 @@
   .burger i + i { margin-top: 4px; }
   .burger:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
 
-  /* ---------- mentorship ---------- */
-
-  /* Mobile: the comp's field boxes sit 15px off the frame rule where the frame
-     padding gives 20, so the block pulls itself 4px outward. Desktop: content
-     sits at the frame padding's own 48. The frame itself stays untouched. */
-  .men { margin: 0 calc(var(--s1) * -1); display: flow-root; }
+  
+    .men { margin: 0 calc(var(--s1) * -1); display: flow-root; }
 
   h1 .ln { display: block; overflow: hidden; }
   h1 .ln i {
@@ -221,8 +194,7 @@
   .plot h1 .ln i { transform: translateY(0); }
   .plot h1 .ln:nth-child(1) i { transition-delay: .30s; }
 
-  /* Comp caps measured: mobile 41px -> 56px Bebas at 390; desktop 58px -> 80px. */
-  h1 {
+    h1 {
     font-family: var(--disp); font-weight: 400;
     font-size: clamp(40px, 14.4vw, 80px);
     line-height: .90; letter-spacing: .005em;
@@ -239,34 +211,13 @@
   .sub { opacity: 0; transition: opacity .5s ease; }
   .plot .sub { opacity: 1; transition-delay: .62s; }
 
-  /* The intro slot is a void, deliberately: the mentorship program description
-     has never been supplied by the client, and model-written filler does not
-     ship. Crop marks + a label, the way a sheet reserves a detail area. */
-  .void {
-    position: relative;
-    margin: var(--s2) 0 0;
-    width: 76%; height: 40px;
-    border: 1px solid var(--hair);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .void .cm { position: absolute; width: 9px; height: 9px; pointer-events: none; }
-  .void .cm::before, .void .cm::after { content: ""; position: absolute; background: var(--rule); }
-  .void .cm::before { width: 9px; height: 1px; }
-  .void .cm::after  { width: 1px; height: 9px; }
-  .void .cm.tl { top: -5px; left: -5px; }   .void .cm.tl::before { top: 4px; } .void .cm.tl::after { left: 4px; }
-  .void .cm.tr { top: -5px; right: -5px; }  .void .cm.tr::before { top: 4px; } .void .cm.tr::after { right: 4px; }
-  .void .cm.bl { bottom: -5px; left: -5px; }  .void .cm.bl::before { bottom: 4px; } .void .cm.bl::after { left: 4px; }
-  .void .cm.br { bottom: -5px; right: -5px; } .void .cm.br::before { bottom: 4px; } .void .cm.br::after { right: 4px; }
-  .void p {
-    margin: 0; font-family: var(--mono); font-size: 9px; line-height: 1.6;
-    letter-spacing: .16em; color: var(--ink-dim); text-align: center;
-    text-transform: uppercase;
-  }
+    .intro {
+    margin: var(--s3) 0 0; font-family: var(--mono);
+    font-size: 11px; line-height: 1.6; letter-spacing: .02em;
+    color: var(--ink); max-width: 56ch;     }
+    .dim { display: none; }
 
-  /* one octopus arm, line art, same mask trick as the sibling pages:
-     the PNG is the mask, var(--ink) is the fill, so one asset serves
-     both themes. Mobile: horizontal band between intro and form. */
-  .arm {
+    .arm {
     display: block; width: 61%; margin: 0;
     transform: scaleX(-1);
     aspect-ratio: 440 / 136;
@@ -277,8 +228,7 @@
     -webkit-mask-position: left center; mask-position: left center;
   }
 
-  /* ---------- the enquiry form: a technical data-entry sheet ---------- */
-
+  
   .enq { margin: 0; }
   .fld { margin: 12px 0 0; }
   .fld label {
@@ -310,53 +260,53 @@
   .go:hover { background: rgba(176, 50, 48, 0.08); }
   .go:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
-  /* No backend exists yet, and the sheet does not pretend otherwise. */
-  .pend {
+    .pend {
     margin: var(--s2) 0 0; font-family: var(--mono); font-size: 11px;
     line-height: 1.5; letter-spacing: .02em; color: var(--ink-dim);
   }
   .pend[hidden] { display: none; }
 
-  /* ---------- title block ---------- */
+  
+      .bd { display: none; }
+  .bm { display: inline; }
+  @media (min-width: 900px) { .bd { display: inline; } .bm { display: none; } }
 
-  /* Three groups will not sit in one row on a phone without going illegible,
-     so it becomes a 2x2 block. Still one deliberate unit, not a sprawl. */
   .titleblock {
-    display: grid; grid-template-columns: 1fr 1fr; align-items: start;
-    gap: var(--s3) var(--s2);
-    border-top: 1px solid var(--rule);
-    margin: var(--s4) calc(var(--s3) * -1) 0; padding: var(--s3);
+    display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
+    gap: 0;
+        border-top: 1px solid var(--rule);
+    margin: var(--s4) -20px calc(-1 * var(--s2)); padding: 0;
   }
   .tb { font-family: var(--mono); font-size: 9px; line-height: 1.6; white-space: nowrap;
         margin: 0;
         color: var(--ink-dim); letter-spacing: .06em; }
   .tb b { color: var(--ink); font-weight: 400; }
   .tb.slabel { margin: 0 0 var(--s1); }
-  .tb.readout { grid-column: 1 / -1; font-variant-numeric: tabular-nums;
-                border-top: 1px solid var(--hair); padding-top: var(--s2); }
-  .tbgroup { display: flex; align-items: flex-start; gap: var(--s2); min-width: 0; }
-  .tb.unit { display: none; align-self: flex-end; margin: 0 0 8px; }
-  @media (min-width: 900px) { .tb.unit { display: block; } }
+  .tbgroup { display: flex; align-items: flex-start; gap: var(--s2); min-width: 0;
+             padding: var(--s2); }
+  .tbgroup:nth-child(odd) { border-right: 1px solid var(--rule); }
+  .tbgroup:nth-child(-n+2) { border-bottom: 1px solid var(--rule); }
+  .tb.unit { align-self: flex-end; margin: 0 0 8px; }
   .titleblock svg { max-width: 100%; height: auto; }
-  /* Patrik: keep the graphical version everywhere. Symbols scale down, never hide. */
-  @media (max-width: 899px) {
-    .titleblock { grid-template-columns: 1fr; }
-    .titleblock .tb { white-space: normal; }
+    @media (max-width: 899px) {
+        .titleblock { grid-template-columns: 58% 42%; }
+    .titleblock .tb { white-space: normal; letter-spacing: .02em; }
     .titleblock > .tbgroup > svg { width: 28px; height: 28px; }
-    .titleblock .tbgroup > div > svg { width: 130px; height: 18px; }
+    .titleblock .tbgroup > div > svg { width: 110px; height: 16px; }
     .tbgroup:nth-of-type(3) svg { width: 52px; height: 23px; }
   }
   .titleblock svg { flex: none; }
   @media (min-width: 900px) {
-    .titleblock { grid-template-columns: auto auto auto 1fr; gap: var(--s3) var(--s6); }
+    .titleblock { grid-template-columns: auto auto auto auto; justify-content: space-between;
+                  gap: var(--s3) var(--s6); border: none; border-top: 1px solid var(--rule); }
+    .tbgroup { padding: 0; }
+    .tbgroup:nth-child(odd) { border-right: none; }
+    .tbgroup:nth-child(-n+2) { border-bottom: none; }
     .tb { font-size: 11px; line-height: 1.7; }
-    .tb.readout { grid-column: auto; justify-self: end; text-align: right;
-                  border-top: none; padding-top: 0; }
   }
   .rulerwrap { display: flex; align-items: flex-end; gap: var(--s2); }
 
-  /* ---------- desktop ---------- */
-
+  
   @media (min-width: 900px) {
     .mark { font-size: 16px; letter-spacing: .18em; }
     .spine { display: block; }
@@ -370,31 +320,28 @@
     h1 { font-size: 80px; margin: calc(var(--s5) + var(--s2)) 0 0; }
     .sub { font-size: 16px; margin-top: var(--s2); }
 
-    .void { margin-top: var(--s4); width: 360px; height: 72px; }
-    .void p { line-height: 1.8; }
+    .intro { margin-top: var(--s4); font-size: 13px; }
 
-    /* the arm stands upright beside the form: same artwork, rotated the way
-       a drafting sheet turns a long part to fit its plate. Centre measured
-       off the comp: cx 88.1% of content width, cy 337px below the header. */
-    .arm {
-      position: absolute; left: 88.1%; top: 333px;
+        .arm {
+      position: absolute; left: 82%; top: 390px;
       width: 647px; margin: 0;
       transform: translate(-50%, -50%) rotate(-90deg);
       -webkit-mask-position: center; mask-position: center;
     }
-
+    .dim { display: block; position: absolute; left: 82%; top: 390px;
+           width: 240px; height: 700px;
+           transform: translate(-50%, -50%); pointer-events: none; }
     .enq { width: 65.8%; }
     .frow.two { display: grid; grid-template-columns: 597fr 549fr; gap: 20px var(--s4); }
     .frow.two, .fld { margin: 20px 0 0; }
     .frow.two .fld { margin: 0; }
     .enq > .frow.two:first-child { margin-top: var(--s5); }
-    .fld label { font-size: 11px; }
-    .fld input { height: 36px; }
-    .fld.area input { height: 32px; }
-    .fld textarea { height: 100px; }
-
-    .go {
-      width: 208px; height: 40px; margin-top: var(--s4);
+    .fld label { font-size: 11px; margin-bottom: var(--s2); }
+        .fld input { height: 42px; }
+    .fld.area input { height: 36px; }
+    .fld textarea { height: 120px; }
+        .go {
+      width: 260px; height: 56px; margin-top: var(--s4);
       padding: 0 var(--s3) 0 20px;
       font-size: 13px; letter-spacing: .08em; color: var(--ink);
     }
@@ -426,7 +373,7 @@
       <path d="M11 1v20M1 11h20" stroke="var(--rule)"/>
     </svg>
     <span class="spine l">DWG. KKC-004-A</span>
-    <span class="spine r">EST. GLENDALE, ARIZONA</span>
+    <span class="spine r">DATE: 08-03-26</span>
 
     <header class="head">
       <a class="mark" href="./">K.R.A.K.E.N. CORPS</a>
@@ -456,14 +403,17 @@
       <h1><span class="ln"><i>Mentorship</i></span></h1>
       <p class="sub">Education and Mentoring Enquiries</p>
 
-      <!-- The program description has never been supplied by the client.
-           The slot is reserved, labelled, and empty on purpose. -->
-      <div class="void" role="note" aria-label="Program description awaiting client supply">
-        <i class="cm tl"></i><i class="cm tr"></i><i class="cm bl"></i><i class="cm br"></i>
-        <p>Program Description<br>Awaiting Client Supply</p>
-      </div>
+                  <p class="intro">We welcome enquiries from individuals, organisations,<br class="bd">
+        and institutions seeking mentorship, curriculum<br class="bd">
+        support, or educational collaboration.<br>
+        Please complete the form below.</p>
 
       <i class="arm" role="img" aria-label="Technical drawing, octopus arm"></i>
+      <svg class="dim" aria-hidden="true" viewBox="0 0 240 700" fill="none">
+        <path d="M120 0V700" stroke="var(--rule)" stroke-dasharray="10 4 2 4"/>
+        <path d="M0 340H240" stroke="var(--rule)" stroke-dasharray="10 4 2 4"/>
+        <path d="M120 4v8M116 8h8M4 336v8M0 340h8M236 336v8M232 340h8M120 688v8M116 692h8" stroke="var(--rule)"/>
+      </svg>
 
       <form class="enq" id="enq" novalidate>
         <div class="frow two">
@@ -509,7 +459,7 @@
           <circle cx="23" cy="23" r="13" fill="none" stroke="var(--rule)"/>
           <path d="M23 4v38M4 23h38" stroke="var(--rule)"/>
         </svg>
-        <p class="tb">K.R.A.K.E.N. = KNOWLEDGE / RESOURCES<br>ACCESSIBILITY / KEYSTONE<br>EDUCATION / NETWORKING</p>
+        <p class="tb">UNLESS OTHERWISE SPECIFIED:<br>DIMENSIONS ARE IN INCHES<br>ANGLES &#177;0.5&#176;</p>
       </div>
 
       <div class="tbgroup">
@@ -535,11 +485,11 @@
           <path d="M20 3v36M2 21h36" stroke="var(--rule)" fill="none"/>
           <path d="M54 8l34 6v14l-34 6z" fill="none" stroke="var(--rule)"/>
         </svg>
-        <p class="tb">DRAWN: <b>AOM</b><br>CHECKED: <b>QA</b><br>APPROVED: <b>M. MCDONALD, CEO</b></p>
       </div>
 
-      <p class="tb readout">CURSOR <b id="coords">0000 , 0000</b>
-        &nbsp;&nbsp; CONTACT <b>+1 (623) 296-1416</b></p>
+      <div class="tbgroup">
+        <p class="tb">DRAWN: <b>AOM</b><br>CHECKED: <b>QA</b><br>APPROVED:<br class="bm"> <b>M. MCDONALD, CEO</b></p>
+      </div>
     </div>
   </div>
 </main>
@@ -548,18 +498,14 @@
 (function () {
   "use strict";
 
-  /* A phone lays out at 980px and scales down without this, which kills every
-     breakpoint below. The head is supplied by the host, so it goes in here. */
-  if (!document.querySelector('meta[name="viewport"]')) {
+    if (!document.querySelector('meta[name="viewport"]')) {
     var mv = document.createElement("meta");
     mv.name = "viewport";
     mv.content = "width=device-width, initial-scale=1, viewport-fit=cover";
     document.head.appendChild(mv);
   }
 
-  /* interval ticks along the top and bottom rules - the small marks that make
-     a drawing sheet read as an instrument rather than a border */
-  ["ticksT", "ticksB"].forEach(function (id) {
+    ["ticksT", "ticksB"].forEach(function (id) {
     var rail = document.getElementById(id);
     [9, 91].forEach(function (pc) {          // comp: one tick just inside each corner
       var t = document.createElement("i");
@@ -569,23 +515,35 @@
     });
   });
 
-  /* row letters A-F, evenly down both edges */
+      var ROWY_M = [0.079, 0.201, 0.330, 0.606, 0.740, 0.875];
   var rows = document.getElementById("rows");
-  ["A", "B", "C", "D", "E", "F"].forEach(function (letter, i) {
-    var y = ((i + 0.5) / 6 * 100).toFixed(2) + "%";
-    ["l", "r"].forEach(function (side) {
-      var b = document.createElement("b");
-      b.className = side;
-      b.style.top = y;
-      b.textContent = letter;
-      rows.appendChild(b);
+  var rowsMQ = matchMedia("(max-width: 899px)");
+  function placeRows() {
+    rows.textContent = "";
+    var fMax = null;
+    if (rowsMQ.matches) {
+      var tb = document.querySelector(".titleblock");
+      if (tb && rows.offsetHeight) {
+        fMax = (tb.getBoundingClientRect().top - rows.getBoundingClientRect().top - 14)
+               / rows.offsetHeight;
+      }
+    }
+    ["A", "B", "C", "D", "E", "F"].forEach(function (letter, i) {
+      var f = rowsMQ.matches ? ROWY_M[i] : (i + 0.5) / 6;
+      if (fMax !== null && f > fMax) f = fMax;
+      ["l", "r"].forEach(function (side) {
+        var b = document.createElement("b");
+        b.className = side;
+        b.style.top = (f * 100).toFixed(2) + "%";
+        b.textContent = letter;
+        rows.appendChild(b);
+      });
     });
-  });
+  }
+  placeRows();
+  rowsMQ.addEventListener("change", placeRows);
 
-  /* Patrik 2026-08-02: whiteprint during the day, blueprint from 16:00.
-     The clock sets the default; the sun/moon control overrides it, and a manual
-     pick holds only for the rest of that day-part so the rhythm resumes. */
-  var themeBtn = document.getElementById("printToggle");
+    var themeBtn = document.getElementById("printToggle");
   function dayPart() {
     var h = new Date().getHours();
     var night = (h >= 16 || h < 6);           // day runs 06:00-16:00
@@ -612,13 +570,11 @@
     setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark", true);
   });
 
-  /* plot the sheet once, on load */
-  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
     requestAnimationFrame(function () { document.body.classList.add("plot"); });
   });
 
-  /* the row letters read the sheet back to you as you move down it */
-  var rowEls = rows.querySelectorAll("b");
+    var rowEls = rows.querySelectorAll("b");
   var frameEl = document.getElementById("frame");
   var ticking = false;
   function trackRows() {
@@ -637,8 +593,7 @@
   addEventListener("resize", trackRows, { passive: true });
   trackRows();
 
-  /* menu */
-  var burger = document.getElementById("burger"), nav = document.getElementById("nav");
+    var burger = document.getElementById("burger"), nav = document.getElementById("nav");
   if (burger && nav) {
     Array.prototype.forEach.call(nav.querySelectorAll("a"), function (a, i) {
       a.style.setProperty("--i", i);
@@ -658,16 +613,13 @@
     if (e.target.tagName === "A") { nav.classList.remove("open"); burger.setAttribute("aria-expanded", "false"); }
   });
 
-  /* No backend exists and hosting is undecided, so the form does not pretend
-     to send. Submit reveals the honest line instead. */
-  var enq = document.getElementById("enq"), pend = document.getElementById("pend");
+    var enq = document.getElementById("enq"), pend = document.getElementById("pend");
   enq.addEventListener("submit", function (e) {
     e.preventDefault();
     pend.hidden = false;
   });
 
-  /* crosshair + coordinate readout */
-  var sheet = document.getElementById("sheet"), cx = document.getElementById("cx"),
+    var sheet = document.getElementById("sheet"), cx = document.getElementById("cx"),
       cy = document.getElementById("cy"), coords = document.getElementById("coords");
   var crossEl = document.querySelector(".cross"), crossTimer = null;
   sheet.addEventListener("pointerdown", function (ev) {
