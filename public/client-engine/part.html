@@ -1,11 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <title>Google Business Profile · Wolfpack</title>
-  <style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part</title>
+<style>
     :root {
       color-scheme: light dark;
       --bg: #ede7dc;
@@ -592,244 +591,253 @@
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
 
-      </style>
+      
+    .board-message { padding: 24px; border-radius: 12px; background: var(--panel);
+      border: 1px solid var(--line); max-width: 52ch; }
+    .board-message b { display: block; font-size: 16px; margin-bottom: 8px; }
+    .board-message p { margin: 0 0 16px; font-size: 14px; color: var(--muted); font-weight: 600; }
+    .part-switcher { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 16px; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; flex: none;
+      padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--surface); color: var(--text); text-decoration: none;
+      font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .chip.on { border-color: var(--bad); color: var(--bad); background: var(--bad-soft); }
+    .chip.dim { opacity: .55; }
+    .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+    .chip .dot.completed { background: var(--good); }
+    .chip .dot.blocked { background: var(--bad); }
+    .chip .dot.cannot { background: var(--quiet); }
+    .switcher-meta { display: flex; justify-content: space-between; align-items: center; }
+    .head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 16px 0 8px; }
+    .head h1 { display: flex; align-items: center; gap: 16px; margin: 0; }
+    .consequence { padding: 24px; border-radius: 12px; margin: 16px 0;
+      background: var(--warn-soft); color: var(--warn); font-size: 16px; }
+    .consequence.blocked { background: var(--bad-soft); color: var(--bad); }
+    .consequence.completed { background: var(--good-soft); color: var(--good); }
+    .blocks { padding: 16px 24px; border-left: 4px solid var(--warn);
+      background: var(--warn-soft); color: var(--text); font-size: 14px;
+      font-weight: 600; margin: 0 0 24px; }
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; }
+    .card { padding: 24px; border-radius: 16px; background: var(--surface);
+      border: 1px solid var(--line); margin: 0 0 24px; }
+    .card h2 { margin: 0 0 4px; }
+    .card .sub { margin: 0 0 16px; font-size: 13px; color: var(--muted); font-weight: 600; }
+    .trail { list-style: none; margin: 0; padding: 0; }
+    .ev { padding: 0 0 16px 24px; border-left: 2px solid var(--line); position: relative; }
+    .ev:last-child { padding-bottom: 0; }
+    .ev::before { content: ""; position: absolute; left: -6px; top: 4px; width: 10px;
+      height: 10px; border-radius: 50%; background: var(--good); }
+    .ev-line { font-size: 14px; margin-bottom: 8px; }
+    .ev.empty { color: var(--muted); font-weight: 600; font-size: 14px; }
+    .ev.empty::before { background: var(--quiet); }
+    .actor { display: inline-block; padding: 4px 8px; border-radius: 999px;
+      background: var(--panel); font-size: 12px; font-weight: 700; }
+    .actor.assistant { background: var(--good-soft); color: var(--good); }
+    .receipt { font-size: 12px; font-weight: 700; color: var(--accent); }
+    .disputed { font-size: 12px; font-weight: 700; color: var(--bad); }
+    .next { font-size: 16px; font-weight: 700; margin: 0 0 16px; }
+    .claim-row { display: flex; justify-content: space-between; align-items: center;
+      padding-top: 16px; border-top: 1px solid var(--line); }
+    .claim-label { font-size: 12px; color: var(--muted); font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; }
+    .claim-owner { font-size: 14px; font-weight: 700; }
+    .access-line { display: flex; justify-content: space-between; gap: 16px;
+      padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 600; }
+    .access-line:last-child { border-bottom: 0; }
+    .access-line .k { color: var(--muted); }
+    .not-written { margin: 0; font-size: 14px; color: var(--muted);
+      font-weight: 600; line-height: 1.5; }
+    .btn-primary { display: inline-flex; padding: 12px 24px; border-radius: 999px;
+      background: var(--accent); color: #fff; text-decoration: none;
+      font-size: 14px; font-weight: 700; }
+    .btn-ghost { margin-left: auto; padding: 12px 24px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--surface); color: var(--text);
+      text-decoration: none; font-size: 14px; font-weight: 700; }
+    .top-row { display: flex; justify-content: space-between; align-items: center;
+      margin: 0 0 24px; flex-wrap: wrap; gap: 8px; }
+    .back { color: var(--text); text-decoration: none; font-size: 14px; font-weight: 700; }
+    .crumb { font-size: 13px; color: var(--muted); font-weight: 600; }
+    @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
-  <div class="shell">
-    <div class="top-row">
-      <a class="back" href="./">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-        Back to client home
-      </a>
-      <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <a href="./">Clients</a><span class="crumb-separator">/</span>
-        <a href="./">Wolfpack</a><span class="crumb-separator">/</span>
-        <a class="current" href="part.html" aria-current="page">Google Business Profile</a>
-      </nav>
-    </div>
+  <div class="shell" id="part-root"></div>
+<script>
+  const ICONS = {"google": "<svg viewBox=\"0 0 24 24\"><path fill=\"#4285F4\" d=\"M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.87h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z\"/><path fill=\"#34A853\" d=\"M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.59A10 10 0 0 0 12 22Z\"/><path fill=\"#FBBC05\" d=\"M6.4 13.9A6 6 0 0 1 6.08 12c0-.66.11-1.3.32-1.9V7.51H3.06A10 10 0 0 0 2 12c0 1.61.38 3.14 1.06 4.49L6.4 13.9Z\"/><path fill=\"#EA4335\" d=\"M12 5.97c1.47 0 2.78.5 3.81 1.49l2.86-2.86A9.58 9.58 0 0 0 12 2a10 10 0 0 0-8.94 5.51L6.4 10.1C7.19 7.73 9.4 5.97 12 5.97Z\"/></svg>", "reviews": "<svg viewBox=\"0 0 24 24\"><path fill=\"#FBBC05\" d=\"m12 2.6 2.75 5.58 6.16.9-4.46 4.34 1.05 6.14L12 16.66l-5.5 2.9 1.05-6.14-4.46-4.34 6.16-.9L12 2.6Z\"/></svg>", "website": "<svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"18\" rx=\"3\" fill=\"#4F46E5\"/><path fill=\"#fff\" d=\"M2 8h20v2H2z\"/><circle cx=\"5.2\" cy=\"6\" r=\"1\" fill=\"#fff\"/><circle cx=\"8.2\" cy=\"6\" r=\"1\" fill=\"#fff\"/><rect x=\"5\" y=\"12\" width=\"14\" height=\"6\" rx=\"1.5\" fill=\"#fff\" opacity=\".9\"/></svg>", "yelp": "<svg viewBox=\"0 0 24 24\"><path fill=\"#D32323\" d=\"M10.6 10.2 8.9 3.15A1.45 1.45 0 0 1 10.1 1.4l2.15-.34a1.45 1.45 0 0 1 1.66 1.58l-.75 7.42c-.12 1.16-2.28 1.28-2.56.14ZM14.35 10.95l4.72-2.8a1.45 1.45 0 0 1 2.1.74l.7 1.86a1.45 1.45 0 0 1-1.24 1.95l-5.72.24c-1.12.05-1.53-1.42-.56-2ZM14.26 14.42l4.56 2.94a1.45 1.45 0 0 1 .27 2.2l-1.4 1.44a1.45 1.45 0 0 1-2.3-.3l-2.56-4.9c-.5-.96.52-1.97 1.43-1.38ZM10.76 15.1l-1.5 5.44a1.45 1.45 0 0 1-1.93.96l-1.87-.75a1.45 1.45 0 0 1-.7-2.22l3.42-4.38c.67-.86 2.88-.1 2.58.95ZM8.4 11.6l-5.36-1.56a1.45 1.45 0 0 1-.93-1.98l.82-1.84a1.45 1.45 0 0 1 2.24-.64l4.25 3.57c.84.71.03 2.75-1.02 2.45Z\"/></svg>", "linkedin": "<svg viewBox=\"0 0 24 24\"><path fill=\"#fff\" d=\"M6.15 8.55H2.9V19h3.25V8.55ZM4.53 3.35a1.89 1.89 0 1 0 0 3.78 1.89 1.89 0 0 0 0-3.78ZM18.47 8.3c-1.75 0-2.93.96-3.41 1.88h-.05V8.55H11.9V19h3.24v-5.17c0-1.36.26-2.68 1.95-2.68 1.66 0 1.68 1.55 1.68 2.77V19H22v-5.72c0-2.81-.61-4.98-3.53-4.98Z\"/></svg>", "ai": "<svg viewBox=\"0 0 24 24\"><path fill=\"#7C3AED\" d=\"M12 1.5c.62 5.2 2.8 8.2 8.3 9.5-5.5 1.3-7.68 4.3-8.3 9.5-.62-5.2-2.8-8.2-8.3-9.5C9.2 9.7 11.38 6.7 12 1.5Z\"/><path fill=\"#A78BFA\" d=\"M19.1 15.2c.25 2.12 1.14 3.35 3.4 3.88-2.26.53-3.15 1.76-3.4 3.88-.25-2.12-1.14-3.35-3.4-3.88 2.26-.53 3.15-1.76 3.4-3.88Z\"/></svg>", "photo": "<svg viewBox=\"0 0 24 24\"><path fill=\"#0F9F95\" d=\"M4 6h3.4l1.45-2h6.3l1.45 2H20a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z\"/><circle cx=\"12\" cy=\"13\" r=\"4.2\" fill=\"#fff\"/><circle cx=\"12\" cy=\"13\" r=\"2.45\" fill=\"#0F9F95\"/><circle cx=\"18.5\" cy=\"8.8\" r=\"1\" fill=\"#fff\"/></svg>", "video": "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#E84A6F\"/><path fill=\"#fff\" d=\"M9.3 7.8c0-.73.8-1.18 1.43-.8l7.05 4.2c.61.36.61 1.25 0 1.62l-7.05 4.18a.94.94 0 0 1-1.43-.8V7.8Z\"/></svg>", "case-study": "<svg viewBox=\"0 0 24 24\"><path fill=\"#D99A08\" d=\"M5 2h9l5 5v15H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z\"/><path fill=\"#fff\" opacity=\".9\" d=\"M14 2v5h5ZM7 11h8v2H7zM7 15h8v2H7zM7 19h5v2H7z\"/></svg>", "folder": "<svg viewBox=\"0 0 24 24\"><path fill=\"#F07A19\" d=\"M2 5.5A2.5 2.5 0 0 1 4.5 3H10l2.2 2.5h7.3A2.5 2.5 0 0 1 22 8v9.5a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-12Z\"/><path fill=\"#FFB36B\" d=\"M2 9h20l-2.25 9H4.25L2 9Z\"/></svg>", "jobber": "<svg viewBox=\"0 0 24 24\"><path fill=\"#12A150\" d=\"M8 3h9v12.1C17 19.5 14.55 22 10.45 22 7 22 4.75 20.1 4.3 16.8l4.2-.65c.2 1.35.78 2.05 1.8 2.05 1.28 0 1.9-.9 1.9-2.75V7H8V3Z\"/></svg>", "recurring": "<svg viewBox=\"0 0 24 24\"><path fill=\"#06AFC7\" d=\"M12 3a9 9 0 0 1 7.15 3.53L21 4.7V11h-6.3l1.92-1.92A5.9 5.9 0 0 0 6.3 11H3.06A9 9 0 0 1 12 3Zm8.94 10A9 9 0 0 1 4.85 17.47L3 19.3V13h6.3l-1.92 1.92A5.9 5.9 0 0 0 17.7 13h3.24Z\"/></svg>", "follow-up": "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#238FD0\"/><path fill=\"#fff\" d=\"M11 6h2v5.2l4 2.3-1 1.73-5-2.9V6Z\"/><circle cx=\"12\" cy=\"12\" r=\"1.45\" fill=\"#fff\"/></svg>", "insurance": "<svg viewBox=\"0 0 24 24\"><path fill=\"#14966D\" d=\"m12 1.5 9 3.85v6.1c0 5.7-3.52 9.3-9 11.05-5.48-1.75-9-5.35-9-11.05v-6.1L12 1.5Z\"/><path fill=\"#fff\" d=\"m7.5 11.8 2.72 2.72 6.35-7.02 1.78 1.6-8.04 8.9-4.5-4.5 1.69-1.7Z\"/></svg>", "target": "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"#F06449\"/><circle cx=\"12\" cy=\"12\" r=\"6.2\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"3.1\" fill=\"#F06449\"/><circle cx=\"12\" cy=\"12\" r=\"1.15\" fill=\"#fff\"/></svg>", "memberships": "<svg viewBox=\"0 0 24 24\"><circle cx=\"8\" cy=\"7.5\" r=\"4\" fill=\"#8247C9\"/><circle cx=\"17.2\" cy=\"8.2\" r=\"3.2\" fill=\"#A56DE8\"/><path fill=\"#8247C9\" d=\"M1.5 21c.2-5.25 2.35-8 6.5-8s6.3 2.75 6.5 8h-13Z\"/><path fill=\"#A56DE8\" d=\"M13.2 21c.15-4.35 1.65-6.7 4.8-6.7 2.9 0 4.38 2.35 4.5 6.7h-9.3Z\"/></svg>", "outreach": "<svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"3\" fill=\"#3478D4\"/><path fill=\"#fff\" d=\"m3.15 6.3 8.85 7 8.85-7 1.25 1.6L12 15.9 1.9 7.9l1.25-1.6Z\" opacity=\".95\"/></svg>", "report": "<svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"13\" width=\"5\" height=\"9\" rx=\"1.5\" fill=\"#84B91E\"/><rect x=\"9.5\" y=\"7\" width=\"5\" height=\"15\" rx=\"1.5\" fill=\"#6EA511\"/><rect x=\"17\" y=\"2\" width=\"5\" height=\"20\" rx=\"1.5\" fill=\"#568A08\"/></svg>"};
+  const LABEL = {"completed": "Completed", "needs": "Needs work", "blocked": "Blocked", "cannot": "Cannot see"};
+  const SB_REF = 'mcngatprgluexjjcqpkp';
 
-    <section class="switcher-block" aria-labelledby="switcher-heading">
-      <div class="switcher-meta">
-        <span class="switcher-label" id="switcher-heading">Wolfpack parts</span>
-        <span class="counter">Part 1 of 19 · 13 need attention</span>
-      </div>
-      <div class="part-switcher">
-        <button class="switch-arrow" id="previous-parts" type="button" aria-label="Show previous parts">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-        </button>
-        <nav class="part-strip" id="part-strip" aria-label="Switch Wolfpack part">
-          <a class="part-tab current" href="part.html" aria-current="page"><span class="status-dot blocked"></span>Google Business Profile</a>
-          <a class="part-tab" id="part-online-reviews" href="part.html"><span class="status-dot"></span>Online reviews</a>
-          <a class="part-tab" id="part-website" href="part.html"><span class="status-dot"></span>Website</a>
-          <a class="part-tab" id="part-yelp" href="part.html"><span class="status-dot unseen"></span>Yelp</a>
-          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Company LinkedIn</a>
-          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Owner's LinkedIn</a>
-          <a class="part-tab" id="part-ai-answers" href="part.html"><span class="status-dot"></span>AI answers</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Photography</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Video</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Case studies</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Capability folder</a>
-          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Field service software (Jobber)</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Recurring jobs</a>
-          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Lead follow-up</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Insurance and licence</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Target account list</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Association memberships</a>
-          <a class="part-tab" href="part.html"><span class="status-dot unseen"></span>Cold outreach</a>
-          <a class="part-tab" href="part.html"><span class="status-dot"></span>Monthly report</a>
-        </nav>
-        <button class="switch-arrow" id="next-parts" type="button" aria-label="Show next parts">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-      </div>
-    </section>
+  // Same session read as the board: supabase-js stores the session in
+  // localStorage, not a cookie, so a cookie-only page can never see it.
+  function sessionToken() {
+    try {
+      let raw = localStorage.getItem('sb-' + SB_REF + '-auth-token');
+      if (!raw) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (/^sb-.*-auth-token$/.test(k)) { raw = localStorage.getItem(k); break; }
+        }
+      }
+      if (!raw) return null;
+      if (raw.startsWith('base64-')) raw = atob(raw.slice(7));
+      const v = JSON.parse(raw);
+      if (typeof v === 'string') return v;
+      if (Array.isArray(v)) return v[0] || null;
+      return v.access_token || v?.currentSession?.access_token || null;
+    } catch (e) { return null; }
+  }
+  function authed(extra) {
+    const t = sessionToken();
+    const h = Object.assign({}, extra || {});
+    if (t) h.Authorization = 'Bearer ' + t;
+    return h;
+  }
 
-    <header class="part-header">
-      <div>
-        <p class="eyebrow">Blocked</p>
-        <h1><span class="part-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.87h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.9A6 6 0 0 1 6.08 12c0-.66.11-1.3.32-1.9V7.51H3.06A10 10 0 0 0 2 12c0 1.61.38 3.14 1.06 4.49L6.4 13.9Z"/><path fill="#EA4335" d="M12 5.97c1.47 0 2.78.5 3.81 1.49l2.86-2.86A9.58 9.58 0 0 0 12 2a10 10 0 0 0-8.94 5.51L6.4 10.1C7.19 7.73 9.4 5.97 12 5.97Z"/></svg></span>Google Business Profile</h1>
-        <p class="header-copy">We manage this so buyers can find and contact the right Wolfpack listing in Phoenix.</p>
-      </div>
-      <a class="external-button" href="https://www.google.com/maps/search/?api=1&amp;query=Wolfpack%20Companies%20Phoenix%20Arizona" target="_blank" rel="noopener noreferrer">
-        Open actual profile
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8"/><path d="M18 13v6H5V6h6"/></svg>
-      </a>
-    </header>
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
-    <div class="consequence" role="status">
-      <span class="consequence-icon" aria-hidden="true">!</span>
-      <span>Calls and reviews are splitting between two listings.</span>
-    </div>
+  const CONN = {
+    connected:      ['yes', 'Connected'],
+    not_applicable: ['na',  'Not applicable'],
+    wrong_level:    ['no',  'Wrong level'],
+    pending:        ['no',  'Invite pending'],
+    expired:        ['no',  'Access expired'],
+    never_asked:    ['no',  'Never asked'],
+  };
 
-    <p class="blocking"><strong>While this is open, 3 other parts cannot be fixed</strong> — <a href="#part-online-reviews">Online reviews</a>, <a href="#part-website">Website</a>, <a href="#part-ai-answers">AI answers</a>.</p>
+  const qs = new URLSearchParams(location.search);
+  const CLIENT = qs.get('client') || 'wolfpack';
+  const PART   = qs.get('part') || '';
+  const $ = s => document.querySelector(s);
+  const root = $('#part-root');
 
-    <div class="content-grid">
-      <div class="main-column">
-        <section class="panel evidence-panel" aria-labelledby="evidence-heading">
-          <div class="section-heading">
-            <h2 id="evidence-heading">Evidence and history</h2>
-            <p class="section-note">What we found and who recorded it.</p>
-          </div>
-          <ol class="timeline">
-            <li class="timeline-item">
-              <span class="timeline-dot" aria-hidden="true"></span>
-              <div>
-                <p class="event-line"><span class="event-date">31 Jul</span> · <span class="event-copy">Confirmed we are a manager on the profile</span> · Gary</p>
-                <div class="actor"><span class="actor-type">Person</span></div>
-              </div>
-            </li>
-            <li class="timeline-item">
-              <span class="timeline-dot" aria-hidden="true"></span>
-              <div>
-                <p class="event-line"><span class="event-date">30 Jul</span> · <span class="event-copy">Found two listings under different names</span> · Assistant</p>
-                <div class="actor"><span class="actor-type assistant">Assistant</span></div>
-              </div>
-            </li>
-          </ol>
-        </section>
+  const when = t => t ? new Date(t).toLocaleDateString('en-US',
+    { day: 'numeric', month: 'short' }) : '';
 
-        <section class="panel actions-panel" aria-labelledby="actions-heading">
-          <div class="action-top">
-            <div><p class="eyebrow">Next action</p><h2 id="actions-heading">Consolidate under one name</h2></div>
-            <button class="primary-button" id="primary-action" type="button">
-              Consolidate under one name
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
-          </div>
+  function fail(title, body, action) {
+    root.innerHTML = '<div class="board-message"><b>' + esc(title) + '</b><p>' +
+      esc(body) + '</p>' + (action || '') + '</div>';
+  }
 
-          <div class="claim-row">
-            <div class="claim-state">
-              <span class="claim-avatar" id="claim-avatar">—</span>
-              <div><div class="claim-label">Owner</div><div class="claim-owner" id="claim-owner">Unclaimed</div></div>
-            </div>
-            <button class="claim-button" id="claim-button" type="button" aria-pressed="false">Claim this part</button>
-          </div>
-
-          <div class="assistant-row">
-            <div class="assistant-copy"><strong>Need fresher evidence?</strong><span>The checklist will show each line as it is checked.</span></div>
-            <button class="assistant-button" id="assistant-check" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 3 1.1 3.9L17 8l-3.9 1.1L12 13l-1.1-3.9L7 8l3.9-1.1ZM18 14l.7 2.3L21 17l-2.3.7L18 20l-.7-2.3L15 17l2.3-.7Z"/></svg>
-              <span>Ask the assistant to check again</span>
-            </button>
-          </div>
-        </section>
-      </div>
-
-      <aside class="right-column">
-        <section class="panel side-card" aria-labelledby="good-heading">
-          <div class="section-heading">
-            <h2 id="good-heading">What good looks like</h2>
-            <p class="section-note">Specific checks for this part.</p>
-          </div>
-          <ul class="checklist" id="checklist" aria-live="polite">
-            <li class="check-item" data-state="fail" data-settle="fail">
-              <span class="check-symbol" aria-hidden="true">×</span>
-              <div><div class="check-name">One company, not two</div><div class="check-meta"><span class="check-result">Failed</span><span>·</span><span class="check-stamp">Checked 31 Jul</span></div></div>
-            </li>
-            <li class="check-item" data-state="unknown" data-settle="unknown">
-              <span class="check-symbol" aria-hidden="true">?</span>
-              <div><div class="check-name">Real hours</div><div class="check-meta"><span class="check-result">Not checked</span></div></div>
-            </li>
-            <li class="check-item" data-state="unknown" data-settle="unknown">
-              <span class="check-symbol" aria-hidden="true">?</span>
-              <div><div class="check-name">Commercial plumbing and hydro jetting are listed</div><div class="check-meta"><span class="check-result">Not checked</span></div></div>
-            </li>
-            <li class="check-item" data-state="unknown" data-settle="unknown">
-              <span class="check-symbol" aria-hidden="true">?</span>
-              <div><div class="check-name">Phoenix service area is accurate</div><div class="check-meta"><span class="check-result">Not checked</span></div></div>
-            </li>
-            <li class="check-item" data-state="unknown" data-settle="unknown">
-              <span class="check-symbol" aria-hidden="true">?</span>
-              <div><div class="check-name">Calls and reviews reach one listing</div><div class="check-meta"><span class="check-result">Not checked</span></div></div>
-            </li>
-          </ul>
-          <p class="recheck-note">These are exactly what the assistant re-checks.</p>
-        </section>
-
-      </aside>
-
-      <section class="panel side-card access-card" aria-labelledby="access-heading">
-        <h2 id="access-heading">Access</h2>
-        <span class="access-status">Active</span>
-        <dl class="access-list">
-          <div class="access-line"><dt>Account held</dt><dd>Google Business Profile</dd></div>
-          <div class="access-line"><dt>Permission level</dt><dd>Manager</dd></div>
-          <div class="access-line"><dt>What it permits</dt><dd class="permits">Manage the profile while the owner keeps control.</dd></div>
-          <div class="access-line"><dt>Last verified</dt><dd>30 Jul</dd></div>
-        </dl>
-        <p class="freshness-note">Access freshness is separate from profile health. Manager access was accepted 30 Jul.</p>
-      </section>
-    </div>
-  </div>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-  <script>
-    const strip = document.getElementById('part-strip');
-    document.getElementById('previous-parts').addEventListener('click', () => strip.scrollBy({ left: -320, behavior: 'smooth' }));
-    document.getElementById('next-parts').addEventListener('click', () => strip.scrollBy({ left: 320, behavior: 'smooth' }));
-
-    let toastTimer;
-    const toast = document.getElementById('toast');
-    function showToast(message) {
-      window.clearTimeout(toastTimer);
-      toast.textContent = message;
-      toast.classList.add('show');
-      toastTimer = window.setTimeout(() => toast.classList.remove('show'), 2600);
+  async function main() {
+    let res, data;
+    try {
+      res = await fetch('/api/client-parts?client=' + encodeURIComponent(CLIENT),
+                        { credentials: 'same-origin', cache: 'no-store', headers: authed() });
+      data = await res.json();
+    } catch (e) {
+      return fail('Could not reach the record.',
+                  'Nothing here would be trustworthy, so nothing is shown. Try again.');
     }
+    if (res.status === 401 || res.status === 403 || data.auth === false) {
+      return fail('You are signed out.',
+        'This page shows client information, so it needs you signed in.',
+        '<a class="btn-primary" href="/dashboard">Sign in on the dashboard, then come back</a>');
+    }
+    if (!res.ok) return fail('Could not load this part.', data.error || ('Error ' + res.status));
 
-    document.getElementById('primary-action').addEventListener('click', () => {
-      showToast('Next action ready: consolidate under one name.');
-    });
+    const parts = data.parts || [];
+    const part = parts.find(p => p.part_key === PART) || parts[0];
+    if (!part) {
+      return fail('That part is not on this client.',
+        'It may have been renamed or removed since this link was made.',
+        '<a class="btn-primary" href="/client-engine/">Back to the board</a>');
+    }
+    render(part, parts, (data.evidence || {})[part.part_key] || []);
+  }
 
-    const claimButton = document.getElementById('claim-button');
-    const claimOwner = document.getElementById('claim-owner');
-    const claimAvatar = document.getElementById('claim-avatar');
-    let claimed = false;
+  function render(p, parts, trail) {
+    document.title = p.name + ' — ' + CLIENT;
+    const [connCls, connLabel] = CONN[p.connection] || ['no', 'Not connected'];
+    const idx = parts.findIndex(x => x.part_key === p.part_key);
+    const attention = parts.filter(x => x.state === 'needs' || x.state === 'blocked').length;
 
-    claimButton.addEventListener('click', () => {
-      claimed = !claimed;
-      claimButton.setAttribute('aria-pressed', String(claimed));
-      claimOwner.textContent = claimed ? 'You' : 'Unclaimed';
-      claimAvatar.textContent = claimed ? 'Y' : '—';
-      claimAvatar.classList.toggle('claimed', claimed);
-      claimButton.textContent = claimed ? 'Release claim' : 'Claim this part';
-      showToast(claimed ? 'This part is now claimed by you.' : 'This part is unclaimed.');
-    });
+    // switcher across every part of this client
+    const switcher = parts.map(x =>
+      '<a class="chip' + (x.part_key === p.part_key ? ' on' : '') +
+      (x.state === 'cannot' ? ' dim' : '') +
+      '" href="/client-engine/part.html?client=' + encodeURIComponent(CLIENT) +
+      '&part=' + encodeURIComponent(x.part_key) + '">' +
+      '<span class="dot ' + esc(x.state) + '"></span>' + esc(x.name) + '</a>').join('');
 
-    const assistantButton = document.getElementById('assistant-check');
-    const assistantButtonLabel = assistantButton.querySelector('span');
-    const checkItems = [...document.querySelectorAll('.check-item')];
+    // the trail is the receipts; an empty one says so rather than looking bare
+    const trailHtml = trail.length ? trail.map(e =>
+      '<li class="ev"><div class="ev-line"><b>' + esc(when(e.at)) + '</b> &middot; ' +
+      esc(e.claim) + ' &middot; ' + esc(e.actor || 'Unknown') + '</div>' +
+      '<span class="actor ' + (e.actor_kind === 'person' ? 'person' : 'assistant') + '">' +
+      esc(e.actor_kind === 'person' ? 'Person' : 'Assistant') + '</span>' +
+      (e.artifact_url ? ' <a class="receipt" href="' + esc(e.artifact_url) +
+        '" target="_blank" rel="noopener">See the receipt</a>' : '') +
+      (e.disputed_at ? ' <span class="disputed">Disputed</span>' : '') +
+      '</li>').join('')
+      : '<li class="ev empty">Nothing has been recorded for this part yet. ' +
+        'Every state on it was entered by a person.</li>';
 
-    assistantButton.addEventListener('click', () => {
-      if (assistantButton.disabled) return;
-      assistantButton.disabled = true;
-      assistantButtonLabel.textContent = 'Checking 0 of ' + checkItems.length + '…';
+    const blocks = Array.isArray(p.blocks) ? p.blocks : [];
+    const blockNames = blocks
+      .map(k => (parts.find(x => x.part_key === k) || {}).name)
+      .filter(Boolean);
 
-      checkItems.forEach((item) => {
-        item.dataset.state = 'checking';
-        item.querySelector('.check-symbol').textContent = '';
-        const meta = item.querySelector('.check-meta');
-        meta.innerHTML = '<span class="check-result">Checking…</span>';
-      });
+    root.innerHTML =
+      '<div class="top-row"><a class="back" href="/client-engine/">&larr; Back to client home</a>' +
+      '<div class="crumb">Clients / ' + esc(CLIENT) + ' / <b>' + esc(p.name) + '</b></div></div>' +
 
-      checkItems.forEach((item, index) => {
-        window.setTimeout(() => {
-          const failed = item.dataset.settle === 'fail';
-          item.dataset.state = failed ? 'fail' : 'unknown';
-          item.querySelector('.check-symbol').textContent = failed ? '×' : '?';
-          const meta = item.querySelector('.check-meta');
-          meta.innerHTML = '<span class="check-result">' + (failed ? 'Failed' : 'Not confirmed') + '</span><span>·</span><span class="check-stamp">Checked just now</span>';
-          assistantButtonLabel.textContent = 'Checking ' + (index + 1) + ' of ' + checkItems.length + '…';
+      '<div class="switcher-meta"><span class="side-label">' + esc(CLIENT) + ' parts</span>' +
+      '<span class="side-label">Part ' + (idx + 1) + ' of ' + parts.length +
+      ' &middot; ' + attention + ' need attention</span></div>' +
+      '<div class="part-switcher">' + switcher + '</div>' +
 
-          if (index === checkItems.length - 1) {
-            assistantButton.disabled = false;
-            assistantButtonLabel.textContent = 'Ask the assistant to check again';
-            showToast('Check complete. Nothing unchecked has been marked good.');
-          }
-        }, 650 + (index * 480));
-      });
-    });
-  </script>
+      '<div class="head">' +
+      '<span class="health ' + esc(p.state) + '">' + esc(LABEL[p.state] || p.state) + '</span>' +
+      '<h1><span class="glyph ' + esc(p.icon) + '">' + (ICONS[p.icon] || '') + '</span>' +
+      esc(p.name) + '</h1>' +
+      (p.deep_link ? '<a class="btn-ghost" href="' + esc(p.deep_link) +
+        '" target="_blank" rel="noopener">Open it</a>' : '') +
+      '</div>' +
+
+      (p.status_line ? '<div class="consequence ' + esc(p.state) + '"><b>' +
+        esc(p.status_line) + '</b></div>' : '') +
+
+      (blockNames.length ? '<div class="blocks">While this is open, ' + blockNames.length +
+        ' other part' + (blockNames.length === 1 ? '' : 's') + ' cannot be fixed &mdash; ' +
+        esc(blockNames.join(', ')) + '.</div>' : '') +
+
+      '<div class="content-grid">' +
+        '<div class="main-column">' +
+          '<section class="card"><h2>Evidence and history</h2>' +
+          '<p class="sub">What we found, and who recorded it.</p>' +
+          '<ul class="trail">' + trailHtml + '</ul></section>' +
+
+          (p.suggestion ? '<section class="card"><div class="section-heading">Next action</div>' +
+            '<div class="next">' + esc(p.suggestion) + '</div>' +
+            '<div class="claim-row"><div><div class="claim-label">Owner</div>' +
+            '<div class="claim-owner">' + esc(p.owner || 'Unclaimed') + '</div></div></div>' +
+            '</section>' : '') +
+        '</div>' +
+
+        '<aside class="side-column">' +
+          '<section class="card"><h2>What good looks like</h2>' +
+          '<p class="sub">The standard this part is measured against.</p>' +
+          '<p class="not-written">No standard has been written for this part yet. ' +
+          'When one exists it lists the specific checks, and the re-check reports ' +
+          'each line as it runs.</p></section>' +
+
+          '<section class="card"><h2>Access</h2>' +
+          '<div class="access-line"><span class="k">Connection</span>' +
+          '<span class="conn ' + connCls + '">' + esc(connLabel) + '</span></div>' +
+          '<div class="access-line"><span class="k">Permission level</span><span>' +
+          esc(p.access_detail || '&mdash;') + '</span></div>' +
+          '<div class="access-line"><span class="k">Last verified</span><span>' +
+          (p.access_verified_at ? esc(when(p.access_verified_at)) : 'Never') + '</span></div>' +
+          '<div class="access-line"><span class="k">Last checked</span><span>' +
+          (p.checked_at ? esc(when(p.checked_at)) : 'Never checked') + '</span></div>' +
+          '</section>' +
+        '</aside>' +
+      '</div>';
+  }
+
+  main();
+</script>
 </body>
 </html>

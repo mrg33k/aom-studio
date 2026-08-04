@@ -730,7 +730,7 @@
                  !RESTATES.includes(norm(detail)) &&
                  norm(detail) !== norm(connLabel) &&
                  detail.length <= 12;
-    return '<a class="part-card' + dim + '" href="part.html?client=' + encodeURIComponent(current) +
+    return '<a class="part-card' + dim + '" href="/client-engine/part.html?client=' + encodeURIComponent(current) +
       '&part=' + encodeURIComponent(p.part_key) + '" data-part="' + esc(p.name) +
       '" data-key="' + esc(p.part_key) + '" data-state="' + esc(p.state) + '">' +
       '<div class="card-top"><span class="glyph ' + esc(p.icon) + '" aria-hidden="true">' + icon + '</span>' +
