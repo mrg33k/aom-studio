@@ -651,8 +651,14 @@
     .receipt { font-size: 12px; font-weight: 700; color: var(--accent); }
     .disputed { font-size: 12px; font-weight: 700; color: var(--bad); }
     .next { font-size: 16px; font-weight: 700; margin: 0 0 16px; }
+    /* part.css gives .claim-row a bottom border, which separated it from the
+       block the mock had underneath. Here it is the last thing in the card, so
+       that border is a rule hanging under nothing. */
     .claim-row { display: flex; justify-content: space-between; align-items: center;
-      padding-top: 16px; border-top: 1px solid var(--line); }
+      padding: 16px 0 0; border-top: 1px solid var(--line); border-bottom: 0; }
+    /* The label is what tells you this card is the ACTION, not more history. */
+    .section-heading { font-size: 12px; font-weight: 750; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--bad); margin: 0 0 8px; }
     .claim-label { font-size: 12px; color: var(--muted); font-weight: 700;
       text-transform: uppercase; letter-spacing: .06em; }
     .claim-owner { font-size: 14px; font-weight: 700; }
