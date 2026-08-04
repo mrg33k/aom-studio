@@ -822,7 +822,7 @@
     trade.textContent = meta.trade;
     meeting.textContent = meta.meeting;
     document.querySelectorAll('.client').forEach(a =>
-      a.classList.toggle('selected', a.dataset.client === key));
+      a.classList.toggle('selected', !!a.dataset.client && a.dataset.client === key));
     if (!silent) { summary.classList.remove('on'); groupsEl.innerHTML =
       '<p class="status-line">Reading the record...</p>'; }
 
@@ -876,13 +876,13 @@
 
   $('#client-search').addEventListener('input', e => {
     const q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll('.client').forEach(a => {
+    document.querySelectorAll('.client[data-client]').forEach(a => {
       const hit = a.querySelector('.client-name').textContent.toLowerCase().includes(q);
       a.style.display = hit ? '' : 'none';
     });
   });
 
-  document.querySelectorAll('.client').forEach(a => a.addEventListener('click', e => {
+  document.querySelectorAll('.client[data-client]').forEach(a => a.addEventListener('click', e => {
     e.preventDefault(); load(a.dataset.client);
   }));
 
