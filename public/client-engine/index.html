@@ -498,6 +498,15 @@
     .summary.on { display: block; }
     .summary ul { margin: 8px 0 0; padding-left: 16px; font-weight: 600; }
 
+    /* base.css pins the grid to exactly 4 columns at any width. That was fine
+       when the board owned the whole page; with a 380px rail beside it the four
+       cards squeeze until "Needs work" wraps to two lines and "Manager"
+       truncates to "Man...". Let the grid choose how many columns fit at a
+       width a card is actually readable at. */
+    .card-grid { grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); }
+    /* A state pill that wraps stops looking like one pill. */
+    .health { white-space: nowrap; }
+
     /* The rail is the second half of the tool: the board tells you what is
        true, the rail is where you change it and where the work lands. */
     .app.has-rail { grid-template-columns: 248px minmax(0, 1fr) 380px; }
@@ -880,11 +889,20 @@
     if (!chat) loadFiles(current);
   }));
 
+  // The agents write markdown. Escaping first and formatting second means the
+  // bubble can never render caller-controlled HTML, but **bold** still reads as
+  // bold instead of as four asterisks.
+  function fmt(t) {
+    return esc(t)
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>');
+  }
+
   function msgHtml(m) {
     const mine = m.role === 'user';
     const who = mine ? (m.user_name || 'You') : (m.agent || 'Agent');
     return '<div class="msg' + (mine ? ' me' : '') + '"><span class="who">' + esc(who) +
-      '</span><div class="bubble">' + esc(m.text || '') + '</div></div>';
+      '</span><div class="bubble">' + fmt(m.text || '') + '</div></div>';
   }
 
   async function loadChat(key, { append = false } = {}) {
