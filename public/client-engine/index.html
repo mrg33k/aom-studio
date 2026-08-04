@@ -593,16 +593,23 @@
     const [cls, connLabel] = CONN[p.connection] || ['no', 'Not connected'];
     const dim = p.state === 'cannot' ? ' dim' : '';
     const icon = ICONS[p.icon] || '';
-    // The state and the detail are two different facts, but often the same
-    // words: never_asked carries access_detail "Not connected", and
-    // not_applicable carries "Not applicable" — printing both gives you
-    // "Not applicable  Not applicable" on nine of Wolfpack's nineteen cards.
-    // Show the detail only when it actually adds something.
+    // access_detail is meant to carry the ACCESS LEVEL — "Manager", "Editor",
+    // "Read only", "Via Google" — which is the fact the connection state cannot
+    // tell you and the one that decides what you can actually do. Often it just
+    // restates the state instead ("Not connected", "Not applicable"), and then
+    // printing both gives you "Not applicable  Not applicable".
+    //
+    // So: show it only when it adds a level, and only when it fits. The one
+    // long value in the data, "Field crew level, no reporting", is already
+    // spelled out in the card's status line — truncating it to "Field crew le…"
+    // in the pill costs a readable row and returns nothing.
     const detail = (p.access_detail || '').trim();
     const norm = t => t.toLowerCase().replace(/[^a-z]/g, '');
-    const adds = detail && norm(detail) !== norm(connLabel) &&
-                 !norm(connLabel).includes(norm(detail)) &&
-                 !norm(detail).includes(norm(connLabel));
+    const RESTATES = ['connected', 'notconnected', 'notapplicable'];
+    const adds = detail &&
+                 !RESTATES.includes(norm(detail)) &&
+                 norm(detail) !== norm(connLabel) &&
+                 detail.length <= 12;
     return '<a class="part-card' + dim + '" href="part.html?client=' + encodeURIComponent(current) +
       '&part=' + encodeURIComponent(p.part_key) + '" data-part="' + esc(p.name) +
       '" data-key="' + esc(p.part_key) + '" data-state="' + esc(p.state) + '">' +
