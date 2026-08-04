@@ -935,7 +935,11 @@
   async function send() {
     const text = composer.value.trim();
     if (!text) return;
+    // Clear optimistically so the box feels responsive, but keep the text: if
+    // the send fails, putting it back is the difference between "try again"
+    // and "retype the paragraph you just lost".
     sendBtn.disabled = true; composer.value = '';
+    const restore = () => { if (!composer.value) composer.value = text; };
     try {
       const r = await fetch('/api/dashboard/supabase-messages', {
         method: 'POST', credentials: 'same-origin',
@@ -950,12 +954,18 @@
         thread.insertAdjacentHTML('beforeend',
           '<p class="rail-note">Not sent: ' + esc(d.error || ('error ' + r.status)) + '</p>');
         thread.scrollTop = thread.scrollHeight;
+        restore();
         return;
       }
       await loadChat(current, { append: true });
       // The agent replies asynchronously, and it may also change the record —
       // so poll for BOTH: new messages, and a board that no longer matches.
       watch();
+    } catch (e) {
+      thread.insertAdjacentHTML('beforeend',
+        '<p class="rail-note">Not sent: could not reach the room.</p>');
+      thread.scrollTop = thread.scrollHeight;
+      restore();
     } finally {
       sendBtn.disabled = false;
     }
