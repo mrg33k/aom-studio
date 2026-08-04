@@ -260,15 +260,41 @@ document.head.appendChild(o)}initApollo();</script>
          =================================================================== -->
     <script>
       (function () {
+        /* manifest:null is deliberate and load-bearing. "Add to Home Screen" on
+           iOS 16.4+ takes its URL from the manifest's start_url, NOT from the
+           page you are looking at. aom.webmanifest declares start_url "/" and
+           scope "/", so while it was linked site-wide every single page offered
+           to save as the bare domain — /work/kohrs, /about, all of them.
+
+           Before this mission index.html linked /corner/manifest.json instead,
+           whose scope is /dashboard. On marketing pages that scope did not match
+           the document, so the manifest was ignored and iOS fell back to the
+           real URL. It worked by accident, and swapping in a site-wide AOM
+           manifest broke it.
+
+           The marketing site is not an installable app. With no manifest, iOS
+           saves the page you are actually on and still takes the icon from
+           apple-touch-icon and the name from apple-mobile-web-app-title, so
+           nothing about the favicon system is lost. Only the real apps below
+           get a manifest. */
         var DEFAULT = {
           slug: 'aom', theme: '#0B0B0B', title: 'Ahead of Market',
-          manifest: '/brand/favicon/aom.webmanifest',
+          manifest: null,
           doc: 'AOM | We Make Companies Impossible to Ignore'
         };
         var SURFACES = [
-          { re: /^\/(?:dashboard|cvg|cv6)(?:\/|$)/, slug: 'corner', theme: '#0A0F1E', title: 'Corner', manifest: '/corner/manifest.json', doc: 'Corner — Your AI Team in a Dashboard' },
-          { re: /^\/moguls(?:\/|$)/,                slug: 'moguls', theme: '#050505', title: 'Moguls', manifest: '/brand/favicon/moguls.webmanifest', doc: 'Moguls — The market for music fans' }
+          { re: /^\/(?:dashboard|cvg|cv6)(?:\/|$)/, slug: 'corner', theme: '#0A0F1E', title: 'Corner', manifest: '/corner/manifest.json', manifestRe: /^\/dashboard(?:\/|$)/, doc: 'Corner — Your AI Team in a Dashboard' },
+          { re: /^\/moguls(?:\/|$)/,                slug: 'moguls', theme: '#050505', title: 'Moguls', manifest: '/brand/favicon/moguls.webmanifest', manifestRe: /^\/moguls\/?$/, doc: 'Moguls — The market for music fans' }
         ];
+
+        /* The set of titles that BELONG to a surface. Used as a floor: if the
+           document is showing one surface's title while we are on a different
+           surface, that is stale by definition and gets corrected. Nothing else
+           is touched, so a route component's own title ("Kohrs Construction
+           Social Content") is never clobbered. */
+        var KNOWN_DOCS = [DEFAULT.doc];
+        for (var s = 0; s < SURFACES.length; s++) KNOWN_DOCS.push(SURFACES[s].doc);
+        var wantDoc = DEFAULT.doc;
 
         /* Tracking params are noise in a canonical and noise in a saved
            bookmark. Everything else (?view=files, ?mission=x) is part of the
@@ -299,6 +325,21 @@ document.head.appendChild(o)}initApollo();</script>
           if (el) el.setAttribute(attr, val);
         }
 
+        /* A manifest cannot be "turned off" by blanking its href — an empty
+           href resolves to the page itself, which is worse. Detach the element
+           and keep the reference so a later navigation can put it back. */
+        var manifestEl = document.querySelector('[data-fav="manifest"]');
+        var manifestHome = manifestEl && manifestEl.parentNode;
+        function setManifest(href) {
+          if (!manifestEl || !manifestHome) return;
+          if (href) {
+            manifestEl.setAttribute('href', href);
+            if (!manifestEl.parentNode) manifestHome.appendChild(manifestEl);
+          } else if (manifestEl.parentNode) {
+            manifestEl.parentNode.removeChild(manifestEl);
+          }
+        }
+
         /* og:title is the name a share sheet offers, so it has to equal
            document.title at all times. We do not own that value — route
            components set it whenever their data lands, which can be several
@@ -310,8 +351,33 @@ document.head.appendChild(o)}initApollo();</script>
           }
         }
 
+        /* Several route components capture document.title on mount and RESTORE
+           it on unmount. That restore fires while React commits the next route
+           — after we have already claimed the title — so navigating from a
+           marketing page into Corner left the AOM marketing headline sitting on
+           the dashboard. Waiting a frame does not help: the value it restores is
+           not the one we were watching for.
+
+           The rule that does hold: a surface's title on a different surface is
+           always wrong. Correct only that, and only ever back to the current
+           surface's own title. Anything a component genuinely authored is not in
+           KNOWN_DOCS and is left alone. */
+        function enforceSurfaceTitle() {
+          var t = document.title;
+          if (t === wantDoc) return;
+          for (var i = 0; i < KNOWN_DOCS.length; i++) {
+            if (t === KNOWN_DOCS[i]) { try { document.title = wantDoc; } catch (e) {} return; }
+          }
+        }
+
+        function onHeadMutation() {
+          enforceSurfaceTitle();
+          mirrorOgTitle();
+        }
+
         function apply() {
-          var hit = surfaceFor((window.location && window.location.pathname) || '');
+          var path = (window.location && window.location.pathname) || '';
+          var hit = surfaceFor(path);
           var href = cleanHref();
 
           set('canonical', 'href', href);
@@ -320,7 +386,16 @@ document.head.appendChild(o)}initApollo();</script>
           set('icon', 'href', '/brand/favicon/' + hit.slug + '.svg');
           set('ico', 'href', '/brand/favicon/' + hit.slug + '.ico');
           set('apple', 'href', '/brand/favicon/' + hit.slug + '-180.png');
-          set('manifest', 'href', hit.manifest);
+          /* manifestRe: attach the manifest ONLY on the app's real front door.
+             /cv6 and /cvg render the same app but sit outside corner
+             manifest.json's scope, so a browser would reject it there anyway —
+             and this bug was caused by relying on exactly that kind of silent
+             rejection. Say it out loud instead: no manifest, so those save as
+             themselves. */
+          setManifest(
+            hit.manifest && (!hit.manifestRe || hit.manifestRe.test(path))
+              ? hit.manifest : null
+          );
           set('theme', 'content', hit.theme);
           set('title', 'content', hit.title);
 
@@ -332,6 +407,7 @@ document.head.appendChild(o)}initApollo();</script>
              rather than let the previous page's name stand. */
           var prev = document.title;
           var want = hit.doc;
+          wantDoc = want;
           if (prev !== want) { try { document.title = want; } catch (e) {} }
           mirrorOgTitle();
 
@@ -351,7 +427,7 @@ document.head.appendChild(o)}initApollo();</script>
            and a wholesale <title> replacement alike. */
         try {
           if (typeof MutationObserver === 'function' && document.head) {
-            new MutationObserver(mirrorOgTitle).observe(document.head, {
+            new MutationObserver(onHeadMutation).observe(document.head, {
               subtree: true, childList: true, characterData: true
             });
           }
