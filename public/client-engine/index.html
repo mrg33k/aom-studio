@@ -454,8 +454,13 @@
     .meeting .lbl { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; opacity: .8; }
 
     .counts { display: flex; gap: 8px; flex-wrap: wrap; }
-    .access-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
-    .access-pill { white-space: nowrap; }
+    /* The arrow is the affordance that says "this opens" — it must survive any
+       label length. The pill is the only element allowed to give up space. */
+    .access-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+      min-width: 0; }
+    .access-row .arrow { flex: none; margin-left: auto; }
+    .access-pill { min-width: 0; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
     .conn { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700;
       white-space: nowrap; flex: none; }
     .conn::before { content: ""; width: 8px; height: 8px; border-radius: 50%; }
@@ -588,7 +593,16 @@
     const [cls, connLabel] = CONN[p.connection] || ['no', 'Not connected'];
     const dim = p.state === 'cannot' ? ' dim' : '';
     const icon = ICONS[p.icon] || '';
-    const access = p.access_detail || connLabel;
+    // The state and the detail are two different facts, but often the same
+    // words: never_asked carries access_detail "Not connected", and
+    // not_applicable carries "Not applicable" — printing both gives you
+    // "Not applicable  Not applicable" on nine of Wolfpack's nineteen cards.
+    // Show the detail only when it actually adds something.
+    const detail = (p.access_detail || '').trim();
+    const norm = t => t.toLowerCase().replace(/[^a-z]/g, '');
+    const adds = detail && norm(detail) !== norm(connLabel) &&
+                 !norm(connLabel).includes(norm(detail)) &&
+                 !norm(detail).includes(norm(connLabel));
     return '<a class="part-card' + dim + '" href="part.html?client=' + encodeURIComponent(current) +
       '&part=' + encodeURIComponent(p.part_key) + '" data-part="' + esc(p.name) +
       '" data-key="' + esc(p.part_key) + '" data-state="' + esc(p.state) + '">' +
@@ -598,7 +612,7 @@
       '<p class="status-line">' + esc(p.status_line) + '</p>' +
       '<p class="suggest"><span class="k">Do next</span>' + esc(p.suggestion) + '</p>' +
       '<div class="access-row"><span class="conn ' + cls + '">' + esc(connLabel) + '</span>' +
-      '<span class="access-pill">' + esc(access) + '</span>' +
+      (adds ? '<span class="access-pill" title="' + esc(detail) + '">' + esc(detail) + '</span>' : '') +
       '<span class="arrow" aria-hidden="true">&rarr;</span></div></a>';
   }
 
