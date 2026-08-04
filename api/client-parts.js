@@ -119,6 +119,65 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
+      // ── THE DAY (Phase 2) ────────────────────────────────────────────────
+      // One screen across every client, because the question at 8am is not
+      // "how is Wolfpack" — it is "what needs ME". Three buckets, and the
+      // split that matters is between work that is ours and work that is
+      // theirs: a part blocked on a client is not a task Patrik can do today,
+      // and mixing the two is how a to-do list stops being believed.
+      if (String(req.query.view || '') === 'day') {
+        const all = await sb('/client_parts?select=*&order=project_slug.asc,sort_order.asc')
+        // Scope to what this caller may actually see, one client at a time.
+        const clients = [...new Set(all.map((p) => p.project_slug))]
+        const allowed = []
+        for (const c of clients) {
+          try { await verifyProjectAccess(c, req); allowed.push(c) } catch { /* not yours */ }
+        }
+        if (!allowed.length) throw new TenantAuthError('jwt required', 401)
+        const mine = all.filter((p) => allowed.includes(p.project_slug))
+
+        // "Waiting on them" is decided by ACCESS, not by state: if we have
+        // never been given the keys, no amount of our effort moves it.
+        const waiting = (p) =>
+          p.connection === 'never_asked' || p.connection === 'pending' ||
+          p.connection === 'wrong_level' || p.connection === 'expired'
+
+        const needsMe = mine.filter((p) => !waiting(p) &&
+          (p.state === 'blocked' || p.state === 'needs'))
+        const waitingOnClient = mine.filter(waiting)
+        const running = mine.filter((p) => p.state === 'completed')
+
+        const shape = (p) => ({
+          client: p.project_slug, part_key: p.part_key, name: p.name,
+          icon: p.icon, state: p.state, connection: p.connection,
+          status_line: p.status_line, suggestion: p.suggestion,
+          owner: p.owner, checked_at: p.checked_at, group_name: p.group_name,
+        })
+
+        let sweep = null
+        try {
+          const rows = await sb('/routines?select=name,status,last_run_at,last_error' +
+                                '&name=eq.com.aom-ea.client-engine-nightly&limit=1')
+          sweep = rows[0] || null
+        } catch { /* the board must render even if this lookup fails */ }
+
+        return res.status(200).json({
+          clients: allowed,
+          needs_me: needsMe.map(shape),
+          waiting_on_client: waitingOnClient.map(shape),
+          running: running.map(shape),
+          counts: {
+            total: mine.length,
+            needs_me: needsMe.length,
+            waiting_on_client: waitingOnClient.length,
+            running: running.length,
+            unchecked: mine.filter((p) => !p.checked_at).length,
+            checked: mine.filter((p) => p.checked_at).length,
+          },
+          sweep,
+        })
+      }
+
       const client = String(req.query.client || '').trim()
       if (!client) return res.status(400).json({ error: 'client is required' })
       await verifyProjectAccess(client, req)
