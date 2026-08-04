@@ -612,7 +612,7 @@
       <div class="meeting" id="meeting-bar"><span class="lbl">Next meeting</span><span id="meeting-text"></span></div>
 
       <div class="recheck-bar" id="recheck-bar">
-        <button class="recheck-btn" id="recheck" type="button">Refresh from the record</button>
+        <button class="recheck-btn" id="recheck" type="button">Check everything now</button>
         <span class="recheck-note" id="recheck-note"></span>
       </div>
 
@@ -866,12 +866,47 @@
   // and until that exists this button must not imply it.
   btn.addEventListener('click', async () => {
     const before = lastLoad[current] || [];
-    btn.disabled = true; note.textContent = 'Reading the record...';
-    summary.classList.remove('on');
+    btn.disabled = true; summary.classList.remove('on');
+
+    // Ask for the REAL check — a dispatched pass that opens what it has an
+    // address for and writes down what it saw. It runs outside the page, so
+    // this reports what it STARTED, never what it found. The watcher below
+    // shows findings as they land.
+    note.textContent = 'Asking for a check...';
+    let started = null;
+    try {
+      const rq = await fetch('/api/client-parts', {
+        method: 'POST', credentials: 'same-origin',
+        headers: authed({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action: 'request_check', client: current }),
+      });
+      started = await rq.json();
+      if (!rq.ok) started = null;
+    } catch (e) { started = null; }
 
     const data = await load(current, { silent: true });
     btn.disabled = false; note.textContent = '';
     if (!data) return;
+
+    if (started) {
+      const unchecked = data.counts?.unchecked ?? 0;
+      summary.innerHTML = '<b>' + (started.already
+          ? 'A check is already running for this client.'
+          : 'A check has started.') +
+        '</b> It opens every part we have an address for and writes down what it ' +
+        'saw, with the link it opened. Parts change here as it works — nothing ' +
+        'below has been updated yet by this run.' +
+        (unchecked ? ' <br>' + unchecked + ' of ' + (data.counts?.total ?? 0) +
+          ' parts have no address recorded, so the check will report what is ' +
+          'missing rather than pass them.' : '');
+      summary.classList.add('on');
+      watch();
+      return;
+    }
+    summary.innerHTML = '<b>Could not start a check.</b> The board below is still ' +
+      'the current record — it just has not been re-checked.';
+    summary.classList.add('on');
+    return;
 
     const was = Object.fromEntries(before.map(p => [p.part_key, p]));
     const changed = (data.parts || []).filter(p => {
