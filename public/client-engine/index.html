@@ -799,6 +799,14 @@
     recheckBar.style.display = on ? '' : 'none';
   }
 
+  // The rail is a CLIENT's room and a CLIENT's folder. The day spans every
+  // client, so there is no room to show — leaving it mounted put an empty pane
+  // and a composer with nowhere to send beside the list.
+  function showRail(on) {
+    rail.style.display = on ? '' : 'none';
+    document.querySelector('.app').classList.toggle('has-rail', on);
+  }
+
   function message(title, body, action) {
     groupsEl.innerHTML = '<div class="board-message"><b>' + esc(title) + '</b>' +
       '<p>' + esc(body) + '</p>' + (action || '') + '</div>';
@@ -845,6 +853,7 @@
     }
 
     chrome(true);
+    showRail(true);
     const parts = data.parts || [];
     lastLoad[key] = parts;
     groupsEl.innerHTML = groupsHtml(parts);
@@ -1186,6 +1195,7 @@
     hello.textContent = 'Your day.';
     trade.textContent = 'Every client, in one place.';
     chrome(false);
+    showRail(false);
     groupsEl.innerHTML = '<p class="status-line">Reading every client...</p>';
 
     let res, d;
