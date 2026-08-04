@@ -360,6 +360,63 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, settings: s })
       }
 
+      // ---- ask for a real check --------------------------------------------
+      // The board's button used to re-read the database and call it a re-check.
+      // This queues the thing that actually leaves the building:
+      // scripts/client-engine-check.py opens what it has an address for,
+      // appends evidence carrying the URL it fetched, and stamps checked_at
+      // only on the parts it genuinely reached.
+      //
+      // It DISPATCHES rather than checking inline on purpose. One
+      // implementation of "what does a check mean" — the Python script the
+      // nightly sweep also runs — instead of a second one in JS that drifts
+      // from it. A serverless function that fetched sites itself would be that
+      // second implementation.
+      //
+      // Reading is never gated by autonomy: looking at a public website
+      // changes nothing in the world. The two consent gates exist for ACTING.
+      if (action === 'request_check') {
+        // Match on the CLIENT this check is for, which lives in metadata.
+        // `project` is the REPO (AOM-EA) because task-runner.sh takes the repo
+        // lock from it — so querying project=<client> could never match, and
+        // every click would queue another check behind the last one forever.
+        const existing = await sb(
+          `/tasks?select=id,status&status=in.(queued,running)` +
+          `&metadata->>check_client=eq.${encodeURIComponent(scopeClient)}&limit=1`
+        )
+        if (existing.length) {
+          return res.status(200).json({
+            ok: true, already: true, task_id: existing[0].id,
+            message: 'A check for this client is already running.',
+          })
+        }
+        const rows = await sb('/tasks', {
+          method: 'POST',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify([{
+            title: `Client Engine check — ${scopeClient}`,
+            text: `Run: python3 scripts/client-engine-check.py --client ${scopeClient}\n\n` +
+                  `It opens every part that has a recorded address, writes down what it ` +
+                  `saw with the link it opened, and stamps the check time only on the ` +
+                  `parts it actually reached. Parts with no recorded address must stay ` +
+                  `unchecked and say why — do not invent an address to make one pass.`,
+            description: `Client Engine check for ${scopeClient}, asked for by ${actor}.`,
+            status: 'queued',
+            source: 'client-engine-board',
+            client_id: 'aom',
+            project: 'AOM-EA',
+            priority: 0,   // integer column; queue-task.py's default is 0
+            metadata: {
+              repo: 'AOM-EA',
+              created_via: 'client-engine-board',
+              mission_slug: 'aom:client-engine',
+              check_client: scopeClient,
+            },
+          }]),
+        })
+        return res.status(200).json({ ok: true, task_id: rows[0]?.id || null })
+      }
+
       // ---- may an agent act right now? -------------------------------------
       // The agent asks this BEFORE doing anything that changes the world.
       // Checking/reading never needs it; acting always does.
