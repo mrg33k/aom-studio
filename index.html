@@ -31,14 +31,28 @@ document.head.appendChild(o)}initApollo();</script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Ahead of Market" data-fav="title" />
+    <!-- Must sit ABOVE the script below: it rewrites this to the current
+         path, and a tag parsed later would not exist yet when it runs. -->
+    <link rel="canonical" href="https://aheadofmarket.com/" data-fav="canonical" />
     <script>
       /* Route -> brand identity. Runs before first paint, so the tab never
          flashes the wrong mark. Add a surface here, not a second <link>. */
       (function () {
         var path = (window.location && window.location.pathname) || '';
+
+        /* Canonical must be THIS page, not the homepage. The tag above ships
+           hardcoded to the root, and Safari + the iOS share sheet read
+           rel=canonical when saving a bookmark — so every page bookmarked as
+           bare aheadofmarket.com with the path thrown away. It also told search
+           engines every route was a duplicate of the homepage. */
+        try {
+          var can = document.querySelector('[data-fav="canonical"]');
+          if (can) can.setAttribute('href', window.location.origin + path);
+        } catch (e) {}
+
         var SURFACES = [
-          { re: /^\/(?:dashboard|cvg|cv6)(?:\/|$)/, slug: 'corner', theme: '#0A0F1E', title: 'Corner', manifest: '/corner/manifest.json' },
-          { re: /^\/moguls(?:\/|$)/,                slug: 'moguls', theme: '#050505', title: 'Moguls', manifest: '/brand/favicon/moguls.webmanifest' }
+          { re: /^\/(?:dashboard|cvg|cv6)(?:\/|$)/, slug: 'corner', theme: '#0A0F1E', title: 'Corner', manifest: '/corner/manifest.json', doc: 'Corner — Your AI Team in a Dashboard' },
+          { re: /^\/moguls(?:\/|$)/,                slug: 'moguls', theme: '#050505', title: 'Moguls', manifest: '/brand/favicon/moguls.webmanifest', doc: 'Moguls — The market for music fans' }
         ];
         var hit = null;
         for (var i = 0; i < SURFACES.length; i++) {
@@ -53,6 +67,9 @@ document.head.appendChild(o)}initApollo();</script>
         set('ico', 'href', '/brand/favicon/' + hit.slug + '.ico');
         set('apple', 'href', '/brand/favicon/' + hit.slug + '-180.png');
         set('manifest', 'href', hit.manifest);
+        /* A bookmark is named from document.title. Without this every Corner
+           page saved under the AOM marketing headline. */
+        try { document.title = hit.doc; } catch (e) {}
         set('theme', 'content', hit.theme);
         set('title', 'content', hit.title);
       })();
@@ -229,7 +246,6 @@ document.head.appendChild(o)}initApollo();</script>
     <meta name="description" content="AOM builds the content, websites, and systems that make companies impossible to ignore. Video production, social media, websites, and AI-powered workflows for construction companies, founders, nonprofits, and brands that do real work." />
     <meta name="keywords" content="video production Phoenix, social media content, brand video, content systems, website development, AI workflows, construction marketing, corporate video, nonprofit video, founder content, Phoenix production studio" />
     <meta name="author" content="AOM (Ahead of Market)" />
-    <link rel="canonical" href="https://aheadofmarket.com/" />
     <link rel="preconnect" href="https://play.gumlet.io" crossorigin />
     <link rel="dns-prefetch" href="https://play.gumlet.io" />
 
