@@ -31,49 +31,9 @@ document.head.appendChild(o)}initApollo();</script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Ahead of Market" data-fav="title" />
-    <!-- Must sit ABOVE the script below: it rewrites this to the current
-         path, and a tag parsed later would not exist yet when it runs. -->
+    <!-- Rewritten to the current URL by the surface script at the END of this
+         head (see there for why it lives down there and not up here). -->
     <link rel="canonical" href="https://aheadofmarket.com/" data-fav="canonical" />
-    <script>
-      /* Route -> brand identity. Runs before first paint, so the tab never
-         flashes the wrong mark. Add a surface here, not a second <link>. */
-      (function () {
-        var path = (window.location && window.location.pathname) || '';
-
-        /* Canonical must be THIS page, not the homepage. The tag above ships
-           hardcoded to the root, and Safari + the iOS share sheet read
-           rel=canonical when saving a bookmark — so every page bookmarked as
-           bare aheadofmarket.com with the path thrown away. It also told search
-           engines every route was a duplicate of the homepage. */
-        try {
-          var can = document.querySelector('[data-fav="canonical"]');
-          if (can) can.setAttribute('href', window.location.origin + path);
-        } catch (e) {}
-
-        var SURFACES = [
-          { re: /^\/(?:dashboard|cvg|cv6)(?:\/|$)/, slug: 'corner', theme: '#0A0F1E', title: 'Corner', manifest: '/corner/manifest.json', doc: 'Corner — Your AI Team in a Dashboard' },
-          { re: /^\/moguls(?:\/|$)/,                slug: 'moguls', theme: '#050505', title: 'Moguls', manifest: '/brand/favicon/moguls.webmanifest', doc: 'Moguls — The market for music fans' }
-        ];
-        var hit = null;
-        for (var i = 0; i < SURFACES.length; i++) {
-          if (SURFACES[i].re.test(path)) { hit = SURFACES[i]; break; }
-        }
-        if (!hit) return; /* stay on the Ahead of Market set */
-        function set(key, attr, val) {
-          var el = document.querySelector('[data-fav="' + key + '"]');
-          if (el) el.setAttribute(attr, val);
-        }
-        set('icon', 'href', '/brand/favicon/' + hit.slug + '.svg');
-        set('ico', 'href', '/brand/favicon/' + hit.slug + '.ico');
-        set('apple', 'href', '/brand/favicon/' + hit.slug + '-180.png');
-        set('manifest', 'href', hit.manifest);
-        /* A bookmark is named from document.title. Without this every Corner
-           page saved under the AOM marketing headline. */
-        try { document.title = hit.doc; } catch (e) {}
-        set('theme', 'content', hit.theme);
-        set('title', 'content', hit.title);
-      })();
-    </script>
     <script>
       (function () {
         var path = window.location && window.location.pathname ? window.location.pathname : '';
@@ -252,9 +212,9 @@ document.head.appendChild(o)}initApollo();</script>
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="AOM | Ahead of Market" />
-    <meta property="og:title" content="AOM | We Make Companies Impossible to Ignore" />
+    <meta property="og:title" content="AOM | We Make Companies Impossible to Ignore" data-fav="ogtitle" />
     <meta property="og:description" content="AOM builds the content, websites, and systems that make companies impossible to ignore. Video, social, web, and AI-powered workflows for construction companies, founders, nonprofits, and brands." />
-    <meta property="og:url" content="https://aheadofmarket.com/" />
+    <meta property="og:url" content="https://aheadofmarket.com/" data-fav="ogurl" />
     <meta property="og:image" content="https://www.aheadofmarket.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -271,6 +231,147 @@ document.head.appendChild(o)}initApollo();</script>
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+
+    <!-- ===================================================================
+         Surface identity: favicon set + bookmark identity, per route.
+         Mission: aom:favicon-system.
+
+         THE INVARIANT: after an in-app navigation to path P, this head must
+         match what a hard load of P produces — canonical, og:url, og:title,
+         title, icon, ico, apple-touch-icon, manifest, theme-color.
+
+         This document is one SPA serving three brands. React Router changes
+         the URL without reloading the document, so a run-once version of this
+         script goes stale the instant anyone clicks a link: the Corner
+         dashboard kept the AOM favicon, the AOM manifest, a canonical pointing
+         at whatever marketing page you came from, and that page's name. Safari
+         and the iOS share sheet read rel=canonical and document.title when
+         saving a bookmark, which is why every bookmark came out as the bare
+         domain under the wrong name.
+
+         TWO PLACEMENT RULES, both learned the hard way:
+         1. This script must stay LAST in <head>. It writes to <title>, the OG
+            tags and the icon links, and a tag the parser has not reached yet
+            cannot be written to. An earlier version sat at the top and set
+            document.title before <title> was parsed — which silently created a
+            SECOND <title> element and only worked because it happened to come
+            first in tree order.
+         2. Add a surface to SURFACES below. Never a second hardcoded <link>.
+         =================================================================== -->
+    <script>
+      (function () {
+        var DEFAULT = {
+          slug: 'aom', theme: '#0B0B0B', title: 'Ahead of Market',
+          manifest: '/brand/favicon/aom.webmanifest',
+          doc: 'AOM | We Make Companies Impossible to Ignore'
+        };
+        var SURFACES = [
+          { re: /^\/(?:dashboard|cvg|cv6)(?:\/|$)/, slug: 'corner', theme: '#0A0F1E', title: 'Corner', manifest: '/corner/manifest.json', doc: 'Corner — Your AI Team in a Dashboard' },
+          { re: /^\/moguls(?:\/|$)/,                slug: 'moguls', theme: '#050505', title: 'Moguls', manifest: '/brand/favicon/moguls.webmanifest', doc: 'Moguls — The market for music fans' }
+        ];
+
+        /* Tracking params are noise in a canonical and noise in a saved
+           bookmark. Everything else (?view=files, ?mission=x) is part of the
+           page's identity and has to survive. */
+        var JUNK = /^(?:utm_.*|gclid|fbclid|msclkid|mc_cid|mc_eid|_hsenc|_hsmi|igshid|si)$/i;
+
+        function surfaceFor(path) {
+          for (var i = 0; i < SURFACES.length; i++) {
+            if (SURFACES[i].re.test(path)) return SURFACES[i];
+          }
+          return DEFAULT;
+        }
+
+        function cleanHref() {
+          try {
+            var u = new URL(window.location.href);
+            var drop = [];
+            u.searchParams.forEach(function (v, k) { if (JUNK.test(k)) drop.push(k); });
+            for (var i = 0; i < drop.length; i++) u.searchParams.delete(drop[i]);
+            return u.origin + u.pathname + (u.search || '');
+          } catch (e) {
+            return window.location.origin + window.location.pathname;
+          }
+        }
+
+        function set(key, attr, val) {
+          var el = document.querySelector('[data-fav="' + key + '"]');
+          if (el) el.setAttribute(attr, val);
+        }
+
+        /* og:title is the name a share sheet offers, so it has to equal
+           document.title at all times. We do not own that value — route
+           components set it whenever their data lands, which can be several
+           frames after navigation — so mirror it instead of trying to time it. */
+        function mirrorOgTitle() {
+          var el = document.querySelector('[data-fav="ogtitle"]');
+          if (el && el.getAttribute('content') !== document.title) {
+            el.setAttribute('content', document.title);
+          }
+        }
+
+        function apply() {
+          var hit = surfaceFor((window.location && window.location.pathname) || '');
+          var href = cleanHref();
+
+          set('canonical', 'href', href);
+          set('ogurl', 'content', href);
+
+          set('icon', 'href', '/brand/favicon/' + hit.slug + '.svg');
+          set('ico', 'href', '/brand/favicon/' + hit.slug + '.ico');
+          set('apple', 'href', '/brand/favicon/' + hit.slug + '-180.png');
+          set('manifest', 'href', hit.manifest);
+          set('theme', 'content', hit.theme);
+          set('title', 'content', hit.title);
+
+          /* A bookmark is NAMED from document.title. Only about half the route
+             components set one, and several restore whatever title was up when
+             they mounted — so left alone, a page inherits the name of the page
+             you came from. Claim the title now, then yield a frame: if a
+             component sets its own it wins, and if nothing does we re-assert
+             rather than let the previous page's name stand. */
+          var prev = document.title;
+          var want = hit.doc;
+          if (prev !== want) { try { document.title = want; } catch (e) {} }
+          mirrorOgTitle();
+
+          if (prev === want || typeof requestAnimationFrame !== 'function') return;
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              if (document.title === prev) { try { document.title = want; } catch (e) {} }
+              mirrorOgTitle();
+            });
+          });
+        }
+
+        apply();
+
+        /* Catches every later title write — a route component's effect, a data
+           fetch resolving, anything. One observer on <head> covers text edits
+           and a wholesale <title> replacement alike. */
+        try {
+          if (typeof MutationObserver === 'function' && document.head) {
+            new MutationObserver(mirrorOgTitle).observe(document.head, {
+              subtree: true, childList: true, characterData: true
+            });
+          }
+        } catch (e) {}
+
+        /* React Router mutates history directly and neither pushState nor
+           replaceState fires an event, so there is nothing to listen to until
+           we wrap them. This is the whole reason the head used to go stale. */
+        ['pushState', 'replaceState'].forEach(function (name) {
+          var orig = history[name];
+          if (typeof orig !== 'function') return;
+          history[name] = function () {
+            var r = orig.apply(this, arguments);
+            try { apply(); } catch (e) {}
+            return r;
+          };
+        });
+        window.addEventListener('popstate', function () { try { apply(); } catch (e) {} });
+      })();
+    </script>
   </head>
   <body>
     <noscript>
