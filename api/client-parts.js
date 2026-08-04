@@ -189,6 +189,24 @@ export default async function handler(req, res) {
         if (patch.connection && !CONNECTIONS.includes(patch.connection)) {
           return res.status(400).json({ error: `connection must be one of ${CONNECTIONS.join(', ')}` })
         }
+        // deep_link is the address the nightly check OPENS, unattended, on a
+        // machine holding the service key. An operator who could write
+        // "file:///.../.env" here would be aiming that job at whatever they
+        // liked and reading the result back off the evidence trail. The checker
+        // refuses non-public targets too; this is the same rule stated at the
+        // point of writing, so a bad address never gets stored in the first place.
+        for (const f of ['deep_link', 'artifact_url']) {
+          if (patch[f] == null || patch[f] === '') continue
+          let u
+          try { u = new URL(String(patch[f])) } catch {
+            return res.status(400).json({ error: `${f} must be a full web address` })
+          }
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+            return res.status(400).json({
+              error: `${f} must be an http or https address, not ${u.protocol.replace(':', '')}`,
+            })
+          }
+        }
 
         const allowed = [
           'state', 'connection', 'access_detail', 'access_verified_at',
