@@ -535,10 +535,10 @@
         <div class="counts" id="counts"></div>
       </header>
 
-      <div class="meeting"><span class="lbl">Next meeting</span><span id="meeting-text"></span></div>
+      <div class="meeting" id="meeting-bar"><span class="lbl">Next meeting</span><span id="meeting-text"></span></div>
 
-      <div class="recheck-bar">
-        <button class="recheck-btn" id="recheck" type="button">Re-check everything</button>
+      <div class="recheck-bar" id="recheck-bar">
+        <button class="recheck-btn" id="recheck" type="button">Refresh from the record</button>
         <span class="recheck-note" id="recheck-note"></span>
       </div>
 
@@ -623,10 +623,23 @@
   // An honest state for every way this can fail to show real data. A board
   // that renders empty when it is actually signed out teaches you to distrust
   // it, which is worse than showing nothing.
+  const meetingBar = $('#meeting-bar'), recheckBar = $('#recheck-bar');
+
+  // Hide the client data and the actions, not just the cards. A page that says
+  // "you are signed out" while still displaying a named client's next meeting
+  // is contradicting itself, and offering a refresh button that cannot refresh
+  // anything is a control that does nothing.
+  function chrome(on) {
+    meetingBar.style.display = on ? '' : 'none';
+    recheckBar.style.display = on ? '' : 'none';
+  }
+
   function message(title, body, action) {
     groupsEl.innerHTML = '<div class="board-message"><b>' + esc(title) + '</b>' +
       '<p>' + esc(body) + '</p>' + (action || '') + '</div>';
     countsEl.innerHTML = '';
+    summary.classList.remove('on');
+    chrome(false);
   }
 
   async function load(key, { silent = false } = {}) {
@@ -664,6 +677,7 @@
       return null;
     }
 
+    chrome(true);
     const parts = data.parts || [];
     lastLoad[key] = parts;
     groupsEl.innerHTML = groupsHtml(parts);
