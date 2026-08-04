@@ -172,6 +172,9 @@ function buildHtml(meta, fullUrl, schemaJson) {
   <meta charset="UTF-8" />
   <title>${meta.title}</title>
   <meta name="description" content="${meta.description}" />
+  <!-- Per-page canonical. index.html hardcodes the root, which told search
+       engines every route was a duplicate of the homepage. -->
+  <link rel="canonical" href="${ogUrl}" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="${siteName}" />
   <meta property="og:title" content="${meta.title}" />
