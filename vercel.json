@@ -610,6 +610,11 @@
       "source": "/higher-orbits",
       "destination": "/higherorbits",
       "permanent": true
+    },
+    {
+      "source": "/kraken",
+      "destination": "/kraken/",
+      "permanent": false
     }
   ]
 }
