@@ -498,6 +498,66 @@
     .summary.on { display: block; }
     .summary ul { margin: 8px 0 0; padding-left: 16px; font-weight: 600; }
 
+    /* The rail is the second half of the tool: the board tells you what is
+       true, the rail is where you change it and where the work lands. */
+    .app.has-rail { grid-template-columns: 248px minmax(0, 1fr) 380px; }
+    .rail {
+      position: sticky; top: 0; align-self: stretch; height: 100vh;
+      display: flex; flex-direction: column;
+      background: var(--panel); border-left: 1px solid var(--line);
+    }
+    .rail-tabs { display: flex; gap: 4px; padding: 16px 16px 0; flex: none; }
+    .rail-tab {
+      flex: 1; padding: 8px 12px; border: 0; border-radius: 8px; cursor: pointer;
+      background: transparent; color: var(--muted); font-family: inherit;
+      font-size: 13px; font-weight: 700; letter-spacing: .02em;
+    }
+    .rail-tab.on { background: var(--accent-soft); color: var(--accent); }
+    .rail-pane { display: none; flex: 1; min-height: 0; flex-direction: column; }
+    .rail-pane.on { display: flex; }
+
+    .thread { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; }
+    .msg { margin: 0 0 12px; font-size: 13px; line-height: 1.5; }
+    .msg .who { display: block; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+      margin-bottom: 4px; }
+    .msg .bubble { padding: 12px; border-radius: 12px; background: var(--surface);
+      border: 1px solid var(--line); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .msg.me .bubble { background: var(--accent-soft); border-color: transparent;
+      color: var(--text); }
+    .composer { flex: none; padding: 16px; border-top: 1px solid var(--line);
+      display: flex; gap: 8px; align-items: flex-end; }
+    .composer textarea {
+      flex: 1; min-width: 0; resize: none; font-family: inherit; font-size: 13px;
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+      background: var(--surface); color: var(--text); max-height: 120px;
+    }
+    .composer button {
+      flex: none; border: 0; cursor: pointer; padding: 10px 16px;
+      border-radius: 999px; background: var(--accent); color: #fff;
+      font-family: inherit; font-size: 13px; font-weight: 700;
+    }
+    .composer button[disabled] { opacity: .55; cursor: not-allowed; }
+
+    .files { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; }
+    .file-group { margin: 0 0 16px; }
+    .file-group h4 { margin: 0 0 8px; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .file-row { display: flex; align-items: center; gap: 8px; padding: 8px;
+      border-radius: 8px; font-size: 13px; color: var(--text);
+      text-decoration: none; }
+    .file-row:hover { background: var(--accent-soft); }
+    .file-row .nm { flex: 1; min-width: 0; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    .file-row .wh { flex: none; font-size: 12px; color: var(--muted); }
+    .rail-note { padding: 16px; font-size: 13px; color: var(--muted);
+      font-weight: 600; line-height: 1.5; }
+
+    @media (max-width: 1180px) {
+      .app.has-rail { grid-template-columns: 248px minmax(0, 1fr); }
+      .rail { display: none; }
+    }
+
     .board-message { padding: 24px; border-radius: 12px; background: var(--panel);
       border: 1px solid var(--line); }
     .board-message b { display: block; font-size: 16px; margin-bottom: 8px; }
@@ -511,7 +571,7 @@
 </style>
 </head>
 <body>
-  <div class="app">
+  <div class="app has-rail">
     <aside class="sidebar" aria-label="Clients">
       <div class="sidebar-head">
         <span class="brand-mark" aria-hidden="true">
@@ -556,6 +616,23 @@
 
       <div id="groups"></div>
     </main>
+    <aside class="rail" id="rail" aria-label="Chat and files">
+      <div class="rail-tabs">
+        <button class="rail-tab on" id="tab-chat" type="button">Chat</button>
+        <button class="rail-tab" id="tab-files" type="button">Files</button>
+      </div>
+      <div class="rail-pane on" id="pane-chat">
+        <div class="thread" id="thread"></div>
+        <div class="composer">
+          <label for="composer-input" class="side-label" style="display:none">Message</label>
+          <textarea id="composer-input" rows="1" placeholder="Tell the board what changed..."></textarea>
+          <button id="send" type="button">Send</button>
+        </div>
+      </div>
+      <div class="rail-pane" id="pane-files">
+        <div class="files" id="files"></div>
+      </div>
+    </aside>
   </div>
 <script>
   const META   = {"wolfpack": {"name": "Wolfpack", "trade": "Commercial plumbing and hydro jetting \u00b7 Phoenix", "meeting": "Thursday 7 Aug, 10:00am \u00b7 Ross, site walk"}, "ambition-mechanical": {"name": "Ambition Mechanical", "trade": "Commercial HVAC and refrigeration \u00b7 Phoenix", "meeting": "Tuesday 12 Aug, 2:00pm \u00b7 Mo, monthly review"}, "kohrs": {"name": "Kohrs", "trade": "Demolition and renovation \u00b7 Phoenix", "meeting": "Nothing booked"}};
@@ -780,6 +857,198 @@
     }
     summary.classList.add('on');
   });
+
+  // ── THE RAIL ──────────────────────────────────────────────────────────────
+  // Chat goes through /api/dashboard/supabase-messages, the authenticated
+  // production chat endpoint, NOT the embed widget pipeline. The embed door is
+  // deliberately public and wildcard-CORS because it serves anonymous visitors
+  // on other people's websites; pointing it at a client room would install an
+  // unauthenticated write pump into AOM's own project rooms. This board is an
+  // internal signed-in tool, so it uses the internal signed-in path — same
+  // origin, same cookie, same tenant gate as the rest of the dashboard.
+  const thread = $('#thread'), composer = $('#composer-input'), sendBtn = $('#send'),
+        filesEl = $('#files'), rail = $('#rail');
+  const AGENT = 'elon';   // a real EA slug; never project:<slug>, which routes nowhere
+  let seenIds = new Set(), poller = null;
+
+  document.querySelectorAll('.rail-tab').forEach(t => t.addEventListener('click', () => {
+    const chat = t.id === 'tab-chat';
+    $('#tab-chat').classList.toggle('on', chat);
+    $('#tab-files').classList.toggle('on', !chat);
+    $('#pane-chat').classList.toggle('on', chat);
+    $('#pane-files').classList.toggle('on', !chat);
+    if (!chat) loadFiles(current);
+  }));
+
+  function msgHtml(m) {
+    const mine = m.role === 'user';
+    const who = mine ? (m.user_name || 'You') : (m.agent || 'Agent');
+    return '<div class="msg' + (mine ? ' me' : '') + '"><span class="who">' + esc(who) +
+      '</span><div class="bubble">' + esc(m.text || '') + '</div></div>';
+  }
+
+  async function loadChat(key, { append = false } = {}) {
+    if (!append) { thread.innerHTML = '<p class="rail-note">Reading the room...</p>'; seenIds = new Set(); }
+    let rows;
+    try {
+      const r = await fetch('/api/dashboard/supabase-messages?client=aom&limit=50&project=' +
+                            encodeURIComponent(key), { credentials: 'same-origin', cache: 'no-store' });
+      if (r.status === 401 || r.status === 403) {
+        thread.innerHTML = '<p class="rail-note">Sign in to see this client\'s room.</p>'; return;
+      }
+      const d = await r.json();
+      rows = Array.isArray(d) ? d : (d.messages || []);
+    } catch (e) {
+      thread.innerHTML = '<p class="rail-note">Could not reach the room.</p>'; return;
+    }
+    const fresh = rows.filter(m => !seenIds.has(m.id));
+    fresh.forEach(m => seenIds.add(m.id));
+    if (!append) {
+      thread.innerHTML = rows.length
+        ? rows.map(msgHtml).join('')
+        : '<p class="rail-note">Nothing in this room yet. Tell the board what changed and it lands here.</p>';
+    } else if (fresh.length) {
+      thread.insertAdjacentHTML('beforeend', fresh.map(msgHtml).join(''));
+    }
+    if (fresh.length || !append) thread.scrollTop = thread.scrollHeight;
+    return fresh;
+  }
+
+  async function send() {
+    const text = composer.value.trim();
+    if (!text) return;
+    sendBtn.disabled = true; composer.value = '';
+    try {
+      const r = await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text, role: 'user', source: 'corner-dashboard',
+          agent: AGENT, project: current, client_id: 'aom',
+        }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        thread.insertAdjacentHTML('beforeend',
+          '<p class="rail-note">Not sent: ' + esc(d.error || ('error ' + r.status)) + '</p>');
+        thread.scrollTop = thread.scrollHeight;
+        return;
+      }
+      await loadChat(current, { append: true });
+      // The agent replies asynchronously, and it may also change the record —
+      // so poll for BOTH: new messages, and a board that no longer matches.
+      watch();
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  sendBtn.addEventListener('click', send);
+  composer.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+
+  // "Chat and see this whole thing update in real time." The agent's reply and
+  // its edits to the record arrive at different moments, so this watches both
+  // for two minutes after a send and stops on its own.
+  function watch() {
+    if (poller) clearInterval(poller);
+    let ticks = 0;
+    poller = setInterval(async () => {
+      if (++ticks > 40) { clearInterval(poller); poller = null; return; }
+      await loadChat(current, { append: true });
+      await refreshBoardIfChanged();
+    }, 3000);
+  }
+
+  async function refreshBoardIfChanged() {
+    const before = lastLoad[current] || [];
+    if (!before.length) return;
+    const key = current;
+    let data;
+    try {
+      const r = await fetch('/api/client-parts?client=' + encodeURIComponent(key),
+                            { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) return;
+      data = await r.json();
+    } catch (e) { return; }
+    if (key !== current) return;   // the user switched clients mid-flight
+    const was = Object.fromEntries(before.map(p => [p.part_key, p]));
+    const changed = (data.parts || []).filter(p => {
+      const b = was[p.part_key];
+      return b && (b.state !== p.state || b.status_line !== p.status_line ||
+                   b.connection !== p.connection || b.suggestion !== p.suggestion);
+    });
+    if (!changed.length) return;
+    await load(key, { silent: true });
+    changed.forEach(p => {
+      const el = document.querySelector('[data-key="' + p.part_key + '"]');
+      if (!el) return;
+      el.classList.add('updated');
+      setTimeout(() => el.classList.remove('updated'), 2600);
+    });
+  }
+
+  // ── FILES ─────────────────────────────────────────────────────────────────
+  // A client whose folder does not exist must SAY SO. Files reach a room by
+  // path, so a folderless room is structurally undeliverable: the next file
+  // written for it lands somewhere else and is simply gone. Rendering "no
+  // files" for that case is the bug, not the report of it.
+  async function loadFiles(key) {
+    filesEl.innerHTML = '<p class="rail-note">Reading the folder...</p>';
+    let d;
+    try {
+      const r = await fetch('/api/dashboard/project-files?slug=' + encodeURIComponent(key),
+                            { credentials: 'same-origin', cache: 'no-store' });
+      if (r.status === 401 || r.status === 403) {
+        filesEl.innerHTML = '<p class="rail-note">Sign in to see this client\'s files.</p>'; return;
+      }
+      d = await r.json();
+      if (!r.ok) {
+        filesEl.innerHTML = '<p class="rail-note">' +
+          esc(d.error || ('Error ' + r.status)) + '</p>'; return;
+      }
+    } catch (e) {
+      filesEl.innerHTML = '<p class="rail-note">Could not reach the folder.</p>'; return;
+    }
+    if (key !== current) return;
+
+    const canon = d.files || [], missions = d.missions || [];
+    if (!canon.length && !missions.length) {
+      filesEl.innerHTML = '<p class="rail-note"><b>This client has no folder yet.</b><br>' +
+        'Until one exists, anything sent here has nowhere to land. Set the client up ' +
+        'and its files will show.</p>';
+      return;
+    }
+    const when = t => t ? new Date(t).toLocaleDateString('en-US',
+      { month: 'short', day: 'numeric' }) : '';
+    const row = f => '<div class="file-row"><span class="nm" title="' + esc(f.path || f.name) +
+      '">' + esc(f.name) + '</span><span class="wh">' + esc(when(f.last_modified)) + '</span></div>';
+    let html = '';
+    if (canon.length) {
+      html += '<div class="file-group"><h4>The client\'s own files</h4>' +
+              canon.map(row).join('') + '</div>';
+    }
+    for (const m of missions) {
+      if (!(m.files || []).length) continue;
+      html += '<div class="file-group"><h4>' + esc(m.slug) + '</h4>' +
+              m.files.map(row).join('') + '</div>';
+    }
+    filesEl.innerHTML = html;
+  }
+
+  // Switching clients must switch the rail too, or you are reading one
+  // client's board beside another client's room.
+  const _load = load;
+  load = async function (key, opts) {
+    const out = await _load(key, opts);
+    if (!opts || !opts.silent) {
+      if (poller) { clearInterval(poller); poller = null; }
+      loadChat(key);
+      if ($('#pane-files').classList.contains('on')) loadFiles(key);
+    }
+    return out;
+  };
 
   load('wolfpack');
 </script>
