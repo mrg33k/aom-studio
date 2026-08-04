@@ -657,6 +657,40 @@
         btn = $('#recheck'), note = $('#recheck-note'),
         summary = $('#summary');
 
+  // ── THE SESSION LIVES IN localStorage, NOT IN A COOKIE ────────────────────
+  // src/dashboard/lib/supabase.js calls createClient() with no storage option,
+  // so supabase-js uses its default: localStorage under sb-<ref>-auth-token.
+  // There is no cookie to ride on. Reading the token here and sending it as a
+  // Bearer header is the ONLY way this page can see the session the dashboard
+  // already established — verifyTenant accepts either, and only one exists.
+  const SB_REF = 'mcngatprgluexjjcqpkp';
+  function sessionToken() {
+    try {
+      let raw = localStorage.getItem('sb-' + SB_REF + '-auth-token');
+      if (!raw) {
+        // older/newer key shapes, and any other project ref on this origin
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (/^sb-.*-auth-token$/.test(k)) { raw = localStorage.getItem(k); break; }
+        }
+      }
+      if (!raw) return null;
+      if (raw.startsWith('base64-')) raw = atob(raw.slice(7));
+      const v = JSON.parse(raw);
+      if (typeof v === 'string') return v;
+      if (Array.isArray(v)) return v[0] || null;
+      return v.access_token || v?.currentSession?.access_token || null;
+    } catch (e) { return null; }
+  }
+
+  // Every call to a gated endpoint goes through this.
+  function authed(extra) {
+    const t = sessionToken();
+    const h = Object.assign({}, extra || {});
+    if (t) h.Authorization = 'Bearer ' + t;
+    return h;
+  }
+
   const esc = s => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
@@ -763,7 +797,7 @@
     let res, data;
     try {
       res = await fetch('/api/client-parts?client=' + encodeURIComponent(key),
-                        { credentials: 'same-origin', cache: 'no-store' });
+                        { credentials: 'same-origin', cache: 'no-store', headers: authed() });
       data = await res.json();
     } catch (e) {
       message('Could not reach the board.',
@@ -776,7 +810,9 @@
       message('You are signed out.',
               'This board shows client information, so it needs you signed in. ' +
               'Sign in and it will load.',
-              '<a class="recheck-btn" href="/dashboard">Sign in</a>');
+              '<a class="recheck-btn" href="/dashboard?next=' +
+              encodeURIComponent(location.pathname) + '">Sign in on the dashboard, ' +
+              'then come back to this page</a>');
       return null;
     }
     if (!res.ok) {
@@ -910,7 +946,8 @@
     let rows;
     try {
       const r = await fetch('/api/dashboard/supabase-messages?client=aom&limit=50&project=' +
-                            encodeURIComponent(key), { credentials: 'same-origin', cache: 'no-store' });
+                            encodeURIComponent(key),
+                            { credentials: 'same-origin', cache: 'no-store', headers: authed() });
       if (r.status === 401 || r.status === 403) {
         thread.innerHTML = '<p class="rail-note">Sign in to see this client\'s room.</p>'; return;
       }
@@ -943,7 +980,7 @@
     try {
       const r = await fetch('/api/dashboard/supabase-messages', {
         method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authed({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           text, role: 'user', source: 'corner-dashboard',
           agent: AGENT, project: current, client_id: 'aom',
@@ -996,7 +1033,7 @@
     let data;
     try {
       const r = await fetch('/api/client-parts?client=' + encodeURIComponent(key),
-                            { credentials: 'same-origin', cache: 'no-store' });
+                            { credentials: 'same-origin', cache: 'no-store', headers: authed() });
       if (!r.ok) return;
       data = await r.json();
     } catch (e) { return; }
@@ -1027,7 +1064,7 @@
     let d;
     try {
       const r = await fetch('/api/dashboard/project-files?slug=' + encodeURIComponent(key),
-                            { credentials: 'same-origin', cache: 'no-store' });
+                            { credentials: 'same-origin', cache: 'no-store', headers: authed() });
       if (r.status === 401 || r.status === 403) {
         filesEl.innerHTML = '<p class="rail-note">Sign in to see this client\'s files.</p>'; return;
       }
