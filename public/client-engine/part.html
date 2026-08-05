@@ -1083,8 +1083,15 @@
       const verified = !disputed && e.confidence === 'verified';
       const standing = disputed
         ? '<span class="standing disputed">Disputed</span> '
+        // A person's line and a check's line are both allowed to carry
+        // verification standing — the constraint guards the RECEIPT, not the
+        // author — but they did not happen the same way, and calling Gary
+        // quoting a Google screen "verified by a check" is a small lie that
+        // the trail is the last place on this product to tell.
         : verified
-          ? '<span class="standing verified">Verified by a check</span> '
+          ? '<span class="standing verified">' +
+            (e.actor_kind === 'person' ? 'Verified, with a receipt' : 'Verified by a check') +
+            '</span> '
           : '';
       return '<li class="ev' + (disputed ? ' is-disputed' : verified ? ' is-verified' : '') +
         '"><div class="ev-line"><b>' + esc(when(e.at)) + '</b> &middot; ' +

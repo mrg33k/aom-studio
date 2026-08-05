@@ -632,12 +632,12 @@
     .recheck-btn[disabled] { opacity: .55; cursor: not-allowed; }
     .recheck-note { font-size: 13px; color: var(--muted); font-weight: 600; }
 
-    .progress-wrap { display: none; margin: 0 0 24px; }
-    .progress-wrap.on { display: block; }
-    .progress-track { height: 8px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
-    .progress-fill { height: 100%; width: 0%; border-radius: 999px; background: var(--accent);
-      transition: width .4s ease; }
-    .progress-line { margin: 8px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+    /* .progress-wrap / .progress-track / .progress-fill / .progress-line
+       deleted 2026-08-05 along with their markup. A percentage-fill bar with no
+       JS behind it, sitting one line away from being switched on, on a board
+       that is 0 completed and has machine-checked 2 of 38 parts. There is no
+       number here it could honestly fill to; the first person to wire it would
+       have had to invent one, and the whole product rests on not doing that. */
 
     .summary { display: none; margin: 0 0 24px; padding: 16px; border-radius: 12px;
       background: var(--good-soft); color: var(--good); font-size: 13px; font-weight: 600; }
@@ -776,8 +776,39 @@
       font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text);
     }
     .prompt input:focus { outline: none; border-color: var(--accent); }
-    .act.go { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .act.go:hover { color: #fff; }
+    /* Outlined in the accent, not filled with it. Every state on this board is
+       a solid pill, so a solid button reads as a state at a glance — the lesson
+       the "blocks 3" chip and the refresh button have both already been taught
+       here, and this was the last control still breaking it. It is still
+       obviously the way through: it is the only accent-coloured thing in the
+       prompt, sitting beside a neutral Cancel. */
+    .act.go { background: transparent; color: var(--accent-text); border-color: var(--accent); }
+    .act.go:hover { background: var(--accent-soft); color: var(--accent-text); }
+
+    /* ── WHO WE ARE CHASING ───────────────────────────────────────────────────
+       The API has stored waiting_on since the day the prompt started refusing a
+       wait without a name — and no screen has ever printed it. Six rows sat in
+       "Waiting on a client" and the board could not say who any of them was
+       waiting on, which is the one fact that turns that bucket into calls. A
+       wait is a state, so it is a filled pill. */
+    .waiting-on { display: inline-flex; align-items: center; gap: 8px; flex: none;
+      padding: 4px 8px; border-radius: 999px; background: var(--quiet-soft);
+      color: var(--text); font-size: 12px; font-weight: 750; white-space: nowrap; }
+    .waiting-on::before { content: ""; width: 8px; height: 8px; flex: none;
+      border-radius: 50%; background: var(--quiet); }
+
+    /* ── A LONE CARD ON THE LAST ROW ──────────────────────────────────────────
+       "Found by buyers" holds seven cards and the grid resolves to two columns
+       beside the rail, so the seventh sits alone with half a row of nothing next
+       to it and the next group's heading directly underneath — an enclosed hole
+       in the middle of the page, which reads as a mistake rather than as space.
+       Which cards are alone is measured in JS: CSS cannot count the columns an
+       auto-fill grid chose, and :nth-child(odd) is only accidentally right at
+       two — at three it would stretch a card that was not alone. */
+    .part-card.wide { grid-column: 1 / -1; }
+    /* Filling the row must not stretch the measure with it. Ninety characters
+       to a line is a different defect from the one this fixes. */
+    .part-card.wide .card-link > :not(.card-top) { max-width: 62ch; }
     .prompt .err { margin: 12px 0 0; font-size: 13px; font-weight: 650;
       color: var(--bad); }
     .sweep-line { margin: 0 0 24px; padding: 12px 16px; border-radius: 12px;
@@ -883,7 +914,18 @@
       .day-row .what { flex: 1 0 100%; }
       .day-row .st { min-width: 0; margin-left: auto; text-align: right; }
 
-      .act { padding: 8px 12px; }
+      /* 36px was the old answer here and it is under the floor: a thumb in a
+         truck needs 44. The horizontal padding does NOT grow with it — there
+         are 286px on the second line of a row and "Waiting · Done · Needs work"
+         needs 282 of them, so a wider button is a second control line. */
+      .act { padding: 12px; min-height: 44px; }
+
+      /* THE FIELD CARRYING THE WHOLE RECEIPT RULE WAS THE SMALLEST THING IN ITS
+         ROW. At 390 the input measured 72px beside two buttons that were wider
+         than it, while its own placeholder needs 164px and a real Yelp URL
+         needs 287. On its own line it gets the width the rule deserves. */
+      .prompt-row { flex-wrap: wrap; }
+      .prompt input { flex: 1 0 100%; padding: 12px; }
 
       .bucket-head { display: block; }
       .bucket-head h2 { margin: 0 0 4px; }
@@ -935,11 +977,6 @@
       <div class="recheck-bar" id="recheck-bar">
         <button class="recheck-btn" id="recheck" type="button">Check everything now</button>
         <span class="recheck-note" id="recheck-note"></span>
-      </div>
-
-      <div class="progress-wrap" id="progress">
-        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-        <p class="progress-line" id="progress-line"></p>
       </div>
 
       <div class="summary" id="summary"></div>
@@ -1014,6 +1051,19 @@
     if (!n) return '';
     return '<span class="blocks" title="' + n + ' unfinished part' + (n === 1 ? '' : 's') +
       ' cannot be fixed until this one is">blocks ' + n + '</span>';
+  }
+
+  const shortDate = (t) => t
+    ? new Date(t).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
+
+  // The name the API refused to accept a wait without, finally on a screen.
+  // Only where there is one — a "waiting on nobody" chip would be the noise
+  // wearing information's costume that "blocks 0" would have been.
+  function waitingChip(p) {
+    if (!p.waiting_on) return '';
+    const since = p.waiting_since ? ' since ' + shortDate(p.waiting_since) : '';
+    return '<span class="waiting-on" title="Recorded on the board' + esc(since) +
+      '">Waiting on ' + esc(p.waiting_on) + '</span>';
   }
 
   // ── WHICH CONTROLS A ROW EARNS ────────────────────────────────────────────
@@ -1165,7 +1215,7 @@
       '<a class="card-link" href="/client-engine/part.html?client=' + encodeURIComponent(current) +
       '&part=' + encodeURIComponent(p.part_key) + '">' +
       '<div class="card-top"><span class="glyph ' + esc(p.icon) + '" aria-hidden="true">' + icon + '</span>' +
-      '<span class="card-flags">' + blocksChip(p) +
+      '<span class="card-flags">' + waitingChip(p) + blocksChip(p) +
       '<span class="health ' + esc(p.state) + '">' + esc(LABEL[p.state] || p.state) + '</span></span></div>' +
       '<h3>' + esc(p.name) + '</h3>' +
       '<p class="status-line">' + esc(p.status_line) + '</p>' +
@@ -1177,8 +1227,14 @@
 
   function groupsHtml(parts) {
     if (!parts.length) {
-      return '<p class="status-line">This client is not set up yet. ' +
-             'Add the parts we look after and they will show here.</p>';
+      // It used to say "Add the parts we look after and they will show here"
+      // on a screen with no way to add one. An empty state that names an action
+      // it does not offer is a dead end wearing an instruction's clothes; this
+      // one says what is true and where the work actually happens.
+      return '<p class="status-line">No parts have been set up for this client yet, ' +
+             'so there is nothing here to be right or wrong about. Parts are ' +
+             'created when the client is onboarded — this board reads them, it ' +
+             'does not create them.</p>';
     }
     const order = [];
     const byGroup = {};
@@ -1195,6 +1251,30 @@
       '<div class="card-grid">' + byUnblocks(byGroup[g]).map(card).join('') + '</div></section>'
     ).join('');
   }
+
+  // ── A LONE CARD ON THE LAST ROW ───────────────────────────────────────────
+  // Measured rather than guessed. getComputedStyle resolves an auto-fill grid
+  // to its actual track list, so this is the real column count at this width,
+  // not an assumption about a breakpoint. A card is stretched only when it is
+  // genuinely alone on the last row — never when the group happens to be odd.
+  function balanceGrids() {
+    document.querySelectorAll('.card-grid').forEach((grid) => {
+      const cols = getComputedStyle(grid).gridTemplateColumns.split(/\s+/).filter(Boolean).length;
+      const cards = grid.querySelectorAll('.part-card');
+      cards.forEach((c) => c.classList.remove('wide'));
+      if (cols > 1 && cards.length > cols && cards.length % cols === 1) {
+        cards[cards.length - 1].classList.add('wide');
+      }
+    });
+  }
+
+  // The column count changes with the window, and a card stretched for two
+  // columns is wrong at three. Cheap enough to run on every resize settle.
+  let balanceTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(balanceTimer);
+    balanceTimer = setTimeout(balanceGrids, 120);
+  });
 
   // An honest state for every way this can fail to show real data. A board
   // that renders empty when it is actually signed out teaches you to distrust
@@ -1341,6 +1421,7 @@
     lastLoad[key] = parts;
     renderNextUp(parts);
     groupsEl.innerHTML = groupsHtml(parts);
+    balanceGrids();
 
     const c = data.counts || {};
     // "Never checked" is on the board on purpose. Every part here was typed in
@@ -1697,8 +1778,13 @@
     },
     waiting: {
       label: 'Who are we waiting on?',
+      // NOT "it moves to Waiting on a client". Every row already in that bucket
+      // is there because of ACCESS — a different axis entirely — so this
+      // sentence told six rows they were about to become something they had
+      // been all along, on a screen whose credibility is that it does not say
+      // things that are not so.
       why: 'Their name, so this becomes a call you can make rather than a row ' +
-           'that sits. It moves to "Waiting on a client" and stops counting as yours.',
+           'that sits. The board will show who we are chasing, and since when.',
       place: 'Ross, Robert, Mo...',
       go: 'Move it',
       body: (v) => ({ action: 'mark_waiting', waiting_on: v.trim() }),
@@ -1894,6 +1980,7 @@
       '<span class="who">' + esc(NAMES[p.client] || p.client) + '</span>' +
       '<span class="what"><b>' + esc(p.name) + '</b><span>' +
       esc(p.suggestion || p.status_line || '') + '</span></span></a>' +
+      waitingChip(p) +
       blocksChip(p) +
       actsFor(p) +
       '<span class="st"><span class="health ' + esc(p.state) + '">' +
