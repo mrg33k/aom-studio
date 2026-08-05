@@ -597,6 +597,21 @@
 
     @keyframes flash { 0% { box-shadow: 0 0 0 4px var(--accent-soft); } 100% { box-shadow: none; } }
     .part-card.updated { animation: flash 2.4s ease-out; border-color: var(--accent); }
+
+    /* ── WHAT THIS ONE HOLDS UP ───────────────────────────────────────────────
+       The only ranking signal on the board that is not an opinion. Twenty-three
+       rows wearing the same amber chip is a wall; the same rows with the one
+       that frees three others sitting on top is a list. Teal because it is the
+       accent for "this is the way through", never a state colour — it must not
+       read as a fifth state beside completed / needs / blocked / cannot see. */
+    .blocks {
+      display: inline-flex; align-items: center; flex: none;
+      padding: 4px 8px; border-radius: 999px;
+      background: var(--accent-soft); color: var(--accent-text);
+      font-size: 12px; font-weight: 750; white-space: nowrap;
+    }
+    .card-flags { display: inline-flex; align-items: center; justify-content: flex-end;
+      gap: 8px; min-width: 0; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -674,6 +689,31 @@
 
   let current = 'wolfpack';
   let lastLoad = {};          // client -> the parts array we last rendered
+
+  // ── ORDER BY WHAT UNBLOCKS THE MOST ───────────────────────────────────────
+  // The board's only honest ranking. Every other candidate would be invented:
+  // there is no age, no effort estimate, no score, and 36 of 38 parts have
+  // never been machine-checked, so there is no history to rank on either.
+  // What DOES exist is the dependency chain the part page already names —
+  // "while this is open, 3 other parts cannot be fixed" — and until now no
+  // other screen could see it.
+  //
+  // blocks_open_count, not blocks_count: the sort has to answer "what does
+  // doing this actually free up", and a dependency that is already finished
+  // frees up nothing. Ties keep the record's own order — Array#sort is stable
+  // by specification, so equal rows do not shuffle between renders, which on a
+  // list you read every morning matters more than it sounds.
+  const unblocks = p => p.blocks_open_count || 0;
+  const byUnblocks = list => list.slice().sort((a, b) => unblocks(b) - unblocks(a));
+
+  // Shown only when it is greater than zero. A "blocks 0" chip on 37 of 38 rows
+  // would be noise wearing the costume of information.
+  function blocksChip(p) {
+    const n = unblocks(p);
+    if (!n) return '';
+    return '<span class="blocks" title="' + n + ' unfinished part' + (n === 1 ? '' : 's') +
+      ' cannot be fixed until this one is">blocks ' + n + '</span>';
+  }
 
   const $ = s => document.querySelector(s);
   const groupsEl = $('#groups'), hello = $('#hello'), trade = $('#trade'),
@@ -758,7 +798,8 @@
       '&part=' + encodeURIComponent(p.part_key) + '" data-part="' + esc(p.name) +
       '" data-key="' + esc(p.part_key) + '" data-state="' + esc(p.state) + '">' +
       '<div class="card-top"><span class="glyph ' + esc(p.icon) + '" aria-hidden="true">' + icon + '</span>' +
-      '<span class="health ' + esc(p.state) + '">' + esc(LABEL[p.state] || p.state) + '</span></div>' +
+      '<span class="card-flags">' + blocksChip(p) +
+      '<span class="health ' + esc(p.state) + '">' + esc(LABEL[p.state] || p.state) + '</span></span></div>' +
       '<h3>' + esc(p.name) + '</h3>' +
       '<p class="status-line">' + esc(p.status_line) + '</p>' +
       '<p class="suggest"><span class="k">Do next</span>' + esc(p.suggestion) + '</p>' +
@@ -778,10 +819,13 @@
       if (!byGroup[p.group_name]) { byGroup[p.group_name] = []; order.push(p.group_name); }
       byGroup[p.group_name].push(p);
     }
+    // Same ranking inside a group as the day view uses inside a bucket: the
+    // card that frees the most others sits first. Everything else keeps the
+    // record's order, so this reorders exactly what it has a reason to.
     return order.map(g =>
       '<section class="group"><div class="group-head"><h2>' + esc(g) + '</h2>' +
       '<span class="group-count">' + byGroup[g].length + ' parts</span></div>' +
-      '<div class="card-grid">' + byGroup[g].map(card).join('') + '</div></section>'
+      '<div class="card-grid">' + byUnblocks(byGroup[g]).map(card).join('') + '</div></section>'
     ).join('');
   }
 
@@ -1247,13 +1291,17 @@
       '<span class="who">' + esc(NAMES[p.client] || p.client) + '</span>' +
       '<span class="what"><b>' + esc(p.name) + '</b><span>' +
       esc(p.suggestion || p.status_line || '') + '</span></span>' +
+      blocksChip(p) +
       '<span class="st"><span class="health ' + esc(p.state) + '">' +
       esc(LABEL[p.state] || p.state) + '</span></span></a>';
 
+    // Every bucket is ranked, not just "Needs you". A finished part that three
+    // others were waiting on is the first thing you want to see confirmed, and
+    // an access chase that frees three parts is the first call to make.
     const bucket = (title, why, list) => !list.length ? '' :
       '<section class="bucket"><div class="bucket-head"><h2>' + esc(title) + '</h2>' +
       '<span class="bucket-why">' + esc(why) + '</span></div>' +
-      list.map(row).join('') + '</section>';
+      byUnblocks(list).map(row).join('') + '</section>';
 
     groupsEl.innerHTML = sweepHtml +
       bucket('Needs you', 'Ours to move. Nothing is stopping these but time.',
