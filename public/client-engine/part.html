@@ -1322,10 +1322,12 @@
           // "Never" was not the whole truth either: Gary's Aug 3 line confirms
           // this exact access AND carries a receipt. It simply is not what this
           // field records, and an empty field that says "Never" claims more
-          // than an empty field knows.
+          // than an empty field knows. "Not recorded" is what is actually so,
+          // and it is the word the row above already uses for its own gap, so
+          // the panel has ONE way of saying nothing is here.
           '<div class="access-line"><span class="k">Access last confirmed</span>' +
           (p.access_verified_at ? '<span>' + esc(when(p.access_verified_at)) + '</span>'
-                                : '<span class="unrecorded">Not since it was recorded</span>') +
+                                : '<span class="unrecorded">Not recorded</span>') +
           '</div>' +
           // Two nightly passes have now run against this part and BOTH wrote a
           // line saying they could not read it. "Never checked" reports that as
