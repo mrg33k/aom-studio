@@ -200,6 +200,10 @@
 
   .sname { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
   .swhere {
+    /* A ROW MUST NOT GROW WHEN IT SETTLES. The sub-line arrives with the
+       result, so without a reserved line every flip pushes the rows below it
+       down and the list jumps under the reader's eye mid-scan. */
+    min-height: 20px;
     color: var(--muted);
     font-family: var(--mono);
     font-size: 12px;
@@ -265,6 +269,34 @@
   }
   .receipt .k { color: var(--quiet); }
   .receipt q { display: block; margin-top: 8px; color: var(--text); }
+
+  /* NINE GOOD FINDINGS ARE NOT NINE CARDS. Rendered at card weight they were
+     one skeleton repeated nine times, each restating the same address and the
+     same quoted title — which buries the one thing that is actually wrong and
+     spends the receipt motif on the least surprising lines on the page. */
+  .glist { display: grid; gap: 8px; margin-top: 24px; }
+  .gline {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+  }
+  .gline p { font-size: 14px; line-height: 1.55; }
+  .gcite {
+    margin-top: 4px;
+    color: var(--quiet);
+    font-family: var(--mono);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  .gcite q { color: var(--text); }
+
+  .lookline { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+  .lookline b { color: var(--quiet); font-weight: 700; }
 
   .caveat {
     margin-top: 12px;
@@ -389,6 +421,8 @@
     .srow { grid-template-columns: 32px minmax(0, 1fr); }
     .srow .pill { grid-column: 2; justify-self: start; }
     .find { padding: 16px; }
+    .gline { grid-template-columns: 32px minmax(0, 1fr); }
+    .gline .pill { grid-column: 2; justify-self: start; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -470,7 +504,7 @@
         <h2 id="r-good-h">What is holding up</h2>
         <p class="sub">Checked the same way, on the same pages, and fine.</p>
       </div>
-      <div class="finds" id="r-good-list"></div>
+      <div class="glist" id="r-good-list"></div>
     </div>
 
     <div id="r-unknown">
@@ -590,7 +624,10 @@
     if (f.some(function (x) { return x.standing === 'good'; })) return 'good';
     return 'unknown';
   }
-  var PILL = { weak: 'Would fix', good: 'Holding up', unknown: 'Not readable from outside' };
+  // "Not readable from outside" was four words and 190px, wider than the surface
+  // name beside it, and it repeated on five of seven rows — a neutral fact
+  // rendered louder than the one thing that is actually wrong.
+  var PILL = { weak: 'Would fix', good: 'Holding up', unknown: 'Not checked here' };
 
   function secs(ms) { return (Math.round(ms / 100) / 10).toFixed(1) + 's'; }
 
@@ -641,7 +678,10 @@
         (r.http_status ? ' <span class="k">&middot; answered ' + esc(r.http_status) + '</span>' : '') +
         (r.quote ? '<q>' + esc(r.quote) + '</q>' : '') + '</div>';
     } else {
-      out += '<div class="receipt"><span class="k">looked at</span> ' + esc(f.looked_at) + '</div>';
+      // NOT A RECEIPT. "Every link on your homepage" is not an address we
+      // opened, and dressing it in the same mono band as a fetched document
+      // spends the one visual signal that means "we have the page".
+      out += '<p class="lookline"><b>Looked at:</b> ' + esc(f.looked_at) + '</p>';
     }
     if (f.not_verified) {
       out += '<p class="caveat"><b>Not verified:</b> ' + esc(f.not_verified) + '</p>';
@@ -716,10 +756,27 @@
     scan.findings.forEach(function (f) { by[f.standing].push(f); });
 
     show($('#r-weak'), by.weak.length > 0);
-    $('#r-weak-list').innerHTML = by.weak.map(function (f, i) { return findingBlock(f, i + 1); }).join('');
+    $('#r-weak-list').innerHTML = by.weak
+      .map(function (f, i) { return findingBlock(f, by.weak.length > 1 ? i + 1 : 0); }).join('');
 
     show($('#r-good'), by.good.length > 0);
-    $('#r-good-list').innerHTML = by.good.map(function (f) { return findingBlock(f, 0); }).join('');
+    // The quote is the evidence, but nine findings read off one homepage quote
+    // the same page title nine times. Show each quote the first time it earns
+    // its place and never again; the address stays on every row, because that
+    // is the receipt and the receipt is not optional.
+    var quoted = {};
+    $('#r-good-list').innerHTML = by.good.map(function (f) {
+      var r = f.receipt || {};
+      var q = r.quote && !quoted[r.quote] ? r.quote : null;
+      if (q) quoted[q] = true;
+      return '<div class="gline">' + markFor(f.part_key) +
+        '<div><p>' + esc(f.found) + '</p>' +
+        (r.url ? '<div class="gcite"><a href="' + esc(r.url) +
+          '" rel="noopener noreferrer nofollow" target="_blank">' + esc(r.url) + '</a>' +
+          (q ? ' <q>' + esc(q) + '</q>' : '') + '</div>' : '') +
+        (f.not_verified ? '<p class="caveat"><b>Not verified:</b> ' + esc(f.not_verified) + '</p>' : '') +
+        '</div><span class="pill good">Holding up</span></div>';
+    }).join('');
 
     show($('#r-unknown'), by.unknown.length > 0);
     var surfacesUnknown = scan.surfaces.filter(function (x) { return standingOf(x) === 'unknown'; }).length;
