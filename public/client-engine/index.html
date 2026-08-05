@@ -587,11 +587,20 @@
       text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 
     .recheck-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 24px; }
+    /* Outlined, and NEUTRAL. It was a solid accent pill, which was survivable
+       while it was the only control on the page — but "Start here" now sits
+       directly above it, and a filled green button under an outlined one makes
+       the refresh the loudest thing on a screen about what to do next. Two
+       accent pills would be flat; accent for the way through and the board's
+       ordinary outlined vocabulary for the utility is a hierarchy.
+       (It is also the rule everywhere else here: a solid pill is a STATE.) */
     .recheck-btn {
-      display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
-      padding: 12px 24px; border-radius: 999px; background: var(--accent); color: #fff;
+      display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+      padding: 12px 24px; border-radius: 999px;
+      border: 1px solid var(--line-strong); background: transparent; color: var(--muted);
       font-size: 14px; font-weight: 700; font-family: inherit;
     }
+    .recheck-btn:hover { border-color: var(--accent); color: var(--accent-text); }
     .recheck-btn[disabled] { opacity: .55; cursor: not-allowed; }
     .recheck-note { font-size: 13px; color: var(--muted); font-weight: 600; }
 
@@ -814,6 +823,44 @@
     .tile.unchecked b { color: #9a9c94; }
 
     @media (max-width: 720px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+    /* ── THE PHONE ────────────────────────────────────────────────────────────
+       He reads this between job sites, so 390x844 is not a courtesy width.
+       Measured there, three things were broken and one was invisible:
+
+       THE DAY ROW IS A DESKTOP TABLE. A 152px client column, a flexible middle,
+       then chips, controls and a state pinned to a 104px right column. At 390
+       the middle collapses to about 90px, so "Google Business Profile" sets one
+       word per line and the row grows to 334px tall; the client name lands
+       underneath the blocks chip; and the state pill is pushed 20px past the
+       right edge of the screen, which is what was making the whole page scroll
+       sideways. It stops being a table here: the part you read takes the first
+       line, and the chip, the controls and the state share the second.
+
+       CONTROLS UNDER THE TOUCH FLOOR. Every button on the board measured 28px
+       tall — fine under a mouse, a coin toss under a thumb. 8px of vertical
+       padding takes them to 36px without touching the desktop layout, where the
+       gaps and the type are already right.
+
+       A BUCKET HEAD IS NOT TWO COLUMNS. "Needs you" beside its explanation left
+       the heading wrapping to two lines against a sentence that had room. */
+    @media (max-width: 720px) {
+      .day-row { flex-wrap: wrap; row-gap: 12px; }
+      .day-row .link { flex: 1 0 100%; flex-wrap: wrap; row-gap: 4px; }
+      .day-row .who { flex: 1 0 100%; width: auto; }
+      .day-row .what { flex: 1 0 100%; }
+      .day-row .st { min-width: 0; margin-left: auto; text-align: right; }
+
+      .act { padding: 8px 12px; }
+
+      .bucket-head { display: block; }
+      .bucket-head h2 { margin: 0 0 4px; }
+
+      /* A part name long enough to wrap must wrap inside the pill rather than
+         push it off the card — "Open Association memberships" is wider than a
+         390px screen has room for. */
+      .next-up-go { max-width: 100%; justify-content: center; text-align: center; }
+    }
 </style>
 </head>
 <body>
