@@ -385,6 +385,13 @@
     border-radius: 24px;
     background: var(--accent-soft);
   }
+  /* THE ANSWER, NOT A CAPTION. Before the form is filled in, the copy in this
+     panel is a subtitle over a form and `.sub` (14px, muted) is right. After it
+     is filled in, that paragraph IS the panel — the only thing a person who has
+     just handed over their phone number is here to read — and it was still
+     being drawn in the quietest ink on the page. */
+  .said { margin-top: 12px; font-size: 16px; line-height: 1.65; max-width: 620px; }
+
   .form { display: grid; gap: 12px; margin-top: 24px; max-width: 560px; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   label { display: block; }
@@ -831,7 +838,7 @@
     $('#close').innerHTML =
       '<div class="col"><h2>' +
       (name ? 'We have it, ' + esc(name) + '.' : 'You have already pressed Get Started.') +
-      '</h2><p class="sub">' + body + '</p></div>';
+      '</h2><p class="said">' + body + '</p></div>';
   }
 
   // ── THE REPORT ─────────────────────────────────────────────────────────
