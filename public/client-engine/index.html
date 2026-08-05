@@ -1296,7 +1296,7 @@
     const tile = (n, label, tone) =>
       '<div class="tile ' + tone + '"><b>' + n + '</b><span>' + label + '</span></div>';
     countsEl.innerHTML =
-      tile(c.needs_me || 0, 'Need you', 'needs') +
+      tile(c.needs_me || 0, 'Needs you', 'needs') +
       tile(c.waiting_on_client || 0, 'Waiting on a client', 'waiting') +
       tile(c.running || 0, 'Running', 'running') +
       tile(c.unchecked || 0, 'Never checked', 'unchecked');
