@@ -578,6 +578,27 @@ export function outboundHosts(links, base, limit = 14) {
   return out
 }
 
+// AN ADMIN CONSOLE IS NOT THE PAGE A READER LANDS ON — and Suntec's homepage
+// publishes one. Their footer LinkedIn icon points at
+// linkedin.com/company/786915/admin/, the screen their marketing manager sees
+// while signed in. Opened by anyone else it redirects to a sign-in wall, which
+// is exactly what our own fetch landed on and PRINTED as the receipt:
+// "linkedin.com/uas/login?session_redirect=…%2Fadmin%2F". The finding above it
+// still read "Your homepage links to it, and it answered HTTP 200", green,
+// Holding up.
+//
+// Every fact in that sentence is true and the surface it describes is broken.
+// It is the same defect the Google search-link already taught this file — we
+// resolve the hop, print where it went, and then judge the address we started
+// from — landing one platform over on a path nobody had tested. This is a
+// literal fact about the URL their own page publishes, which is the only kind
+// of claim allowed here.
+export function isAdminShaped(url) {
+  try {
+    return /\/(admin|manage|dashboard)(\/|$)/i.test(new URL(url).pathname)
+  } catch { return false }
+}
+
 // A Google SEARCH url is not a listing. The board carries a Disputed claim that
 // came from exactly this confusion, so the scanner refuses to promote one even
 // when the homepage links to it.
@@ -1448,6 +1469,23 @@ function profileFinding(partKey, found, res) {
         'and shows whatever comes back, which is not the same as a listing you ' +
         'own and control.',
       to_check_this: 'The address of the listing itself, copied from the address bar.',
+    })
+  }
+  // Judged on the address THEY published, before any hop, because that is the
+  // fact: a /admin/ path is the signed-in management screen for the page, and
+  // it is what their own link sends people to. Where it redirects us afterwards
+  // is the platform's business, not evidence about them.
+  if (isAdminShaped(url)) {
+    return finding({
+      id: `${partKey}.admin_link`, part_key: partKey, standing: 'unknown',
+      looked_at: looked,
+      found: `The address ${where} publishes for this ends in /${(new URL(url).pathname
+        .match(/\/(admin|manage|dashboard)(?:\/|$)/i) || [, 'admin'])[1]}/ — the ` +
+        'management screen for the page, which is what whoever posted the link ' +
+        'was looking at when they copied it. That is the address on your site; ' +
+        'the public page is a different one.',
+      to_check_this: 'Opening your own link while signed out. The address of the ' +
+        'public page, copied from the address bar, is what belongs on the site.',
     })
   }
   // THE SUNTEC SHAPE, GIVEN ITS OWN SENTENCE INSTEAD OF BEING ROUNDED TO ZERO.
