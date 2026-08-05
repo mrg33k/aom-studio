@@ -2321,8 +2321,14 @@ export async function scan({
               'opened it')))
     reviews.findings.push(finding({
       id: 'online-reviews.not_checked', part_key: 'online-reviews', standing: 'unknown',
-      looked_at: `${pages.charAt(0).toUpperCase()}${pages.slice(1)} — reviews are ` +
-        `read off the Google listing, ${why}.`,
+      // NOT `${pages} — … ${why}`: `why` names the pages too, so that printed
+      // "Your homepage and the 2 other pages of your site we opened — reviews
+      // are read off the Google listing, and we did not find an address for one
+      // in the source of your homepage and the 2 other pages of your site we
+      // opened." One clause, twice, in one line.
+      looked_at: `${pages.charAt(0).toUpperCase()}${pages.slice(1)}. Reviews are ` +
+        'read off the Google listing, and this card says which of the two ' +
+        'happened when we went looking for its address.',
       found: `Reviews are counted and read on your Google listing, ${why}. ` +
         (gbpFound ? '' : `We read the document ${pagesRead.length === 1 ? 'that page' : 'each of those pages'} ` +
           'sent, before any script on it ran, so a map or a reviews panel drawn ' +
