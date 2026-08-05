@@ -593,16 +593,29 @@
   function secs(ms) { return (Math.round(ms / 100) / 10).toFixed(1) + 's'; }
 
   // ── the surface row, used live and in the saved record ─────────────────
+  //
+  // WHAT `looked_at` MEANS DEPENDS ON WHETHER WE OPENED ANYTHING. When no link
+  // to a profile was found, the scanner records the homepage as the thing it
+  // looked at — correctly, because the homepage is where it looked. Printing
+  // that URL beside "Google Business Profile" reads as though we opened their
+  // listing and found it at their own domain, which is a claim we did not make
+  // and cannot support. So a surface that produced one unreceipted unknown gets
+  // the SCANNER'S OWN SENTENCE about what it looked at instead of an address.
+  function whereFor(s) {
+    var fs = s.findings || [];
+    var one = fs.length === 1 ? fs[0] : null;
+    if (one && one.standing === 'unknown' && !(one.receipt && one.receipt.url)) return one.looked_at;
+    if (s.looked_at) return s.looked_at;
+    return s.note || '';
+  }
+
   function surfaceRow(s, settledOn) {
     var st = standingOf(s);
-    var where = s.looked_at
-      ? esc(s.looked_at)
-      : (s.status === 'not_looked' ? 'Nothing was opened for this one.' : '');
     var at = settledOn && s.at_ms != null ? '  &middot;  settled at ' + secs(s.at_ms) : '';
     return '<div class="srow' + (settledOn ? ' done' : '') + '" data-key="' + esc(s.part_key) + '">' +
       markFor(s.part_key) +
       '<div><div class="sname">' + esc(s.name) + '</div>' +
-      '<div class="swhere">' + where + at + '</div></div>' +
+      '<div class="swhere">' + esc(settledOn ? whereFor(s) : '') + at + '</div></div>' +
       '<span class="pill ' + (settledOn ? st : 'pending') + '">' +
         (settledOn ? PILL[st] : 'not opened yet') + '</span>' +
       '</div>';
