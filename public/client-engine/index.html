@@ -2471,10 +2471,24 @@
     return s;
   }
 
+  // OPEN WHERE THERE IS ROOM, FOLDED WHERE THERE IS NOT.
+  //
+  // Folding them everywhere was the first answer and it was wrong on the one
+  // screen it matters on: a message going out under the agency's name is an
+  // assertion, and this product's whole claim is that an assertion arrives with
+  // its receipts attached. Measured on the live board at 1440, it also costs
+  // nothing — the draft is the taller of the two columns, so the receipts fill
+  // a band that was otherwise 230px of background and the item does not grow.
+  //
+  // Under 1240 the columns stack and that trade reverses: eight items times two
+  // quotes, inline, under eight drafts, is a wall, and a wall is how receipts
+  // stop being read at all. There they fold, and the count in the summary says
+  // what is behind it.
   function qSources(item) {
     const s = Array.isArray(item.sources) ? item.sources : [];
-    return '<details class="q-sources"><summary>Where every line came from (' +
-      s.length + ')</summary>' +
+    const room = window.matchMedia('(min-width: 1241px)').matches;
+    return '<details class="q-sources"' + (room ? ' open' : '') +
+      '><summary>Where every line came from (' + s.length + ')</summary>' +
       (s.length
         ? s.map((x) => '<p class="q-src"><span class="ref" title="' + esc(x.ref) + '">' +
             esc(refSaid(x.ref)) + '</span>' +
