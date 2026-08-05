@@ -839,6 +839,23 @@ export async function scan({
     }).then(note).catch((e) => ({ ok: false, kind: 'blocked', error: String(e.message || e) })),
   ])
 
+  // WE REFUSED THE ADDRESS THEY TYPED. That is not a finding about a website,
+  // it is an answer to the request, and it belongs in the response as one.
+  //
+  // urlProblem() cannot see this case: "localtest.me" and "127.0.0.1.nip.io"
+  // are well-formed public domain names, and only the resolver knows they
+  // point at loopback. Verified on production — both come back refused with
+  // the address named. Left as a 200 with a note on the website surface, that
+  // refusal reads like the prospect's site was down, which is a lie about them
+  // to cover a decision of ours.
+  //
+  // A redirect hop that lands somewhere internal is deliberately NOT this: we
+  // opened the address they gave us, and where it sent us next is a fact about
+  // their site. `hops` tells the two apart.
+  if (home.kind === 'blocked' && !(home.hops && home.hops.length > 1)) {
+    throw new BlockedTarget(home.error)
+  }
+
   // If the secure address did not answer at all, try plain http before giving
   // up on the whole site — a trades company on a 2013 host is a real case, and
   // "we could not reach you" when the site is up and unencrypted is both wrong
