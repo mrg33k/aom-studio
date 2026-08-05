@@ -763,6 +763,36 @@
     .not-receipt { display: inline-block; padding: 4px 8px; border-radius: 999px;
       background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong);
       color: var(--muted); font-size: 12px; font-weight: 700; }
+    /* ── A QUOTED RECEIPT IS EVIDENCE, AND IT IS NOT A LINK ───────────────────
+       The trail drew a receipt only when the proof was a web address. When the
+       proof was the exact words somebody read — the OTHER half of what the API
+       demands before it writes green, and the half the "Mark it done" box asks
+       for by name — it drew nothing, so Gary's line sat badged "Verified, with
+       a receipt" beside a receipt that did not exist on the page.
+
+       It must not dress as a link. A link says "go and look"; a quote says
+       "somebody looked, and these are the words they read". Rendering the
+       second in the first's clothes produces a receipt that opens nothing,
+       which is the failure this block exists to end. So: no accent colour, no
+       underline, nothing to click. A left rule and a warm ground mark it as a
+       transcription, and it takes a block of its own because unlike a chip it
+       is meant to be READ, not counted. */
+    .quoted { margin-top: 12px; padding: 12px 16px; border-radius: 0 12px 12px 0;
+      border-left: 2px solid var(--line-strong); background: var(--surface-soft); }
+    .quoted .k { display: block; font-size: 12px; font-weight: 750;
+      text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .quoted q { display: block; margin-top: 8px; font-size: 14px; font-weight: 600;
+      line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+    /* A "Disputed" badge whose stored reason is never shown is the same defect
+       one paragraph up wearing red: the page states a verdict and withholds the
+       thing that earns it. Both disputes on this account name a specific search
+       run on a specific day; that sentence is the whole argument. */
+    .dispute-note { margin-top: 12px; padding: 12px 16px; border-radius: 0 12px 12px 0;
+      border-left: 2px solid var(--bad); background: var(--bad-soft);
+      font-size: 13px; font-weight: 600; line-height: 1.5; color: var(--text); }
+    .dispute-note .k { display: block; margin-bottom: 4px; font-size: 12px;
+      font-weight: 750; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--bad); }
     .next { font-size: 16px; font-weight: 700; margin: 0 0 16px; }
     /* part.css gives .claim-row a bottom border, which separated it from the
        block the mock had underneath. Here it is the last thing in the card, so
@@ -837,6 +867,10 @@
     /* A gap in the record is not a value. It reads lighter than a real one so
        the panel cannot be skimmed as if every line were answered. */
     .access-line .unrecorded { color: var(--quiet); font-weight: 600; }
+    /* Sits under the four rows, not beside them, because it is a note about
+       the panel rather than another value in it. */
+    .access-note { margin: 16px 0 0; font-size: 13px; font-weight: 600;
+      line-height: 1.5; color: var(--muted); }
     .not-written { margin: 0; font-size: 14px; color: var(--muted);
       font-weight: 600; line-height: 1.5; }
 
@@ -1119,6 +1153,33 @@
             (e.actor_kind === 'person' ? 'Verified, with a receipt' : 'Verified by a check') +
             '</span> '
           : '';
+      // THE QUOTE IS THE RECEIPT, AND IT WAS BEING THROWN AWAY. `artifact_quote`
+      // holds the exact words somebody read — the thing the "Mark it done" box
+      // asks for in those words, and one of the two facts the database will
+      // accept in place of the other before it lets a claim go green. It was
+      // fetched to the browser on every load and rendered nowhere, so every
+      // quote receipt typed on this product was invisible to the next person,
+      // which is precisely who the box says the line is for.
+      //
+      // What a quote MEANS depends on whether anything else opens. With a page
+      // beside it, the quote is the line that was read on that page. With
+      // nothing to open — or with only a search, which this page already
+      // refuses to call a receipt — the quote is the entire receipt, and
+      // saying so is the difference between evidence and a stray note.
+      const q = (e.artifact_quote || '').trim();
+      const openable = !!e.artifact_url && !isSearch(e.artifact_url);
+      const quoteBlock = q
+        ? '<div class="quoted"><span class="k">' +
+          (openable ? 'The line that was read there' : 'This is the receipt') +
+          '</span><q>' + esc(q) + '</q></div>'
+        : '';
+      // The reason a claim is disputed is stored on the row and was dropped the
+      // same way the quote was. A red badge with the argument withheld asks to
+      // be taken on trust, on the one page that exists to never do that.
+      const disputeNote = disputed && e.disputed_note
+        ? '<div class="dispute-note"><span class="k">Why this is disputed</span>' +
+          esc(e.disputed_note) + '</div>'
+        : '';
       return '<li class="ev' + (disputed ? ' is-disputed' : verified ? ' is-verified' : '') +
         '"><div class="ev-line"><b>' + esc(when(e.at)) + '</b> &middot; ' +
         esc(e.claim) + ' &middot; ' + esc(e.actor || 'Unknown') + '</div>' +
@@ -1131,6 +1192,7 @@
             '" target="_blank" rel="noopener">Open the search that was run</a>'
           : ' <a class="receipt" href="' + esc(e.artifact_url) +
             '" target="_blank" rel="noopener">See the receipt</a>') : '') +
+        quoteBlock + disputeNote +
         '</li>';
     }).join('')
       : '<li class="ev empty">Nothing has been recorded for this part yet. ' +
@@ -1242,10 +1304,44 @@
           '<span class="conn ' + connCls + '">' + esc(connLabel) + '</span></div>' +
           '<div class="access-line"><span class="k">Permission level</span>' +
           permissionLevel(p, connLabel) + '</div>' +
-          '<div class="access-line"><span class="k">Last verified</span><span>' +
-          (p.access_verified_at ? esc(when(p.access_verified_at)) : 'Never') + '</span></div>' +
-          '<div class="access-line"><span class="k">Last checked</span><span>' +
-          (p.checked_at ? esc(when(p.checked_at)) : 'Never checked') + '</span></div>' +
+          // ── ONE WORD, TWO QUESTIONS, OPPOSITE ANSWERS ─────────────────────
+          // This row read "Last verified: Never" a few inches from a trail line
+          // dated Aug 5 and badged "Verified by a check". Nothing false was
+          // printed — they answer different questions:
+          //
+          //   HERE:      has anyone re-confirmed OUR LOGIN on this account?
+          //              Written only when a person changes the connection
+          //              state on the board.
+          //   THE TRAIL: did that CLAIM arrive with a receipt? That is the one
+          //              the database constraint guards.
+          //
+          // But a page whose whole credibility is that a word means one thing
+          // cannot spend the same word on two of them, so the login question
+          // stops calling itself "verified" and says what it is.
+          //
+          // "Never" was not the whole truth either: Gary's Aug 3 line confirms
+          // this exact access AND carries a receipt. It simply is not what this
+          // field records, and an empty field that says "Never" claims more
+          // than an empty field knows.
+          '<div class="access-line"><span class="k">Access last confirmed</span>' +
+          (p.access_verified_at ? '<span>' + esc(when(p.access_verified_at)) + '</span>'
+                                : '<span class="unrecorded">Not since it was recorded</span>') +
+          '</div>' +
+          // Two nightly passes have now run against this part and BOTH wrote a
+          // line saying they could not read it. "Never checked" reports that as
+          // though nothing ever tried, which is the opposite of what happened
+          // and hides the reason, which is on the trail underneath.
+          '<div class="access-line"><span class="k">Last checked</span>' +
+          (p.checked_at ? '<span>' + esc(when(p.checked_at)) + '</span>'
+                        : '<span class="unrecorded">No check has read it yet</span>') +
+          '</div>' +
+          // The rename removes the collision from the labels; this removes it
+          // from the reader's head. Someone who sees green in the trail and a
+          // blank here should not have to work out which of them is lying,
+          // because neither is.
+          '<p class="access-note">This panel is about our login. A line in the ' +
+          'trail marked verified means that claim came with a receipt, which is ' +
+          'a different question, and neither one answers the other.</p>' +
           (p.chase_ask ? '<div class="ask-block"><div class="label">What to ask for</div>' +
             '<p>' + esc(p.chase_ask) + '</p>' +
             (p.chase_from ? '<span class="who">Ask ' + esc(p.chase_from) + '</span>' : '') +
