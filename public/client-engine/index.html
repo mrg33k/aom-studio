@@ -530,7 +530,17 @@
     }
     /* margin-top:auto is gone with the anchor taking flex:1 — the foot is the
        last child of the card and the link absorbs any height the grid adds. */
-    .access-row { margin: 0 24px; padding: 16px 0 24px; flex-wrap: wrap; }
+    /* justify-content was space-between, which was invisible for as long as the
+       foot fit on one line: an auto margin eats every pixel of free space
+       before justify-content sees any, so the controls were pushed right by the
+       margin and nothing was being spread. The moment the foot wraps — which it
+       does on a phone — the first line has no auto margin left on it, and
+       space-between threw "Connected" and "Manager" to opposite edges of the
+       card. They are one fact, "connected, at Manager level", and reading them
+       32px apart with nothing between makes them look like two.
+       Packed left; the auto margins still do the right-hand alignment. */
+    .access-row { margin: 0 24px; padding: 16px 0 24px; flex-wrap: wrap;
+      justify-content: flex-start; }
     .access-row.bare { padding: 0 0 24px; border-top: 0; }
     /* Two controls, a state and an arrow will not fit on one 288px line, and a
        card is not allowed to clip its own buttons. The access facts stay left,
