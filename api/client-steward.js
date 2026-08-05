@@ -54,7 +54,7 @@
 // rather than a new draft. The record still says what it said; a redraft would
 // be the same words back; and a queue that re-serves a thing you just answered
 // is the nag this design exists to avoid.
-import { verifyProjectAccess, TenantAuthError } from './_lib/verifyTenant.js'
+import { extractJwt, verifyProjectAccess, TenantAuthError } from './_lib/verifyTenant.js'
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -279,6 +279,29 @@ export default async function handler(req, res) {
 
   if (!SUPABASE_URL || !SERVICE_KEY) {
     return res.status(500).json({ error: 'Supabase is not configured on this deployment' })
+  }
+
+  // A SESSION BEFORE A SINGLE ROW IS READ.
+  //
+  // verifyProjectAccess is still the decision, and it still runs on every path
+  // below. This is the cheaper thing in front of it, and it exists because the
+  // id-addressed paths have to look a row up BEFORE they can know which client
+  // to gate on — which meant, on the first deploy, that an anonymous
+  //
+  //     POST {action:'send', id:'<uuid>'}
+  //
+  // answered "prepared item not found" with a 404. Two things wrong with that,
+  // and the second is the one that matters: it is an existence oracle over
+  // prepared-item ids, and it is a database read performed for a caller who has
+  // shown nothing at all. Unguessable uuids make the first cheap; neither makes
+  // it right, on an endpoint whose entire job is a queue of half-written
+  // messages about every client.
+  //
+  // Presence, not validity — a forged token still fails in verifyProjectAccess
+  // a line later. The only thing this decides is whether a stranger gets to
+  // make us query.
+  if (!extractJwt(req)) {
+    return res.status(401).json({ error: 'jwt required', auth: false })
   }
 
   try {
