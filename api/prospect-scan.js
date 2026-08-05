@@ -1247,9 +1247,9 @@ const NO_LINK = {
 
 function profileFinding(partKey, found, res) {
   const url = found.url
-  const where = found.source === 'your homepage'
-    ? 'your homepage'
-    : found.source
+  // Always a second-person noun phrase: "your homepage", "your contact page",
+  // "your \"Markets\" section". Set at the point the page was chosen.
+  const where = found.source
   const looked = `The address ${where} publishes for this: ${url}`
   if (isSearchShaped(url)) {
     return finding({
@@ -1303,7 +1303,9 @@ function profileFinding(partKey, found, res) {
     // the structured-data entry get named, because a company that does not know
     // its Google address is published in its own page data should be told where
     // we read it.
-    found: `${found.source === 'your homepage' ? 'Your homepage' : `Your ${found.source}`} ` +
+    // The source is already a second-person noun phrase ("your homepage", "your
+    // contact page"). It only needs its first letter, not a second "Your".
+    found: `${where.charAt(0).toUpperCase()}${where.slice(1)} ` +
       (found.how === 'a link on the page'
         ? 'links to it'
         : `publishes it in ${found.how}`) +
@@ -1348,9 +1350,40 @@ const REVIEW_PLACES = {
   'google-business-profile': 'your Google listing',
   yelp: 'Yelp',
 }
+// A REFUSAL IS NOT A DEAD PAGE, AND THE TWO CANNOT BE COLLAPSED. Yelp answers a
+// bot with a challenge and LinkedIn with 999; that is them declining us, not
+// evidence the page is gone, and profileFinding already refuses to call it
+// broken. 404 and 410 are the platform telling us the thing is not there, which
+// is the one status that does contradict "a buyer can go and read reviews here".
+const GONE = new Set([404, 410])
+
+/**
+ * The public places a buyer can actually go and read reviews, out of what the
+ * site points at — filtered by what we LANDED on, not by what was published.
+ *
+ * The claim this feeds asserts two things: that their site links there, and
+ * that the destination is a review page. The first is read off their document.
+ * The second was being taken on the URL's shape alone, which is how a Google
+ * SEARCH link became "your Google listing" on the board and got Disputed. So a
+ * hop we opened gets judged on where it ended.
+ */
 function reviewLinks(profiles) {
   return Object.keys(REVIEW_PLACES)
-    .filter((k) => profiles[k] && !isSearchShaped(profiles[k].url))
+    .filter((k) => {
+      const p = profiles[k]
+      if (!p) return false
+      // Search-shaped as published: never a listing, whether or not we opened it.
+      if (isSearchShaped(p.url)) return false
+      const r = p.opened
+      // Never opened — budget spent, or nothing tried. The claim stays a claim
+      // about their link, which is all it ever was, and not_verified carries it.
+      if (!r || !r.ok) return true
+      // Opened, and the last hop is a query that shows whatever comes back.
+      if (isSearchShaped(r.finalUrl || r.url || p.url)) return false
+      // Opened, and the platform says there is nothing at that address.
+      if (GONE.has(r.status)) return false
+      return true
+    })
     .map((k) => ({ name: REVIEW_PLACES[k], url: profiles[k].url }))
 }
 
@@ -1573,23 +1606,39 @@ export function pickInternalPages(links, homeUrl) {
   }
   const out = []
   const taken = new Set()
-  const take = (pick, kind, why) => {
+  // TWO NAMES FOR ONE PAGE, BECAUSE THERE ARE TWO READERS.
+  //
+  // `why` narrates the wave to the operator watching the scan run, and talks
+  // ABOUT the prospect: "their contact page". `label` is printed on the report
+  // the prospect himself reads, which addresses him throughout as you: "your
+  // contact page". One string was doing both jobs, with " page" glued on the
+  // end for the profile source, and a live scan of Rosendin printed the result:
+  //
+  //   "The address their contact page page publishes for this: …"
+  //
+  // A doubled word and the wrong person, on the document whose entire argument
+  // is that we are careful enough to be believed. The voice is not decoration
+  // here; it is the product.
+  const take = (pick, kind, why, label) => {
     if (!pick || taken.has(pick.url)) return
     taken.add(pick.url)
-    out.push({ url: pick.url, kind, why })
+    out.push({ url: pick.url, kind, why, label })
   }
 
   const work = findWorkLinks(sameHost.map((x) => ({ href: x.url, label: x.label })), base.toString())
   if (work.length) {
     const chosen = sameHost.find((x) => x.url === work[0].href)
-    take(chosen, 'work', work[0].label ? `the "${clip(work[0].label, 30)}" section` : 'their work section')
+    const named = work[0].label ? `"${clip(work[0].label, 30)}" section` : null
+    take(chosen, 'work',
+      named ? `the ${named}` : 'their work section',
+      named ? `your ${named}` : 'your work section')
   }
   // The shortest path that reads as contact or about — /contact/ beats
   // /about/leadership/contact-the-team/.
   const contact = sameHost
     .filter((x) => CONTACT_PAGE_RE.test(x.words))
     .sort((a, b) => a.path.length - b.path.length)[0]
-  take(contact, 'contact', 'their contact page')
+  take(contact, 'contact', 'their contact page', 'your contact page')
 
   return out.slice(0, MAX_INTERNAL_FETCHES)
 }
@@ -1769,10 +1818,12 @@ export async function scan({
         if (unreadableBody(got.res)) continue
         const p = readHtml(got.res.body)
         const at = got.res.finalUrl || got.res.url || got.target.url
-        pagesRead.push(got.target.why)
+        // Both of these are printed on the report the prospect reads, so both
+        // take the second-person label, not the operator's narration.
+        pagesRead.push(got.target.label)
         for (const h of outboundHosts(p.links, at)) if (!outbound.includes(h)) outbound.push(h)
         const more = findProfileLinks(p.links, at, {
-          frames: p.frames, sameAs: sameAsUrls(p.jsonld), source: `${got.target.why} page`,
+          frames: p.frames, sameAs: sameAsUrls(p.jsonld), source: got.target.label,
         })
         for (const k of Object.keys(more)) if (!profiles[k]) profiles[k] = more[k]
         if (got.target.kind === 'work') {
@@ -1859,6 +1910,17 @@ export async function scan({
           .catch((e) => ({ ok: false, kind: 'blocked', error: String(e.message || e) }))
           .then((r) => {
             if (!PROFILE_KEYS.includes(key)) return
+            // WHAT THE HOP ACTUALLY LANDED ON, KEPT. This used to be consumed
+            // here and dropped, which meant the ONLY thing downstream could see
+            // was the address the site published. The reviews surface then read
+            // that address, and a maps.app.goo.gl short link that RESOLVES to a
+            // Google search — the exact Wolfpack confusion, already Disputed on
+            // the board — was counted as "a place where reviews of you are
+            // public", green and verified, on the same report where the Google
+            // surface said it landed on a search. Two findings, one document,
+            // opposite claims. The resolution is a fact we paid a fetch for; it
+            // stays attached to the thing it is a fact about.
+            profiles[key].opened = r
             const s = surfaces.get(key)
             s.looked_at = profiles[key].url
             s.status = 'read'
@@ -1925,14 +1987,36 @@ export async function scan({
         'Google Business Profile login, which is the real answer.',
     }))
   } else {
+    // A THIRD SENTENCE THAT WAS NOT TRUE, AND IT CONTRADICTED THE CARD ABOVE IT.
+    // This printed "we did not find an address for one to open" in every case
+    // that was not a clean 200 — including the reports where the Google surface,
+    // one card up, printed the address in full and said it landed on a search or
+    // did not answer. A reader who scrolls sees us find an address and deny
+    // finding it on the same page. Which of the two actually happened is a fact
+    // we already hold, so the sentence says it.
+    const gbpFound = profiles['google-business-profile'] || null
+    // A short link is not search-shaped until it is followed. maps.app.goo.gl
+    // hides where it goes, which is the whole reason the resolution is kept.
+    const gbpLanded = gbpFound && gbpFound.opened && gbpFound.opened.ok
+      ? (gbpFound.opened.finalUrl || gbpFound.opened.url || gbpFound.url)
+      : null
+    const searchy = gbpFound &&
+      (isSearchShaped(gbpFound.url) || (gbpLanded && isSearchShaped(gbpLanded)))
+    const why = !gbpFound
+      ? 'and we did not find an address for one to open'
+      : (searchy
+        ? `and the address your site publishes for it ${gbpLanded &&
+            gbpLanded !== gbpFound.url ? 'lands on' : 'is'} a search ` +
+          `rather than a listing (${clip(gbpLanded || gbpFound.url, 90)}), so what ` +
+          'we opened was a query rather than a page of yours'
+        : 'and the address your site publishes for it did not answer when we opened it')
     reviews.findings.push(finding({
       id: 'online-reviews.not_checked', part_key: 'online-reviews', standing: 'unknown',
-      looked_at: 'Nothing — reviews are read off the Google listing, and we did ' +
-        'not find an address for one to open.',
-      found: 'Reviews are counted and read on your Google listing, and this scan ' +
-        'did not open one. How many you have, how recent they are and whether ' +
-        'any of them name commercial work is not checked here.',
-      to_check_this: 'The Maps link for your listing.',
+      looked_at: `Nothing — reviews are read off the Google listing, ${why}.`,
+      found: `Reviews are counted and read on your Google listing, ${why}. ` +
+        'How many you have, how recent they are and whether any of them name ' +
+        'commercial work is not checked here.',
+      to_check_this: 'The Maps link for your listing, copied from the address bar.',
     }))
   }
 
