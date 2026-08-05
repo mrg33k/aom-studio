@@ -1573,7 +1573,13 @@ function marketFinding({ page, receipt, term, id, opened, weakCost, absent }) {
     costs: weakCost,
     cutTo: `Whether "${term}" appears below where we stopped reading.`,
     searched: searchRecord({
-      looked_for: [`the word "${term}"`],
+      // NOT `the word "${term}"`. The report wraps every looked_for entry in its
+      // own quotation marks, so that rendered as `"the word "commercial""` — a
+      // doubled quote at the end of the one block on the card whose entire job
+      // is to look like something a person can check. Every other entry in every
+      // other search record is a bare token; this one was a sentence with quotes
+      // already inside it.
+      looked_for: [term],
       across: 'the homepage copy, its title, its image captions, its ' +
         'search-engine description and its own structured data',
       read: `${hay.length.toLocaleString('en-US')} characters of readable text`,
