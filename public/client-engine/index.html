@@ -1061,12 +1061,19 @@
     .q-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
     .act.on { background: var(--accent-soft); color: var(--accent-text);
       border-color: var(--accent); }
-    .prompt textarea { width: 100%; min-height: 72px; padding: 12px;
-      border-radius: 8px; border: 1px solid var(--line-strong);
+    /* A FIELD IS AS WIDE AS WHAT GOES IN IT. The queue's prompt spans the whole
+       item, so an unconstrained input ran 1400px for an optional one-line note
+       and made the accent button beside it read as the smaller thing on the
+       row. Everything here is capped at the same measure the drafts are read
+       at. (The day row's receipt field is deliberately not touched: it holds a
+       URL, and that one was measured and set where it is.) */
+    .prompt textarea { width: 100%; max-width: 62ch; min-height: 72px;
+      padding: 12px; border-radius: 8px; border: 1px solid var(--line-strong);
       background: var(--surface); color: var(--text); font-family: inherit;
       font-size: 13px; font-weight: 600; resize: vertical; }
     .prompt textarea:focus { outline: none; border-color: var(--accent); }
-    .q-fix { display: grid; gap: 8px; margin: 12px 0; }
+    .prompt-row input.q-note { flex: 0 1 62ch; }
+    .q-fix { display: grid; gap: 8px; margin: 12px 0; max-width: 62ch; }
     .prompt .k { display: block; margin: 0 0 8px; color: var(--muted);
       font-size: 12px; font-weight: 700; }
     .q-fix input { width: 100%; }
@@ -2625,7 +2632,8 @@
       'data-via="' + v + '">' + l + '</button>').join('') +
     '</div>' +
     '<div class="prompt-row">' +
-    '<input type="text" placeholder="Anything worth recording about how it went (optional)">' +
+    '<input type="text" class="q-note" ' +
+    'placeholder="Anything worth recording about how it went (optional)">' +
     '<button type="button" class="act go" data-act="q-send-go">Record that I sent it</button>' +
     '<button type="button" class="act" data-act="cancel">Cancel</button></div>';
 
