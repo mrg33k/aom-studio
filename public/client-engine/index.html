@@ -820,6 +820,47 @@
       background: var(--panel); font-size: 13px; font-weight: 600; color: var(--muted); }
     .sweep-line.bad { background: var(--bad-soft); color: var(--bad); }
 
+    /* ── SOMEBODY PRESSED GET STARTED ────────────────────────────────────────
+       A stranger read their own scan report, left a name and a number, and
+       until now that landed in a store no screen on this board read. The
+       report told them it was in front of Patrik; it was not. This is the
+       screen that makes the sentence true, and it sits ABOVE the overnight
+       line and every bucket because a person waiting on a call outranks a
+       part waiting on a person.
+
+       It is a day-row, not a new component — same 152px identity column, same
+       middle, same right-hand state pill — because it is read in the same
+       sweep as the rows under it. What separates it is the accent outline and
+       the fact that the identity column is a company we do not work for yet.
+
+       The pill is the base amber: "ours to move". Accent is this board's
+       "way through" colour and never a state, so the row's border carries the
+       urgency and the pill keeps the vocabulary the other 38 rows use. */
+    .day-row.lead { align-items: flex-start; border-color: var(--accent); }
+    .day-row.lead .who { color: var(--accent-text); }
+    .day-row.lead .what b { font-size: 16px; }
+    .day-row.lead .what .when { font-weight: 650; color: var(--muted); }
+    /* Scoped through .what on purpose: `.day-row .what span` is (0,2,1) and
+       would out-specify a bare `.lead-note`, greying out the one sentence on
+       this row that the person themselves wrote. */
+    .day-row.lead .what .lead-note { display: block; margin-top: 4px;
+      font-size: 13px; font-weight: 600; color: var(--text); }
+    /* NOT `.act`. The day's delegated click handler swallows every `.act` it
+       finds inside #groups and calls preventDefault() on it — a tel: link
+       wearing that class would look like a button and do nothing. Same
+       outlined shape, different name, so it stays a link. */
+    .lead-reach { display: inline-flex; align-items: center; flex: none;
+      flex-wrap: wrap; gap: 8px; }
+    .reach { display: inline-flex; align-items: center; flex: none;
+      padding: 4px 12px; border-radius: 999px;
+      border: 1px solid var(--line-strong); background: transparent;
+      color: var(--text); font-size: 12px; font-weight: 700;
+      white-space: nowrap; text-decoration: none; }
+    .reach:hover { border-color: var(--accent); color: var(--accent-text); }
+    .lead-done { margin: 0 0 24px; font-size: 13px; font-weight: 600;
+      color: var(--muted); }
+    .lead-done a { color: var(--accent-text); }
+
     .board-message { padding: 24px; border-radius: 12px; background: var(--panel);
       border: 1px solid var(--line); }
     .board-message b { display: block; font-size: 16px; margin-bottom: 8px; }
@@ -1845,6 +1886,21 @@
     return out;
   }
 
+  // A lead lives in the scanner's store, so it is closed out against the
+  // scanner's endpoint. Same session, same contract: the refusal comes back as
+  // a sentence and is shown as written.
+  async function postPickup(token, note) {
+    const r = await fetch('/api/prospect-report?r=' + encodeURIComponent(token), {
+      method: 'POST', credentials: 'same-origin',
+      headers: authed({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ picked_up: { note } }),
+    });
+    let out = null;
+    try { out = await r.json(); } catch (e) { out = null; }
+    if (!r.ok) throw new Error((out && out.error) || ('The record said no (' + r.status + ').'));
+    return out;
+  }
+
   groupsEl.addEventListener('click', async (e) => {
     const btn = e.target.closest('.act');
     if (!btn || !groupsEl.contains(btn)) return;
@@ -1864,6 +1920,35 @@
         btn.disabled = false;
         alertInline(btn, err.message);
       }
+      return;
+    }
+
+    // Taking a person off the list asks the same kind of question as marking a
+    // part done, for the same reason: "picked up" with nothing behind it is a
+    // green tick with no receipt, and the next person to open this row is
+    // about to phone a stranger who has already spoken to us once.
+    if (act === 'pickup') {
+      closePrompt();
+      const rowEl = rowOf(btn);
+      const box = document.createElement('div');
+      box.className = 'prompt';
+      box.innerHTML =
+        '<label>What happened? &middot; ' + esc(btn.dataset.name) + '</label>' +
+        '<p class="why">One line: what you said, or what they said. It is what the next person ' +
+        'reads before calling them again, and it is the only thing that takes them off this list.</p>' +
+        '<div class="prompt-row"><input type="text" ' +
+        'placeholder="Called him, walking his Google listing Thursday">' +
+        '<button type="button" class="act go" data-act="commit">Picked it up</button>' +
+        '<button type="button" class="act" data-act="cancel">Cancel</button></div>';
+      box.dataset.act = 'pickup';
+      box.dataset.token = btn.dataset.token;
+      rowEl.insertAdjacentElement('afterend', box);
+      const pin = box.querySelector('input');
+      pin.focus();
+      pin.addEventListener('keydown', (k) => {
+        if (k.key === 'Enter') box.querySelector('[data-act="commit"]').click();
+        if (k.key === 'Escape') closePrompt();
+      });
       return;
     }
 
@@ -1896,14 +1981,18 @@
       const box = btn.closest('.prompt');
       const input = box.querySelector('input');
       const val = input.value.trim();
-      const ask = ASK[box.dataset.act];
       const old = box.querySelector('.err');
       if (old) old.remove();
       if (!val) { input.focus(); return; }
       btn.disabled = true;
       try {
-        const payload = Object.assign({ part_key: box.dataset.part }, ask.body(val));
-        await postAction(payload, box.dataset.client);
+        if (box.dataset.act === 'pickup') {
+          await postPickup(box.dataset.token, val);
+        } else {
+          const ask = ASK[box.dataset.act];
+          await postAction(Object.assign({ part_key: box.dataset.part }, ask.body(val)),
+                           box.dataset.client);
+        }
         await refreshCurrent();
       } catch (err) {
         // The refusal is the API's own sentence and it is written to be read.
@@ -1928,6 +2017,42 @@
   }
 
 
+  // ── SOMEBODY PRESSED GET STARTED ──────────────────────────────────────────
+  // Read from the scanner's own store (/api/prospect-report?started=1), not
+  // from client_parts. A lead is not a part: it has no client, no state, no
+  // receipt, and it must never be counted in the four tiles — every one of
+  // those numbers is the length of a list of PARTS, and it stops meaning that
+  // the moment a stranger is added to one.
+  const leadWhen = (t) => t
+    ? new Date(t).toLocaleString('en-US',
+        { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : '';
+
+  // Still open = nobody has picked it up SINCE the last time they pressed.
+  // Pressing again on a report we already called about is a new ask, not a
+  // duplicate of the handled one, and the API refuses a second pickup by this
+  // same comparison — one rule, both ends.
+  const leadOpen = (l) => !l.picked_up || String(l.at || '') > String(l.picked_up.at || '');
+
+  function leadRow(l) {
+    const tel = String(l.phone || '').replace(/[^\d+]/g, '');
+    const reach =
+      (tel ? '<a class="reach" href="tel:' + esc(tel) + '">' + esc(l.phone) + '</a>' : '') +
+      (l.email ? '<a class="reach" href="mailto:' + esc(l.email) + '">' + esc(l.email) + '</a>' : '');
+    return '<div class="day-row lead" data-row="lead::' + esc(l.token) + '">' +
+      '<a class="link" href="/scan/?r=' + encodeURIComponent(l.token) + '">' +
+      '<span class="who">' + esc(l.company || 'Company not on the scan') + '</span>' +
+      '<span class="what"><b>' + esc(l.name) +
+      '<span class="when"> &middot; ' + esc(leadWhen(l.at)) + '</span></b>' +
+      '<span class="lead-note">' +
+      (l.note ? '&ldquo;' + esc(l.note) + '&rdquo;' : 'No note left.') +
+      '</span></span></a>' +
+      '<span class="lead-reach">' + reach + '</span>' +
+      '<span class="row-acts"><button type="button" class="act" data-act="pickup" data-token="' +
+      esc(l.token) + '" data-name="' + esc(l.name) + '">Picked it up</button></span>' +
+      '<span class="st"><span class="health">Not picked up</span></span></div>';
+  }
+
   async function loadDay() {
     current = '__day__';
     document.querySelectorAll('.client').forEach(a => a.classList.remove('selected'));
@@ -1938,6 +2063,17 @@
     chrome(false);
     showRail(false);
     groupsEl.innerHTML = '<p class="status-line">Reading every client...</p>';
+
+    // Started before the parts read and awaited after it, so the list of people
+    // waiting on a call costs the morning nothing. It resolves to its own error
+    // object rather than throwing: a scanner that is down must not take the
+    // client board down with it, and it must not silently print an empty list
+    // either — an empty Get Started section and a broken one look identical,
+    // and one of them is a person nobody called.
+    const leadsReq = fetch('/api/prospect-report?started=1',
+                           { credentials: 'same-origin', cache: 'no-store', headers: authed() })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Error ' + r.status))))
+      .catch((e) => ({ error: String(e.message || e) }));
 
     let res, d;
     try {
@@ -2016,14 +2152,47 @@
       '<span class="bucket-why">' + esc(why) + '</span></div>' +
       byUnblocks(list).map((p) => row(p)).join('') + '</section>';
 
-    groupsEl.innerHTML = sweepHtml +
+    // ── the people, above the parts ───────────────────────────────────────
+    // Oldest first, which is the only ranking here that is not invented: how
+    // long somebody has been waiting for a call is a fact on the record. The
+    // newest-first order the store returns is a filing order, not a call order.
+    const lj = await leadsReq;
+    let leadsHtml = '';
+    if (lj && lj.error) {
+      leadsHtml = '<div class="sweep-line bad">The Get Started list did not load (' +
+        esc(lj.error) + '), so anyone who pressed it is missing from this screen.</div>';
+    } else if (lj && Array.isArray(lj.leads)) {
+      const open = lj.leads.filter(leadOpen)
+        .sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
+      const handled = lj.leads.length - open.length;
+      if (open.length) {
+        leadsHtml =
+          '<section class="bucket"><div class="bucket-head"><h2>Someone pressed Get Started</h2>' +
+          '<span class="bucket-why">They read their own scan report and left a number. Nothing ' +
+          'has been sent to them &mdash; the next thing that happens is you calling.</span></div>' +
+          open.map((l) => leadRow(l)).join('') + '</section>';
+      }
+      if (handled) {
+        leadsHtml += '<p class="lead-done">' + handled +
+          (handled === 1 ? ' earlier one has' : ' earlier ones have') +
+          ' been picked up. <a href="/scan/">The scanner console keeps them, with what was said</a>.</p>';
+      }
+    }
+
+    // The `||` fallback used to sit after `sweepHtml + ...`, where it could
+    // never fire — sweepHtml is never empty, so a board with nothing on it
+    // still read as a full one. It now guards the buckets, which are the part
+    // that can actually be empty.
+    const buckets =
       bucket('Needs you', 'Ours to move. Nothing is stopping these but time.',
              d.needs_me || []) +
       bucket('Waiting on a client', 'We were never given the access. Chasing it is the work.',
              d.waiting_on_client || []) +
       bucket('Running', 'Done and holding. Nothing to do unless a check says otherwise.',
-             d.running || []) ||
-      '<p class="status-line">Nothing on any client needs attention.</p>';
+             d.running || []);
+
+    groupsEl.innerHTML = leadsHtml + sweepHtml +
+      (buckets || '<p class="status-line">Nothing on any client needs attention.</p>');
   }
 
   document.querySelector('.day-link').addEventListener('click', e => {

@@ -790,9 +790,44 @@
       d.getFullYear() + ' at ' + h + ':' + m + ap;
   }
 
+  // ── WHAT IS TRUE AFTER SOMEBODY PRESSES GET STARTED ────────────────────
+  //
+  // This block used to read: "It is sitting on the board Patrik opens every
+  // morning, next to this report." It was not, and a tester proved it by
+  // pressing the button and going to look — the lead was written to the
+  // scanner's own store, which no board on this product read. That is the one
+  // sentence a stranger tests out loud on the call this page just booked
+  // ("so what happens now?"), sitting at the end of a document whose whole
+  // argument is that we only say what we actually checked.
+  //
+  // Two things changed rather than one. The client board's day view now reads
+  // the same list (see loadDay in public/client-engine/index.html), so a lead
+  // does land on the screen the client work is run from, above that work, and
+  // stays there until somebody records what was said. And this sentence now
+  // claims only what a mechanism carries: it was saved onto THIS report and
+  // reopening the link says so, a person reads it and calls, and nothing else
+  // fires — there is no mailer, no account, no automation anywhere behind it.
+  //
+  // `reach` is what they typed and is only known in the browser that typed it.
+  // The saved report deliberately never hands the contact back out (see
+  // api/prospect-report.js), so a reopened link says "what you left" instead
+  // of quoting a number it would have had to be given to know.
+  function confirmStarted(name, at, reach) {
+    var when = longDate(at);
+    $('#close').innerHTML =
+      '<div class="col"><h2>' +
+      (name ? 'We have it, ' + esc(name) + '.' : 'You have already pressed Get Started.') +
+      '</h2><p class="sub">Your answers were saved onto this report' +
+      (when ? ' on ' + esc(when) : '') + ', and reopening this link says so. ' +
+      'They sit on the board Patrik runs the client work from, above that work, ' +
+      'and they stay there until he has picked them up — so what happens next is ' +
+      'his call' + (reach ? ' on ' + esc(reach) : ' on what you left') + '. ' +
+      'Nothing else is automatic: no email goes out from here, and no account was made.</p></div>';
+  }
+
   // ── THE REPORT ─────────────────────────────────────────────────────────
   var CURRENT = null;
-  function renderReport(scan, token) {
+  function renderReport(scan, token, started) {
     CURRENT = scan;
     var host = '';
     try { host = new URL(scan.website.final || scan.website.opened).host; } catch (e) { host = scan.website.opened || ''; }
@@ -889,6 +924,11 @@
 
     SHARE_TOKEN = token || SHARE_TOKEN;
     show($('#close'), !!SHARE_TOKEN);
+    // Somebody already filled this in. Showing them the empty form again would
+    // invite a second submission and quietly deny the first — and this page
+    // claims their answers are on the record, so the record has to say so on
+    // the one screen they can reach.
+    if (started && started.at) confirmStarted(null, started.at, null);
     show($('#report'), true);
   }
 
@@ -1043,11 +1083,11 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ started: { name: name, email: email, phone: phone, note: $('#s-note').value } })
       });
-      if (!r.ok) throw new Error((await r.json()).error || 'That did not send.');
-      $('#close').innerHTML =
-        '<div class="col"><h2>We have it, ' + esc(name.split(/\s+/)[0]) + '.</h2>' +
-        '<p class="sub">It is sitting on the board Patrik opens every morning, next to this ' +
-        'report. He will come back to you on ' + esc(phone || email) + '.</p></div>';
+      var out = null;
+      try { out = await r.json(); } catch (e) { out = null; }
+      if (!r.ok) throw new Error((out && out.error) || 'That did not send.');
+      out = out || {};
+      confirmStarted(name.split(/\s+/)[0], out.at || new Date().toISOString(), phone || email);
     } catch (e) {
       $('#start-err').textContent = String(e.message || e);
       show($('#start-err'), true);
@@ -1066,7 +1106,7 @@
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (out) {
         if (!out.ok) throw new Error(out.j.error || 'No report at this link.');
-        renderReport(out.j.scan, shared);
+        renderReport(out.j.scan, shared, out.j.started);
       })
       .catch(function (e) {
         $('#r-name').textContent = 'This link did not open';
@@ -1092,17 +1132,31 @@
         show($('#console'), true);
       });
     });
-    // Recent starts, so "we have it, it is on the board" is a mechanism and
-    // not a sentence. Silent when there are none, and silent when signed out.
+    // Everyone who has pressed Get Started, and what was done about it. The
+    // board's day view works the same list and shows only the ones nobody has
+    // called yet; this console is the whole record, including the line the
+    // person who called wrote down. Silent when there are none, and silent
+    // when signed out.
     fetch('/api/prospect-report?started=1', { headers: authed() })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
         if (!j || !j.leads || !j.leads.length) return;
         $('#leads').innerHTML = '<hr class="rule"><h2>Started</h2><div class="leads">' +
           j.leads.map(function (l) {
+            // Handled means picked up SINCE they last pressed — the same
+            // comparison the board and the API both make, so no screen can
+            // call a lead closed that the other two call open.
+            var up = l.picked_up;
+            var handled = up && !(String(l.at || '') > String(up.at || ''));
             return '<div class="lead"><div><div class="sname">' + esc(l.name) +
               ' &middot; ' + esc(l.company || '') + '</div><div class="swhere">' +
-              esc(l.email || l.phone || '') + '</div></div>' +
+              esc(l.email || l.phone || '') +
+              (handled
+                ? ' &middot; picked up by ' + esc(up.by || 'someone') +
+                  (up.at ? ' on ' + esc(longDate(up.at)) : '') +
+                  ' &mdash; &ldquo;' + esc(up.note || '') + '&rdquo;'
+                : ' &middot; nobody has picked this up') +
+              '</div></div>' +
               '<a class="chip accent" href="/scan/?r=' + esc(l.token) + '">Their report</a></div>';
           }).join('') + '</div>';
       })
