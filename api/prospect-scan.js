@@ -1011,15 +1011,38 @@ const IMPOSSIBILITY_CLAIM = new RegExp([
   '\\bit is proof\\b', '\\bthat proves\\b', '\\bwhich proves\\b', '\\bproof that you\\b',
 ].join('|'), 'i')
 
+// ── AND THE LIST OF WHAT WE READ INSTEAD WAS SILENTLY THE FIRST FOURTEEN ───
+//
+// This block is printed under "we found no address for X" so the reader can
+// CHECK that sentence: he looks for his own outbound links in the list, sees
+// them, and knows we opened the page. It was sliced to 14 here with no count
+// and no ellipsis — and outboundHosts had already sliced to 14 a second time,
+// upstream, so two independent caps were both dropping addresses in silence.
+//
+// Bel-Aire Mechanical's homepage points at sixteen off-site hosts. Two of them,
+// youtube.com and dayforcehcm.com, were simply not in the list. Nothing above it
+// is false — the search really did run over every link — but a company whose
+// LinkedIn happened to be the fifteenth host would read "we found no company
+// LinkedIn", look at a list of what we read with his own LinkedIn missing from
+// it, and conclude the search never opened the page it says it opened. That is
+// the report losing an argument it should win.
+//
+// The cut stays; the report is long enough. It now names what it left out.
+const INSTEAD_SHOWN = 14
+
 export function searchRecord({ looked_for, across, read = null, instead = [] }) {
   if (!Array.isArray(looked_for) || !looked_for.length || !across) {
     throw new Error('a search record needs what it looked for and what it looked across')
   }
+  const all = instead || []
   return {
     looked_for: looked_for.slice(0, 24),
     across: String(across),
     read: read == null ? null : String(read),
-    instead: (instead || []).slice(0, 14),
+    instead: all.length > INSTEAD_SHOWN
+      ? [...all.slice(0, INSTEAD_SHOWN),
+        `and ${all.length - INSTEAD_SHOWN} more off-site addresses on those pages`]
+      : all,
   }
 }
 
@@ -1876,6 +1899,7 @@ function noLinkFinding(partKey, { pagesRead, hosts }) {
       'a link, not in an embedded frame, not in the structured data the page ' +
       `publishes about itself, and nowhere else in the document. ${copy.tail(pagesRead.length)}`,
     to_check_this: copy.ask,
+    // The whole list goes in. searchRecord does the cutting, and says so.
     searched: searchRecord({
       looked_for: copy.shapes,
       across: pagesRead.join(', '),
@@ -2410,7 +2434,8 @@ export async function scan({
     page = readHtml(res.body)
     const homeUrl = res.finalUrl || res.url
     pagesRead = ['your homepage']
-    outbound = outboundHosts(page.links, homeUrl)
+    // UNCAPPED HERE, AND CUT WHERE THE CUT CAN BE DECLARED. See noLinkFinding.
+    outbound = outboundHosts(page.links, homeUrl, Infinity)
     profiles = findProfileLinks(page.links, homeUrl, {
       frames: page.frames, sameAs: sameAsUrls(page.jsonld), inSource: page.inSource,
       source: 'your homepage',
@@ -2464,7 +2489,7 @@ export async function scan({
         // Both of these are printed on the report the prospect reads, so both
         // take the second-person label, not the operator's narration.
         pagesRead.push(got.target.label)
-        for (const h of outboundHosts(p.links, at)) if (!outbound.includes(h)) outbound.push(h)
+        for (const h of outboundHosts(p.links, at, Infinity)) if (!outbound.includes(h)) outbound.push(h)
         const more = findProfileLinks(p.links, at, {
           frames: p.frames, sameAs: sameAsUrls(p.jsonld), inSource: p.inSource,
           source: got.target.label,
