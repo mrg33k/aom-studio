@@ -1599,10 +1599,27 @@
     if (!p) { nextUpEl.style.display = 'none'; nextUpEl.innerHTML = ''; return; }
     // The chip carries the number; the sentence carries the reason. Printing
     // "3" twice would be one fact wearing two costumes.
-    const basis = unblocks(p)
-      ? 'It is first because more of this client\'s work is waiting on this one than on anything else.'
-      : 'Nothing on this client is holding anything else up, so there is no order to these — ' +
-        'this is simply the first one on the board.';
+    //
+    // AND "MORE THAN ANYTHING ELSE" IS A SUPERLATIVE THE SORT DOES NOT EARN.
+    // byUnblocks is a plain descending sort: on a tie it hands back whichever
+    // of the equals came first out of the table, and the card then tells Patrik
+    // this one holds up more work than any other when two hold up the same
+    // amount. There is nothing in the record that breaks that tie — no age, no
+    // effort, no score — so inventing an order and narrating it as a fact is
+    // the small version of the thing this whole product refuses to do. Say
+    // "as much as any other" when it is shared, and name that it is shared.
+    const top = unblocks(p);
+    const equals = (parts || []).filter((x) =>
+      x.state !== 'completed' && x.part_key !== p.part_key && unblocks(x) === top).length;
+    const basis = !top
+      ? 'Nothing on this client is holding anything else up, so there is no order to these — ' +
+        'this is simply the first one on the board.'
+      : equals
+        ? 'It is at the top because more of this client\'s work is waiting on this one than ' +
+          'on all but ' + (equals === 1 ? 'one other part' : equals + ' other parts') +
+          ', which ' + (equals === 1 ? 'holds' : 'hold') + ' up exactly as much. Nothing in ' +
+          'the record separates them, so this one is not first for a reason.'
+        : 'It is first because more of this client\'s work is waiting on this one than on anything else.';
     nextUpEl.style.display = '';
     nextUpEl.innerHTML =
       '<div class="next-up-top"><span class="k">Start here</span>' + blocksChip(p) + '</div>' +

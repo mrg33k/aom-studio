@@ -613,6 +613,72 @@ export function isSearchShaped(url) {
   }
 }
 
+// ── AND NEITHER IS A ROUTE, WHICH IS THE FIFTH TIME THIS EXACT MISTAKE HAS
+//    BEEN CAUGHT AND THE FIRST TIME IT WAS GREEN. ─────────────────────────
+//
+// Brycon Corporation's footer publishes, under each office address, a
+// "Directions" link. Every one of them is
+//   google.com/maps/dir/39.5665189,-104.8987456/134+Rio+Rancho+Blvd+NE,…
+// — a DRIVING ROUTE from a coordinate in Colorado to a street address in New
+// Mexico. `isSearchShaped` does not fire (no /maps/search, no ?q=), the host is
+// google.com and the path starts /maps, so the matcher took it, opened it, got
+// HTTP 200, and their live report said FOUR separate times:
+//
+//   "Your homepage links to it, and it answered HTTP 200"     — standing GOOD
+//   "Your site sends a buyer to 1 place where reviews are read: your Google
+//    listing."                                                 — standing GOOD
+//   "We opened your Google listing and it answered…"
+//   "Looked at: Your Google listing, at …/maps/dir/…"
+//
+// Opened by hand that address is titled "39.5665189, -104.8987456 to 134 Rio
+// Rancho Blvd NE - Google Maps", 424 miles, 6 hr 10 min via I-25 S. The only
+// review counts anywhere on it belong to Cheyenne Mountain Zoo and Garden of
+// the Gods, which Google suggests as stops along the way.
+//
+// Same class as every one before it: a finite check (host is google, path
+// starts /maps) allowed to emit an infinite claim (this is your listing, and
+// buyers read your reviews there). Two shapes, and they are told apart because
+// what we can honestly say about them differs:
+//
+//   dir  — a route between two points. There is no listing in it at all, and
+//          we can say so flatly. Certain.
+//   pin  — /maps/place/<a postal address>/@… , which is Google's geocoder
+//          showing a spot on the map. Willmeng Construction publishes six of
+//          these. It may well be where their listing sits, and it may not; the
+//          address in the link names a street, not a business, so the link
+//          itself does not tell us. Honest answer: say what the link contains.
+export function isDirectionsShaped(url) {
+  try {
+    return /^\/maps\/dir\b/i.test(new URL(url).pathname)
+  } catch {
+    return false
+  }
+}
+
+// The place segment of /maps/place/<segment>/@… , when that segment is a postal
+// address rather than the name of a business. "1702+E+Highland+Ave,+Phoenix,+AZ+85016"
+// is a street address; "Willmeng+Construction" is a listing. The test is the
+// tail — a US state abbreviation followed by a ZIP — because that is the part a
+// business name does not have, and it is read off the string rather than guessed.
+export function isAddressPinShaped(url) {
+  try {
+    const u = new URL(url)
+    const m = u.pathname.match(/^\/maps\/place\/([^/]+)/i)
+    if (!m) return false
+    const seg = decodeURIComponent(m[1]).replace(/\+/g, ' ')
+    return /\b[A-Z]{2}\s+\d{5}(-\d{4})?\s*$/.test(seg.trim())
+  } catch {
+    return false
+  }
+}
+
+// Anything that is a Google Maps address but demonstrably not a listing. The
+// one predicate `reviewLinks` and the reviews card both ask, so a shape added
+// here can never be picked up by one of them and missed by the other.
+export function isNotAListing(url) {
+  return isSearchShaped(url) || isDirectionsShaped(url) || isAddressPinShaped(url)
+}
+
 // ── WHAT WE LOOKED FOR, WRITTEN DOWN ───────────────────────────────────────
 // These are printed on the report, verbatim, beside every finding that reports
 // not having found something. A reader who can see the list can check whether
@@ -783,6 +849,69 @@ export function sectionLabels(links, limit = 14) {
 // markets or projects index that number is the section: Wilson Electric's
 // /markets/ links to thirteen category pages. It is a count of links, said as a
 // count of links — not a count of projects, which we cannot see.
+// ── AND THE OTHER HALF OF "IS THIS AN INDEX", BECAUSE THE PATH WAS NEVER IT.
+//
+// `countDeeperLinks` only sees pages nested UNDER the work page's own path. It
+// was written against a site whose portfolio lived at /projects/<job>/, and on
+// that shape it is right. It is also blind to the most common shape in this
+// entire market, which is WordPress's default for a custom post type:
+//
+//   the archive at  /projects/          ← the page we open
+//   each job at     /project/<slug>/    ← singular. A SIBLING, not a child.
+//
+// Brycon Corporation's /projects/ is that exact shape. The document we fetched
+// carries 24 distinct /project/<slug>/ links — Fujifilm Electronic Materials,
+// Stryker Sterilization, four confidential semiconductor fabs — and the report
+// we sent them said, of that page:
+//
+//   "We counted 0 links from it into pages below it, so what we opened reads as
+//    one page — an article or a single job — rather than an index of your work."
+//
+// Bel-Aire Mechanical's is the same defect in a second dress: their jobs sit at
+// the ROOT (/marina-heights/, /banner-health/, /asu-bio-c/), so the prefix test
+// finds nothing there either. Two of the two firms scanned this round, both
+// wrong, both on the one surface a construction buyer actually cares about.
+//
+// The fix is not a longer list of path shapes — that is the same finite check
+// with more entries, and the fifth shape breaks it again. What actually
+// separates an index from an article is not where its links point but WHETHER
+// IT HAS ANY OF ITS OWN: an index of work points at pages the homepage never
+// mentioned; a blog post points at the nav, which every page on the site shares.
+// So we count the pages this one reaches that the homepage does not, and that
+// measure does not care what the slug looks like.
+//
+// Suntec Concrete's blog post — the prospect this check was hardened on, whose
+// "Advancing Sustainable High-Rise Construction" article won the work link and
+// had to NOT come back green — still counts near zero here, because its
+// internal links are the nav and the nav is on the homepage.
+export function countLinksBeyondHome(workLinks, workPageUrl, homeLinks, homeUrl) {
+  let base
+  try { base = new URL(workPageUrl) } catch { return 0 }
+  const norm = (href, from) => {
+    try {
+      const u = new URL(href, from)
+      if (u.hostname !== base.hostname) return null
+      const p = u.pathname.replace(/\/+$/, '')
+      return p || '/'
+    } catch { return null }
+  }
+  const onHome = new Set()
+  for (const { href } of homeLinks || []) {
+    const p = norm(href, homeUrl || base)
+    if (p) onHome.add(p)
+  }
+  const here = base.pathname.replace(/\/+$/, '') || '/'
+  let home = '/'
+  try { home = new URL(homeUrl || base).pathname.replace(/\/+$/, '') || '/' } catch { /* '/' */ }
+  const seen = new Set()
+  for (const { href } of workLinks || []) {
+    const p = norm(href, base)
+    if (!p || p === here || p === home || onHome.has(p)) continue
+    seen.add(p)
+  }
+  return seen.size
+}
+
 export function countDeeperLinks(links, pageUrl) {
   let base
   try { base = new URL(pageUrl) } catch { return 0 }
@@ -963,7 +1092,11 @@ function receiptFrom(res, quote = null) {
 
 // ── THE WEBSITE ────────────────────────────────────────────────────────────
 
-function websiteFindings({ res, page, insecure, city, workPage = null }) {
+// `workPage` is the work page WE READ. `workAttempt` is the request we made for
+// it whatever came back — the two are different facts and the report used to
+// own only the first, which is how "we did not open it" ended up printed on a
+// page we had opened and waited three seconds for.
+function websiteFindings({ res, page, insecure, city, workPage = null, workAttempt = null }) {
   const out = []
   const url = res.finalUrl || res.url
   // THE SENTENCE THAT SET UP EVERY FALSE CLAIM UNDER IT. This read "Your
@@ -1219,6 +1352,11 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
     // WE OPENED IT. Which turns a guess about a label into a fact about a page.
     const wp = workPage.page
     const deeper = countDeeperLinks(wp.links, workPage.url)
+    // The same question the path test was asking, asked in a way a sibling slug
+    // cannot walk past. See countLinksBeyondHome for the two live reports this
+    // was found on and why a longer list of path shapes is not the fix.
+    const beyond = countLinksBeyondHome(wp.links, workPage.url, page.links, url)
+    const leadsOn = deeper || beyond
     // AND WHEN WE OPEN IT AND IT IS NOT AN INDEX, THAT IS NOT A PASS.
     //
     // Caught reading Suntec Concrete's live report. Their best "work" link is a
@@ -1233,32 +1371,68 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
     // what gets read.
     out.push(finding({
       id: 'website.proof_of_work', part_key: 'website',
-      standing: deeper ? 'good' : 'unknown',
+      standing: leadsOn ? 'good' : 'unknown',
       looked_at: `Your homepage, and then the page behind "${clip(bestWork.label || bestWork.href, 50)}".`,
       found: `Your homepage points at "${clip(bestWork.label || bestWork.href, 50)}". ` +
         `We opened it: it titles itself "${clip(wp.title || '(no title)', 80)}" and ` +
         `carries ${wp.images} image${wp.images === 1 ? '' : 's'}` +
-        (deeper
-          ? `, and it links to ${deeper} further page${deeper === 1 ? '' : 's'} below it.`
-          : '. We counted 0 links from it into pages below it, so what we opened ' +
-            'reads as one page — an article or a single job — rather than an ' +
-            'index of your work. Where the rest of it lives, if it is on the ' +
-            'site, is not something this link told us.'),
+        (leadsOn
+          ? `, and from it we counted ${leadsOn} more page${leadsOn === 1 ? '' : 's'} ` +
+            `of your own site${deeper && !beyond ? ' below it' : ''} that your homepage ` +
+            'does not point at itself.'
+          // AND THE SECOND CLAUSE IS GONE, WHICH WAS THE ACTUAL DEFECT. "So what
+          // we opened reads as one page — an article or a single job — rather
+          // than an index of your work" is an inference about a page, drawn
+          // from a count, printed as a finding. When the count was wrong the
+          // inference was a flat falsehood told to a general contractor about
+          // his own portfolio. What follows is the count and its limit, and no
+          // conclusion drawn from either — including the limit the old sentence
+          // never carried at all, which is that a projects grid built by a
+          // script is not in the document a fetch returns.
+          : '. Every link on it goes somewhere your homepage already points, so ' +
+            'in the document we read we did not find further pages of work ' +
+            'behind it — and we read that document before any script on the ' +
+            'page had run, so a list drawn in the browser is outside what we ' +
+            'looked at.'),
       receipt: receiptFrom(workPage.res, wp.title || null),
-      to_check_this: deeper ? null : 'The address of the page that lists your ' +
+      to_check_this: leadsOn ? null : 'The address of the page that lists your ' +
         'finished jobs, if there is one.',
       not_verified: 'How recent that work is, what it cost and whether any of it ' +
         'is the size of the job a particular buyer is bidding is not on the page ' +
         'in a form we can read, so it is not checked here.',
     }))
   } else if (bestWork && bestWork.tier === 'strong') {
+    // "WE DID NOT OPEN IT" WAS PRINTED ON PAGES WE HAD OPENED AND WAITED THREE
+    // SECONDS FOR. Willmeng Construction's live report: we requested
+    // /construction-projects/, held the connection for 3,004ms, gave up, and
+    // then told them we never looked. It is the same defect as the four before
+    // it, pointed the other way — instead of a small check claiming a large
+    // fact, a real fact was replaced by a smaller and untrue one about
+    // ourselves. And it buried a finding: a projects page that does not answer
+    // in three seconds is something a buyer meets too. Say which of the two
+    // happened, and never say we did not look when we did.
+    const asked = workAttempt && workAttempt.res
+    const gaveUp = asked && workAttempt.res.kind === 'timeout'
+    const refused = asked && !gaveUp
+    const waited = gaveUp && Number.isFinite(workAttempt.res.ms)
+      ? `${(workAttempt.res.ms / 1000).toFixed(1)} seconds`
+      : 'the few seconds this scan allows one page'
     out.push(finding({
       id: 'website.proof_of_work', part_key: 'website', looked_at: opened, standing: 'good',
       found: `The homepage links to work: "${clip(bestWork.label || bestWork.href, 60)}"` +
         `${workHits.length > 1 ? `, and ${workHits.length - 1} other link${workHits.length === 2 ? '' : 's'} like it` : ''}.`,
       receipt: receipt(bestWork.href),
-      not_verified: 'We did not open it, so what is behind that link — how many ' +
-        'projects, at what size, how recent — is not checked here.',
+      not_verified: gaveUp
+        ? `We asked for that page and stopped waiting after ${waited} without an ` +
+          'answer, so what is behind the link — how many projects, at what size, ' +
+          'how recent — is not checked here. One slow read on one day is not ' +
+          'enough to call the page slow; it is why this part of the report is thin.'
+        : refused
+          ? 'We asked for that page and it did not answer with something we could ' +
+            'read, so what is behind the link — how many projects, at what size, ' +
+            'how recent — is not checked here.'
+          : 'We did not open it, so what is behind that link — how many ' +
+            'projects, at what size, how recent — is not checked here.',
     }))
   } else if (bestWork) {
     // A SECTOR LABEL IS NOT A PORTFOLIO AND IS NOT ITS ABSENCE. "Markets",
@@ -1488,6 +1662,45 @@ function profileFinding(partKey, found, res) {
       to_check_this: 'The address of the listing itself, copied from the address bar.',
     })
   }
+  // A ROUTE. Judged on the address they published, like the admin link above,
+  // because that is the fact: their own page sends a reader to turn-by-turn
+  // directions. It is a perfectly reasonable thing to put in a footer. It is
+  // not a listing, and nothing that reads reviews is reachable through it.
+  if (isDirectionsShaped(url)) {
+    return finding({
+      id: `${partKey}.directions_link`, part_key: partKey, standing: 'unknown',
+      looked_at: looked,
+      // WRITTEN ABOUT THE ADDRESS, BECAUSE THE ADDRESS IS ALL WE READ. The
+      // first draft of this said "nothing about your listing, and none of your
+      // reviews, is on the other end of it" and finding() threw on it, which is
+      // the tripwire doing precisely its job: we looked at the shape of a URL,
+      // we did not open the far end and enumerate what was there. What we know
+      // is what the address IS.
+      found: `The address ${where} publishes for this is a Google Maps ROUTE ` +
+        '— turn-by-turn directions from one point to another, which is a set of ' +
+        'driving instructions rather than a listing. Where your listing sits, ' +
+        'and what is on it, is not something a route can tell us.',
+      to_check_this: 'The Maps link for the listing itself, copied from the ' +
+        'address bar while looking at it. A "Directions" link in a footer is a ' +
+        'useful thing to have; it is a different thing.',
+    })
+  }
+  // A PIN. The link contains a street address, so Google shows a spot on the
+  // map. Their listing may sit on that spot. We cannot read that off the link,
+  // and the whole product is not saying things we cannot read.
+  if (isAddressPinShaped(url)) {
+    return finding({
+      id: `${partKey}.address_pin`, part_key: partKey, standing: 'unknown',
+      looked_at: looked,
+      found: `The address ${where} publishes for this names a STREET ADDRESS ` +
+        'rather than a business — it opens a pin on the map at that address. ' +
+        'Your listing may well be at that pin; the link does not say so, and ' +
+        'we are not going to read one into it.',
+      to_check_this: 'The Maps link for the listing itself, copied from the ' +
+        'address bar. A listing link carries your company name in it, not a ' +
+        'street and a ZIP.',
+    })
+  }
   // Judged on the address THEY published, before any hop, because that is the
   // fact: a /admin/ path is the signed-in management screen for the page, and
   // it is what their own link sends people to. Where it redirects us afterwards
@@ -1561,6 +1774,33 @@ function profileFinding(partKey, found, res) {
       found: `We opened it and it lands on a SEARCH rather than a page: ${clip(final, 120)}. ` +
         'A query that shows whatever comes back is not a listing you own and control.',
       to_check_this: 'The address of the listing itself, copied from the address bar.',
+    })
+  }
+  // THE SHORT LINK HIDES THE ROUTE TOO. maps.app.goo.gl/<id> is opaque until it
+  // is followed, and Brycon's footer publishes one of those for two of its four
+  // offices — both resolving to /maps/dir/. The hop we land on gets the same
+  // test as the address we started from, exactly as the search case does.
+  if (isDirectionsShaped(final)) {
+    return finding({
+      id: `${partKey}.directions_link`, part_key: partKey, standing: 'unknown',
+      looked_at: looked,
+      found: 'We opened it and it lands on a Google Maps ROUTE rather than a ' +
+        `listing: ${clip(final, 120)}. That address is turn-by-turn directions ` +
+        'from one point to another, so where your listing sits is not something ' +
+        'it can tell us.',
+      to_check_this: 'The Maps link for the listing itself, copied from the ' +
+        'address bar while looking at it.',
+    })
+  }
+  if (isAddressPinShaped(final)) {
+    return finding({
+      id: `${partKey}.address_pin`, part_key: partKey, standing: 'unknown',
+      looked_at: looked,
+      found: 'We opened it and it lands on a pin at a STREET ADDRESS rather ' +
+        `than a business listing: ${clip(final, 120)}. Your listing may well be ` +
+        'at that pin; the address does not say so.',
+      to_check_this: 'The Maps link for the listing itself, copied from the ' +
+        'address bar.',
     })
   }
   return finding({
@@ -1650,8 +1890,12 @@ function reviewLinks(profiles) {
     .filter((k) => {
       const p = profiles[k]
       if (!p) return false
-      // Search-shaped as published: never a listing, whether or not we opened it.
-      if (isSearchShaped(p.url)) return false
+      // Never a listing as published, whether or not we opened it: a search, a
+      // route, or a pin at a postal address. Brycon's report said "Your site
+      // sends a buyer to 1 place where reviews are read: your Google listing"
+      // about turn-by-turn directions to New Mexico — the reviews a buyer would
+      // actually find at that address belong to a zoo in Colorado Springs.
+      if (isNotAListing(p.url)) return false
       // An address we only found loose in the source is not a place their site
       // SENDS anybody. That claim needs a link or a frame; a config blob is a
       // string in a script, and we did not run the script.
@@ -1660,8 +1904,9 @@ function reviewLinks(profiles) {
       // Never opened — budget spent, or nothing tried. The claim stays a claim
       // about their link, which is all it ever was, and not_verified carries it.
       if (!r || !r.ok) return true
-      // Opened, and the last hop is a query that shows whatever comes back.
-      if (isSearchShaped(r.finalUrl || r.url || p.url)) return false
+      // Opened, and the last hop is a query, a route, or a pin — none of which
+      // is a place reviews of them are read.
+      if (isNotAListing(r.finalUrl || r.url || p.url)) return false
       // Opened, and the platform says there is nothing at that address.
       if (GONE.has(r.status)) return false
       return true
@@ -2038,10 +2283,27 @@ export async function scan({
   // has to be able to tell them apart: one is a finding about them, the other
   // is a disclaimer about us.
   let clockRanOut = false
+  // AND WHICH PAGE IT WAS, BECAUSE "OUR CLOCK RAN OUT" NAMED NOTHING.
+  //
+  // Every other line on the report names the page it was read on; this one told
+  // a prospect his report was "short of a full read" and left him no way to see
+  // what was missing. It fires on a PER-PAGE cap — three seconds for a page of
+  // their own site — so it was printing on scans that finished in 6.4s of a 9s
+  // budget, contradicting the elapsed time two words to its left. One finite
+  // fact (one page did not answer in three seconds) was emitting a claim about
+  // the whole document. Recording the address turns the disclaimer into a
+  // finding a reader can check, which is the only shape this product allows.
+  const cutShort = []
   const budgetLeft = () => deadline - now()
   const canFetch = () => fetches < MAX_FETCHES && budgetLeft() > 400
   const note = (r) => {
-    if (r && r.kind === 'timeout') clockRanOut = true
+    if (r && r.kind === 'timeout') {
+      clockRanOut = true
+      const at = r.url || null
+      if (at && !cutShort.some((c) => c.url === at)) {
+        cutShort.push({ url: at, ms: Number.isFinite(r.ms) ? r.ms : null })
+      }
+    }
     return r
   }
 
@@ -2115,6 +2377,10 @@ export async function scan({
   let pagesRead = []
   let outbound = []
   let workPage = null
+  // The REQUEST for the work page, kept whatever it returned. See the note in
+  // websiteFindings: dropping the failures is what let the report say we never
+  // looked at a page we spent three seconds on.
+  let workAttempt = null
   const gibberish = res.ok ? unreadableBody(res) : null
   const readable = res.ok && !gibberish
   if (readable) {
@@ -2162,6 +2428,12 @@ export async function scan({
           .then((r) => ({ target, res: r }))
       }))
       for (const got of opened) {
+        // RECORDED BEFORE THE SKIP, WHICH IS THE WHOLE POINT. Every line below
+        // this one drops a page that did not answer, and the work page's own
+        // finding then reported the drop as "we did not open it".
+        if (got && got.res && got.target.kind === 'work' && !workAttempt) {
+          workAttempt = { url: got.target.url, res: got.res }
+        }
         if (!got || !got.res || !got.res.ok || got.res.status >= 400) continue
         if (unreadableBody(got.res)) continue
         const p = readHtml(got.res.body)
@@ -2189,7 +2461,7 @@ export async function scan({
     }
 
     site.status = 'read'
-    site.findings = websiteFindings({ res, page, insecure, city, workPage })
+    site.findings = websiteFindings({ res, page, insecure, city, workPage, workAttempt })
   } else if (res.ok) {
     // It answered. We could not read what it said. Those are different facts
     // and the second one is not a verdict on their website.
@@ -2351,6 +2623,17 @@ export async function scan({
       : null
     const searchy = gbpFound &&
       (isSearchShaped(gbpFound.url) || (gbpLanded && isSearchShaped(gbpLanded)))
+    // THE SAME ELIMINATION, ONE SHAPE WIDER. When the Google card learned to
+    // say "that is a route, not a listing", this card kept its three answers
+    // and picked the last one — so Brycon's report said "We opened your Google
+    // listing and it answered" about turn-by-turn directions, on the same page
+    // where the card above it had just said the opposite. A reason arrived at
+    // by elimination has to run out of elimination honestly, every time the
+    // facts upstream get richer.
+    const routey = gbpFound &&
+      (isDirectionsShaped(gbpFound.url) || (gbpLanded && isDirectionsShaped(gbpLanded)))
+    const pinny = gbpFound &&
+      (isAddressPinShaped(gbpFound.url) || (gbpLanded && isAddressPinShaped(gbpLanded)))
     // AND "NOTHING" WAS THE FOURTH THING ON THIS CARD THAT WAS NOT TRUE. The
     // looked_at read "Nothing — reviews are read off the Google listing, and we
     // did not find an address for one to open", on a scan that had just read
@@ -2378,11 +2661,22 @@ export async function scan({
               gbpLanded !== gbpFound.url ? 'lands on' : 'is'} a search ` +
             `rather than a listing (${clip(gbpLanded || gbpFound.url, 90)}), so what ` +
             'we opened was a query rather than a page of yours'
-          : (gbpFound.opened && gbpFound.opened.ok && gbpFound.opened.status < 400
-            ? 'and it answered when we opened it, but Google draws the listing in ' +
-              'the browser, so a fetch returns the page without its contents'
-            : 'and the address your site publishes for it did not answer when we ' +
-              'opened it')))
+          : (routey
+            ? `and the address your site publishes for it ${gbpLanded &&
+                gbpLanded !== gbpFound.url ? 'lands on' : 'is'} Google Maps ` +
+              `directions (${clip(gbpLanded || gbpFound.url, 90)}) — a route to a ` +
+              'street address, and a route is not a page reviews sit on'
+            : (pinny
+              ? `and the address your site publishes for it ${gbpLanded &&
+                  gbpLanded !== gbpFound.url ? 'lands on' : 'is'} a pin at a ` +
+                `street address rather than a business (${clip(gbpLanded || gbpFound.url, 90)}), ` +
+                'so what that address opens is a place on the map rather than a ' +
+                'listing we could read them from'
+              : (gbpFound.opened && gbpFound.opened.ok && gbpFound.opened.status < 400
+                ? 'and it answered when we opened it, but Google draws the listing in ' +
+                  'the browser, so a fetch returns the page without its contents'
+                : 'and the address your site publishes for it did not answer when we ' +
+                  'opened it')))))
     reviews.findings.push(finding({
       id: 'online-reviews.not_checked', part_key: 'online-reviews', standing: 'unknown',
       // NOT `${pages} — … ${why}`: `why` names the pages too, so that printed
@@ -2468,6 +2762,14 @@ export async function scan({
     // able to say "we stopped early" rather than present a short list as a
     // complete one.
     timed_out: clockRanOut || elapsed >= budgetMs,
+    // AND THESE ARE THE TWO DIFFERENT THINGS THAT FLAG COVERED. `budget_spent`
+    // is the whole scan hitting its ceiling; `cut_short` is a named page that
+    // did not answer inside the slice we allow one page. They were reported as
+    // the same sentence, so a scan that finished in 6.4 seconds of a 9-second
+    // budget told the prospect "our clock ran out … this is short of a full
+    // read" — a whole-document verdict bought with one slow page it never named.
+    budget_spent: elapsed >= budgetMs,
+    cut_short: cutShort.slice(0, 6),
     fetches,
     surfaces: list,
     findings,

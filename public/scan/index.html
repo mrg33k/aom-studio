@@ -581,7 +581,14 @@
 
     <div class="col">
       <h2>The record of the check</h2>
-      <p class="sub">Seven surfaces, the address opened for each, and the second it settled on.</p>
+      <!-- "Seven surfaces, THE ADDRESS OPENED FOR EACH" — and two rows down,
+           on the Willmeng report, Yelp and the owner's LinkedIn carry no
+           address at all, because there was none to open; they carry the
+           sentence about what we read through instead. A subtitle that
+           describes the list under it wrongly is the same defect as a finding
+           that overstates its search, and this one also hard-coded "Seven"
+           beside a count the page reads from the data. Set from the scan. -->
+      <p class="sub" id="r-record-sub"></p>
     </div>
     <div class="surfaces" id="r-surfaces"></div>
 
@@ -841,6 +848,34 @@
       '</h2><p class="said">' + body + '</p></div>';
   }
 
+  // ── "OUR CLOCK RAN OUT" NAMED NOTHING, AND USUALLY WAS NOT TRUE ─────────
+  // One sentence covered two different facts and printed the wrong one far more
+  // often than the right one. `timed_out` goes true when ANY single page misses
+  // its own few-second slice, so Willmeng Construction — a scan that settled in
+  // 6.4s of a 9s budget, with all seven surfaces read — was told "our clock ran
+  // out before every page finished answering, so this is short of a full read".
+  // The elapsed time sat two words to the left of it, contradicting it, and the
+  // page it meant was named nowhere on the report. That is a judgement with no
+  // receipt on the one document whose whole promise is that there are none.
+  //
+  // Two facts, two sentences, each naming its evidence: the budget genuinely
+  // spent, or the pages that did not answer — by address, so he can open them.
+  function shortReadLine(scan) {
+    var cut = scan.cut_short || [];
+    if (scan.budget_spent) {
+      return '<br>our clock ran out at ' + esc(secs(scan.budget_ms)) +
+        ', so this is short of a full read';
+    }
+    if (!cut.length) return '';
+    return '<br>' + esc(cut.length === 1 ? 'one page' : cut.length + ' pages') +
+      ' did not answer inside the few seconds we give one, so ' +
+      (cut.length === 1 ? 'it is' : 'they are') + ' not read here: ' +
+      cut.map(function (c) {
+        return '<a href="' + esc(c.url) + '" rel="noopener noreferrer nofollow" ' +
+          'target="_blank" title="' + esc(c.url) + '">' + esc(shortUrl(c.url)) + '</a>';
+      }).join(', ');
+  }
+
   // ── THE REPORT ─────────────────────────────────────────────────────────
   var CURRENT = null;
   function renderReport(scan, token, started, pickedUp) {
@@ -857,7 +892,7 @@
       esc(scan.surfaces.length) + ' surfaces &middot; ' + esc(secs(scan.elapsed_ms)) +
       ' &middot; ' + esc(scan.fetches) + ' pages opened' +
       (scan.scanned_by ? ' &middot; run by ' + esc(scan.scanned_by) : '') +
-      (scan.timed_out ? '<br>our clock ran out before every page finished answering, so this is short of a full read' : '');
+      shortReadLine(scan);
 
     // AN UNREAD WEBSITE MAKES A SHORT REPORT, AND A SHORT REPORT LOOKS LIKE A
     // CLEAN BILL OF HEALTH UNLESS IT SAYS OTHERWISE. Six of the seven surfaces
@@ -936,6 +971,12 @@
       'what would settle it. That list is the first conversation.';
     $('#r-unknown-list').innerHTML = by.unknown.map(function (f) { return findingBlock(f, 0); }).join('');
 
+    // Count from the data, and promise only what the rows under it deliver: a
+    // surface with no address to open shows what we looked THROUGH instead.
+    $('#r-record-sub').textContent =
+      scan.surfaces.length + ' surfaces, what we opened — or what we read ' +
+      'through, where there was no address to open — and the second each one ' +
+      'settled on our clock.';
     $('#r-surfaces').innerHTML = scan.surfaces.map(function (x) { return surfaceRow(x, true); }).join('');
 
     $('#close-copy').textContent =
@@ -1136,11 +1177,35 @@
         if (!out.ok) throw new Error(out.j.error || 'No report at this link.');
         renderReport(out.j.scan, shared, out.j.started, out.j.picked_up);
       })
+      // ── A DEAD LINK MUST NOT WEAR THE REPORT'S CLOTHES ──────────────────
+      // This showed `#report` whole, and the report SHELL TALKS. With every
+      // list inside it empty, a stranger on a replaced link read four headings
+      // and their standing subtitles: "What is holding up — Checked the same
+      // way, on the same pages, and fine." "The record of the check — Seven
+      // surfaces, the address opened for each, and the second it settled on."
+      // "What we would fix — In the order we would fix it. Each one names the
+      // page it came from." Nothing was checked. No surface was opened. No
+      // page was named. Those sentences are true of a report and this is the
+      // absence of one, which makes them the same defect as the four before
+      // it — a claim standing on evidence that was never collected — on the
+      // one page a stranger reads with no login and no way to ask us about it.
+      //
+      // Hidden BY SUBTRACTION rather than by naming the four sections: keep
+      // the head, hide every sibling. A section added to the report next year
+      // is silent here by default instead of inheriting this bug, which is the
+      // difference between a fix and a patch on a list.
       .catch(function (e) {
+        var kids = $('#report').children;
+        for (var i = 1; i < kids.length; i++) kids[i].classList.add('hide');
+        // The lede is the head's, not a section's, and it labels a reading
+        // that did not happen. "What a buyer finds when he checks you out"
+        // under "This link did not open", with nothing beneath it, promises a
+        // page that is not there.
+        var lede = $('#report .lede');
+        if (lede) lede.classList.add('hide');
         $('#r-name').textContent = 'This link did not open';
         $('#r-stamp').textContent = String(e.message || e);
         show($('#report'), true);
-        show($('#close'), false);
       });
   } else {
     show($('#console'), true);
