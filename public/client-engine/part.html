@@ -691,6 +691,12 @@
       background: var(--warn-soft); color: var(--warn); font-size: 16px; }
     .consequence.blocked { background: var(--bad-soft); color: var(--bad); }
     .consequence.completed { background: var(--good-soft); color: var(--good); }
+    /* Quiet, and it must stay quiet: it is a caveat under a headline, not a
+       second headline. Muted ink, no fill, the board's ordinary rule on the
+       left — so it reads as the small print the status line was missing. */
+    .unreceipted { margin: 0 0 24px; padding: 0 0 0 16px;
+      border-left: 2px solid var(--line-strong); color: var(--muted);
+      font-size: 13px; line-height: 1.55; }
     .blocks { padding: 16px 24px; border-left: 4px solid var(--warn);
       background: var(--warn-soft); color: var(--text); font-size: 14px;
       font-weight: 600; margin: 0 0 24px; }
@@ -1136,6 +1142,13 @@
       '<span class="dot ' + esc(x.state) + '"></span>' + esc(x.name) + '</a>').join('');
 
     // the trail is the receipts; an empty one says so rather than looking bare
+    // Does ANY line on this part hand over something a reader can go and look
+    // at — a page we opened, or the words we read? A disputed line does not
+    // count: it is a receipt somebody has contested. See the note beside the
+    // status line for the eight parts this was written for.
+    const receipted = trail.some((e) =>
+      !e.disputed_at && ((e.artifact_url || '').trim() || (e.artifact_quote || '').trim()));
+
     const trailHtml = trail.length ? trail.map(e => {
       // Disputed outranks verified: a claim somebody has contested does not get
       // to keep wearing the badge that says a machine confirmed it.
@@ -1266,6 +1279,28 @@
 
       (p.status_line ? '<div class="consequence ' + esc(p.state) + '"><b>' +
         esc(p.status_line) + '</b></div>' : '') +
+
+      // ── A HEADLINE FACT WITH NOTHING UNDER IT SAYS SO ─────────────────────
+      // Eight of the thirty-eight parts are marked Completed, carry a specific
+      // checkable claim — "Current through January 2027", "June was sent and
+      // opened. Notes resolved.", "One listing, complete, commercial photos and
+      // real hours" — and have no receipt anywhere on them. The last of those
+      // sits on the same page as "What to ask for: the Google Maps link for the
+      // listing", because we have never had its address. One page, two opposite
+      // claims, the green pill winning.
+      //
+      // The page ALREADY had the honest sentence. It was conditioned on the
+      // trail being EMPTY, and every one of these eight has exactly one trail
+      // row — the nightly check's "could not check this" — so a populated trail
+      // sat under an unsupported headline and made it look sourced. The
+      // question was never "is there a trail", it is "does anything on this
+      // part carry a receipt", so that is what it asks now.
+      ((p.status_line && !receipted)
+        ? '<p class="unreceipted">That line was entered on this board. Nothing ' +
+          'recorded on this part carries a page we opened or words we read, so ' +
+          'it stands on whoever typed it' +
+          (p.checked_at ? '.' : ', and no check has read this part.') + '</p>'
+        : '') +
 
       (blockNames.length ? '<div class="blocks">While this is open, ' + blockNames.length +
         ' other part' + (blockNames.length === 1 ? '' : 's') + ' cannot be fixed &mdash; ' +
