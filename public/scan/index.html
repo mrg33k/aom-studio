@@ -221,6 +221,14 @@
   .finds { display: grid; gap: 16px; margin-top: 24px; }
 
   .find {
+    /* A GRID ITEM DEFAULTS TO min-width:auto, WHICH MEANS IT REFUSES TO SHRINK
+       BELOW ITS LONGEST WORD — and a finding's longest word is a Google Maps
+       place URL. Measured at 768px: the card was 789px inside a 689px track and
+       the page scrolled sideways. `overflow-wrap: break-word` does not fix this
+       on its own; by spec it breaks the word for OVERFLOW but leaves the
+       intrinsic min-content size alone. The pair is what works: the item is
+       allowed to shrink, and then the word breaks inside it. */
+    min-width: 0;
     padding: 24px;
     border: 1px solid var(--line);
     border-radius: 24px;
@@ -302,7 +310,14 @@
   }
   .gcite q { color: var(--text); }
 
-  .lookline { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+  .lookline {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+    /* This line carries addresses, so it breaks anywhere rather than never. */
+    overflow-wrap: anywhere;
+  }
   .lookline b { color: var(--quiet); font-weight: 700; }
 
   .caveat {
