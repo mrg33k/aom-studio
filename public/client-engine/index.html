@@ -836,7 +836,18 @@
        The pill is the base amber: "ours to move". Accent is this board's
        "way through" colour and never a state, so the row's border carries the
        urgency and the pill keeps the vocabulary the other 38 rows use. */
-    .day-row.lead { align-items: flex-start; border-color: var(--accent); }
+    /* TWO LINES, NOT ONE. A part row fits on one line because its middle is a
+       label; this row's middle is a sentence a stranger typed, and it was
+       competing with a phone number, an email address, a button and a pill for
+       the same 900px. Measured on the deploy: the note got a 110px ribbon and
+       wrapped six times, with 600px of white beside it. So what they wrote
+       takes the whole first line, and what you can DO about it becomes an
+       action bar under it — the state pill still pinned right, where every
+       other row on this board keeps it. */
+    .day-row.lead { align-items: flex-start; flex-wrap: wrap; row-gap: 12px;
+      border-color: var(--accent); }
+    .day-row.lead .link { flex: 1 0 100%; align-items: flex-start; }
+    .day-row.lead .st { margin-left: auto; }
     .day-row.lead .who { color: var(--accent-text); }
     .day-row.lead .what b { font-size: 16px; }
     .day-row.lead .what .when { font-weight: 650; color: var(--muted); }
