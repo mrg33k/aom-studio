@@ -812,22 +812,31 @@
   // The saved report deliberately never hands the contact back out (see
   // api/prospect-report.js), so a reopened link says "what you left" instead
   // of quoting a number it would have had to be given to know.
-  function confirmStarted(name, at, reach) {
+  function confirmStarted(name, at, reach, pickedAt) {
     var when = longDate(at);
+    // Three states, and the third one is why the record travels back at all: a
+    // report reopened after somebody here has called would otherwise still say
+    // the next thing to happen is a call that has already happened. That is
+    // narrating the mechanism instead of reading the record — the exact move
+    // the sentence this replaced was making.
+    var body = pickedAt
+      ? 'Your answers were saved onto this report' + (when ? ' on ' + esc(when) : '') +
+        ', and somebody here picked them up on ' + esc(longDate(pickedAt)) +
+        '. On our side that means a person has read them and written down what was said.'
+      : 'Your answers were saved onto this report' + (when ? ' on ' + esc(when) : '') +
+        ', and reopening this link says so. They sit on the board Patrik runs the client ' +
+        'work from, above that work, and they stay there until he has picked them up — so ' +
+        'what happens next is his call' + (reach ? ' on ' + esc(reach) : ' on what you left') +
+        '. Nothing else is automatic: no email goes out from here, and no account was made.';
     $('#close').innerHTML =
       '<div class="col"><h2>' +
       (name ? 'We have it, ' + esc(name) + '.' : 'You have already pressed Get Started.') +
-      '</h2><p class="sub">Your answers were saved onto this report' +
-      (when ? ' on ' + esc(when) : '') + ', and reopening this link says so. ' +
-      'They sit on the board Patrik runs the client work from, above that work, ' +
-      'and they stay there until he has picked them up — so what happens next is ' +
-      'his call' + (reach ? ' on ' + esc(reach) : ' on what you left') + '. ' +
-      'Nothing else is automatic: no email goes out from here, and no account was made.</p></div>';
+      '</h2><p class="sub">' + body + '</p></div>';
   }
 
   // ── THE REPORT ─────────────────────────────────────────────────────────
   var CURRENT = null;
-  function renderReport(scan, token, started) {
+  function renderReport(scan, token, started, pickedUp) {
     CURRENT = scan;
     var host = '';
     try { host = new URL(scan.website.final || scan.website.opened).host; } catch (e) { host = scan.website.opened || ''; }
@@ -928,7 +937,7 @@
     // invite a second submission and quietly deny the first — and this page
     // claims their answers are on the record, so the record has to say so on
     // the one screen they can reach.
-    if (started && started.at) confirmStarted(null, started.at, null);
+    if (started && started.at) confirmStarted(null, started.at, null, pickedUp && pickedUp.at);
     show($('#report'), true);
   }
 
@@ -1106,7 +1115,7 @@
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (out) {
         if (!out.ok) throw new Error(out.j.error || 'No report at this link.');
-        renderReport(out.j.scan, shared, out.j.started);
+        renderReport(out.j.scan, shared, out.j.started, out.j.picked_up);
       })
       .catch(function (e) {
         $('#r-name').textContent = 'This link did not open';

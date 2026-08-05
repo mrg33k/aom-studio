@@ -158,8 +158,20 @@ export default async function handler(req, res) {
     // person who pressed Get Started that their answers were saved onto it, and
     // a claim this page makes about itself has to be checkable on this page:
     // reopen the link and it says the minute it landed.
+    //
+    // The pickup TIME comes back for the same reason and nothing else does.
+    // Without it a report reopened after we called still tells the person the
+    // next thing to happen is a call they have already had — the page would be
+    // narrating a mechanism instead of reading the record. The minute is a
+    // fact about them; the name and the note are ours.
     const { started, picked_up, picked_up_log, ...rest } = row
-    return res.status(200).json({ ...rest, started: started ? { at: started.at } : null })
+    const handled = started && picked_up &&
+      !(String(started.at || '') > String(picked_up.at || ''))
+    return res.status(200).json({
+      ...rest,
+      started: started ? { at: started.at } : null,
+      picked_up: handled ? { at: picked_up.at } : null,
+    })
   }
 
   if (req.method !== 'POST') {
