@@ -917,6 +917,11 @@
       .btn-ghost { margin-left: 0; }
       .claim-row { gap: 12px; }
       .claim-row.unclaimed .claim-btn { width: 100%; }
+      /* Measured at 390: the card's interior is 267px and the three controls
+         need 286, so they wrap one per line no matter what. Left-aligned pills
+         of three different widths stacked down a card read as leftovers; the
+         same three at one width read as a list of what you can do. */
+      .do-btn { flex: 1 0 100%; }
     }
 </style>
 </head>
