@@ -308,11 +308,18 @@ export function readHtml(html) {
   // like a link to it, and it lives in a src rather than an href. A site with a
   // map embedded in its footer and no Maps link in its nav was reading, until
   // now, as a site with no listing anywhere.
+  // A LAZY IFRAME HAS NO src YET, AND THAT IS THE COMMON CASE NOW. WP Rocket,
+  // LiteSpeed, Elementor and every "optimise images" plugin ship the real
+  // address in data-src and swap it in on scroll. A map embedded in a footer
+  // that way is, to a src-only regex, no map at all — which is how a page that
+  // embeds its own Google listing reads as a page with no listing anywhere.
   const frames = []
-  const frameRe = /<iframe\b[^>]*\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi
+  const frameRe = new RegExp(
+    '<iframe\\b[^>]*?\\b(?:src|data-src|data-lazy-src|data-litespeed-src|data-cmplz-src)' +
+    '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>]+))', 'gi')
   while ((m = frameRe.exec(src)) !== null) {
     const s = (m[1] || m[2] || m[3] || '').trim()
-    if (s) frames.push(s)
+    if (s && !frames.includes(s)) frames.push(s)
     if (frames.length >= 40) break
   }
 
@@ -355,6 +362,7 @@ export function readHtml(html) {
     links,
     linksTruncated,
     frames,
+    inSource: sourceProfileUrls(src),
     text,
     captions,
     metas,
@@ -363,6 +371,58 @@ export function readHtml(html) {
     forms: (src.match(/<form\b/gi) || []).length,
     inputs: (src.match(/<input\b|<textarea\b/gi) || []).length,
   }
+}
+
+// ── THE PAGE A SCRIPT DRAWS, WHICH WE DO NOT SEE ───────────────────────────
+//
+// THE SUNTEC CLASS. A fetch returns the document the server sent. It does not
+// run the scripts, so anything a script draws after load — a reviews panel, a
+// map widget, a listing card with a star rating in it — is not in what we read.
+// A finding that turns "not in the document" into "a buyer cannot reach it" is
+// making a claim about a page it never saw, and it is the claim that ends the
+// call, because the prospect is looking at the widget while he reads it.
+//
+// Two answers, and the first one is worth more than the hedge. A widget that
+// draws a Google listing almost always carries the ADDRESS of that listing in
+// the source anyway — in a JSON config blob, a data- attribute, a script
+// variable — even though it is nowhere in an href or an iframe src. So before
+// we say we found nothing, we look at the whole document for an address of the
+// shape we are hunting, wherever it sits.
+//
+// What comes back from here is NEVER promoted to a green finding: an address in
+// a script blob is not a link a buyer can tap, and we cannot tell from the
+// source which of the two it becomes. It gets its own honest sentence — we
+// found the address, here, and here is what that does not tell you.
+const SOURCE_URL_RE = new RegExp(
+  '(?:https?:)?//(?:' +
+  '(?:www\\.)?google\\.[a-z.]{2,6}/maps[^\\s"\'<>\\\\)]*' +
+  '|g\\.page/[^\\s"\'<>\\\\)]+' +
+  '|g\\.co/kgs/[^\\s"\'<>\\\\)]+' +
+  '|maps\\.app\\.goo\\.gl/[^\\s"\'<>\\\\)]+' +
+  '|goo\\.gl/maps/[^\\s"\'<>\\\\)]+' +
+  '|(?:www\\.)?yelp\\.[a-z.]{2,6}/biz/[^\\s"\'<>\\\\)]+' +
+  '|(?:[a-z]{2,3}\\.)?linkedin\\.com/(?:company|showcase|school|in|pub)/[^\\s"\'<>\\\\)]+' +
+  ')', 'gi')
+
+export function sourceProfileUrls(src, limit = 24) {
+  const out = []
+  // A URL INSIDE A SCRIPT IS ALMOST NEVER SPELLED THE WAY IT LOOKS. WordPress,
+  // Elementor and every widget that ships its config as JSON escape the forward
+  // slashes — "https:\/\/www.google.com\/maps\/place\/…" — and a regex hunting
+  // for "//" walks straight past the address it was written to find. That is
+  // not an edge case, it is the majority spelling of the exact thing this
+  // function exists to catch.
+  const s = String(src || '').replace(/\\\//g, '/').replace(/\\u002[fF]/g, '/')
+  let m
+  SOURCE_URL_RE.lastIndex = 0
+  while ((m = SOURCE_URL_RE.exec(s)) !== null) {
+    // Trailing punctuation arrives glued to the address. It is not part of it.
+    const href = decodeEntities(m[0]).replace(/[.,;:'"]+$/, '')
+    const full = href.startsWith('//') ? `https:${href}` : href
+    if (!out.includes(full)) out.push(full)
+    if (out.length >= limit) break
+  }
+  return out
 }
 
 // Everything on the page a person reads, in one string: the text nodes, the
@@ -454,15 +514,23 @@ export function sameAsUrls(nodes) {
  * `links` is [{ href }], `extra` is bare href strings (iframe sources, sameAs).
  */
 export function findProfileLinks(links, base, {
-  frames = [], sameAs = [], source = 'your homepage',
+  frames = [], sameAs = [], inSource = [], source = 'your homepage',
 } = {}) {
   const out = {}
+  // ORDER IS THE PRIORITY. A link a buyer can tap beats an embed beats the
+  // company's own structured data beats an address we only found loose in the
+  // source — and the last of those carries `viaSource`, which is what stops it
+  // ever being drawn as a green "your homepage links to it".
   const candidates = [
     ...links.map((l) => ({ href: l.href, how: 'a link on the page' })),
     ...frames.map((href) => ({ href, how: 'a Google map embedded in the page' })),
     ...sameAs.map((href) => ({ href, how: 'the sameAs list in its own structured data' })),
+    ...inSource.map((href) => ({
+      href, viaSource: true,
+      how: 'the page\'s own source, in script data rather than in a link or an embed',
+    })),
   ]
-  for (const { href, how } of candidates) {
+  for (const { href, how, viaSource } of candidates) {
     let u
     try { u = new URL(href, base) } catch { continue }
     if (u.protocol !== 'http:' && u.protocol !== 'https:') continue
@@ -475,6 +543,7 @@ export function findProfileLinks(links, base, {
         out[key] = {
           url: u.toString(),
           source,
+          viaSource: !!viaSource,
           how: isEmbed && key === 'google-business-profile'
             ? 'a Google map embedded in the page' : how,
         }
@@ -482,7 +551,8 @@ export function findProfileLinks(links, base, {
     }
     if (!out['google-business-profile'] && isEmbed) {
       out['google-business-profile'] = {
-        url: u.toString(), source, how: 'a Google map embedded in the page',
+        url: u.toString(), source, viaSource: !!viaSource,
+        how: 'a Google map embedded in the page',
       }
     }
   }
@@ -744,6 +814,44 @@ const ABSOLUTE_CLAIM = new RegExp([
   '\\bno (?:phone number|form|link|title|listing)\\b',
 ].join('|'), 'i')
 
+// ── THE THIRD RULE, WHICH THE SUNTEC REPORT BROKE ──────────────────────────
+// A FINITE CHECK MAY NOT EMIT AN INFINITE CLAIM, AND NO SEARCH RECORD BUYS ONE.
+//
+// The rule above lets an absolute through when it is paired with its search,
+// because "we found no link, here is exactly what we looked for" is checkable
+// and fair. That is not the sentence that got two testers to refuse to forward
+// a report. This was, on Suntec Concrete, whose homepage embeds its own Google
+// listing showing 155 reviews:
+//
+//   "That is not proof you do not have one — it is proof a buyer on your site
+//    cannot reach it in one tap."
+//
+// Every word before the dash is right. The words after it convert "we did not
+// find" into "a buyer cannot", and no amount of search record supports that:
+// we read a document, we did not watch a buyer, and we did not even run the
+// scripts that draw half of what he sees. A prospect reading that sentence with
+// the widget on screen in front of him has learned one thing about us, and it
+// is not that we are careful.
+//
+// So this tripwire has no escape hatch. There is no evidence a fetch can return
+// that licenses a claim about what a person out there can do, or about what
+// exists in a world we did not open, and a finding that reaches for one is a
+// bug in the sentence rather than a gap in the evidence. It covers `costs` as
+// well as `found`, because "he has no way to start a conversation" is the same
+// claim wearing the next field's clothes — and that one shipped too.
+const IMPOSSIBILITY_CLAIM = new RegExp([
+  // What a person out there can or cannot do. We watched no one.
+  '\\b(?:buyers?|callers?|visitors?|customers?|contractors?|superintendents?|' +
+  'anyone|anybody|nobody|no one|he|she|they)\\s+(?:cannot|can\'t|could not|' +
+  'couldn\'t|has no way|have no way|is unable|are unable)\\b',
+  '\\bno way (?:to|for|of)\\b', '\\bnowhere to\\b', '\\bno one can\\b',
+  // Absence asserted about the world rather than about a document we read.
+  '\\bthere (?:is|are) none\\b', '\\bdoes not exist\\b', '\\bdo not exist\\b',
+  '\\byou (?:do not|don\'t) have (?:one|any|a)\\b',
+  // This product reports. It does not prove.
+  '\\bit is proof\\b', '\\bthat proves\\b', '\\bwhich proves\\b', '\\bproof that you\\b',
+].join('|'), 'i')
+
 export function searchRecord({ looked_for, across, read = null, instead = [] }) {
   if (!Array.isArray(looked_for) || !looked_for.length || !across) {
     throw new Error('a search record needs what it looked for and what it looked across')
@@ -775,11 +883,31 @@ export function finding({
   if (standing === 'weak' && !costs) {
     throw new Error(`finding ${id}: a weak finding must say what it costs them`)
   }
-  if (ABSOLUTE_CLAIM.test(found) && !searched) {
+  // BOTH TRIPWIRES READ OUR WORDS, NEVER THE PROSPECT'S. Half of what a finding
+  // prints is a QUOTE — their title, the copy around a word we searched for,
+  // the label on a link — and their copy is not our claim. A Phoenix
+  // contractor whose hero reads "Nothing is more important than safety" put the
+  // word "nothing" inside our quotation marks, the absolute-claim rule fired on
+  // his sentence, and finding() threw: the whole scan 500s on a page that did
+  // nothing wrong. Quoted spans come out before either rule looks.
+  const ourWords = (s) => String(s || '').replace(/"[^"]*"/g, ' ')
+  const claim = ourWords(found)
+  if (ABSOLUTE_CLAIM.test(claim) && !searched) {
     throw new Error(
-      `finding ${id}: "${(found.match(ABSOLUTE_CLAIM) || [''])[0]}" is a claim about ` +
+      `finding ${id}: "${(claim.match(ABSOLUTE_CLAIM) || [''])[0]}" is a claim about ` +
       'everything we did not look at. Hand it a searchRecord — what you looked ' +
       'for, across what, and what was there instead — or say what you did find.'
+    )
+  }
+  for (const [field, raw] of [['found', found], ['costs', costs]]) {
+    const text = ourWords(raw)
+    if (!raw || !IMPOSSIBILITY_CLAIM.test(text)) continue
+    throw new Error(
+      `finding ${id}: ${field} says "${(text.match(IMPOSSIBILITY_CLAIM) || [''])[0]}". ` +
+      'That is a claim about what a person out there can do, or about what exists ' +
+      'in a world we did not open. A fetch cannot return the evidence for it and ' +
+      'no searchRecord buys it. Say what we opened, what we found there, and what ' +
+      'that does not tell us.'
     )
   }
   return {
@@ -817,7 +945,14 @@ function receiptFrom(res, quote = null) {
 function websiteFindings({ res, page, insecure, city, workPage = null }) {
   const out = []
   const url = res.finalUrl || res.url
-  const opened = 'Your homepage, opened the way a visitor\'s browser opens it.'
+  // THE SENTENCE THAT SET UP EVERY FALSE CLAIM UNDER IT. This read "Your
+  // homepage, opened the way a visitor's browser opens it" — which promises a
+  // browser, and a browser runs the scripts. We fetch the document and read it.
+  // Everything a script draws afterwards — a reviews panel, a map, a chat
+  // widget, half of a page built by a framework — is outside what we saw, and
+  // the frame sentence has to say so before a single finding leans on it.
+  const opened = 'Your homepage, fetched the way a browser first fetches it: the ' +
+    'document your server sent, read before any script on the page had run.'
   const receipt = (quote) => receiptFrom(res, quote)
   const linkCount = page.links.length
   const links = linkCount === 1 ? 'one link' : `${linkCount} links`
@@ -886,7 +1021,7 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
   } else {
     out.push(absent({
       id: 'website.identity',
-      found: 'The page carries no title tag.',
+      found: 'The document your server sent carries no title tag.',
       costs: 'The line a buyer reads in Google before clicking is your bare ' +
         'domain name instead of what you do and where you do it.',
       cutTo: 'Whether the page has a title is one line of its source.',
@@ -979,12 +1114,21 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
       })
       : finding({
         id: 'website.phone', part_key: 'website', looked_at: opened, standing: 'weak',
+        // AND THIS SAID "SO TAPPING THE NUMBER ON A PHONE DOES NOTHING", WHICH
+        // IS FALSE ON AN IPHONE. Safari's data detectors turn a plain ten-digit
+        // number into a dial prompt without any tel: link, and Chrome on
+        // Android does the same. A prospect who reads that sentence, taps his
+        // own number on his own phone and watches it dial has caught us telling
+        // him something about his site that he can disprove in one second. What
+        // we actually know is what is in the markup: he did not make it a link,
+        // so whether it is tappable is the phone's decision rather than his.
         found: `A phone number appears on the page as text (${phoneInText[0]}) and ` +
-          `none of its ${links} is a tel: link, so tapping the ` +
-          'number on a phone does nothing.',
-        costs: 'On a phone the number has to be read, remembered and typed before ' +
-          'it can be dialled. That is the step where a caller tries the next ' +
-          'company on the list instead.',
+          `none of its ${links} is a tel: link, so nothing in the page itself ` +
+          'makes that number dial.',
+        costs: 'Whether it is tappable is left to the phone: some browsers spot a ' +
+          'number in text and offer to dial it, and the rest hand the caller a ' +
+          'number to read, remember and type. That is the step where he tries ' +
+          'the next company on the list instead.',
         receipt: receipt(phoneInText[0]),
         searched: phoneSearch,
       }))
@@ -994,8 +1138,8 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
       found: 'We found no phone number on the homepage: no tel: link among its ' +
         `${links}, and no ten-digit number in its text, its captions ` +
         'or its own structured data.',
-      costs: 'The buyer who has already decided to call you has nowhere to call ' +
-        'from without hunting for it.',
+      costs: 'The buyer who has already decided to call you has to go looking for ' +
+        'the number before he can, and looking is the step where he stops.',
       cutTo: 'Looking at the rest of your own homepage settles it.',
       searched: phoneSearch,
     }))
@@ -1030,9 +1174,10 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
       id: 'website.next_action',
       found: `We found no form on the homepage, and none of its ${links} ` +
         'offers contact, a quote or an estimate in its text or its address.',
-      costs: 'A general contractor building a bid list has no way to start a ' +
-        'conversation without leaving the page. He does not leave the page. He ' +
-        'closes the tab.',
+      costs: 'A general contractor building a bid list is looking for the one ' +
+        'obvious place to start. In the document we read there is not one, so ' +
+        'starting the conversation becomes his errand rather than your invitation ' +
+        '— and the tab is the easier thing to close.',
       cutTo: 'Whether there is a contact link below where we stopped.',
       searched: contactSearch,
     }))
@@ -1101,8 +1246,9 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
       found: 'We found no link to your work on the homepage: none of its ' +
         `${links} is labelled or addressed as projects, a portfolio, ` +
         'a gallery, case studies, markets, sectors or industries.',
-      costs: 'The only question a buyer has is whether you have done his job at ' +
-        'his size before. This page asks him to take that on faith.',
+      costs: 'The first question a buyer has is whether you have done his job at ' +
+        'his size before. We did not find the page that answers it, so he is left ' +
+        'taking that on faith or spending a phone call to ask.',
       cutTo: 'Whether there is a projects link below where we stopped.',
       searched: workSearch,
     }))
@@ -1120,8 +1266,8 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
   } else {
     out.push(absent({
       id: 'website.mobile',
-      found: 'The page sets no mobile viewport tag, so a phone renders it at ' +
-        'desktop width and shrinks it to fit.',
+      found: 'The document your server sent sets no mobile viewport tag, so a ' +
+        'phone renders it at desktop width and shrinks it to fit.',
       costs: 'A superintendent looking you up from the truck gets a page he has ' +
         'to pinch and zoom to read. What he is zooming to find is your number.',
       cutTo: 'The viewport tag sits in the head of the page, one line of source.',
@@ -1137,14 +1283,14 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
   out.push(marketFinding({ page, receipt, term: 'commercial', id: 'website.names_commercial',
     opened, absent,
     weakCost: 'A commercial buyer scanning your homepage is looking for one ' +
-      'word to know he is in the right place. Without it he reads you as a ' +
-      'residential company and moves on, whatever your actual work looks like.',
+      'word to tell him he is in the right place. It is not in the words we ' +
+      'read, so what he fills that gap with is his own guess about what kind of ' +
+      'company you are — whatever your actual work looks like.',
   }))
   if (city) {
     out.push(marketFinding({ page, receipt, term: city, id: 'website.names_city', opened, absent,
-      weakCost: `A buyer searching for your trade in ${city} has nothing on this ` +
-        'page telling him you cover it, and neither does a search engine reading ' +
-        'the same page.',
+      weakCost: `The words we read on this page do not tell a buyer — or a search ` +
+        `engine reading the same words — that you cover ${city}.`,
     }))
   }
 
@@ -1163,31 +1309,52 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
 // it twice. The haystack is now everything a person reads — the copy, the title,
 // the image captions, the button labels and the description a search engine is
 // handed — and the sentence names the haystack instead of implying the page.
+// AND WHERE IT WAS STILL TOO SMALL A HAYSTACK. The phone check learned to read
+// the page's own structured data; this one did not, so a contractor whose
+// LocalBusiness node says "addressLocality": "Phoenix" — the machine-readable
+// place a company states its city, the one Google reads — was told the word
+// "Phoenix" did not appear on his homepage. It appeared. We were not looking
+// where he put it.
 function marketFinding({ page, receipt, term, id, opened, weakCost, absent }) {
-  const hay = readableSurface(page)
-  const how = ` We searched the homepage copy, its title, its image captions and ` +
-    `its search-engine description for the word "${term}".`
+  const hay = `${readableSurface(page)} · ${JSON.stringify(page.jsonld || [])}`
+  const how = ` We searched the homepage copy, its title, its image captions, its ` +
+    `search-engine description and its own structured data for the word "${term}".`
+  const readable = readableSurface(page)
   const i = hay.toLowerCase().indexOf(String(term).toLowerCase())
   if (i >= 0) {
     const around = hay.slice(Math.max(0, i - 60), i + String(term).length + 60)
+    // WHERE THE WORD WAS IS PART OF THE CLAIM. Once the haystack grew to take in
+    // the structured data, a hit inside a JSON-LD node printed as `"Phoenix"
+    // appears on the homepage: "…"ratingValue":4.9,"addressLocality":"Phoenix"}…"`
+    // — a true sentence quoting machine data as if it were the copy a buyer
+    // reads. They are different facts and a buyer scanning the page only gets
+    // one of them, so the sentence says which.
+    const inCopy = readable.toLowerCase().includes(String(term).toLowerCase())
     return finding({
       id, part_key: 'website', standing: 'good',
       looked_at: `${opened}${how}`,
-      found: `"${term}" appears on the homepage: "…${clip(around, 140)}…"`,
+      found: inCopy
+        ? `"${term}" appears on the homepage: "…${clip(around, 140)}…"`
+        : `"${term}" appears on the homepage, in the structured data it publishes ` +
+          `about itself rather than in the copy a reader sees: "…${clip(around, 140)}…"`,
       receipt: receipt(around),
+      not_verified: inCopy ? null : 'A search engine reads that. Somebody scanning ' +
+        'the page does not, and the words he does read are searched above.',
     })
   }
   return absent({
     id,
     how,
     found: `The word "${term}" does not appear in the homepage copy, its title, ` +
-      'its image captions or its search-engine description.',
+      'its image captions, its search-engine description or its own structured ' +
+      'data. Anything a script writes onto the page after it loads is outside ' +
+      'what we read.',
     costs: weakCost,
     cutTo: `Whether "${term}" appears below where we stopped reading.`,
     searched: searchRecord({
       looked_for: [`the word "${term}"`],
-      across: 'the homepage copy, its title, its image captions and its ' +
-        'search-engine description',
+      across: 'the homepage copy, its title, its image captions, its ' +
+        'search-engine description and its own structured data',
       read: `${hay.length.toLocaleString('en-US')} characters of readable text`,
     }),
   })
@@ -1214,34 +1381,56 @@ const CANNOT_READ = {
     'automated requests with a refusal rather than the page.',
 }
 
+// ONE SENTENCE, ON EVERY ONE OF THESE, BECAUSE ONE SENTENCE IS WHAT WAS MISSING.
+// Every "we did not find it" here is a fact about a DOCUMENT, and the document
+// is not the page. A reviews panel, a map card, a footer built by a script —
+// none of it is in what a fetch returns, and the prospect reading this is very
+// often looking straight at the thing we say we could not find. Naming the limit
+// in the same breath is the difference between a scanner he corrects and a
+// scanner he stops trusting.
+const sourceOnly = (n) => `We read the document ${n === 1 ? 'that page' : 'each of those pages'} ` +
+  'sent, before any script on it ran, so anything drawn onto the page afterwards ' +
+  'is outside what we looked at.'
+
 const NO_LINK = {
   'google-business-profile': {
     what: 'a Google listing',
-    tail: 'That is not proof you do not have one — it is proof a buyer on your ' +
-      'site cannot reach it in one tap. We do not count a Google search result ' +
-      'as a listing, so we are not going to show you one and call it yours.',
+    // WHAT THIS SAID, AND WHY IT ENDED CALLS. "That is not proof you do not have
+    // one — it is proof a buyer on your site cannot reach it in one tap." The
+    // first half is the rule this product is built on. The second half breaks it
+    // in the same sentence: a buyer's experience is not a thing a fetch can
+    // measure, and on a homepage that embeds its own listing it is simply false.
+    tail: (n) => `${sourceOnly(n)} What we did not find in a document is our ` +
+      'search coming back empty, not a listing you are missing and not a door ' +
+      'that is shut to the person reading your site. We do not count a Google ' +
+      'search result as a listing either, so we are not going to show you one ' +
+      'and call it yours.',
     ask: 'The Maps link for your listing, copied from the address bar. That is ' +
       'the one thing this scan cannot get on its own.',
     shapes: ['google.com/maps/…', 'g.page/…', 'g.co/kgs/…', 'goo.gl/maps/…',
-      'maps.app.goo.gl/…', 'an embedded Google map', 'sameAs in your page data'],
+      'maps.app.goo.gl/…', 'an embedded Google map', 'sameAs in your page data',
+      'any of those addresses loose in the page source'],
   },
   yelp: {
     what: 'a Yelp page',
-    tail: 'Whether one exists is not something this scan checked.',
+    tail: (n) => `${sourceOnly(n)} Whether one exists is not something this scan checked.`,
     ask: 'The address of your Yelp page, if you have one.',
-    shapes: ['yelp.com/biz/…', 'sameAs in your page data'],
+    shapes: ['yelp.com/biz/…', 'sameAs in your page data',
+      'that address loose in the page source'],
   },
   'company-linkedin': {
     what: 'a company LinkedIn page',
-    tail: '',
+    tail: sourceOnly,
     ask: 'The address of your company page on LinkedIn.',
-    shapes: ['linkedin.com/company/…', 'linkedin.com/showcase/…', 'sameAs in your page data'],
+    shapes: ['linkedin.com/company/…', 'linkedin.com/showcase/…',
+      'sameAs in your page data', 'those addresses loose in the page source'],
   },
   'owners-linkedin': {
     what: "an owner's LinkedIn profile",
-    tail: '',
+    tail: sourceOnly,
     ask: "The owner's LinkedIn profile address.",
-    shapes: ['linkedin.com/in/…', 'linkedin.com/pub/…', 'sameAs in your page data'],
+    shapes: ['linkedin.com/in/…', 'linkedin.com/pub/…', 'sameAs in your page data',
+      'those addresses loose in the page source'],
   },
 }
 
@@ -1259,6 +1448,30 @@ function profileFinding(partKey, found, res) {
         'and shows whatever comes back, which is not the same as a listing you ' +
         'own and control.',
       to_check_this: 'The address of the listing itself, copied from the address bar.',
+    })
+  }
+  // THE SUNTEC SHAPE, GIVEN ITS OWN SENTENCE INSTEAD OF BEING ROUNDED TO ZERO.
+  //
+  // The address is in the document — in a widget's config blob, a data-
+  // attribute, a script variable — but it is not a link and it is not a frame,
+  // so we cannot tell from the source whether it becomes something tappable
+  // when the page runs. Both of the sentences we could round this to are lies:
+  // "we found no link" hides an address we are holding, and "your homepage
+  // links to it" invents a link we never saw. This is the third one, which is
+  // what actually happened, and it never goes green.
+  if (found.viaSource) {
+    return finding({
+      id: `${partKey}.in_source`, part_key: partKey, standing: 'unknown',
+      looked_at: `The source of ${where}, where this address appears: ${url}`,
+      found: `${where.charAt(0).toUpperCase()}${where.slice(1)} carries the address ` +
+        `of ${NO_LINK[partKey] ? NO_LINK[partKey].what : 'this'} in its source — but ` +
+        'in script data rather than in a link or an embedded frame' +
+        (res && res.ok ? `, and the address itself answered HTTP ${res.status} when we opened it` : '') +
+        '. Something on the page very likely draws it for a reader; what that ' +
+        'ends up being — a map, a reviews panel, a button — needs the page ' +
+        'running, and we read it before any script had run.',
+      to_check_this: 'Opening your own page and looking for it is a second, and ' +
+        'settles what a reader actually gets.',
     })
   }
   if (!res || !res.ok) {
@@ -1327,13 +1540,23 @@ function noLinkFinding(partKey, { pagesRead, hosts }) {
   // in the sentence as well they were the same twelve words in two type
   // treatments on three consecutive cards, which is how a reader learns that
   // the evidence block is decoration.
+  const where = pagesRead.length === 1
+    ? 'your homepage'
+    : `your homepage or the ${pagesRead.length - 1} other page${pagesRead.length === 2 ? '' : 's'} of your site we opened`
   return finding({
     id: `${partKey}.not_linked`, part_key: partKey, standing: 'unknown',
-    looked_at: `Every link on ${pagesRead.length === 1 ? 'your homepage' : `the ${pagesRead.length} pages of your site we read`}.`,
-    found: `We found no link to ${copy.what} on ${pagesRead.length === 1
-      ? 'your homepage'
-      : `your homepage or the ${pagesRead.length - 1} other page${pagesRead.length === 2 ? '' : 's'} of your site we opened`}` +
-      `.${copy.tail ? ` ${copy.tail}` : ''}`,
+    // NAME THE FOUR PLACES, NOT "EVERY LINK". We read more than the links — the
+    // embedded frames, the structured data, and the loose addresses in the
+    // source — and a reader who is told "every link" and then shown a search
+    // record listing embeds has been handed two different accounts of one check.
+    looked_at: `The source of ${pagesRead.length === 1 ? 'your homepage' : `the ${pagesRead.length} pages of your site we read`}: ` +
+      'every link in it, every frame it embeds, the structured data it publishes ' +
+      'about itself, and the rest of the document besides.',
+    // "No link" was the smaller half of what we checked, and stating it as the
+    // whole check made the search look shorter than it was.
+    found: `We found no address for ${copy.what} in the source of ${where}: not in ` +
+      'a link, not in an embedded frame, not in the structured data the page ' +
+      `publishes about itself, and nowhere else in the document. ${copy.tail(pagesRead.length)}`,
     to_check_this: copy.ask,
     searched: searchRecord({
       looked_for: copy.shapes,
@@ -1374,6 +1597,10 @@ function reviewLinks(profiles) {
       if (!p) return false
       // Search-shaped as published: never a listing, whether or not we opened it.
       if (isSearchShaped(p.url)) return false
+      // An address we only found loose in the source is not a place their site
+      // SENDS anybody. That claim needs a link or a frame; a config blob is a
+      // string in a script, and we did not run the script.
+      if (p.viaSource) return false
       const r = p.opened
       // Never opened — budget spent, or nothing tried. The claim stays a claim
       // about their link, which is all it ever was, and not_verified carries it.
@@ -1469,13 +1696,26 @@ function aiCrawlerFinding(res) {
       to_check_this: 'Opening yourdomain.com/robots.txt in a browser.',
     })
   }
-  if (res.status >= 400) {
+  // A REFUSAL IS NOT AN EMPTY SHELF. Every status from 400 up landed here and
+  // printed "Your site has no robots.txt", green and receipted — including 403,
+  // which is a firewall declining us, and 429, which is a rate limiter. On a
+  // Cloudflare-fronted site that is a confident false statement about a file
+  // that is sitting right there. 404 and 410 are the server saying the file is
+  // not there; everything else is the server saying something about us.
+  if (res.status === 404 || res.status === 410) {
     return finding({
       id: 'ai-answers.crawlers', part_key: 'ai-answers', standing: 'good',
       looked_at: looked,
-      found: `Your site has no robots.txt — the address answered HTTP ${res.status}. ` +
-        'With no file there, nothing on your side tells any crawler, including ' +
-        'the assistants\', to stay out.',
+      // "WITH NO FILE, NOTHING ON YOUR SIDE TELLS ANY CRAWLER TO STAY OUT" WAS
+      // A CLAIM ABOUT A SITE, MADE OUT OF ONE MISSING FILE. A noindex meta tag,
+      // an X-Robots-Tag header and a firewall rule all block crawlers and none
+      // of them is robots.txt. What the 404 tells us is that this file is not
+      // there, and that is all the sentence is now allowed to say.
+      found: `Your site has no robots.txt — the address answered HTTP ${res.status}, ` +
+        'which is the server saying the file is not there. That is the file the ' +
+        'assistants\' crawlers look for, and at that address they find nothing ' +
+        'to read. Rules kept anywhere else — a noindex tag, a header, a firewall ' +
+        '— are not in this file and are not checked here.',
       receipt: receiptFrom(res),
       not_verified: notWhole,
       searched: searchRecord({
@@ -1483,6 +1723,16 @@ function aiCrawlerFinding(res) {
         across: 'the root of your own domain',
         read: `HTTP ${res.status}`,
       }),
+    })
+  }
+  if (res.status >= 400) {
+    return finding({
+      id: 'ai-answers.crawlers', part_key: 'ai-answers', standing: 'unknown',
+      looked_at: looked,
+      found: `That address answered HTTP ${res.status}, which is your server ` +
+        'declining the request rather than telling us the file is not there. ' +
+        'What your robots.txt says, or whether you have one, is not checked here.',
+      to_check_this: 'Opening yourdomain.com/robots.txt in a browser.',
     })
   }
   if (!looksLikeRobots(res.body)) {
@@ -1522,9 +1772,9 @@ function aiCrawlerFinding(res) {
       looked_at: looked,
       found: `Your robots.txt disallows the whole site to ${named.length} ` +
         `assistant crawler${named.length === 1 ? '' : 's'}: ${named.join(', ')}.`,
-      costs: 'When a buyer asks an assistant who does your trade in your city, the ' +
-        'assistants that obey this file have never read your site and answer with ' +
-        'somebody who let them in.',
+      costs: 'When a buyer asks an assistant who does your trade in your city, an ' +
+        'assistant that obeys this file is answering him out of sources that do ' +
+        'not include your own site.',
       receipt: receiptFrom(res, named.map((n) => `User-agent: ${n} / Disallow: /`).join(' · ')),
       not_verified: notWhole,
     })
@@ -1625,13 +1875,27 @@ export function pickInternalPages(links, homeUrl) {
     out.push({ url: pick.url, kind, why, label })
   }
 
+  // AND WHEN THERE IS NO LABEL TO QUOTE, QUOTE THE ADDRESS. An icon link, an
+  // image link, an anchor a theme never closed — all of them arrive here with
+  // an empty label, and the fallback then reached for a generic name: "your
+  // work section", "your contact page". That generic name is the WILSON DEFECT
+  // in its last hiding place. It is a guess about what the page is, printed as
+  // a fact about a page we opened, and on Wilson it printed "your contact page"
+  // about /about/ three times. The path is never a guess: we fetched it.
+  const pathName = (pick) => {
+    let p = ''
+    try { p = new URL(pick.url).pathname } catch { p = pick.path || '' }
+    p = p.replace(/\/+$/, '')
+    return p && p !== '/' ? p : null
+  }
   const work = findWorkLinks(sameHost.map((x) => ({ href: x.url, label: x.label })), base.toString())
   if (work.length) {
     const chosen = sameHost.find((x) => x.url === work[0].href)
     const named = work[0].label ? `"${clip(work[0].label, 30)}" section` : null
+    const byPath = chosen ? pathName(chosen) : null
     take(chosen, 'work',
-      named ? `the ${named}` : 'their work section',
-      named ? `your ${named}` : 'your work section')
+      named ? `the ${named}` : `their ${byPath || 'work'} page`,
+      named ? `your ${named}` : `your ${byPath || 'work'} page`)
   }
   // The shortest path that reads as contact or about — /contact/ beats
   // /about/leadership/contact-the-team/.
@@ -1654,9 +1918,10 @@ export function pickInternalPages(links, homeUrl) {
   // quote (an icon, an image link), where there is nothing to be specific with.
   const cName = contact ? clip(String(contact.label || '').trim(), 30) : ''
   const cNamed = cName ? `"${cName}" page` : null
+  const cPath = contact ? pathName(contact) : null
   take(contact, 'contact',
-    cNamed ? `the ${cNamed}` : 'their contact page',
-    cNamed ? `your ${cNamed}` : 'your contact page')
+    cNamed ? `the ${cNamed}` : `their ${cPath || 'contact'} page`,
+    cNamed ? `your ${cNamed}` : `your ${cPath || 'contact'} page`)
 
   return out.slice(0, MAX_INTERNAL_FETCHES)
 }
@@ -1794,7 +2059,8 @@ export async function scan({
     pagesRead = ['your homepage']
     outbound = outboundHosts(page.links, homeUrl)
     profiles = findProfileLinks(page.links, homeUrl, {
-      frames: page.frames, sameAs: sameAsUrls(page.jsonld), source: 'your homepage',
+      frames: page.frames, sameAs: sameAsUrls(page.jsonld), inSource: page.inSource,
+      source: 'your homepage',
     })
 
     // ── wave 2: two pages of THEIR OWN SITE ────────────────────────────────
@@ -1841,7 +2107,8 @@ export async function scan({
         pagesRead.push(got.target.label)
         for (const h of outboundHosts(p.links, at)) if (!outbound.includes(h)) outbound.push(h)
         const more = findProfileLinks(p.links, at, {
-          frames: p.frames, sameAs: sameAsUrls(p.jsonld), source: got.target.label,
+          frames: p.frames, sameAs: sameAsUrls(p.jsonld), inSource: p.inSource,
+          source: got.target.label,
         })
         for (const k of Object.keys(more)) if (!profiles[k]) profiles[k] = more[k]
         if (got.target.kind === 'work') {
@@ -2020,18 +2287,46 @@ export async function scan({
       : null
     const searchy = gbpFound &&
       (isSearchShaped(gbpFound.url) || (gbpLanded && isSearchShaped(gbpLanded)))
+    // AND "NOTHING" WAS THE FOURTH THING ON THIS CARD THAT WAS NOT TRUE. The
+    // looked_at read "Nothing — reviews are read off the Google listing, and we
+    // did not find an address for one to open", on a scan that had just read
+    // three pages of their site hunting for exactly that address. Understating
+    // the search is the same defect as overstating the claim: both leave the
+    // reader holding a sentence the evidence does not match.
+    const pages = pagesRead.length === 1
+      ? 'your homepage'
+      : `your homepage and the ${pagesRead.length - 1} other page${pagesRead.length === 2 ? '' : 's'} of your site we opened`
+    // EVERY REASON HERE HAS TO BE THE REAL ONE, INCLUDING THE NEW ONE. The
+    // moment the Google surface learned a fourth answer — the address is in the
+    // source but not in a link — this card kept only three, and an address that
+    // answered HTTP 200 was reported to the prospect as one that "did not
+    // answer". That is the same defect this whole round is about, reappearing
+    // one card over the instant a fact upstream got richer. A reason that is
+    // picked by elimination has to run out of elimination honestly.
     const why = !gbpFound
-      ? 'and we did not find an address for one to open'
-      : (searchy
-        ? `and the address your site publishes for it ${gbpLanded &&
-            gbpLanded !== gbpFound.url ? 'lands on' : 'is'} a search ` +
-          `rather than a listing (${clip(gbpLanded || gbpFound.url, 90)}), so what ` +
-          'we opened was a query rather than a page of yours'
-        : 'and the address your site publishes for it did not answer when we opened it')
+      ? `and we did not find an address for one in the source of ${pages}`
+      : (gbpFound.viaSource
+        ? 'and the address your site carries for it sits in script data rather ' +
+          'than in a link we could follow, so what a reader gets sent to is not ' +
+          'something we can see from the source'
+        : (searchy
+          ? `and the address your site publishes for it ${gbpLanded &&
+              gbpLanded !== gbpFound.url ? 'lands on' : 'is'} a search ` +
+            `rather than a listing (${clip(gbpLanded || gbpFound.url, 90)}), so what ` +
+            'we opened was a query rather than a page of yours'
+          : (gbpFound.opened && gbpFound.opened.ok && gbpFound.opened.status < 400
+            ? 'and it answered when we opened it, but Google draws the listing in ' +
+              'the browser, so a fetch returns the page without its contents'
+            : 'and the address your site publishes for it did not answer when we ' +
+              'opened it')))
     reviews.findings.push(finding({
       id: 'online-reviews.not_checked', part_key: 'online-reviews', standing: 'unknown',
-      looked_at: `Nothing — reviews are read off the Google listing, ${why}.`,
+      looked_at: `${pages.charAt(0).toUpperCase()}${pages.slice(1)} — reviews are ` +
+        `read off the Google listing, ${why}.`,
       found: `Reviews are counted and read on your Google listing, ${why}. ` +
+        (gbpFound ? '' : `We read the document ${pagesRead.length === 1 ? 'that page' : 'each of those pages'} ` +
+          'sent, before any script on it ran, so a map or a reviews panel drawn ' +
+          'onto the page afterwards is outside what we looked at. ') +
         'How many you have, how recent they are and whether any of them name ' +
         'commercial work is not checked here.',
       to_check_this: 'The Maps link for your listing, copied from the address bar.',
@@ -2044,9 +2339,14 @@ export async function scan({
   if (reviewPlaces.length) {
     reviews.findings.push(finding({
       id: 'online-reviews.places', part_key: 'online-reviews', standing: 'good',
-      looked_at: `Every link on ${pagesRead.join(' and ')}.`,
+      looked_at: `The links and embedded frames on ${pagesRead.join(' and ')}.`,
+      // "WHERE REVIEWS OF YOU ARE PUBLIC" ASSERTED THAT REVIEWS EXIST. We never
+      // read one: both platforms draw them in the browser, which the caveat
+      // under this says in the next breath. A listing with no reviews on it at
+      // all produces this same green sentence. What their document supports is
+      // where it SENDS somebody, and that reviews are what is read there.
       found: `Your site sends a buyer to ${reviewPlaces.length} place` +
-        `${reviewPlaces.length === 1 ? '' : 's'} where reviews of you are public: ` +
+        `${reviewPlaces.length === 1 ? '' : 's'} where reviews are read: ` +
         `${reviewPlaces.map((p) => p.name).join(', ')}.`,
       // The receipt is the document that carries the links, because the claim is
       // about their site — not the platform, which we did not read.
