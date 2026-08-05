@@ -596,8 +596,32 @@
       border: 1px solid var(--line); max-width: 52ch; }
     .board-message b { display: block; font-size: 16px; margin-bottom: 8px; }
     .board-message p { margin: 0 0 16px; font-size: 14px; color: var(--muted); font-weight: 600; }
-    .part-switcher { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 16px; }
+    /* THE STRIP SCROLLS, AND IT HAS TO SAY SO. 19 chips is 2885px of content in
+       a 314px window on a phone. It clipped "Online reviews" to "Online revi"
+       against a hard edge, which reads as a broken layout rather than as more
+       to the right. Three parts to the fix and all three are needed:
+       the fades (there IS more that way, shown only when there actually is),
+       snap (a rest position never leaves a word cut in half), and centring the
+       current chip on load — without that, opening part 17 showed chips 1-3
+       and the highlighted one sat 2.3k pixels off screen. */
+    .switcher-scroll { position: relative; }
+    .switcher-scroll::before, .switcher-scroll::after {
+      content: ""; position: absolute; top: 0; bottom: 16px; width: 32px;
+      z-index: 1; opacity: 0; pointer-events: none; transition: opacity .18s; }
+    .switcher-scroll::before { left: 0;
+      background: linear-gradient(to right, var(--panel), rgba(254, 252, 249, 0)); }
+    .switcher-scroll::after { right: 0;
+      background: linear-gradient(to left, var(--panel), rgba(254, 252, 249, 0)); }
+    .switcher-scroll[data-more-left]::before { opacity: 1; }
+    .switcher-scroll[data-more-right]::after { opacity: 1; }
+    .part-switcher { position: relative; display: flex; gap: 8px; overflow-x: auto;
+      padding: 8px 0 16px; scroll-snap-type: x proximity; scroll-padding-left: 8px;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    /* The native bar renders as a stub of grey cut by the shell's corner and
+       reads as debris, not as an affordance. The fades are the affordance. */
+    .part-switcher::-webkit-scrollbar { display: none; }
     .chip { display: inline-flex; align-items: center; gap: 8px; flex: none;
+      scroll-snap-align: start;
       padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line);
       background: var(--surface); color: var(--text); text-decoration: none;
       font-size: 13px; font-weight: 700; white-space: nowrap; }
@@ -607,9 +631,24 @@
     .chip .dot.completed { background: var(--good); }
     .chip .dot.blocked { background: var(--bad); }
     .chip .dot.cannot { background: var(--quiet); }
-    .switcher-meta { display: flex; justify-content: space-between; align-items: center; }
+    /* side-label was never defined anywhere, so both of these rendered as plain
+       14px body text and read like a sentence rather than a rail label. And no
+       margin-left:auto on the count: when the two do not fit on one line — and
+       with a longer client name they will not — an auto-pushed count lands
+       right-aligned under a left-aligned label and reads as a stray fragment. */
+    .switcher-meta { display: flex; justify-content: space-between; align-items: baseline;
+      gap: 16px; flex-wrap: wrap; }
+    .side-label { font-size: 12px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .09em; color: var(--muted); }
+    .side-count { font-size: 12px; font-weight: 700; color: var(--muted); }
     .head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 16px 0 8px; }
-    .head h1 { display: flex; align-items: center; gap: 16px; margin: 0; }
+    .head h1 { display: flex; align-items: center; gap: 16px; margin: 0; min-width: 0; }
+    /* The title was a bare text node in a flex row, so it could only shrink to
+       the width of its longest word and then pushed past the shell. "Association
+       memberships" overran the right padding by 9px at 320. Wrapping it in a real
+       element lets it be a flex item that can actually wrap, and anywhere is the
+       backstop for a single word longer than the column. */
+    .head h1 .t { min-width: 0; overflow-wrap: anywhere; }
     /* The state is the first thing you should read, so it has to look like the
        pill it is on the board — not plain text beside the title. */
     .head .health { display: inline-flex; align-items: center; gap: 8px;
@@ -633,8 +672,14 @@
       background: var(--warn-soft); color: var(--text); font-size: 14px;
       font-weight: 600; margin: 0 0 24px; }
     .content-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; }
+    /* part.css collapses .main-column to display:contents under 760px, which put
+       every card straight into the 24px grid gap while each card still carried
+       its own 24px bottom margin — a 48px trench between cards on a phone, off
+       the scale and the reason the page read loose. One rhythm, owned by the
+       column, and the columns stay real columns at every width. */
+    .main-column, .side-column { display: grid; gap: 24px; align-content: start; min-width: 0; }
     .card { padding: 24px; border-radius: 16px; background: var(--surface);
-      border: 1px solid var(--line); margin: 0 0 24px; }
+      border: 1px solid var(--line); margin: 0; }
     .card h2 { margin: 0 0 4px; }
     .card .sub { margin: 0 0 16px; font-size: 13px; color: var(--muted); font-weight: 600; }
     .trail { list-style: none; margin: 0; padding: 0; }
@@ -654,14 +699,59 @@
     /* part.css gives .claim-row a bottom border, which separated it from the
        block the mock had underneath. Here it is the last thing in the card, so
        that border is a rule hanging under nothing. */
+    /* THE OWNER HAS TO BE UNMISSABLE. It was 14px of grey body text at the
+       bottom of the card, on a page whose only job is to get one thing done —
+       an item nobody owns looked exactly like an item someone owned. Unclaimed
+       is a STATE, so it is a solid pill, and it takes the foot of the card as a
+       band. Claim/Release are actions, so they are outlined. */
     .claim-row { display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 0 0; border-top: 1px solid var(--line); border-bottom: 0; }
+      gap: 16px; flex-wrap: wrap; padding: 16px 0 0;
+      border-top: 1px solid var(--line); border-bottom: 0; }
+    .claim-row.unclaimed { margin: 16px -24px -24px; padding: 16px 24px;
+      border-top: 1px solid var(--line);
+      border-radius: 0 0 16px 16px; background: var(--surface-soft); }
+    .claim-state { min-width: 0; }
+    .owner-pill { display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 750;
+      background: var(--accent-soft); color: var(--accent-text); }
+    .owner-pill::before { content: ""; width: 8px; height: 8px; flex: none;
+      border-radius: 50%; background: currentColor; }
+    /* Not warn, and not quiet. Both already mean something on this board —
+       "needs work" and "cannot see" — and ownership is a different axis, so
+       borrowing either says something untrue about the state of the work. It
+       is instead the only near-black object on a page of white cards and
+       muted grey, which is what makes it impossible to skim past. */
+    .owner-pill.none { background: var(--text); color: var(--panel); }
+    .claim-btn { flex: none; padding: 12px 24px; border-radius: 999px;
+      border: 1px solid var(--line-strong); background: var(--surface);
+      color: var(--text); font-size: 13px; font-weight: 750; cursor: pointer; }
+    .claim-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .claim-btn[disabled] { cursor: wait; opacity: .6; }
     /* The label is what tells you this card is the ACTION, not more history. */
     .section-heading { font-size: 12px; font-weight: 750; text-transform: uppercase;
-      letter-spacing: .06em; color: var(--bad); margin: 0 0 8px; }
+      letter-spacing: .06em; color: var(--accent-text); margin: 0 0 8px; }
     .claim-label { font-size: 12px; color: var(--muted); font-weight: 700;
       text-transform: uppercase; letter-spacing: .06em; }
-    .claim-owner { font-size: 14px; font-weight: 700; }
+    /* WHAT IT COSTS. status_line above is the finding — "two listings exist" —
+       and a finding is not a reason to spend the morning on it. This is the
+       same sentence in the client's money terms, and it is the API's
+       why_it_matters verbatim: nothing here is derived or scored. */
+    .why { padding: 24px; margin: 0 0 24px; border-radius: 16px;
+      background: var(--surface); border: 1px solid var(--line); }
+    .why .label { font-size: 12px; font-weight: 750; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+    .why p { margin: 0; font-size: 16px; font-weight: 650; line-height: 1.5; }
+    /* Only 12 of the 36 have something a client can actually hand over, so this
+       block is absent — not empty — on the other 24. An "ask the client" slot
+       with nothing in it is how someone ends up asking Ross for the address of
+       a photo shoot. */
+    .ask-block { margin: 16px 0 0; padding: 16px; border-radius: 12px;
+      background: var(--surface-soft); }
+    .ask-block .label { font-size: 12px; font-weight: 750; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+    .ask-block p { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.5; }
+    .ask-block .who { display: block; margin-top: 8px; font-size: 12px;
+      font-weight: 750; color: var(--accent-text); }
     .access-line { display: flex; justify-content: space-between; gap: 16px;
       padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 600; }
     .access-line:last-child { border-bottom: 0; }
@@ -679,6 +769,29 @@
     .back { color: var(--text); text-decoration: none; font-size: 14px; font-weight: 700; }
     .crumb { font-size: 13px; color: var(--muted); font-weight: 600; }
     @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 520px) {
+      /* 320 is the floor body already declares. At that width the shell leaves
+         248px of content, and the 48px glyph plus a 16px gap left only 184px
+         for a title whose longest word measures 192px. 32/8 gives it 208px. */
+      .head { gap: 8px; }
+      .head h1 { gap: 8px; }
+      .head .glyph { width: 32px; height: 32px; border-radius: 8px; }
+      .head .health { padding: 4px 12px; }
+      .consequence { padding: 16px; }
+      .blocks { padding: 16px; }
+      .why { padding: 16px; }
+      .btn-ghost { margin-left: 0; }
+      .claim-row { gap: 12px; }
+      .claim-row.unclaimed .claim-btn { width: 100%; }
+    }
+    /* Not 520: at 390 the access table reads correctly as key/value on one line
+       and is left alone. Below about 400 the two columns stop fitting and each
+       one breaks mid-phrase — "Permission / level" set against "Not /
+       applicable" — so under that they stack instead of colliding. */
+    @media (max-width: 400px) {
+      .access-line { display: block; }
+      .access-line .k { display: block; margin-bottom: 4px; font-size: 12px; }
+    }
 </style>
 </head>
 <body>
@@ -742,6 +855,42 @@
       esc(body) + '</p>' + (action || '') + '</div>';
   }
 
+  // What the page is looking at right now. Held here so an action can write the
+  // one field it changed and re-render, rather than refetching the client and
+  // hoping the answer comes back the same.
+  let CURRENT = null, PARTS = [], TRAIL = [];
+
+  let toastTimer = null;
+  function toast(msg) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'toast';
+      el.setAttribute('role', 'status');
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  async function post(payload) {
+    let res, data = {};
+    try {
+      res = await fetch('/api/client-parts', {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+        headers: authed({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload),
+      });
+      data = await res.json();
+    } catch (e) {
+      return { status: 0, ok: false, data: {} };
+    }
+    return { status: res.status, ok: res.ok, data: data || {} };
+  }
+
   async function main() {
     let res, data;
     try {
@@ -770,6 +919,7 @@
   }
 
   function render(p, parts, trail) {
+    CURRENT = p; PARTS = parts; TRAIL = trail;
     const clientName = NAMES[CLIENT] || CLIENT;
     document.title = p.name + ' — ' + clientName;
     const [connCls, connLabel] = CONN[p.connection] || ['no', 'Not connected'];
@@ -802,19 +952,32 @@
       .map(k => (parts.find(x => x.part_key === k) || {}).name)
       .filter(Boolean);
 
+    // OWNER. Unclaimed is a state, so it is a solid pill and it takes the foot
+    // of the card; claiming is an act, so the control beside it is outlined.
+    const owned = !!p.owner;
+    const ownerBlock =
+      '<div class="claim-row' + (owned ? '' : ' unclaimed') + '">' +
+        '<div class="claim-state"><div class="claim-label">Owner</div>' +
+        '<span class="owner-pill' + (owned ? '' : ' none') + '">' +
+        esc(owned ? p.owner : 'Unclaimed') + '</span></div>' +
+        '<button class="claim-btn" id="claim-btn" type="button">' +
+        (owned ? 'Release it' : 'Claim it') + '</button>' +
+      '</div>';
+
     root.innerHTML =
       '<div class="top-row"><a class="back" href="/client-engine/">&larr; Back to client home</a>' +
       '<div class="crumb">Clients / ' + esc(clientName) + ' / <b>' + esc(p.name) + '</b></div></div>' +
 
       '<div class="switcher-meta"><span class="side-label">' + esc(clientName) + ' parts</span>' +
-      '<span class="side-label">Part ' + (idx + 1) + ' of ' + parts.length +
+      '<span class="side-count">Part ' + (idx + 1) + ' of ' + parts.length +
       ' &middot; ' + attention + ' need attention</span></div>' +
-      '<div class="part-switcher">' + switcher + '</div>' +
+      '<div class="switcher-scroll" id="switch-box">' +
+      '<div class="part-switcher" id="part-strip">' + switcher + '</div></div>' +
 
       '<div class="head">' +
       '<span class="health ' + esc(p.state) + '">' + esc(LABEL[p.state] || p.state) + '</span>' +
       '<h1><span class="glyph ' + esc(p.icon) + '">' + (ICONS[p.icon] || '') + '</span>' +
-      esc(p.name) + '</h1>' +
+      '<span class="t">' + esc(p.name) + '</span></h1>' +
       (p.deep_link ? '<a class="btn-ghost" href="' + esc(p.deep_link) +
         '" target="_blank" rel="noopener">Open it</a>' : '') +
       '</div>' +
@@ -826,17 +989,24 @@
         ' other part' + (blockNames.length === 1 ? '' : 's') + ' cannot be fixed &mdash; ' +
         esc(blockNames.join(', ')) + '.</div>' : '') +
 
+      // The finding, then what it blocks, then what it costs — and only if the
+      // sentence has been written. An empty "why this matters" is worse than no
+      // panel, because it reads as "no reason".
+      (p.why_it_matters ? '<section class="why"><div class="label">Why this matters</div>' +
+        '<p>' + esc(p.why_it_matters) + '</p></section>' : '') +
+
       '<div class="content-grid">' +
         '<div class="main-column">' +
+          // The action, and who has it, before the history of how it got here.
+          '<section class="card"><div class="section-heading">Next action</div>' +
+          (p.suggestion
+            ? '<div class="next">' + esc(p.suggestion) + '</div>'
+            : '<p class="not-written">No next action has been written for this part yet.</p>') +
+          ownerBlock + '</section>' +
+
           '<section class="card"><h2>Evidence and history</h2>' +
           '<p class="sub">What we found, and who recorded it.</p>' +
           '<ul class="trail">' + trailHtml + '</ul></section>' +
-
-          (p.suggestion ? '<section class="card"><div class="section-heading">Next action</div>' +
-            '<div class="next">' + esc(p.suggestion) + '</div>' +
-            '<div class="claim-row"><div><div class="claim-label">Owner</div>' +
-            '<div class="claim-owner">' + esc(p.owner || 'Unclaimed') + '</div></div></div>' +
-            '</section>' : '') +
         '</div>' +
 
         '<aside class="side-column">' +
@@ -855,9 +1025,82 @@
           (p.access_verified_at ? esc(when(p.access_verified_at)) : 'Never') + '</span></div>' +
           '<div class="access-line"><span class="k">Last checked</span><span>' +
           (p.checked_at ? esc(when(p.checked_at)) : 'Never checked') + '</span></div>' +
+          (p.chase_ask ? '<div class="ask-block"><div class="label">What to ask for</div>' +
+            '<p>' + esc(p.chase_ask) + '</p>' +
+            (p.chase_from ? '<span class="who">Ask ' + esc(p.chase_from) + '</span>' : '') +
+            '</div>' : '') +
           '</section>' +
         '</aside>' +
       '</div>';
+
+    wireSwitcher();
+    const btn = document.getElementById('claim-btn');
+    if (btn) btn.addEventListener('click', () => onClaim(btn));
+  }
+
+  // The strip is a 314px window onto 2885px of chips on a phone. Say so, and
+  // start it on the part you are actually looking at.
+  function wireSwitcher() {
+    const box = document.getElementById('switch-box');
+    const strip = document.getElementById('part-strip');
+    if (!box || !strip) return;
+    const sync = () => {
+      const max = strip.scrollWidth - strip.clientWidth;
+      if (max <= 1) {
+        box.removeAttribute('data-more-left');
+        box.removeAttribute('data-more-right');
+        return;
+      }
+      if (strip.scrollLeft > 2) box.setAttribute('data-more-left', '');
+      else box.removeAttribute('data-more-left');
+      if (strip.scrollLeft < max - 2) box.setAttribute('data-more-right', '');
+      else box.removeAttribute('data-more-right');
+    };
+    strip.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    const cur = strip.querySelector('.chip.on');
+    if (cur) {
+      strip.scrollLeft = Math.max(0,
+        cur.offsetLeft - (strip.clientWidth - cur.offsetWidth) / 2);
+    }
+    sync();
+  }
+
+  // Claim writes the owner from the verified session, so this sends no name.
+  // A part someone else holds is not silently reassigned — 409 comes back with
+  // their name on it and the takeover is a second, deliberate answer.
+  async function onClaim(btn) {
+    const p = CURRENT;
+    if (!p) return;
+    const taking = !p.owner;
+    btn.disabled = true;
+    btn.textContent = taking ? 'Claiming…' : 'Releasing…';
+
+    let out = await post({ action: taking ? 'claim' : 'release',
+                           client: CLIENT, part_key: p.part_key });
+
+    if (out.status === 409 && out.data.owner) {
+      if (window.confirm(out.data.owner + ' has this one. Take it from them?')) {
+        out = await post({ action: 'claim', client: CLIENT,
+                           part_key: p.part_key, takeover: true });
+      } else {
+        return render(p, PARTS, TRAIL);
+      }
+    }
+    if (out.status === 401 || out.status === 403) {
+      toast('You are signed out, so nothing was changed. Sign in on the dashboard and try again.');
+      return render(p, PARTS, TRAIL);
+    }
+    if (!out.ok || !out.data.part) {
+      toast(out.data.error || 'That did not save. Nothing was changed.');
+      return render(p, PARTS, TRAIL);
+    }
+
+    p.owner = out.data.part.owner || null;
+    const inList = PARTS.find(x => x.part_key === p.part_key);
+    if (inList) inList.owner = p.owner;
+    toast(p.owner ? 'Yours now — ' + p.owner : 'Put back. Nobody has this one.');
+    render(p, PARTS, TRAIL);
   }
 
   main();
