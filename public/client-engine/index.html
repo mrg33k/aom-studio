@@ -538,6 +538,46 @@
     .access-row .row-acts { flex: none; margin-left: auto; }
     .access-row .row-acts ~ .arrow { margin-left: 4px; }
 
+    /* ── WHERE TO START ───────────────────────────────────────────────────────
+       Nineteen cards at identical volume answers "how is this client" and never
+       answers "what do I do right now", which is the one question this page
+       exists for. This is that answer and nothing more: the open part that the
+       most other work is waiting on, what it costs, and one way in.
+       There is no impact score and no time estimate here on purpose. Neither
+       exists in the record — 36 of 38 parts have never been machine-checked and
+       there is no history to derive either from — and a made-up number at the
+       top of the page would teach you to distrust every real one under it.
+       Surface, not another tinted band: the meeting bar directly above is
+       already accent-soft, and two coloured bars stacked read as one. The
+       accent is spent on a rule down the left and on the way in. */
+    .next-up {
+      margin: 0 0 24px; padding: 24px;
+      border: 1px solid var(--line); border-left: 4px solid var(--accent);
+      border-radius: 16px; background: var(--surface); box-shadow: var(--shadow);
+    }
+    .next-up-top { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .next-up .k {
+      color: var(--muted); font-size: 12px; font-weight: 750;
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .next-up-name { margin: 0 0 8px; font-size: 20px; line-height: 1.25; letter-spacing: -.025em; }
+    .next-up-why { margin: 0 0 8px; font-size: 16px; line-height: 1.5; max-width: 62ch; }
+    .next-up-basis { margin: 0 0 16px; color: var(--muted); font-size: 13px; max-width: 62ch; }
+    /* Outlined, like every other button on this board. A solid pill is a STATE
+       here, and the one thing this control must not look like is a badge saying
+       the part is fine. */
+    .next-up-go {
+      display: inline-flex; align-items: center; padding: 12px 24px;
+      border: 1px solid var(--accent); border-radius: 999px;
+      color: var(--accent-text); font-size: 14px; font-weight: 700;
+      text-decoration: none;
+    }
+    .next-up-go:hover { background: var(--accent-soft); }
+    .next-up-go:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      outline-offset: 2px;
+    }
+
     /* The prompt opens across the whole grid rather than inside one 288px
        column: "https://..." plus two buttons in a card-width box is a form you
        have to fight. Full width puts it under the card you clicked and gives
@@ -811,6 +851,8 @@
 
       <div class="meeting" id="meeting-bar"><span class="lbl">Next meeting</span><span id="meeting-text"></span></div>
 
+      <section class="next-up" id="next-up" aria-label="Where to start"></section>
+
       <div class="recheck-bar" id="recheck-bar">
         <button class="recheck-btn" id="recheck" type="button">Check everything now</button>
         <span class="recheck-note" id="recheck-note"></span>
@@ -1071,7 +1113,8 @@
   // An honest state for every way this can fail to show real data. A board
   // that renders empty when it is actually signed out teaches you to distrust
   // it, which is worse than showing nothing.
-  const meetingBar = $('#meeting-bar'), recheckBar = $('#recheck-bar');
+  const meetingBar = $('#meeting-bar'), recheckBar = $('#recheck-bar'),
+        nextUpEl = $('#next-up');
 
   // Hide the client data and the actions, not just the cards. A page that says
   // "you are signed out" while still displaying a named client's next meeting
@@ -1082,7 +1125,7 @@
     // only the API can say there is one to show. Turning it on with the rest of
     // the chrome would put an empty coloured bar under the greeting on every
     // client with nothing booked.
-    if (!on) meetingBar.style.display = 'none';
+    if (!on) { meetingBar.style.display = 'none'; nextUpEl.style.display = 'none'; }
     recheckBar.style.display = on ? '' : 'none';
   }
 
@@ -1095,6 +1138,51 @@
   //
   // The expiry is deliberately NOT computed here. If it were, the next surface
   // to render a meeting would have to remember to, and one of them would not.
+  // ── WHERE TO START ────────────────────────────────────────────────────────
+  // One item, chosen by the only ranking on this board that is not an opinion:
+  // how many unfinished parts are waiting on this one. Same key the day sorts
+  // its buckets by, same reason — there is no age, no effort estimate and no
+  // score in the record, so every other candidate would have to be invented.
+  //
+  // Two rules on top of that ordering, both borrowed rather than invented:
+  //
+  //   COMPLETED PARTS ARE NOT ACTIONS. Nothing to start on something finished.
+  //
+  //   NEITHER IS SOMETHING WE CANNOT MOVE. The day already refuses to put an
+  //   access-blocked part in "Needs you", because a part we were never given
+  //   keys to is not a task anyone can do today. Putting one under "Start here"
+  //   would contradict the screen next door. If EVERY open part is like that,
+  //   the chase is the work and the top one is still the answer.
+  const oursToMove = (p) => !p.waiting_on &&
+    p.connection !== 'never_asked' && p.connection !== 'pending' &&
+    p.connection !== 'wrong_level' && p.connection !== 'expired';
+
+  function nextUp(parts) {
+    const open = (parts || []).filter((p) => p.state !== 'completed');
+    if (!open.length) return null;
+    const ours = open.filter(oursToMove);
+    return byUnblocks(ours.length ? ours : open)[0] || null;
+  }
+
+  function renderNextUp(parts) {
+    const p = nextUp(parts);
+    if (!p) { nextUpEl.style.display = 'none'; nextUpEl.innerHTML = ''; return; }
+    // The chip carries the number; the sentence carries the reason. Printing
+    // "3" twice would be one fact wearing two costumes.
+    const basis = unblocks(p)
+      ? 'It is first because more of this client\'s work is waiting on this one than on anything else.'
+      : 'Nothing on this client is holding anything else up, so there is no order to these — ' +
+        'this is simply the first one on the board.';
+    nextUpEl.style.display = '';
+    nextUpEl.innerHTML =
+      '<div class="next-up-top"><span class="k">Start here</span>' + blocksChip(p) + '</div>' +
+      '<h2 class="next-up-name">' + esc(p.name) + '</h2>' +
+      '<p class="next-up-why">' + esc(p.why_it_matters || p.status_line || '') + '</p>' +
+      '<p class="next-up-basis">' + esc(basis) + '</p>' +
+      '<a class="next-up-go" href="/client-engine/part.html?client=' + encodeURIComponent(current) +
+      '&part=' + encodeURIComponent(p.part_key) + '">Open ' + esc(p.name) + '</a>';
+  }
+
   function renderMeeting(m) {
     const line = m ? [m.when, m.label].filter(Boolean).join(' · ') : '';
     meetingBar.style.display = line ? '' : 'none';
@@ -1127,6 +1215,7 @@
     // meeting up under a new client's name is a sentence about the wrong
     // person, and it is on screen for as long as the request takes.
     renderMeeting(null);
+    nextUpEl.style.display = 'none';
     document.querySelectorAll('.client').forEach(a =>
       a.classList.toggle('selected', !!a.dataset.client && a.dataset.client === key));
     if (!silent) { summary.classList.remove('on'); groupsEl.innerHTML =
@@ -1163,6 +1252,7 @@
     renderMeeting(data.next_meeting);
     const parts = data.parts || [];
     lastLoad[key] = parts;
+    renderNextUp(parts);
     groupsEl.innerHTML = groupsHtml(parts);
 
     const c = data.counts || {};
