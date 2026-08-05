@@ -776,7 +776,16 @@ const WORK_SECTOR_RE = new RegExp(
 const CONTACT_PAGE_RE = /\b(contact|about|about\s?us|connect|locations?|our\s?team|company)\b/i
 
 const TEL_RE = /\btel:\s*([+0-9().\s-]{7,})/i
-const PHONE_TEXT_RE = /(?:\+?1[\s.-]?)?\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/
+// THE LEADING 1 CAME OFF THE END OF A ZIP CODE. Bel-Aire Mechanical's
+// homepage reads "…Phoenix, AZ 85031 623-846-8600", and the optional country
+// code had no left boundary, so it swallowed the last digit of 85031 and the
+// report quoted their phone number back to them as "1 623-846-8600" — in the
+// receipt block, under a heading that promises the line we read it from. The
+// number is right and the quote is not, which is a small hole in the one
+// promise this product makes on every card. \b before the 1 closes it: there
+// is no word boundary between "3" and "1", and there is one before a real
+// "+1" or a "1-602-…".
+const PHONE_TEXT_RE = /(?:\+?\b1[\s.-]?)?\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/
 
 // An href read the way a person reads a link: slugs are words.
 function hrefWords(href, base) {
