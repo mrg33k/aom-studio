@@ -323,6 +323,38 @@
     text-transform: uppercase;
   }
 
+  /* WHAT WE LOOKED FOR, WHERE, AND WHAT WAS THERE INSTEAD.
+     A finding that reports not having found something is a claim about
+     everything we did not look at, and the reader is the only person who knows
+     whether our search was long enough. So the search is printed: the words, the
+     documents, and a sample of what we read instead. Quieter than the receipt on
+     purpose — it is the method, not the evidence. */
+  .searched {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .searched b {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--quiet);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .searched .terms {
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  .searched .row { margin-top: 8px; }
+
   /* ── the close ────────────────────────────────────────────────────────── */
   .close {
     margin-top: 40px;
@@ -683,11 +715,31 @@
       // spends the one visual signal that means "we have the page".
       out += '<p class="lookline"><b>Looked at:</b> ' + esc(f.looked_at) + '</p>';
     }
+    if (f.searched) {
+      out += searchedBlock(f.searched);
+    }
     if (f.not_verified) {
       out += '<p class="caveat"><b>Not verified:</b> ' + esc(f.not_verified) + '</p>';
     }
     if (f.to_check_this) {
       out += '<div class="settles"><b>What settles it</b><p>' + esc(f.to_check_this) + '</p></div>';
+    }
+    return out + '</div>';
+  }
+
+  // A "we did not find it" line is only checkable if the reader can see the
+  // search behind it. He is the one person who knows the word for his own
+  // section, so if our list is short he can say so — and that is the only
+  // correction loop a scan run from outside can honestly offer.
+  function searchedBlock(sr) {
+    var terms = (sr.looked_for || []).map(function (x) { return '"' + x + '"'; }).join('  ');
+    var out = '<div class="searched"><b>What we searched for</b>' +
+      '<p class="terms">' + esc(terms) + '</p>' +
+      '<p class="row">Across ' + esc(sr.across) +
+      (sr.read ? ' &middot; ' + esc(sr.read) + ' read' : '') + '.</p>';
+    if (sr.instead && sr.instead.length) {
+      out += '<p class="row">What we read instead: <span class="terms">' +
+        esc(sr.instead.join('  ·  ')) + '</span></p>';
     }
     return out + '</div>';
   }
