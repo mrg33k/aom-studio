@@ -796,6 +796,11 @@
       color: var(--text); font-size: 12px; font-weight: 750; white-space: nowrap; }
     .waiting-on::before { content: ""; width: 8px; height: 8px; flex: none;
       border-radius: 50%; background: var(--quiet); }
+    /* On a card it is a line, not a pill — see waitingLine() for why. */
+    .waiting-line { display: flex; align-items: center; gap: 8px; margin: 0 0 8px;
+      color: var(--quiet); font-size: 13px; font-weight: 700; }
+    .waiting-line::before { content: ""; width: 8px; height: 8px; flex: none;
+      border-radius: 50%; background: var(--quiet); }
 
     /* ── A LONE CARD ON THE LAST ROW ──────────────────────────────────────────
        "Found by buyers" holds seven cards and the grid resolves to two columns
@@ -1066,6 +1071,18 @@
       '">Waiting on ' + esc(p.waiting_on) + '</span>';
   }
 
+  // The same fact, in the shape each surface has room for. The day row is a
+  // horizontal line and takes the pill without growing — measured, 77px, the
+  // same height as every other row. A 288px card header does NOT: the pill and
+  // the state wrapped to two lines there and pushed the title 28px below its
+  // neighbour's, so on a card the wait is a line of type in the body, where it
+  // can wrap without dragging anything with it.
+  function waitingLine(p) {
+    if (!p.waiting_on) return '';
+    return '<p class="waiting-line">Waiting on ' + esc(p.waiting_on) +
+      (p.waiting_since ? ' since ' + esc(shortDate(p.waiting_since)) : '') + '</p>';
+  }
+
   // ── WHICH CONTROLS A ROW EARNS ────────────────────────────────────────────
   // ONE definition, used by the day AND by every card on a client page. Two
   // implementations of "what can I do to this part" drift, and the one that
@@ -1215,10 +1232,11 @@
       '<a class="card-link" href="/client-engine/part.html?client=' + encodeURIComponent(current) +
       '&part=' + encodeURIComponent(p.part_key) + '">' +
       '<div class="card-top"><span class="glyph ' + esc(p.icon) + '" aria-hidden="true">' + icon + '</span>' +
-      '<span class="card-flags">' + waitingChip(p) + blocksChip(p) +
+      '<span class="card-flags">' + blocksChip(p) +
       '<span class="health ' + esc(p.state) + '">' + esc(LABEL[p.state] || p.state) + '</span></span></div>' +
       '<h3>' + esc(p.name) + '</h3>' +
       '<p class="status-line">' + esc(p.status_line) + '</p>' +
+      waitingLine(p) +
       (cost ? '<p class="cost">' + esc(cost) + '</p>' : '') +
       '<p class="suggest"><span class="k">Do next</span>' + esc(p.suggestion) + '</p></a>' +
       '<div class="access-row' + (access || acts ? '' : ' bare') + '">' + access + acts +
