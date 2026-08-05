@@ -781,13 +781,14 @@
 <script>
   // \u2500\u2500 WHO THE CLIENTS ARE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   // The sidebar markup is the only copy. This was a META literal that also
-  // carried a hardcoded "Thursday 7 Aug, 10:00am \u00b7 Ross, site walk" \u2014 a meeting
-  // that named the wrong weekday (7 Aug 2026 is a Friday) and that would have
-  // gone on presenting itself as upcoming on 8 Aug and every morning after.
+  // carried a hardcoded meeting line for every client: a typed weekday that was
+  // wrong (7 Aug 2026 is a Friday, not a Thursday) on a date somebody sets an
+  // alarm against, and a line that could only ever expire - it would have gone
+  // on presenting a meeting that had already happened, every morning after.
   //
   // The meeting now comes from the API and from nowhere else. Keeping any copy
   // of it here "as a fallback" would reinstate exactly that bug the first time
-  // the API answered null \u2014 which is the answer it gives the moment a meeting
+  // the API answered null - which is the answer it gives the moment a meeting
   // starts. The same literal was also being written out twice to build NAMES;
   // one source on the markup means a client cannot be renamed in one place and
   // not the other.
