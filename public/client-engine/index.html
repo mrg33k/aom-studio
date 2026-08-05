@@ -509,7 +509,40 @@
        from that line has nothing left to separate. The arrow stays, in the same
        corner it sits in on every other card — it is the affordance that says
        this opens, and losing it on ten of nineteen cards would read as a bug. */
-    .access-row.bare { padding-top: 0; border-top: 0; }
+
+    /* ── A CARD YOU CAN ACT ON ────────────────────────────────────────────────
+       The card used to be one anchor wrapping everything, which is exactly the
+       shape the day row was in before it grew controls: there was nowhere to
+       put a button that was not also a navigation click, and a <button> inside
+       an <a> is not a thing you can ship.
+       So the card is a container now. The anchor covers the part you READ and
+       carries the padding itself, so clicking near the edge still opens the
+       part instead of landing on dead inset. The foot sits outside it and holds
+       the things you DO. */
+    .part-card { padding: 0; }
+    .card-link {
+      display: flex; flex: 1; min-width: 0; flex-direction: column;
+      padding: 24px 24px 0; color: inherit; text-decoration: none;
+    }
+    .card-link:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      outline-offset: -4px;
+    }
+    /* margin-top:auto is gone with the anchor taking flex:1 — the foot is the
+       last child of the card and the link absorbs any height the grid adds. */
+    .access-row { margin: 0 24px; padding: 16px 0 24px; flex-wrap: wrap; }
+    .access-row.bare { padding: 0 0 24px; border-top: 0; }
+    /* Two controls, a state and an arrow will not fit on one 288px line, and a
+       card is not allowed to clip its own buttons. The access facts stay left,
+       the things you do stay right, and on a narrow card they stack. */
+    .access-row .row-acts { flex: none; margin-left: auto; }
+    .access-row .row-acts ~ .arrow { margin-left: 4px; }
+
+    /* The prompt opens across the whole grid rather than inside one 288px
+       column: "https://..." plus two buttons in a card-width box is a form you
+       have to fight. Full width puts it under the card you clicked and gives
+       the receipt field room to hold a receipt. */
+    .card-grid > .prompt { grid-column: 1 / -1; }
     .suggest .k { display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em;
       text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 
@@ -862,6 +895,41 @@
       ' cannot be fixed until this one is">blocks ' + n + '</span>';
   }
 
+  // ── WHICH CONTROLS A ROW EARNS ────────────────────────────────────────────
+  // ONE definition, used by the day AND by every card on a client page. Two
+  // implementations of "what can I do to this part" drift, and the one that
+  // drifts is always the one nobody is looking at.
+  //
+  // It takes the part and nothing else. It used to take the day's bucket as a
+  // second argument, which is how `.map(actsFor)` would have handed it an array
+  // INDEX — the same trap this file already walked into once. There is no
+  // second argument to get wrong now, and the row's own fields answer the
+  // question anyway:
+  //
+  //   completed        nothing. It is done, and the honest way one comes back
+  //                    is a check disagreeing with the record, not a button.
+  //   waiting on a NAME   "Not waiting" (the chase ended) and "Done".
+  //   everything else  "Waiting" (name who) and "Done".
+  //
+  // "Not waiting" used to be offered on the whole waiting bucket, and it did
+  // nothing on all of it: mark_waiting {clear:true} answers 200 {already:true}
+  // and changes no row when waiting_on is null, and not one part in the record
+  // has a waiting_on today — every row in that bucket is there because of
+  // ACCESS. Six visible buttons, six no-ops. Where there is no name, the useful
+  // action is putting one there: that is what turns "we never asked" into "we
+  // asked Ross on 5 Aug", and that is the whole of the chase.
+  const actsFor = (p) => {
+    if (p.state === 'completed') return '';
+    const b = (act, label) =>
+      '<button type="button" class="act" data-act="' + act +
+      '" data-client="' + esc(p.client || p.project_slug || current) +
+      '" data-part="' + esc(p.part_key) +
+      '" data-name="' + esc(p.name) + '">' + label + '</button>';
+    return '<span class="row-acts">' +
+      (p.waiting_on ? b('unwait', 'Not waiting') : b('waiting', 'Waiting')) +
+      b('done', 'Done') + '</span>';
+  };
+
   const $ = s => document.querySelector(s);
   const groupsEl = $('#groups'), hello = $('#hello'), trade = $('#trade'),
         meeting = $('#meeting-text'), countsEl = $('#counts'),
@@ -957,18 +1025,26 @@
     // with no sentence at all is the failure this line exists to prevent.
     const cost = p.why_it_matters || '';
 
-    return '<a class="part-card' + dim + '" href="/client-engine/part.html?client=' + encodeURIComponent(current) +
-      '&part=' + encodeURIComponent(p.part_key) + '" data-part="' + esc(p.name) +
+    // The same controls the day has, on the card, from the same function. The
+    // cards used to end in a sentence — "ask ten recent commercial customers
+    // for a review this week" — with no way to say you had. Every card was a
+    // dead end, and the only surface that could close anything out was a list
+    // that does not show you one client at a time.
+    const acts = actsFor(p);
+
+    return '<div class="part-card' + dim + '" data-part="' + esc(p.name) +
       '" data-key="' + esc(p.part_key) + '" data-state="' + esc(p.state) + '">' +
+      '<a class="card-link" href="/client-engine/part.html?client=' + encodeURIComponent(current) +
+      '&part=' + encodeURIComponent(p.part_key) + '">' +
       '<div class="card-top"><span class="glyph ' + esc(p.icon) + '" aria-hidden="true">' + icon + '</span>' +
       '<span class="card-flags">' + blocksChip(p) +
       '<span class="health ' + esc(p.state) + '">' + esc(LABEL[p.state] || p.state) + '</span></span></div>' +
       '<h3>' + esc(p.name) + '</h3>' +
       '<p class="status-line">' + esc(p.status_line) + '</p>' +
       (cost ? '<p class="cost">' + esc(cost) + '</p>' : '') +
-      '<p class="suggest"><span class="k">Do next</span>' + esc(p.suggestion) + '</p>' +
-      '<div class="access-row' + (access ? '' : ' bare') + '">' + access +
-      '<span class="arrow" aria-hidden="true">&rarr;</span></div></a>';
+      '<p class="suggest"><span class="k">Do next</span>' + esc(p.suggestion) + '</p></a>' +
+      '<div class="access-row' + (access || acts ? '' : ' bare') + '">' + access + acts +
+      '<span class="arrow" aria-hidden="true">&rarr;</span></div></div>';
   }
 
   function groupsHtml(parts) {
@@ -1457,7 +1533,26 @@
     if (open) open.remove();
   }
 
-  async function send(payload, client) {
+  // The controls now live on two surfaces, so "reload what you are looking at"
+  // has to ask which one that is. It used to be `loadDay()` unconditionally,
+  // which on a client page would have swapped the whole screen out from under
+  // the card you just closed out.
+  const refreshCurrent = () =>
+    current === '__day__' ? loadDay() : load(current, { silent: true });
+
+  // A row on the day, a card on a client page. Both open the question under
+  // themselves rather than over the list, so closing six things out stays one
+  // motion instead of six dialogs.
+  const rowOf = (el) => el.closest('.day-row, .part-card');
+
+  // ── NOT NAMED `send` ──────────────────────────────────────────────────────
+  // It was, and the rail already had one. Two `function send` declarations in
+  // one classic script is not a redeclaration error — the second silently wins
+  // for BOTH names, so `sendBtn.addEventListener('click', send)` has been
+  // wired to this one. Clicking Send in the chat posted a MouseEvent as the
+  // payload and `undefined` as the client to /api/client-parts, got a 400, and
+  // threw into nothing: no message sent, no error on screen, every client page.
+  async function postAction(payload, client) {
     const r = await fetch('/api/client-parts', {
       method: 'POST', credentials: 'same-origin',
       headers: authed({ 'Content-Type': 'application/json' }),
@@ -1481,9 +1576,9 @@
     if (act === 'unwait') {
       btn.disabled = true;
       try {
-        await send({ action: 'mark_waiting', part_key: btn.dataset.part, clear: true },
-                   btn.dataset.client);
-        await loadDay();
+        await postAction({ action: 'mark_waiting', part_key: btn.dataset.part, clear: true },
+                         btn.dataset.client);
+        await refreshCurrent();
       } catch (err) {
         btn.disabled = false;
         alertInline(btn, err.message);
@@ -1494,7 +1589,7 @@
     if (act === 'done' || act === 'waiting') {
       closePrompt();
       const ask = ASK[act];
-      const rowEl = btn.closest('.day-row');
+      const rowEl = rowOf(btn);
       const box = document.createElement('div');
       box.className = 'prompt';
       box.innerHTML =
@@ -1527,8 +1622,8 @@
       btn.disabled = true;
       try {
         const payload = Object.assign({ part_key: box.dataset.part }, ask.body(val));
-        await send(payload, box.dataset.client);
-        await loadDay();
+        await postAction(payload, box.dataset.client);
+        await refreshCurrent();
       } catch (err) {
         // The refusal is the API's own sentence and it is written to be read.
         // Surfacing it beats replacing it with something vaguer of my own, and
@@ -1543,7 +1638,7 @@
   });
 
   function alertInline(btn, msg) {
-    const rowEl = btn.closest('.day-row');
+    const rowEl = rowOf(btn);
     closePrompt();
     const box = document.createElement('div');
     box.className = 'prompt';
@@ -1611,20 +1706,10 @@
         ' parts have ever been machine-checked.</div>';
     }
 
-    // Which controls a row earns. Running rows get none: they are already done,
-    // and the honest way one comes back is the record disagreeing, not a button.
-    const actsFor = (p, bucket) => {
-      const b = (act, label) =>
-        '<button type="button" class="act" data-act="' + act +
-        '" data-client="' + esc(p.client) + '" data-part="' + esc(p.part_key) +
-        '" data-name="' + esc(p.name) + '">' + label + '</button>';
-      if (bucket === 'running') return '';
-      if (bucket === 'waiting') return '<span class="row-acts">' +
-        b('unwait', 'Not waiting') + b('done', 'Done') + '</span>';
-      return '<span class="row-acts">' + b('waiting', 'Waiting') + b('done', 'Done') + '</span>';
-    };
-
-    const row = (p, bucket) =>
+    // actsFor lives at the top of this file now — the client-page cards use the
+    // same one. It reads the part instead of the bucket, so this row no longer
+    // has to tell it which list it came out of.
+    const row = (p) =>
       '<div class="day-row" data-row="' + esc(p.client) + '::' + esc(p.part_key) + '">' +
       '<a class="link" href="/client-engine/part.html?client=' + encodeURIComponent(p.client) +
       '&part=' + encodeURIComponent(p.part_key) + '">' +
@@ -1632,27 +1717,29 @@
       '<span class="what"><b>' + esc(p.name) + '</b><span>' +
       esc(p.suggestion || p.status_line || '') + '</span></span></a>' +
       blocksChip(p) +
-      actsFor(p, bucket) +
+      actsFor(p) +
       '<span class="st"><span class="health ' + esc(p.state) + '">' +
       esc(LABEL[p.state] || p.state) + '</span></span></div>';
 
     // Every bucket is ranked, not just "Needs you". A finished part that three
     // others were waiting on is the first thing you want to see confirmed, and
     // an access chase that frees three parts is the first call to make.
-    // `.map(row)` would have handed the ARRAY INDEX in as the bucket, so every
-    // row past the first would have earned the wrong controls. Named explicitly.
-    const bucket = (title, why, list, key) => !list.length ? '' :
+    // `.map(row)` is safe only because `row` takes exactly one argument — this
+    // file has already shipped a bug where map handed an ARRAY INDEX into a
+    // second parameter and every row past the first earned the wrong controls,
+    // so it is still written out rather than passed by reference.
+    const bucket = (title, why, list) => !list.length ? '' :
       '<section class="bucket"><div class="bucket-head"><h2>' + esc(title) + '</h2>' +
       '<span class="bucket-why">' + esc(why) + '</span></div>' +
-      byUnblocks(list).map((p) => row(p, key)).join('') + '</section>';
+      byUnblocks(list).map((p) => row(p)).join('') + '</section>';
 
     groupsEl.innerHTML = sweepHtml +
       bucket('Needs you', 'Ours to move. Nothing is stopping these but time.',
-             d.needs_me || [], 'needs') +
+             d.needs_me || []) +
       bucket('Waiting on a client', 'We were never given the access. Chasing it is the work.',
-             d.waiting_on_client || [], 'waiting') +
+             d.waiting_on_client || []) +
       bucket('Running', 'Done and holding. Nothing to do unless a check says otherwise.',
-             d.running || [], 'running') ||
+             d.running || []) ||
       '<p class="status-line">Nothing on any client needs attention.</p>';
   }
 
