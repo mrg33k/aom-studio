@@ -790,6 +790,57 @@
     .access-line .k { color: var(--muted); }
     .not-written { margin: 0; font-size: 14px; color: var(--muted);
       font-weight: 600; line-height: 1.5; }
+
+    /* ── THE SCREEN FOR FIXING ONE THING COULD NOT FIX ANYTHING ───────────────
+       "Start here" on the client page sends you here, and here had exactly one
+       control: Claim. The page then tells you precisely what to go and get —
+       "the Google Maps link for BOTH listings, copied from the address bar" —
+       and when you come back holding it there is nowhere to put it. A tester
+       got the CID in ninety seconds and had to paste it into the chat box and
+       hope an agent read it. The API has taken mark_done, mark_waiting and
+       add_evidence since 2026-08-05; only the day and the client page ever
+       wired them.
+
+       Outlined, every one of them. A solid fill is a STATE on this board, and
+       these are things you DO. The one exception on the page is the state pill
+       for a wait, which is a state and therefore filled.
+
+       44px, not 36. This is read one-handed between job sites. */
+    .do-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
+    .do-btn { flex: none; min-height: 44px; padding: 12px 16px; border-radius: 999px;
+      border: 1px solid var(--line-strong); background: transparent; color: var(--text);
+      font-family: inherit; font-size: 13px; font-weight: 750; cursor: pointer; }
+    .do-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+    .do-btn[disabled] { opacity: .55; cursor: progress; }
+    /* The way through is an outline in the accent, never a fill. */
+    .do-btn.lead { border-color: var(--accent); color: var(--accent-text); }
+
+    /* The question opens UNDER the card, not over it — same motion the day
+       view uses, so closing something out never hides the record behind it. */
+    .prompt { margin: 16px 0 0; padding: 16px; border-radius: 12px;
+      background: var(--surface-soft); border: 1px solid var(--line-strong); }
+    .prompt .q { display: block; font-size: 12px; font-weight: 750; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; margin: 0 0 4px; }
+    .prompt .why { margin: 0 0 12px; font-size: 13px; color: var(--muted); font-weight: 600; }
+    /* Full width, on its own line. On the day this field is 72px wide at 390 —
+       narrower than the two buttons beside it — and it is the field carrying
+       the entire receipt rule. A real Yelp URL needs 287px. */
+    .prompt input { display: block; width: 100%; margin: 0 0 8px; padding: 12px;
+      border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface);
+      font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text); }
+    .prompt input:focus { outline: none; border-color: var(--accent); }
+    .prompt .err { margin: 12px 0 0; font-size: 13px; font-weight: 700; color: var(--bad); }
+
+    /* WHO WE ARE CHASING. The API has stored waiting_on since the day the
+       prompt started refusing to accept a wait without a name, and not one
+       screen printed it — so six rows sat in "waiting on a client" and the
+       board could not say who any of them was waiting on. A wait is a state,
+       so it is a filled pill. */
+    .waiting-pill { display: inline-flex; align-items: center; gap: 8px; margin: 16px 0 0;
+      padding: 8px 16px; border-radius: 999px; background: var(--quiet-soft);
+      color: var(--text); font-size: 13px; font-weight: 750; }
+    .waiting-pill::before { content: ""; width: 8px; height: 8px; flex: none;
+      border-radius: 50%; background: var(--quiet); }
     .btn-primary { display: inline-flex; padding: 12px 24px; border-radius: 999px;
       background: var(--accent); color: #fff; text-decoration: none;
       font-size: 14px; font-weight: 700; }
@@ -976,6 +1027,32 @@
       .map(k => (parts.find(x => x.part_key === k) || {}).name)
       .filter(Boolean);
 
+    // ── WHAT YOU CAN ACTUALLY DO TO IT ────────────────────────────────────
+    // Same three the day view offers, plus the one only this screen needs:
+    // somewhere to put what you went and found. The page names the errand
+    // ("the Maps link for BOTH listings, copied from the address bar") and
+    // until now had no field for the answer.
+    //
+    // A completed part keeps only "Record what you found" — the honest way one
+    // comes back is a claim disagreeing with the record, never a button that
+    // un-does it.
+    const doBtn = (act, label, lead) =>
+      '<button type="button" class="do-btn' + (lead ? ' lead' : '') +
+      '" data-do="' + act + '">' + label + '</button>';
+    const doRow = '<div class="do-row">' +
+      (p.state === 'completed' ? '' :
+        (p.waiting_on ? doBtn('unwait', 'Not waiting any more')
+                      : doBtn('waiting', 'Waiting on someone')) +
+        doBtn('done', 'Mark it done')) +
+      doBtn('found', 'Record what you found', true) + '</div>';
+
+    // The wait itself, in words, with the name the API refused to take it
+    // without. `waiting_since` is the date the ask went out, not today.
+    const waitPill = p.waiting_on
+      ? '<div class="waiting-pill">Waiting on ' + esc(p.waiting_on) +
+        (p.waiting_since ? ' since ' + esc(when(p.waiting_since)) : '') + '</div>'
+      : '';
+
     // OWNER. Unclaimed is a state, so it is a solid pill and it takes the foot
     // of the card; claiming is an act, so the control beside it is outlined.
     const owned = !!p.owner;
@@ -1027,10 +1104,11 @@
       '<div class="content-grid">' +
         '<div class="main-column">' +
           // The action, and who has it, before the history of how it got here.
-          '<section class="card"><div class="section-heading">Next action</div>' +
+          '<section class="card" id="action-card"><div class="section-heading">Next action</div>' +
           (p.suggestion
             ? '<div class="next">' + esc(p.suggestion) + '</div>'
             : '<p class="not-written">No next action has been written for this part yet.</p>') +
+          waitPill + doRow +
           ownerBlock + '</section>' +
 
           '<section class="card"><h2>Evidence and history</h2>' +
@@ -1065,6 +1143,147 @@
     wireSwitcher();
     const btn = document.getElementById('claim-btn');
     if (btn) btn.addEventListener('click', () => onClaim(btn));
+    const card = document.getElementById('action-card');
+    if (card) card.addEventListener('click', onAction);
+  }
+
+  // ── THE QUESTIONS THE RECORD REFUSES TO SKIP ──────────────────────────────
+  // Two of these need a fact before the API will take them, and that is the
+  // product rather than friction: mark_done will not write green without a
+  // receipt, and mark_waiting will not accept a wait with nobody's name on it.
+  // So the button opens the question instead of firing and eating a 422.
+  const ASK = {
+    done: {
+      q: 'What is the proof?',
+      why: 'A link to what changed, or the exact words you saw. Nothing here ' +
+           'goes green on memory alone — this line is what the next person reads.',
+      fields: [{ key: 'receipt', place: 'https://... or what you saw' }],
+      go: 'Mark it done',
+      body: (v) => /^https?:\/\//i.test(v.receipt)
+        ? { action: 'mark_done', artifact_url: v.receipt, artifact_kind: 'link' }
+        : { action: 'mark_done', artifact_quote: v.receipt },
+    },
+    waiting: {
+      q: 'Who are we waiting on?',
+      // NOT "it moves to Waiting on a client". Half the rows that see this
+      // prompt are already in that bucket — they are there because of ACCESS,
+      // which is a different axis — so the old sentence told six rows they were
+      // about to become something they already were.
+      why: 'Their name, so this becomes a call you can make rather than a row ' +
+           'that sits. The board will show who we are chasing, and since when.',
+      fields: [{ key: 'who', place: 'Ross, Robert, Mo...' }],
+      go: 'Record the wait',
+      body: (v) => ({ action: 'mark_waiting', waiting_on: v.who }),
+    },
+    found: {
+      q: 'What did you find?',
+      why: 'One line, in your own words. If you opened a page to find it, put ' +
+           'the address in too — that is what turns a claim into something the ' +
+           'next person can check instead of take on trust.',
+      fields: [
+        { key: 'claim', place: 'What you saw, in one line' },
+        { key: 'url', place: 'The address you opened (optional)', optional: true },
+      ],
+      go: 'Add it to the record',
+      // actor_kind is PERSON, spelled out. add_evidence defaults to 'assistant',
+      // and this screen is where a human types their own witness — signing it
+      // with a machine's kind is the same inversion the trail's colours had.
+      // Confidence stays 'reported': a person looking is a report. Only a check
+      // writes 'verified', and only with a receipt.
+      body: (v) => {
+        const out = { action: 'add_evidence', claim: v.claim, actor_kind: 'person',
+                      confidence: 'reported', method: 'Recorded on the part page' };
+        // A value that is not a web address is not a link. Putting it in
+        // artifact_url anyway is how a trail ends up with a "See the receipt"
+        // that opens nothing.
+        if (v.url) {
+          if (/^https?:\/\//i.test(v.url)) out.artifact_url = v.url;
+          else out.artifact_quote = v.url;
+        }
+        return out;
+      },
+    },
+  };
+
+  function closePrompt() {
+    const open = document.querySelector('#action-card .prompt');
+    if (open) open.remove();
+  }
+
+  async function onAction(e) {
+    const b = e.target.closest('[data-do]');
+    if (!b) return;
+    e.preventDefault();
+    const act = b.dataset.do;
+
+    if (act === 'cancel') return closePrompt();
+
+    // The chase simply ended. Nothing to ask for, so nothing is asked.
+    if (act === 'unwait') {
+      b.disabled = true;
+      const out = await post({ action: 'mark_waiting', client: CLIENT,
+                               part_key: CURRENT.part_key, clear: true });
+      if (!out.ok) { b.disabled = false; return toast(out.data.error || 'That did not save.'); }
+      toast('Not waiting on anyone now.');
+      return main();
+    }
+
+    if (ASK[act]) {
+      closePrompt();
+      const ask = ASK[act];
+      const box = document.createElement('div');
+      box.className = 'prompt';
+      box.dataset.ask = act;
+      box.innerHTML = '<span class="q">' + esc(ask.q) + '</span>' +
+        '<p class="why">' + esc(ask.why) + '</p>' +
+        ask.fields.map(f => '<input type="text" data-key="' + f.key +
+          '" placeholder="' + esc(f.place) + '">').join('') +
+        '<div class="do-row"><button type="button" class="do-btn lead" data-do="commit">' +
+        esc(ask.go) + '</button>' +
+        '<button type="button" class="do-btn" data-do="cancel">Cancel</button></div>';
+      b.closest('.do-row').insertAdjacentElement('afterend', box);
+      const first = box.querySelector('input');
+      first.focus();
+      box.addEventListener('keydown', (k) => {
+        if (k.key === 'Enter') box.querySelector('[data-do="commit"]').click();
+        if (k.key === 'Escape') closePrompt();
+      });
+      return;
+    }
+
+    if (act === 'commit') {
+      const box = b.closest('.prompt');
+      const ask = ASK[box.dataset.ask];
+      const vals = {};
+      let missing = null;
+      for (const f of ask.fields) {
+        const el = box.querySelector('[data-key="' + f.key + '"]');
+        vals[f.key] = el.value.trim();
+        if (!vals[f.key] && !f.optional && !missing) missing = el;
+      }
+      // Empty and spaces-only refuse on the spot, with no request sent. The
+      // record never sees a blank claim, so it never has to reject one.
+      if (missing) return missing.focus();
+      const old = box.querySelector('.err');
+      if (old) old.remove();
+      b.disabled = true;
+      const out = await post(Object.assign(
+        { client: CLIENT, part_key: CURRENT.part_key }, ask.body(vals)));
+      if (!out.ok) {
+        b.disabled = false;
+        // The API's refusal is written to be read. Surfacing it verbatim beats
+        // replacing it with something vaguer, and what was typed stays put.
+        const p = document.createElement('p');
+        p.className = 'err';
+        p.textContent = out.data.error || 'That did not save. Nothing was changed.';
+        box.appendChild(p);
+        return;
+      }
+      toast(act === 'found' ? 'Added to the record.'
+            : act === 'done' ? 'Marked done, with the receipt on the trail.'
+            : 'Recorded. The board now says who we are chasing.');
+      return main();
+    }
   }
 
   // The strip is a 314px window onto 2885px of chips on a phone. Say so, and
