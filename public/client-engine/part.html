@@ -342,26 +342,11 @@
     h2 { margin: 0; font-size: 20px; line-height: 1.25; letter-spacing: -.02em; }
     .section-note { margin: var(--space-2) 0 0; color: var(--muted); font-size: 13px; }
 
-    .timeline { position: relative; display: grid; gap: var(--space-6); margin: 0; padding: 0; list-style: none; }
-    .timeline::before { position: absolute; top: 9px; bottom: 9px; left: 7px; width: 1px; background: var(--line-strong); content: ""; }
-
-    .timeline-item {
-      position: relative;
-      display: grid;
-      grid-template-columns: 16px minmax(0, 1fr);
-      gap: var(--space-4);
-    }
-
-    .timeline-dot {
-      z-index: 1;
-      width: 15px;
-      height: 15px;
-      margin-top: 3px;
-      border: 4px solid var(--surface);
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent);
-    }
+    /* .timeline / .timeline-item / .timeline-dot deleted 2026-08-05. Nothing on
+       this page has ever rendered them — the trail is .trail / .ev — and the
+       dot carried the file's only off-scale value (margin-top: 3px). There is
+       more dead CSS above and below from the same mock; it is left alone
+       deliberately rather than swept in the same pass as behaviour changes. */
 
     .event-line { margin: 0; font-size: 14px; }
     .event-date { color: var(--muted); font-weight: 750; }
@@ -707,19 +692,64 @@
       border: 1px solid var(--line); margin: 0; }
     .card h2 { margin: 0 0 4px; }
     .card .sub { margin: 0 0 16px; font-size: 13px; color: var(--muted); font-weight: 600; }
+    /* ── THE TRAIL COLOURED TRUST UPSIDE DOWN ────────────────────────────────
+       Every "Assistant" tag was filled in the same green this board uses for
+       VERIFIED GOOD, and every "Person" tag was var(--panel) on var(--surface)
+       — #fefcf9 on #fff, near-invisible. So a line a machine typed looked
+       confirmed and a line a human witnessed looked like nothing. After the
+       Wolfpack session it was stark: the two claims now marked DISPUTED were
+       wearing the green tag, and the two verified human lines were wearing the
+       invisible one. Every dot down the timeline was that same green too —
+       including the Aug 4 line that says the check FAILED.
+
+       The rule now: the dot and the pills describe the CLAIM'S STANDING, never
+       who typed it. Green is reserved for a machine check that carried a
+       receipt (confidence 'verified' — the thing the database constraint
+       actually guards), red for disputed, and everything else is neutral,
+       because "a person reported this" is not a colour, it is the default. */
     .trail { list-style: none; margin: 0; padding: 0; }
     .ev { padding: 0 0 16px 24px; border-left: 2px solid var(--line); position: relative; }
     .ev:last-child { padding-bottom: 0; }
     .ev::before { content: ""; position: absolute; left: -6px; top: 4px; width: 10px;
-      height: 10px; border-radius: 50%; background: var(--good); }
+      height: 10px; border-radius: 50%; background: var(--line-strong); }
+    .ev.is-verified::before { background: var(--good); }
+    .ev.is-disputed::before { background: var(--bad); }
     .ev-line { font-size: 14px; margin-bottom: 8px; }
+    /* A disputed claim is still on the record — the trail never deletes — but
+       it must not read as fact while you skim past it. */
+    .ev.is-disputed .ev-line { color: var(--muted); }
     .ev.empty { color: var(--muted); font-weight: 600; font-size: 14px; }
-    .ev.empty::before { background: var(--quiet); }
+    /* WHO SAID IT, told by structure rather than by hue. Person is the filled
+       neutral chip and Assistant is the outlined one; neither borrows a colour
+       that means something else three inches away. Both are legible, which is
+       the whole of the bug. */
     .actor { display: inline-block; padding: 4px 8px; border-radius: 999px;
-      background: var(--panel); font-size: 12px; font-weight: 700; }
-    .actor.assistant { background: var(--good-soft); color: var(--good); }
+      background: var(--quiet-soft); color: var(--text);
+      font-size: 12px; font-weight: 700; }
+    .actor.assistant { background: transparent; color: var(--muted);
+      box-shadow: inset 0 0 0 1px var(--line-strong); }
+    /* The standing of the claim IS a state, so these two are filled pills, and
+       they come first on the line — before the receipt, before the tag. */
+    .standing { display: inline-block; padding: 4px 8px; border-radius: 999px;
+      font-size: 12px; font-weight: 750; }
+    .standing.verified { background: var(--good-soft); color: var(--good); }
+    .standing.disputed { background: var(--bad-soft); color: var(--bad); }
     .receipt { font-size: 12px; font-weight: 700; color: var(--accent); }
-    .disputed { font-size: 12px; font-weight: 700; color: var(--bad); }
+    /* ── A SEARCH LINK IS NOT A RECEIPT ──────────────────────────────────────
+       The most important claim on the Wolfpack account — "two listings exist
+       under different names" — carried a "See the receipt" that opened a Google
+       Maps SEARCH. Clicking it returned four results, none of them the second
+       listing, and three inches lower the same page says twice that a search
+       link is not a listing. The board presented as proof the exact thing it
+       declares is not proof, and that unproven line ranked the job first across
+       five accounts. A query is not a thing; it is a question, and it can
+       answer differently tomorrow. It still opens — the trail deletes nothing —
+       it just stops calling itself a receipt. */
+    .searchlink { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .searchlink:hover { color: var(--text); }
+    .not-receipt { display: inline-block; padding: 4px 8px; border-radius: 999px;
+      background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong);
+      color: var(--muted); font-size: 12px; font-weight: 700; }
     .next { font-size: 16px; font-weight: 700; margin: 0 0 16px; }
     /* part.css gives .claim-row a bottom border, which separated it from the
        block the mock had underneath. Here it is the last thing in the card, so
@@ -775,8 +805,11 @@
     .ask-block .label { font-size: 12px; font-weight: 750; text-transform: uppercase;
       letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
     .ask-block p { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.5; }
+    /* NOT accent-text. It was the accent colour with cursor:auto and no href —
+       "Ask Robert" read as the action on the page and did nothing when tapped.
+       It is a fact about who holds the answer, so it looks like one. */
     .ask-block .who { display: block; margin-top: 8px; font-size: 12px;
-      font-weight: 750; color: var(--accent-text); }
+      font-weight: 750; color: var(--text); }
     /* No width breakpoint here. The row is a two-column table wherever the two
        columns fit — at 390 they do, and that is left alone. Where they do not,
        flex-wrap drops the value onto its own line and space-between puts it at
@@ -849,7 +882,12 @@
       text-decoration: none; font-size: 14px; font-weight: 700; }
     .top-row { display: flex; justify-content: space-between; align-items: center;
       margin: 0 0 24px; flex-wrap: wrap; gap: 8px; }
-    .back { color: var(--text); text-decoration: none; font-size: 14px; font-weight: 700; }
+    /* 21px of text was the only way off this page on a phone. The negative
+       margin keeps it optically flush with the shell's padding while the tap
+       target reaches the 44px floor. */
+    .back { display: inline-flex; align-items: center; min-height: 44px;
+      margin: 0 0 0 -12px; padding: 0 12px; color: var(--text);
+      text-decoration: none; font-size: 14px; font-weight: 700; }
     .crumb { font-size: 13px; color: var(--muted); font-weight: 600; }
     @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
     @media (max-width: 520px) {
@@ -924,6 +962,21 @@
 
   const when = t => t ? new Date(t).toLocaleDateString('en-US',
     { day: 'numeric', month: 'short' }) : '';
+
+  // A URL that runs a query rather than naming a thing. Maps and Yelp and
+  // LinkedIn each spell it differently, so this reads the shape, not the host:
+  // a /search segment, or any of the query keys those sites put a phrase into.
+  // Deliberately conservative — a false positive costs a link its accent, a
+  // false negative lets a question keep calling itself an answer.
+  function isSearch(url) {
+    let u;
+    try { u = new URL(url, location.href); } catch (e) { return false; }
+    if (/(^|\/)search(\/|$)/i.test(u.pathname)) return true;
+    for (const k of ['q', 'query', 'find_desc', 'keywords', 'search_query', 'text']) {
+      if (u.searchParams.has(k)) return true;
+    }
+    return false;
+  }
 
   function fail(title, body, action) {
     root.innerHTML = '<div class="board-message"><b>' + esc(title) + '</b><p>' +
@@ -1010,15 +1063,30 @@
       '<span class="dot ' + esc(x.state) + '"></span>' + esc(x.name) + '</a>').join('');
 
     // the trail is the receipts; an empty one says so rather than looking bare
-    const trailHtml = trail.length ? trail.map(e =>
-      '<li class="ev"><div class="ev-line"><b>' + esc(when(e.at)) + '</b> &middot; ' +
-      esc(e.claim) + ' &middot; ' + esc(e.actor || 'Unknown') + '</div>' +
-      '<span class="actor ' + (e.actor_kind === 'person' ? 'person' : 'assistant') + '">' +
-      esc(e.actor_kind === 'person' ? 'Person' : 'Assistant') + '</span>' +
-      (e.artifact_url ? ' <a class="receipt" href="' + esc(e.artifact_url) +
-        '" target="_blank" rel="noopener">See the receipt</a>' : '') +
-      (e.disputed_at ? ' <span class="disputed">Disputed</span>' : '') +
-      '</li>').join('')
+    const trailHtml = trail.length ? trail.map(e => {
+      // Disputed outranks verified: a claim somebody has contested does not get
+      // to keep wearing the badge that says a machine confirmed it.
+      const disputed = !!e.disputed_at;
+      const verified = !disputed && e.confidence === 'verified';
+      const standing = disputed
+        ? '<span class="standing disputed">Disputed</span> '
+        : verified
+          ? '<span class="standing verified">Verified by a check</span> '
+          : '';
+      return '<li class="ev' + (disputed ? ' is-disputed' : verified ? ' is-verified' : '') +
+        '"><div class="ev-line"><b>' + esc(when(e.at)) + '</b> &middot; ' +
+        esc(e.claim) + ' &middot; ' + esc(e.actor || 'Unknown') + '</div>' +
+        standing +
+        '<span class="actor ' + (e.actor_kind === 'person' ? 'person' : 'assistant') + '">' +
+        esc(e.actor_kind === 'person' ? 'Person' : 'Assistant') + '</span>' +
+        (e.artifact_url ? (isSearch(e.artifact_url)
+          ? ' <span class="not-receipt">a search, not a receipt</span>' +
+            ' <a class="searchlink" href="' + esc(e.artifact_url) +
+            '" target="_blank" rel="noopener">Open the search that was run</a>'
+          : ' <a class="receipt" href="' + esc(e.artifact_url) +
+            '" target="_blank" rel="noopener">See the receipt</a>') : '') +
+        '</li>';
+    }).join('')
       : '<li class="ev empty">Nothing has been recorded for this part yet. ' +
         'Every state on it was entered by a person.</li>';
 
@@ -1279,8 +1347,12 @@
         box.appendChild(p);
         return;
       }
-      toast(act === 'found' ? 'Added to the record.'
-            : act === 'done' ? 'Marked done, with the receipt on the trail.'
+      // `act` is 'commit' here — the button that was clicked. Which question
+      // was answered is on the box, and reading it off `act` reported every
+      // write as a wait. Caught by driving it, not by reading the diff.
+      const kind = box.dataset.ask;
+      toast(kind === 'found' ? 'Added to the record, with your name on it.'
+            : kind === 'done' ? 'Marked done, with the receipt on the trail.'
             : 'Recorded. The board now says who we are chasing.');
       return main();
     }
