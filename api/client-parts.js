@@ -1,10 +1,13 @@
 // /api/client-parts — the Client Engine board's read/write path.
 //
-//   GET  /api/client-parts?client=wolfpack   -> { parts[], evidence{part_key:[...]}, counts }
+//   GET  /api/client-parts?client=wolfpack   -> { parts[], evidence{part_key:[...]},
+//                                               settings, next_meeting, counts }
 //   GET  /api/client-parts?view=day          -> the cross-client three buckets
+//   GET  /api/client-parts?view=chase        -> the never-checked parts, grouped by
+//                                               client, with what to ask for
 //   POST /api/client-parts                   -> move a part (claim / release /
-//                                               mark_done / mark_waiting),
-//                                               update it, or append evidence
+//                                               mark_done / mark_waiting), update it,
+//                                               append evidence, or set the meeting
 //
 // The service key stays server-side; the board is a static page and must never
 // hold it. This is the only reason the endpoint exists rather than the page
@@ -74,6 +77,44 @@
 // mark_done still REQUIRES a receipt — an artifact_url or an exact quote —
 // because green with nothing behind it is the precise shape of claim this
 // board exists to make impossible.
+//
+// ── WHAT IT COSTS, WHAT TO ASK FOR, AND A MEETING THAT ENDS (2026-08-05) ───
+// Three things the screens needed and the read path could not give them.
+//
+//   why_it_matters   Every card states a technical finding — "two listings
+//                    exist under different names" — and stops. The product's
+//                    own rule is that a card which only says "needs attention"
+//                    is a failed card: it has to say what the finding COSTS, in
+//                    the client's money terms. On every part, on every read
+//                    path, seeded per part in migration 20260805000001.
+//
+//   ?view=chase      36 of 38 parts have never been machine-checked because no
+//                    address was ever recorded. That number has been inert
+//                    since the day the check first ran. This view turns it into
+//                    a list: grouped by client, each row carrying the specific
+//                    thing to ask for and, where the record names one, the
+//                    person to ask. Split into ASK and NO-ASK, because only 12
+//                    of the 36 have anything a client could hand over — the
+//                    other 24 (photography, case studies, the capability
+//                    folder) cannot be read from outside by anything, ever, and
+//                    listing them as chases would send Patrik to Ross asking
+//                    for the address of a photo shoot.
+//
+//   next_meeting     The client page reads a hardcoded "Thursday 7 Aug,
+//                    10:00am · Ross, site walk" out of a literal in index.html.
+//                    On 8 Aug that is a past meeting presented as upcoming, and
+//                    it stays that way forever. Patrik's call: expire it. The
+//                    API serves it WITH its date and serves null the moment the
+//                    date has passed. It may go stale; it can no longer lie.
+//                    Not a calendar integration — one hand-entered value per
+//                    client, beside the autonomy toggle, with a writer.
+//
+// The chase view does NOT restate why a part cannot be checked. The nightly
+// check already wrote that, per part, in its own words, with the date it
+// looked; this reads it off the evidence trail. One implementation of "why can
+// this not be checked", owned by the thing that actually tried — the same
+// reason request_check dispatches the Python checker instead of re-implementing
+// a check in JS.
 import { verifyProjectAccess, TenantAuthError } from './_lib/verifyTenant.js'
 
 const SUPABASE_URL =
@@ -98,6 +139,27 @@ const ARTIFACT_KINDS = ['capture', 'link', 'quote', 'number']
 // manager", short enough that the field cannot become a paragraph — the note
 // belongs on the evidence trail, which is where the reason already lives.
 const MAX_WAITING_ON = 120
+
+// why_it_matters and chase_ask are SENTENCES, not notes. Capped so they stay
+// one, because a paragraph in either does not just break the card — it gets
+// truncated on screen, and a half-sentence about what something costs is worse
+// than no sentence at all. chase_from is a name, so it takes the same ceiling
+// as waiting_on. These mirror the CHECK constraints added in migration
+// 20260805000001; the database is the authority and these exist so a caller
+// gets a readable refusal instead of a raw Postgres 400.
+const MAX_WHY_IT_MATTERS = 240
+const MAX_CHASE_ASK = 240
+const MAX_CHASE_FROM = MAX_WAITING_ON
+// "Ross, site walk" — who and what, not an agenda.
+const MAX_MEETING_LABEL = 120
+
+// Every client is in Phoenix and so is the agency. Arizona does not observe
+// daylight saving, so the offset is -07:00 every day of the year — which is the
+// only reason a fixed offset is honest here rather than a latent one-hour bug
+// twice a year. The moment a client sits outside Arizona this needs a real
+// timezone, not a bigger constant.
+const PHOENIX_TZ = 'America/Phoenix'
+const PHOENIX_OFFSET = '-07:00'
 
 async function sb(path, init = {}) {
   const res = await fetch(`${REST()}${path}`, { ...init, headers: headers(init.headers) })
@@ -141,6 +203,85 @@ function webAddressProblem(value, field) {
     return `${field} must be an http or https address, not ${u.protocol.replace(':', '')}`
   }
   return null
+}
+
+// Same shape as webAddressProblem: a readable problem, or null when the value
+// is fine (absent included). Stated once because update_part and set_meeting
+// both write length-capped text, and a rule enforced in one of two writers is
+// not enforced.
+function tooLongProblem(value, field, max, what) {
+  if (value == null || value === '') return null
+  if (String(value).length > max) {
+    return `${field} must be ${max} characters or fewer — it is ${what}.`
+  }
+  return null
+}
+
+// ── THE MEETING ────────────────────────────────────────────────────────────
+// A date the board may show only while it is still ahead of us.
+//
+// EXPIRY IS AT THE START TIME, not some grace window after it. A window would
+// be an invented number, and "next meeting" stops being true the moment the
+// meeting begins. 10:01 on the day is not a lie about a future meeting; it is
+// a lie about which meeting is next.
+
+// "Friday 7 Aug, 10:00am", rendered in Phoenix. Returns null rather than
+// throwing if the runtime's Intl cannot do timezones — the caller still gets
+// the ISO instant, which is the authoritative half, and the UI can format it.
+function phoenixWhen(iso) {
+  try {
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return null
+    const p = Object.fromEntries(
+      new Intl.DateTimeFormat('en-GB', {
+        timeZone: PHOENIX_TZ, weekday: 'long', day: 'numeric', month: 'short',
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      }).formatToParts(d).map((x) => [x.type, x.value])
+    )
+    if (!p.weekday || !p.day || !p.month || !p.hour) return null
+    // ICU emits AM/PM, am/pm, or a.m. depending on version, sometimes preceded
+    // by a narrow no-break space. Normalise rather than trust one of them.
+    const half = String(p.dayPeriod || '').toLowerCase().replace(/[\s.\u00a0\u202f]/g, '')
+    return `${p.weekday} ${p.day} ${p.month}, ${p.hour}:${p.minute}${half}`
+  } catch {
+    return null
+  }
+}
+
+// null when there is no meeting recorded AND null when the recorded one has
+// passed. Deliberately the same answer: in both cases there is nothing true to
+// put on screen, and the board has no state for "there used to be one".
+function nextMeeting(settings) {
+  const at = settings?.next_meeting_at
+  if (!at) return null
+  const t = new Date(at).getTime()
+  if (Number.isNaN(t) || t <= Date.now()) return null
+  return {
+    at: new Date(t).toISOString(),
+    when: phoenixWhen(at),
+    label: settings.next_meeting_label || null,
+    timezone: PHOENIX_TZ,
+    set_at: settings.next_meeting_set_at || null,
+    set_by: settings.next_meeting_set_by || null,
+  }
+}
+
+// A date input that is unambiguous, without demanding the caller type an
+// offset. Two accepted shapes, and the distinction matters because Node parses
+// a bare "2026-08-14T10:00" as the SERVER's local time — which on Vercel is
+// UTC, so a 10am site walk would silently be stored as 3am Phoenix.
+//   with an offset or Z   taken as the instant it names
+//   bare YYYY-MM-DDTHH:MM read as Phoenix local, which is what a person typing
+//                         a meeting time into this tool means
+function parseMeetingAt(raw) {
+  const s = String(raw == null ? '' : raw).trim()
+  if (!s) return { error: 'at is required: the date and time of the meeting.' }
+  const bare = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/.test(s)
+  const d = new Date(bare ? `${s.replace(' ', 'T')}${PHOENIX_OFFSET}` : s)
+  if (Number.isNaN(d.getTime())) {
+    return { error: 'at must be a date and time, e.g. 2026-08-14T10:00 (read as Phoenix time).' }
+  }
+  return { at: d }
 }
 
 // HOW MANY OTHER PARTS THIS ONE HOLDS UP.
@@ -254,6 +395,50 @@ function tally(parts) {
   return t
 }
 
+// Every cross-client view answers the same question first: of the clients that
+// have parts, which may THIS caller see. One client at a time through the same
+// vetted decision function, never a bulk shortcut — a cross-client screen is
+// exactly where a bespoke check would quietly show one operator another's book.
+// Shared by the day and the chase so a third view cannot be added without it.
+async function visibleClients(all, req) {
+  const clients = [...new Set(all.map((p) => p.project_slug))]
+  const allowed = []
+  for (const c of clients) {
+    try { await verifyProjectAccess(c, req); allowed.push(c) } catch { /* not yours */ }
+  }
+  if (!allowed.length) throw new TenantAuthError('jwt required', 401)
+  return allowed
+}
+
+// WHY A PART HAS NEVER BEEN CHECKED, in the words of the thing that tried.
+//
+// scripts/client-engine-check.py writes exactly this line, per part, every time
+// it goes looking and finds nowhere to look — "Could not check the Google
+// listing: no listing address (a Maps link or CID) has ever been recorded, and
+// a search link is not a listing." The chase view quotes that rather than
+// restating it in JS, for the same reason request_check dispatches the Python
+// checker instead of re-implementing a check here: two definitions of "why can
+// this not be checked" would drift, and the one on screen would be the wrong one.
+//
+// Keyed on the METHOD string, not the actor, because the method IS the event —
+// "we looked for somewhere to check and found none" — and a second checker
+// (the midday pass Patrik asked for) writing the same method should count.
+// If that string is ever renamed, this degrades to null: the chase row loses
+// its reason line and keeps its ask. Wrong-and-silent is the failure this file
+// refuses; absent-and-visible is acceptable.
+const NOWHERE_TO_CHECK = 'Looked for somewhere to check, and found none'
+
+async function whyNotChecked(partIds) {
+  if (!partIds.length) return {}
+  const rows = await sb(
+    `/part_evidence?select=part_id,at,claim&part_id=in.(${partIds.join(',')})` +
+    `&method=eq.${encodeURIComponent(NOWHERE_TO_CHECK)}&order=at.desc`
+  )
+  const newest = {}
+  for (const r of rows) if (!newest[r.part_id]) newest[r.part_id] = r
+  return newest
+}
+
 // The client this evidence row belongs to. `dispute` is the one action that
 // names no client, so without this it would be the unguarded hole in an
 // otherwise gated file: an evidence_id is enough to mark any claim, in any
@@ -287,12 +472,7 @@ export default async function handler(req, res) {
       if (String(req.query.view || '') === 'day') {
         const all = await sb('/client_parts?select=*&order=project_slug.asc,sort_order.asc')
         // Scope to what this caller may actually see, one client at a time.
-        const clients = [...new Set(all.map((p) => p.project_slug))]
-        const allowed = []
-        for (const c of clients) {
-          try { await verifyProjectAccess(c, req); allowed.push(c) } catch { /* not yours */ }
-        }
-        if (!allowed.length) throw new TenantAuthError('jwt required', 401)
+        const allowed = await visibleClients(all, req)
         const mine = withBlockCounts(all.filter((p) => allowed.includes(p.project_slug)))
 
         // "Waiting on them" is never decided by STATE: a part we cannot move
@@ -318,6 +498,12 @@ export default async function handler(req, res) {
           icon: p.icon, state: p.state, connection: p.connection,
           status_line: p.status_line, suggestion: p.suggestion,
           owner: p.owner, checked_at: p.checked_at, group_name: p.group_name,
+          // WHAT IT COSTS. status_line is the finding, suggestion is the fix,
+          // and neither says why a busy person should spend the morning on it.
+          // This view picks its fields explicitly, so an addition to the read
+          // path that is not named here simply never reaches the day — which is
+          // how this field would have shipped invisible on the 8am screen.
+          why_it_matters: p.why_it_matters || null,
           // what doing this frees up — the day view's ordering key
           blocks_count: p.blocks_count, blocks_open_count: p.blocks_open_count,
           // and, when we are waiting: who, and since when. A row that says
@@ -349,6 +535,98 @@ export default async function handler(req, res) {
         })
       }
 
+      // ── THE CHASE ────────────────────────────────────────────────────────
+      // "36 of 38 parts have ever been machine-checked" is the most honest line
+      // on the board and, until now, the most inert: it has not moved since the
+      // first sweep and no screen offers a way to move it. The reason is the
+      // same on every one of the 36 — nobody ever wrote down where the thing
+      // lives — so the number becomes work the moment each row carries the
+      // SPECIFIC thing to ask a named person for.
+      //
+      // MEMBERSHIP is the pair, not either half: never machine-checked AND no
+      // recorded address. Both, because they answer different questions and a
+      // future row can satisfy one without the other — an address recorded this
+      // morning is not a chase even though tonight's sweep has not run yet, and
+      // a part that was checked once has an address by definition. Counting on
+      // checked_at alone would put the first back on the list every day.
+      //
+      // THE SPLIT IS THE PRODUCT. Only 12 of the 36 have anything a client
+      // could hand over: a Maps link, a Yelp URL, a LinkedIn address, a Jobber
+      // invite at reporting level, a sending mailbox. The other 24 — the photo
+      // shoot, the case studies, the capability folder, the target account list
+      // — cannot be read from outside by anything and no login changes that.
+      // Listing all 36 as chases would be filler, and filler here means walking
+      // into Ross's office to ask for the address of a photo shoot. So:
+      //   ask     hand this over and a machine can look. Real work, finite.
+      //   no_ask  a person judges this and a machine never will. Not a gap.
+      // A null chase_ask is therefore a finding, not a field somebody forgot.
+      if (String(req.query.view || '') === 'chase') {
+        const all = await sb('/client_parts?select=*&order=project_slug.asc,sort_order.asc')
+        const allowed = await visibleClients(all, req)
+        const mine = withBlockCounts(all.filter((p) => allowed.includes(p.project_slug)))
+
+        const neverChecked = mine.filter((p) => !p.checked_at && !p.deep_link)
+        const reasons = await whyNotChecked(neverChecked.map((p) => p.id))
+
+        const shape = (p) => ({
+          client: p.project_slug, part_key: p.part_key, name: p.name,
+          icon: p.icon, group_name: p.group_name,
+          state: p.state, connection: p.connection, access_detail: p.access_detail,
+          status_line: p.status_line,
+          why_it_matters: p.why_it_matters || null,
+          // the exact thing to request, and who to request it from. chase_from
+          // is null wherever the record does not already name a person —
+          // inventing one would be the same class of lie as inventing a number.
+          chase_ask: p.chase_ask || null,
+          chase_from: p.chase_from || null,
+          // quoted off the trail, in the checker's own words, with the date it
+          // last went looking. Not restated here.
+          why_not_checked: reasons[p.id]?.claim || null,
+          why_not_checked_at: reasons[p.id]?.at || null,
+          waiting_on: p.waiting_on || null, waiting_since: p.waiting_since || null,
+          blocks_count: p.blocks_count, blocks_open_count: p.blocks_open_count,
+        })
+
+        // Same ranking law as the day view: what unblocks the most goes first,
+        // then the client's own order. A chase list ordered by nothing is the
+        // wall of 23 identical amber rows again, one screen over.
+        const rank = (a, b) =>
+          (b.blocks_open_count - a.blocks_open_count) ||
+          (a.sort_order - b.sort_order)
+
+        const groups = allowed.map((c) => {
+          const rows = neverChecked.filter((p) => p.project_slug === c).sort(rank)
+          const ask = rows.filter((p) => p.chase_ask).map(shape)
+          const noAsk = rows.filter((p) => !p.chase_ask).map(shape)
+          return {
+            client: c,
+            ask,
+            no_ask: noAsk,
+            counts: { never_checked: rows.length, ask: ask.length, no_ask: noAsk.length },
+          }
+        // The client you can actually get somewhere with goes first; ties break
+        // by name so the order is stable between reloads.
+        }).sort((a, b) => (b.counts.ask - a.counts.ask) || a.client.localeCompare(b.client))
+
+        return res.status(200).json({
+          view: 'chase',
+          clients: allowed,
+          groups,
+          counts: {
+            total: mine.length,
+            // Reported separately on purpose. They are the same number today
+            // (36 and 36) and the day they diverge is a real event: a part
+            // carrying an address that no sweep has ever opened. Collapsing
+            // them into one figure would hide it.
+            never_checked: mine.filter((p) => !p.checked_at).length,
+            no_address: mine.filter((p) => !p.deep_link).length,
+            in_chase: neverChecked.length,
+            ask: groups.reduce((n, g) => n + g.counts.ask, 0),
+            no_ask: groups.reduce((n, g) => n + g.counts.no_ask, 0),
+          },
+        })
+      }
+
       const client = String(req.query.client || '').trim()
       if (!client) return res.status(400).json({ error: 'client is required' })
       await verifyProjectAccess(client, req)
@@ -364,6 +642,7 @@ export default async function handler(req, res) {
       const settings = settingsRows[0] || {
         project_slug: client, autonomy_enabled: false, nightly_check_enabled: true,
         orders_approved_for: null, orders_scope: [],
+        next_meeting_at: null, next_meeting_label: null,
       }
       settings.may_act_now = mayActNow(settings)
 
@@ -382,7 +661,24 @@ export default async function handler(req, res) {
         }
       }
 
-      return res.status(200).json({ client, parts, evidence, settings, counts: tally(parts) })
+      // THE MEETING, ONLY WHILE IT IS STILL TRUE.
+      //
+      // A top-level field rather than something the caller digs out of
+      // settings, because the rule lives here and not on the screen: the board
+      // showed a hardcoded "Thursday 7 Aug, 10:00am" that would have become a
+      // past meeting presented as upcoming on 8 Aug and stayed that way
+      // forever. If the expiry were the UI's job, the next surface to render a
+      // meeting would have to remember it, and one of them would not.
+      //
+      // null means "nothing to put on screen" and covers both "no meeting has
+      // ever been set" and "the last one has been and gone". The board has no
+      // honest third thing to say, and inventing one — a stale badge, a
+      // "rebook" prompt nobody asked for — is how a fact becomes a nag.
+      return res.status(200).json({
+        client, parts, evidence, settings,
+        next_meeting: nextMeeting(settings),
+        counts: tally(parts),
+      })
     }
 
     if (req.method === 'POST') {
@@ -429,15 +725,34 @@ export default async function handler(req, res) {
           const problem = webAddressProblem(patch[f], f)
           if (problem) return res.status(400).json({ error: problem })
         }
+        // Sentences stay sentences and names stay names. The migration puts the
+        // same ceilings on the columns; this is the readable half of the pair.
+        for (const [f, max, what] of [
+          ['why_it_matters', MAX_WHY_IT_MATTERS, 'one sentence saying what this costs the client'],
+          ['chase_ask', MAX_CHASE_ASK, 'one sentence naming the thing to ask for'],
+          ['chase_from', MAX_CHASE_FROM, 'a name, not a note'],
+        ]) {
+          const problem = tooLongProblem(patch[f], f, max, what)
+          if (problem) return res.status(400).json({ error: problem })
+        }
 
         // waiting_on / waiting_since are deliberately NOT here. They are a pair
         // — a date with no name, or a name with no date, is half a record — and
         // a general patch endpoint cannot enforce a pair. mark_waiting writes
         // both together or neither, and is the only writer.
+        //
+        // why_it_matters / chase_ask / chase_from ARE here, and are patchable
+        // one at a time, because they are independent sentences with no pair
+        // invariant between them — and because the seeded ones are a first
+        // draft. Patrik knowing something truer about what a gap costs his
+        // client, with no way to type it, is how a field goes stale and then
+        // gets ignored. Every correction leaves the same attributed trail line
+        // as any other, so the next agent reads it before it re-checks.
         const allowed = [
           'state', 'connection', 'access_detail', 'access_verified_at',
           'status_line', 'suggestion', 'owner', 'deep_link',
           'artifact_url', 'artifact_kind', 'artifact_at', 'checked_at',
+          'why_it_matters', 'chase_ask', 'chase_from',
         ]
         const update = {}
         for (const k of allowed) if (k in patch) update[k] = patch[k]
@@ -769,6 +1084,74 @@ export default async function handler(req, res) {
         const s = rows[0]
         s.may_act_now = mayActNow(s)
         return res.status(200).json({ ok: true, settings: s })
+      }
+
+      // ---- the next meeting -------------------------------------------------
+      // The other half of expiring it. A field that can only run out is a
+      // countdown: serve the seeded meeting, watch it disappear on 8 Aug, and
+      // the bar is blank forever with no way to put anything back. That is not
+      // shipping the decision, it is deleting the feature slowly.
+      //
+      // Deliberately NOT a calendar integration. One hand-entered value per
+      // client, sitting beside the autonomy toggle, written the same way it is
+      // — through the gate, stamped with who set it and when, so the board can
+      // say where the line came from instead of asserting it.
+      //
+      // A meeting in the PAST IS REFUSED. It is the exact defect being fixed:
+      // the board's whole problem was a past meeting presented as upcoming, and
+      // an endpoint that accepts one lets the bug back in through the front
+      // door. Backdating is meaningful for a wait (mark_waiting takes `since`,
+      // because the ask really did go out last Tuesday) and meaningless for a
+      // next meeting.
+      if (action === 'set_meeting') {
+        const { at, label = null, clear = false } = body
+
+        if (clear) {
+          const rows = await sb(
+            `/client_engine_settings?project_slug=eq.${encodeURIComponent(scopeClient)}`,
+            {
+              method: 'PATCH',
+              headers: { Prefer: 'return=representation' },
+              body: JSON.stringify({
+                next_meeting_at: null, next_meeting_label: null,
+                next_meeting_set_at: new Date().toISOString(),
+                next_meeting_set_by: actor,
+              }),
+            }
+          )
+          if (!rows.length) return res.status(404).json({ error: 'client not found' })
+          return res.status(200).json({ ok: true, next_meeting: null })
+        }
+
+        const parsed = parseMeetingAt(at)
+        if (parsed.error) return res.status(400).json({ error: parsed.error })
+        if (parsed.at.getTime() <= Date.now()) {
+          return res.status(400).json({
+            error: 'at must be in the future. A meeting that has already happened is ' +
+                   'not the next one, and showing it as upcoming is the bug this ' +
+                   'field exists to end.',
+          })
+        }
+        const problem = tooLongProblem(label, 'label', MAX_MEETING_LABEL,
+          'who and what, like "Ross, site walk"')
+        if (problem) return res.status(400).json({ error: problem })
+
+        const patch = {
+          next_meeting_at: parsed.at.toISOString(),
+          next_meeting_label: (label && String(label).trim()) || null,
+          next_meeting_set_at: new Date().toISOString(),
+          next_meeting_set_by: actor,
+        }
+        // Upsert, not PATCH: a client with parts but no settings row yet would
+        // otherwise be the one client whose meeting silently cannot be set.
+        // merge-duplicates touches only the columns named here, so the autonomy
+        // gate beside it is not reset by writing a meeting.
+        const rows = await sb('/client_engine_settings?on_conflict=project_slug', {
+          method: 'POST',
+          headers: { Prefer: 'return=representation,resolution=merge-duplicates' },
+          body: JSON.stringify([{ project_slug: scopeClient, ...patch }]),
+        })
+        return res.status(200).json({ ok: true, next_meeting: nextMeeting(rows[0]) })
       }
 
       // ---- the daily handshake --------------------------------------------
