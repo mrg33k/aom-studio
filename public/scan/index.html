@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>What a buyer finds</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="A record of what is publicly visible about a company, read live, with the address of every page it came from.">
+<style>
+  /* ── THE PALETTE IS THE BOARD'S, EXACTLY ────────────────────────────────
+     A scan becomes a client's board with no translation layer, so it should
+     not need a translation layer to LOOK at either. Same tokens, same states,
+     same solid-pill-for-state / outlined-for-information rule. */
+  :root {
+    color-scheme: light;
+    --bg: #ede7dc;
+    --panel: #fefcf9;
+    --surface: #ffffff;
+    --text: #262823;
+    --muted: #6d7068;
+    --line: #ddd8ce;
+    --line-strong: #c9c3b7;
+    --accent: #176c61;
+    --accent-soft: #dbece7;
+    --accent-text: #0d5249;
+    --good: #26715b;
+    --good-soft: #e2f1eb;
+    --warn: #9b651b;
+    --warn-soft: #faecd3;
+    --bad: #a6473f;
+    --bad-soft: #f8e3df;
+    --quiet: #747870;
+    --quiet-soft: #ecece7;
+    --shadow: 0 12px 28px rgba(75, 58, 32, .08), 0 2px 8px rgba(75, 58, 32, .04);
+    --panel-shadow: 0 28px 72px rgba(75, 58, 32, .13), 0 6px 20px rgba(75, 58, 32, .06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent-text); overflow-wrap: anywhere; }
+  button, input, textarea { font: inherit; color: inherit; }
+  h1, h2, h3, p { margin: 0; }
+
+  .sheet {
+    max-width: 1024px;
+    margin: 24px auto;
+    padding: 40px clamp(24px, 5vw, 72px) 56px;
+    border: 1px solid rgba(255, 255, 255, .7);
+    border-radius: 32px;
+    background: var(--panel);
+    box-shadow: var(--panel-shadow);
+  }
+
+  .col { max-width: 680px; }
+
+  /* ── masthead ─────────────────────────────────────────────────────────── */
+  .eyebrow {
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+
+  .rule { height: 1px; margin: 32px 0; background: var(--line); border: 0; }
+  .rule.strong { background: var(--line-strong); }
+
+  h1 {
+    margin: 16px 0 0;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  .lede {
+    margin-top: 12px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    line-height: 1.3;
+  }
+
+  .stamp {
+    margin-top: 16px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+
+  .statement { margin-top: 24px; font-size: 16px; line-height: 1.65; }
+  .statement p + p { margin-top: 16px; }
+
+  /* ── states: solid pill. information: outlined chip. ──────────────────── */
+  .pill, .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 32px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .01em;
+    white-space: nowrap;
+  }
+  .pill { border: 1px solid transparent; color: var(--surface); }
+  .pill.weak { background: var(--warn); }
+  .pill.good { background: var(--good); }
+  .pill.unknown { background: var(--quiet); }
+  .pill.pending { border-color: var(--line-strong); background: transparent; color: var(--muted); font-weight: 650; }
+
+  .chip {
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--muted);
+    font-weight: 650;
+  }
+  .chip.accent { border-color: var(--accent); color: var(--accent-text); }
+
+  /* ── the count strip: measured numbers only, nothing drawn under them ─── */
+  .counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .count {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+  }
+  .count b { display: block; font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+  .count span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+  .count.weak b { color: var(--warn); }
+  .count.good b { color: var(--good); }
+  .count.unknown b { color: var(--quiet); }
+  .count.accent b { color: var(--accent-text); }
+
+  /* ── the watched scan ─────────────────────────────────────────────────── */
+  .watch-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .clock {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .doing { margin-top: 8px; color: var(--muted); font-size: 13px; min-height: 20px; }
+
+  .surfaces { display: grid; gap: 8px; margin-top: 24px; }
+
+  .srow {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    opacity: .5;
+    transition: opacity .35s ease, box-shadow .35s ease, border-color .35s ease;
+  }
+  .srow.done { opacity: 1; box-shadow: var(--shadow); }
+  .srow.just { border-color: var(--line-strong); }
+
+  .mark {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--quiet-soft);
+  }
+  .mark svg { width: 20px; height: 20px; display: block; }
+  .mark.li { background: #0a66c2; }
+  .mark.on { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+
+  .sname { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+  .swhere {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── findings ─────────────────────────────────────────────────────────── */
+  h2 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+  }
+  .sub { margin-top: 8px; color: var(--muted); font-size: 14px; max-width: 620px; }
+
+  .finds { display: grid; gap: 16px; margin-top: 24px; }
+
+  .find {
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .find.q { box-shadow: none; background: transparent; }
+
+  .find-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .find-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .found { margin-top: 12px; font-size: 16px; line-height: 1.55; }
+
+  .costs {
+    margin-top: 16px;
+    padding-left: 16px;
+    border-left: 2px solid var(--accent);
+  }
+  .costs b {
+    display: block;
+    color: var(--accent-text);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .costs p { margin-top: 4px; font-size: 16px; line-height: 1.5; }
+
+  /* THE RECEIPT IS THE HERO. Every judgement on this page is followed by the
+     address we opened and, where there is one, the line we read on it. */
+  .receipt {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--quiet-soft);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .receipt .k { color: var(--quiet); }
+  .receipt q { display: block; margin-top: 8px; color: var(--text); }
+
+  .caveat {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .caveat b { color: var(--text); font-weight: 700; }
+
+  .settles {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .settles b {
+    color: var(--accent-text);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  /* ── the close ────────────────────────────────────────────────────────── */
+  .close {
+    margin-top: 40px;
+    padding: 32px clamp(24px, 4vw, 40px);
+    border: 1px solid var(--accent);
+    border-radius: 24px;
+    background: var(--accent-soft);
+  }
+  .form { display: grid; gap: 12px; margin-top: 24px; max-width: 560px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  label { display: block; }
+  label span {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  input, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    outline: none;
+    background: var(--surface);
+    font-size: 16px;
+  }
+  textarea { min-height: 72px; resize: vertical; }
+  input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(23, 108, 97, .16); }
+
+  .go {
+    min-height: 56px;
+    padding: 16px 32px;
+    border: 1px solid var(--accent);
+    border-radius: 32px;
+    background: var(--accent);
+    color: var(--surface);
+    font-size: 16px;
+    font-weight: 750;
+    letter-spacing: -.01em;
+    cursor: pointer;
+    transition: background .2s, box-shadow .2s;
+  }
+  .go:hover { background: var(--accent-text); box-shadow: var(--shadow); }
+  .go[disabled] { opacity: .55; cursor: default; }
+
+  .ghost {
+    min-height: 40px;
+    padding: 8px 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: 32px;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .ghost:hover { border-color: var(--accent); color: var(--accent-text); }
+
+  .err {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--bad);
+    border-radius: 12px;
+    background: var(--bad-soft);
+    color: var(--bad);
+    font-size: 13px;
+  }
+
+  footer {
+    max-width: 1024px;
+    margin: 0 auto;
+    padding: 24px clamp(24px, 5vw, 72px) 56px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .hide { display: none !important; }
+
+  /* ── the operator console. Not part of what a prospect ever sees. ─────── */
+  .console { padding: 24px; border: 1px solid var(--line-strong); border-radius: 24px; background: var(--surface); }
+  .lead { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .leads { display: grid; gap: 8px; margin-top: 16px; }
+  .share { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .share code { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
+
+  @media (min-width: 760px) {
+    h1 { font-size: 48px; }
+    .sheet { margin: 40px auto; }
+  }
+
+  @media (max-width: 560px) {
+    .two { grid-template-columns: 1fr; }
+    .srow { grid-template-columns: 32px minmax(0, 1fr); }
+    .srow .pill { grid-column: 2; justify-self: start; }
+    .find { padding: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .srow { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<main class="sheet">
+
+  <!-- ── operator console ─────────────────────────────────────────────── -->
+  <section id="console" class="hide">
+    <p class="eyebrow">Ahead of Market &middot; operator</p>
+    <h1>Run a check</h1>
+    <p class="sub">A company name and a web address. Everything read is public, and the report
+      that comes out is the page you send them.</p>
+    <div class="console" style="margin-top: 24px">
+      <div class="form" style="margin-top: 0">
+        <div class="two">
+          <label><span>Company</span><input id="f-company" autocomplete="off" placeholder="Icon Mechanical"></label>
+          <label><span>City</span><input id="f-city" autocomplete="off" placeholder="Phoenix"></label>
+        </div>
+        <label><span>Website</span><input id="f-site" autocomplete="off" placeholder="iconmechanicalinc.com"></label>
+        <div><button class="go" id="run" type="button">Run the check</button></div>
+      </div>
+      <div id="console-err" class="err hide"></div>
+      <div id="leads"></div>
+    </div>
+  </section>
+
+  <!-- ── the watched scan ─────────────────────────────────────────────── -->
+  <section id="watch" class="hide">
+    <p class="eyebrow" id="watch-eyebrow">Reading now</p>
+    <div class="watch-head" style="margin-top: 16px">
+      <h1 id="watch-name">&nbsp;</h1>
+      <div class="clock" id="clock">0.0s</div>
+    </div>
+    <p class="doing" id="doing"></p>
+    <div class="surfaces" id="surfaces"></div>
+    <div id="watch-err" class="err hide"></div>
+  </section>
+
+  <!-- ── the report ───────────────────────────────────────────────────── -->
+  <section id="report" class="hide">
+    <div class="col">
+      <p class="eyebrow">Ahead of Market &middot; Phoenix</p>
+      <h1 id="r-name">&nbsp;</h1>
+      <p class="lede">What a buyer finds when he checks you out.</p>
+      <p class="stamp" id="r-stamp"></p>
+    </div>
+
+    <div class="statement col">
+      <p>Before anyone hires a contractor they check first, quietly, and you never hear from
+        the ones who decide not to call. This is that check, run cold from nothing but your name
+        and your web address.</p>
+      <p>Nothing below is an opinion, a score or a grade. Every judgement names the page it was
+        read on and quotes the line it was read from. Anything that cannot be seen from outside
+        says so instead of guessing.</p>
+    </div>
+
+    <div class="counts" id="r-counts"></div>
+
+    <hr class="rule strong">
+
+    <div id="r-weak">
+      <div class="col">
+        <h2 id="r-weak-h">What we would fix</h2>
+        <p class="sub">In the order we would fix it. Each one names the page it came from.</p>
+      </div>
+      <div class="finds" id="r-weak-list"></div>
+    </div>
+
+    <div id="r-good">
+      <hr class="rule">
+      <div class="col">
+        <h2 id="r-good-h">What is holding up</h2>
+        <p class="sub">Checked the same way, on the same pages, and fine.</p>
+      </div>
+      <div class="finds" id="r-good-list"></div>
+    </div>
+
+    <div id="r-unknown">
+      <hr class="rule">
+      <div class="col">
+        <h2 id="r-unknown-h">What cannot be read from outside</h2>
+        <p class="sub" id="r-unknown-sub"></p>
+      </div>
+      <div class="finds" id="r-unknown-list"></div>
+    </div>
+
+    <hr class="rule strong">
+
+    <div class="col">
+      <h2>The record of the check</h2>
+      <p class="sub">Seven surfaces, the address opened for each, and the second it settled on.</p>
+    </div>
+    <div class="surfaces" id="r-surfaces"></div>
+
+    <!-- ── the one action ───────────────────────────────────────────── -->
+    <section class="close" id="close">
+      <div class="col">
+        <h2>Get started</h2>
+        <p class="sub" id="close-copy"></p>
+      </div>
+      <div class="form">
+        <div class="two">
+          <label><span>Your name</span><input id="s-name" autocomplete="name"></label>
+          <label><span>Phone</span><input id="s-phone" autocomplete="tel" inputmode="tel"></label>
+        </div>
+        <label><span>Email</span><input id="s-email" autocomplete="email" inputmode="email"></label>
+        <label><span>Anything you want looked at first</span><textarea id="s-note"></textarea></label>
+        <div><button class="go" id="start" type="button">Get Started</button></div>
+      </div>
+      <div id="start-err" class="err hide"></div>
+    </section>
+    <div id="share"></div>
+  </section>
+
+</main>
+
+<footer id="foot"></footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── THE SESSION LIVES IN localStorage, NOT IN A COOKIE ──────────────────
+  // Same reading as the board (public/client-engine/index.html): the dashboard
+  // creates its supabase client with no storage option, so there is no cookie
+  // to ride on and the Bearer header is the only way this page can see the
+  // session. Only the operator half needs it; a prospect reading a saved report
+  // never has one and never calls a gated route.
+  var SB_REF = 'mcngatprgluexjjcqpkp';
+  function sessionToken() {
+    try {
+      var raw = localStorage.getItem('sb-' + SB_REF + '-auth-token');
+      if (!raw) {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (/^sb-.*-auth-token$/.test(k)) { raw = localStorage.getItem(k); break; }
+        }
+      }
+      if (!raw) return null;
+      if (raw.indexOf('base64-') === 0) raw = atob(raw.slice(7));
+      var v = JSON.parse(raw);
+      if (typeof v === 'string') return v;
+      if (Array.isArray(v)) return v[0] || null;
+      return v.access_token || (v.currentSession && v.currentSession.access_token) || null;
+    } catch (e) { return null; }
+  }
+  function authed(extra) {
+    var t = sessionToken();
+    var h = Object.assign({ 'Content-Type': 'application/json' }, extra || {});
+    if (t) h.Authorization = 'Bearer ' + t;
+    return h;
+  }
+
+  var $ = function (s) { return document.querySelector(s); };
+  var esc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  };
+  var show = function (el, on) { el.classList.toggle('hide', !on); };
+
+  // Platform marks, lifted from the board so the same surface wears the same
+  // face in both places. Full colour: the one place colour is allowed to shout.
+  var ICONS = {
+    website: '<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="3" fill="#262823"/><path fill="#fff" d="M2 8h20v2H2z"/><circle cx="5.2" cy="6" r="1" fill="#fff"/><circle cx="8.2" cy="6" r="1" fill="#fff"/><rect x="5" y="12" width="14" height="6" rx="1.5" fill="#fff" opacity=".9"/></svg>',
+    google: '<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.87h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.59A10 10 0 0 0 12 22Z"/><path fill="#262823" d="M6.4 13.9A6 6 0 0 1 6.08 12c0-.66.11-1.3.32-1.9V7.51H3.06A10 10 0 0 0 2 12c0 1.61.38 3.14 1.06 4.49L6.4 13.9Z"/><path fill="#EA4335" d="M12 5.97c1.47 0 2.78.5 3.81 1.49l2.86-2.86A9.58 9.58 0 0 0 12 2a10 10 0 0 0-8.94 5.51L6.4 10.1C7.19 7.73 9.4 5.97 12 5.97Z"/></svg>',
+    reviews: '<svg viewBox="0 0 24 24"><path fill="#262823" d="m12 2.6 2.75 5.58 6.16.9-4.46 4.34 1.05 6.14L12 16.66l-5.5 2.9 1.05-6.14-4.46-4.34 6.16-.9L12 2.6Z"/></svg>',
+    linkedin: '<svg viewBox="0 0 24 24"><path fill="#fff" d="M6.15 8.55H2.9V19h3.25V8.55ZM4.53 3.35a1.89 1.89 0 1 0 0 3.78 1.89 1.89 0 0 0 0-3.78ZM18.47 8.3c-1.75 0-2.93.96-3.41 1.88h-.05V8.55H11.9V19h3.24v-5.17c0-1.36.26-2.68 1.95-2.68 1.66 0 1.68 1.55 1.68 2.77V19H22v-5.72c0-2.81-.61-4.98-3.53-4.98Z"/></svg>',
+    yelp: '<svg viewBox="0 0 24 24"><path fill="#D32323" d="M10.6 10.2 8.9 3.15A1.45 1.45 0 0 1 10.1 1.4l2.15-.34a1.45 1.45 0 0 1 1.66 1.58l-.75 7.42c-.12 1.16-2.28 1.28-2.56.14ZM14.35 10.95l4.72-2.8a1.45 1.45 0 0 1 2.1.74l.7 1.86a1.45 1.45 0 0 1-1.24 1.95l-5.72.24c-1.12.05-1.53-1.42-.56-2ZM14.26 14.42l4.56 2.94a1.45 1.45 0 0 1 .27 2.2l-1.4 1.44a1.45 1.45 0 0 1-2.3-.3l-2.56-4.9c-.5-.96.52-1.97 1.43-1.38ZM10.76 15.1l-1.5 5.44a1.45 1.45 0 0 1-1.93.96l-1.87-.75a1.45 1.45 0 0 1-.7-2.22l3.42-4.38c.67-.86 2.88-.1 2.58.95ZM8.4 11.6l-5.36-1.56a1.45 1.45 0 0 1-.93-1.98l.82-1.84a1.45 1.45 0 0 1 2.24-.64l4.25 3.57c.84.71.03 2.75-1.02 2.45Z"/></svg>',
+    ask: '<svg viewBox="0 0 24 24"><path fill="#262823" d="M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9.6L5 21.2V17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path fill="#fff" d="M6 7.5h12v1.8H6zM6 11h9v1.8H6z"/></svg>'
+  };
+  var MARK = {
+    'website': ['website', 'on'],
+    'google-business-profile': ['google', 'on'],
+    'online-reviews': ['reviews', 'on'],
+    'company-linkedin': ['linkedin', 'li'],
+    'owners-linkedin': ['linkedin', 'li'],
+    'yelp': ['yelp', 'on'],
+    'ai-answers': ['ask', 'on']
+  };
+  function markFor(key) {
+    var m = MARK[key] || ['website', 'on'];
+    return '<span class="mark ' + m[1] + '">' + ICONS[m[0]] + '</span>';
+  }
+
+  // A surface's standing is the worst standing of what was found on it. Worst
+  // means "would fix" first, because that is the order the page is read in —
+  // never "unknown", which is not a bad grade and must not sort like one.
+  function standingOf(surface) {
+    var f = surface.findings || [];
+    if (f.some(function (x) { return x.standing === 'weak'; })) return 'weak';
+    if (f.some(function (x) { return x.standing === 'good'; })) return 'good';
+    return 'unknown';
+  }
+  var PILL = { weak: 'Would fix', good: 'Holding up', unknown: 'Not readable from outside' };
+
+  function secs(ms) { return (Math.round(ms / 100) / 10).toFixed(1) + 's'; }
+
+  // ── the surface row, used live and in the saved record ─────────────────
+  function surfaceRow(s, settledOn) {
+    var st = standingOf(s);
+    var where = s.looked_at
+      ? esc(s.looked_at)
+      : (s.status === 'not_looked' ? 'Nothing was opened for this one.' : '');
+    var at = settledOn && s.at_ms != null ? '  &middot;  settled at ' + secs(s.at_ms) : '';
+    return '<div class="srow' + (settledOn ? ' done' : '') + '" data-key="' + esc(s.part_key) + '">' +
+      markFor(s.part_key) +
+      '<div><div class="sname">' + esc(s.name) + '</div>' +
+      '<div class="swhere">' + where + at + '</div></div>' +
+      '<span class="pill ' + (settledOn ? st : 'pending') + '">' +
+        (settledOn ? PILL[st] : 'not opened yet') + '</span>' +
+      '</div>';
+  }
+
+  // ── one finding ────────────────────────────────────────────────────────
+  function findingBlock(f, n) {
+    var r = f.receipt;
+    var out = '<div class="find' + (f.standing === 'unknown' ? ' q' : '') + '">' +
+      '<div class="find-top"><div class="find-who">' + markFor(f.part_key) +
+      '<span class="sname">' + esc(f.surface) + '</span></div>' +
+      '<span class="pill ' + f.standing + '">' + PILL[f.standing] + '</span></div>' +
+      '<p class="found">' + (n ? '<b>' + n + '. </b>' : '') + esc(f.found) + '</p>';
+
+    if (f.costs) {
+      out += '<div class="costs"><b>What it costs you</b><p>' + esc(f.costs) + '</p></div>';
+    }
+    if (r && r.url) {
+      out += '<div class="receipt"><span class="k">read on</span> <a href="' + esc(r.url) +
+        '" rel="noopener noreferrer nofollow" target="_blank">' + esc(r.url) + '</a>' +
+        (r.http_status ? ' <span class="k">&middot; answered ' + esc(r.http_status) + '</span>' : '') +
+        (r.quote ? '<q>' + esc(r.quote) + '</q>' : '') + '</div>';
+    } else {
+      out += '<div class="receipt"><span class="k">looked at</span> ' + esc(f.looked_at) + '</div>';
+    }
+    if (f.not_verified) {
+      out += '<p class="caveat"><b>Not verified:</b> ' + esc(f.not_verified) + '</p>';
+    }
+    if (f.to_check_this) {
+      out += '<div class="settles"><b>What settles it</b><p>' + esc(f.to_check_this) + '</p></div>';
+    }
+    return out + '</div>';
+  }
+
+  var DAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+             'August', 'September', 'October', 'November', 'December'];
+  function longDate(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0');
+    var ap = h < 12 ? 'am' : 'pm';
+    h = h % 12 || 12;
+    return DAY[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()] + ' ' +
+      d.getFullYear() + ' at ' + h + ':' + m + ap;
+  }
+
+  // ── THE REPORT ─────────────────────────────────────────────────────────
+  var CURRENT = null;
+  function renderReport(scan, token) {
+    CURRENT = scan;
+    var host = '';
+    try { host = new URL(scan.website.final || scan.website.opened).host; } catch (e) { host = scan.website.opened || ''; }
+
+    $('#r-name').textContent = scan.company || host;
+    document.title = (scan.company || host) + ' — what a buyer finds';
+
+    var s = scan.summary;
+    $('#r-stamp').innerHTML =
+      'read live from ' + esc(host) + ' on ' + esc(longDate(scan.scanned_at)) + '<br>' +
+      esc(scan.surfaces.length) + ' surfaces &middot; ' + esc(secs(scan.elapsed_ms)) +
+      ' &middot; ' + esc(scan.fetches) + ' pages opened' +
+      (scan.scanned_by ? ' &middot; run by ' + esc(scan.scanned_by) : '') +
+      (scan.timed_out ? '<br>our clock ran out before every page finished answering, so this is short of a full read' : '');
+
+    $('#r-counts').innerHTML = [
+      ['weak', s.weak, s.weak === 1 ? 'thing we would fix' : 'things we would fix'],
+      ['good', s.good, s.good === 1 ? 'thing holding up' : 'things holding up'],
+      ['unknown', s.unknown, 'not readable from outside'],
+      ['accent', s.verified + ' of ' + scan.findings.length, 'carry a receipt']
+    ].map(function (c) {
+      return '<div class="count ' + c[0] + '"><b>' + esc(c[1]) + '</b><span>' + esc(c[2]) + '</span></div>';
+    }).join('');
+
+    var by = { weak: [], good: [], unknown: [] };
+    scan.findings.forEach(function (f) { by[f.standing].push(f); });
+
+    show($('#r-weak'), by.weak.length > 0);
+    $('#r-weak-list').innerHTML = by.weak.map(function (f, i) { return findingBlock(f, i + 1); }).join('');
+
+    show($('#r-good'), by.good.length > 0);
+    $('#r-good-list').innerHTML = by.good.map(function (f) { return findingBlock(f, 0); }).join('');
+
+    show($('#r-unknown'), by.unknown.length > 0);
+    var surfacesUnknown = scan.surfaces.filter(function (x) { return standingOf(x) === 'unknown'; }).length;
+    $('#r-unknown-sub').textContent =
+      'Not a mark against you. ' + surfacesUnknown + ' of these ' + scan.surfaces.length +
+      ' can only be read with something you hand over — the listing, the login, the numbers behind ' +
+      'the calls. Guessing at them is exactly what this check refuses to do, so each one says ' +
+      'what would settle it. That list is the first conversation.';
+    $('#r-unknown-list').innerHTML = by.unknown.map(function (f) { return findingBlock(f, 0); }).join('');
+
+    $('#r-surfaces').innerHTML = scan.surfaces.map(function (x) { return surfaceRow(x, true); }).join('');
+
+    $('#close-copy').textContent =
+      'We are Ahead of Market, a Phoenix agency that runs the marketing for commercial ' +
+      'construction and trades companies. What you just read took ' + secs(scan.elapsed_ms) +
+      ' and used only what is public. The rest of the check needs your side of it. Leave a name ' +
+      'and one way to reach you and we will bring it.';
+
+    $('#foot').innerHTML =
+      'Ahead of Market &middot; Phoenix, Arizona. This report was produced by opening public web ' +
+      'pages and recording what was on them at ' + esc(longDate(scan.scanned_at)) +
+      '. Every claim above names the address it came from. Pages change; the addresses are there ' +
+      'so you can check us.';
+
+    SHARE_TOKEN = token || SHARE_TOKEN;
+    show($('#close'), !!SHARE_TOKEN);
+    show($('#report'), true);
+  }
+
+  // ── THE WATCHED SCAN ───────────────────────────────────────────────────
+  // Every row that flips carries a millisecond measured on the server before it
+  // was sent. Nothing here schedules a reveal, delays a row, or paces the list:
+  // if the stream flows, the page draws the real sequence; if a proxy buffers
+  // it and everything lands at once, the page draws everything at once and the
+  // stamps are still true. The one thing it will not do is invent the gap.
+  var tick = null;
+  function startClock(t0) {
+    var el = $('#clock');
+    stopClock();
+    tick = setInterval(function () {
+      el.textContent = ((Date.now() - t0) / 1000).toFixed(1) + 's';
+    }, 100);
+  }
+  function stopClock() { if (tick) { clearInterval(tick); tick = null; } }
+
+  function paintSurface(s) {
+    var row = $('#surfaces .srow[data-key="' + s.part_key + '"]');
+    if (!row) return;
+    row.outerHTML = surfaceRow(s, true);
+    var fresh = $('#surfaces .srow[data-key="' + s.part_key + '"]');
+    if (fresh) {
+      fresh.classList.add('just');
+      setTimeout(function () { fresh.classList.remove('just'); }, 600);
+    }
+  }
+
+  var SHARE_TOKEN = null;
+
+  async function runScan(company, website, city) {
+    show($('#console'), false);
+    show($('#report'), false);
+    show($('#watch'), true);
+    show($('#watch-err'), false);
+    $('#watch-name').textContent = company;
+    $('#doing').textContent = 'Nothing has been opened yet.';
+    $('#surfaces').innerHTML = '';
+    var t0 = Date.now();
+    startClock(t0);
+
+    var res = await fetch('/api/prospect-scan', {
+      method: 'POST',
+      headers: authed(),
+      body: JSON.stringify({ company: company, website: website, city: city || null, stream: true })
+    });
+
+    if (!res.ok) {
+      var msg = 'That did not run.';
+      try { msg = (await res.json()).error || msg; } catch (e) { /* keep the default */ }
+      stopClock();
+      $('#watch-err').textContent = msg;
+      show($('#watch-err'), true);
+      show($('#console'), true);
+      return;
+    }
+
+    var reader = res.body.getReader();
+    var dec = new TextDecoder();
+    var buf = '';
+    var done = null;
+    for (;;) {
+      var chunk = await reader.read();
+      if (chunk.value) buf += dec.decode(chunk.value, { stream: true });
+      var cut;
+      while ((cut = buf.indexOf('\n')) >= 0) {
+        var line = buf.slice(0, cut).trim();
+        buf = buf.slice(cut + 1);
+        if (!line) continue;
+        var ev;
+        try { ev = JSON.parse(line); } catch (e) { continue; }
+        if (ev.event === 'open') {
+          $('#surfaces').innerHTML = ev.surfaces.map(function (x) {
+            return surfaceRow({ part_key: x.part_key, name: x.name, findings: [], looked_at: null }, false);
+          }).join('');
+        } else if (ev.event === 'wave') {
+          $('#doing').textContent = ev.doing;
+        } else if (ev.event === 'surface') {
+          paintSurface(ev.surface);
+        } else if (ev.event === 'done') {
+          done = ev;
+        } else if (ev.event === 'error') {
+          stopClock();
+          $('#watch-err').textContent = ev.error;
+          show($('#watch-err'), true);
+          show($('#console'), true);
+          return;
+        }
+      }
+      if (chunk.done) break;
+    }
+    stopClock();
+    if (!done) {
+      $('#watch-err').textContent = 'The check stopped before it finished. Nothing was written.';
+      show($('#watch-err'), true);
+      show($('#console'), true);
+      return;
+    }
+    $('#clock').textContent = secs(done.elapsed_ms);
+    $('#doing').textContent = 'Done. ' + done.fetches + ' pages opened, ' +
+      done.findings.length + ' things written down.';
+    $('#watch-eyebrow').textContent = 'The check, as it ran';
+
+    // Save it so there is a link to send. The operator sees the report either
+    // way; a save that fails costs the link, not the report.
+    var token = null;
+    try {
+      var save = await fetch('/api/prospect-report', {
+        method: 'POST', headers: authed(), body: JSON.stringify({ scan: done })
+      });
+      if (save.ok) token = (await save.json()).token;
+    } catch (e) { /* the report still renders */ }
+
+    renderReport(done, token);
+    if (token) {
+      var url = location.origin + '/scan/?r=' + token;
+      $('#share').innerHTML =
+        '<hr class="rule"><div class="col"><h2>The link to send</h2>' +
+        '<p class="sub">Anyone with this address reads the report above. It carries no login.</p></div>' +
+        '<div class="share"><code id="share-url">' + esc(url) + '</code>' +
+        '<button class="ghost" id="copy" type="button">Copy</button></div>';
+      $('#copy').addEventListener('click', function () {
+        navigator.clipboard.writeText(url);
+        $('#copy').textContent = 'Copied';
+      });
+    } else {
+      $('#share').innerHTML = '<hr class="rule"><p class="sub">This one was not saved, so there ' +
+        'is no link to send yet. Run it again to get one.</p>';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── GET STARTED ────────────────────────────────────────────────────────
+  $('#start').addEventListener('click', async function () {
+    var b = $('#start');
+    var name = $('#s-name').value.trim();
+    var email = $('#s-email').value.trim();
+    var phone = $('#s-phone').value.trim();
+    show($('#start-err'), false);
+    if (!name || (!email && !phone)) {
+      $('#start-err').textContent = 'A name and one way to reach you — email or phone — are needed.';
+      show($('#start-err'), true);
+      return;
+    }
+    b.disabled = true;
+    b.textContent = 'Sending';
+    try {
+      var r = await fetch('/api/prospect-report?r=' + encodeURIComponent(SHARE_TOKEN), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ started: { name: name, email: email, phone: phone, note: $('#s-note').value } })
+      });
+      if (!r.ok) throw new Error((await r.json()).error || 'That did not send.');
+      $('#close').innerHTML =
+        '<div class="col"><h2>We have it, ' + esc(name.split(/\s+/)[0]) + '.</h2>' +
+        '<p class="sub">It is sitting on the board Patrik opens every morning, next to this ' +
+        'report. He will come back to you on ' + esc(phone || email) + '.</p></div>';
+    } catch (e) {
+      $('#start-err').textContent = String(e.message || e);
+      show($('#start-err'), true);
+      b.disabled = false;
+      b.textContent = 'Get Started';
+    }
+  });
+
+  // ── BOOT ───────────────────────────────────────────────────────────────
+  var params = new URLSearchParams(location.search);
+  var shared = params.get('r');
+
+  if (shared) {
+    SHARE_TOKEN = shared;
+    fetch('/api/prospect-report?r=' + encodeURIComponent(shared))
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (out) {
+        if (!out.ok) throw new Error(out.j.error || 'No report at this link.');
+        renderReport(out.j.scan, shared);
+      })
+      .catch(function (e) {
+        $('#r-name').textContent = 'This link did not open';
+        $('#r-stamp').textContent = String(e.message || e);
+        show($('#report'), true);
+        show($('#close'), false);
+      });
+  } else {
+    show($('#console'), true);
+    $('#run').addEventListener('click', function () {
+      var company = $('#f-company').value.trim();
+      var site = $('#f-site').value.trim();
+      show($('#console-err'), false);
+      if (!company || !site) {
+        $('#console-err').textContent = 'A company name and a web address, both.';
+        show($('#console-err'), true);
+        return;
+      }
+      runScan(company, site, $('#f-city').value.trim()).catch(function (e) {
+        stopClock();
+        $('#watch-err').textContent = String(e.message || e);
+        show($('#watch-err'), true);
+        show($('#console'), true);
+      });
+    });
+    // Recent starts, so "we have it, it is on the board" is a mechanism and
+    // not a sentence. Silent when there are none, and silent when signed out.
+    fetch('/api/prospect-report?started=1', { headers: authed() })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.leads || !j.leads.length) return;
+        $('#leads').innerHTML = '<hr class="rule"><h2>Started</h2><div class="leads">' +
+          j.leads.map(function (l) {
+            return '<div class="lead"><div><div class="sname">' + esc(l.name) +
+              ' &middot; ' + esc(l.company || '') + '</div><div class="swhere">' +
+              esc(l.email || l.phone || '') + '</div></div>' +
+              '<a class="chip accent" href="/scan/?r=' + esc(l.token) + '">Their report</a></div>';
+          }).join('') + '</div>';
+      })
+      .catch(function () { /* the console still works */ });
+  }
+})();
+</script>
+</body>
+</html>

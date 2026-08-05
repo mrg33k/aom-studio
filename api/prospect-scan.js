@@ -804,11 +804,37 @@ export function normaliseWebsite(raw) {
 export async function scan({
   company, website, city = null, budgetMs = TOTAL_BUDGET_MS,
   fetchImpl = fetchPublic, fetchOnceImpl = fetchOnce, now = Date.now,
+  onProgress = null,
 } = {}) {
   const startedAt = now()
   const deadline = startedAt + budgetMs
   const normal = normaliseWebsite(website)
   if (normal.error) throw new BlockedTarget(normal.error)
+
+  // ── WATCHING IT HAPPEN, WITHOUT LYING ABOUT WHEN ─────────────────────────
+  // The report page shows each surface resolving. That is only allowed to be
+  // an animation if it is also a fact, so the resolution is announced HERE,
+  // at the moment the surface actually settles, carrying the millisecond it
+  // settled on OUR clock. A caller that renders `at_ms` is drawing the real
+  // sequence; nothing downstream has to invent a delay, and nothing downstream
+  // is able to, because the number is measured before it leaves this function.
+  //
+  // Emitting never changes the result: the same object is pushed into the
+  // stream and returned in `surfaces` at the end. A stream that fails to reach
+  // the browser costs the animation, not the report.
+  const emit = (event, data) => {
+    if (!onProgress) return
+    try { onProgress({ event, at_ms: now() - startedAt, ...data }) } catch { /* never break a scan for its own narration */ }
+  }
+  // The stamp goes ON the surface, not just into the event, so a saved report
+  // still carries the real sequence months later. A report page that has to
+  // show "the homepage answered at 1.2s, the profiles at 3.4s" from a stored
+  // document cannot measure that itself, and the only alternative to storing it
+  // is inventing it.
+  const settled = (s) => {
+    s.at_ms = now() - startedAt
+    emit('surface', { surface: s })
+  }
 
   let fetches = 0
   // TRUE the moment OUR clock cut something short, as opposed to a site
@@ -828,7 +854,16 @@ export async function scan({
     looked_at: null, status: 'not_looked', note: null, findings: [],
   }]))
 
+  emit('open', {
+    company: company || null,
+    city: city || null,
+    website: { requested: String(website), opened: normal.url },
+    budget_ms: budgetMs,
+    surfaces: [...surfaces.values()].map((s) => ({ part_key: s.part_key, name: s.name })),
+  })
+
   // ── wave 1: the homepage, and the plain-http probe, together ─────────────
+  emit('wave', { wave: 1, doing: 'Opening the homepage the way a visitor\'s browser opens it.' })
   fetches += 2
   const [home, insecure] = await Promise.all([
     fetchImpl(normal.url, {
@@ -895,40 +930,73 @@ export async function scan({
         'website either way.'
   }
 
+  settled(site)
+
   // ── wave 2: every profile the homepage points at, together ───────────────
   const wanted = Object.keys(profiles).slice(0, MAX_PROFILE_FETCHES)
-  const fetched = {}
-  if (wanted.length && canFetch()) {
-    const jobs = wanted.map(async (key) => {
-      if (!canFetch() || isSearchShaped(profiles[key])) return [key, null]
+  emit('wave', {
+    wave: 2,
+    doing: wanted.length
+      ? `Opening the ${wanted.length} profile${wanted.length === 1 ? '' : 's'} the homepage points at.`
+      : 'The homepage points at no profiles, so there is nothing in this wave to open.',
+  })
+  // THE WAVE IS PARALLEL; THE SETTLING IS NOT. These four requests all leave at
+  // once, but they come back at different times, and each surface is finished
+  // the moment its own answer arrives rather than when the slowest one does.
+  // The difference matters for one reason: the report page draws the sequence,
+  // and settling them together after Promise.all would stamp four surfaces with
+  // one millisecond they did not share. Awaiting the whole wave before moving
+  // on is unchanged — nothing downstream starts early.
+  const PROFILE_KEYS = ['google-business-profile', 'yelp', 'company-linkedin', 'owners-linkedin']
+  const jobs = []
+  const fetching = new Set()
+
+  if (readable && wanted.length && canFetch()) {
+    for (const key of wanted) {
+      if (!canFetch() || isSearchShaped(profiles[key])) continue
       fetches += 1
-      const r = await fetchImpl(profiles[key], {
-        timeoutMs: Math.min(SECONDARY_MS, budgetLeft()),
-        maxBytes: SECONDARY_BYTES, deadline,
-      }).then(note).catch((e) => ({ ok: false, kind: 'blocked', error: String(e.message || e) }))
-      return [key, r]
-    })
-    for (const [key, r] of await Promise.all(jobs)) fetched[key] = r
+      fetching.add(key)
+      jobs.push(
+        fetchImpl(profiles[key], {
+          timeoutMs: Math.min(SECONDARY_MS, budgetLeft()),
+          maxBytes: SECONDARY_BYTES, deadline,
+        })
+          .then(note)
+          .catch((e) => ({ ok: false, kind: 'blocked', error: String(e.message || e) }))
+          .then((r) => {
+            if (!PROFILE_KEYS.includes(key)) return
+            const s = surfaces.get(key)
+            s.looked_at = profiles[key]
+            s.status = 'read'
+            s.findings = [profileFinding(key, profiles[key], r)]
+            settled(s)
+          })
+      )
+    }
   }
 
-  for (const key of ['google-business-profile', 'yelp', 'company-linkedin', 'owners-linkedin']) {
+  for (const key of PROFILE_KEYS) {
+    if (fetching.has(key)) continue
     const s = surfaces.get(key)
     if (!readable) {
       s.status = 'not_looked'
       s.note = 'This is found by reading your homepage, and we could not read your ' +
         'homepage. Nothing here was checked.'
-      continue
-    }
-    if (profiles[key]) {
+    } else if (profiles[key]) {
+      // Linked, but we did not open it — a search-shaped address, or the fetch
+      // budget was already spent. profileFinding() says which.
       s.looked_at = profiles[key]
       s.status = 'read'
-      s.findings = [profileFinding(key, profiles[key], fetched[key])]
+      s.findings = [profileFinding(key, profiles[key], null)]
     } else {
       s.looked_at = res.finalUrl || res.url
       s.status = 'read'
       s.findings = [noLinkFinding(key)]
     }
+    settled(s)
   }
+
+  await Promise.all(jobs)
 
   // Reviews: the only honest reading of them from outside is the Google
   // listing, and we did not open one. What the site says about itself is a
@@ -956,6 +1024,7 @@ export async function scan({
       to_check_this: 'The Maps link for your listing.',
     })]
   }
+  settled(reviews)
 
   // AI answers: the checker's own words, because it is the same limitation.
   const ai = surfaces.get('ai-answers')
@@ -968,6 +1037,7 @@ export async function scan({
     to_check_this: 'A prompt run against the assistants. It takes longer than ' +
       'this scan is allowed to take.',
   })]
+  settled(ai)
 
   const list = [...surfaces.values()]
   const findings = list.flatMap((s) => s.findings)
@@ -1059,6 +1129,47 @@ export default async function handler(req, res) {
   const budgetMs = Number.isFinite(budget)
     ? Math.max(2000, Math.min(TOTAL_BUDGET_MS, budget))
     : TOTAL_BUDGET_MS
+
+  // ── STREAMING, BECAUSE THE WATCHING IS THE PRODUCT ───────────────────────
+  // `{ stream: true }` returns the same scan as newline-delimited JSON, one
+  // object per line, written as each surface actually settles. The last line is
+  // the whole result — identical to what the plain POST returns — so a caller
+  // that only wants the answer can ignore every earlier line and lose nothing.
+  //
+  // Why this exists rather than a delay on the client: the report page shows
+  // seven surfaces resolving one after another, and a staggered reveal of data
+  // that all arrived at once is a lie about the one thing this product sells.
+  // Every event carries `at_ms`, measured inside scan() before it left the
+  // server, so what the page draws is when it happened. If a proxy buffers the
+  // stream and it all lands together, the page draws it together — that is the
+  // honest degradation, and it costs the animation, not the report.
+  //
+  // Everything that can refuse the request has already refused it by this
+  // point, because after the first byte the status code is spent: auth, the
+  // company name, the address and its SSRF check are all above. A failure from
+  // here on rides in the stream as an `error` line.
+  if (body.stream === true || body.stream === 'true') {
+    res.status(200)
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
+    res.setHeader('X-Accel-Buffering', 'no')
+    if (typeof res.flushHeaders === 'function') res.flushHeaders()
+    const line = (o) => {
+      try {
+        res.write(JSON.stringify(o) + '\n')
+        if (typeof res.flush === 'function') res.flush()
+      } catch { /* client hung up; the scan finishes and is discarded */ }
+    }
+    try {
+      const out = await scan({
+        company, website: body.website, city: city || null, budgetMs,
+        onProgress: line,
+      })
+      line({ event: 'done', at_ms: out.elapsed_ms, ...out, scanned_by: who.userName || null })
+    } catch (e) {
+      line({ event: 'error', error: String(e.message || e), blocked: !!(e instanceof BlockedTarget || e.blocked) })
+    }
+    return res.end()
+  }
 
   try {
     const out = await scan({ company, website: body.website, city: city || null, budgetMs })
