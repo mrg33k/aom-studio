@@ -450,6 +450,8 @@
         says so instead of guessing.</p>
     </div>
 
+    <div id="r-blocked"></div>
+
     <div class="counts" id="r-counts"></div>
 
     <hr class="rule strong">
@@ -680,6 +682,26 @@
       ' &middot; ' + esc(scan.fetches) + ' pages opened' +
       (scan.scanned_by ? ' &middot; run by ' + esc(scan.scanned_by) : '') +
       (scan.timed_out ? '<br>our clock ran out before every page finished answering, so this is short of a full read' : '');
+
+    // AN UNREAD WEBSITE MAKES A SHORT REPORT, AND A SHORT REPORT LOOKS LIKE A
+    // CLEAN BILL OF HEALTH UNLESS IT SAYS OTHERWISE. Six of the seven surfaces
+    // are found by reading the homepage, so when the homepage does not answer
+    // the whole page collapses to "nothing found" — which a reader will hear as
+    // "nothing wrong". This band is the difference between the two, and it goes
+    // above the counts because the counts are what would mislead him.
+    var site = scan.surfaces.filter(function (x) { return x.part_key === 'website'; })[0] || {};
+    if (site.status !== 'read') {
+      $('#r-blocked').innerHTML =
+        '<div class="find" style="margin-top: 32px"><div class="find-top"><div class="find-who">' +
+        markFor('website') + '<span class="sname">We could not read your website</span></div>' +
+        '<span class="pill unknown">nothing below is a verdict</span></div>' +
+        '<p class="found">' + esc(site.note || 'The address did not answer when we opened it.') + '</p>' +
+        '<p class="caveat">Six of the seven surfaces below are found by reading your homepage ' +
+        'and following the links on it, so this report is short because we could not get in, ' +
+        'not because there was nothing to find. It is worth one more run, or one phone call.</p></div>';
+    } else {
+      $('#r-blocked').innerHTML = '';
+    }
 
     $('#r-counts').innerHTML = [
       ['weak', s.weak, s.weak === 1 ? 'thing we would fix' : 'things we would fix'],
