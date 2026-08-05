@@ -845,7 +845,11 @@
        A BUCKET HEAD IS NOT TWO COLUMNS. "Needs you" beside its explanation left
        the heading wrapping to two lines against a sentence that had room. */
     @media (max-width: 720px) {
-      .day-row { flex-wrap: wrap; row-gap: 12px; }
+      /* 16px between the controls is a desktop gap. At 390 there are 286px on
+         the second line and "Waiting · Done · Needs work" needs 282 of them —
+         the 16 was the difference between one control line and two. The row
+         gap stays wide: that one IS separating groups. */
+      .day-row { flex-wrap: wrap; gap: 12px 8px; }
       .day-row .link { flex: 1 0 100%; flex-wrap: wrap; row-gap: 4px; }
       .day-row .who { flex: 1 0 100%; width: auto; }
       .day-row .what { flex: 1 0 100%; }
