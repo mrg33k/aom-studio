@@ -212,8 +212,14 @@ export default async function handler(req, res) {
         String(row.started.at) > String(row.picked_up.at || '')
       if (row.picked_up && !pressedSince) {
         return res.status(409).json({
+          // Phoenix, explicitly. This runs on a machine set to UTC, so the
+          // default locale string told an operator standing in Phoenix that
+          // he picked something up at 3:57 PM when he did it at 8:57 AM — a
+          // wrong time printed BY the record, in a refusal about the record.
           error: `Already picked up by ${row.picked_up.by || 'someone'}` +
-            (row.picked_up.at ? ` on ${new Date(row.picked_up.at).toLocaleString('en-US')}` : '') + '.',
+            (row.picked_up.at
+              ? ` on ${new Date(row.picked_up.at).toLocaleString('en-US', { timeZone: 'America/Phoenix' })}`
+              : '') + '.',
         })
       }
       const note = clean(body.picked_up.note, MAX_NOTE)
