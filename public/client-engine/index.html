@@ -474,10 +474,42 @@
 
     .health.completed { background: var(--good-soft); color: var(--good); }
 
+    /* ── WHAT IT COSTS ────────────────────────────────────────────────────────
+       status_line is the finding and suggestion is the fix. A card carrying
+       only those two tells you what is wrong and what to type, and never once
+       says why a busy morning should be spent on it — "Needs work · rebuild the
+       site" is a failed card no matter how neatly it is set.
+       No uppercase key over it. The card already has one on "Do next", and
+       three labelled blocks in a 288px column means nothing is emphasised. A
+       rule down the left says "this follows from the line above" and costs a
+       row of nothing. It is --line-strong, not the accent: the cost is not a
+       state and must not pick up the state vocabulary. */
+    .cost {
+      margin: 0 0 8px; padding-left: 12px;
+      border-left: 2px solid var(--line-strong);
+      color: var(--text); font-size: 13px; line-height: 1.5;
+    }
+    /* The finding and what it costs are one thought, so they sit at the tight
+       gap. 24px between them read as two unrelated paragraphs, and the dashed
+       rule above "Do next" is already doing the separating. */
+    .part-card .status-line { margin-bottom: 8px; }
+
     .suggest {
       margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed var(--line);
       font-size: 13px; color: var(--text); font-weight: 600;
     }
+
+    /* ── THE ROW THAT SAID NOTHING ────────────────────────────────────────────
+       Ten of Wolfpack's nineteen cards spent their last line on the words "Not
+       applicable" under a divider. Photography, case studies, the capability
+       folder — there is no login for any of them, so there is no access
+       question, so there was never an answer to print. It read as a status the
+       eye had to check and discard ten times per page.
+       The divider goes with it: a rule whose whole job was to separate the card
+       from that line has nothing left to separate. The arrow stays, in the same
+       corner it sits in on every other card — it is the affordance that says
+       this opens, and losing it on ten of nineteen cards would read as a bug. */
+    .access-row.bare { padding-top: 0; border-top: 0; }
     .suggest .k { display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em;
       text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 
@@ -909,6 +941,22 @@
                  !RESTATES.includes(norm(detail)) &&
                  norm(detail) !== norm(connLabel) &&
                  detail.length <= 12;
+
+    // NOT_APPLICABLE IS NOT AN ANSWER. Every other connection value reports
+    // something you can act on — connected, never asked, wrong level, expired.
+    // "Not applicable" reports that the question does not apply: there is no
+    // login for a photo shoot and there never will be. Printing it gave ten of
+    // nineteen cards a line to say nothing, and made the nine that DO carry an
+    // access state harder to pick out of the page.
+    const access = (p.connection === 'not_applicable'
+        ? '' : '<span class="conn ' + cls + '">' + esc(connLabel) + '</span>') +
+      (adds ? '<span class="access-pill" title="' + esc(detail) + '">' + esc(detail) + '</span>' : '');
+
+    // WHAT IT COSTS, in the client's money terms. Falls back to the finding
+    // rather than rendering an empty rule down the side of nothing — a card
+    // with no sentence at all is the failure this line exists to prevent.
+    const cost = p.why_it_matters || '';
+
     return '<a class="part-card' + dim + '" href="/client-engine/part.html?client=' + encodeURIComponent(current) +
       '&part=' + encodeURIComponent(p.part_key) + '" data-part="' + esc(p.name) +
       '" data-key="' + esc(p.part_key) + '" data-state="' + esc(p.state) + '">' +
@@ -917,9 +965,9 @@
       '<span class="health ' + esc(p.state) + '">' + esc(LABEL[p.state] || p.state) + '</span></span></div>' +
       '<h3>' + esc(p.name) + '</h3>' +
       '<p class="status-line">' + esc(p.status_line) + '</p>' +
+      (cost ? '<p class="cost">' + esc(cost) + '</p>' : '') +
       '<p class="suggest"><span class="k">Do next</span>' + esc(p.suggestion) + '</p>' +
-      '<div class="access-row"><span class="conn ' + cls + '">' + esc(connLabel) + '</span>' +
-      (adds ? '<span class="access-pill" title="' + esc(detail) + '">' + esc(detail) + '</span>' : '') +
+      '<div class="access-row' + (access ? '' : ' bare') + '">' + access +
       '<span class="arrow" aria-hidden="true">&rarr;</span></div></a>';
   }
 
