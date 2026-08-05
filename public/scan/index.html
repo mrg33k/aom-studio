@@ -916,7 +916,19 @@
     }).join('');
 
     show($('#r-unknown'), by.unknown.length > 0);
-    var surfacesUnknown = scan.surfaces.filter(function (x) { return standingOf(x) === 'unknown'; }).length;
+    // COUNT WHAT THE READER CAN COUNT.
+    //
+    // This counted surfaces whose OVERALL standing is unknown. The list printed
+    // directly under the sentence is one card per unknown FINDING, each headed
+    // by its surface — so a surface that also carries a finding which held up
+    // stops counting here while its card stays on the page. Wilson Electric
+    // read "3 of these 7" over five named cards (Online reviews and AI answers
+    // each have a good finding as well), with "5 not readable from outside" in
+    // the tally above it. Three numbers, one document, and the reader can settle
+    // it by counting headings. Count the surfaces actually named below.
+    var unknownSurfaces = {};
+    by.unknown.forEach(function (f) { unknownSurfaces[f.part_key] = true; });
+    var surfacesUnknown = Object.keys(unknownSurfaces).length;
     $('#r-unknown-sub').textContent =
       'Not a mark against you. ' + surfacesUnknown + ' of these ' + scan.surfaces.length +
       ' can only be read with something you hand over — the listing, the login, the numbers behind ' +

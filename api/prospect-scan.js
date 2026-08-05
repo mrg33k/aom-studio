@@ -1638,7 +1638,25 @@ export function pickInternalPages(links, homeUrl) {
   const contact = sameHost
     .filter((x) => CONTACT_PAGE_RE.test(x.words))
     .sort((a, b) => a.path.length - b.path.length)[0]
-  take(contact, 'contact', 'their contact page', 'your contact page')
+  // NAME THE PAGE WE OPENED, NOT THE PAGE WE WENT LOOKING FOR.
+  //
+  // CONTACT_PAGE_RE matches about, connect, locations, our team and company as
+  // well as contact, and the shortest path wins — so on Wilson Electric, whose
+  // nav carries both, /about/ (6 characters) beat /contact/ (8). The report
+  // then told a prospect three times that we had read "your contact page". He
+  // has one, it is linked from his own nav, and we never opened it. A receipt
+  // that names the wrong document is the one thing this product may not print,
+  // and it is worse than a vague one: it is checkable, and it fails the check.
+  //
+  // The work page above already solved this by quoting the link it followed —
+  // `your "Markets" section` — so the contact pick quotes its link the same
+  // way. The generic phrasing survives only for an anchor with no text to
+  // quote (an icon, an image link), where there is nothing to be specific with.
+  const cName = contact ? clip(String(contact.label || '').trim(), 30) : ''
+  const cNamed = cName ? `"${cName}" page` : null
+  take(contact, 'contact',
+    cNamed ? `the ${cNamed}` : 'their contact page',
+    cNamed ? `your ${cNamed}` : 'your contact page')
 
   return out.slice(0, MAX_INTERNAL_FETCHES)
 }
@@ -2033,8 +2051,16 @@ export async function scan({
       // The receipt is the document that carries the links, because the claim is
       // about their site — not the platform, which we did not read.
       receipt: receiptFrom(res, reviewPlaces.map((p) => p.url).join(' · ')),
+      // "both platforms" was hardcoded from the days this only ever fired with
+      // Google and Yelp together. Wilson Electric links one, and the sentence
+      // above it says so — "1 place where reviews of you are public: your
+      // Google listing" — while four cards down the same report says we found
+      // no Yelp link at all. Three statements on one document about how many
+      // places exist, and they do not agree. The count is already in hand here;
+      // the caveat has no business disagreeing with it.
       not_verified: 'What those reviews say, and how many there are, is drawn in ' +
-        'the browser on both platforms and is not in the page a fetch returns.',
+        `the browser on ${reviewPlaces.length === 1 ? 'that platform' : 'those platforms'} ` +
+        'and is not in the page a fetch returns.',
     }))
   }
 
