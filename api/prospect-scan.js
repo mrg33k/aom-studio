@@ -1314,21 +1314,22 @@ function profileFinding(partKey, found, res) {
 // not look can see exactly where we did.
 function noLinkFinding(partKey, { pagesRead, hosts }) {
   const copy = NO_LINK[partKey]
-  const alsoFound = hosts.length
-    ? ` The off-site addresses we did find on those pages point at ${hosts.slice(0, 6).join(', ')}.`
-    : ' Those pages carry no off-site links at all.'
+  // The hosts we DID read live in the search record and nowhere else. Printed
+  // in the sentence as well they were the same twelve words in two type
+  // treatments on three consecutive cards, which is how a reader learns that
+  // the evidence block is decoration.
   return finding({
     id: `${partKey}.not_linked`, part_key: partKey, standing: 'unknown',
     looked_at: `Every link on ${pagesRead.length === 1 ? 'your homepage' : `the ${pagesRead.length} pages of your site we read`}.`,
     found: `We found no link to ${copy.what} on ${pagesRead.length === 1
       ? 'your homepage'
       : `your homepage or the ${pagesRead.length - 1} other page${pagesRead.length === 2 ? '' : 's'} of your site we opened`}` +
-      `.${alsoFound}${copy.tail ? ` ${copy.tail}` : ''}`,
+      `.${copy.tail ? ` ${copy.tail}` : ''}`,
     to_check_this: copy.ask,
     searched: searchRecord({
       looked_for: copy.shapes,
       across: pagesRead.join(', '),
-      instead: hosts,
+      instead: hosts.length ? hosts : ['no off-site links at all'],
     }),
   })
 }
