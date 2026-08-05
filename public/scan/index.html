@@ -237,6 +237,13 @@
     gap: 8px;
   }
   .find-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  /* A FINDING QUOTES ADDRESSES, AND AN ADDRESS IS ONE UNBREAKABLE WORD. A
+     Google Maps place URL is 250 characters of coordinates and feature ids;
+     dropped into a prose paragraph with no break rule it sets the card's
+     min-content width and the whole page scrolls sideways. Prose blocks break
+     the word rather than the page. */
+  .find p, .find q, .searched p { overflow-wrap: break-word; }
+
   .found { margin-top: 12px; font-size: 16px; line-height: 1.55; }
 
   .costs {

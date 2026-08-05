@@ -1904,7 +1904,10 @@ export async function scan({
   if (gbpOpened) {
     reviews.findings.push(finding({
       id: 'online-reviews.listing_opened', part_key: 'online-reviews', standing: 'unknown',
-      looked_at: `Your Google listing, at ${gbpReceipt ? gbpReceipt.url : profiles['google-business-profile'].url}`,
+      // Clipped: a Maps place URL is 250 characters of coordinates and feature
+      // ids, and printed whole it is the widest thing on the report.
+      looked_at: `Your Google listing, at ${clip(gbpReceipt ? gbpReceipt.url
+        : profiles['google-business-profile'].url, 110)}`,
       found: 'We opened your Google listing and it answered, but the reviews are ' +
         'not in what came back: Google draws the listing in the browser, so a ' +
         'fetch returns the page without its contents. How many reviews you have, ' +
