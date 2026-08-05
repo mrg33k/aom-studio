@@ -810,10 +810,18 @@
        Which cards are alone is measured in JS: CSS cannot count the columns an
        auto-fill grid chose, and :nth-child(odd) is only accidentally right at
        two — at three it would stretch a card that was not alone. */
-    .part-card.wide { grid-column: 1 / -1; }
+       A CARD WITH ITS PROMPT OPEN takes the whole row too, and for a plainer
+       reason: the prompt is a full-width grid item, so opening one on a card in
+       column 1 left that card sitting alone with a hole beside it and the form
+       underneath — measured, live, 2026-08-05: rows went [2,2,2,1] to
+       [1,2,2,1,1], two holes where there had been none. The card and the
+       question it just asked are one thing on the page, so they occupy one
+       width. */
+    .part-card.wide, .part-card.open { grid-column: 1 / -1; }
     /* Filling the row must not stretch the measure with it. Ninety characters
        to a line is a different defect from the one this fixes. */
-    .part-card.wide .card-link > :not(.card-top) { max-width: 62ch; }
+    .part-card.wide .card-link > :not(.card-top),
+    .part-card.open .card-link > :not(.card-top) { max-width: 62ch; }
     .prompt .err { margin: 12px 0 0; font-size: 13px; font-weight: 650;
       color: var(--bad); }
     .sweep-line { margin: 0 0 24px; padding: 12px 16px; border-radius: 12px;
@@ -878,6 +886,8 @@
     .board-message p { margin: 0 0 16px; font-size: 14px; color: var(--muted);
       font-weight: 600; max-width: 52ch; }
     .board-message .recheck-btn { text-decoration: none; }
+    .board-message .said { margin: 12px 0 0; max-width: 52ch; color: var(--muted);
+      font-size: 13px; font-weight: 650; }
     .count-pill.quiet { color: var(--quiet); }
 
     @keyframes flash { 0% { box-shadow: 0 0 0 4px var(--accent-soft); } 100% { box-shadow: none; } }
@@ -938,6 +948,131 @@
        the least actionable, and it should not win a screen about what to do. */
     .tile.unchecked b { color: #9a9c94; }
 
+    /* ── WRITTEN FOR YOU, AND NOT SENT ────────────────────────────────────────
+       The steward writes drafts; it does not send them, and it has no way to.
+       That is a property of the store rather than a promise made here —
+       prepared_messages has no address column, so nothing downstream can
+       address a message from one — and it is the only reason a standing agent
+       was allowed anywhere near a client's name. A screen that let a reader
+       forget it would be the version that was blocked.
+
+       So it is said twice, in the two places a person actually looks: once at
+       the top of the section, and once on every item, as the pill it wears
+       until he says otherwise. A pill and not a footnote, because every other
+       state on this board is a pill and "nothing has gone out" is a state.
+
+       The item is a ROW of the same family as a day row — surface, one line of
+       rule, 12px radius — not a card. Cards are for parts, of which there are
+       nineteen; these are eight things to read in order, and the day view
+       already has one reading vocabulary. */
+    .queue { margin: 0 0 32px; }
+    .queue-note {
+      margin: 0 0 16px; padding: 12px 16px; border-radius: 12px;
+      background: var(--quiet-soft); color: var(--text);
+      font-size: 13px; font-weight: 600; max-width: 78ch;
+    }
+    .queue-note b { font-weight: 750; }
+
+    /* Grouped by the person it is addressed to, because that is how it gets
+       done: nobody writes Ross four separate times, they deal with Ross. */
+    .q-person { margin: 0 0 24px; }
+    .q-person-head { display: flex; align-items: baseline; gap: 12px;
+      flex-wrap: wrap; margin: 0 0 12px; }
+    .q-person-head h3 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+    .q-person-head .who { font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+
+    .q-item { margin: 0 0 8px; padding: 16px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--line); }
+    .q-item-top { display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap; margin: 0 0 12px; }
+    .q-about { flex: 1; min-width: 0; font-size: 14px; font-weight: 750; }
+    .q-about span { display: block; font-size: 13px; font-weight: 600;
+      color: var(--muted); }
+    .health.unsent { background: var(--quiet-soft); color: var(--quiet); }
+    .health.sent { background: var(--good-soft); color: var(--good); }
+    .health.answered { background: var(--warn-soft); color: var(--warn); }
+
+    /* TWO COLUMNS, AND THE SPLIT IS THE POINT.
+       Left is the message. Right is everything that is NOT the message and must
+       never end up in it — what it costs the client (written for the operator's
+       card, third person about the person it is addressed to), and the receipts
+       under it. Measured first at one column: the draft box came out 1020px
+       wide around a 537px text measure, so 47% of the band was background, and
+       the label "Not in the message" was the only thing keeping two audiences
+       apart. Structure says it better than a label, and it spends the width. */
+    .q-cols { display: grid; align-items: start; gap: 24px; margin: 0 0 12px;
+      grid-template-columns: minmax(0, 72ch) minmax(0, 1fr); }
+
+    /* THE DRAFT, AS IT WOULD ACTUALLY GO OUT — the words, never a summary of
+       them. Judging a message you have not read is the thing this queue exists
+       to prevent, so the body is never behind a click. The measure lives on the
+       column, not on the paragraph, so the box ends where the reading ends. */
+    .q-draft { padding: 16px; border-radius: 12px;
+      background: var(--panel); border: 1px solid var(--line); }
+    .q-subject { margin: 0 0 8px; font-size: 14px; font-weight: 750; }
+    .q-body { margin: 0; color: var(--text); font-size: 13px;
+      font-weight: 600; line-height: 1.6; white-space: pre-wrap;
+      overflow-wrap: anywhere; }
+
+    .q-aside { margin: 0 0 12px; color: var(--muted);
+      font-size: 13px; font-weight: 600; }
+    .q-aside b { display: block; color: var(--text); font-weight: 750; }
+
+    /* Under about 1240 the right column is narrower than the quotes it holds,
+       and a receipt that wraps every four words stops being readable. It goes
+       under the draft instead, which is where it was to begin with. */
+    @media (max-width: 1240px) {
+      .q-cols { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .q-body { max-width: 72ch; }
+    }
+
+    /* The receipts are folded, and that is a judgement worth writing down. The
+       BODY is the thing being judged and must be readable without a click; the
+       receipts are the appeal against it. Eight items times two receipts printed
+       inline is a wall, and a wall is how receipts stop being read at all. The
+       count is in the summary so nobody has to open one to learn there are
+       none — a draft with no receipts cannot exist, and if one ever appears
+       here the summary is where it shows. */
+    .q-sources { font-size: 13px; }
+    .q-sources > summary { cursor: pointer; color: var(--accent-text);
+      font-weight: 700; list-style: none; }
+    .q-sources > summary::-webkit-details-marker { display: none; }
+    /* A non-breaking space, not a plain one: a CSS hex escape swallows the
+       space that terminates it, so "\2212 " is the sign and nothing else, and
+       the summary rendered as "-Where every line came from". */
+    .q-sources > summary::before { content: "+\00a0"; }
+    .q-sources[open] > summary::before { content: "\2212\00a0"; }
+    .q-src { margin: 12px 0 0; padding-left: 12px;
+      border-left: 2px solid var(--line-strong); }
+    .q-src .ref { display: block; color: var(--muted); font-size: 12px;
+      font-weight: 700; overflow-wrap: anywhere; }
+    .q-src .quote { display: block; margin-top: 4px; max-width: 78ch;
+      color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+
+    .q-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .q-outcome { margin: 12px 0 0; padding: 12px; border-radius: 12px;
+      background: var(--good-soft); color: var(--good); font-size: 13px;
+      font-weight: 650; max-width: 78ch; }
+
+    /* The chosen channel goes SOLID because at that moment it stops being a
+       thing you can press and becomes the thing the record will say. Same law
+       as everywhere else here: outlined is a verb, filled is a state. */
+    .q-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+    .act.on { background: var(--accent-soft); color: var(--accent-text);
+      border-color: var(--accent); }
+    .prompt textarea { width: 100%; min-height: 72px; padding: 12px;
+      border-radius: 8px; border: 1px solid var(--line-strong);
+      background: var(--surface); color: var(--text); font-family: inherit;
+      font-size: 13px; font-weight: 600; resize: vertical; }
+    .prompt textarea:focus { outline: none; border-color: var(--accent); }
+    .q-fix { display: grid; gap: 8px; margin: 12px 0; }
+    .prompt .k { display: block; margin: 0 0 8px; color: var(--muted);
+      font-size: 12px; font-weight: 700; }
+    .q-fix input { width: 100%; }
+    .prompt .ok { margin: 12px 0 0; color: var(--good); font-size: 13px;
+      font-weight: 650; }
+
     @media (max-width: 720px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
     /* ── THE PHONE ────────────────────────────────────────────────────────────
@@ -991,6 +1126,28 @@
          push it off the card — "Open Association memberships" is wider than a
          390px screen has room for. */
       .next-up-go { max-width: 100%; justify-content: center; text-align: center; }
+
+      /* THE QUEUE ON A PHONE. The item is already one column, so what breaks is
+         everything that was laid out as a LINE, and the fix is never "let it
+         wrap" on its own — measured at 390, free wrapping put the icon alone on
+         one row, the name on the next and the pill on a third, and turned a
+         three-part heading into three separate headings 12px apart.
+
+         The name keeps the icon's line and the pill takes the next one: at 342
+         usable, the icon and its 12px gap leave 290, and "Google Business
+         Profile" needs 214 of them while the pill needs 150 — one of the two
+         has to move, and it is not the thing you read first.
+
+         The heading's three parts close to 4px so they read as one heading, and
+         the two verbs split the width so neither is the small one. A thumb
+         should not have to pick the smaller of two buttons when one of them
+         releases a message to a client. */
+      .q-item-top { align-items: flex-start; gap: 8px 12px; }
+      .q-about { flex: 1 1 180px; }
+      .q-acts .act { flex: 1 1 0; justify-content: center; text-align: center; }
+      .q-chips .act { flex: 1 0 auto; }
+      .q-person-head { gap: 4px 12px; }
+      .q-person-head h3 { flex: 1 0 100%; }
     }
 </style>
 </head>
@@ -1297,14 +1454,25 @@
 
   function groupsHtml(parts) {
     if (!parts.length) {
-      // It used to say "Add the parts we look after and they will show here"
-      // on a screen with no way to add one. An empty state that names an action
-      // it does not offer is a dead end wearing an instruction's clothes; this
-      // one says what is true and where the work actually happens.
-      return '<p class="status-line">No parts have been set up for this client yet, ' +
-             'so there is nothing here to be right or wrong about. Parts are ' +
-             'created when the client is onboarded — this board reads them, it ' +
-             'does not create them.</p>';
+      // It used to say "Add the parts we look after and they will show here" on
+      // a screen with no way to add one. Naming the correct absence instead was
+      // half the fix and it stopped there: "parts are created when the client is
+      // onboarded" is true, and it is still a closed door with a sign on it.
+      //
+      // There is no create action on /api/client-parts, and inventing a form
+      // that posts to one would be a button that 404s. What DOES exist is the
+      // room sitting against the right-hand edge of this very page — the place
+      // this board has always said the work is asked for and where it lands. So
+      // the door is that one, and the button is honest about what it does: it
+      // writes the ask and leaves the cursor in it. It does not send it, and it
+      // does not promise the parts will appear on their own.
+      return '<div class="board-message"><b>No parts have been set up for ' +
+        esc((CLIENTS[current] || {}).name || current) + ' yet.</b>' +
+        '<p>So there is nothing here to be right or wrong about, and this board will not ' +
+        'invent a list to fill the space. It reads parts; it does not create them. The room ' +
+        'beside it is where they get asked for.</p>' +
+        '<button type="button" class="act go" data-act="ask-parts">' +
+        'Ask for them in the room</button></div>';
     }
     const order = [];
     const byGroup = {};
@@ -1323,16 +1491,30 @@
   }
 
   // ── A LONE CARD ON THE LAST ROW ───────────────────────────────────────────
-  // Measured rather than guessed. getComputedStyle resolves an auto-fill grid
-  // to its actual track list, so this is the real column count at this width,
-  // not an assumption about a breakpoint. A card is stretched only when it is
-  // genuinely alone on the last row — never when the group happens to be odd.
+  // Measured rather than guessed, and now measured off the CARDS rather than
+  // off the column count.
+  //
+  // The old version counted the tracks and did `cards.length % cols === 1`,
+  // which is only the same question while the grid contains nothing but cards.
+  // It does not: an open prompt is a full-width grid item, so opening one on
+  // the first card of "Found by buyers" pushed everything down by a row and a
+  // half. Measured live on 2026-08-05 at 1440, seven cards in two columns went
+  // from [2,2,2,1] to [1,2,2,1,1] — the arithmetic still said "one on the last
+  // row, already handled" while the page had grown TWO holes, one beside the
+  // card that had just been clicked.
+  //
+  // Reading the rendered tops cannot drift from what is on screen, because it
+  // IS what is on screen. getBoundingClientRect flushes layout, so these are
+  // the positions after the class above came off, not the ones before it.
   function balanceGrids() {
     document.querySelectorAll('.card-grid').forEach((grid) => {
-      const cols = getComputedStyle(grid).gridTemplateColumns.split(/\s+/).filter(Boolean).length;
-      const cards = grid.querySelectorAll('.part-card');
+      const cards = [...grid.querySelectorAll('.part-card')];
       cards.forEach((c) => c.classList.remove('wide'));
-      if (cols > 1 && cards.length > cols && cards.length % cols === 1) {
+      if (cards.length < 2) return;
+      const tops = cards.map((c) => Math.round(c.getBoundingClientRect().top));
+      const last = tops[tops.length - 1];
+      if (tops[0] === last) return;   // one row: nothing is alone on it
+      if (tops.filter((t) => t === last).length === 1) {
         cards[cards.length - 1].classList.add('wide');
       }
     });
@@ -1442,7 +1624,15 @@
     chrome(false);
   }
 
-  async function load(key, { silent = false } = {}) {
+  // `known` is a read of this client that the caller ALREADY has in its hand.
+  //
+  // Without it, every path that has to decide "did anything change" reads the
+  // whole client to find out and then makes load() read the whole client again
+  // to draw it — two identical GETs, three seconds apart, for one part moving.
+  // The watcher did exactly that on every tick where anything had changed, and
+  // it is the first read that is redundant, not the second: whoever noticed the
+  // change is holding the answer.
+  async function load(key, { silent = false, known = null } = {}) {
     current = key;
     const meta = CLIENTS[key] || { name: key, trade: '' };
     eyebrow.textContent = 'Client home';
@@ -1458,30 +1648,33 @@
     if (!silent) { summary.classList.remove('on'); groupsEl.innerHTML =
       '<p class="status-line">Reading the record...</p>'; }
 
-    let res, data;
-    try {
-      res = await fetch('/api/client-parts?client=' + encodeURIComponent(key),
-                        { credentials: 'same-origin', cache: 'no-store', headers: authed() });
-      data = await res.json();
-    } catch (e) {
-      message('Could not reach the board.',
-              'The record did not answer, so nothing below would be trustworthy. ' +
-              'Check your connection and try again.');
-      return null;
-    }
+    let data = known;
+    if (!data) {
+      let res;
+      try {
+        res = await fetch('/api/client-parts?client=' + encodeURIComponent(key),
+                          { credentials: 'same-origin', cache: 'no-store', headers: authed() });
+        data = await res.json();
+      } catch (e) {
+        message('Could not reach the board.',
+                'The record did not answer, so nothing below would be trustworthy. ' +
+                'Check your connection and try again.');
+        return null;
+      }
 
-    if (res.status === 401 || res.status === 403 || data.auth === false) {
-      message('You are signed out.',
-              'This board shows client information, so it needs you signed in. ' +
-              'Sign in and it will load.',
-              '<a class="recheck-btn" href="/dashboard?next=' +
-              encodeURIComponent(location.pathname) + '">Sign in on the dashboard, ' +
-              'then come back to this page</a>');
-      return null;
-    }
-    if (!res.ok) {
-      message('The board could not load.', data.error || ('Error ' + res.status));
-      return null;
+      if (res.status === 401 || res.status === 403 || data.auth === false) {
+        message('You are signed out.',
+                'This board shows client information, so it needs you signed in. ' +
+                'Sign in and it will load.',
+                '<a class="recheck-btn" href="/dashboard?next=' +
+                encodeURIComponent(location.pathname) + '">Sign in on the dashboard, ' +
+                'then come back to this page</a>');
+        return null;
+      }
+      if (!res.ok) {
+        message('The board could not load.', data.error || ('Error ' + res.status));
+        return null;
+      }
     }
 
     chrome(true);
@@ -1749,7 +1942,8 @@
                    b.connection !== p.connection || b.suggestion !== p.suggestion);
     });
     if (!changed.length) return;
-    await load(key, { silent: true });
+    // The read that found the change IS the read that draws it. See load().
+    await load(key, { silent: true, known: data });
     changed.forEach(p => {
       const el = document.querySelector('[data-key="' + p.part_key + '"]');
       if (!el) return;
@@ -1864,6 +2058,11 @@
   function closePrompt() {
     const open = groupsEl.querySelector('.prompt');
     if (open) open.remove();
+    // A card only wears `open` while its question is on screen. Leaving the
+    // class behind would leave one card stretched across a two-column grid
+    // with nothing under it, which is the defect this pairing exists to fix.
+    groupsEl.querySelectorAll('.part-card.open').forEach((c) => c.classList.remove('open'));
+    balanceGrids();
   }
 
   // The controls now live on two surfaces, so "reload what you are looking at"
@@ -1873,10 +2072,20 @@
   const refreshCurrent = () =>
     current === '__day__' ? loadDay() : load(current, { silent: true });
 
-  // A row on the day, a card on a client page. Both open the question under
-  // themselves rather than over the list, so closing six things out stays one
-  // motion instead of six dialogs.
-  const rowOf = (el) => el.closest('.day-row, .part-card');
+  // A row on the day, a card on a client page, an item in the queue. All three
+  // open the question under themselves rather than over the list, so closing
+  // six things out stays one motion instead of six dialogs.
+  const rowOf = (el) => el.closest('.day-row, .part-card, .q-item');
+
+  // A card and the question it just asked are one thing on the page, so they
+  // take one width. Nothing to do for a day row or a queue item: those are
+  // already full width and are not in a grid.
+  function openOn(rowEl) {
+    if (rowEl && rowEl.classList.contains('part-card')) {
+      rowEl.classList.add('open');
+      balanceGrids();
+    }
+  }
 
   // ── NOT NAMED `send` ──────────────────────────────────────────────────────
   // It was, and the rail already had one. Two `function send` declarations in
@@ -1920,6 +2129,124 @@
 
     if (act === 'cancel') return closePrompt();
 
+    // ── THE TWO VERBS ON A PREPARED MESSAGE ─────────────────────────────
+    if (act === 'q-send' || act === 'q-feedback') {
+      closePrompt();
+      const item = qItems[btn.dataset.id];
+      if (!item) return alertInline(btn, 'This draft is no longer on screen. Reload the day.');
+      const box = document.createElement('div');
+      box.className = 'prompt';
+      box.dataset.qid = item.id;
+      box.innerHTML = act === 'q-send' ? sendPromptHtml(item) : feedbackPromptHtml(item);
+      rowOf(btn).insertAdjacentElement('afterend', box);
+      const first = box.querySelector('textarea, input');
+      if (first) first.focus();
+      return;
+    }
+
+    // The chosen channel is the only one that can be true, so choosing one
+    // unchooses the rest and it goes solid — it has stopped being a button and
+    // become what the record will say.
+    if (act === 'q-via') {
+      const box = btn.closest('.prompt');
+      box.querySelectorAll('[data-act="q-via"]').forEach((b) => b.classList.remove('on'));
+      btn.classList.add('on');
+      const stale = box.querySelector('.err');
+      if (stale) stale.remove();
+      return;
+    }
+
+    if (act === 'q-copy') {
+      const box = btn.closest('.prompt');
+      const item = qItems[box.dataset.qid];
+      try {
+        await navigator.clipboard.writeText(item.subject + '\n\n' + item.body);
+        qSay(box, 'Copied: the subject line and the message, exactly as they read above.');
+      } catch (e) {
+        qSay(box, 'The clipboard refused. Select the message above and copy it by hand.', true);
+      }
+      return;
+    }
+
+    if (act === 'q-send-go') {
+      const box = btn.closest('.prompt');
+      const id = box.dataset.qid;
+      const picked = box.querySelector('[data-act="q-via"].on');
+      const note = (box.querySelector('.prompt-row input').value || '').trim();
+      btn.disabled = true;
+      try {
+        // `via` is deliberately not defaulted here. The endpoint refuses an
+        // empty one in a sentence that explains why, and that sentence is
+        // better than anything this screen would say over the top of it.
+        const out = await postSteward(Object.assign(
+          { action: 'send', id, via: picked ? picked.dataset.via : '' },
+          note ? { note } : {}));
+        const w = out.waiting_recorded, it = out.item;
+        qReplace(id, it, out.note + (w
+          ? ' ' + (NAMES[it.client] || it.client) + ' · ' + it.part_name +
+            ' is now recorded as waiting on ' + w.waiting_on + ', which the list below ' +
+            'was read too early to show.'
+          : ''));
+        closePrompt();
+      } catch (err) {
+        btn.disabled = false;
+        qSay(box, err.message, true);
+      }
+      return;
+    }
+
+    if (act === 'q-feedback-go') {
+      const box = btn.closest('.prompt');
+      const id = box.dataset.qid;
+      const words = (box.querySelector('textarea').value || '').trim();
+      const apply = {};
+      box.querySelectorAll('[data-fix]').forEach((f) => {
+        const v = (f.value || '').trim();
+        if (v) apply[f.dataset.fix] = f.dataset.fix === 'hold_days' ? Number(v) : v;
+      });
+      btn.disabled = true;
+      try {
+        const out = await postSteward({ action: 'feedback', id, feedback: words, apply });
+        // `next` is the endpoint's own honest answer, and sometimes it is
+        // "nothing will happen". Printing it unedited is the point.
+        qReplace(id, out.item, out.next);
+        closePrompt();
+      } catch (err) {
+        btn.disabled = false;
+        qSay(box, err.message, true);
+      }
+      return;
+    }
+
+    // ── SOMEBODY ASKED FOR A CLIENT THAT HAS NO PARTS ───────────────────
+    // The one door that exists, and it is a real one: the room beside this
+    // board is where the work is asked for and where it lands. This types the
+    // ask and leaves the cursor in it — it does not send it, and it does not
+    // claim the parts will appear.
+    if (act === 'ask-parts') {
+      const box = btn.closest('.board-message');
+      const stale = box.querySelector('.said');
+      if (stale) stale.remove();
+      // The room is hidden under 1180px — a laptop at 1024 and every phone. A
+      // button that types into a composer nobody can see is the same dead end
+      // this empty state was rewritten to stop being, so it says where the door
+      // is rather than pretending to have opened it.
+      if (composer.offsetParent === null) {
+        box.insertAdjacentHTML('beforeend', '<p class="said">The room is not on screen at ' +
+          'this width. Open this client on a wider screen and the chat sits down the ' +
+          'right of the board.</p>');
+        return;
+      }
+      $('#tab-chat').click();
+      composer.value = 'Set up the parts we look after for ' +
+        (NAMES[current] || current) + '.';
+      composer.focus();
+      composer.scrollIntoView({ block: 'center' });
+      box.insertAdjacentHTML('beforeend', '<p class="said">Typed into the room on the ' +
+        'right. Nothing has been sent — press Send there when it says what you mean.</p>');
+      return;
+    }
+
     // "Not waiting" needs nothing from anyone — the chase simply ended.
     if (act === 'unwait') {
       btn.disabled = true;
@@ -1954,6 +2281,7 @@
       box.dataset.act = 'pickup';
       box.dataset.token = btn.dataset.token;
       rowEl.insertAdjacentElement('afterend', box);
+      openOn(rowEl);
       const pin = box.querySelector('input');
       pin.focus();
       pin.addEventListener('keydown', (k) => {
@@ -1979,6 +2307,7 @@
       box.dataset.client = btn.dataset.client;
       box.dataset.part = btn.dataset.part;
       rowEl.insertAdjacentElement('afterend', box);
+      openOn(rowEl);
       const input = box.querySelector('input');
       input.focus();
       input.addEventListener('keydown', (k) => {
@@ -2064,6 +2393,273 @@
       '<span class="st"><span class="health">Not picked up</span></span></div>';
   }
 
+  // ── WHAT THE STEWARD WROTE, WAITING ON A CLICK ────────────────────────────
+  // WHY IT IS ON THE DAY AND NOWHERE ELSE.
+  //
+  // A prepared message is not a page you visit. It is the one kind of work on
+  // this board where everything except the judgement is already done — the
+  // words are written, the person is named, the receipts are attached — and
+  // the only thing standing between it and a client is ten seconds of reading.
+  // Work like that dies on a surface you have to remember to open. He opens the
+  // day every morning; that is the whole argument.
+  //
+  // ABOVE the overnight line and every bucket, because each item here becomes
+  // the chase on a part in those buckets the moment it goes out — reading it
+  // after them would be reading the answer before the question. BELOW "Someone
+  // pressed Get Started", which is the precedent this file already set and it
+  // still holds: a stranger who left a phone number is waiting on a call, and a
+  // person outranks a draft.
+  //
+  // There is no queue on a client page and that is deliberate, not an omission.
+  // The unit here is a PERSON — four things owed by Ross, dealt with in one
+  // sitting — and a person does not belong to one client's page. Putting the
+  // same items on both surfaces would also put two send buttons on one draft,
+  // and the second one to be clicked is a 409 whose only useful reading is
+  // "somebody already did this", which is not what happened.
+  const CHANNELS = [
+    ['email', 'Email'], ['text', 'Text'], ['call', 'On a call'],
+    ['in_person', 'In person'], ['other', 'Another way'],
+  ];
+
+  // The rendered items, by id, so a prompt can read the draft it belongs to
+  // without going back to the network for something already on screen.
+  let qItems = {};
+
+  const Q_STATE = {
+    waiting: ['unsent', 'Nothing sent yet'],
+    sent: ['sent', null],        // state_line already names how, and by whom
+    feedback: ['answered', null],
+  };
+
+  // ── A RECEIPT HAS TO POINT AT SOMETHING A PERSON CAN NAME ─────────────────
+  // The steward stores a machine pointer, because a fingerprint has to be one:
+  // `client_parts.<row id>.chase_ask`. Printing that at Patrik is the failure
+  // this board refuses everywhere else — a table, a column and a row id are not
+  // things in his world, and a receipt he cannot read is not a receipt he can
+  // check.
+  //
+  // So the two shapes the preparer actually writes get read back into his
+  // language, and ANY OTHER SHAPE IS PRINTED EXACTLY AS STORED. Guessing at an
+  // unfamiliar pointer would be this product's own recurring defect in
+  // miniature: a finite thing emitting a claim wider than itself.
+  //
+  // The row id is deliberately NOT resolved to a part name. This screen cannot
+  // check that the row belongs to the part named on the item, and "Google
+  // Business Profile's chase ask" said without checking is a claim. The exact
+  // stored pointer stays on the element for anyone who has to trace it.
+  const FIELD_SAID = {
+    chase_ask: 'what we are asking them for',
+    chase_from: 'who we ask',
+    waiting_on: 'who we are waiting on',
+    waiting_since: 'how long we have waited',
+    why_it_matters: 'what it costs them',
+    status_line: 'where it stands',
+    suggestion: 'what to do next',
+    access_detail: 'what level of access we hold',
+    primary_contact: 'who we deal with',
+    primary_contact_source: 'where that name came from',
+    next_meeting_label: 'the next meeting',
+  };
+  const sayField = (f) => FIELD_SAID[f] || String(f).replace(/_/g, ' ');
+
+  function refSaid(ref) {
+    const s = String(ref == null ? '' : ref);
+    let m = s.match(/^client_engine_settings\.([a-z0-9-]+)\.(\w+)$/);
+    if (m) return (NAMES[m[1]] || m[1]) + '’s board, its own settings: ' + sayField(m[2]);
+    m = s.match(/^client_parts\.[0-9a-fA-F-]{36}\.(\w+)$/);
+    if (m) return 'A part on the board: ' + sayField(m[1]);
+    return s;
+  }
+
+  function qSources(item) {
+    const s = Array.isArray(item.sources) ? item.sources : [];
+    return '<details class="q-sources"><summary>Where every line came from (' +
+      s.length + ')</summary>' +
+      (s.length
+        ? s.map((x) => '<p class="q-src"><span class="ref" title="' + esc(x.ref) + '">' +
+            esc(refSaid(x.ref)) + '</span>' +
+            '<span class="quote">&ldquo;' + esc(x.quote) + '&rdquo;</span></p>').join('')
+        : '<p class="q-src"><span class="quote">This draft carries no receipts, which the ' +
+          'record is supposed to make impossible. Do not send it.</span></p>') +
+      '</details>';
+  }
+
+  function qItem(item) {
+    const tone = (Q_STATE[item.state] || ['unsent', null])[0];
+    const label = (Q_STATE[item.state] || [null, null])[1] || item.state_line;
+    const icon = ICONS[item.part_icon] || '';
+    const why = (item.context && item.context.why_it_matters) || '';
+    return '<article class="q-item" data-id="' + esc(item.id) + '">' +
+      '<div class="q-item-top">' +
+      (icon ? '<span class="glyph ' + esc(item.part_icon) + '" aria-hidden="true">' +
+        icon + '</span>' : '') +
+      '<span class="q-about">' + esc(item.part_name) +
+      '<span>' + esc(item.kind_label) + '</span></span>' +
+      '<span class="health ' + tone + '">' + esc(label) + '</span></div>' +
+
+      '<div class="q-cols">' +
+      '<div class="q-draft"><p class="q-subject">' + esc(item.subject) + '</p>' +
+      '<p class="q-body">' + esc(item.body) + '</p></div>' +
+
+      // The right column is everything that is NOT the message. why_it_matters
+      // is the sharpest case and the reason the split is structural rather than
+      // a label: it is a real sentence, written for the operator's card, and
+      // read into a message to the person it is about it turns third person
+      // ("so nobody can prove to Mo that the marketing paid for itself", sent to
+      // Mo). It sits beside the draft, never in it.
+      '<div class="q-side">' +
+      (why ? '<p class="q-aside"><b>Not in the message, for you</b>' + esc(why) + '</p>' : '') +
+      qSources(item) +
+      (item.feedback
+        ? '<p class="q-aside"><b>You said</b>&ldquo;' + esc(item.feedback) + '&rdquo;</p>'
+        : '') +
+      '</div></div>' +
+
+      // EXACTLY TWO, and only while it is still his to act on. The API says
+      // which in `verbs`; this does not decide it, so a third one cannot appear
+      // on the screen without appearing in the endpoint that authorises it.
+      ((item.verbs || []).length
+        ? '<div class="q-acts">' +
+            '<button type="button" class="act go" data-act="q-send" data-id="' +
+              esc(item.id) + '">Send it</button>' +
+            '<button type="button" class="act" data-act="q-feedback" data-id="' +
+              esc(item.id) + '">Give feedback</button>' +
+          '</div>'
+        : '') +
+      '</article>';
+  }
+
+  function qPerson(g) {
+    const n = g.items.length;
+    return '<div class="q-person"><div class="q-person-head">' +
+      '<h3>' + esc(g.to_name) + '</h3>' +
+      '<span class="who">' + esc(NAMES[g.client] || g.client) + '</span>' +
+      '<span class="bucket-why">' + n + (n === 1 ? ' message' : ' messages') +
+      ', written and not sent</span></div>' +
+      g.items.map((i) => qItem(i)).join('') + '</div>';
+  }
+
+  function queueHtml(q) {
+    qItems = {};
+    if (q && q.error) {
+      return '<div class="sweep-line bad">The prepared messages did not load (' +
+        esc(q.error) + '), so anything written for you is missing from this screen.</div>';
+    }
+    if (!q || !Array.isArray(q.items)) return '';
+    (q.items || []).forEach((i) => { qItems[i.id] = i; });
+
+    const groups = (q.by_person || []).filter((g) => g.items && g.items.length);
+    // AN EMPTY QUEUE IS A GOOD DAY. One line, no heading over nothing, and no
+    // invented activity to make the section look inhabited. It still says
+    // something, because a section that renders as absolutely nothing is
+    // indistinguishable from one that failed to load.
+    if (!groups.length) {
+      const ever = (q.counts && q.counts.total) || 0;
+      return '<div class="sweep-line">' + (ever
+        ? 'Nothing is written and waiting on you. Every message that was prepared has been dealt with.'
+        : 'Nothing has been written for you. When a client owes us something worth asking for, ' +
+          'the draft turns up here.') + '</div>';
+    }
+    return '<section class="queue"><div class="bucket-head"><h2>Written for you</h2>' +
+      '<span class="bucket-why">Drafted from the record, addressed to one person, ' +
+      'and read by you before it goes.</span></div>' +
+      '<p class="queue-note"><b>Nothing here has been sent.</b> This board holds no ' +
+      'address for anyone and has no way to send anything. You send it from your own ' +
+      'mail or phone; pressing Send here records that you did, so the follow-up is ' +
+      'possible later.</p>' +
+      groups.map((g) => qPerson(g)).join('') + '</section>';
+  }
+
+  // Same contract as postAction: the refusal comes back as a sentence written
+  // to be read, and it is shown as written.
+  async function postSteward(payload) {
+    const r = await fetch('/api/client-steward', {
+      method: 'POST', credentials: 'same-origin',
+      headers: authed({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload),
+    });
+    let out = null;
+    try { out = await r.json(); } catch (e) { out = null; }
+    if (!r.ok) throw new Error((out && out.error) || ('The queue said no (' + r.status + ').'));
+    return out;
+  }
+
+  // Replace the item where it stands, and say what happened underneath it.
+  //
+  // NOT a reload of the day. Four drafts for Ross get dealt with in one sitting,
+  // and re-reading every client between each one re-renders 38 rows and throws
+  // his place away three times. The board below is a read of the record from
+  // before this action, so where the action moved something down there, the
+  // outcome line says so in words rather than letting the screen quietly
+  // disagree with itself.
+  // ── THE FIRST VERB ────────────────────────────────────────────────────────
+  // It does not say "Sending..." and then lie. The message leaves the building
+  // from his hands exactly as it does today; this asks the one fact the record
+  // cannot see afterwards, which is how it went. Copy is INSIDE the prompt, not
+  // a third button on the item: it is part of doing the send, not a thing you
+  // can do to a draft, and this queue has exactly two of those.
+  const sendPromptHtml = (item) =>
+    '<label>Send it yourself &middot; ' + esc(item.to_name) + '</label>' +
+    '<p class="why">This board holds no address for anyone and cannot send it, so it goes ' +
+    'out from your own mail or your own phone. Then say how it went, because the board ' +
+    'cannot see that either, and guessing would be a claim wider than anything it saw.</p>' +
+    '<div class="q-chips"><button type="button" class="act" data-act="q-copy">' +
+    'Copy the message</button></div>' +
+    '<span class="k">How did it go out?</span>' +
+    '<div class="q-chips">' +
+    CHANNELS.map(([v, l]) => '<button type="button" class="act" data-act="q-via" ' +
+      'data-via="' + v + '">' + l + '</button>').join('') +
+    '</div>' +
+    '<div class="prompt-row">' +
+    '<input type="text" placeholder="Anything worth recording about how it went (optional)">' +
+    '<button type="button" class="act go" data-act="q-send-go">Record that I sent it</button>' +
+    '<button type="button" class="act" data-act="cancel">Cancel</button></div>';
+
+  // ── THE SECOND VERB ───────────────────────────────────────────────────────
+  // The easy version of this is a hide button and it is worthless: the item
+  // goes away, the next run writes the same draft, and he learns the queue does
+  // not listen. So the words are required, and the three fields under them are
+  // the ones that actually change what gets written next — the person, the ask,
+  // and "not yet". why_it_matters is NOT offered: the steward keeps it out of
+  // every message body, so correcting it could not change a single word of the
+  // next draft, and a field on a form headed "what is wrong with it" that
+  // cannot alter it is a promise the machine does not keep.
+  const feedbackPromptHtml = (item) =>
+    '<label>What is wrong with it? &middot; ' + esc(item.to_name) + '</label>' +
+    '<p class="why">In your own words. It is stored against this draft and it is what the ' +
+    'next one is written from. It is not a way to make this one go away: if nothing ' +
+    'underneath it changes, nothing new gets written, and it will say so.</p>' +
+    '<textarea placeholder="Ross left in June. This one should go to Robert."></textarea>' +
+    '<div class="q-fix"><span class="k">Name the correction and the next draft is built ' +
+    'from it</span>' +
+    '<input type="text" data-fix="to_name" placeholder="Write to someone else instead (their name)">' +
+    '<input type="text" data-fix="chase_ask" placeholder="Ask for something else (one sentence)">' +
+    '<input type="text" data-fix="hold_days" inputmode="numeric" ' +
+    'placeholder="Not now &mdash; hold it this many days"></div>' +
+    '<div class="prompt-row">' +
+    '<button type="button" class="act go" data-act="q-feedback-go">Save this feedback</button>' +
+    '<button type="button" class="act" data-act="cancel">Cancel</button></div>';
+
+  function qSay(box, msg, bad) {
+    const old = box.querySelector('.ok, .err');
+    if (old) old.remove();
+    const p = document.createElement('p');
+    p.className = bad ? 'err' : 'ok';
+    p.textContent = msg;
+    box.appendChild(p);
+  }
+
+  function qReplace(id, item, outcome) {
+    const host = groupsEl.querySelector('.q-item[data-id="' + id + '"]');
+    if (!host) return;
+    qItems[item.id] = item;
+    host.outerHTML = qItem(item);
+    const fresh = groupsEl.querySelector('.q-item[data-id="' + item.id + '"]');
+    if (fresh && outcome) {
+      fresh.insertAdjacentHTML('beforeend', '<p class="q-outcome">' + esc(outcome) + '</p>');
+    }
+  }
+
   async function loadDay() {
     current = '__day__';
     document.querySelectorAll('.client').forEach(a => a.classList.remove('selected'));
@@ -2082,6 +2678,16 @@
     // either — an empty Get Started section and a broken one look identical,
     // and one of them is a person nobody called.
     const leadsReq = fetch('/api/prospect-report?started=1',
+                           { credentials: 'same-origin', cache: 'no-store', headers: authed() })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Error ' + r.status))))
+      .catch((e) => ({ error: String(e.message || e) }));
+
+    // The prepared queue, started here for the same reason and resolved the
+    // same way: eight drafts nobody has read are not worth delaying the day's
+    // list for, and a queue that is DOWN must not render as a queue that is
+    // EMPTY. One of those is a good morning and the other is eight things a
+    // client is still waiting on.
+    const queueReq = fetch('/api/client-steward?view=queue',
                            { credentials: 'same-origin', cache: 'no-store', headers: authed() })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Error ' + r.status))))
       .catch((e) => ({ error: String(e.message || e) }));
@@ -2202,7 +2808,7 @@
       bucket('Running', 'Done and holding. Nothing to do unless a check says otherwise.',
              d.running || []);
 
-    groupsEl.innerHTML = leadsHtml + sweepHtml +
+    groupsEl.innerHTML = leadsHtml + queueHtml(await queueReq) + sweepHtml +
       (buckets || '<p class="status-line">Nothing on any client needs attention.</p>');
   }
 
