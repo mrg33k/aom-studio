@@ -752,8 +752,15 @@
     .ask-block p { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.5; }
     .ask-block .who { display: block; margin-top: 8px; font-size: 12px;
       font-weight: 750; color: var(--accent-text); }
-    .access-line { display: flex; justify-content: space-between; gap: 16px;
+    /* No width breakpoint here. The row is a two-column table wherever the two
+       columns fit — at 390 they do, and that is left alone. Where they do not,
+       flex-wrap drops the value onto its own line and space-between puts it at
+       the start, so it stacks instead of breaking BOTH columns mid-phrase
+       ("Permission / level" set against "Not / applicable" at 320). The key
+       never breaks, so the stacked form still reads as a label. */
+    .access-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px;
       padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 600; }
+    .access-line .k { white-space: nowrap; }
     .access-line:last-child { border-bottom: 0; }
     .access-line .k { color: var(--muted); }
     .not-written { margin: 0; font-size: 14px; color: var(--muted);
@@ -783,14 +790,6 @@
       .btn-ghost { margin-left: 0; }
       .claim-row { gap: 12px; }
       .claim-row.unclaimed .claim-btn { width: 100%; }
-    }
-    /* Not 520: at 390 the access table reads correctly as key/value on one line
-       and is left alone. Below about 400 the two columns stop fitting and each
-       one breaks mid-phrase — "Permission / level" set against "Not /
-       applicable" — so under that they stack instead of colliding. */
-    @media (max-width: 400px) {
-      .access-line { display: block; }
-      .access-line .k { display: block; margin-bottom: 4px; font-size: 12px; }
     }
 </style>
 </head>
