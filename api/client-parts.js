@@ -1,7 +1,10 @@
 // /api/client-parts — the Client Engine board's read/write path.
 //
 //   GET  /api/client-parts?client=wolfpack   -> { parts[], evidence{part_key:[...]}, counts }
-//   POST /api/client-parts                   -> update a part, or append evidence
+//   GET  /api/client-parts?view=day          -> the cross-client three buckets
+//   POST /api/client-parts                   -> move a part (claim / release /
+//                                               mark_done / mark_waiting),
+//                                               update it, or append evidence
 //
 // The service key stays server-side; the board is a static page and must never
 // hold it. This is the only reason the endpoint exists rather than the page
@@ -40,6 +43,37 @@
 // something Patrik fixed. A forged attribution there is durable misinformation
 // aimed at the source of truth, so the name now comes from the verified JWT and
 // the body's `actor` is ignored.
+//
+// ── ACTING ON A PART (2026-08-04) ──────────────────────────────────────────
+// Until now every card on the board dead-ended in a sentence — "Request the
+// merge so calls and reviews land on one listing" — with no control under it.
+// A morning tool you cannot close anything out of is a reading exercise, so
+// four actions move a part:
+//
+//   claim         take it: owner := the verified caller
+//   release       put it back: owner := null
+//   mark_done     state := completed, WITH a receipt (see below)
+//   mark_waiting  record the chase: WHO we are waiting on, and SINCE WHEN
+//
+// TWO LINES THESE ACTIONS DO NOT CROSS, because the board's credibility is the
+// product and both are cheap to erode by accident:
+//
+//   1. A PERSON NEVER WRITES 'verified'. Every line these actions leave is
+//      actor_kind 'person', confidence 'reported' — hardcoded in recordAction()
+//      rather than passed in, so no future action can quietly write green with
+//      a machine's authority. `verified` means a machine fetched something and
+//      the artifact is what it fetched; a human saying "I did it" is a report,
+//      however true. The database's verified_needs_a_receipt constraint is the
+//      floor under that, not the whole of it.
+//   2. mark_done NEVER STAMPS checked_at. checked_at answers "has a machine
+//      ever looked at this", which is the number the board tells the truth with
+//      on its own front page ("2 of 38 parts have ever been machine-checked").
+//      If finishing work moved that counter, the honesty counter would measure
+//      activity instead of verification and the whole line becomes a lie.
+//
+// mark_done still REQUIRES a receipt — an artifact_url or an exact quote —
+// because green with nothing behind it is the precise shape of claim this
+// board exists to make impossible.
 import { verifyProjectAccess, TenantAuthError } from './_lib/verifyTenant.js'
 
 const SUPABASE_URL =
@@ -59,6 +93,11 @@ const CONNECTIONS = [
   'connected', 'wrong_level', 'pending', 'expired', 'never_asked', 'not_applicable',
 ]
 const CONFIDENCES = ['verified', 'inferred', 'reported']
+const ARTIFACT_KINDS = ['capture', 'link', 'quote', 'number']
+// A name typed into "who are we waiting on". Long enough for "Ross's office
+// manager", short enough that the field cannot become a paragraph — the note
+// belongs on the evidence trail, which is where the reason already lives.
+const MAX_WAITING_ON = 120
 
 async function sb(path, init = {}) {
   const res = await fetch(`${REST()}${path}`, { ...init, headers: headers(init.headers) })
@@ -82,6 +121,126 @@ function today() {
 function mayActNow(settings) {
   if (!settings || !settings.autonomy_enabled) return false
   return settings.orders_approved_for === today()
+}
+
+// deep_link is the address the nightly check OPENS, unattended, on a machine
+// holding the service key, and artifact_url is what the board renders as "see
+// the receipt". Both must be somewhere on the public web. Stated once here
+// because update_part and mark_done both write one, and a rule enforced in one
+// of two writers is not enforced. Returns a readable problem, or null when the
+// value is fine (including absent — absence is not a problem, it is a null).
+function webAddressProblem(value, field) {
+  if (value == null || value === '') return null
+  let u
+  try {
+    u = new URL(String(value))
+  } catch {
+    return `${field} must be a full web address`
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+    return `${field} must be an http or https address, not ${u.protocol.replace(':', '')}`
+  }
+  return null
+}
+
+// HOW MANY OTHER PARTS THIS ONE HOLDS UP.
+//
+// The single most valuable fact in the product and, until now, the most buried:
+// the part page writes "While this is open, 3 other parts cannot be fixed" from
+// `blocks`, and no other screen can see it. The day view therefore shows 23
+// identical amber rows in no order, and nothing on screen says which of the 23
+// to do first. This is the field it sorts on.
+//
+// A key is counted ONLY when it resolves to a part that actually exists for the
+// same client — the same resolution the part page does before it names them.
+// A dangling key is a typo, not a dependency, and counting it would inflate the
+// exact number the ranking is built on. Two counts because they answer two
+// different questions and both are real:
+//   blocks_count       what the part page's sentence says
+//   blocks_open_count  how many of those are not already finished — the honest
+//                      "what does doing this actually free up" for sorting
+// Keyed by client too, so this is correct on the cross-client day view where
+// two clients own a part_key of the same name. The separator is a space, and a
+// space is safe because both halves are kebab-case identifiers that cannot
+// contain one. It was a raw NUL byte until 2026-08-04 -- two unprintable 0x00s
+// sitting in the source. It RAN, because both the set and the get used the same
+// byte, and it survived review because git renders a file as text when the
+// first 8000 bytes are clean and both NULs landed at 8773 and 8950. The failure
+// mode it was waiting on is the bad one: any formatter, bundler or editor that
+// normalises one of the two and not the other makes every lookup miss, every
+// count silently fall to zero, and the ranking below sort on nothing at all --
+// with no error anywhere. A wrong number that raises nothing is the one defect
+// this board cannot carry.
+//
+// THREE ways a `blocks` array inflates that count if you just take its length,
+// all the same mistake -- treating a typed string as a fact about the world:
+//   a DANGLING key   names no part. A typo, not something being held up.
+//   a DUPLICATE key  is one dependency written twice, not two dependencies.
+//   a SELF reference is a part blocking itself. Counted, it lifts that part
+//                    above its peers in the one ranking the day view sorts on.
+// Exported for the unit tests, which build all three shapes in memory rather
+// than writing a fake dependency onto a real client's row. Only the default
+// export is routed, so this is invisible to the board.
+export function withBlockCounts(parts) {
+  const byKey = new Map()
+  for (const p of parts) byKey.set(`${p.project_slug} ${p.part_key}`, p)
+  return parts.map((p) => {
+    const keys = Array.isArray(p.blocks) ? p.blocks : []
+    const resolved = [...new Set(keys)]
+      .filter((k) => k !== p.part_key)
+      .map((k) => byKey.get(`${p.project_slug} ${k}`))
+      .filter(Boolean)
+    return {
+      ...p,
+      blocks_count: resolved.length,
+      blocks_open_count: resolved.filter((d) => d.state !== 'completed').length,
+    }
+  })
+}
+
+// One part, scoped to the client the caller was already verified against.
+async function findPart(client, partKey) {
+  const rows = await sb(
+    `/client_parts?select=*&project_slug=eq.${encodeURIComponent(client)}` +
+    `&part_key=eq.${encodeURIComponent(partKey)}&limit=1`
+  )
+  return rows[0] || null
+}
+
+// By id, and only ever with a row already fetched through findPart() — so the
+// client scope that authorised the write is the one that found the row.
+async function patchPart(id, update) {
+  return sb(`/client_parts?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(update),
+  })
+}
+
+// The line a human action leaves behind.
+//
+// actor_kind and confidence are HARDCODED, not parameters, and that is the
+// whole point of routing every action through one function. A person acting on
+// the board is a person reporting — never a machine verifying — so no action
+// added later can write a claim carrying a check's authority just by passing a
+// different string. Receipts still ride along (mark_done requires one); what
+// they cannot do is upgrade who is talking.
+async function recordAction(partId, actor, claim, extra = {}) {
+  const rows = await sb('/part_evidence', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify([{
+      part_id: partId,
+      actor,
+      actor_kind: 'person',
+      claim,
+      method: extra.method || 'Entered directly on the board',
+      artifact_url: extra.artifact_url || null,
+      artifact_quote: extra.artifact_quote || null,
+      confidence: 'reported',
+    }]),
+  })
+  return rows[0] || null
 }
 
 function tally(parts) {
@@ -134,11 +293,18 @@ export default async function handler(req, res) {
           try { await verifyProjectAccess(c, req); allowed.push(c) } catch { /* not yours */ }
         }
         if (!allowed.length) throw new TenantAuthError('jwt required', 401)
-        const mine = all.filter((p) => allowed.includes(p.project_slug))
+        const mine = withBlockCounts(all.filter((p) => allowed.includes(p.project_slug)))
 
-        // "Waiting on them" is decided by ACCESS, not by state: if we have
-        // never been given the keys, no amount of our effort moves it.
+        // "Waiting on them" is never decided by STATE: a part we cannot move
+        // is not a task Patrik can do today, whatever shape the work is in.
+        // TWO ways that happens, and the second one used to be invisible here:
+        //   ACCESS  we were never given the keys, so no effort of ours moves it.
+        //   A CHASE we asked a named human for a thing and are waiting on them.
+        //           Photography is the live example — connection not_applicable,
+        //           nobody withholding a login, and "waiting on a date from the
+        //           owner" sat in the Needs-you column as if it were ours.
         const waiting = (p) =>
+          !!p.waiting_on ||
           p.connection === 'never_asked' || p.connection === 'pending' ||
           p.connection === 'wrong_level' || p.connection === 'expired'
 
@@ -152,6 +318,11 @@ export default async function handler(req, res) {
           icon: p.icon, state: p.state, connection: p.connection,
           status_line: p.status_line, suggestion: p.suggestion,
           owner: p.owner, checked_at: p.checked_at, group_name: p.group_name,
+          // what doing this frees up — the day view's ordering key
+          blocks_count: p.blocks_count, blocks_open_count: p.blocks_open_count,
+          // and, when we are waiting: who, and since when. A row that says
+          // "waiting on a client" without naming them is a row nobody chases.
+          waiting_on: p.waiting_on || null, waiting_since: p.waiting_since || null,
         })
 
         let sweep = null
@@ -182,10 +353,10 @@ export default async function handler(req, res) {
       if (!client) return res.status(400).json({ error: 'client is required' })
       await verifyProjectAccess(client, req)
 
-      const parts = await sb(
+      const parts = withBlockCounts(await sb(
         `/client_parts?select=*&project_slug=eq.${encodeURIComponent(client)}` +
         `&order=group_name.asc,sort_order.asc`
-      )
+      ))
 
       const settingsRows = await sb(
         `/client_engine_settings?select=*&project_slug=eq.${encodeURIComponent(client)}`
@@ -255,18 +426,14 @@ export default async function handler(req, res) {
         // refuses non-public targets too; this is the same rule stated at the
         // point of writing, so a bad address never gets stored in the first place.
         for (const f of ['deep_link', 'artifact_url']) {
-          if (patch[f] == null || patch[f] === '') continue
-          let u
-          try { u = new URL(String(patch[f])) } catch {
-            return res.status(400).json({ error: `${f} must be a full web address` })
-          }
-          if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-            return res.status(400).json({
-              error: `${f} must be an http or https address, not ${u.protocol.replace(':', '')}`,
-            })
-          }
+          const problem = webAddressProblem(patch[f], f)
+          if (problem) return res.status(400).json({ error: problem })
         }
 
+        // waiting_on / waiting_since are deliberately NOT here. They are a pair
+        // — a date with no name, or a name with no date, is half a record — and
+        // a general patch endpoint cannot enforce a pair. mark_waiting writes
+        // both together or neither, and is the only writer.
         const allowed = [
           'state', 'connection', 'access_detail', 'access_verified_at',
           'status_line', 'suggestion', 'owner', 'deep_link',
@@ -314,6 +481,209 @@ export default async function handler(req, res) {
         })
 
         return res.status(200).json({ ok: true, part: rows[0] })
+      }
+
+      // ---- take it ---------------------------------------------------------
+      // Owner comes from the verified session, exactly like the trail's
+      // signature does, so "claim" cannot be used to put someone else's name on
+      // work they never agreed to do. A body-supplied `owner` is ignored here
+      // the same way a body-supplied `actor` is.
+      //
+      // An owned part is not silently reassignable. Two people who both believe
+      // they own the Google merge is the failure this field exists to prevent,
+      // so taking work off someone is a deliberate act (takeover: true) and it
+      // says whose it was, in the trail, in their name.
+      if (action === 'claim') {
+        const { part_key, takeover = false } = body
+        if (!part_key) return res.status(400).json({ error: 'part_key is required' })
+        const part = await findPart(scopeClient, part_key)
+        if (!part) return res.status(404).json({ error: 'part not found' })
+
+        // Already yours. Idempotent on purpose — a double click is not an
+        // event, and it must not put a second identical line on the trail.
+        if (part.owner && part.owner === actor) {
+          return res.status(200).json({ ok: true, already: true, part })
+        }
+        if (part.owner && !takeover) {
+          return res.status(409).json({
+            error: `${part.owner} already has this. Pass takeover: true to take it from them.`,
+            owner: part.owner,
+          })
+        }
+
+        const rows = await patchPart(part.id, { owner: actor })
+        await recordAction(part.id, actor,
+          part.owner ? `Taken over by ${actor}, was ${part.owner}` : `Claimed by ${actor}`,
+          { method: 'Claimed on the board' })
+        return res.status(200).json({ ok: true, part: rows[0] })
+      }
+
+      // ---- put it back -----------------------------------------------------
+      // Anyone who can reach the client can release, including work that is not
+      // theirs — someone leaves, someone is on site, and an item frozen under a
+      // name nobody can clear is worse than an unowned one. The accountability
+      // is the trail line, which names both the releaser and who held it.
+      if (action === 'release') {
+        const { part_key } = body
+        if (!part_key) return res.status(400).json({ error: 'part_key is required' })
+        const part = await findPart(scopeClient, part_key)
+        if (!part) return res.status(404).json({ error: 'part not found' })
+        if (!part.owner) {
+          return res.status(200).json({ ok: true, already: true, part })
+        }
+
+        const rows = await patchPart(part.id, { owner: null })
+        await recordAction(part.id, actor,
+          part.owner === actor
+            ? `Released by ${actor}`
+            : `Released by ${actor}, was ${part.owner}`,
+          { method: 'Released on the board' })
+        return res.status(200).json({ ok: true, part: rows[0], released_from: part.owner })
+      }
+
+      // ---- mark it done ----------------------------------------------------
+      // The one action that writes green, so it is the one that has to be
+      // hardest to abuse. Three rules, and each of them is a thing the board
+      // would otherwise start lying about:
+      //
+      //   A RECEIPT IS REQUIRED. artifact_url or artifact_quote — something a
+      //   person can open or read. "Nothing renders verified without a receipt"
+      //   is the sentence the whole product rests on, and a green card with an
+      //   empty trail behind it is exactly the claim it forbids. 422, the same
+      //   readable refusal add_evidence gives, not a raw constraint error.
+      //
+      //   IT IS STILL A REPORT, NOT A VERIFICATION. recordAction writes person
+      //   / reported. The receipt makes the claim checkable; it does not make a
+      //   human into the nightly check.
+      //
+      //   checked_at IS NOT TOUCHED. "2 of 38 parts have ever been machine
+      //   checked" is on the front page. If finishing work moved that number it
+      //   would measure how busy we were instead of what has been looked at,
+      //   and the most honest line on the board becomes its most misleading one.
+      if (action === 'mark_done') {
+        const { part_key, note, artifact_url = null, artifact_quote = null,
+                artifact_kind } = body
+        if (!part_key) return res.status(400).json({ error: 'part_key is required' })
+        if (!artifact_url && !artifact_quote) {
+          return res.status(422).json({
+            error: 'Marking a part done needs a receipt: pass artifact_url (something ' +
+                   'to open) or artifact_quote (the exact text you saw). Nothing on ' +
+                   'this board goes green on somebody\'s word alone.',
+          })
+        }
+        const problem = webAddressProblem(artifact_url, 'artifact_url')
+        if (problem) return res.status(400).json({ error: problem })
+
+        const part = await findPart(scopeClient, part_key)
+        if (!part) return res.status(404).json({ error: 'part not found' })
+
+        const update = { state: 'completed' }
+        // The part carries ONE current artifact, replaced not appended; the
+        // history is the trail. A quote-only receipt has nowhere to live on the
+        // part row, so it stays on the trail line and the part keeps whatever
+        // artifact it already had rather than being blanked.
+        if (artifact_url) {
+          update.artifact_url = artifact_url
+          update.artifact_kind = ARTIFACT_KINDS.includes(artifact_kind) ? artifact_kind : 'link'
+          update.artifact_at = new Date().toISOString()
+        }
+        // Done and still "waiting on Robert" is a contradiction on screen, and
+        // the day view would keep it in their column forever.
+        const wasWaitingOn = part.waiting_on || null
+        if (wasWaitingOn) {
+          update.waiting_on = null
+          update.waiting_since = null
+        }
+
+        const rows = await patchPart(part.id, update)
+        const evidence = await recordAction(part.id, actor,
+          (note && String(note).trim()) || `Marked done by ${actor}`,
+          {
+            method: wasWaitingOn
+              ? `Marked done on the board, no longer waiting on ${wasWaitingOn}`
+              : 'Marked done on the board',
+            artifact_url,
+            artifact_quote,
+          })
+        return res.status(200).json({ ok: true, part: rows[0], evidence })
+      }
+
+      // ---- waiting on the client -------------------------------------------
+      // A chase with no name and no date is not a record, it is a feeling: by
+      // Thursday nobody remembers who was asked or when, so it gets asked again
+      // or never. WHO is required. SINCE defaults to now and may be backdated to
+      // when the ask actually went out — but never forward, because you cannot
+      // have started waiting tomorrow.
+      //
+      // STATE IS NOT TOUCHED. Waiting is its own axis, like access: a part can
+      // be blocked AND waiting on Robert. Folding it into state would need a
+      // fifth state, and the nearest one would swallow "blocked" — which means
+      // something precise here (another part must be fixed first) and carries
+      // the dependency logic the whole board sorts on.
+      //
+      // { clear: true } ends the wait — the same action owning both ends of the
+      // same axis, the way set_autonomy owns its toggle.
+      if (action === 'mark_waiting') {
+        const { part_key, waiting_on, since, note, clear = false } = body
+        if (!part_key) return res.status(400).json({ error: 'part_key is required' })
+        const part = await findPart(scopeClient, part_key)
+        if (!part) return res.status(404).json({ error: 'part not found' })
+
+        if (clear) {
+          if (!part.waiting_on) {
+            return res.status(200).json({ ok: true, already: true, part })
+          }
+          const cleared = await patchPart(part.id, { waiting_on: null, waiting_since: null })
+          const evidence = await recordAction(part.id, actor,
+            `No longer waiting on ${part.waiting_on}` +
+            (note && String(note).trim() ? ` — ${String(note).trim()}` : ''),
+            { method: 'Cleared on the board' })
+          return res.status(200).json({ ok: true, part: cleared[0], evidence })
+        }
+
+        // NOT named `who`: the verified session object is `who` in the enclosing
+        // scope, and this is the person on the OTHER end. Same reason `scopeClient`
+        // is not named `scope`. Shadowing it here would also arm a TDZ trap for
+        // whoever next reads the session at the top of this block.
+        const person = String(waiting_on == null ? '' : waiting_on).trim()
+        if (!person) {
+          return res.status(400).json({
+            error: 'waiting_on is required: name the person we are waiting on. ' +
+                   'A row that says "waiting on a client" without naming them is a ' +
+                   'row nobody ever chases.',
+          })
+        }
+        if (person.length > MAX_WAITING_ON) {
+          return res.status(400).json({
+            error: `waiting_on must be ${MAX_WAITING_ON} characters or fewer — it is a ` +
+                   'name, not a note. Put the detail in note.',
+          })
+        }
+
+        let waitingSince = new Date()
+        if (since != null && since !== '') {
+          const parsed = new Date(since)
+          if (Number.isNaN(parsed.getTime())) {
+            return res.status(400).json({ error: 'since must be a date, e.g. 2026-08-01' })
+          }
+          // A minute of slack for clock skew between the browser and here.
+          if (parsed.getTime() > Date.now() + 60000) {
+            return res.status(400).json({
+              error: 'since cannot be in the future — a wait starts when the ask went out.',
+            })
+          }
+          waitingSince = parsed
+        }
+
+        const rows = await patchPart(part.id, {
+          waiting_on: person,
+          waiting_since: waitingSince.toISOString(),
+        })
+        const evidence = await recordAction(part.id, actor,
+          `Waiting on ${person} since ${waitingSince.toISOString().slice(0, 10)}` +
+          (note && String(note).trim() ? ` — ${String(note).trim()}` : ''),
+          { method: 'Marked waiting on the board' })
+        return res.status(200).json({ ok: true, part: rows[0], evidence })
       }
 
       // ---- append evidence ------------------------------------------------
