@@ -1215,7 +1215,7 @@
 
 <div class="kst" id="kstory" hidden role="dialog" aria-modal="true"
      aria-label="What we do: a one minute dive"
-     data-music="story-music.mp3" data-vo="story-vo.mp3">
+     data-music="/kraken/story-music.mp3">
 
   <div class="kst-water" aria-hidden="true">
     <div class="kst-rules" id="kstRules"></div>
@@ -1257,7 +1257,7 @@
       <div class="kst-tx" data-sc="s2">
         <p class="kst-kick"><b>02</b> / 08 &nbsp; THE FOUNDER</p>
         <h2 class="kst-chap">One body.</h2>
-        <p class="kst-cap">Matthew McDonald. Eight years,<br>U.S. Navy Submarine Force.<br>Quality assurance on<br>mission-critical systems.</p>
+        <p class="kst-cap">Matthew McDonald. More than<br>eight years, U.S. Navy Submarine<br>Force. Quality assurance on<br>mission-critical systems.</p>
       </div>
 
       <div class="kst-tx" data-sc="s3">
@@ -1403,7 +1403,7 @@
     b.className = "kst-tick"; b.type = "button";
     b.style.left = (s.a / DUR * 100) + "%";
     b.setAttribute("aria-label", "Chapter " + (n + 1));
-    b.addEventListener("click", function () { seek(s.a + .01); if (!playing) play(); });
+    b.addEventListener("click", function () { hardSeek(s.a + .01); if (!playing) play(); });
     elBar.appendChild(b);
   });
   var ticks = elBar.querySelectorAll(".kst-tick");
@@ -1653,13 +1653,25 @@
     elPing.style.opacity = "0"; elPing.style.transform = "scale(46)";
   }
 
-  var music = null, vo = null, muted = false;
+  var music = null, muted = false;
   var btnMute = document.getElementById("kstMute");
 
+  function hardSeek(nt) {
+    t = nt;
+    if (music) { try { music.currentTime = nt; } catch (e) {} }
+    seek(nt);
+  }
+
+  var stallAt = 0, stallT = -1;
   function tick(now) {
     if (!playing) return;
-    if (music && !music.paused) t = music.currentTime;
-    else { t += (now - last) / 1000; }
+    if (music && !music.paused) {
+      if (music.currentTime === stallT) {
+        if (now - stallAt > 1500) { music = null; last = now; }   
+      } else { stallT = music.currentTime; stallAt = now; }
+      if (music) t = music.currentTime;
+      else t += (now - last) / 1000;
+    } else { t += (now - last) / 1000; }
     last = now;
     if (t >= DUR) { t = DUR; seek(t); pause(); return; }
     seek(t);
@@ -1668,36 +1680,47 @@
   function play() {
     if (t >= DUR) t = 0;
     playing = true; last = performance.now();
-    if (music) { music.currentTime = t; music.play().catch(function () {}); }
-    if (vo) { vo.currentTime = t; vo.play().catch(function () {}); }
+    stallT = -1; stallAt = performance.now();
+    if (music) {
+      try { music.currentTime = t; } catch (e) {}
+      var pr = music.play();
+      
+      if (pr && pr.catch) pr.catch(function () {
+        btnMute.hidden = false;
+        btnMute.textContent = "TAP FOR SOUND";
+      });
+    }
     root.setAttribute("data-playing", "1");
     raf = requestAnimationFrame(tick);
   }
   function pause() {
     playing = false; cancelAnimationFrame(raf);
-    if (music) music.pause(); if (vo) vo.pause();
+    if (music) music.pause();
     root.removeAttribute("data-playing");
   }
 
-  var audioTried = false;
-  function tryAudio() {
-    if (audioTried) return; audioTried = true;
-    ["music", "vo"].forEach(function (kind) {
-      var src = root.getAttribute("data-" + kind);
-      if (!src) return;
-      fetch(src, { method: "HEAD" }).then(function (r) {
-        if (!r.ok) return;
-        var a = new Audio(src); a.preload = "auto";
-        if (kind === "music") { a.volume = .55; music = a; } else { a.volume = 1; vo = a; }
-        btnMute.hidden = false;
-        if (playing) { a.currentTime = t; a.play().catch(function () {}); }
-      }).catch(function () {});
+  var audioReady = false;
+  (function initAudio() {
+    var src = root.getAttribute("data-music");
+    if (!src) return;
+    var a = new Audio();
+    a.preload = "none";
+    a.src = src;
+    a.volume = 1;
+    a.addEventListener("canplay", function () {
+      audioReady = true; btnMute.hidden = false;
     });
-  }
+    
+    a.addEventListener("error", function () { music = null; btnMute.hidden = true; });
+    
+    a.hidden = true;
+    root.appendChild(a);
+    music = a;
+  })();
 
   btnMute.addEventListener("click", function () {
     muted = !muted;
-    if (music) music.muted = muted; if (vo) vo.muted = muted;
+    if (music) { music.muted = muted; if (music.paused && playing) music.play().catch(function () {}); }
     btnMute.textContent = muted ? "MUTED" : "SOUND";
     btnMute.setAttribute("aria-label", muted ? "Sound off" : "Sound on");
   });
@@ -1709,9 +1732,9 @@
     buildDrops();
     root.classList.add("on");
     document.body.classList.add("story-open");
-    t = 0; cur = -1; seek(0);
-    tryAudio();
-    if (reduce) { seek(SC[1].a + .01); }
+    cur = -1; hardSeek(0);
+    
+    if (reduce) { hardSeek(SC[1].a + .01); }
     else { play(); }
     document.getElementById("kstClose").focus();
   }
@@ -1726,15 +1749,15 @@
 
   document.getElementById("kstClose").addEventListener("click", close);
   document.getElementById("kstDone").addEventListener("click", close);
-  document.getElementById("kstReplay").addEventListener("click", function () { t = 0; cur = -1; seek(0); play(); });
+  document.getElementById("kstReplay").addEventListener("click", function () { cur = -1; hardSeek(0); play(); });
   document.getElementById("kstPause").addEventListener("click", function () { playing ? pause() : play(); });
 
   addEventListener("keydown", function (e) {
     if (root.hidden) return;
     if (e.key === "Escape") { close(); }
     else if (e.key === " ") { e.preventDefault(); playing ? pause() : play(); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); seek(SC[Math.min(7, (cur + 1))].a + .01); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); seek(SC[Math.max(0, (cur - 1))].a + .01); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); hardSeek(SC[Math.min(7, (cur + 1))].a + .01); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); hardSeek(SC[Math.max(0, (cur - 1))].a + .01); }
   });
 
   var cta = document.querySelector(".cta");
@@ -1754,7 +1777,7 @@
   window.kstoryOpen = open;
   window.kstorySeek = function (nt) {
     if (root.hidden) { root.hidden = false; void root.offsetWidth; root.classList.add("on"); buildDrops(); }
-    pause(); seek(nt);
+    pause(); hardSeek(nt);
   };
 })();
 </script>
