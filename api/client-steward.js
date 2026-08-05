@@ -55,6 +55,14 @@
 // be the same words back; and a queue that re-serves a thing you just answered
 // is the nag this design exists to avoid.
 import { extractJwt, verifyProjectAccess, TenantAuthError } from './_lib/verifyTenant.js'
+// The ranking law, imported rather than restated. client-parts.js exports this
+// and states the reason it exists: without it the day view is "23 identical
+// amber rows in no order, and nothing on screen says which of the 23 to do
+// first". A queue of eight prepared messages in the order they happened to be
+// written has exactly that defect, one file over. Two implementations of "what
+// does finishing this free up" would drift, and the one on screen would be the
+// wrong one.
+import { withBlockCounts } from './client-parts.js'
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -139,18 +147,34 @@ async function visibleClients(slugs, req) {
 // third person ("so nobody can prove to Mo that the marketing paid for itself",
 // sent to Mo). The steward therefore keeps it out of every body and it surfaces
 // HERE instead, beside the draft, where its actual audience is reading.
+// EVERY part of the clients involved, not just the ones with an item — because
+// blocks_open_count is a question about a part's DEPENDANTS, and you cannot
+// count what you did not fetch. Filtering to the eight parts that happen to have
+// a draft would silently score every one of them zero, which reads as a working
+// ranking and is not one.
 async function partsFor(items) {
   if (!items.length) return {}
   const slugs = [...new Set(items.map((i) => i.project_slug))]
-  const keys = [...new Set(items.map((i) => i.part_key))]
   const rows = await sb(
-    `/client_parts?select=id,project_slug,part_key,name,icon,group_name,state,` +
-    `connection,status_line,suggestion,why_it_matters,chase_ask,chase_from,` +
-    `waiting_on,waiting_since,checked_at` +
-    `&project_slug=in.(${slugs.map(encodeURIComponent).join(',')})` +
-    `&part_key=in.(${keys.map(encodeURIComponent).join(',')})`
+    `/client_parts?select=*&project_slug=in.(${slugs.map(encodeURIComponent).join(',')})`
   )
-  return Object.fromEntries(rows.map((p) => [`${p.project_slug} ${p.part_key}`, p]))
+  return Object.fromEntries(
+    withBlockCounts(rows).map((p) => [`${p.project_slug} ${p.part_key}`, p])
+  )
+}
+
+// WHAT TO DO FIRST. The same law the day and chase views sort on: what finishing
+// it frees up, then the client's own order for the rest. `prepared_at` is the
+// last tiebreak and not the first — eight drafts written in the same second are
+// not eight decreasingly urgent drafts.
+function rank(parts) {
+  return (a, b) => {
+    const pa = parts[`${a.project_slug} ${a.part_key}`]
+    const pb = parts[`${b.project_slug} ${b.part_key}`]
+    return ((pb?.blocks_open_count || 0) - (pa?.blocks_open_count || 0)) ||
+      ((pa?.sort_order ?? 0) - (pb?.sort_order ?? 0)) ||
+      String(b.prepared_at).localeCompare(String(a.prepared_at))
+  }
 }
 
 // The queue's own words for what is true of an item right now. Written once
@@ -340,7 +364,8 @@ export default async function handler(req, res) {
         const allowed = await visibleClients(all.map((r) => r.project_slug), req)
         const mine = all.filter((r) => allowed.includes(r.project_slug))
         const parts = await partsFor(mine)
-        const rows = state === 'all' ? mine : mine.filter((r) => r.state === state)
+        const rows = (state === 'all' ? mine : mine.filter((r) => r.state === state))
+          .sort(rank(parts))
         const items = rows.map((r) => shape(r, parts[`${r.project_slug} ${r.part_key}`]))
         return res.status(200).json({
           view: 'queue', clients: allowed, state,
@@ -358,7 +383,8 @@ export default async function handler(req, res) {
         `&order=prepared_at.desc`
       )
       const parts = await partsFor(mine)
-      const rows = state === 'all' ? mine : mine.filter((r) => r.state === state)
+      const rows = (state === 'all' ? mine : mine.filter((r) => r.state === state))
+        .sort(rank(parts))
       const items = rows.map((r) => shape(r, parts[`${r.project_slug} ${r.part_key}`]))
       return res.status(200).json({
         client, state, items, by_person: byPerson(items), counts: counts(mine),
