@@ -664,6 +664,31 @@
     .head .glyph { display: inline-flex; align-items: center; justify-content: center;
       width: 48px; height: 48px; border-radius: 12px; background: var(--panel); flex: none; }
     .head .glyph svg { width: 24px; height: 24px; }
+
+    /* Each mark is drawn for ITS OWN tile, not for a cream panel. LinkedIn's is
+       a single path filled #fff, so on var(--panel) it was white on white —
+       invisible on both LinkedIn part pages. The others carry their colour but
+       lose the knockouts that shape them. The board already had these eighteen
+       rules; the part page never got them, which is why a logo could look right
+       on the card and vanish one tap later. */
+    .head .glyph.google { background: #e8f0fe; }
+    .head .glyph.reviews { background: #fff4cf; }
+    .head .glyph.website { background: #ecebff; }
+    .head .glyph.yelp { background: #fde8e8; }
+    .head .glyph.linkedin { background: #0a66c2; }
+    .head .glyph.ai { background: #f1e9ff; }
+    .head .glyph.photo { background: #dff7f4; }
+    .head .glyph.video { background: #ffe7ed; }
+    .head .glyph.case-study { background: #fff0cc; }
+    .head .glyph.folder { background: #ffead5; }
+    .head .glyph.jobber { background: #def5e7; }
+    .head .glyph.recurring { background: #dcf7fb; }
+    .head .glyph.follow-up { background: #e1f2ff; }
+    .head .glyph.insurance { background: #ddf7ec; }
+    .head .glyph.target { background: #ffe4dd; }
+    .head .glyph.memberships { background: #f0e7ff; }
+    .head .glyph.outreach { background: #e4efff; }
+    .head .glyph.report { background: #eff9d5; }
     .consequence { padding: 24px; border-radius: 12px; margin: 16px 0;
       background: var(--warn-soft); color: var(--warn); font-size: 16px; }
     .consequence.blocked { background: var(--bad-soft); color: var(--bad); }
@@ -964,7 +989,12 @@
       '</div>';
 
     root.innerHTML =
-      '<div class="top-row"><a class="back" href="/client-engine/">&larr; Back to client home</a>' +
+      // Named a client home, so it has to land on one. The bare href sent every
+      // part page to whatever the board opens by default — the cross-client day
+      // — so from an Ambition part the "back to client home" link put you on a
+      // 38-row list of everybody, with Ambition no longer selected.
+      '<div class="top-row"><a class="back" href="/client-engine/?client=' +
+        encodeURIComponent(CLIENT) + '">&larr; Back to client home</a>' +
       '<div class="crumb">Clients / ' + esc(clientName) + ' / <b>' + esc(p.name) + '</b></div></div>' +
 
       '<div class="switcher-meta"><span class="side-label">' + esc(clientName) + ' parts</span>' +
