@@ -1126,7 +1126,7 @@
         '<span class="actor ' + (e.actor_kind === 'person' ? 'person' : 'assistant') + '">' +
         esc(e.actor_kind === 'person' ? 'Person' : 'Assistant') + '</span>' +
         (e.artifact_url ? (isSearch(e.artifact_url)
-          ? ' <span class="not-receipt">a search, not a receipt</span>' +
+          ? ' <span class="not-receipt">A search, not a receipt</span>' +
             ' <a class="searchlink" href="' + esc(e.artifact_url) +
             '" target="_blank" rel="noopener">Open the search that was run</a>'
           : ' <a class="receipt" href="' + esc(e.artifact_url) +
