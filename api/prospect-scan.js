@@ -1651,7 +1651,15 @@ function profileFinding(partKey, found, res) {
   // Always a second-person noun phrase: "your homepage", "your contact page",
   // "your \"Markets\" section". Set at the point the page was chosen.
   const where = found.source
-  const looked = `The address ${where} publishes for this: ${url}`
+  // CLIPPED, FOR THE REASON ALREADY WRITTEN DOWN ONE SURFACE OVER. A Maps
+  // address is 250 characters of coordinates, zoom levels and feature ids, and
+  // printed whole it wraps to three lines of grey text and is the widest thing
+  // on the card — the reviews card clips it to 110 for exactly this and this
+  // line did not. What matters to the reader survives the clip: the host, the
+  // /maps/dir/ or /maps/place/ that names what kind of address it is, and the
+  // destination. What is lost is the "@33.29,-111.96,17z/data=!4m9!4m8!…" tail.
+  // Green findings carry the whole address in their receipt regardless.
+  const looked = `The address ${where} publishes for this: ${clip(url, 110)}`
   if (isSearchShaped(url)) {
     return finding({
       id: `${partKey}.search_link`, part_key: partKey, standing: 'unknown',
