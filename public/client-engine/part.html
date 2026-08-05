@@ -834,6 +834,9 @@
     .access-line .k { white-space: nowrap; }
     .access-line:last-child { border-bottom: 0; }
     .access-line .k { color: var(--muted); }
+    /* A gap in the record is not a value. It reads lighter than a real one so
+       the panel cannot be skimmed as if every line were answered. */
+    .access-line .unrecorded { color: var(--quiet); font-weight: 600; }
     .not-written { margin: 0; font-size: 14px; color: var(--muted);
       font-weight: 600; line-height: 1.5; }
 
@@ -1064,6 +1067,24 @@
     render(part, parts, (data.evidence || {})[part.part_key] || []);
   }
 
+  // access_detail is meant to carry the LEVEL — "Manager", "Editor", "Read
+  // only", "Field crew level, no reporting" — the fact the connection state
+  // cannot tell you and the one that decides what you can actually do. Often it
+  // just restates the state, and then the panel read "Connection: Connected /
+  // Permission level: Connected": two rows, one fact, and the second one
+  // pretending to be an answer. The card grid has refused to print those since
+  // it shipped; this panel never got the rule. Saying it is not recorded is
+  // true and it is the thing somebody could go and fix.
+  const RESTATES = ['connected', 'notconnected', 'notapplicable'];
+  const normalise = (t) => String(t || '').toLowerCase().replace(/[^a-z]/g, '');
+  function permissionLevel(p, connLabel) {
+    const detail = (p.access_detail || '').trim();
+    const adds = detail && !RESTATES.includes(normalise(detail)) &&
+                 normalise(detail) !== normalise(connLabel);
+    return adds ? '<span>' + esc(detail) + '</span>'
+                : '<span class="unrecorded">Not recorded</span>';
+  }
+
   function render(p, parts, trail) {
     CURRENT = p; PARTS = parts; TRAIL = trail;
     const clientName = NAMES[CLIENT] || CLIENT;
@@ -1219,8 +1240,8 @@
           '<section class="card"><h2>Access</h2>' +
           '<div class="access-line"><span class="k">Connection</span>' +
           '<span class="conn ' + connCls + '">' + esc(connLabel) + '</span></div>' +
-          '<div class="access-line"><span class="k">Permission level</span><span>' +
-          esc(p.access_detail || '&mdash;') + '</span></div>' +
+          '<div class="access-line"><span class="k">Permission level</span>' +
+          permissionLevel(p, connLabel) + '</div>' +
           '<div class="access-line"><span class="k">Last verified</span><span>' +
           (p.access_verified_at ? esc(when(p.access_verified_at)) : 'Never') + '</span></div>' +
           '<div class="access-line"><span class="k">Last checked</span><span>' +
