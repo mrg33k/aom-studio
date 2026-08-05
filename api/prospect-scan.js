@@ -1298,9 +1298,16 @@ function profileFinding(partKey, found, res) {
   return finding({
     id: `${partKey}.linked`, part_key: partKey, standing: 'good',
     looked_at: looked,
-    found: `${found.source === 'your homepage' ? 'Your homepage' : `The ${found.source}`} ` +
-      `points at it through ${found.how}, and it answered HTTP ${res.status} when ` +
-      'we opened it.',
+    // The mechanism is only worth a reader's attention when it is not the
+    // obvious one. "Your homepage links to it" for a link; the embedded map and
+    // the structured-data entry get named, because a company that does not know
+    // its Google address is published in its own page data should be told where
+    // we read it.
+    found: `${found.source === 'your homepage' ? 'Your homepage' : `Your ${found.source}`} ` +
+      (found.how === 'a link on the page'
+        ? 'links to it'
+        : `publishes it in ${found.how}`) +
+      `, and it answered HTTP ${res.status} when we opened it.`,
     receipt: receiptFrom(res),
     not_verified: CANNOT_READ[partKey] || null,
   })
@@ -1495,7 +1502,7 @@ function aiCrawlerFinding(res) {
     found: `Your robots.txt names ${agents.length} crawler group` +
       `${agents.length === 1 ? '' : 's'} and blocks the site to none of the ` +
       'assistants\' crawlers.',
-    receipt: receiptFrom(res, agents.slice(0, 8).join(', ')),
+    receipt: receiptFrom(res, agents.slice(0, 6).map((a) => `User-agent: ${a}`).join(' · ')),
     not_verified: notWhole,
     searched: searchRecord({
       looked_for: AI_CRAWLERS,

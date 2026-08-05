@@ -685,6 +685,17 @@
 
   function secs(ms) { return (Math.round(ms / 100) / 10).toFixed(1) + 's'; }
 
+  // THE ADDRESS IS THE RECEIPT AND MUST STAY CLICKABLE AND WHOLE. What it does
+  // not have to be is THREE LINES OF MONO on the calmest list on the page: a
+  // Google Maps place URL is 250 characters of coordinates and feature ids, and
+  // rendered in full it was the loudest thing in "What is holding up". Shown
+  // short, linked whole, with the full address on hover.
+  function shortUrl(u) {
+    var s = String(u || '');
+    if (s.length <= 82) return s;
+    return s.slice(0, 62) + '…' + s.slice(-18);
+  }
+
   // ── the surface row, used live and in the saved record ─────────────────
   //
   // WHAT `looked_at` MEANS DEPENDS ON WHETHER WE OPENED ANYTHING. When no link
@@ -846,7 +857,8 @@
       return '<div class="gline">' + markFor(f.part_key) +
         '<div><p>' + esc(f.found) + '</p>' +
         (r.url ? '<div class="gcite"><a href="' + esc(r.url) +
-          '" rel="noopener noreferrer nofollow" target="_blank">' + esc(r.url) + '</a>' +
+          '" rel="noopener noreferrer nofollow" target="_blank" title="' + esc(r.url) + '">' +
+          esc(shortUrl(r.url)) + '</a>' +
           (q ? ' <q>' + esc(q) + '</q>' : '') + '</div>' : '') +
         (f.not_verified ? '<p class="caveat"><b>Not verified:</b> ' + esc(f.not_verified) + '</p>' : '') +
         '</div><span class="pill good">Holding up</span></div>';
