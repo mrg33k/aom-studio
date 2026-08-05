@@ -1219,17 +1219,34 @@ function websiteFindings({ res, page, insecure, city, workPage = null }) {
     // WE OPENED IT. Which turns a guess about a label into a fact about a page.
     const wp = workPage.page
     const deeper = countDeeperLinks(wp.links, workPage.url)
+    // AND WHEN WE OPEN IT AND IT IS NOT AN INDEX, THAT IS NOT A PASS.
+    //
+    // Caught reading Suntec Concrete's live report. Their best "work" link is a
+    // blog post — "Advancing Sustainable High-Rise Construction: The Astria
+    // Project" — which wins on the word "Project" in its headline, sits at a
+    // root-level slug so the /news/ penalty never fires, and is one article.
+    // The finding opened it, counted zero pages below it, said in its own last
+    // clause that it "reads as a single page rather than an index of work", and
+    // then stamped the surface Holding up. The sentence and the badge disagreed
+    // on one card. A check that reports what it found and then grades it the
+    // opposite way is worse than one that never looked, because the badge is
+    // what gets read.
     out.push(finding({
-      id: 'website.proof_of_work', part_key: 'website', standing: 'good',
+      id: 'website.proof_of_work', part_key: 'website',
+      standing: deeper ? 'good' : 'unknown',
       looked_at: `Your homepage, and then the page behind "${clip(bestWork.label || bestWork.href, 50)}".`,
       found: `Your homepage points at "${clip(bestWork.label || bestWork.href, 50)}". ` +
         `We opened it: it titles itself "${clip(wp.title || '(no title)', 80)}" and ` +
         `carries ${wp.images} image${wp.images === 1 ? '' : 's'}` +
         (deeper
           ? `, and it links to ${deeper} further page${deeper === 1 ? '' : 's'} below it.`
-          : '. We counted 0 links from it into pages below it, so it reads as a ' +
-            'single page rather than an index of work.'),
+          : '. We counted 0 links from it into pages below it, so what we opened ' +
+            'reads as one page — an article or a single job — rather than an ' +
+            'index of your work. Where the rest of it lives, if it is on the ' +
+            'site, is not something this link told us.'),
       receipt: receiptFrom(workPage.res, wp.title || null),
+      to_check_this: deeper ? null : 'The address of the page that lists your ' +
+        'finished jobs, if there is one.',
       not_verified: 'How recent that work is, what it cost and whether any of it ' +
         'is the size of the job a particular buyer is bidding is not on the page ' +
         'in a form we can read, so it is not checked here.',
@@ -1929,8 +1946,17 @@ export function pickInternalPages(links, homeUrl) {
   const work = findWorkLinks(sameHost.map((x) => ({ href: x.url, label: x.label })), base.toString())
   if (work.length) {
     const chosen = sameHost.find((x) => x.url === work[0].href)
-    const named = work[0].label ? `"${clip(work[0].label, 30)}" section` : null
     const byPath = chosen ? pathName(chosen) : null
+    // "SECTION" IS A CLAIM ABOUT WHAT THE PAGE IS, AND WE HAVE NOT OPENED IT
+    // YET. Suntec's report called a blog post "your 'Advancing Sustainable
+    // High-Ri…' section" in three different search records. A section is an
+    // index of things; this was one article that won on the word "Project" in
+    // its headline. The word is earned by the ADDRESS — /projects/, /markets/,
+    // /our-work/ is a section — and everything else is a page until we look.
+    const isIndex = chosen ? WORK_STRONG_RE.test(hrefWords(chosen.url, base)) ||
+      WORK_SECTOR_RE.test(hrefWords(chosen.url, base)) : false
+    const kind = isIndex ? 'section' : 'page'
+    const named = work[0].label ? `"${clip(work[0].label, 30)}" ${kind}` : null
     take(chosen, 'work',
       named ? `the ${named}` : `their ${byPath || 'work'} page`,
       named ? `your ${named}` : `your ${byPath || 'work'} page`)
