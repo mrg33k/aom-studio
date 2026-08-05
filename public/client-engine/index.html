@@ -583,6 +583,52 @@
     .day-row .what b { display: block; font-size: 14px; }
     .day-row .what span { font-size: 13px; color: var(--muted); font-weight: 600; }
     .day-row .st { flex: none; }
+
+    /* ── CLOSING THINGS OUT ───────────────────────────────────────────────────
+       The row was one anchor wrapping everything, so there was nowhere to put a
+       control that was not also a navigation click. It is a container now: the
+       anchor covers the part of the row you read, the buttons sit outside it.
+
+       Outlined, never filled — the same lesson the blocks chip taught. Every
+       state on this board is a solid pill, so a solid button would read as a
+       state at a glance. These are things you DO, not things the part IS.
+
+       Contextual by bucket, because a button that does not apply is noise on a
+       23-row list: ours-to-move gets Done and Waiting, waiting-on-them gets Done
+       and "not waiting" (the chase ended), and Running gets nothing — it is
+       already done, and the only honest way back is the record disagreeing. */
+    .row-acts { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+    .act {
+      padding: 4px 12px; border-radius: 999px; cursor: pointer;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--line-strong);
+      font-family: inherit; font-size: 12px; font-weight: 700; white-space: nowrap;
+    }
+    .act:hover { border-color: var(--accent); color: var(--accent-text); }
+    .act[disabled] { opacity: .5; cursor: progress; }
+    .day-row .link { display: flex; align-items: center; gap: 16px; flex: 1;
+      min-width: 0; text-decoration: none; color: inherit; }
+
+    /* The prompt opens UNDER the row rather than over it. A modal for a one-line
+       answer stops the list you are working; this keeps every other row on
+       screen, so closing six things out stays one motion. */
+    .prompt { margin: 0 0 8px; padding: 16px; border-radius: 12px;
+      background: var(--panel); border: 1px solid var(--line-strong); }
+    .prompt label { display: block; font-size: 12px; font-weight: 700;
+      color: var(--muted); margin: 0 0 4px; }
+    .prompt .why { font-size: 13px; color: var(--muted); font-weight: 600;
+      margin: 0 0 12px; }
+    .prompt-row { display: flex; gap: 8px; align-items: center; }
+    .prompt input {
+      flex: 1; min-width: 0; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid var(--line-strong); background: var(--surface);
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .prompt input:focus { outline: none; border-color: var(--accent); }
+    .act.go { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .act.go:hover { color: #fff; }
+    .prompt .err { margin: 12px 0 0; font-size: 13px; font-weight: 650;
+      color: var(--bad); }
     .sweep-line { margin: 0 0 24px; padding: 12px 16px; border-radius: 12px;
       background: var(--panel); font-size: 13px; font-weight: 600; color: var(--muted); }
     .sweep-line.bad { background: var(--bad-soft); color: var(--bad); }
@@ -1276,6 +1322,138 @@
   // split that matters is ours vs theirs: a part blocked because we were never
   // given access is not a task Patrik can do today, and mixing those into one
   // list is how a to-do list stops being believed.
+  // ── acting on a row ────────────────────────────────────────────────────
+  // Two of the three actions need a fact from Patrik before the API will take
+  // them, and that is deliberate on the API's side, not an obstacle to route
+  // around: `mark_done` refuses without a receipt, because nothing on this
+  // board goes green on somebody's word alone, and `mark_waiting` refuses
+  // without a name, because a row that says "waiting on a client" without
+  // naming them is a row nobody ever chases. So the button opens the question
+  // rather than firing and eating a 422.
+  const ASK = {
+    done: {
+      label: 'What is the proof?',
+      why: 'A link to what changed, or the exact words you saw. Nothing here goes ' +
+           'green on memory alone — this line is what the next person reads.',
+      place: 'https://... or what you saw',
+      go: 'Mark it done',
+      // A receipt that parses as a web address goes in the field the API
+      // validates as one; anything else is a quote. Guessing wrong here is the
+      // difference between a clickable receipt and a 400.
+      body: (v) => /^https?:\/\//i.test(v.trim())
+        ? { action: 'mark_done', artifact_url: v.trim(), artifact_kind: 'link' }
+        : { action: 'mark_done', artifact_quote: v.trim() },
+    },
+    waiting: {
+      label: 'Who are we waiting on?',
+      why: 'Their name, so this becomes a call you can make rather than a row ' +
+           'that sits. It moves to "Waiting on a client" and stops counting as yours.',
+      place: 'Ross, Robert, Mo...',
+      go: 'Move it',
+      body: (v) => ({ action: 'mark_waiting', waiting_on: v.trim() }),
+    },
+  };
+
+  function closePrompt() {
+    const open = groupsEl.querySelector('.prompt');
+    if (open) open.remove();
+  }
+
+  async function send(payload, client) {
+    const r = await fetch('/api/client-parts', {
+      method: 'POST', credentials: 'same-origin',
+      headers: authed({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(Object.assign({ client }, payload)),
+    });
+    let out = null;
+    try { out = await r.json(); } catch (e) { out = null; }
+    if (!r.ok) throw new Error((out && out.error) || ('The board said no (' + r.status + ').'));
+    return out;
+  }
+
+  groupsEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.act');
+    if (!btn || !groupsEl.contains(btn)) return;
+    e.preventDefault();
+    const act = btn.dataset.act;
+
+    if (act === 'cancel') return closePrompt();
+
+    // "Not waiting" needs nothing from anyone — the chase simply ended.
+    if (act === 'unwait') {
+      btn.disabled = true;
+      try {
+        await send({ action: 'mark_waiting', part_key: btn.dataset.part, clear: true },
+                   btn.dataset.client);
+        await loadDay();
+      } catch (err) {
+        btn.disabled = false;
+        alertInline(btn, err.message);
+      }
+      return;
+    }
+
+    if (act === 'done' || act === 'waiting') {
+      closePrompt();
+      const ask = ASK[act];
+      const rowEl = btn.closest('.day-row');
+      const box = document.createElement('div');
+      box.className = 'prompt';
+      box.innerHTML =
+        '<label>' + esc(ask.label) + ' &middot; ' + esc(btn.dataset.name) + '</label>' +
+        '<p class="why">' + esc(ask.why) + '</p>' +
+        '<div class="prompt-row"><input type="text" placeholder="' + esc(ask.place) + '">' +
+        '<button type="button" class="act go" data-act="commit">' + esc(ask.go) + '</button>' +
+        '<button type="button" class="act" data-act="cancel">Cancel</button></div>';
+      box.dataset.act = act;
+      box.dataset.client = btn.dataset.client;
+      box.dataset.part = btn.dataset.part;
+      rowEl.insertAdjacentElement('afterend', box);
+      const input = box.querySelector('input');
+      input.focus();
+      input.addEventListener('keydown', (k) => {
+        if (k.key === 'Enter') box.querySelector('[data-act="commit"]').click();
+        if (k.key === 'Escape') closePrompt();
+      });
+      return;
+    }
+
+    if (act === 'commit') {
+      const box = btn.closest('.prompt');
+      const input = box.querySelector('input');
+      const val = input.value.trim();
+      const ask = ASK[box.dataset.act];
+      const old = box.querySelector('.err');
+      if (old) old.remove();
+      if (!val) { input.focus(); return; }
+      btn.disabled = true;
+      try {
+        const payload = Object.assign({ part_key: box.dataset.part }, ask.body(val));
+        await send(payload, box.dataset.client);
+        await loadDay();
+      } catch (err) {
+        // The refusal is the API's own sentence and it is written to be read.
+        // Surfacing it beats replacing it with something vaguer of my own, and
+        // the typed value stays put so nothing has to be typed twice.
+        btn.disabled = false;
+        const p = document.createElement('p');
+        p.className = 'err';
+        p.textContent = err.message;
+        box.appendChild(p);
+      }
+    }
+  });
+
+  function alertInline(btn, msg) {
+    const rowEl = btn.closest('.day-row');
+    closePrompt();
+    const box = document.createElement('div');
+    box.className = 'prompt';
+    box.innerHTML = '<p class="err" style="margin:0">' + esc(msg) + '</p>';
+    rowEl.insertAdjacentElement('afterend', box);
+  }
+
+
   async function loadDay() {
     current = '__day__';
     document.querySelectorAll('.client').forEach(a => a.classList.remove('selected'));
@@ -1335,31 +1513,48 @@
         ' parts have ever been machine-checked.</div>';
     }
 
-    const row = p =>
-      '<a class="day-row" href="/client-engine/part.html?client=' + encodeURIComponent(p.client) +
+    // Which controls a row earns. Running rows get none: they are already done,
+    // and the honest way one comes back is the record disagreeing, not a button.
+    const actsFor = (p, bucket) => {
+      const b = (act, label) =>
+        '<button type="button" class="act" data-act="' + act +
+        '" data-client="' + esc(p.client) + '" data-part="' + esc(p.part_key) +
+        '" data-name="' + esc(p.name) + '">' + label + '</button>';
+      if (bucket === 'running') return '';
+      if (bucket === 'waiting') return '<span class="row-acts">' +
+        b('unwait', 'Not waiting') + b('done', 'Done') + '</span>';
+      return '<span class="row-acts">' + b('waiting', 'Waiting') + b('done', 'Done') + '</span>';
+    };
+
+    const row = (p, bucket) =>
+      '<div class="day-row" data-row="' + esc(p.client) + '::' + esc(p.part_key) + '">' +
+      '<a class="link" href="/client-engine/part.html?client=' + encodeURIComponent(p.client) +
       '&part=' + encodeURIComponent(p.part_key) + '">' +
       '<span class="who">' + esc(NAMES[p.client] || p.client) + '</span>' +
       '<span class="what"><b>' + esc(p.name) + '</b><span>' +
-      esc(p.suggestion || p.status_line || '') + '</span></span>' +
+      esc(p.suggestion || p.status_line || '') + '</span></span></a>' +
       blocksChip(p) +
+      actsFor(p, bucket) +
       '<span class="st"><span class="health ' + esc(p.state) + '">' +
-      esc(LABEL[p.state] || p.state) + '</span></span></a>';
+      esc(LABEL[p.state] || p.state) + '</span></span></div>';
 
     // Every bucket is ranked, not just "Needs you". A finished part that three
     // others were waiting on is the first thing you want to see confirmed, and
     // an access chase that frees three parts is the first call to make.
-    const bucket = (title, why, list) => !list.length ? '' :
+    // `.map(row)` would have handed the ARRAY INDEX in as the bucket, so every
+    // row past the first would have earned the wrong controls. Named explicitly.
+    const bucket = (title, why, list, key) => !list.length ? '' :
       '<section class="bucket"><div class="bucket-head"><h2>' + esc(title) + '</h2>' +
       '<span class="bucket-why">' + esc(why) + '</span></div>' +
-      byUnblocks(list).map(row).join('') + '</section>';
+      byUnblocks(list).map((p) => row(p, key)).join('') + '</section>';
 
     groupsEl.innerHTML = sweepHtml +
       bucket('Needs you', 'Ours to move. Nothing is stopping these but time.',
-             d.needs_me || []) +
+             d.needs_me || [], 'needs') +
       bucket('Waiting on a client', 'We were never given the access. Chasing it is the work.',
-             d.waiting_on_client || []) +
+             d.waiting_on_client || [], 'waiting') +
       bucket('Running', 'Done and holding. Nothing to do unless a check says otherwise.',
-             d.running || []) ||
+             d.running || [], 'running') ||
       '<p class="status-line">Nothing on any client needs attention.</p>';
   }
 
