@@ -1,0 +1,40 @@
+/* ============================================================
+   Ahead of Market — tokens used by this surface.
+   Copied verbatim from the design system's own token source:
+   .claude/skills/ahead-of-market-design/tokens/{colors,spacing,typography}.css
+   Values are not re-derived here; only the ones this hero uses are carried.
+   ============================================================ */
+:root{
+  /* ---- Ink (obsidian) — colors.css ---- */
+  --ink-900:#0B0B0B;   /* Obsidian Black — the ground of this surface */
+  --ink-700:#2A2A28;
+  --ink-600:#44443F;   /* hairline rules on obsidian                  */
+
+  /* ---- Paper (ivory) — colors.css ---- */
+  --paper:#F6F6F4;     /* Ivory White                                  */
+
+  /* ---- Stone (warm neutral support) — colors.css ---- */
+  --stone:#B6B2AB;     /* Stone Gray — secondary text on obsidian      */
+
+  /* ---- Accent: Bronze Gold — the ONE accent — colors.css ---- */
+  --gold:#B58A38;      /* THE primary accent; black text on gold       */
+
+  /* ---- Spacing — spacing.css, strict 4px grid ---- */
+  --space-2:8px;
+  --space-4:16px;
+  --space-6:24px;
+  --space-8:32px;
+  --space-12:48px;
+  --space-16:64px;
+
+  /* ---- Layout — spacing.css ---- */
+  --container:1240px;
+
+  /* ---- Semantic aliases used by this hero ---- */
+  --bg:var(--ink-900);
+  --text:var(--paper);
+  --text-muted:var(--stone);
+  --divider:var(--ink-600);
+  --accent:var(--gold);
+  --text-on-accent:var(--ink-900);
+}

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ahead of Market — You don’t have a marketing department. Now you do.</title>
+<link rel="icon" href="/hero-ab/b/assets/aom-monogram.svg">
+<link rel="stylesheet" href="/hero-ab/b/assets/tokens.css">
+<style>
+/* ============================================================
+   AHEAD OF MARKET — homepage hero. Variant A, "The Masthead Department".
+
+   Grid, derived in Müller-Brockmann order (design-intent.md §4):
+     margins 96 -> measure 1248 | body 16/24, standfirst 22/32
+     baseline 28 (18 x 1.556) | 12 columns, 24 gutter, column 82
+   Spacing ladder, RANKED not spread:  8 · 16 · 24 · 32 · 48 · 96
+     inside a group 8/16 · between groups 32/48 · between bands 96
+   Type ladder, 6 steps:  L1 monument · L2 display · 28 · 22 · 16 · 13
+   Display sizes are DERIVED, not chosen: Druk Cond Super measures
+     0.2446em per character on line A and 0.2548em on line B (measured on the
+     render, not estimated), so the two sizes are whatever makes each line span
+     ~92% of the 1248 measure. That is the fix for the incumbent's headline.
+   Accent: bronze gold #B58A38 in exactly two places — the period closing the
+     monument line, and the single CTA. Never gold display type.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ink-900);
+  color: var(--paper);
+  font-family: var(--font-text);
+  font-size: 16px;
+  line-height: 24px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- the hero is the first screen and nothing below it ---- */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 96px;
+}
+
+/* ---- masthead: the mark, a hairline, two links. No CTA up here. ---- */
+.masthead {
+  flex: 0 0 auto;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ink-700);
+}
+.mark { display: block; width: 48px; color: var(--paper); }
+.mark svg { display: block; width: 100%; height: auto; }
+.nav { display: flex; align-items: center; gap: 32px; }
+.nav a {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ink-300);
+  text-decoration: none;
+  transition: color 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+.nav a:hover { color: var(--paper); }
+
+/* ---- the claim: ONE dominant element, sized to its measure ---- */
+.claim {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 0;
+}
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-display);
+  color: var(--paper);
+}
+/* L2 — the condition. 38 characters, sized to span the measure. */
+.line-a {
+  display: block;
+  font-size: clamp(39px, 8.58vw, 132px);
+  line-height: 0.92;
+}
+/* L1 — the payoff. THE dominant element: 11 characters across the same
+   measure, which makes it 3.3x line A by construction, not by taste. */
+.line-b {
+  display: block;
+  font-size: clamp(78px, 28.44vw, 438px);
+  line-height: 0.84;
+}
+.dot { color: var(--gold); }
+.mobile-break { display: none; }
+
+/* ---- standfirst left, the single CTA right: counterweight, not a stack ---- */
+.under {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+  margin: 32px 0 0;
+}
+.standfirst {
+  margin: 0;
+  max-width: 48ch;
+  font-size: 22px;
+  line-height: 32px;
+}
+.cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 32px;
+  background: var(--gold);
+  color: var(--ink-900);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid var(--gold);
+  transition: background 160ms cubic-bezier(0.2, 0, 0, 1),
+              transform 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+.cta svg { display: block; }
+.cta:hover { background: var(--gold-deep); border-color: var(--gold-deep); }
+.cta:active { transform: translateY(1px); }
+.cta:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+
+/* ---- the roster: the lower third carries the department, not furniture ---- */
+.roster {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 0.6fr 1.13fr 1.13fr 1.13fr;
+  gap: 32px;
+  padding: 24px 0 32px;
+  border-top: 1px solid var(--ink-700);
+}
+.roster-label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 28px;
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+}
+.entry {
+  padding: 0 0 0 32px;
+  border-left: 1px solid var(--ink-700);
+}
+.entry .idx {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: var(--tracking-label);
+  color: var(--ink-500);
+}
+.entry h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 28px;
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+}
+.entry p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--ink-300);
+}
+
+/* ============================================================
+   390 — the breaks are RE-COMPOSED by hand, never re-wrapped.
+   Display sizes switch to pure vw so the ladder gains no new steps.
+   ============================================================ */
+@media (max-width: 720px) {
+  .hero { padding: 0 24px; }
+  .masthead { height: 64px; }
+  .mark { width: 40px; }
+  .nav { gap: 24px; }
+  .claim { padding: 24px 0; }
+  .line-a { font-size: 15.9vw; line-height: 0.96; }
+  .line-b { font-size: 29.4vw; line-height: 0.88; }
+  .mobile-break { display: block; }
+  .under {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 24px;
+    margin: 24px 0 0;
+  }
+  .standfirst { font-size: 16px; line-height: 24px; }
+  .desk-break { display: none; }
+  .cta { justify-content: space-between; }
+  .roster {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 24px 0;
+  }
+  .roster-label { font-size: 22px; line-height: 24px; }
+  .entry {
+    padding: 16px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--ink-700);
+  }
+  .entry h2 { font-size: 22px; line-height: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav a, .cta { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+
+  <header class="masthead">
+    <a class="mark" href="#top" aria-label="Ahead of Market"><svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+<mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
+<g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0&#xA;-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30&#xA;-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59&#xA;-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41&#xA;-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575&#xA;47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350&#xA;39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295&#xA;-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13&#xA;-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357&#xA;156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124&#xA;335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0&#xA;-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52&#xA;-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59&#xA;-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66&#xA;-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15&#xA;61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52&#xA;52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64&#xA;175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186&#xA;199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57&#xA;153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151&#xA;462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98&#xA;9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235&#xA;563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31&#xA;-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464&#xA;-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31&#xA;81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278&#xA;130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97&#xA;-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1&#xA;30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9&#xA;123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32&#xA;104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18&#xA;121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325&#xA;-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66&#xA;-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1&#xA;-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128&#xA;-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38&#xA;471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134&#xA;-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path>
+<path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25&#xA;-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129&#xA;-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81&#xA;-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39&#xA;-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66&#xA;-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145&#xA;-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415&#xA;-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360&#xA;-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17&#xA;-35 -3z"></path>
+<path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25&#xA;-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6&#xA;-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path>
+<path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20&#xA;-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715&#xA;516 -90 41 -123 48 -123 25z"></path>
+<path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149&#xA;22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10&#xA;-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153&#xA;-152 122z"></path>
+<path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8&#xA;-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15&#xA;258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292&#xA;112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12 -396 5&#xA;-408 5 -425 -14z"></path>
+</g></mask>
+<rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
+</svg></a>
+    <nav class="nav">
+      <a href="#role">Our role</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main class="claim">
+    <h1>
+      <span class="line-a">You don’t have a<br class="mobile-break"> marketing department.</span><span class="line-b">Now you do<span class="dot">.</span></span>
+    </h1>
+
+    <div class="under">
+      <p class="standfirst">
+        Ahead of Market becomes the department you never built:<br class="desk-break">
+        strategy, creative and promotion, run as one team.
+      </p>
+      <a class="cta" href="#contact">
+        Book a call
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 13L13 3M13 3H5M13 3V11" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
+        </svg>
+      </a>
+    </div>
+  </main>
+
+  <section class="roster" id="role" aria-label="The department">
+    <p class="roster-label">The<br>department</p>
+
+    <div class="entry">
+      <span class="idx">01</span>
+      <h2>Strategy</h2>
+      <p>What you sell, and why it wins.</p>
+    </div>
+
+    <div class="entry">
+      <span class="idx">02</span>
+      <h2>Creative</h2>
+      <p>Brand, site, film, and every word.</p>
+    </div>
+
+    <div class="entry">
+      <span class="idx">03</span>
+      <h2>Promotion</h2>
+      <p>It goes out, to the people who buy.</p>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>
