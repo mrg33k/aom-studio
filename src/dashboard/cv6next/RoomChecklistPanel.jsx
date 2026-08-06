@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useRoomChecklists from './data/useRoomChecklists.js';
 import { roomChecklistKey, roomChecklistLabel } from './data/roomKeys.js';
 
@@ -24,7 +24,7 @@ const circleButton = (active = false, danger = false) => ({
   cursor: 'pointer', flex: '0 0 auto',
 });
 
-function EditableItem({ item, disabled, onEdit, onToggle, onDelete, onPlay }) {
+function EditableItem({ item, disabled, onEdit, onToggle, onDelete, onPlay, registerInput, onEnter }) {
   const [text, setText] = useState(item.text || '');
   useEffect(() => { setText(item.text || ''); }, [item.text]);
   const commit = () => {
@@ -38,8 +38,13 @@ function EditableItem({ item, disabled, onEdit, onToggle, onDelete, onPlay }) {
         style={{ ...circleButton(item.done), width: 38, height: 38, minWidth: 38, minHeight: 38, maxWidth: 38, maxHeight: 38 }}>
         {item.done ? <span style={{ fontSize: 16, fontWeight: 800 }}>✓</span> : <span style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid currentColor' }} />}
       </button>
-      <input aria-label="Checklist item" value={text} disabled={disabled} onChange={(event) => setText(event.target.value)} onBlur={commit}
-        onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+      {/* Enter walks DOWN the list (Patrik 2026-08-06): it used to blur, which saved the
+          line but dumped you out of the list, so adding five items meant five clicks.
+          Now it hands focus to the next item — and past the last one, to the "add item"
+          field — so a list can be typed straight through. The save is unchanged: moving
+          focus fires the same onBlur commit that blur() did. */}
+      <input ref={registerInput} aria-label="Checklist item" value={text} disabled={disabled} onChange={(event) => setText(event.target.value)} onBlur={commit}
+        onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onEnter?.(); } }}
         style={{ flex: 1, minWidth: 0, height: 40, border: 'none', borderBottom: '1px solid var(--hair)', background: 'transparent', color: item.done ? 'var(--faint)' : 'var(--fg)', textDecoration: item.done ? 'line-through' : 'none', outline: 'none', font: '500 13.5px var(--font-sans)', padding: '0 4px' }} />
       <button type="button" aria-label={`Send ${item.text} to agent`} title="Play: send this item to the agent" disabled={disabled} onClick={onPlay}
         style={{ ...circleButton(false), width: 38, height: 38, minWidth: 38, minHeight: 38, maxWidth: 38, maxHeight: 38, color: 'var(--accent)' }}><Icon name="play" size={14}/></button>
@@ -57,6 +62,39 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
   const [deleteArmed, setDeleteArmed] = useState(false);
   useEffect(() => { setTitle(list.title || 'New list'); }, [list.title]);
   useEffect(() => { setShareOpen(false); setDeleteArmed(false); }, [list.id]);
+  // Enter-walks-down (Patrik 2026-08-06). Keyed by item id, not index: items get
+  // deleted and re-ordered while the panel is open, and a positional array hands
+  // back a stale node after a delete — focus would land on the wrong line.
+  const itemInputs = useRef(new Map());
+  const addInputRef = useRef(null);
+  const registerItemInput = useCallback((id) => (el) => {
+    if (el) itemInputs.current.set(id, el); else itemInputs.current.delete(id);
+  }, []);
+  const focusAfter = useCallback((id) => {
+    const items = list.items || [];
+    const index = items.findIndex((entry) => entry.id === id);
+    const next = index >= 0 ? items[index + 1] : null;
+    const el = next ? itemInputs.current.get(next.id) : null;
+    // Past the last item, the "add item" field is the next line — so typing a list
+    // straight through never needs the mouse.
+    const target = el || addInputRef.current;
+    if (!target) return;
+    target.focus();
+    // Caret at the end, not a full select: Enter here means "carry on", and a
+    // selected line means the next keystroke wipes an item the user meant to keep.
+    const end = target.value ? target.value.length : 0;
+    if (typeof target.setSelectionRange === 'function') target.setSelectionRange(end, end);
+  }, [list.items]);
+  // Returns false when there is nowhere to go — a COLLAPSED list mounts no item
+  // inputs, and silently swallowing Enter there would leave the retitle unsaved.
+  const focusFirstItem = useCallback(() => {
+    const first = (list.items || [])[0];
+    const el = first ? itemInputs.current.get(first.id) : null;
+    const target = el || addInputRef.current;
+    if (!target) return false;
+    target.focus();
+    return true;
+  }, [list.items]);
 
   const saveTitle = () => {
     const next = title.trim();
@@ -68,7 +106,9 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
     const text = newItem.trim();
     if (!text) return;
     const saved = await mutate('add-item', { list_id: list.id, text });
-    if (saved) setNewItem('');
+    // Stay in the add field after a save so Enter keeps adding lines. The re-render
+    // that lands the new item can steal focus on slower saves, so put it back.
+    if (saved) { setNewItem(''); addInputRef.current?.focus(); }
   };
   const share = async (mode) => {
     if (!targetRoom) return;
@@ -88,8 +128,10 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
           onClick={() => mutate('toggle-list', { list_id: list.id })} style={{ ...circleButton(false), width: 36, height: 36, minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36, background: 'transparent', borderColor: 'transparent', transform: list.collapsed ? 'none' : 'rotate(90deg)', transition: 'transform .15s' }}>
           <Icon name="chevron" size={15}/>
         </button>
+        {/* Same gesture from the title: Enter drops into the first item (or the add
+            field on an empty list), so a new list is one continuous typing run. */}
         <input aria-label="List title" value={title} disabled={disabled} onChange={(event) => setTitle(event.target.value)} onBlur={saveTitle}
-          onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (!focusFirstItem()) event.currentTarget.blur(); } }}
           style={{ flex: '1 1 auto', minWidth: 0, height: 40, border: 'none', background: 'transparent', color: 'var(--fg)', outline: 'none', font: '700 14px var(--font-sans)', textOverflow: 'ellipsis' }} />
         <span aria-label={`${openCount} open items`} style={{ flex: 'none', font: '600 10.5px var(--font-mono)', color: 'var(--faint)', whiteSpace: 'nowrap' }}>{openCount} open</span>
         <button type="button" aria-label={`Send ${list.title} to agent`} title={openCount ? 'Play: send the whole list to the agent' : 'Nothing open to send'} disabled={disabled || !openCount}
@@ -133,6 +175,7 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
         <div style={{ padding: '5px 12px 14px', display: 'grid', gap: 10 }}>
           {(list.items || []).map((item) => (
             <EditableItem key={item.id} item={item} disabled={disabled}
+              registerInput={registerItemInput(item.id)} onEnter={() => focusAfter(item.id)}
               onEdit={(text) => mutate('edit-item', { list_id: list.id, item_id: item.id, text })}
               onToggle={() => mutate('toggle-item', { list_id: list.id, item_id: item.id })}
               onDelete={() => mutate('delete-item', { list_id: list.id, item_id: item.id })}
@@ -142,7 +185,7 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
               }} />
           ))}
           <form onSubmit={addItem} style={{ display: 'flex', gap: 7, alignItems: 'center', marginTop: 2 }}>
-            <input aria-label={`Add item to ${list.title}`} value={newItem} disabled={disabled} onChange={(event) => setNewItem(event.target.value)} placeholder="Add a note or next step…"
+            <input ref={addInputRef} aria-label={`Add item to ${list.title}`} value={newItem} disabled={disabled} onChange={(event) => setNewItem(event.target.value)} placeholder="Add a note or next step…"
               style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--composer-solid, #131317)', color: 'var(--fg)', padding: '0 12px', outline: 'none', font: '500 13px var(--font-sans)' }} />
             <button type="submit" aria-label={`Add item to ${list.title}`} disabled={disabled || !newItem.trim()} style={circleButton(Boolean(newItem.trim()))}><Icon name="plus" size={17}/></button>
           </form>
