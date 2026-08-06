@@ -2754,7 +2754,14 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   position:absolute; left:12px; right:12px; bottom:20px; z-index:6;
   margin-bottom:0;
 }
-[data-cv6][data-screen="home-mobile"] .hbody { padding-bottom:132px; }
+/* The list scrolls UNDER the floating box, so it needs both room to stop and a
+   scrim — without it a half-row peeked out beside and below the card. */
+[data-cv6][data-screen="home-mobile"] .hbody { padding-bottom:186px; }
+[data-cv6][data-screen="home-mobile"] .mintake::before {
+  content:''; position:absolute; left:-12px; right:-12px; bottom:-20px; top:-34px;
+  background:linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--ground) 34%, var(--ground) 100%);
+  pointer-events:none; z-index:-1;
+}
 html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8px; }
 /* Corner-logo thinking mark in the routing modal. */
 [data-cv6] .cv6-intake-thinking-mark { width:40px; height:40px; flex:none; }
