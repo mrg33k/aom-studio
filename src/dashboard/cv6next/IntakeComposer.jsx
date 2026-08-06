@@ -122,7 +122,7 @@ export default function IntakeComposer({ onSubmit, busy = false, placeholder = '
               />
             </div>
             <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-              <button type="button" className="cv6-mode-toggle"
+              <button type="button" className="cv6-mode-toggle cv6-composer-util"
                 aria-label={`Currently in ${interactionMode} mode. Switch to ${interactionMode === 'plan' ? 'work' : 'plan'} mode`}
                 title={interactionMode === 'plan' ? 'Plan mode: Corner proposes a plan and waits' : 'Work mode: Corner starts right away'}
                 onClick={() => changeMode(interactionMode === 'plan' ? 'work' : 'plan')}

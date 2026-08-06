@@ -2520,6 +2520,10 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 /* corner:cv6-polish R10 — control geometry and composed surfaces. Text actions
    are pills; icon controls are true circles on every CV6 page. */
 [data-cv6] button { border-radius:999px !important; }
+/* ...except the composer's secondary controls (Patrik 2026-08-06). Voice and Send
+   stay round primaries; commands / files / Work-Plan / checklists are rectangles,
+   and this blanket !important was overriding their inline radius. */
+[data-cv6] button.cv6-composer-util { border-radius:10px !important; }
 [data-cv6] :where(.ib,.mback,.room-settings-close,.fcv-step,.cv6-chat-popout,.chat-column-open,.room-options-trigger) { border-radius:50% !important; }
 [data-cv6] .ib.is-active { color:var(--accent); background:var(--accent-weak); border-color:var(--accent); }
 [data-cv6][data-screen="home-mobile"] .hlogo { width:96px; height:auto; margin-left:2px; flex:none; }
