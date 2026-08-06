@@ -105,6 +105,42 @@ export const OAUTH_PROVIDERS = {
     scopes: ['crm.objects.contacts.read', 'crm.objects.deals.read'],
     envPrefix: 'HUBSPOT',
   },
+
+  // Microsoft Outlook / Graph API (R1, 2026-08-06)
+  // Delegates access to a user's Outlook mailbox via Microsoft identity platform.
+  // App registration: Azure Portal > App Registrations > redirect URI must be
+  //   https://<host>/api/integrations/oauth/callback
+  // Required env: OUTLOOK_OAUTH_CLIENT_ID + OUTLOOK_OAUTH_CLIENT_SECRET
+  // Tenant type: "Accounts in any organizational directory and personal Microsoft accounts"
+  //   (i.e. common endpoint) so karen.garcia@ambitionac.com (work) + hotmail/outlook.com
+  //   (personal) both work through the same app registration.
+  outlook: {
+    label: 'Outlook',
+    authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+    tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    // offline_access is how Microsoft issues refresh tokens (no separate access_type param).
+    // User.Read is needed to fetch the profile after connect (account email, display name).
+    // Mail.Read + Mail.ReadWrite covers inbox read + organize (flag, move, mark-read).
+    scopes: [
+      'openid',
+      'email',
+      'profile',
+      'offline_access',
+      'User.Read',
+      'Mail.Read',
+      'Mail.ReadWrite',
+    ],
+    // Minimum functional scopes. User.Read to identify the account; Mail.Read to pull the inbox.
+    // Microsoft returns scope strings in mixed case matching what was granted — keep in sync
+    // with the OUTLOOK_REQUIRED_SCOPES constant in api/_lib/mailAccess.js.
+    requiredScopes: ['User.Read', 'Mail.Read'],
+    extraAuthParams: {
+      // Force account picker so connecting a second Outlook account always prompts the user
+      // to choose which address — never silently reuses the active session.
+      prompt: 'select_account',
+    },
+    envPrefix: 'OUTLOOK',
+  },
 }
 
 export function getProvider(slug) {

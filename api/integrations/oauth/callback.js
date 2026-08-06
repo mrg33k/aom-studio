@@ -242,6 +242,26 @@ async function fetchGmailProfile(accessToken) {
   }
 }
 
+// R1 (2026-08-06) — Fetch the signed-in Microsoft account identity from Graph /me.
+// Normalises the result to { emailAddress, displayName } so downstream code has a
+// consistent profile shape regardless of whether the account is a personal Microsoft
+// account (mail field) or a work/school account (userPrincipalName field).
+async function fetchOutlookProfile(accessToken) {
+  try {
+    const r = await fetch('https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,displayName', {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+    })
+    if (!r.ok) return null
+    const data = await r.json()
+    // Personal accounts: data.mail is the email. Work/school accounts may have
+    // data.mail null (no assigned mailbox) and fall back to userPrincipalName.
+    const emailAddress = data.mail || data.userPrincipalName || null
+    return { emailAddress, displayName: data.displayName || null }
+  } catch {
+    return null
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' })
 
@@ -304,13 +324,18 @@ export default async function handler(req, res) {
     return failRedirect(res, `exchange-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
-  // Gmail: pull profile early so we can target the exact row to delete
+  // Pull provider profile early so we can target the exact row to delete
   // when scopes are insufficient (the workspace upsert keys on email).
   let gmailProfile = null
+  let outlookProfile = null
   let accountEmail = null
   if (slug === 'gmail' && tokens.access_token) {
     gmailProfile = await fetchGmailProfile(tokens.access_token)
     accountEmail = gmailProfile?.emailAddress || null
+  }
+  if (slug === 'outlook' && tokens.access_token) {
+    outlookProfile = await fetchOutlookProfile(tokens.access_token)
+    accountEmail = outlookProfile?.emailAddress || null
   }
 
   // R12 (2026-05-25) — validate granted scopes BEFORE storing. If the user
@@ -359,7 +384,7 @@ export default async function handler(req, res) {
     userId,
     slug,
     tokenBlob: encrypted,
-    providerProfile: gmailProfile || tokens.team || tokens.workspace_name || null,
+    providerProfile: gmailProfile || outlookProfile || tokens.team || tokens.workspace_name || null,
     workspaceId: workspaceId || null,
     accountEmail,
     grantedScopes: Array.from(grantedSet),

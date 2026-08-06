@@ -1,5 +1,5 @@
-// Resolves "which Gmail connections can this user see and use?" against the
-// new workspace-owned model. A connection is either user-owned (config in
+// Resolves mail connections (Gmail + Outlook) visible to a user against the
+// workspace-owned model. A connection is either user-owned (config in
 // account_integrations with user_id set) or workspace-owned (workspace_id set
 // and the user is a member of that workspace via tenant_users).
 
@@ -15,10 +15,24 @@ const GMAIL_REQUIRED_SCOPES = [
   'https://www.googleapis.com/auth/gmail.send',
 ]
 
+// R1 (2026-08-06) — required Outlook/Graph scopes. User.Read identifies the
+// account; Mail.Read lets us pull the inbox. Keep in sync with oauthProviders.js
+// requiredScopes for outlook and outlookClient.js.
+const OUTLOOK_REQUIRED_SCOPES = ['User.Read', 'Mail.Read']
+
+// Mail slugs supported by the personal inbox reader.
+// Add 'outlook' here; it is now wired with a real OAuth flow.
+const MAIL_SLUGS = ['gmail', 'outlook']
+
 function hasAllScopes(grantedScopes, required) {
   if (!Array.isArray(grantedScopes)) return false
   const set = new Set(grantedScopes)
   return required.every(s => set.has(s))
+}
+
+function requiredScopesFor(slug) {
+  if (slug === 'outlook') return OUTLOOK_REQUIRED_SCOPES
+  return GMAIL_REQUIRED_SCOPES
 }
 
 function svcHeaders() {
@@ -41,23 +55,25 @@ export async function listConnectionsForUser(userId) {
     `user_id.eq.${userId}`,
     ...wsIds.map(w => `workspace_id.eq.${w}`),
   ]
-  const url = `${SUPABASE_URL}/rest/v1/account_integrations?or=(${filters.join(',')})&integration_slug=eq.gmail&status=eq.connected&select=id,user_id,workspace_id,connected_at,config,integration_slug`
+  // Query for all supported mail slugs (gmail + outlook) in one round trip.
+  // PostgREST IN filter: integration_slug=in.(gmail,outlook)
+  const slugFilter = `integration_slug=in.(${MAIL_SLUGS.join(',')})`
+  const url = `${SUPABASE_URL}/rest/v1/account_integrations?or=(${filters.join(',')})&${slugFilter}&status=eq.connected&select=id,user_id,workspace_id,connected_at,config,integration_slug`
   const r = await fetch(url, { headers: svcHeaders() })
   if (!r.ok) return []
   const rows = await r.json()
   if (!Array.isArray(rows)) return []
-  // R12 — hide any row where the granted OAuth scopes are missing the bits
-  // that make the connection actually useful. Rows from before this round
-  // have no config.granted_scopes field at all → treated as insufficient.
-  // The user sees the Connect prompt again and a re-auth (with "Select all"
-  // ticked) writes a fresh row with the scope list populated.
+  // Hide any row where the granted OAuth scopes are missing the bits that make
+  // the connection actually functional. Per-slug scope requirements differ.
+  // Rows from before R12 have no config.granted_scopes → treated as insufficient.
   return rows
-    .filter(row => hasAllScopes(row.config?.granted_scopes, GMAIL_REQUIRED_SCOPES))
+    .filter(row => hasAllScopes(row.config?.granted_scopes, requiredScopesFor(row.integration_slug)))
     .map(row => ({
       id: row.id,
       user_id: row.user_id,
       workspace_id: row.workspace_id,
       integration_slug: row.integration_slug,
+      provider: row.integration_slug,
       scope: row.workspace_id ? 'team' : 'personal',
       account_email: row.config?.account_email || null,
       connector_user_id: row.config?.connector_user_id || null,
