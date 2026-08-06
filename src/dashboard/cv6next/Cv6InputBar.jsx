@@ -129,7 +129,7 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
   );
 }
 
-export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = [], onPlayChecklistItem, onPlayChecklistList }) {
+export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = [], onPlayChecklistItem, onPlayChecklistList, onClearRoom }) {
   const { selectedAgent, selectedProject, chatInputFocused, setChatInputFocused } = useChatCore();
   const {
     input, setInput, inputRef,
@@ -146,7 +146,27 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [caret, setCaret] = useState(null);
+  // /clear asks before it acts. Room settings' "Clear chat" arms the same way, and
+  // this is reachable by typing two characters and pressing Enter — far easier to
+  // hit by accident. Nothing is deleted either way: room-reset archives the visible
+  // session and the messages stay readable under History.
+  const [clearArmed, setClearArmed] = useState(false);
+  const [clearBusy, setClearBusy] = useState(false);
+  const [clearFailed, setClearFailed] = useState(false);
   useEffect(() => { setChecklistOpen(false); }, [room?.id, room?.missionSlug]);
+  // Never leave a confirm armed across a room switch — the next room would inherit
+  // a primed destructive-looking control the user never opened.
+  useEffect(() => { setClearArmed(false); setClearBusy(false); setClearFailed(false); }, [room?.id, room?.missionSlug]);
+  const runClear = useCallback(async () => {
+    if (typeof onClearRoom !== 'function') return;
+    setClearBusy(true);
+    setClearFailed(false);
+    const ok = await onClearRoom();
+    setClearBusy(false);
+    setClearArmed(false);
+    // Say so when it did not work rather than closing the bar as if it had.
+    if (ok === false) setClearFailed(true);
+  }, [onClearRoom]);
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null);
 
   const handlePaste = useCallback((e) => {
@@ -190,12 +210,36 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
         </div>
       ) : null}
       <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
+      {/* /clear confirm. Sits above the input so it reads as a question about this
+          chat, not a toast that might belong to something else. */}
+      {clearArmed ? (
+        <div data-testid="cv6-clear-confirm" role="group" aria-label="Confirm clearing this chat"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 9, padding: '9px 12px', borderRadius: 14, border: '1px solid var(--hair)', background: 'var(--composer-card-solid, var(--surface-2))' }}>
+          <span style={{ flex: 1, minWidth: 150, fontSize: 12.5, color: 'var(--fg)' }}>
+            Start {roomName} fresh? Nothing is deleted — the messages stay under History.
+          </span>
+          <button type="button" disabled={clearBusy} onClick={() => setClearArmed(false)}
+            style={{ height: 32, padding: '0 13px', borderRadius: 16, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', font: '600 12px var(--font-sans)', cursor: clearBusy ? 'default' : 'pointer' }}>Cancel</button>
+          <button type="button" disabled={clearBusy} onClick={runClear}
+            style={{ height: 32, padding: '0 15px', borderRadius: 16, border: 'none', background: 'var(--accent)', color: '#fff', font: '700 12px var(--font-sans)', cursor: clearBusy ? 'default' : 'pointer' }}>{clearBusy ? 'Clearing…' : 'Clear chat'}</button>
+        </div>
+      ) : null}
+      {clearFailed ? (
+        <div aria-live="polite" style={{ marginBottom: 9, padding: '8px 12px', borderRadius: 12, background: 'rgba(229,72,77,.12)', color: '#e5484d', font: '600 12px var(--font-sans)' }}>
+          Couldn't clear this chat just now. Nothing changed — try again in a moment.
+        </div>
+      ) : null}
       <div style={{ position: 'relative' }}>
         {checklistOpen ? (
           <RoomChecklistPanel room={room} worldId={worldId} roomOptions={roomOptions} onPlay={onPlayChecklistItem} onPlayList={onPlayChecklistList} onClose={() => setChecklistOpen(false)} />
         ) : <div style={{ minWidth: 0, position: 'relative' }}>
           <SlashCommandAutocomplete value={input} setValue={setInput} inputRef={inputRef} caret={caret}
-            onModalCommand={(name) => { if (name === '/integrations') setIntegrationsOpen(true); }} surface="1on1"
+            onModalCommand={(name) => {
+              if (name === '/integrations') setIntegrationsOpen(true);
+              // /clear arms the confirm bar below; it never clears on the pick itself.
+              if (name === '/clear') { setClearFailed(false); setClearArmed(typeof onClearRoom === 'function'); }
+            }}
+            surface={(room?.isProject || room?.isMission) ? 'project' : '1on1'}
             panelStyle={{ background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)' }} />
           <div style={{ display: 'flex', alignItems: 'center', minHeight: 50, borderRadius: 17, background: 'var(--composer-card-solid, var(--surface-2))', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 15px' }}>
             <input

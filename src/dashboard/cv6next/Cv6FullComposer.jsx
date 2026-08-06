@@ -93,7 +93,7 @@ function mapRoom(room, agents) {
   };
 }
 
-function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], roomOptions = [], onOpenFiles }) {
+function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], roomOptions = [], onOpenFiles, onClearRoom }) {
   // CornerCV6 is NOT mounted under the CV4 Corner context providers (it uses
   // useHome/useDataPipe standalone), so we can't read useCornerAuth/Data here —
   // worldId + agents come in as props and the user comes straight from supabase.
@@ -341,7 +341,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
               <ChatComposerProvider value={composerValue}>
                 <ChatSettingsProvider value={settingsValue}>
                   <ChatContextMenuProvider value={ctxMenuValue}>
-                    {isVoiceActive ? <VoiceModeBar /> : <Cv6InputBar onOpenFiles={onOpenFiles} room={room} worldId={worldId} roomOptions={roomOptions} onPlayChecklistItem={playChecklistItem} onPlayChecklistList={playChecklistList} />}
+                    {isVoiceActive ? <VoiceModeBar /> : <Cv6InputBar onOpenFiles={onOpenFiles} room={room} worldId={worldId} roomOptions={roomOptions} onPlayChecklistItem={playChecklistItem} onPlayChecklistList={playChecklistList} onClearRoom={onClearRoom} />}
                     {isVoiceActive && (
                       <div style={{ display: 'none' }}>
                         <VoiceChat

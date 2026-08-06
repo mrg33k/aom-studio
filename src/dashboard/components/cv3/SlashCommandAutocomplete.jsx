@@ -4,9 +4,12 @@
 // Escape dismisses. Selection replaces the active `/token` with `/skill-name `.
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import skillsData from '../../../data/skills.json'
+import { withUiCommands } from './uiCommands.js'
 import { C } from '../../lib/cv3Colors.js'
 
-const SKILLS = skillsData.skills
+// Dashboard actions (/clear) sit alongside the generated skill list — see uiCommands.js
+// for why they cannot live in skills.json.
+const SKILLS = withUiCommands(skillsData.skills)
 
 function findActiveSlash(value, caret) {
   // Walk back from caret to find a '/' that starts a slash token.

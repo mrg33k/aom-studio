@@ -668,7 +668,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           <div className="mcomposer" ref={setMComposerHost}
             style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }} />
           <Cv6FullComposer target={mComposerHost} room={fullRoom} worldId={worldId} agents={[]}
-            roomOptions={roomOptions} quickSend={onSend} onOpenFiles={() => setFilesSheetOpen(true)} />
+            roomOptions={roomOptions} quickSend={onSend} onOpenFiles={() => setFilesSheetOpen(true)}
+            onClearRoom={onClearRoom} />
         </>
       ) : (
       <div className="mcomposer" style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
