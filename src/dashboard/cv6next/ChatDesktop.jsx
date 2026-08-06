@@ -107,11 +107,54 @@ function fileGlyph(kind) {
     : 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6';
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 }
+// ── Files panel view preferences (Patrik 2026-08-06: grid view + chron order) ──
+// Persisted so the panel opens the way the user left it. One key for all three
+// mount points (home panel, desktop drawer, mobile sheet) — it is one panel to the
+// user, and having it open as a grid in one place and a list in another reads as a
+// bug. A blocked/absent localStorage just means the defaults come back each time.
+const FILES_PREF_KEY = 'cv6.filesShelf.prefs';
+const FILES_PREF_DEFAULTS = { layout: 'list', order: 'newest', grouped: true };
+function readFilesPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FILES_PREF_KEY) || 'null');
+    if (!saved || typeof saved !== 'object') return FILES_PREF_DEFAULTS;
+    return {
+      layout: saved.layout === 'grid' ? 'grid' : 'list',
+      order: saved.order === 'oldest' ? 'oldest' : 'newest',
+      grouped: saved.grouped !== false,
+    };
+  } catch { return FILES_PREF_DEFAULTS; }
+}
+const tsOf = (it) => (new Date(it?.ts || 0).getTime() || 0);
+// A tiny segmented control — three of these make up the panel's toolbar.
+function ShelfToggle({ label, value, options, onChange }) {
+  return (
+    <div role="group" aria-label={label} style={{ display: 'flex', gap: 2, padding: 2, borderRadius: 9, background: 'var(--surface-2)', border: '1px solid var(--divider)' }}>
+      {options.map((opt) => {
+        const on = opt.id === value;
+        return (
+          <button type="button" key={opt.id} aria-pressed={on ? 'true' : 'false'} title={opt.title || opt.label} onClick={() => onChange(opt.id)}
+            style={{ height: 24, padding: '0 9px', borderRadius: 7, border: 'none', cursor: on ? 'default' : 'pointer', background: on ? 'var(--accent)' : 'transparent', color: on ? '#fff' : 'var(--muted)', font: '600 11px var(--font-sans)', whiteSpace: 'nowrap' }}>
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // The room's files panel: everything that crossed this chat, nothing else.
 // The whole row is the primary open action. Amber is reserved for an item that
 // is still in the waiting-review queue; ordinary files keep a quiet chevron.
 export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, needsReview, status, windowFull = false }) {
   const CAP = 80; // newest per section; a busy room can carry hundreds
+  const [prefs, setPrefs] = useState(readFilesPrefs);
+  const setPref = (patch) => setPrefs((prev) => {
+    const next = { ...prev, ...patch };
+    try { localStorage.setItem(FILES_PREF_KEY, JSON.stringify(next)); } catch { /* private mode — session only */ }
+    return next;
+  });
+  const { layout, order, grouped } = prefs;
   const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
   const openItem = (it) => {
     // Photos and videos (and anything flagged for review) open in the in-app
@@ -162,12 +205,41 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     </button>
     );
   };
+  // Grid tile. Images render their real thumbnail; everything else gets its glyph on
+  // a tinted plate, because a wall of identical grey rectangles is a worse grid than
+  // no grid. Video keeps a glyph rather than a <video> poster: loading N videos to
+  // paint N first frames is a lot of bytes for a thumbnail.
+  const tile = (it, i) => {
+    const waiting = needsAttention(it);
+    const isImage = it.kind === 'photo' && !!it.url;
+    return (
+      <button type="button" key={`${it.url || it.name}-${i}`} onClick={() => openItem(it)}
+        aria-label={`${waiting ? 'Review' : 'Open'} ${it.name}`} title={`${it.name}${itemMeta(it) ? ` — ${itemMeta(it)}` : ''}`}
+        style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 0, border: 'none', background: 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)', cursor: 'pointer', minWidth: 0 }}>
+        <span style={{ position: 'relative', display: 'block', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', background: 'var(--media-tile, var(--surface-2))', border: '1px solid var(--divider)' }}>
+          {isImage ? (
+            <img src={it.url} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          ) : (
+            <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'scale(1.7)' }}>{fileGlyph(it.kind)}</span>
+          )}
+          {waiting ? (
+            <span aria-hidden="true" style={{ position: 'absolute', top: 5, right: 5, fontSize: 9.5, fontWeight: 700, color: 'var(--warn)', background: 'rgba(4,6,9,.78)', border: '1px solid rgba(251,191,36,.34)', padding: '2px 6px', borderRadius: 6 }}>Review</span>
+          ) : null}
+        </span>
+        <span style={{ display: 'block', minWidth: 0, fontSize: 11.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</span>
+        <span className="mono" style={{ display: 'block', marginTop: -3, fontSize: 10, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{itemMeta(it)}</span>
+      </button>
+    );
+  };
+  const body = (list) => (layout === 'grid'
+    ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 12 }}>{list.map(tile)}</div>
+    : <div style={{ display: 'flex', flexDirection: 'column' }}>{list.map(row)}</div>);
   const section = (label, list) => {
     const shown = list.slice(0, CAP);
     return (
       <div key={label} style={{ marginBottom: 14 }}>
-        <div className="eyebrow" style={{ margin: '2px 4px 6px' }}>{label}</div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>{shown.map(row)}</div>
+        {label ? <div className="eyebrow" style={{ margin: '2px 4px 6px' }}>{label}</div> : null}
+        {body(shown)}
         {list.length > shown.length ? <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', padding: '10px 4px' }}>+{list.length - shown.length} more</div> : null}
       </div>
     );
@@ -181,11 +253,35 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   // Section label: the single sender's title when one agent speaks here, else the plural.
   const senders = [...new Set(fromAgent.map((i) => i.who).filter(Boolean))];
   const fromLabel = senders.length === 1 ? `From ${senders[0]}` : 'From agents';
+  // The source arrives newest-first; oldest-first is a reversal, not a re-sort by a
+  // different key, so the two orders stay exact mirrors of each other.
+  const inOrder = (list) => (order === 'oldest' ? [...list].sort((a, b) => tsOf(a) - tsOf(b)) : [...list].sort((a, b) => tsOf(b) - tsOf(a)));
+  // "All in order" is the chronological view: one timeline across both senders,
+  // which is the thing the two grouped sections cannot show.
+  const timeline = inOrder([...fromAgent, ...youSent]);
+  const toolbar = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', margin: '0 4px 11px' }}>
+      <ShelfToggle label="Layout" value={layout} onChange={(id) => setPref({ layout: id })}
+        options={[{ id: 'list', label: 'List' }, { id: 'grid', label: 'Grid' }]} />
+      <ShelfToggle label="Order" value={order} onChange={(id) => setPref({ order: id })}
+        options={[{ id: 'newest', label: 'Newest' }, { id: 'oldest', label: 'Oldest' }]} />
+      <ShelfToggle label="Grouping" value={grouped ? 'grouped' : 'all'} onChange={(id) => setPref({ grouped: id === 'grouped' })}
+        options={[
+          { id: 'grouped', label: 'By sender', title: 'Group by who sent it' },
+          { id: 'all', label: 'All in order', title: 'One timeline, everything in the order it arrived' },
+        ]} />
+    </div>
+  );
   return (
     <>
       <div style={{ fontSize: 11.5, color: 'var(--muted)', margin: '0 4px 10px' }}>Everything that crossed this chat. Nothing else.</div>
-      {fromAgent.length ? section(fromLabel, fromAgent) : null}
-      {youSent.length ? section('You sent', youSent) : null}
+      {toolbar}
+      {grouped ? (
+        <>
+          {fromAgent.length ? section(fromLabel, inOrder(fromAgent)) : null}
+          {youSent.length ? section('You sent', inOrder(youSent)) : null}
+        </>
+      ) : section('', timeline)}
       {windowFull ? (
         <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', padding: '6px 4px' }}>
           Showing the newest crossings — older files exist. Ask the agent for one by name, or open All files.
