@@ -253,9 +253,14 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   // Section label: the single sender's title when one agent speaks here, else the plural.
   const senders = [...new Set(fromAgent.map((i) => i.who).filter(Boolean))];
   const fromLabel = senders.length === 1 ? `From ${senders[0]}` : 'From agents';
-  // The source arrives newest-first; oldest-first is a reversal, not a re-sort by a
-  // different key, so the two orders stay exact mirrors of each other.
-  const inOrder = (list) => (order === 'oldest' ? [...list].sort((a, b) => tsOf(a) - tsOf(b)) : [...list].sort((a, b) => tsOf(b) - tsOf(a)));
+  // ONE canonical newest-first ordering, reversed for oldest-first, so the two
+  // directions are exact mirrors by construction. Sorting each direction on its own
+  // comparator is not enough: a message with several attachments gives its files
+  // IDENTICAL timestamps, and tied elements do not come back in opposite orders from
+  // two opposite sorts — so the same three files read in the same order under both
+  // settings, which looks like the toggle half-worked. Name breaks the tie.
+  const canonical = (list) => [...list].sort((a, b) => (tsOf(b) - tsOf(a)) || String(a.name || '').localeCompare(String(b.name || '')));
+  const inOrder = (list) => (order === 'oldest' ? canonical(list).reverse() : canonical(list));
   // "All in order" is the chronological view: one timeline across both senders,
   // which is the thing the two grouped sections cannot show.
   const timeline = inOrder([...fromAgent, ...youSent]);
