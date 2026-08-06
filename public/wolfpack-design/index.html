@@ -31,7 +31,7 @@ main{max-width:430px;margin:0 auto;padding:16px 16px 40px}
 .page.on{display:block}
 .phone{background:#F4F2EE;border:1px solid var(--line);overflow:hidden;
   box-shadow:0 2px 18px rgba(18,20,15,.10)}
-.phone img{display:block;width:100%;height:auto}
+.phone img{display:block;width:100%;height:auto;background:#EDEAE4}
 .note{margin:14px 2px 0;font-size:12px;line-height:1.55;color:var(--ink-2)}
 .note b{color:var(--ink)}
 .warn{border-left:3px solid var(--blue);padding-left:10px;margin-top:10px}
@@ -57,12 +57,12 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
 <main>
   <section class="page on" data-k="home">
     <div class="phone">
-      <img src="img/home-1.jpg" alt="Top of the home page" width="1080" height="1920">
-      <img src="img/home-2.jpg" alt="Client proof" width="1080" height="1920" loading="lazy">
-      <img src="img/home-3.jpg" alt="Services" width="1080" height="1920" loading="lazy">
-      <img src="img/home-4.jpg" alt="Our work" width="1080" height="1920" loading="lazy">
-      <img src="img/home-5.jpg" alt="Who we serve" width="1080" height="1920" loading="lazy">
-      <img src="img/home-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+      <img data-src="img/home-1.jpg" alt="Top of the home page" width="1080" height="1920">
+      <img data-src="img/home-2.jpg" alt="Client proof" width="1080" height="1920">
+      <img data-src="img/home-3.jpg" alt="Services" width="1080" height="1920">
+      <img data-src="img/home-4.jpg" alt="Our work" width="1080" height="1920">
+      <img data-src="img/home-5.jpg" alt="Who we serve" width="1080" height="1920">
+      <img data-src="img/home-6.jpg" alt="Footer" width="1080" height="1920">
     </div>
     <p class="note"><b>What changed.</b> The phone number is a full-width call bar instead of
       being hidden. Services and audiences are full-width rows you scan, not tall centred boxes.
@@ -74,12 +74,12 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
 
   <section class="page" data-k="pm">
     <div class="phone">
-      <img src="img/pm-1.jpg" alt="Top of the property managers page" width="1080" height="1920" loading="lazy">
-      <img src="img/pm-2.jpg" alt="The problem" width="1080" height="1920" loading="lazy">
-      <img src="img/pm-3.jpg" alt="Response commitment" width="1080" height="1920" loading="lazy">
-      <img src="img/pm-4.jpg" alt="Vendor compliance" width="1080" height="1920" loading="lazy">
-      <img src="img/pm-5.jpg" alt="How it works" width="1080" height="1920" loading="lazy">
-      <img src="img/pm-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+      <img data-src="img/pm-1.jpg" alt="Top of the property managers page" width="1080" height="1920">
+      <img data-src="img/pm-2.jpg" alt="The problem" width="1080" height="1920">
+      <img data-src="img/pm-3.jpg" alt="Response commitment" width="1080" height="1920">
+      <img data-src="img/pm-4.jpg" alt="Vendor compliance" width="1080" height="1920">
+      <img data-src="img/pm-5.jpg" alt="How it works" width="1080" height="1920">
+      <img data-src="img/pm-6.jpg" alt="Footer" width="1080" height="1920">
     </div>
     <p class="note"><b>The test this page passed.</b> Its copy was written in desktop shapes
       &mdash; a 2x2 grid, three figures side by side, a six-row table, four steps in a row. All
@@ -92,12 +92,12 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
 
   <section class="page" data-k="jet">
     <div class="phone">
-      <img src="img/jet-1.jpg" alt="Top of the hydro jetting page" width="1080" height="1920" loading="lazy">
-      <img src="img/jet-2.jpg" alt="Before and after" width="1080" height="1920" loading="lazy">
-      <img src="img/jet-3.jpg" alt="Cable versus jetting" width="1080" height="1920" loading="lazy">
-      <img src="img/jet-4.jpg" alt="Four steps" width="1080" height="1920" loading="lazy">
-      <img src="img/jet-5.jpg" alt="Free camera inspection" width="1080" height="1920" loading="lazy">
-      <img src="img/jet-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+      <img data-src="img/jet-1.jpg" alt="Top of the hydro jetting page" width="1080" height="1920">
+      <img data-src="img/jet-2.jpg" alt="Before and after" width="1080" height="1920">
+      <img data-src="img/jet-3.jpg" alt="Cable versus jetting" width="1080" height="1920">
+      <img data-src="img/jet-4.jpg" alt="Four steps" width="1080" height="1920">
+      <img data-src="img/jet-5.jpg" alt="Free camera inspection" width="1080" height="1920">
+      <img data-src="img/jet-6.jpg" alt="Footer" width="1080" height="1920">
     </div>
     <p class="note"><b>Before and after are stacked</b>, not side by side &mdash; on a phone two
       half-width pipe shots are unreadable, and this is the page's whole argument.</p>
@@ -108,12 +108,12 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
 
   <section class="page" data-k="fog">
     <div class="phone">
-      <img src="img/fog-1.jpg" alt="Top of the grease trap page" width="1080" height="1920" loading="lazy">
-      <img src="img/fog-2.jpg" alt="Why it matters" width="1080" height="1920" loading="lazy">
-      <img src="img/fog-3.jpg" alt="The service" width="1080" height="1920" loading="lazy">
-      <img src="img/fog-4.jpg" alt="One agreement" width="1080" height="1920" loading="lazy">
-      <img src="img/fog-5.jpg" alt="The cadence" width="1080" height="1920" loading="lazy">
-      <img src="img/fog-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+      <img data-src="img/fog-1.jpg" alt="Top of the grease trap page" width="1080" height="1920">
+      <img data-src="img/fog-2.jpg" alt="Why it matters" width="1080" height="1920">
+      <img data-src="img/fog-3.jpg" alt="The service" width="1080" height="1920">
+      <img data-src="img/fog-4.jpg" alt="One agreement" width="1080" height="1920">
+      <img data-src="img/fog-5.jpg" alt="The cadence" width="1080" height="1920">
+      <img data-src="img/fog-6.jpg" alt="Footer" width="1080" height="1920">
     </div>
     <p class="note"><b>Aimed at the group, not the restaurant.</b> One agreement across the
       estate, priced per location, records filed per address &mdash; which is the thesis in the
@@ -122,11 +122,11 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
 
   <section class="page" data-k="contact">
     <div class="phone">
-      <img src="img/contact-1.jpg" alt="Top of the contact page" width="1080" height="1920" loading="lazy">
-      <img src="img/contact-2.jpg" alt="Two ways in" width="1080" height="1920" loading="lazy">
-      <img src="img/contact-3.jpg" alt="Request form" width="1080" height="1920" loading="lazy">
-      <img src="img/contact-4.jpg" alt="Service area" width="1080" height="1920" loading="lazy">
-      <img src="img/contact-5.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+      <img data-src="img/contact-1.jpg" alt="Top of the contact page" width="1080" height="1920">
+      <img data-src="img/contact-2.jpg" alt="Two ways in" width="1080" height="1920">
+      <img data-src="img/contact-3.jpg" alt="Request form" width="1080" height="1920">
+      <img data-src="img/contact-4.jpg" alt="Service area" width="1080" height="1920">
+      <img data-src="img/contact-5.jpg" alt="Footer" width="1080" height="1920">
     </div>
     <p class="note"><b>Four fields, full width, stacked.</b> The brief says drop-off gets steep
       past three, so nothing was added &mdash; no message box, no fifth field.</p>
@@ -137,17 +137,33 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
 
 <script>
 (function(){
-  var btns = Array.prototype.slice.call(document.querySelectorAll('#tabs button'));
+  var btns  = Array.prototype.slice.call(document.querySelectorAll('#tabs button'));
   var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
+
+  /* Images carry data-src, not src. A lazy image inside a display:none panel
+     never loads, and revealing the panel does not reliably start it - which is
+     why every tab but the first came up blank. Hydrating on tab switch is the
+     fix, and it keeps the initial payload to one page instead of five. */
+  function hydrate(page){
+    Array.prototype.forEach.call(page.querySelectorAll('img[data-src]'), function(img){
+      img.src = img.dataset.src;
+      img.removeAttribute('data-src');
+    });
+  }
   function pick(k){
     btns.forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.k === k)); });
-    pages.forEach(function(p){ p.classList.toggle('on', p.dataset.k === k); });
+    pages.forEach(function(p){
+      var on = p.dataset.k === k;
+      p.classList.toggle('on', on);
+      if (on) hydrate(p);
+    });
     location.hash = k;
     window.scrollTo(0,0);
   }
   btns.forEach(function(b){ b.addEventListener('click', function(){ pick(b.dataset.k); }); });
+
   var h = location.hash.replace('#','');
-  if (h && btns.some(function(b){ return b.dataset.k === h; })) pick(h);
+  pick(btns.some(function(b){ return b.dataset.k === h; }) ? h : 'home');
 })();
 </script>
 </body>
