@@ -7,22 +7,24 @@
 <title>Wolfpack — mobile design, generated</title>
 <style>
 /* A viewer, not a design. Deliberately plain so nothing here competes with the
-   comps it is showing. The sections are separate images because a single
-   1080 x 11520 JPEG sits near iOS Safari's decode ceiling and can blank out. */
+   comps it is showing. Sections are separate images because a single tall JPEG
+   sits near iOS Safari's decode ceiling and can blank out. */
 :root{--ink:#12140F;--ink-2:#5D6058;--ground:#E8E5DE;--line:#C9C4B8;--blue:#489FD3}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--ground);color:var(--ink);
   font:15px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
   -webkit-font-smoothing:antialiased}
 header{position:sticky;top:0;z-index:10;background:rgba(232,229,222,.94);
-  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
-  padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 0 0}
+.hd{padding:0 16px}
 h1{font-size:13px;letter-spacing:.13em;text-transform:uppercase;font-weight:700}
 .sub{font-size:12px;color:var(--ink-2);margin-top:2px}
-nav{display:flex;gap:8px;margin-top:10px}
-nav button{flex:1;font:inherit;font-size:13px;font-weight:600;padding:9px 6px;
+nav{display:flex;gap:6px;margin-top:10px;padding:0 16px 10px;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;font:inherit;font-size:13px;font-weight:600;padding:9px 14px;
   border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;
-  border-radius:0}
+  white-space:nowrap}
 nav button[aria-selected="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
 main{max-width:430px;margin:0 auto;padding:16px 16px 40px}
 .page{display:none}
@@ -39,16 +41,21 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
 <body>
 
 <header>
-  <h1>Wolfpack &middot; mobile design</h1>
-  <div class="sub">Generated 5 Aug 2026. Not the working site.</div>
-  <nav>
-    <button id="t-home" aria-selected="true">Home</button>
-    <button id="t-pm" aria-selected="false">Property managers</button>
+  <div class="hd">
+    <h1>Wolfpack &middot; mobile design</h1>
+    <div class="sub">Five pages, generated 5 Aug 2026. Not the working site.</div>
+  </div>
+  <nav id="tabs">
+    <button data-k="home" aria-selected="true">Home</button>
+    <button data-k="pm" aria-selected="false">Property managers</button>
+    <button data-k="jet" aria-selected="false">Hydro jetting</button>
+    <button data-k="fog" aria-selected="false">Grease &amp; FOG</button>
+    <button data-k="contact" aria-selected="false">Contact</button>
   </nav>
 </header>
 
 <main>
-  <section class="page on" id="p-home">
+  <section class="page on" data-k="home">
     <div class="phone">
       <img src="img/home-1.jpg" alt="Top of the home page" width="1080" height="1920">
       <img src="img/home-2.jpg" alt="Client proof" width="1080" height="1920" loading="lazy">
@@ -60,12 +67,12 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
     <p class="note"><b>What changed.</b> The phone number is a full-width call bar instead of
       being hidden. Services and audiences are full-width rows you scan, not tall centred boxes.
       The work photos are a swipe rail. The footer rows are tappable.</p>
-    <p class="note warn"><b>The photography is generated</b> and the generator painted a
-      made-up Wolfpack logo onto the truck and the crew shirts. Placeholder only. Thursday's
-      shoot replaces every photo.</p>
+    <p class="note warn"><b>The photography is generated</b> and the generator painted a made-up
+      Wolfpack logo onto the truck and the crew shirts. Placeholder only. Thursday's shoot
+      replaces every photo.</p>
   </section>
 
-  <section class="page" id="p-pm">
+  <section class="page" data-k="pm">
     <div class="phone">
       <img src="img/pm-1.jpg" alt="Top of the property managers page" width="1080" height="1920" loading="lazy">
       <img src="img/pm-2.jpg" alt="The problem" width="1080" height="1920" loading="lazy">
@@ -75,12 +82,54 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
       <img src="img/pm-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
     </div>
     <p class="note"><b>The test this page passed.</b> Its copy was written in desktop shapes
-      &mdash; a 2x2 grid, three figures side by side, a six-row table, four steps in a row.
-      All four came back as proper phone patterns.</p>
+      &mdash; a 2x2 grid, three figures side by side, a six-row table, four steps in a row. All
+      four came back as proper phone patterns.</p>
     <p class="note warn"><b>The response numbers are ours, not Wolfpack's.</b> The 30-minute
       callback and 4-hour on-site figures have never been confirmed by Ross. They now read as a
       written service guarantee on the page whose job is surviving vendor vetting. This page
       cannot go live to customers until he commits to those numbers, or we replace them.</p>
+  </section>
+
+  <section class="page" data-k="jet">
+    <div class="phone">
+      <img src="img/jet-1.jpg" alt="Top of the hydro jetting page" width="1080" height="1920" loading="lazy">
+      <img src="img/jet-2.jpg" alt="Before and after" width="1080" height="1920" loading="lazy">
+      <img src="img/jet-3.jpg" alt="Cable versus jetting" width="1080" height="1920" loading="lazy">
+      <img src="img/jet-4.jpg" alt="Four steps" width="1080" height="1920" loading="lazy">
+      <img src="img/jet-5.jpg" alt="Free camera inspection" width="1080" height="1920" loading="lazy">
+      <img src="img/jet-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+    </div>
+    <p class="note"><b>Before and after are stacked</b>, not side by side &mdash; on a phone two
+      half-width pipe shots are unreadable, and this is the page's whole argument.</p>
+    <p class="note warn"><b>Both pipe shots are generated.</b> These must be Wolfpack's own sewer
+      camera stills before this page goes anywhere near a customer. A fabricated before-and-after
+      is the one image on this site a property manager would be right to distrust.</p>
+  </section>
+
+  <section class="page" data-k="fog">
+    <div class="phone">
+      <img src="img/fog-1.jpg" alt="Top of the grease trap page" width="1080" height="1920" loading="lazy">
+      <img src="img/fog-2.jpg" alt="Why it matters" width="1080" height="1920" loading="lazy">
+      <img src="img/fog-3.jpg" alt="The service" width="1080" height="1920" loading="lazy">
+      <img src="img/fog-4.jpg" alt="One agreement" width="1080" height="1920" loading="lazy">
+      <img src="img/fog-5.jpg" alt="The cadence" width="1080" height="1920" loading="lazy">
+      <img src="img/fog-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+    </div>
+    <p class="note"><b>Aimed at the group, not the restaurant.</b> One agreement across the
+      estate, priced per location, records filed per address &mdash; which is the thesis in the
+      plan, not a generic services page.</p>
+  </section>
+
+  <section class="page" data-k="contact">
+    <div class="phone">
+      <img src="img/contact-1.jpg" alt="Top of the contact page" width="1080" height="1920" loading="lazy">
+      <img src="img/contact-2.jpg" alt="Two ways in" width="1080" height="1920" loading="lazy">
+      <img src="img/contact-3.jpg" alt="Request form" width="1080" height="1920" loading="lazy">
+      <img src="img/contact-4.jpg" alt="Service area" width="1080" height="1920" loading="lazy">
+      <img src="img/contact-5.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+    </div>
+    <p class="note"><b>Four fields, full width, stacked.</b> The brief says drop-off gets steep
+      past three, so nothing was added &mdash; no message box, no fifth field.</p>
   </section>
 </main>
 
@@ -88,19 +137,17 @@ footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:va
 
 <script>
 (function(){
-  var tabs = {home: document.getElementById('t-home'), pm: document.getElementById('t-pm')};
-  var pages = {home: document.getElementById('p-home'), pm: document.getElementById('p-pm')};
+  var btns = Array.prototype.slice.call(document.querySelectorAll('#tabs button'));
+  var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
   function pick(k){
-    for (var n in tabs){
-      tabs[n].setAttribute('aria-selected', String(n === k));
-      pages[n].classList.toggle('on', n === k);
-    }
+    btns.forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.k === k)); });
+    pages.forEach(function(p){ p.classList.toggle('on', p.dataset.k === k); });
     location.hash = k;
     window.scrollTo(0,0);
   }
-  tabs.home.addEventListener('click', function(){ pick('home'); });
-  tabs.pm.addEventListener('click', function(){ pick('pm'); });
-  if (location.hash === '#pm') pick('pm');
+  btns.forEach(function(b){ b.addEventListener('click', function(){ pick(b.dataset.k); }); });
+  var h = location.hash.replace('#','');
+  if (h && btns.some(function(b){ return b.dataset.k === h; })) pick(h);
 })();
 </script>
 </body>
