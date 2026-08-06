@@ -415,7 +415,7 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
   );
 }
 
-function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
+function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed, knavZone = 'rail' }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
   const { refetch: refetchHomeData } = useDataContext();
@@ -778,6 +778,17 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // Keyboard navigation state (desktop only): tracks selected row in All Rooms list.
   // -1 = nothing selected. 0..agentsLen-1 = agents. agentsLen..agentsLen+projLen-1 = projects.
   const [knavSelectedIdx, setKnavSelectedIdx] = useState(-1);
+  // Read inside the keydown handler, which is registered once and must not go
+  // stale on every zone change.
+  const knavZoneRef = useRef(knavZone);
+  useEffect(() => { knavZoneRef.current = knavZone; }, [knavZone]);
+  // Coming back out of a chat (← off the leftmost column) lands on the FIRST row of
+  // "Pick up where you left off", so the very next ↓ walks the list — Patrik's spec.
+  const prevKnavZoneRef = useRef(knavZone);
+  useEffect(() => {
+    if (prevKnavZoneRef.current !== 'rail' && knavZone === 'rail') setKnavSelectedIdx(0);
+    prevKnavZoneRef.current = knavZone;
+  }, [knavZone]);
   // Track keyboard nav room open state and which room is opened for col3 view.
   // null = no room open. 'col3' = room displayed in Conversation col. 'full' = full Chat opened.
   const [knavRoomOpenState, setKnavRoomOpenState] = useState(null);
@@ -928,8 +939,16 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       // must still navigate from there. So: while the composer is EMPTY, let the arrow
       // keys drive navigation; the moment you've typed something, the arrows go back to
       // moving the cursor inside the box (we bail). Other inputs (search, ⌘K) always bail.
+      // The rail only owns the arrows while it holds the zone. Once a chat column
+      // has them, ←/→ belong to the shell's cross-column handler (Patrik 2026-08-06).
+      if (knavZoneRef.current !== 'rail') return;
+
       const focused = document.activeElement;
-      const inComposer = !!(focused && focused.closest && focused.closest('[data-cv6-composer]'));
+      // BOTH boxes count as "the composer": the quick-reply one AND the front-door
+      // intake box, which auto-focuses itself on desktop. Leaving the intake box out
+      // is why ↓ did nothing on Home — the guard classified it as a foreign text
+      // input and bailed before the arrows ever ran (Patrik 2026-08-06).
+      const inComposer = !!(focused && focused.closest && focused.closest('[data-cv6-composer],[data-cv6-intake]'));
       const composerHasText = inComposer && !!((focused.value || focused.textContent || '').trim());
       const isOtherTextInput = focused && !inComposer && (
         focused.tagName === 'INPUT' ||
@@ -2405,6 +2424,14 @@ class ScreenBoundary extends Component {
 // Initial view from the URL (?view=command), so each tool is deep-linkable: a refresh
 // keeps you on the page, and the screen can be linked/screenshotted directly. 'chat'
 // maps to the conversations list. Unknown values fall back to Home.
+// Column ids carry ':' and '/' (chat:project/mission), which break a raw attribute
+// selector. CSS.escape is not in every engine we ship to, so fall back to quoting.
+function cssEscape(value) {
+  const s = String(value || '');
+  try { if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(s); } catch { /* older engine */ }
+  return s.replace(/["\\]/g, '\\$&');
+}
+
 function initialViewFromUrl() {
   try {
     const v = new URLSearchParams(window.location.search).get('view');
@@ -3210,6 +3237,70 @@ export default function CornerCV6() {
     });
   }, [activeColumnId, workspaceColumns.length]);
 
+  // ---- Arrow navigation across the workspace (Patrik 2026-08-06) ------------
+  // One idea: the arrow keys always belong to exactly ONE surface — either the
+  // All-rooms rail ('rail') or one open chat column (its id). knavZone says which.
+  // Home owns ↑/↓ and → while the zone is the rail; this shell owns ←/→ once the
+  // zone is a column. ← off the leftmost column lands you back in the rail at the
+  // top of "Pick up where you left off", so you can keep walking with ↓.
+  const [knavZone, setKnavZone] = useState('rail');
+  const knavZoneRef = useRef('rail');
+  useEffect(() => { knavZoneRef.current = knavZone; }, [knavZone]);
+  // A closed column must never keep the keys — fall back to the rail.
+  useEffect(() => {
+    if (knavZone !== 'rail' && !workspaceColumns.some((column) => column.id === knavZone)) setKnavZone('rail');
+  }, [knavZone, workspaceColumns]);
+
+  // Put the cursor in the focused column's composer. That is also what makes the
+  // "only while the box is empty" rule read the box the user is actually looking at.
+  useEffect(() => {
+    if (!isDesktop || knavZone === 'rail') return undefined;
+    const id = requestAnimationFrame(() => {
+      const column = document.querySelector(`[data-workspace-column="${cssEscape(knavZone)}"]`);
+      const el = column?.querySelector('.cv6-floating-composer textarea, .cv6-floating-composer input[type="text"]');
+      try { el?.focus?.(); } catch { /* not mounted */ }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isDesktop, knavZone]);
+
+  useEffect(() => {
+    if (!isDesktop) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const zone = knavZoneRef.current;
+      if (zone === 'rail') return; // Home's handler owns the rail
+
+      const column = document.querySelector(`[data-workspace-column="${cssEscape(zone)}"]`);
+      if (!column) return;
+      // Any typing in this column's composer means the arrows are moving a cursor,
+      // not a room. Same contract as Home: empty box = navigation.
+      const composer = column.querySelector('.cv6-floating-composer');
+      const typed = [...(composer?.querySelectorAll('textarea, input[type="text"]') || [])]
+        .some((el) => String(el.value || '').trim().length > 0);
+      if (typed) return;
+      // Search / ⌘K / anything else with a caret keeps its own arrows.
+      const focused = document.activeElement;
+      const inThisComposer = !!(focused && composer && composer.contains(focused));
+      if (focused && !inThisComposer && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA'
+        || focused.isContentEditable || focused.closest?.('[role="combobox"]'))) return;
+
+      const ids = workspaceColumns.map((item) => item.id);
+      const index = ids.indexOf(zone);
+      if (index < 0) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (index === 0) { setKnavZone('rail'); try { focused?.blur?.(); } catch { /* noop */ } }
+        else { setKnavZone(ids[index - 1]); setActiveColumnId(ids[index - 1]); }
+      } else if (index < ids.length - 1) {
+        e.preventDefault();
+        setKnavZone(ids[index + 1]);
+        setActiveColumnId(ids[index + 1]);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isDesktop, workspaceColumns]);
+
   // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
   // nav's search icon opens it too (onOpenCommandK below). Escape closes inside Search.
   useEffect(() => {
@@ -3305,6 +3396,9 @@ export default function CornerCV6() {
     const column = { id, type: 'chat', room, worldId: wid || worldId };
     setWorkspaceColumns((columns) => columns.some((item) => item.id === id) ? columns : [...columns, column]);
     setActiveColumnId(id);
+    // Opening a room hands it the arrow keys, so → out of the rail walks straight
+    // into the chat you just opened (and ← walks straight back out).
+    setKnavZone(id);
     try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
   }, [worldId]);
 
@@ -3414,7 +3508,7 @@ export default function CornerCV6() {
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={onSearch} />; viewKey = 'chatlist'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} knavZone={knavZone} />; viewKey = 'home'; }
 
   const current = view === 'chatlist' ? 'chat' : view;
   const parkedLabel = { organize: 'Files', command: 'Command', tracker: 'Tracker', livescribe: 'Scribe' }[view] || '';
@@ -3484,7 +3578,7 @@ export default function CornerCV6() {
           // missing handler).
           const onToggleWidth = isDesktop ? () => toggleWorkspaceColumnWidth(column.id) : undefined;
           return (
-          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} data-column-expanded={expanded ? '1' : undefined} aria-label={column.type === 'email' ? 'Email column' : column.type === 'workers' ? 'Background work column' : `${column.room?.name || 'Chat'} chat column`}>
+          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} data-column-expanded={expanded ? '1' : undefined} data-knav-zone={knavZone === column.id ? 'on' : undefined} aria-label={column.type === 'email' ? 'Email column' : column.type === 'workers' ? 'Background work column' : `${column.room?.name || 'Chat'} chat column`}>
             {column.type === 'workers' ? (
               <WorkersShell onClose={() => closeWorkspaceColumn(column.id)} expanded={expanded} onToggleWidth={onToggleWidth} />
             ) : column.type === 'email' ? (

@@ -2519,6 +2519,10 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 @media (prefers-reduced-motion:reduce) { [data-cv6] .room-settings-panel { animation:none; } }
 /* corner:cv6-polish R10 — control geometry and composed surfaces. Text actions
    are pills; icon controls are true circles on every CV6 page. */
+/* Which column the arrow keys are standing in (Patrik 2026-08-06). Without a mark
+   you cannot tell where ←/→ will take you next, and the first press feels random. */
+[data-cv6] .cv6-workspace-column[data-knav-zone="on"] { box-shadow:inset 0 0 0 1.5px var(--accent); }
+
 [data-cv6] button { border-radius:999px !important; }
 /* ...except the composer's secondary controls (Patrik 2026-08-06). Voice and Send
    stay round primaries; commands / files / Work-Plan / checklists are rectangles,
