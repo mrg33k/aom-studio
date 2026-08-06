@@ -93,7 +93,9 @@ export default function IntakeComposer({ onSubmit, busy = false, placeholder = '
 
   return (
     <div ref={rootRef} className="cv6-intake-composer" style={{ width: '100%', maxWidth: 680, margin: '0 auto', fontFamily: 'var(--font-sans)' }}>
-      <div className="cv6-intake-heading" style={{ fontSize: 21, fontWeight: 600, letterSpacing: '-.01em', color: 'var(--fg)', margin: '0 4px 14px' }}>What do you want to get done?</div>
+      {/* The "What do you want to get done?" heading was removed (Patrik 2026-08-06)
+          when the composer moved to the bottom of the front door — a headline under
+          the recents list read as a caption for the list, not a prompt for the box. */}
       <div className="cv6-floating-composer" style={{ padding: 14, borderRadius: 26, background: 'var(--composer-solid, #131317)', border: '1px solid var(--hair)', boxShadow: '0 22px 52px -22px rgba(0,0,0,.88)' }}>
         {busy ? (
           <div className="cv6-intake-thinking" role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 6px' }}>
@@ -124,7 +126,7 @@ export default function IntakeComposer({ onSubmit, busy = false, placeholder = '
                 aria-label={`Currently in ${interactionMode} mode. Switch to ${interactionMode === 'plan' ? 'work' : 'plan'} mode`}
                 title={interactionMode === 'plan' ? 'Plan mode: Corner proposes a plan and waits' : 'Work mode: Corner starts right away'}
                 onClick={() => changeMode(interactionMode === 'plan' ? 'work' : 'plan')}
-                style={{ height: 42, padding: '0 13px', borderRadius: 21, border: `1px solid ${interactionMode === 'plan' ? 'var(--accent)' : 'var(--hair)'}`, background: interactionMode === 'plan' ? 'var(--accent-weak)' : 'var(--surface-2)', color: interactionMode === 'plan' ? 'var(--accent)' : 'var(--muted)', font: '700 11.5px var(--font-sans)', cursor: 'pointer' }}>
+                style={{ height: 34, padding: '0 12px', borderRadius: 10, border: `1px solid ${interactionMode === 'plan' ? 'var(--accent)' : 'var(--hair)'}`, background: interactionMode === 'plan' ? 'var(--accent-weak)' : 'var(--surface-2)', color: interactionMode === 'plan' ? 'var(--accent)' : 'var(--muted)', font: '700 11.5px var(--font-sans)', cursor: 'pointer' }}>
                 {interactionMode === 'plan' ? 'Plan' : 'Work'}
               </button>
               <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>

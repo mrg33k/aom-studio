@@ -28,9 +28,6 @@
     </div>
   </div>
   <div class="hbody" data-state="ready">
-    <!-- Front door (corner:front-door): React portals the IntakeComposer + editable
-         confirm here. Mobile always lands on Home, so this is the first thing you see. -->
-    <div class="cv6-intake-host" data-cv6-intake data-cv6-keep="home-intake" style="padding:0 22px 6px;"></div>
     <!-- Catch Up swipe deck retired from mobile Home (Patrik 2026-07-13): mobile now
          matches desktop, which retired its Catch Up column 2026-06-30. Home is
          "Pick up where you left off" + All Rooms; the needs-you inbox lives on its
@@ -83,6 +80,12 @@
       </div>
     </div>
   </div>
+  <!-- Front door (corner:front-door): React portals the IntakeComposer + editable
+       confirm here. Docked to the bottom of the screen (Patrik 2026-08-06) and
+       deliberately OUTSIDE .hbody, so "Pick up where you left off" and All rooms
+       scroll underneath it and the box never scrolls away. Same landing line as
+       the chat composer (.mcomposer). -->
+  <div class="cv6-intake-host mintake" data-cv6-intake data-cv6-keep="home-intake"></div>
 </div>
 
 <!-- ============ B · PROJECT OPENED (general chat + missions) ============ -->

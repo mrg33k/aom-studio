@@ -1587,7 +1587,6 @@
 [data-cv6] .restcol .restrow .rprev { display:block; margin-top:2px; font-size:11px; color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 [data-cv6] .restcol .restrow .rprev:empty { display:none; }
 [data-cv6] .restcol .restrow:hover { background:var(--surface-hover); }
-[data-cv6] .restcol .restrows .restrow:nth-child(n+7) { display:none; }
 [data-cv6] .restcol .restrow .rsub { font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 [data-cv6] .rest-hint { font-size:12px; color:var(--faint); text-align:center; margin-top:16px; }
 
@@ -2708,24 +2707,48 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
 [data-cv6] [data-cv6-intake] { display:block; width:100%; margin-bottom:22px; }
 @keyframes cv6IntakeSpin { to { transform:rotate(360deg); } }
 [data-cv6] .cv6-intake-spin { animation:cv6IntakeSpin .7s linear infinite; }
-/* corner:front-door refine — breathing room from the top bar at the front door
-   (only the resting/no-room state; in-room quick-chat is untouched). */
-[data-cv6] .convo-ready.is-none .convo-rest2 { align-items:flex-start; }
-[data-cv6] .convo-ready.is-none .restcol { margin-top:7vh; }
-/* Recents digest slides away smoothly the moment you start composing. The host
-   gets .is-composing from IntakeComposer; the digest is its next sibling
-   (.restlist desktop, .mresume mobile). */
-[data-cv6] [data-cv6-intake] ~ .restlist,
-[data-cv6] [data-cv6-intake] ~ .restempty,
-[data-cv6] [data-cv6-intake] ~ .mresume {
-  max-height:1400px; overflow:hidden;
-  transition:max-height .4s cubic-bezier(.4,0,.2,1), opacity .26s ease, margin .4s cubic-bezier(.4,0,.2,1);
+
+/* ---- Front door, composer at the BOTTOM (Patrik 2026-08-06) --------------
+   It used to sit at the top with the recents digest under it, and the digest
+   slid away the moment you typed — so the two halves of the front door were
+   never on screen together. Now the column is a chat shape: "Pick up where you
+   left off" fills the space and SCROLLS (all 30, not the old 6-row cap), the
+   composer is docked under it, and neither one hides the other. The collapse-on-
+   compose rule is gone with it. */
+[data-cv6] .convo-ready.is-none .convo-rest2 { align-items:stretch; }
+[data-cv6] .convo-ready.is-none .restcol {
+  display:flex; flex-direction:column; min-height:0; height:100%;
+  margin:0 auto; padding:20px 0 4px; box-sizing:border-box;
 }
-[data-cv6] [data-cv6-intake].is-composing ~ .restlist,
-[data-cv6] [data-cv6-intake].is-composing ~ .restempty,
-[data-cv6] [data-cv6-intake].is-composing ~ .mresume {
-  max-height:0; opacity:0; margin-top:0; margin-bottom:0; pointer-events:none;
+[data-cv6] .convo-ready.is-none .restcol > [data-cv6-intake] {
+  order:2; flex:none; margin:14px 0 0;
 }
+[data-cv6] .convo-ready.is-none .restcol > .restlist,
+[data-cv6] .convo-ready.is-none .restcol > .restempty {
+  order:1; flex:1 1 auto; min-height:0;
+}
+[data-cv6] .convo-ready.is-none .restcol > .restlist { display:flex; flex-direction:column; }
+[data-cv6] .convo-ready.is-none .restcol > .restlist.is-none { display:none; }
+/* the heading stays put; only the rows scroll */
+[data-cv6] .convo-ready.is-none .restcol > .restlist > .subhdr { flex:none; }
+[data-cv6] .convo-ready.is-none .restcol .restrows {
+  flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+  padding-right:4px;
+}
+[data-cv6] .convo-ready.is-none .restcol > .restempty { display:flex; align-items:center; justify-content:center; }
+/* must out-specify the rule above, or the empty state shows while rows exist */
+[data-cv6] .convo-ready.is-none .restcol > .restempty.is-has { display:none; }
+
+/* Mobile front door: the same move. The composer is docked over the bottom of the
+   screen (outside the scroller in the template) and .hbody reserves room for it so
+   the last "All rooms" row is always reachable. */
+[data-cv6][data-screen="home-mobile"] { position:relative; }
+[data-cv6][data-screen="home-mobile"] .mintake {
+  position:absolute; left:12px; right:12px; bottom:20px; z-index:6;
+  margin-bottom:0;
+}
+[data-cv6][data-screen="home-mobile"] .hbody { padding-bottom:132px; }
+html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8px; }
 /* Corner-logo thinking mark in the routing modal. */
 [data-cv6] .cv6-intake-thinking-mark { width:40px; height:40px; flex:none; }
 @media (max-width:899px) {

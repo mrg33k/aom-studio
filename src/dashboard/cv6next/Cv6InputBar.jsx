@@ -46,6 +46,15 @@ const I = {
   checklist: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.2 1.2L6.5 5M3 12l1.2 1.2L6.5 11M3 18l1.2 1.2L6.5 17"/></svg>,
 };
 
+// Composer action buttons split into two families (Patrik 2026-08-06): voice and
+// Send stay the 42px round primaries; every other control (commands, files,
+// Work/Plan, checklists) is a smaller rounded RECTANGLE, so the two things you
+// actually reach for keep the visual weight.
+const UTILITY_BTN = {
+  width: 38, height: 34, borderRadius: 10, flex: 'none',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+};
+
 function MenuRow({ icon, label, detail, hasSubmenu, onClick, tint, testid }) {
   return (
     <button type="button" data-testid={testid} onClick={onClick}
@@ -82,7 +91,7 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
   return (
     <div ref={wrapRef} data-testid="cv6-commands-menu" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 'none' }}>
       <button type="button" title="Commands" data-testid="cv6-commands-menu-button" onClick={() => setOpen((o) => !o)}
-        style={{ width: 42, height: 42, borderRadius: '50%', flex: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: open || selectedImageTool ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${open ? 'var(--accent)' : 'var(--hair)'}`, color: open || selectedImageTool || isRecording ? 'var(--accent)' : 'var(--muted)', transition: 'background .15s, color .15s, border-color .15s' }}>
+        style={{ ...UTILITY_BTN, cursor: 'pointer', background: open || selectedImageTool ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${open ? 'var(--accent)' : 'var(--hair)'}`, color: open || selectedImageTool || isRecording ? 'var(--accent)' : 'var(--muted)', transition: 'background .15s, color .15s, border-color .15s' }}>
         {isRecording ? I.stop : I.sparkles}
       </button>
       {open ? (
@@ -263,16 +272,16 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
         <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: checklistOpen ? 12 : 10 }}>
           <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} />
           <button type="button" title="Files" aria-label="Attach and upload files" onClick={() => fileInputRef.current?.click()} disabled={uploading}
-            style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--hair)', color: uploading ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            style={{ ...UTILITY_BTN, background: 'var(--surface-2)', border: '1px solid var(--hair)', color: uploading ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer' }}>
             {uploading ? <CornerLoaderMark compact className="cv6-upload-loader" /> : I.attach}
           </button>
           <button type="button" className="cv6-mode-toggle" aria-label={`Currently in ${interactionMode} mode. Switch to ${interactionMode === 'plan' ? 'work' : 'plan'} mode`} title={interactionMode === 'plan' ? 'Plan mode: think until we decide' : 'Work mode: go go go'} onClick={() => setInteractionMode?.(interactionMode === 'plan' ? 'work' : 'plan')}
-            style={{ height: 42, padding: '0 13px', borderRadius: 21, border: `1px solid ${interactionMode === 'plan' ? 'var(--accent)' : 'var(--hair)'}`, background: interactionMode === 'plan' ? 'var(--accent-weak)' : 'var(--surface-2)', color: interactionMode === 'plan' ? 'var(--accent)' : 'var(--muted)', font: '700 11.5px var(--font-sans)', cursor: 'pointer' }}>
+            style={{ height: 34, padding: '0 12px', borderRadius: 10, border: `1px solid ${interactionMode === 'plan' ? 'var(--accent)' : 'var(--hair)'}`, background: interactionMode === 'plan' ? 'var(--accent-weak)' : 'var(--surface-2)', color: interactionMode === 'plan' ? 'var(--accent)' : 'var(--muted)', font: '700 11.5px var(--font-sans)', cursor: 'pointer' }}>
             {interactionMode === 'plan' ? 'Plan' : 'Work'}
           </button>
           <button type="button" data-testid="room-checklist-toggle" title={checklistOpen ? 'Back to message' : 'Room checklists'} aria-label={checklistOpen ? 'Close room checklists' : 'Open room checklists'} aria-pressed={checklistOpen}
             onClick={() => { setCommandsOpen(false); setChecklistOpen((open) => !open); }}
-            style={{ width: 42, height: 42, borderRadius: '50%', background: checklistOpen ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${checklistOpen ? 'var(--accent)' : 'var(--hair)'}`, color: checklistOpen ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            style={{ ...UTILITY_BTN, background: checklistOpen ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${checklistOpen ? 'var(--accent)' : 'var(--hair)'}`, color: checklistOpen ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer' }}>
             {I.checklist}
           </button>
           <span style={{ flex: 1 }} />
