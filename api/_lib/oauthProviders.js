@@ -121,6 +121,13 @@ export const OAUTH_PROVIDERS = {
     // offline_access is how Microsoft issues refresh tokens (no separate access_type param).
     // User.Read is needed to fetch the profile after connect (account email, display name).
     // Mail.Read + Mail.ReadWrite covers inbox read + organize (flag, move, mark-read).
+    // Mail.Read.Shared + Mail.ReadWrite.Shared are required to access shared mailboxes
+    // (e.g. bids@ambitionac.com, ap@ambitionac.com) that a tenant admin has delegated
+    // Full Access on. Without these two scopes, Graph returns 403 on /users/{shared}/...
+    // paths even if the signed-in user holds Full Access delegation.
+    // The signed-in user must also hold Full Access delegation on the target mailbox —
+    // that is an Exchange/M365 admin action, not an OAuth scope. The scope only opens
+    // the API door; the delegation is the key.
     scopes: [
       'openid',
       'email',
@@ -129,6 +136,8 @@ export const OAUTH_PROVIDERS = {
       'User.Read',
       'Mail.Read',
       'Mail.ReadWrite',
+      'Mail.Read.Shared',
+      'Mail.ReadWrite.Shared',
     ],
     // Minimum functional scopes. User.Read to identify the account; Mail.Read to pull the inbox.
     // Microsoft returns scope strings in mixed case matching what was granted — keep in sync

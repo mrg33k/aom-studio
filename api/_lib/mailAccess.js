@@ -20,6 +20,12 @@ const GMAIL_REQUIRED_SCOPES = [
 // requiredScopes for outlook and outlookClient.js.
 const OUTLOOK_REQUIRED_SCOPES = ['User.Read', 'Mail.Read']
 
+// R3 (2026-08-06) — Outlook shared-mailbox scopes. These are checked separately
+// (not in OUTLOOK_REQUIRED_SCOPES) because a connection is still valid for the
+// user's own mailbox even if the tenant hasn't granted .Shared scopes. The
+// listConnectionsForUser response surfaces whether the token covers shared access.
+const OUTLOOK_SHARED_SCOPES = ['Mail.Read.Shared', 'Mail.ReadWrite.Shared']
+
 // Mail slugs supported by the personal inbox reader.
 // Add 'outlook' here; it is now wired with a real OAuth flow.
 const MAIL_SLUGS = ['gmail', 'outlook']
@@ -68,17 +74,59 @@ export async function listConnectionsForUser(userId) {
   // Rows from before R12 have no config.granted_scopes → treated as insufficient.
   return rows
     .filter(row => hasAllScopes(row.config?.granted_scopes, requiredScopesFor(row.integration_slug)))
-    .map(row => ({
-      id: row.id,
-      user_id: row.user_id,
-      workspace_id: row.workspace_id,
-      integration_slug: row.integration_slug,
-      provider: row.integration_slug,
-      scope: row.workspace_id ? 'team' : 'personal',
-      account_email: row.config?.account_email || null,
-      connector_user_id: row.config?.connector_user_id || null,
-      connected_at: row.connected_at,
-    }))
+    .map(row => {
+      const isOutlook = row.integration_slug === 'outlook'
+      const ownEmail = row.config?.account_email || null
+
+      // Build the mailboxes array for Outlook connections.
+      // The primary mailbox is always the signed-in account. extra_mailboxes
+      // (stored in config by an admin) adds shared mailboxes reachable via the
+      // same delegated token with Mail.Read.Shared / Mail.ReadWrite.Shared.
+      // extra_mailboxes shape: [{address, label, type}] where type = 'shared'
+      //   or 'distribution_list' (read-only, no inbox — surface a warning in the UI).
+      let mailboxes = null
+      if (isOutlook && ownEmail) {
+        mailboxes = [{ address: ownEmail, label: row.config?.profile?.displayName || ownEmail, type: 'primary' }]
+        const extras = row.config?.extra_mailboxes
+        if (Array.isArray(extras) && extras.length) {
+          for (const box of extras) {
+            if (box && box.address) {
+              mailboxes.push({
+                address: box.address,
+                label: box.label || box.address,
+                type: box.type || 'shared',
+              })
+            }
+          }
+        }
+      }
+
+      // Indicate whether the token covers shared-mailbox access.
+      // If the .Shared scopes are missing, shared mailboxes will 403 on Graph.
+      // This lets the UI warn Karen BEFORE she selects a shared mailbox.
+      const hasSharedAccess = isOutlook
+        ? hasAllScopes(row.config?.granted_scopes, OUTLOOK_SHARED_SCOPES)
+        : null  // not applicable to Gmail
+
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        workspace_id: row.workspace_id,
+        integration_slug: row.integration_slug,
+        provider: row.integration_slug,
+        scope: row.workspace_id ? 'team' : 'personal',
+        account_email: ownEmail,
+        connector_user_id: row.config?.connector_user_id || null,
+        connected_at: row.connected_at,
+        // Outlook only — list of mailboxes addressable through this connection.
+        // null for Gmail connections.
+        mailboxes,
+        // Outlook only — whether the token includes Mail.Read.Shared access.
+        // null for Gmail. false means shared mailboxes will fail until Karen
+        // re-authorises (or the token refreshes with the new .Shared scopes).
+        has_shared_access: hasSharedAccess,
+      }
+    })
 }
 
 export async function assertCanUseConnection(userId, connectionId) {

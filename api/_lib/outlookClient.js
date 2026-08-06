@@ -59,8 +59,9 @@ async function refresh(refreshToken) {
     client_secret: clientSecret,
     // Restate the scopes so Microsoft always returns an updated token with the
     // same permission set. Without this, incremental consent may downgrade scopes
-    // on quiet re-auths.
-    scope: 'openid email profile offline_access User.Read Mail.Read Mail.ReadWrite',
+    // on quiet re-auths. Includes .Shared variants so existing connections gain
+    // shared-mailbox access automatically on the next token refresh.
+    scope: 'openid email profile offline_access User.Read Mail.Read Mail.ReadWrite Mail.Read.Shared Mail.ReadWrite.Shared',
   })
   const r = await fetch(TOKEN_URL, {
     method: 'POST',
@@ -152,6 +153,43 @@ export async function graphFetch(accessToken, path, init = {}) {
     ...(init.headers || {}),
   }
   return fetch(url, { ...init, headers })
+}
+
+// Resolve a Graph path to either the signed-in user's mailbox (/v1.0/me/...)
+// or a shared/delegated mailbox (/v1.0/users/{address}/...).
+//
+// Pass:
+//   relPath      — the path segment after the mailbox root, e.g. '/mailFolders/Inbox/messages?...'
+//   mailboxAddress — the target mailbox email address, or null/undefined for the signed-in user
+//   ownEmail     — the account_email on the connection (from config); if mailboxAddress
+//                  matches this (case-insensitive), we still use /me for reliability
+//
+// Returns an absolute URL string ready to pass to graphFetch().
+//
+// WHY /users/{address} instead of /me for shared mailboxes:
+//   Shared mailboxes in Microsoft 365 are separate mailbox objects identified by
+//   their SMTP address. The delegated Graph path is /v1.0/users/{sharedAddress}/...
+//   (not /me/...), even when the signed-in user holds Full Access. The signed-in
+//   user's token is still used for auth — we are not switching accounts.
+export function buildMailboxPath(relPath, mailboxAddress, ownEmail) {
+  if (!mailboxAddress) return relPath  // relative → graphFetch prefixes /v1.0/me
+  const isOwn = ownEmail
+    && mailboxAddress.trim().toLowerCase() === ownEmail.trim().toLowerCase()
+  if (isOwn) return relPath
+  return `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(mailboxAddress.trim())}${relPath}`
+}
+
+// Translate a Graph 403 on a shared mailbox into a human message.
+// Returns null if the error is not a shared-mailbox-access issue.
+export function sharedMailboxAccessError(graphStatus, mailboxAddress) {
+  if (graphStatus !== 403) return null
+  const box = mailboxAddress || 'this mailbox'
+  return (
+    `Your admin needs to grant you Full Access delegation on ${box} ` +
+    'in the Microsoft 365 admin center before it can be read here. ' +
+    'Ask your Exchange/M365 admin to add a Full Access delegation under ' +
+    'Recipients → Mailboxes → [the shared mailbox] → Mailbox delegation.'
+  )
 }
 
 // Resolve an Outlook connection id by account email.

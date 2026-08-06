@@ -18,7 +18,7 @@
 // Supports Gmail (via Gmail API) and Outlook (via Graph sendMail).
 
 import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
-import { getOutlookTokenByConnection, graphFetch } from '../../_lib/outlookClient.js'
+import { getOutlookTokenByConnection, graphFetch, buildMailboxPath, sharedMailboxAccessError } from '../../_lib/outlookClient.js'
 import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 
 // ── Shared helpers ────────────────────────────────────────
@@ -106,10 +106,16 @@ function buildRfc822({ from, to, cc, bcc, subject, bodyHtml, bodyText, inReplyTo
 }
 
 // ── Outlook send via Graph ────────────────────────────────
-// POST /me/sendMail — the message body is sent in one API call.
+// Own mailbox:    POST /me/sendMail
+// Shared mailbox: POST /users/{address}/sendMail
+//   Sending from a shared mailbox requires the signed-in user to have
+//   "Send As" or "Send on Behalf" delegation on the shared mailbox (set
+//   by an Exchange/M365 admin). Full Access alone is NOT sufficient for sends.
+//   If missing, Graph returns 403 → human-readable error below.
+//
 // Outlook doesn't expose a sendAs signature API via Graph, so the
 // caller's HTML body is sent as-is (no signature appended).
-async function sendOutlookMail(accessToken, payload, senderEmail) {
+async function sendOutlookMail(accessToken, payload, senderEmail, mailboxAddress, ownEmail) {
   const bodyHtml = String(payload.bodyHtml)
   const message = {
     subject: payload.subject,
@@ -119,27 +125,36 @@ async function sendOutlookMail(accessToken, payload, senderEmail) {
     bccRecipients: Array.isArray(payload.bcc) ? payload.bcc.map(toGraphRecipient) : [],
   }
 
-  // Reply-to threading: if inReplyTo is set, set replyTo header so Graph
-  // surfaces the conversation link. Graph doesn't expose In-Reply-To natively
-  // but uses conversationId for threading (derived automatically when we reply
-  // via /me/messages/{replyToId}/reply). For a raw sendMail, we just set the
-  // header and let Graph create a new thread or link via conversationId.
-  if (senderEmail) {
-    message.from = { emailAddress: { address: senderEmail } }
+  // Set sender address. For shared mailboxes, this sets who the recipient sees
+  // as the sender. Requires "Send As" permission on the shared mailbox.
+  const effectiveSender = mailboxAddress && mailboxAddress !== ownEmail
+    ? mailboxAddress
+    : senderEmail
+  if (effectiveSender) {
+    message.from = { emailAddress: { address: effectiveSender } }
   }
 
-  const r = await graphFetch(accessToken, '/sendMail', {
+  const sendPath = '/sendMail'
+  const url = buildMailboxPath(sendPath, mailboxAddress, ownEmail)
+  const r = await graphFetch(accessToken, url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, saveToSentItems: true }),
   })
 
   if (!r.ok) {
+    const human = sharedMailboxAccessError(r.status, mailboxAddress)
     const text = await r.text().catch(() => '')
-    return { error: `graph-send ${r.status}: ${text.slice(0, 300)}`, status: r.status }
+    // Send-specific 403 message: needs Send As (not just Full Access)
+    const sendHuman = r.status === 403 && mailboxAddress
+      ? `Your admin needs to grant you Send As permission on ${mailboxAddress} to send from this mailbox. ` +
+        'Full Access delegation is not sufficient for sending. Ask your Exchange/M365 admin to add Send As ' +
+        'under Recipients → Mailboxes → [the shared mailbox] → Mailbox delegation.'
+      : human
+    return { error: `graph-send ${r.status}: ${text.slice(0, 300)}`, human: sendHuman, status: r.status }
   }
   // Graph sendMail returns 202 Accepted with no body on success.
-  return { ok: true, provider: 'outlook' }
+  return { ok: true, provider: 'outlook', mailboxAddress: mailboxAddress || ownEmail || null }
 }
 
 export default async function handler(req, res) {
@@ -163,6 +178,11 @@ export default async function handler(req, res) {
   if (!userId) return res.status(401).json({ error: 'not-authenticated' })
 
   const connectionId = (payload?.connection_id || '').toString() || null
+  // mailbox_address: optional — shared mailbox to send FROM via the connection.
+  // Absent or matching own account_email → sends via /me/sendMail.
+  // Set to a different address → sends via /users/{address}/sendMail.
+  // IMPORTANT: requires "Send As" delegation on the shared mailbox, not just Full Access.
+  const mailboxAddress = (payload?.mailbox_address || '').toString().trim() || null
   let creds
   let providerSlug = 'gmail'
 
@@ -178,12 +198,16 @@ export default async function handler(req, res) {
     if (providerSlug === 'outlook') {
       creds = await getOutlookTokenByConnection(connectionId)
       if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
-      // Use account_email from the connection row as the sender identity
-      const senderEmail = creds.row?.config?.account_email
-        || creds.profile?.emailAddress
-        || null
-      const result = await sendOutlookMail(creds.accessToken, payload, senderEmail)
-      if (result.error) return res.status(502).json({ error: result.error })
+      // Use account_email from the connection row as the signed-in sender identity
+      const ownEmail = creds.row?.config?.account_email || creds.profile?.emailAddress || null
+      const senderEmail = ownEmail
+      const result = await sendOutlookMail(creds.accessToken, payload, senderEmail, mailboxAddress, ownEmail)
+      if (result.error) {
+        if (result.human) {
+          return res.status(result.status || 403).json({ error: result.human, code: 'shared-mailbox-access-denied' })
+        }
+        return res.status(502).json({ error: result.error })
+      }
       return res.status(200).json(result)
     }
 

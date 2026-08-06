@@ -11,7 +11,7 @@
 // }
 
 import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch, decodeBase64Url } from '../../_lib/gmailClient.js'
-import { getOutlookTokenByConnection, graphFetch } from '../../_lib/outlookClient.js'
+import { getOutlookTokenByConnection, graphFetch, buildMailboxPath, sharedMailboxAccessError } from '../../_lib/outlookClient.js'
 import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 
 function parseFrom(header) {
@@ -78,10 +78,11 @@ function extractAttachments(payload) {
 
 // ─────────────────────────────────────────────────────────
 // Outlook message fetcher via Microsoft Graph
-// GET /me/messages/{id}?$select=…
+// Own mailbox:    GET /me/messages/{id}?$select=…
+// Shared mailbox: GET /users/{address}/messages/{id}?$select=…
 // Normalises the Graph response to the same shape as Gmail.
 // ─────────────────────────────────────────────────────────
-async function getOutlookMessage(accessToken, id) {
+async function getOutlookMessage(accessToken, id, mailboxAddress, ownEmail) {
   // internetMessageHeaders contains RFC-2822 headers (In-Reply-To, References, Message-Id, etc.)
   const select = [
     'id', 'conversationId', 'subject', 'bodyPreview',
@@ -89,10 +90,13 @@ async function getOutlookMessage(accessToken, id) {
     'receivedDateTime', 'isRead', 'hasAttachments',
     'internetMessageId', 'internetMessageHeaders',
   ].join(',')
-  const r = await graphFetch(accessToken, `/messages/${encodeURIComponent(id)}?$select=${encodeURIComponent(select)}`)
+  const relPath = `/messages/${encodeURIComponent(id)}?$select=${encodeURIComponent(select)}`
+  const url = buildMailboxPath(relPath, mailboxAddress, ownEmail)
+  const r = await graphFetch(accessToken, url)
   if (!r.ok) {
+    const human = sharedMailboxAccessError(r.status, mailboxAddress)
     const text = await r.text().catch(() => '')
-    return { error: `graph-get ${r.status}: ${text.slice(0, 200)}`, status: r.status }
+    return { error: `graph-get ${r.status}: ${text.slice(0, 200)}`, human, status: r.status }
   }
   const m = await r.json()
 
@@ -145,6 +149,10 @@ export default async function handler(req, res) {
   if (!userId) return res.status(401).json({ error: 'not-authenticated' })
 
   const connectionId = (req.query?.connection_id || '').toString() || null
+  // mailbox_address: optional — shared mailbox address for the message source.
+  // Absent or matching own account_email → reads from /me/messages/{id}.
+  // Set to a different address → reads from /users/{address}/messages/{id}.
+  const mailboxAddress = (req.query?.mailbox_address || '').toString().trim() || null
   let creds
   let providerSlug = 'gmail'
 
@@ -160,8 +168,14 @@ export default async function handler(req, res) {
     if (providerSlug === 'outlook') {
       creds = await getOutlookTokenByConnection(connectionId)
       if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
-      const result = await getOutlookMessage(creds.accessToken, id)
-      if (result.error) return res.status(502).json({ error: result.error })
+      const ownEmail = creds.row?.config?.account_email || null
+      const result = await getOutlookMessage(creds.accessToken, id, mailboxAddress, ownEmail)
+      if (result.error) {
+        if (result.human) {
+          return res.status(result.status || 403).json({ error: result.human, code: 'shared-mailbox-access-denied' })
+        }
+        return res.status(502).json({ error: result.error })
+      }
       return res.status(200).json(result)
     }
 

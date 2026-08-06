@@ -26,7 +26,7 @@
 // }
 
 import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
-import { getOutlookTokenByConnection, graphFetch } from '../../_lib/outlookClient.js'
+import { getOutlookTokenByConnection, graphFetch, buildMailboxPath, sharedMailboxAccessError } from '../../_lib/outlookClient.js'
 import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 import { buildBucketQuery } from '../../_lib/mailBuckets.js'
 
@@ -100,18 +100,25 @@ async function applyAwaitingFilter(emails, creds) {
 
 // ────────────────────────────────────────────────────────────
 // Outlook inbox lister via Microsoft Graph
-// GET /me/mailFolders/Inbox/messages — OData query
-// Returns normalized email shape matching Gmail branch.
+// For the signed-in user's own mailbox: GET /me/mailFolders/Inbox/messages
+// For a shared mailbox: GET /users/{address}/mailFolders/Inbox/messages
+// Both use OData query params; returns normalized email shape matching Gmail.
 // ────────────────────────────────────────────────────────────
-async function listOutlookInbox(accessToken) {
+async function listOutlookInbox(accessToken, mailboxAddress, ownEmail) {
   const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
   const filter = encodeURIComponent(`receivedDateTime gt ${tenDaysAgo} and isDraft eq false`)
   const select = encodeURIComponent('id,conversationId,subject,bodyPreview,from,receivedDateTime,isRead,hasAttachments')
-  const url = `/mailFolders/Inbox/messages?$filter=${filter}&$select=${select}&$orderby=receivedDateTime%20desc&$top=50`
+  const relPath = `/mailFolders/Inbox/messages?$filter=${filter}&$select=${select}&$orderby=receivedDateTime%20desc&$top=50`
+  const url = buildMailboxPath(relPath, mailboxAddress, ownEmail)
   const r = await graphFetch(accessToken, url)
   if (!r.ok) {
+    const human = sharedMailboxAccessError(r.status, mailboxAddress)
     const text = await r.text().catch(() => '')
-    return { error: `graph-list ${r.status}: ${text.slice(0, 200)}`, status: r.status }
+    return {
+      error: `graph-list ${r.status}: ${text.slice(0, 200)}`,
+      human,
+      status: r.status,
+    }
   }
   const data = await r.json()
   const messages = data.value || []
@@ -129,6 +136,9 @@ async function listOutlookInbox(accessToken) {
     unread: !m.isRead,
     hasAttachments: m.hasAttachments || false,
     provider: 'outlook',
+    // For shared mailbox reads, surface which box these messages came from
+    // so the UI can label the inbox correctly.
+    mailboxAddress: mailboxAddress || ownEmail || null,
   }))
   return { emails }
 }
@@ -144,6 +154,11 @@ export default async function handler(req, res) {
   if (!userId) return res.status(401).json({ error: 'not-authenticated' })
 
   const connectionId = (req.query?.connection_id || '').toString() || null
+  // mailbox_address: optional — address of a shared mailbox to read via the connection.
+  // If absent or equal to the connection's own account_email, reads /me/... (own inbox).
+  // If set to a different address (e.g. bids@ambitionac.com), reads
+  // /users/{address}/... via delegated Full Access.
+  const mailboxAddress = (req.query?.mailbox_address || '').toString().trim() || null
   let creds
   let providerSlug = 'gmail' // default
 
@@ -158,16 +173,23 @@ export default async function handler(req, res) {
       providerSlug = connectionRow?.integration_slug || 'gmail'
 
       if (providerSlug === 'outlook') {
-        // Outlook path — load Graph token and list inbox
+        // Outlook path — load Graph token and list inbox (own or shared mailbox)
         creds = await getOutlookTokenByConnection(connectionId)
         if (!creds) return res.status(200).json({ emails: [], historyId: null, mode: 'not-connected', provider: 'outlook' })
-        const result = await listOutlookInbox(creds.accessToken)
-        if (result.error) return res.status(502).json({ error: result.error })
+        const ownEmail = creds.row?.config?.account_email || null
+        const result = await listOutlookInbox(creds.accessToken, mailboxAddress, ownEmail)
+        if (result.error) {
+          if (result.human) {
+            return res.status(result.status || 403).json({ error: result.human, code: 'shared-mailbox-access-denied' })
+          }
+          return res.status(502).json({ error: result.error })
+        }
         return res.status(200).json({
           emails: result.emails,
           historyId: null,
           mode: 'live',
           provider: 'outlook',
+          mailboxAddress: mailboxAddress || ownEmail,
         })
       }
 
