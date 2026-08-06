@@ -203,6 +203,15 @@ a{color:inherit;text-decoration:none}
   .nav .role{display:none}
   .stage{padding:var(--space-4) 0}
   /* four hand-placed lines at this width, force-justified the same way */
+  /* Slack on a phone: the stage is 474 tall for a 345 monument, so 128px is
+     spare. Impeccable's own reviewer recommended top-aligning to collect it as
+     one gap instead of two. TRIED IT AND LOOKED: worse. Centred, the slack reads
+     as breathing room above and below; top-aligned, all 128px lands between the
+     headline and the answer line and reads as a dead band, which is the exact
+     defect we killed in the incumbent. Kept centred deliberately. The real fix
+     is not alignment - the type is already 100% of the measure, so its height is
+     locked by the column width, and the band is simply taller than four lines of
+     it need. That is a round-2 layout question, not a spacing tweak. */
   .monument{font-size:26.9cqw;line-height:0.82}
   .monument .d{display:none}
   .monument .m{display:block}
