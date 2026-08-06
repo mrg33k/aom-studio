@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/hero-2/assets/tokens.css">
+<title>Ahead of Market — You never built a marketing department. So we become it.</title>
+<style>
+/* ============================================================
+   Ahead of Market — homepage hero, ROUND 2: THE FIELD REPORT.
+
+   Round 1 shipped the sentence alone and its own judge named the
+   defect: "a beautiful block of type sitting on top of nothing."
+   Measured 2026-08-06 against scripts/design_screen_check.py, the
+   live round-1 hero returned 0 content graphics on the first
+   screen. Round 2 keeps the monument Patrik chose (and the line
+   sizing that fixed its spacing) and gives it a ground to stand
+   on: one real, graded, black-and-white documentary frame of the
+   buyer's own world, labelled as an anonymous example by a
+   hand-drawn gold mark.
+
+   Direction is not new — it is the ratified one in
+   missions/aom-website/creative-brief.md ("THE FIELD REPORT"),
+   which round 1 never executed because the cage-match brief
+   forbade every form of evidence.
+   ============================================================ */
+@font-face{font-family:'Druk Cond';src:url('/hero-2/assets/fonts/DrukCond-Super-subset.woff2') format('woff2'),url('/hero-2/assets/fonts/DrukCond-Super-Trial.otf') format('opentype');font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:'Schibsted Grotesk';src:url('/hero-2/assets/fonts/SchibstedGrotesk-var.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+
+:root{
+  /* MEASURED, NOT GUESSED (2026-08-06). The first attempt STACKED the
+     photograph under the monument. Measured at 1440x900 it collapsed the
+     column to 459px and drove the display face to 84px — under the 104px
+     Druk Cond aperture floor derived yesterday. A stacked plate and a
+     full-measure monument cannot both have the screen's height.
+     So the photograph takes WIDTH instead: the obsidian slab holds the
+     type at its own scale, the picture holds the rest of the frame, and
+     they meet on one hard vertical seam. */
+  --pad-l:100px;
+  --pad-r:64px;
+  /* fixed vertical chrome inside the slab: masthead 97 + stage padding 48
+     + answer 105 + base 71 */
+  --chrome:321px;
+  --h-coef:1.8202;        /* 1 / (0.79 x (0.2484 + 0.1826 + 0.2644)) */
+  /* LOOKED AT IT (r2-desktop, first capture): at a 786px measure the
+     monument only used 432 of the stage's 631, and the 100px of slack
+     under the last line read as a dead band above the rule — the same
+     void defect round 1 was pulled up on. The measure is raised until
+     the block nearly fills the stage (432 -> 494, slack 100 -> 42), which
+     costs the photograph 114px of width it can afford (34.8% -> 26% of
+     the first screen, well clear of the 8% floor). */
+  --measure:min(900px, calc(0.74 * 100vw - var(--pad-l) - var(--pad-r)), calc((100svh - var(--chrome)) * var(--h-coef)));
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);
+  color:var(--paper);
+  font-family:'Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  caret-color:var(--accent);
+  scrollbar-color:var(--divider) var(--bg);
+}
+::selection{background:var(--accent);color:var(--text-on-accent)}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--paper);outline-offset:3px}
+
+/* ---------- the frame: slab meets picture on one seam ---------- */
+.frame{
+  min-height:100svh;
+  display:flex;
+  align-items:stretch;
+}
+.hero{
+  width:calc(var(--measure) + var(--pad-l) + var(--pad-r));
+  flex:0 0 auto;
+  padding:0 var(--pad-r) 0 var(--pad-l);
+  background:var(--bg);
+  display:flex;
+  flex-direction:column;
+}
+
+/* ---------- masthead ---------- */
+.masthead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:var(--space-8) 0;
+  border-bottom:1px solid var(--divider);
+}
+.identity{display:flex;align-items:center;gap:var(--space-4)}
+.mark{width:32px;height:32px;display:block;color:var(--paper);transition:color 160ms cubic-bezier(0.2,0,0,1)}
+.mark:hover{color:var(--accent)}
+.mark svg{width:100%;height:100%;display:block}
+.label{
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  line-height:1.2;
+}
+.identity .label{color:var(--paper)}
+.nav{display:flex;align-items:center;gap:var(--space-16)}
+.nav a{color:var(--text-muted);transition:color 160ms cubic-bezier(0.2,0,0,1)}
+.nav a:hover{color:var(--paper)}
+.menu{display:flex;align-items:center;gap:var(--space-2)}
+.menu svg{display:block;width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:square;fill:none}
+
+/* ---------- the monument ---------- */
+.stage{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:var(--space-6) 0;
+  container-type:inline-size;
+}
+.monument{
+  margin:0;
+  font-family:'Druk Cond','Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;
+  font-weight:400;
+  line-height:0.79;
+  text-transform:uppercase;
+  color:var(--paper);
+}
+.monument span{display:block;white-space:nowrap;letter-spacing:0.005em}
+.monument .m{display:none}
+/* Each line is SIZED to the measure at one uniform tracking (the round-1
+   fix for "the text spacing is weird"): the block stays flush on both
+   edges and the type colour is even, because nothing is pried apart. */
+.d1{font-size:24.84cqw}
+.d2{font-size:18.26cqw}
+.d3{font-size:26.44cqw}
+
+/* ---------- the plate: the evidence ---------- */
+.plate{
+  position:relative;
+  flex:1 1 auto;
+  margin:0;
+  min-width:0;
+  overflow:hidden;
+  background:var(--ink-700);
+}
+.plate img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  /* the tech and the opened unit sit right of centre in the frame, so the
+     crop is pulled that way — the seam must not cut the subject in half */
+  object-position:68% 46%;
+  display:block;
+}
+/* NOT a scrim over the picture — a short gradient in the bottom fifth
+   only, so the photograph reads as a photograph and not as texture. The
+   incumbent's "ghost photograph" was killed for the opposite treatment. */
+.plate::after{
+  content:"";
+  position:absolute;
+  inset:auto 0 0 0;
+  height:30%;
+  background:linear-gradient(to bottom,rgba(11,11,11,0) 0%,rgba(11,11,11,0.78) 76%,rgba(11,11,11,0.9) 100%);
+  pointer-events:none;
+}
+.example{
+  position:absolute;
+  left:var(--space-8);
+  bottom:var(--space-8);
+  width:224px;
+  z-index:1;
+  pointer-events:none;
+}
+.example svg{width:100%;height:auto;display:block}
+
+/* ---------- the answer ---------- */
+.answer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-12);
+  padding:var(--space-6) 0;
+  border-top:1px solid var(--divider);
+}
+.subline{
+  margin:0;
+  font-size:20px;
+  font-weight:400;
+  line-height:1.4;
+  color:var(--text-muted);
+  max-width:62ch;
+  text-wrap:balance;
+}
+.subline b{font-weight:500;color:var(--paper)}
+.cta{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-6);
+  padding:var(--space-4) var(--space-8);
+  background:var(--accent);
+  border:1px solid var(--accent);
+  color:var(--bg);
+  transition:color 180ms cubic-bezier(0.2,0,0,1);
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.cta span,.cta svg{position:relative;z-index:1}
+.cta svg{display:block;width:14px;height:14px;stroke:currentColor;stroke-width:2;stroke-linecap:square;fill:none}
+.cta::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:var(--bg);
+  transform:scaleX(0);
+  transform-origin:left center;
+  transition:transform 180ms cubic-bezier(0.2,0,0,1);
+}
+.cta:hover::before{transform:scaleX(1)}
+.cta:hover{color:var(--accent)}
+.cta:active{transform:translateY(1px)}
+
+/* ---------- the base band ---------- */
+/* rule 9: the base of a screen NAMES, it does not explain. Three words. */
+.disciplines{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border-top:1px solid var(--divider);
+  padding:var(--space-6) 0 var(--space-8);
+}
+.disciplines span{color:var(--text-muted)}
+.disciplines span+span{
+  border-left:1px solid var(--divider);
+  padding-left:var(--space-6);
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:1ms !important}
+}
+
+/* ---------- tablet ---------- */
+@media (max-width:1024px){
+  :root{--pad-l:48px;--pad-r:40px}
+  .nav{gap:var(--space-8)}
+}
+
+/* ---------- 390: the seam turns horizontal ---------- */
+@media (max-width:640px){
+  :root{
+    --pad-l:24px;
+    --pad-r:24px;
+    /* four hand-placed lines here; slab chrome MEASURED on the phone,
+       not carried over: masthead 81 + stage padding 32 + answer 170 +
+       base 119 = 402. */
+    --chrome:315px;
+    --h-coef:0.9903;   /* 1 / (0.82 x (0.2736+0.3471+0.3464+0.2642)) */
+    /* svh is the right unit on a real phone but over-reports by ~7px under
+       CDP emulation, so the phone layout is sized to fit on the WIDTH cap
+       alone (81 + 32 + 345 + 154 + 119 + 96 = 827 at 390x844) and never
+       depends on the height term being exact. Slack: 17px. */
+    --plate-h:168px;
+    --measure:min(calc(100vw - var(--pad-l) - var(--pad-r)), calc((100svh - var(--plate-h) - var(--chrome)) * var(--h-coef)));
+  }
+  .frame{flex-direction:column}
+  .hero{width:100%;flex:1 1 auto}
+  .plate{flex:0 0 auto;height:var(--plate-h);border-top:1px solid var(--divider)}
+  .masthead{padding:var(--space-6) 0}
+  .identity .label{display:none}
+  .nav{gap:var(--space-6)}
+  .nav .role{display:none}
+  .stage{padding:var(--space-4) 0}
+  .example{left:var(--space-6);bottom:var(--space-4);width:160px}
+  .plate img{object-position:74% 52%}
+  .plate::after{height:56%}
+  .monument{line-height:0.82}
+  .monument .d{display:none}
+  .monument .m{display:block}
+  .m1{font-size:27.36cqw}
+  .m2{font-size:34.71cqw}
+  .m3{font-size:34.64cqw}
+  .m4{font-size:26.42cqw}
+  .answer{
+    flex-direction:column;
+    align-items:stretch;
+    gap:var(--space-4);
+    padding:var(--space-4) 0;
+  }
+  .subline{font-size:16px}
+  .cta{justify-content:space-between;padding:var(--space-4)}
+  /* LOOKED AT IT (r2-mobile, first capture): stacked, the base band ate
+     119px for three words and squeezed the photograph to a 96px strip.
+     One row says the same thing in 48 and hands the picture the rest. */
+  .disciplines{padding:var(--space-4) 0}
+  .disciplines span+span{padding-left:var(--space-4)}
+  .label{font-size:10px;letter-spacing:0.1em}
+}
+</style>
+</head>
+<body>
+<div class="frame">
+<main class="hero">
+
+  <header class="masthead">
+    <div class="identity">
+      <a class="mark" href="/" aria-label="Ahead of Market — home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+          <mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
+          <g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+          <path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0&#xA;-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30&#xA;-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59&#xA;-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41&#xA;-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575&#xA;47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350&#xA;39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295&#xA;-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13&#xA;-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357&#xA;156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124&#xA;335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0&#xA;-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52&#xA;-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59&#xA;-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66&#xA;-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15&#xA;61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52&#xA;52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64&#xA;175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186&#xA;199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57&#xA;153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151&#xA;462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98&#xA;9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235&#xA;563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31&#xA;-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464&#xA;-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31&#xA;81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278&#xA;130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97&#xA;-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1&#xA;30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9&#xA;123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32&#xA;104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18&#xA;121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325&#xA;-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66&#xA;-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1&#xA;-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128&#xA;-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38&#xA;471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134&#xA;-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path>
+          <path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25&#xA;-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129&#xA;-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81&#xA;-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39&#xA;-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66&#xA;-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145&#xA;-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415&#xA;-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360&#xA;-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17&#xA;-35 -3z"></path>
+          <path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25&#xA;-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6&#xA;-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path>
+          <path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20&#xA;-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715&#xA;516 -90 41 -123 48 -123 25z"></path>
+          <path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149&#xA;22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10&#xA;-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153&#xA;-152 122z"></path>
+          <path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8&#xA;-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15&#xA;258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292&#xA;112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12 -396 5&#xA;-408 5 -425 -14z"></path>
+          </g></mask>
+          <rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
+        </svg>
+      </a>
+      <span class="label">Ahead of Market</span>
+    </div>
+    <nav class="nav label" aria-label="Primary">
+      <a class="role" href="/our-role">Our role</a>
+      <a class="menu" href="/menu">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5h14M1 11h14"/></svg>
+        <span>Menu</span>
+      </a>
+    </nav>
+  </header>
+
+  <div class="stage">
+    <h1 class="monument">
+      <span class="d d1">You never built a</span>
+      <span class="d d2">marketing department.</span>
+      <span class="d d3">So we become it.</span>
+      <span class="m m1">You never built</span>
+      <span class="m m2">a marketing</span>
+      <span class="m m3">department.</span>
+      <span class="m m4">So we become it.</span>
+    </h1>
+  </div>
+
+
+  <div class="answer">
+    <p class="subline">No job posts. No hiring plan. <b>No headcount to carry.</b></p>
+    <a class="cta" href="/contact">
+      <span>Talk to us</span>
+      <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 12L12 2M4 2h8v8"/></svg>
+    </a>
+  </div>
+
+  <div class="disciplines label">
+    <span>Strategy</span>
+    <span>Creative</span>
+    <span>Promotion</span>
+  </div>
+
+</main>
+  <figure class="plate">
+    <img src="/hero-2/assets/field-report.jpg" width="1800" height="1200"
+         alt="A mechanical technician kneeling at an opened rooftop air-handling unit on a Phoenix roof, other units and palms behind him.">
+    <figcaption class="example" aria-label="An example: a Phoenix mechanical contractor">
+      <!-- hand-drawn, not a handwriting font: every glyph instance is
+           re-drawn with its own jitter by assets/mark-gen.py (seed
+           20260806). Client name deliberately absent — examples stay
+           anonymous above the roster moment. -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -2 130 26" fill="none" stroke="#B58A38" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="An example — a Phoenix mechanical contractor"><g opacity=".28" transform="translate(0.55,0.42)"><g transform="translate(0,0.00) scale(1.000)"><g transform="translate(1.50,-0.08) rotate(-0.59 3.20 5) scale(0.967)" stroke-width="1.45"><path d="M0.26,10.17 Q2.02,5.30 3.25,0.26 Q4.93,5.23 6.51,10.23"/><path d="M1.42,6.65 Q3.11,6.87 4.81,6.69"/></g><g transform="translate(9.50,0.03) rotate(-0.55 3.00 5) scale(0.974)" stroke-width="1.46"><path d="M-0.29,9.88 Q-0.15,4.87 -0.31,-0.14"/><path d="M0.41,0.69 Q3.08,5.00 5.61,9.39"/><path d="M6.01,10.13 Q5.87,5.16 5.81,0.20"/></g><g transform="translate(20.70,0.29) rotate(-0.99 2.60 5) scale(0.979)" stroke-width="1.34"><path d="M0.21,0.22 Q0.31,4.97 0.22,9.71"/><path d="M0.17,0.17 Q2.67,0.10 5.18,0.00"/><path d="M-0.22,4.82 Q1.92,4.64 4.07,4.73"/><path d="M0.12,10.03 Q2.57,9.67 5.02,9.99"/></g><g transform="translate(27.50,-0.18) rotate(-0.12 3.00 5) scale(0.976)" stroke-width="1.48"><path d="M0.11,0.01 Q3.15,5.00 5.92,10.14"/><path d="M5.69,0.11 Q2.96,5.25 -0.11,10.19"/></g><g transform="translate(35.10,0.26) rotate(0.65 3.20 5) scale(0.994)" stroke-width="1.36"><path d="M-0.04,9.89 Q1.58,4.81 3.28,-0.24 Q4.59,5.03 6.27,10.20"/><path d="M1.45,6.67 Q3.24,6.72 5.02,6.89"/></g><g transform="translate(43.10,0.05) rotate(1.07 3.80 5) scale(0.998)" stroke-width="1.33"><path d="M-0.12,10.11 Q-0.18,5.16 0.37,0.23"/><path d="M-0.11,0.52 Q2.01,3.59 3.96,6.78"/><path d="M3.64,6.89 Q5.85,3.76 7.57,0.32"/><path d="M7.80,0.09 Q7.51,5.19 7.69,10.30"/></g><g transform="translate(52.30,-0.02) rotate(-2.05 2.80 5) scale(0.968)" stroke-width="1.32"><path d="M0.24,10.32 Q0.14,5.21 0.30,0.11"/><path d="M-0.15,0.38 Q3.80,0.20 4.52,1.03 Q5.25,1.86 5.16,2.68 Q5.06,3.51 4.43,4.09 Q3.80,4.67 1.79,4.69 L-0.22,4.71"/></g><g transform="translate(59.50,0.30) rotate(1.05 2.50 5) scale(1.010)" stroke-width="1.34"><path d="M0.28,0.05 Q-0.16,4.92 -0.31,9.82 Q2.42,9.55 5.13,9.96"/></g><g transform="translate(66.10,-0.08) rotate(-0.16 2.60 5) scale(1.029)" stroke-width="1.49"><path d="M-0.18,-0.10 Q-0.03,5.05 -0.07,10.21"/><path d="M-0.31,0.02 Q2.31,0.12 4.93,0.16"/><path d="M-0.01,5.26 Q1.99,5.41 3.99,5.25"/><path d="M0.16,9.80 Q2.74,9.66 5.31,9.82"/></g></g><g transform="translate(0,15.50) scale(0.600)"><g transform="translate(1.50,0.05) rotate(-0.55 3.20 5) scale(1.043)" stroke-width="2.23"><path d="M0.07,10.25 Q1.63,5.15 3.24,0.07 Q4.66,5.16 6.29,10.18"/><path d="M1.61,7.11 Q3.23,6.59 4.92,6.66"/></g><g transform="translate(13.10,0.15) rotate(-0.41 2.80 5) scale(0.977)" stroke-width="2.16"><path d="M0.28,9.79 Q0.20,4.78 0.22,-0.23"/><path d="M0.00,0.64 Q3.43,-0.06 4.38,0.77 Q5.33,1.60 5.18,2.32 Q5.02,3.05 4.36,3.96 Q3.69,4.86 1.85,4.84 L0.02,4.83"/></g><g transform="translate(20.30,0.08) rotate(0.43 3.10 5) scale(0.975)" stroke-width="2.48"><path d="M0.22,-0.24 Q0.21,5.00 0.16,10.24"/><path d="M5.97,-0.30 Q6.25,5.01 6.10,10.32"/><path d="M0.30,5.34 Q3.13,4.84 6.00,4.86"/></g><g transform="translate(28.10,0.40) rotate(-0.04 3.30 5) scale(1.039)" stroke-width="2.16"><path d="M4.14,0.01 Q5.23,1.67 5.73,2.97 Q6.23,4.26 6.27,5.71 Q6.31,7.15 5.45,8.05 Q4.59,8.94 3.88,9.50 Q3.18,10.07 2.14,9.48 Q1.10,8.90 0.77,7.64 Q0.43,6.38 0.41,4.92 Q0.39,3.45 1.03,2.18 Q1.67,0.91 2.33,0.66 L2.98,0.41"/></g><g transform="translate(36.30,-0.43) rotate(0.09 2.60 5) scale(1.019)" stroke-width="2.20"><path d="M-0.27,0.24 Q0.10,5.03 0.08,9.85"/><path d="M-0.27,0.17 Q2.62,0.31 5.51,0.07"/><path d="M0.01,5.02 Q1.99,5.38 4.00,5.26"/><path d="M0.26,9.90 Q2.67,9.79 5.09,9.83"/></g><g transform="translate(43.10,-0.22) rotate(-0.15 3.00 5) scale(1.020)" stroke-width="2.21"><path d="M0.13,9.87 Q-0.18,4.90 0.10,-0.07"/><path d="M-0.20,0.70 Q2.76,5.14 6.05,9.34"/><path d="M6.18,10.15 Q5.72,4.94 5.90,-0.29"/></g><g transform="translate(50.70,0.11) rotate(1.97 0.80 5) scale(0.993)" stroke-width="2.33"><path d="M0.51,0.09 Q0.96,4.98 1.02,9.89"/></g><g transform="translate(53.90,0.33) rotate(1.73 3.00 5) scale(0.976)" stroke-width="2.20"><path d="M0.21,0.02 Q3.21,4.91 5.89,9.98"/><path d="M6.25,0.29 Q3.15,5.14 -0.21,9.80"/></g><g transform="translate(65.10,0.05) rotate(-1.49 3.80 5) scale(0.969)" stroke-width="2.32"><path d="M-0.05,10.08 Q-0.02,5.02 0.06,-0.03"/><path d="M0.29,0.21 Q2.03,3.48 3.88,6.69"/><path d="M3.99,6.57 Q6.00,3.44 7.62,0.09"/><path d="M7.44,-0.04 Q7.75,5.05 7.52,10.14"/></g><g transform="translate(74.30,0.32) rotate(-1.91 2.60 5) scale(1.039)" stroke-width="2.27"><path d="M-0.15,0.10 Q0.08,5.19 -0.28,10.28"/><path d="M-0.22,0.43 Q2.57,0.29 5.35,0.04"/><path d="M0.07,4.80 Q2.04,5.10 4.01,4.87"/><path d="M-0.26,9.54 Q2.58,9.84 5.42,9.72"/></g><g transform="translate(81.10,0.37) rotate(-2.06 2.50 5) scale(1.006)" stroke-width="2.45"><path d="M4.86,0.44 Q3.11,0.19 2.55,0.58 Q1.99,0.97 1.43,1.85 Q0.87,2.73 0.67,3.85 Q0.47,4.97 0.53,6.33 Q0.59,7.70 1.07,8.42 Q1.56,9.14 2.30,9.67 Q3.04,10.21 3.90,9.79 L4.76,9.37"/></g><g transform="translate(87.70,-0.26) rotate(0.21 3.10 5) scale(0.984)" stroke-width="2.42"><path d="M0.14,0.03 Q0.28,4.92 -0.21,9.79"/><path d="M6.10,0.23 Q5.97,5.02 5.96,9.82"/><path d="M0.09,5.22 Q3.14,4.92 6.19,5.20"/></g><g transform="translate(95.50,-0.42) rotate(-0.11 3.20 5) scale(0.988)" stroke-width="2.34"><path d="M-0.04,10.15 Q1.62,5.13 3.03,0.03 Q4.54,5.20 6.44,10.24"/><path d="M1.30,6.64 Q3.20,6.62 5.06,7.01"/></g><g transform="translate(103.50,-0.02) rotate(0.14 3.00 5) scale(1.011)" stroke-width="2.30"><path d="M0.13,10.04 Q0.12,5.13 0.22,0.23"/><path d="M0.38,0.09 Q2.81,4.96 5.71,9.57"/><path d="M5.93,9.78 Q6.02,4.98 5.97,0.17"/></g><g transform="translate(111.10,0.05) rotate(2.11 0.80 5) scale(1.022)" stroke-width="2.46"><path d="M1.12,-0.31 Q1.26,4.69 1.05,9.69"/></g><g transform="translate(114.30,-0.32) rotate(-0.85 2.50 5) scale(1.014)" stroke-width="2.51"><path d="M4.90,0.54 Q3.15,0.38 2.39,0.48 Q1.62,0.57 1.11,1.46 Q0.60,2.35 0.53,3.57 Q0.46,4.80 0.38,6.16 Q0.30,7.52 1.06,8.28 Q1.83,9.05 2.65,9.44 Q3.47,9.82 4.12,9.54 L4.76,9.25"/></g><g transform="translate(120.90,0.37) rotate(1.90 3.20 5) scale(0.978)" stroke-width="2.29"><path d="M-0.03,10.18 Q1.86,5.11 3.21,-0.13 Q5.12,4.71 6.49,9.73"/><path d="M1.28,6.98 Q3.30,6.88 5.30,6.61"/></g><g transform="translate(128.90,0.09) rotate(-2.01 2.50 5) scale(0.995)" stroke-width="2.16"><path d="M-0.19,-0.16 Q-0.03,5.03 -0.08,10.21 Q2.47,9.94 5.03,10.00"/></g><g transform="translate(139.10,-0.37) rotate(-1.11 2.50 5) scale(0.972)" stroke-width="2.29"><path d="M4.91,0.62 Q3.10,0.11 2.43,0.52 Q1.75,0.94 1.32,1.89 Q0.89,2.84 0.62,3.87 Q0.36,4.91 0.35,6.32 Q0.34,7.73 1.06,8.36 Q1.79,8.99 2.62,9.52 Q3.45,10.04 4.02,9.51 L4.58,8.98"/></g><g transform="translate(145.70,-0.36) rotate(-1.53 3.30 5) scale(1.022)" stroke-width="2.33"><path d="M3.71,0.01 Q5.71,1.34 5.91,2.72 Q6.10,4.09 6.04,5.72 Q5.98,7.34 5.28,8.41 Q4.58,9.47 3.97,9.59 Q3.36,9.71 2.49,9.18 Q1.63,8.65 0.83,7.38 Q0.03,6.11 0.15,4.85 Q0.28,3.60 0.89,2.32 Q1.51,1.05 2.24,0.62 L2.98,0.19"/></g><g transform="translate(153.90,-0.06) rotate(-2.19 3.00 5) scale(1.006)" stroke-width="2.42"><path d="M0.25,9.74 Q0.40,5.02 -0.02,0.32"/><path d="M0.07,0.18 Q3.28,4.91 6.08,9.91"/><path d="M6.08,9.79 Q6.38,4.88 6.25,-0.04"/></g><g transform="translate(161.50,-0.44) rotate(-2.06 3.10 5) scale(1.020)" stroke-width="2.22"><path d="M-0.14,0.45 Q2.95,0.17 6.01,-0.24"/><path d="M3.32,0.02 Q2.91,4.96 3.09,9.91"/></g><g transform="translate(169.30,-0.12) rotate(-0.88 2.90 5) scale(1.044)" stroke-width="2.31"><path d="M0.15,9.93 Q0.20,5.06 -0.28,0.22"/><path d="M-0.06,0.46 Q3.49,0.30 4.10,0.80 Q4.71,1.30 4.98,2.32 Q5.24,3.34 4.21,4.17 Q3.17,4.99 1.58,4.82 L-0.01,4.64"/><path d="M2.96,4.85 Q4.24,7.63 5.82,10.24"/></g><g transform="translate(176.70,-0.32) rotate(-0.18 3.20 5) scale(1.002)" stroke-width="2.39"><path d="M0.26,10.28 Q1.34,5.12 3.03,0.12 Q4.45,5.10 6.50,9.86"/><path d="M1.43,6.85 Q3.22,6.84 5.00,6.64"/></g><g transform="translate(184.70,-0.19) rotate(-1.21 2.50 5) scale(1.011)" stroke-width="2.23"><path d="M4.86,0.98 Q3.15,0.30 2.50,0.63 Q1.84,0.95 1.22,1.64 Q0.61,2.34 0.35,3.64 Q0.08,4.93 0.24,6.10 Q0.39,7.26 1.03,8.30 Q1.67,9.35 2.35,9.51 Q3.02,9.68 3.84,9.43 L4.67,9.17"/></g><g transform="translate(191.30,0.43) rotate(-0.13 3.10 5) scale(1.027)" stroke-width="2.18"><path d="M-0.24,0.07 Q2.84,-0.13 5.93,0.03"/><path d="M3.21,0.00 Q3.34,5.07 3.28,10.13"/></g><g transform="translate(199.10,0.44) rotate(-0.21 3.30 5) scale(1.045)" stroke-width="2.23"><path d="M3.67,-0.05 Q5.79,1.82 5.93,3.12 Q6.07,4.42 6.05,5.74 Q6.03,7.06 5.39,8.25 Q4.75,9.44 3.81,9.53 Q2.87,9.63 1.99,9.17 Q1.12,8.72 0.72,7.61 Q0.32,6.50 0.38,4.90 Q0.45,3.29 0.82,2.03 Q1.19,0.77 2.23,0.29 L3.26,-0.19"/></g><g transform="translate(207.30,0.11) rotate(0.95 2.90 5) scale(1.020)" stroke-width="2.40"><path d="M-0.30,9.69 Q-0.25,4.69 0.02,-0.30"/><path d="M0.24,0.64 Q3.55,0.35 4.35,1.05 Q5.15,1.76 5.15,2.33 Q5.14,2.90 4.24,3.78 Q3.34,4.66 1.79,4.63 L0.24,4.59"/><path d="M2.65,5.10 Q4.26,7.62 5.60,10.30"/></g></g></g><g transform="translate(0,0.00) scale(1.000)"><g transform="translate(1.50,-0.08) rotate(-0.59 3.20 5) scale(0.967)" stroke-width="1.45"><path d="M0.26,10.17 Q2.02,5.30 3.25,0.26 Q4.93,5.23 6.51,10.23"/><path d="M1.42,6.65 Q3.11,6.87 4.81,6.69"/></g><g transform="translate(9.50,0.03) rotate(-0.55 3.00 5) scale(0.974)" stroke-width="1.46"><path d="M-0.29,9.88 Q-0.15,4.87 -0.31,-0.14"/><path d="M0.41,0.69 Q3.08,5.00 5.61,9.39"/><path d="M6.01,10.13 Q5.87,5.16 5.81,0.20"/></g><g transform="translate(20.70,0.29) rotate(-0.99 2.60 5) scale(0.979)" stroke-width="1.34"><path d="M0.21,0.22 Q0.31,4.97 0.22,9.71"/><path d="M0.17,0.17 Q2.67,0.10 5.18,0.00"/><path d="M-0.22,4.82 Q1.92,4.64 4.07,4.73"/><path d="M0.12,10.03 Q2.57,9.67 5.02,9.99"/></g><g transform="translate(27.50,-0.18) rotate(-0.12 3.00 5) scale(0.976)" stroke-width="1.48"><path d="M0.11,0.01 Q3.15,5.00 5.92,10.14"/><path d="M5.69,0.11 Q2.96,5.25 -0.11,10.19"/></g><g transform="translate(35.10,0.26) rotate(0.65 3.20 5) scale(0.994)" stroke-width="1.36"><path d="M-0.04,9.89 Q1.58,4.81 3.28,-0.24 Q4.59,5.03 6.27,10.20"/><path d="M1.45,6.67 Q3.24,6.72 5.02,6.89"/></g><g transform="translate(43.10,0.05) rotate(1.07 3.80 5) scale(0.998)" stroke-width="1.33"><path d="M-0.12,10.11 Q-0.18,5.16 0.37,0.23"/><path d="M-0.11,0.52 Q2.01,3.59 3.96,6.78"/><path d="M3.64,6.89 Q5.85,3.76 7.57,0.32"/><path d="M7.80,0.09 Q7.51,5.19 7.69,10.30"/></g><g transform="translate(52.30,-0.02) rotate(-2.05 2.80 5) scale(0.968)" stroke-width="1.32"><path d="M0.24,10.32 Q0.14,5.21 0.30,0.11"/><path d="M-0.15,0.38 Q3.80,0.20 4.52,1.03 Q5.25,1.86 5.16,2.68 Q5.06,3.51 4.43,4.09 Q3.80,4.67 1.79,4.69 L-0.22,4.71"/></g><g transform="translate(59.50,0.30) rotate(1.05 2.50 5) scale(1.010)" stroke-width="1.34"><path d="M0.28,0.05 Q-0.16,4.92 -0.31,9.82 Q2.42,9.55 5.13,9.96"/></g><g transform="translate(66.10,-0.08) rotate(-0.16 2.60 5) scale(1.029)" stroke-width="1.49"><path d="M-0.18,-0.10 Q-0.03,5.05 -0.07,10.21"/><path d="M-0.31,0.02 Q2.31,0.12 4.93,0.16"/><path d="M-0.01,5.26 Q1.99,5.41 3.99,5.25"/><path d="M0.16,9.80 Q2.74,9.66 5.31,9.82"/></g></g><g transform="translate(0,15.50) scale(0.600)"><g transform="translate(1.50,0.05) rotate(-0.55 3.20 5) scale(1.043)" stroke-width="2.23"><path d="M0.07,10.25 Q1.63,5.15 3.24,0.07 Q4.66,5.16 6.29,10.18"/><path d="M1.61,7.11 Q3.23,6.59 4.92,6.66"/></g><g transform="translate(13.10,0.15) rotate(-0.41 2.80 5) scale(0.977)" stroke-width="2.16"><path d="M0.28,9.79 Q0.20,4.78 0.22,-0.23"/><path d="M0.00,0.64 Q3.43,-0.06 4.38,0.77 Q5.33,1.60 5.18,2.32 Q5.02,3.05 4.36,3.96 Q3.69,4.86 1.85,4.84 L0.02,4.83"/></g><g transform="translate(20.30,0.08) rotate(0.43 3.10 5) scale(0.975)" stroke-width="2.48"><path d="M0.22,-0.24 Q0.21,5.00 0.16,10.24"/><path d="M5.97,-0.30 Q6.25,5.01 6.10,10.32"/><path d="M0.30,5.34 Q3.13,4.84 6.00,4.86"/></g><g transform="translate(28.10,0.40) rotate(-0.04 3.30 5) scale(1.039)" stroke-width="2.16"><path d="M4.14,0.01 Q5.23,1.67 5.73,2.97 Q6.23,4.26 6.27,5.71 Q6.31,7.15 5.45,8.05 Q4.59,8.94 3.88,9.50 Q3.18,10.07 2.14,9.48 Q1.10,8.90 0.77,7.64 Q0.43,6.38 0.41,4.92 Q0.39,3.45 1.03,2.18 Q1.67,0.91 2.33,0.66 L2.98,0.41"/></g><g transform="translate(36.30,-0.43) rotate(0.09 2.60 5) scale(1.019)" stroke-width="2.20"><path d="M-0.27,0.24 Q0.10,5.03 0.08,9.85"/><path d="M-0.27,0.17 Q2.62,0.31 5.51,0.07"/><path d="M0.01,5.02 Q1.99,5.38 4.00,5.26"/><path d="M0.26,9.90 Q2.67,9.79 5.09,9.83"/></g><g transform="translate(43.10,-0.22) rotate(-0.15 3.00 5) scale(1.020)" stroke-width="2.21"><path d="M0.13,9.87 Q-0.18,4.90 0.10,-0.07"/><path d="M-0.20,0.70 Q2.76,5.14 6.05,9.34"/><path d="M6.18,10.15 Q5.72,4.94 5.90,-0.29"/></g><g transform="translate(50.70,0.11) rotate(1.97 0.80 5) scale(0.993)" stroke-width="2.33"><path d="M0.51,0.09 Q0.96,4.98 1.02,9.89"/></g><g transform="translate(53.90,0.33) rotate(1.73 3.00 5) scale(0.976)" stroke-width="2.20"><path d="M0.21,0.02 Q3.21,4.91 5.89,9.98"/><path d="M6.25,0.29 Q3.15,5.14 -0.21,9.80"/></g><g transform="translate(65.10,0.05) rotate(-1.49 3.80 5) scale(0.969)" stroke-width="2.32"><path d="M-0.05,10.08 Q-0.02,5.02 0.06,-0.03"/><path d="M0.29,0.21 Q2.03,3.48 3.88,6.69"/><path d="M3.99,6.57 Q6.00,3.44 7.62,0.09"/><path d="M7.44,-0.04 Q7.75,5.05 7.52,10.14"/></g><g transform="translate(74.30,0.32) rotate(-1.91 2.60 5) scale(1.039)" stroke-width="2.27"><path d="M-0.15,0.10 Q0.08,5.19 -0.28,10.28"/><path d="M-0.22,0.43 Q2.57,0.29 5.35,0.04"/><path d="M0.07,4.80 Q2.04,5.10 4.01,4.87"/><path d="M-0.26,9.54 Q2.58,9.84 5.42,9.72"/></g><g transform="translate(81.10,0.37) rotate(-2.06 2.50 5) scale(1.006)" stroke-width="2.45"><path d="M4.86,0.44 Q3.11,0.19 2.55,0.58 Q1.99,0.97 1.43,1.85 Q0.87,2.73 0.67,3.85 Q0.47,4.97 0.53,6.33 Q0.59,7.70 1.07,8.42 Q1.56,9.14 2.30,9.67 Q3.04,10.21 3.90,9.79 L4.76,9.37"/></g><g transform="translate(87.70,-0.26) rotate(0.21 3.10 5) scale(0.984)" stroke-width="2.42"><path d="M0.14,0.03 Q0.28,4.92 -0.21,9.79"/><path d="M6.10,0.23 Q5.97,5.02 5.96,9.82"/><path d="M0.09,5.22 Q3.14,4.92 6.19,5.20"/></g><g transform="translate(95.50,-0.42) rotate(-0.11 3.20 5) scale(0.988)" stroke-width="2.34"><path d="M-0.04,10.15 Q1.62,5.13 3.03,0.03 Q4.54,5.20 6.44,10.24"/><path d="M1.30,6.64 Q3.20,6.62 5.06,7.01"/></g><g transform="translate(103.50,-0.02) rotate(0.14 3.00 5) scale(1.011)" stroke-width="2.30"><path d="M0.13,10.04 Q0.12,5.13 0.22,0.23"/><path d="M0.38,0.09 Q2.81,4.96 5.71,9.57"/><path d="M5.93,9.78 Q6.02,4.98 5.97,0.17"/></g><g transform="translate(111.10,0.05) rotate(2.11 0.80 5) scale(1.022)" stroke-width="2.46"><path d="M1.12,-0.31 Q1.26,4.69 1.05,9.69"/></g><g transform="translate(114.30,-0.32) rotate(-0.85 2.50 5) scale(1.014)" stroke-width="2.51"><path d="M4.90,0.54 Q3.15,0.38 2.39,0.48 Q1.62,0.57 1.11,1.46 Q0.60,2.35 0.53,3.57 Q0.46,4.80 0.38,6.16 Q0.30,7.52 1.06,8.28 Q1.83,9.05 2.65,9.44 Q3.47,9.82 4.12,9.54 L4.76,9.25"/></g><g transform="translate(120.90,0.37) rotate(1.90 3.20 5) scale(0.978)" stroke-width="2.29"><path d="M-0.03,10.18 Q1.86,5.11 3.21,-0.13 Q5.12,4.71 6.49,9.73"/><path d="M1.28,6.98 Q3.30,6.88 5.30,6.61"/></g><g transform="translate(128.90,0.09) rotate(-2.01 2.50 5) scale(0.995)" stroke-width="2.16"><path d="M-0.19,-0.16 Q-0.03,5.03 -0.08,10.21 Q2.47,9.94 5.03,10.00"/></g><g transform="translate(139.10,-0.37) rotate(-1.11 2.50 5) scale(0.972)" stroke-width="2.29"><path d="M4.91,0.62 Q3.10,0.11 2.43,0.52 Q1.75,0.94 1.32,1.89 Q0.89,2.84 0.62,3.87 Q0.36,4.91 0.35,6.32 Q0.34,7.73 1.06,8.36 Q1.79,8.99 2.62,9.52 Q3.45,10.04 4.02,9.51 L4.58,8.98"/></g><g transform="translate(145.70,-0.36) rotate(-1.53 3.30 5) scale(1.022)" stroke-width="2.33"><path d="M3.71,0.01 Q5.71,1.34 5.91,2.72 Q6.10,4.09 6.04,5.72 Q5.98,7.34 5.28,8.41 Q4.58,9.47 3.97,9.59 Q3.36,9.71 2.49,9.18 Q1.63,8.65 0.83,7.38 Q0.03,6.11 0.15,4.85 Q0.28,3.60 0.89,2.32 Q1.51,1.05 2.24,0.62 L2.98,0.19"/></g><g transform="translate(153.90,-0.06) rotate(-2.19 3.00 5) scale(1.006)" stroke-width="2.42"><path d="M0.25,9.74 Q0.40,5.02 -0.02,0.32"/><path d="M0.07,0.18 Q3.28,4.91 6.08,9.91"/><path d="M6.08,9.79 Q6.38,4.88 6.25,-0.04"/></g><g transform="translate(161.50,-0.44) rotate(-2.06 3.10 5) scale(1.020)" stroke-width="2.22"><path d="M-0.14,0.45 Q2.95,0.17 6.01,-0.24"/><path d="M3.32,0.02 Q2.91,4.96 3.09,9.91"/></g><g transform="translate(169.30,-0.12) rotate(-0.88 2.90 5) scale(1.044)" stroke-width="2.31"><path d="M0.15,9.93 Q0.20,5.06 -0.28,0.22"/><path d="M-0.06,0.46 Q3.49,0.30 4.10,0.80 Q4.71,1.30 4.98,2.32 Q5.24,3.34 4.21,4.17 Q3.17,4.99 1.58,4.82 L-0.01,4.64"/><path d="M2.96,4.85 Q4.24,7.63 5.82,10.24"/></g><g transform="translate(176.70,-0.32) rotate(-0.18 3.20 5) scale(1.002)" stroke-width="2.39"><path d="M0.26,10.28 Q1.34,5.12 3.03,0.12 Q4.45,5.10 6.50,9.86"/><path d="M1.43,6.85 Q3.22,6.84 5.00,6.64"/></g><g transform="translate(184.70,-0.19) rotate(-1.21 2.50 5) scale(1.011)" stroke-width="2.23"><path d="M4.86,0.98 Q3.15,0.30 2.50,0.63 Q1.84,0.95 1.22,1.64 Q0.61,2.34 0.35,3.64 Q0.08,4.93 0.24,6.10 Q0.39,7.26 1.03,8.30 Q1.67,9.35 2.35,9.51 Q3.02,9.68 3.84,9.43 L4.67,9.17"/></g><g transform="translate(191.30,0.43) rotate(-0.13 3.10 5) scale(1.027)" stroke-width="2.18"><path d="M-0.24,0.07 Q2.84,-0.13 5.93,0.03"/><path d="M3.21,0.00 Q3.34,5.07 3.28,10.13"/></g><g transform="translate(199.10,0.44) rotate(-0.21 3.30 5) scale(1.045)" stroke-width="2.23"><path d="M3.67,-0.05 Q5.79,1.82 5.93,3.12 Q6.07,4.42 6.05,5.74 Q6.03,7.06 5.39,8.25 Q4.75,9.44 3.81,9.53 Q2.87,9.63 1.99,9.17 Q1.12,8.72 0.72,7.61 Q0.32,6.50 0.38,4.90 Q0.45,3.29 0.82,2.03 Q1.19,0.77 2.23,0.29 L3.26,-0.19"/></g><g transform="translate(207.30,0.11) rotate(0.95 2.90 5) scale(1.020)" stroke-width="2.40"><path d="M-0.30,9.69 Q-0.25,4.69 0.02,-0.30"/><path d="M0.24,0.64 Q3.55,0.35 4.35,1.05 Q5.15,1.76 5.15,2.33 Q5.14,2.90 4.24,3.78 Q3.34,4.66 1.79,4.63 L0.24,4.59"/><path d="M2.65,5.10 Q4.26,7.62 5.60,10.30"/></g></g></svg>
+    </figcaption>
+  </figure>
+</div>
+
+</body>
+</html>
