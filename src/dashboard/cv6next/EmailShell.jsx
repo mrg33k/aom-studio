@@ -175,7 +175,7 @@ function AutoReplySettings({ onSaved }) {
   );
 }
 
-export default function EmailShell({ isDesktop, inbox, onClose, onOpenNav, onSearch, forceAutoReply = false }) {
+export default function EmailShell({ isDesktop, inbox, onClose, onOpenNav, onSearch, forceAutoReply = false, expanded = false, onToggleWidth }) {
   const [tab, setTabState] = useState(() => {
     try { return sessionStorage.getItem(TAB_KEY) || 'inbox'; } catch { return 'inbox'; }
   });
@@ -227,6 +227,7 @@ export default function EmailShell({ isDesktop, inbox, onClose, onOpenNav, onSea
         </div>
         {onClose ? (
           <span className="cv6-email-side is-end">
+            <ColumnExpandButton expanded={expanded} onToggle={onToggleWidth} label="email" />
             <button type="button" className="cv6-chat-header-button cv6-column-close cv6-email-close" aria-label="Close email" title="Close email" onClick={onClose}>
               <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
             </button>

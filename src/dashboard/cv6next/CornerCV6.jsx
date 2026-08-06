@@ -1889,7 +1889,7 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
 // (the live Goal Thread: steps, decision cards, data tables) we render the rich thread
 // from that real output. Otherwise we show the real messages honestly. ──
 const CHAT_ALIASES = { 'goal.checklist': 'item' };
-function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose }) {
+function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [localTitle, setLocalTitle] = useState(null);
   const [localCustomTitle, setLocalCustomTitle] = useState(null);
   const { data: roomList } = useChatList();
@@ -1949,7 +1949,7 @@ function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose }) {
       roomOptions={checklistRoomOptions}
       messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
-      columnMode={columnMode} onClose={onClose}
+      columnMode={columnMode} onClose={onClose} expanded={expanded} onToggleWidth={onToggleWidth}
       onBack={() => onNav('back')} onSearch={() => onSearch?.()} onRoomRenamed={isDemo ? null : (name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} onClearRoom={isDemo ? null : rt.clearRoom} onSend={(text, options) => send?.(text, options)}
       onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), missionSlug: roomMissionSlug(room), needsReview: true } : null)}
     />
@@ -3264,7 +3264,27 @@ export default function CornerCV6() {
     });
   }, []);
 
+  // Which columns are widened to double (Patrik 2026-08-06). Ids, not a per-column
+  // flag, so the set survives the column array being rebuilt. Width itself is CSS —
+  // this only decides which sections get data-column-expanded.
+  const [expandedColumnIds, setExpandedColumnIds] = useState(() => new Set());
+  const toggleWorkspaceColumnWidth = useCallback((columnId) => {
+    setExpandedColumnIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(columnId)) next.delete(columnId); else next.add(columnId);
+      return next;
+    });
+  }, []);
+
   const closeWorkspaceColumn = useCallback((columnId) => {
+    // Drop the width flag with the column, or reopening the same room later
+    // silently inherits a widened state the user never asked for again.
+    setExpandedColumnIds((prev) => {
+      if (!prev.has(columnId)) return prev;
+      const next = new Set(prev);
+      next.delete(columnId);
+      return next;
+    });
     setWorkspaceColumns((columns) => {
       const index = columns.findIndex((column) => column.id === columnId);
       const next = columns.filter((column) => column.id !== columnId);
@@ -3457,15 +3477,23 @@ export default function CornerCV6() {
             ) : body}
           </ScreenBoundary>
         </div>
-        {workspaceColumns.map((column) => (
-          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} aria-label={column.type === 'email' ? 'Email column' : column.type === 'workers' ? 'Background work column' : `${column.room?.name || 'Chat'} chat column`}>
+        {workspaceColumns.map((column) => {
+          const expanded = expandedColumnIds.has(column.id);
+          // Desktop only: on phone a column already fills the screen, so there is
+          // nothing to widen and the button never renders (the shells no-op on a
+          // missing handler).
+          const onToggleWidth = isDesktop ? () => toggleWorkspaceColumnWidth(column.id) : undefined;
+          return (
+          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} data-column-expanded={expanded ? '1' : undefined} aria-label={column.type === 'email' ? 'Email column' : column.type === 'workers' ? 'Background work column' : `${column.room?.name || 'Chat'} chat column`}>
             {column.type === 'workers' ? (
-              <WorkersShell onClose={() => closeWorkspaceColumn(column.id)} />
+              <WorkersShell onClose={() => closeWorkspaceColumn(column.id)} expanded={expanded} onToggleWidth={onToggleWidth} />
             ) : column.type === 'email' ? (
               <EmailShell
                 isDesktop={false}
                 inbox={<SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Dispatch email', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })} worldId={worldId} />}
                 onClose={() => closeWorkspaceColumn(column.id)}
+                expanded={expanded}
+                onToggleWidth={onToggleWidth}
                 onOpenNav={onOpenNav}
                 onSearch={onSearch}
               />
@@ -3475,12 +3503,15 @@ export default function CornerCV6() {
                 worldId={column.worldId || worldId}
                 columnMode={isDesktop}
                 onClose={() => closeWorkspaceColumn(column.id)}
+                expanded={expanded}
+                onToggleWidth={onToggleWidth}
                 onNav={(target, arg) => { if (target === 'back') closeWorkspaceColumn(column.id); else onNav(target, arg); }}
                 onSearch={onSearch}
               />
             )}
           </section>
-        ))}
+          );
+        })}
       </div>
       <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} badges={navBadges} />
       {/* ⌘K command palette — jump to any room or mission. Opens its own data. */}

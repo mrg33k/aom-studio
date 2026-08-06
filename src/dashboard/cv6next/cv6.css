@@ -2667,6 +2667,19 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
 }
 [data-cv6] .cv6-column-close { background:transparent; border-color:transparent; }
 [data-cv6] .cv6-column-close:hover { background:var(--surface-2); border-color:var(--hair); }
+[data-cv6] .cv6-column-expand { background:transparent; border-color:transparent; }
+[data-cv6] .cv6-column-expand:hover { background:var(--surface-2); border-color:var(--hair); }
+[data-cv6] .cv6-column-expand[aria-pressed="true"] { color:var(--accent); }
+/* Two controls now share the email tab bar's end slot. */
+[data-cv6] .cv6-email-side.is-end { gap:4px; }
+/* Widen to double (Patrik 2026-08-06: "expand to twice their width with an expansion
+   icon next to the close icon"). 400 -> 800, matching the base flex-basis above. Only
+   at desktop width — the narrow media query below makes every column 100%, where there
+   is nothing to widen INTO, and CornerCV6 passes no toggle there so the button is
+   absent too. Declared before that query so the 100% rule still wins on phone. */
+@media (min-width:900px) {
+  [data-cv6] .cv6-workspace-column[data-column-expanded="1"] { flex:0 0 800px; }
+}
 /* On glass the workspace column must read as frosted glass, not a solid panel:
    at .72 the fill sat as an opaque dark box over the wallpaper, so the chat
    column had a hard seam against the gradient showing beside it (Patrik

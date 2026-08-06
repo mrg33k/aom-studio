@@ -14,6 +14,7 @@ import ResultLinkCards from './ResultLinkCard.jsx';
 import { useDictation } from './data/useDictation.js';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
+import ColumnExpandButton from './ColumnExpandButton.jsx';
 import { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { supabase } from '../lib/supabase.js';
@@ -426,7 +427,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp, columnMode = false, onClose }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -572,6 +573,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={moreOpen ? 'true' : 'false'} onClick={() => setMoreOpen((open) => !open)}>
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
           </button>
+          {columnMode ? <ColumnExpandButton expanded={expanded} onToggle={onToggleWidth} label={room.name} /> : null}
           {columnMode ? (
             <button type="button" className="cv6-chat-header-button cv6-column-close" aria-label={`Close ${room.name}`} title={`Close ${room.name}`} onClick={onClose}>
               <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>

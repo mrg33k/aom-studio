@@ -28,6 +28,7 @@ import React, { useState, useEffect } from 'react';
 import { useRunningTasks } from './data/useRunningTasks.js';
 import { authFetch } from '../lib/authFetch';
 import { useWorldId } from '../lib/tenantContext.jsx';
+import ColumnExpandButton from './ColumnExpandButton.jsx';
 
 function titleCaseName(s) {
   const v = String(s || '').replace(/[-_]/g, ' ').trim();
@@ -224,7 +225,7 @@ function Row({ title, meta, metaQuiet, right, rightTone, wrap, actions, separate
   );
 }
 
-export default function WorkersShell({ onClose }) {
+export default function WorkersShell({ onClose, expanded = false, onToggleWidth }) {
   const worldId = useWorldId();
   // room=null -> the whole world's in-flight work: this window is the one place
   // that answers "is anything running?", so it never narrows to a project.
@@ -249,6 +250,7 @@ export default function WorkersShell({ onClose }) {
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>Background work</span>
         <span style={{ flex: 1 }} />
+        <ColumnExpandButton expanded={expanded} onToggle={onToggleWidth} label="background work" />
         {onClose ? (
           <button type="button" className="cv6-chat-header-button cv6-column-close" aria-label="Close background work" title="Close background work" onClick={onClose}>
             <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
