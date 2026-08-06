@@ -1030,19 +1030,13 @@
 [data-cv6][data-screen="home-mobile"] .room.agentrow { height:46px; padding-left:30px; background:var(--surface-2); }
 [data-cv6][data-screen="home-mobile"] .room.agentrow .rn { font-weight:500; }
 [data-cv6][data-screen="home-mobile"] .room.agentgrp .tag { font-family:var(--font-sans); font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-weak); padding:1px 8px; border-radius:8px; letter-spacing:0; }
-/* Pick up where you left off (mobile) — desktop's recent digest, above All rooms */
+/* Pick up where you left off (mobile) — desktop's recent digest, above All rooms.
+   The row styling itself lives in the M12 block further down (search .mresumelist);
+   the .mresumerow/.mresumetop/.mresumechev rules that used to sit here were dead —
+   no markup has referenced them since the deck rewrite — and were removed
+   2026-08-06 so this list has exactly one source. */
 [data-cv6][data-screen="home-mobile"] .mresume.is-none { display:none; }
 [data-cv6][data-screen="home-mobile"] .mresume .roomshdr { margin:8px 0 10px; }
-[data-cv6][data-screen="home-mobile"] .mresumelist { margin:0 22px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; overflow:hidden; }
-[data-cv6][data-screen="home-mobile"] .mresumerow { display:flex; align-items:flex-start; gap:11px; padding:12px 15px; border-bottom:1px solid var(--divider); cursor:pointer; }
-[data-cv6][data-screen="home-mobile"] .mresumerow:last-child { border-bottom:none; }
-[data-cv6][data-screen="home-mobile"] .mresumebody { flex:1; min-width:0; }
-[data-cv6][data-screen="home-mobile"] .mresumetop { display:flex; align-items:baseline; gap:9px; }
-[data-cv6][data-screen="home-mobile"] .mresumetop .rn { flex:0 1 auto; font-size:14px; font-weight:600; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-[data-cv6][data-screen="home-mobile"] .mresumetop .rsub { flex:none; font-size:11.5px; color:var(--muted); white-space:nowrap; }
-[data-cv6][data-screen="home-mobile"] .mresumerow .rprev { display:block; margin-top:2px; font-size:11.5px; color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-[data-cv6][data-screen="home-mobile"] .mresumeage { flex:none; margin-top:3px; font-size:10.5px; color:var(--faint); }
-[data-cv6][data-screen="home-mobile"] .mresumechev { flex:none; margin-top:3px; color:var(--faint); }
 [data-cv6][data-screen="home-desktop"] .room.agentrow { padding-left:26px; }
 [data-cv6][data-screen="home-desktop"] .room.agentrow .rn { font-weight:500; }
 [data-cv6][data-screen="home-desktop"] .agentgrp { padding:9px 12px; }
@@ -1899,56 +1893,53 @@
   color:var(--fg);
 }
 [data-cv6][data-screen="home-mobile"] .mhome-intro h1 em { color:var(--muted); font-weight:400; }
+/* Vertical resume list (Patrik 2026-08-06) — replaces the horizontal snap deck.
+   Same row anatomy as the desktop digest (.restcol .restrow): clock glyph, name +
+   parent, last line, age, chevron. Mobile only changes the sizing: 44px+ touch
+   target, one clamped preview line, and the tint moved to a left edge bar because
+   a full-bleed row has no card top to hang it off. */
 [data-cv6][data-screen="home-mobile"] .mresumelist {
-  display:grid;
-  grid-auto-flow:column;
-  grid-auto-columns:minmax(252px,78vw);
-  gap:11px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
   margin:0;
   padding:0 22px 5px;
   border:0;
   border-radius:0;
   background:transparent;
-  overflow-x:auto;
-  overflow-y:hidden;
-  scroll-snap-type:x mandatory;
-  scroll-padding-inline:22px;
-  overscroll-behavior-x:contain;
-  touch-action:pan-x pan-y;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
+  overflow:visible;
 }
-[data-cv6][data-screen="home-mobile"] .mresumelist::-webkit-scrollbar { display:none; }
+/* 20 rows max on mobile. Desktop's digest caps at 6 the same way (nth-child(n+7)),
+   so the cap stays a display concern and the shared `recent` array is the source. */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:nth-child(n+21) { display:none; }
 [data-cv6][data-screen="home-mobile"] .mresumecard {
   position:relative;
-  min-height:142px;
+  min-height:56px;
   box-sizing:border-box;
   display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  gap:12px;
-  padding:16px;
+  flex-direction:row;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px 10px 16px;
   border:1px solid var(--hair);
-  border-radius:18px;
-  background:
-    radial-gradient(90% 100% at 100% 0%,var(--accent-weak),transparent 64%),
-    var(--surface);
+  border-radius:12px;
+  background:var(--surface);
   color:var(--fg);
-  box-shadow:0 16px 38px -28px rgba(0,0,0,.9);
+  box-shadow:none;
   text-align:left;
   font-family:var(--font-sans);
   cursor:pointer;
-  scroll-snap-align:start;
   overflow:hidden;
 }
+/* Tint rides the left edge of the row (was a tab on the card's top edge). */
 [data-cv6][data-screen="home-mobile"] .mresumecard::before {
   content:"";
   position:absolute;
-  left:16px;
-  top:0;
-  width:38px;
-  height:3px;
-  border-radius:0 0 4px 4px;
+  left:0;
+  top:10px;
+  bottom:10px;
+  width:3px;
+  border-radius:0 3px 3px 0;
   background:var(--accent);
 }
 [data-cv6][data-screen="home-mobile"] .mresumecard.is-violet::before { background:var(--violet-400); }
@@ -1956,40 +1947,45 @@
 [data-cv6][data-screen="home-mobile"] .mresumecard.is-teal::before { background:var(--teal-400); }
 [data-cv6][data-screen="home-mobile"] .mresumecard.is-lime::before { background:var(--lime-400); }
 [data-cv6][data-screen="home-mobile"] .mresumecard.is-amber::before { background:var(--amber-400); }
-[data-cv6][data-screen="home-mobile"] .mresume-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-[data-cv6][data-screen="home-mobile"] .mresume-meta .rsub {
+[data-cv6][data-screen="home-mobile"] .mresume-clock { flex:none; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .mresumebody { flex:1; min-width:0; }
+[data-cv6][data-screen="home-mobile"] .mresume-top { display:flex; align-items:baseline; gap:8px; min-width:0; }
+[data-cv6][data-screen="home-mobile"] .mresumecard .rn {
+  flex:0 1 auto;
   min-width:0;
-  font-size:10.5px;
-  font-weight:700;
-  letter-spacing:.08em;
-  text-transform:uppercase;
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:-.01em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+[data-cv6][data-screen="home-mobile"] .mresumecard .rsub {
+  flex:none;
+  max-width:42%;
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:0;
+  text-transform:none;
   color:var(--muted);
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
-[data-cv6][data-screen="home-mobile"] .mresumeage { flex:none; font-size:10px; color:var(--faint); }
-[data-cv6][data-screen="home-mobile"] .mresumebody { flex:1; min-width:0; }
-[data-cv6][data-screen="home-mobile"] .mresumecard .rn { display:block; font-size:17px; letter-spacing:-.015em; }
 [data-cv6][data-screen="home-mobile"] .mresumecard .rprev {
-  display:-webkit-box;
-  margin-top:5px;
-  font-size:12.5px;
-  line-height:1.42;
-  color:var(--muted);
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-[data-cv6][data-screen="home-mobile"] .mresume-open {
-  display:inline-flex;
-  align-items:center;
-  gap:3px;
-  align-self:flex-start;
+  display:block;
+  margin-top:2px;
   font-size:11.5px;
-  font-weight:700;
-  color:var(--accent);
+  line-height:1.35;
+  color:var(--faint);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
+/* An empty preview must not reserve a line, or short rows sit unevenly tall. */
+[data-cv6][data-screen="home-mobile"] .mresumecard .rprev:empty { display:none; }
+[data-cv6][data-screen="home-mobile"] .mresumeage { flex:none; font-size:10.5px; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .mresume-chev { flex:none; color:var(--faint); }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head { margin:28px 0 12px; }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head > span { display:flex; flex-direction:column; gap:3px; }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head small { color:var(--faint); font-size:12px; }
@@ -2742,14 +2738,10 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   touch-action:pan-y;
 }
 
-/* The recent-chat cards live in a horizontal rail. R11's long-press protection
-   accidentally forced those cards to pan vertically only, so iOS never handed a
-   sideways swipe to `.mresumelist`. Preserve both axes here: horizontal gestures
-   move between chats; vertical gestures still move the Home page. */
-[data-cv6][data-screen="home-mobile"] .mresumelist,
-[data-cv6][data-screen="home-mobile"] .mresumecard {
-  touch-action:pan-x pan-y;
-}
+/* The pan-x carve-out that used to live here is gone with the horizontal rail
+   (Patrik 2026-08-06): the recent list is a vertical stack now, so `.mresumecard`
+   wants the plain pan-y from the rule above. Leaving pan-x on a vertical list
+   makes iOS hesitate on the first scroll frame before it commits to the axis. */
 
 /* Auto-reply is a full Email section, not a switch hidden inside the inbox. */
 [data-cv6] .cv6-autoreply-settings { flex:1; min-height:0; overflow-y:auto; width:min(880px,100%); margin:0 auto; padding:28px; box-sizing:border-box; }

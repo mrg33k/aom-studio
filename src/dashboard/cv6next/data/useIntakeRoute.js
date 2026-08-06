@@ -16,6 +16,7 @@ import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase.js';
 import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { createMissionInProject, createProjectFromHome } from './useHomeData.js';
+import { fetchRoomActivity } from './roomActivity.js';
 import { recordRoutedHere, clearRoutedHere } from './routedHere.js';
 
 const AUTO_ROUTE_CONFIDENCE = 0.85;
@@ -110,34 +111,9 @@ export function assembleCandidates(data, missionsByProject, roomActivity) {
   return { candidates: { projects, missions, agents }, recent_rooms };
 }
 
-// Per-tab memo: the payload is edge-cached and describes "which rooms were active lately",
-// so re-fetching it on every keystroke-to-send would be waste. Refreshed on a short TTL so
-// a room the user just worked in still climbs the ranking within the same session.
-const ACTIVITY_TTL_MS = 120000;
-const ACTIVITY_TIMEOUT_MS = 2500;
-let activityCache = { worldId: '', at: 0, value: null };
-
-async function fetchRoomActivity(worldId) {
-  const now = Date.now();
-  if (activityCache.value && activityCache.worldId === worldId && (now - activityCache.at) < ACTIVITY_TTL_MS) {
-    return activityCache.value;
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ACTIVITY_TIMEOUT_MS);
-  try {
-    const res = await authFetch(`/api/dashboard/room-activity?client=${encodeURIComponent(worldId)}`, { signal: controller.signal });
-    const value = res && res.ok ? await res.json() : null;
-    if (value && (value.projects || value.missions)) {
-      activityCache = { worldId, at: now, value };
-      return value;
-    }
-    return null;
-  } catch {
-    return null;   // ranking degrades to Home's own data; the send still goes through
-  } finally {
-    clearTimeout(timer);
-  }
-}
+// fetchRoomActivity moved to ./roomActivity.js (2026-08-06) — Home's recent list became
+// a second consumer of the same wide window, and this module already imports from
+// useHomeData, so exporting it from here would have made an import cycle.
 
 function readLastRoom(worldId) {
   try {

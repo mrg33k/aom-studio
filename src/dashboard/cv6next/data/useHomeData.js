@@ -17,6 +17,7 @@ import { curateTitledAgents, titleForAgent } from './agentTitles.js';
 import { normalizePreview } from './previewText.js';
 import { missionRecencyKey } from './roomKeys.js';
 import { isRoomActivityNoise } from './presentationClean.js';
+import { fetchRoomActivity } from './roomActivity.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -77,7 +78,7 @@ function relTime(ts) {
   return `${Math.round(h / 24)}d`;
 }
 
-export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [], agentThreadRooms = [] } = {}) {
+export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [], agentThreadRooms = [], roomActivity = null } = {}) {
   // Agents render as TITLES (curated set), never names. id stays the agent slug so the chat
   // opens the right thread. (Agents-as-titles + Agents accordion, decided 2026-06-23.)
   const agentRooms = curateTitledAgents(agents).map((a) => {
@@ -165,7 +166,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // threads — newest activity first, above Projects. The arrow nav starts here. Mission-level
   // recency comes from the inbox feed (it carries missionSlug + timestamp); project-level
   // recency comes from projectRooms.last_message_at (read or unread). Merge by room key, keep
-  // the freshest per room, sort desc, top 6. Real data only — no fabricated rows.
+  // the freshest per room, sort desc, top 30. Real data only — no fabricated rows.
   const recentMap = {};
   // A fresher timestamp-only bump (projectRooms/missionRooms carry no text) must not erase
   // a preview a message-carrying bump already provided (Steffen R4 send-back: the digest
@@ -215,11 +216,48 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (isRoomActivityNoise({ text: ar.last_message_text })) continue;
     bump('a:' + ar.agent, { key: 'a:' + ar.agent, id: ar.agent, kind: 'agent', agent: ar.agent, name: agentNameBySlug[ar.agent] || titleForAgent(ar.agent), sub: 'Direct chat', ts: ar.last_message_at, preview: normalizePreview(ar.last_message_text) });
   }
+  // Wide-window recency (Patrik 2026-08-06, "show the last 30 chats"). Everything
+  // above derives recency from the dashboard's 100-message poll, and 100 rows is
+  // roughly a DOZEN rooms on a live client — so a 30-row list built from it would
+  // quietly render 12 and look broken. /api/dashboard/room-activity already walks a
+  // 6000-row window (~11 days) for the front-door router and is already fetched on
+  // this screen, so the rooms exist; they just never reached this list.
+  //
+  // Recency only. `last_message_text` there is a multi-line DIGEST built to teach the
+  // router what a room is ABOUT — good for matching, wrong as a "here's where you left
+  // off" line. bump() already keeps any preview a message-carrying source supplied, so
+  // passing no preview here means rooms inside the 100-window keep their real last
+  // line and rooms beyond it show none rather than a stitched-together one.
+  const activityProjects = roomActivity?.projects || {};
+  for (const [slug, entry] of Object.entries(activityProjects)) {
+    const ts = entry?.last_message_at ? new Date(entry.last_message_at).getTime() : 0;
+    if (!slug || !ts) continue;
+    bump('p:' + slug, { key: 'p:' + slug, id: slug, kind: 'project', project: slug, name: projectNameBySlug[slug] || cap(slug), sub: 'Project chat', ts, preview: '' });
+  }
+  const activityMissions = roomActivity?.missions || {};
+  for (const [key, entry] of Object.entries(activityMissions)) {
+    const ts = entry?.last_message_at ? new Date(entry.last_message_at).getTime() : 0;
+    if (!key || !ts) continue;
+    // room-activity keys missions "<project>:<missionSlug>" — the same shape the
+    // mission bumps above use before missionRecencyKey normalizes them.
+    const project = key.includes(':') ? key.slice(0, key.indexOf(':')) : '';
+    const slug = key.includes(':') ? key.slice(key.indexOf(':') + 1) : key;
+    if (!slug) continue;
+    const pn = project ? (projectNameBySlug[project] || cap(project)) : '';
+    const nm = missionLabel(slug) || slug;
+    bump('m:' + missionRecencyKey(slug), { key: 'm:' + missionRecencyKey(slug), id: slug, kind: 'mission', missionSlug: slug, project, name: nm, sub: missionSub(pn, nm), ts, preview: '' });
+  }
+
   const recent = Object.values(recentMap)
     // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).
     .filter((r) => { const n = String(r.name || '').trim().toLowerCase(); return n && n !== 'undefined' && n !== 'null'; })
     .sort((a, b) => b.ts - a.ts)
-    .slice(0, 6)
+    // 30, raised from 6 (Patrik 2026-08-06). This is the SOURCE for three surfaces
+    // and each caps its own display: the desktop rail shows all 30, mobile's list
+    // shows 20 (CSS nth-child), the desktop resting digest shows 6 (CSS nth-child).
+    // How many actually exist is bounded by the recency window — see the comment
+    // on the recency scan in useDataPipe.
+    .slice(0, 30)
     .map((r) => ({ ...r, initials: initials(r.name), tint: tintFor(r.name), age: relTime(r.ts), status: (Date.now() - r.ts) < 3600000 ? 'live' : 'ready' }));
   recent.count = recent.length;
 
@@ -268,12 +306,26 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
 export function useHome() {
   const { status, worldId } = useTenantContext();
   const { agents, projectRooms, inboxItems, missionRooms, agentThreadRooms } = useDataContext();
+  // The wide activity window that lets the recent list reach 30 real rooms instead of
+  // the ~12 the 100-message poll can see. Shares useIntakeRoute's module cache, so the
+  // front door and this list cost ONE request between them. A failure returns null and
+  // the list degrades to the old 100-message recency — never to an empty screen.
+  const [roomActivity, setRoomActivity] = useState(null);
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    const load = () => { fetchRoomActivity(worldId).then((value) => { if (alive && value) setRoomActivity(value); }); };
+    load();
+    // Matches the endpoint's own 180s edge cache — polling faster just re-reads it.
+    const timer = setInterval(load, 180000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [worldId]);
 
   // Memoize the shaped data so its identity is stable between renders (it only changes
   // when the underlying pipe arrays change). Without this, `data` was a new object every
   // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
   // list under the user's finger and making taps miss (the "can't open a chat" bug).
-  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms]);
+  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity]);
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
