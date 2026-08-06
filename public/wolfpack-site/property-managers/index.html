@@ -373,7 +373,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 
 /* ============================ TABLET 760+ ============================ */
 @media (min-width:760px){
-  :root{--pad:var(--s6)}
+  :root{--pad:var(--s7)}
   .sec{padding:var(--s8) 0}
   .sec-h{font-size:var(--t5)}
   .hero-shot{aspect-ratio:16/9}
@@ -381,8 +381,8 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .hero-copy{padding:var(--s7) var(--pad) var(--s8)}
   .cta-row{flex-direction:row;gap:var(--s3)}
   .btn{width:auto;display:inline-block}
-  .clients{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4)}
   .rows{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s3)}
+  .row{padding:var(--s4)}
   .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s4)}
   .strip{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s4);
     overflow:visible;margin-left:0;margin-right:0;padding:0}
@@ -399,10 +399,23 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .city.wide{grid-column:auto}
   .ways{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s4)}
   .formcard{padding:var(--s7) var(--s7) var(--s6);max-width:600px;margin-left:auto;margin-right:auto}
-  .foot .wrap{flex-direction:row;align-items:flex-start;gap:var(--s7);flex-wrap:wrap}
-  .foot .fr{margin-left:auto;align-items:flex-end;text-align:right}
   .dock{display:none}
   body.docked .foot{padding-bottom:var(--s7)}
+  .offer h2{max-width:none}
+}
+
+/* ===================== TABLET LANDSCAPE / SMALL LAPTOP 1024+ =====================
+   iPad landscape. Enough width for three testimonials across and a footer that
+   reads as one row. Below this they stack, because at 820 they do not fit.
+   ============================================================================ */
+@media (min-width:1024px){
+  .sec{padding:var(--s9) 0}
+  .clients{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s5)}
+  .cards{grid-template-columns:repeat(2,1fr);gap:var(--s5)}
+  .ways{gap:var(--s5)}
+  .stats{margin-top:var(--s7)}
+  .foot .wrap{flex-direction:row;align-items:flex-start;gap:var(--s7);flex-wrap:wrap}
+  .foot .fr{margin-left:auto;align-items:flex-end;text-align:right}
 }
 
 /* ============================ DESKTOP 1120+ ============================
@@ -438,9 +451,9 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 
   .hero{display:grid;grid-template-columns:1fr 1fr;min-height:585px}
   .hero-shot{aspect-ratio:auto;order:0}
-  .hero-copy{padding:var(--s9) var(--s7) var(--s9) 0;justify-content:center;
+  .hero-copy{padding:var(--s9) var(--s7);justify-content:center;
     max-width:calc(var(--maxw)/2);margin-left:auto;width:100%}
-  .hero h1{font-size:var(--t8);margin-top:var(--s5)}
+  .hero h1{font-size:var(--t7);margin-top:var(--s5)}
   .hero .sub{margin-top:var(--s5);max-width:44ch}
   .cta-row{flex-wrap:wrap;margin-top:var(--s7)}
 
@@ -500,6 +513,12 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .foot .fbrand .cities{display:block;margin-top:var(--s5)}
 }
 @media (max-width:1119px){ .foot .fbrand .cities{display:none} }
+
+/* Full display size only once the half-column can hold the longest line. */
+@media (min-width:1360px){
+  .hero h1{font-size:var(--t8)}
+  .sec-h{font-size:var(--t6)}
+}
 </style>
 </head>
 <body>
