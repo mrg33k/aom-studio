@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/hero/assets/tokens.css">
+<title>Ahead of Market — You never built a marketing department. So we become it.</title>
+<style>
+/* ============================================================
+   Ahead of Market — homepage hero.
+   Type and color are the Ahead of Market design system, copied
+   verbatim from .claude/skills/ahead-of-market-design/tokens/.
+   ============================================================ */
+@font-face{font-family:'Druk Cond';src:url('/hero/assets/fonts/DrukCond-Super-subset.woff2') format('woff2'),url('/hero/assets/fonts/DrukCond-Super-Trial.otf') format('opentype');font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:'Schibsted Grotesk';src:url('/hero/assets/fonts/SchibstedGrotesk-var.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+
+:root{
+  --page-x:100px;
+  /* The MEASURE is the design's one governing number. It is the smaller of the
+     system's 1240px container, the window minus its gutters, and what the
+     viewport HEIGHT can carry (310px of fixed chrome, 3 lines x 0.84 leading,
+     5.371em on the longest line). When height binds, the column narrows with
+     the type instead of the type shrinking inside a column it no longer fills,
+     so the monument stays flush at every window size. */
+  --measure:min(1120px, calc(100vw - 2 * var(--page-x)), calc((100svh - 310px) * 2.1314));
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);
+  color:var(--paper);
+  font-family:'Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  caret-color:var(--accent);
+  scrollbar-color:var(--divider) var(--bg);
+}
+::selection{background:var(--accent);color:var(--text-on-accent)}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--paper);outline-offset:3px}
+
+/* ---------- the frame ---------- */
+.hero{
+  min-height:100svh;
+  width:var(--measure);
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ---------- masthead ---------- */
+.masthead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:var(--space-8) 0;
+  border-bottom:1px solid var(--divider);
+}
+.identity{display:flex;align-items:center;gap:var(--space-4)}
+.mark{width:32px;height:32px;display:block;color:var(--paper);transition:color 160ms cubic-bezier(0.2,0,0,1)}
+.mark:hover{color:var(--accent)}
+.mark svg{width:100%;height:100%;display:block}
+.label{
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  line-height:1.2;
+}
+.identity .label{color:var(--paper)}
+.nav{display:flex;align-items:center;gap:var(--space-16)}
+.nav a{color:var(--text-muted);transition:color 160ms cubic-bezier(0.2,0,0,1)}
+.nav a:hover{color:var(--paper)}
+.menu{display:flex;align-items:center;gap:var(--space-2)}
+.menu svg{display:block;width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:square;fill:none}
+
+/* ---------- the monument ---------- */
+.stage{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:var(--space-4) 0;
+  container-type:inline-size;
+}
+.monument{
+  margin:0;
+  font-family:'Druk Cond','Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;
+  font-weight:400;
+  /* sized from the MEASURE, not guessed: 100/5.371em is the width of the
+     longest line, so the block spans its column exactly at every width. */
+  font-size:18.55cqw;
+  line-height:0.79;
+  text-transform:uppercase;
+  color:var(--paper);
+}
+.monument span{display:block;white-space:nowrap}
+.monument .m{display:none}
+/* Every line is force-justified to the same measure, so the block is flush on
+   both edges and each break sits on a sense unit rather than where the width ran
+   out. The deficit is split the way a typesetter splits it — a word space takes
+   twice a letter space — and the terminal period HANGS outside the measure, so
+   what lines up is the letterforms, not the punctuation. Values solved by
+   measuring the rendered line, not by eye. Positive tracking only. */
+/* REVISED 2026-08-05 (Patrik: "I like A but the text spacing is weird").
+   The block was one size with every line PRIED APART to reach the measure:
+   at 230px the lines are naturally 926 / 1260 / 870 wide against a 1240
+   column, so lines 1 and 3 were tracked ~30% open while line 2 sat tight.
+   That unevenness IS the weirdness. Fixed at the cause: each line is SIZED
+   to the measure at one uniform tracking, so the block stays flush on both
+   edges and the type colour is even. Sizes solved by measuring each line's
+   natural width, not by eye. */
+.monument span{letter-spacing:0.005em;word-spacing:normal}
+.d1{font-size:24.84cqw}
+.d2{font-size:18.26cqw}
+.d3{font-size:26.44cqw}
+
+/* ---------- the answer ---------- */
+.answer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-12);
+  padding:var(--space-6) 0;
+  border-top:1px solid var(--divider);
+}
+.subline{
+  margin:0;
+  font-size:20px;
+  font-weight:400;
+  line-height:1.4;
+  color:var(--text-muted);
+  max-width:62ch;
+  text-wrap:balance;
+}
+.subline b{font-weight:500;color:var(--paper)}
+.cta{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-6);
+  padding:var(--space-4) var(--space-8);
+  background:var(--accent);
+  border:1px solid var(--accent);
+  color:var(--bg);
+  transition:color 180ms cubic-bezier(0.2,0,0,1);
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.cta span,.cta svg{position:relative;z-index:1}
+.cta svg{display:block;width:14px;height:14px;stroke:currentColor;stroke-width:2;stroke-linecap:square;fill:none}
+.cta::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:var(--bg);
+  transform:scaleX(0);
+  transform-origin:left center;
+  transition:transform 180ms cubic-bezier(0.2,0,0,1);
+}
+.cta:hover::before{transform:scaleX(1)}
+.cta:hover{color:var(--accent)}
+.cta:active{transform:translateY(1px)}
+
+/* ---------- the base band ---------- */
+.disciplines{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border-top:1px solid var(--divider);
+  padding:var(--space-6) 0 var(--space-8);
+}
+.disciplines span{color:var(--text-muted)}
+.disciplines span+span{
+  border-left:1px solid var(--divider);
+  padding-left:var(--space-6);
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:1ms !important}
+}
+
+/* ---------- tablet ---------- */
+@media (max-width:1024px){
+  :root{--page-x:48px}
+  .nav{gap:var(--space-8)}
+}
+
+/* ---------- 390 ---------- */
+@media (max-width:640px){
+  :root{
+    --page-x:24px;
+    /* 4 lines at this width, 3.702em on the longest, 0.86 leading */
+    --measure:min(calc(100vw - 2 * var(--page-x)), calc((100svh - 410px) * 1.0762));
+  }
+  .masthead{padding:var(--space-6) 0}
+  .identity .label{display:none}
+  .nav{gap:var(--space-6)}
+  .nav .role{display:none}
+  .stage{padding:var(--space-4) 0}
+  /* four hand-placed lines at this width, force-justified the same way */
+  .monument{font-size:26.9cqw;line-height:0.82}
+  .monument .d{display:none}
+  .monument .m{display:block}
+  .m1{font-size:27.36cqw}
+  .m2{font-size:34.71cqw}
+  .m3{font-size:34.64cqw}
+  .m4{font-size:26.42cqw}
+  .answer{
+    flex-direction:column;
+    align-items:stretch;
+    gap:var(--space-6);
+    padding:var(--space-6) 0;
+  }
+  .subline{font-size:16px}
+  .cta{justify-content:space-between;padding:var(--space-4)}
+  .disciplines{
+    display:block;
+    padding:var(--space-4) 0 var(--space-4);
+  }
+  .disciplines span{display:block;padding:var(--space-2) 0}
+  .disciplines span+span{border-left:0;padding-left:0;border-top:1px solid var(--divider)}
+  .label{font-size:10px;letter-spacing:0.1em}
+}
+</style>
+</head>
+<body>
+<!--
+IMPECCABLE DIRECTION CONTRACT
+THESIS: One sentence owns the screen. It refuses the split hero — a mark on the left arguing with a headline on the right — and the cream ground every agency in this category ships.
+OWN-WORLD: Obsidian field, ivory Druk Cond monument, hairline ink rules, square corners, flat. Bronze gold appears exactly once, as the action.
+STORY: You never built a marketing department. AOM becomes it. Talk to us.
+FIRST VIEWPORT: Hairline masthead with the monogram. Below it a three-line monument, every line force-justified to the full measure. Under one rule: the objection-handling line left, the gold action right. Under the next: strategy, creative, promotion as the base band.
+FORM: The distilled monument — candidate 6 of my ordered structural list, the assignment from concept-seed --scope surface --mode persuade, seed key 3305a0f6.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->
+<main class="hero">
+
+  <header class="masthead">
+    <div class="identity">
+      <a class="mark" href="/" aria-label="Ahead of Market — home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+          <mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
+          <g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+          <path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0&#xA;-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30&#xA;-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59&#xA;-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41&#xA;-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575&#xA;47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350&#xA;39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295&#xA;-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13&#xA;-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357&#xA;156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124&#xA;335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0&#xA;-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52&#xA;-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59&#xA;-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66&#xA;-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15&#xA;61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52&#xA;52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64&#xA;175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186&#xA;199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57&#xA;153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151&#xA;462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98&#xA;9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235&#xA;563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31&#xA;-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464&#xA;-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31&#xA;81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278&#xA;130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97&#xA;-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1&#xA;30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9&#xA;123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32&#xA;104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18&#xA;121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325&#xA;-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66&#xA;-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1&#xA;-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128&#xA;-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38&#xA;471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134&#xA;-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path>
+          <path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25&#xA;-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129&#xA;-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81&#xA;-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39&#xA;-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66&#xA;-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145&#xA;-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415&#xA;-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360&#xA;-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17&#xA;-35 -3z"></path>
+          <path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25&#xA;-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6&#xA;-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path>
+          <path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20&#xA;-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715&#xA;516 -90 41 -123 48 -123 25z"></path>
+          <path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149&#xA;22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10&#xA;-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153&#xA;-152 122z"></path>
+          <path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8&#xA;-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15&#xA;258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292&#xA;112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12 -396 5&#xA;-408 5 -425 -14z"></path>
+          </g></mask>
+          <rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
+        </svg>
+      </a>
+      <span class="label">Ahead of Market</span>
+    </div>
+    <nav class="nav label" aria-label="Primary">
+      <a class="role" href="/our-role">Our role</a>
+      <a class="menu" href="/menu">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5h14M1 11h14"/></svg>
+        <span>Menu</span>
+      </a>
+    </nav>
+  </header>
+
+  <div class="stage">
+    <h1 class="monument">
+      <span class="d d1">You never built a</span>
+      <span class="d d2">marketing department.</span>
+      <span class="d d3">So we become it.</span>
+      <span class="m m1">You never built</span>
+      <span class="m m2">a marketing</span>
+      <span class="m m3">department.</span>
+      <span class="m m4">So we become it.</span>
+    </h1>
+  </div>
+
+  <div class="answer">
+    <p class="subline">No job posts. No hiring plan. <b>No headcount to carry.</b></p>
+    <a class="cta" href="/contact">
+      <span>Talk to us</span>
+      <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 12L12 2M4 2h8v8"/></svg>
+    </a>
+  </div>
+
+  <div class="disciplines label">
+    <span>Strategy</span>
+    <span>Creative</span>
+    <span>Promotion</span>
+  </div>
+
+</main>
+</body>
+</html>
