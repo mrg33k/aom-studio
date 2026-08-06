@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Wolfpack — mobile design, generated</title>
+<style>
+/* A viewer, not a design. Deliberately plain so nothing here competes with the
+   comps it is showing. The sections are separate images because a single
+   1080 x 11520 JPEG sits near iOS Safari's decode ceiling and can blank out. */
+:root{--ink:#12140F;--ink-2:#5D6058;--ground:#E8E5DE;--line:#C9C4B8;--blue:#489FD3}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ground);color:var(--ink);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:10;background:rgba(232,229,222,.94);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+h1{font-size:13px;letter-spacing:.13em;text-transform:uppercase;font-weight:700}
+.sub{font-size:12px;color:var(--ink-2);margin-top:2px}
+nav{display:flex;gap:8px;margin-top:10px}
+nav button{flex:1;font:inherit;font-size:13px;font-weight:600;padding:9px 6px;
+  border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;
+  border-radius:0}
+nav button[aria-selected="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+main{max-width:430px;margin:0 auto;padding:16px 16px 40px}
+.page{display:none}
+.page.on{display:block}
+.phone{background:#F4F2EE;border:1px solid var(--line);overflow:hidden;
+  box-shadow:0 2px 18px rgba(18,20,15,.10)}
+.phone img{display:block;width:100%;height:auto}
+.note{margin:14px 2px 0;font-size:12px;line-height:1.55;color:var(--ink-2)}
+.note b{color:var(--ink)}
+.warn{border-left:3px solid var(--blue);padding-left:10px;margin-top:10px}
+footer{max-width:430px;margin:0 auto;padding:0 16px 40px;font-size:12px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Wolfpack &middot; mobile design</h1>
+  <div class="sub">Generated 5 Aug 2026. Not the working site.</div>
+  <nav>
+    <button id="t-home" aria-selected="true">Home</button>
+    <button id="t-pm" aria-selected="false">Property managers</button>
+  </nav>
+</header>
+
+<main>
+  <section class="page on" id="p-home">
+    <div class="phone">
+      <img src="img/home-1.jpg" alt="Top of the home page" width="1080" height="1920">
+      <img src="img/home-2.jpg" alt="Client proof" width="1080" height="1920" loading="lazy">
+      <img src="img/home-3.jpg" alt="Services" width="1080" height="1920" loading="lazy">
+      <img src="img/home-4.jpg" alt="Our work" width="1080" height="1920" loading="lazy">
+      <img src="img/home-5.jpg" alt="Who we serve" width="1080" height="1920" loading="lazy">
+      <img src="img/home-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+    </div>
+    <p class="note"><b>What changed.</b> The phone number is a full-width call bar instead of
+      being hidden. Services and audiences are full-width rows you scan, not tall centred boxes.
+      The work photos are a swipe rail. The footer rows are tappable.</p>
+    <p class="note warn"><b>The photography is generated</b> and the generator painted a
+      made-up Wolfpack logo onto the truck and the crew shirts. Placeholder only. Thursday's
+      shoot replaces every photo.</p>
+  </section>
+
+  <section class="page" id="p-pm">
+    <div class="phone">
+      <img src="img/pm-1.jpg" alt="Top of the property managers page" width="1080" height="1920" loading="lazy">
+      <img src="img/pm-2.jpg" alt="The problem" width="1080" height="1920" loading="lazy">
+      <img src="img/pm-3.jpg" alt="Response commitment" width="1080" height="1920" loading="lazy">
+      <img src="img/pm-4.jpg" alt="Vendor compliance" width="1080" height="1920" loading="lazy">
+      <img src="img/pm-5.jpg" alt="How it works" width="1080" height="1920" loading="lazy">
+      <img src="img/pm-6.jpg" alt="Footer" width="1080" height="1920" loading="lazy">
+    </div>
+    <p class="note"><b>The test this page passed.</b> Its copy was written in desktop shapes
+      &mdash; a 2x2 grid, three figures side by side, a six-row table, four steps in a row.
+      All four came back as proper phone patterns.</p>
+    <p class="note warn"><b>The response numbers are ours, not Wolfpack's.</b> The 30-minute
+      callback and 4-hour on-site figures have never been confirmed by Ross. They now read as a
+      written service guarantee on the page whose job is surviving vendor vetting. This page
+      cannot go live to customers until he commits to those numbers, or we replace them.</p>
+  </section>
+</main>
+
+<footer>Internal review page. Not indexed, not linked, not the customer-facing site.</footer>
+
+<script>
+(function(){
+  var tabs = {home: document.getElementById('t-home'), pm: document.getElementById('t-pm')};
+  var pages = {home: document.getElementById('p-home'), pm: document.getElementById('p-pm')};
+  function pick(k){
+    for (var n in tabs){
+      tabs[n].setAttribute('aria-selected', String(n === k));
+      pages[n].classList.toggle('on', n === k);
+    }
+    location.hash = k;
+    window.scrollTo(0,0);
+  }
+  tabs.home.addEventListener('click', function(){ pick('home'); });
+  tabs.pm.addEventListener('click', function(){ pick('pm'); });
+  if (location.hash === '#pm') pick('pm');
+})();
+</script>
+</body>
+</html>
