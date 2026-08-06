@@ -83,7 +83,7 @@ export async function listConnectionsForUser(userId) {
 
 export async function assertCanUseConnection(userId, connectionId) {
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${connectionId}&select=id,user_id,workspace_id&limit=1`,
+    `${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${connectionId}&select=id,user_id,workspace_id,integration_slug&limit=1`,
     { headers: svcHeaders() },
   )
   if (!r.ok) {

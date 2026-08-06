@@ -1,12 +1,22 @@
-# corner:test-dashboard R1 — auto-deploy lab branch to aom-studio-lab Vercel project
-# Pushes to `lab` branch trigger a production deploy on the lab project.
-# This bypasses the Vercel productionBranch=main limitation (API doesn't expose this field).
+# corner:integrations R2 — auto-deploy to aom-studio-lab (lab.aheadofmarket.com)
+# Triggers on pushes to `main` OR `lab` branches.
+#
+# Root cause of the 7-day stale deploy (2026-08-06): this workflow only fired on
+# `lab` pushes, but all work lands on `main`. Production was silently skipping
+# every commit for 7 days. Fix: add `main` as a trigger branch. `actions/checkout`
+# with no ref argument checks out the branch that triggered the push, so main
+# pushes deploy main code, lab pushes deploy lab code.
+#
+# The lab branch carries extra experimental features (ManifestScene, Members tab)
+# that aren't on main yet. Either branch is valid for lab.aheadofmarket.com — the
+# important thing is that production stays current whenever main is pushed.
 
 name: Deploy Lab to Production
 
 on:
   push:
     branches:
+      - main
       - lab
 
 jobs:

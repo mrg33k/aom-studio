@@ -1,36 +1,43 @@
 // GET /api/dashboard/mail/list
 //
-// Returns the user's "last 10 days, from real humans" Gmail inbox, sorted newest
-// first. Used by the CV4 Mail rail when activeTool === 'mail'.
+// Returns the user's recent inbox, sorted newest first.
+// Supports Gmail and Outlook connections — branches on integration_slug.
 //
-// Filter — both upstream (the q= search) and downstream (per-message header
-// pass):
-//   - newer_than:10d
-//   - not from the user themselves
-//   - not in promotions / social / updates / forums categories
+// Gmail filter:
+//   - newer_than:10d, not from me, not promotions/social/updates/forums
 //   - no List-Unsubscribe, Precedence:bulk, or Auto-Submitted header
-//   - From doesn't match the noreply/notifications/etc. regex
+//   - From doesn't match the noreply/notifications regex
 //
-// Response shape:
+// Outlook filter:
+//   - Inbox folder only (GET /me/mailFolders/Inbox/messages)
+//   - receivedDateTime > 10 days ago, isDraft eq false
+//   - Up to 50 messages, ordered newest first
+//
+// Response shape (both providers):
 // {
 //   emails: [{
 //     id, threadId, from: {name, email}, subject, snippet, date, unread,
-//     historyId
+//     historyId,  // Gmail only (null for Outlook)
+//     provider    // 'gmail' | 'outlook'
 //   }, ...],
-//   historyId,   // pass back as ?since= on the next poll
-//   mode: 'live' | 'not-connected'
+//   historyId,   // Gmail: pass back as ?since= on next poll; Outlook: null
+//   mode: 'live' | 'not-connected',
+//   provider     // 'gmail' | 'outlook'
 // }
 
 import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { getOutlookTokenByConnection, graphFetch } from '../../_lib/outlookClient.js'
 import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 import { buildBucketQuery } from '../../_lib/mailBuckets.js'
+
+// buildBucketQuery may not exist on older builds — guard it
+const _buildBucketQuery = typeof buildBucketQuery === 'function' ? buildBucketQuery : null
 
 const AUTOMATED_FROM = /(noreply|no-reply|notifications?|mailer-daemon|automated|donotreply|do-not-reply|postmaster|bounces?@)/i
 const SKIP_CATEGORIES = new Set(['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_UPDATES', 'CATEGORY_FORUMS'])
 
 function parseFrom(header) {
   if (!header) return { name: '', email: '' }
-  // "Display Name <addr@host>" or just "addr@host"
   const m = header.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/)
   if (m) return { name: m[1].trim(), email: m[2].trim().toLowerCase() }
   return { name: '', email: header.trim().toLowerCase() }
@@ -42,11 +49,6 @@ function headerVal(headers, name) {
   return h?.value || ''
 }
 
-// R17 (2026-05-25) — walk the payload tree (already returned by
-// format=metadata; only body.data is omitted) and return true if any
-// part has a real attachment (filename + body.attachmentId). Inline
-// images embedded via cid: also count — Patrik wants the paperclip
-// to surface any email with bytes worth opening.
 function detectAttachments(payload) {
   if (!payload) return false
   if (payload.filename && payload.body?.attachmentId) return true
@@ -71,10 +73,6 @@ function isAutomated(msg) {
   return false
 }
 
-
-// "Awaiting reply" = thread whose tail message is from someone OTHER than the
-// account holder. For each unique threadId in the candidate set, fetch the
-// thread's tail and keep the candidate if the tail is external.
 async function applyAwaitingFilter(emails, creds) {
   const accountEmail = (creds?.row?.config?.account_email || '').toLowerCase()
   if (!accountEmail) return emails
@@ -100,6 +98,41 @@ async function applyAwaitingFilter(emails, creds) {
   })
 }
 
+// ────────────────────────────────────────────────────────────
+// Outlook inbox lister via Microsoft Graph
+// GET /me/mailFolders/Inbox/messages — OData query
+// Returns normalized email shape matching Gmail branch.
+// ────────────────────────────────────────────────────────────
+async function listOutlookInbox(accessToken) {
+  const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+  const filter = encodeURIComponent(`receivedDateTime gt ${tenDaysAgo} and isDraft eq false`)
+  const select = encodeURIComponent('id,conversationId,subject,bodyPreview,from,receivedDateTime,isRead,hasAttachments')
+  const url = `/mailFolders/Inbox/messages?$filter=${filter}&$select=${select}&$orderby=receivedDateTime%20desc&$top=50`
+  const r = await graphFetch(accessToken, url)
+  if (!r.ok) {
+    const text = await r.text().catch(() => '')
+    return { error: `graph-list ${r.status}: ${text.slice(0, 200)}`, status: r.status }
+  }
+  const data = await r.json()
+  const messages = data.value || []
+  const emails = messages.map(m => ({
+    id: m.id,
+    threadId: m.conversationId || m.id,
+    historyId: null, // Graph has no direct historyId equivalent
+    from: {
+      name: m.from?.emailAddress?.name || '',
+      email: (m.from?.emailAddress?.address || '').toLowerCase(),
+    },
+    subject: m.subject || '(no subject)',
+    snippet: m.bodyPreview || '',
+    date: m.receivedDateTime ? new Date(m.receivedDateTime).getTime() : 0,
+    unread: !m.isRead,
+    hasAttachments: m.hasAttachments || false,
+    provider: 'outlook',
+  }))
+  return { emails }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS')
@@ -112,36 +145,53 @@ export default async function handler(req, res) {
 
   const connectionId = (req.query?.connection_id || '').toString() || null
   let creds
+  let providerSlug = 'gmail' // default
+
   try {
     if (connectionId) {
+      let connectionRow
       try {
-        await assertCanUseConnection(userId, connectionId)
+        connectionRow = await assertCanUseConnection(userId, connectionId)
       } catch (e) {
         return res.status(e.status || 403).json({ error: e.message })
       }
+      providerSlug = connectionRow?.integration_slug || 'gmail'
+
+      if (providerSlug === 'outlook') {
+        // Outlook path — load Graph token and list inbox
+        creds = await getOutlookTokenByConnection(connectionId)
+        if (!creds) return res.status(200).json({ emails: [], historyId: null, mode: 'not-connected', provider: 'outlook' })
+        const result = await listOutlookInbox(creds.accessToken)
+        if (result.error) return res.status(502).json({ error: result.error })
+        return res.status(200).json({
+          emails: result.emails,
+          historyId: null,
+          mode: 'live',
+          provider: 'outlook',
+        })
+      }
+
+      // Gmail path
       creds = await getGmailTokenByConnection(connectionId)
     } else {
       creds = await getGmailToken(userId)
     }
   } catch (e) {
-    return res.status(502).json({ error: 'gmail-auth', detail: e.message })
+    return res.status(502).json({ error: 'mail-auth', detail: e.message })
   }
-  if (!creds) return res.status(200).json({ emails: [], historyId: null, mode: 'not-connected' })
+  if (!creds) return res.status(200).json({ emails: [], historyId: null, mode: 'not-connected', provider: 'gmail' })
 
-  // Build the search query. Bucket-aware: when ?bucket=<slug> is passed,
-  // the mapper in mailBuckets.js owns the q/post-filter shape. Without a
-  // bucket, we keep the legacy "last 10 days, real humans" behavior so
-  // existing callers don't regress.
+  // ── Gmail path (original) ──────────────────────────────────
   const bucketSlug = (req.query?.bucket || '').toString() || null
   let q, postFilter = null
-  if (bucketSlug) {
+  if (bucketSlug && _buildBucketQuery) {
     const ctx = {
       account_email: creds.row?.config?.account_email,
       client_emails: creds.row?.config?.client_emails || [],
       prospect_emails: creds.row?.config?.prospect_emails || [],
     }
     try {
-      const out = buildBucketQuery(bucketSlug, ctx)
+      const out = _buildBucketQuery(bucketSlug, ctx)
       q = out.q
       postFilter = out.postFilter || null
     } catch (e) {
@@ -169,17 +219,9 @@ export default async function handler(req, res) {
   const list = await listResp.json()
   const ids = (list.messages || []).map(m => m.id)
   if (!ids.length) {
-    return res.status(200).json({ emails: [], historyId: list.historyId || null, mode: 'live' })
+    return res.status(200).json({ emails: [], historyId: list.historyId || null, mode: 'live', provider: 'gmail' })
   }
 
-  // R17 (2026-05-25) — switched from format=metadata to format=full +
-  // a fields filter. metadata DOES NOT include payload.parts (per Gmail
-  // docs: "Returns only email message ID, labels, and email headers"),
-  // which broke hasAttachments detection. Using format=full with a
-  // fields filter keeps the response slim by omitting body.data and
-  // only returning the part shape we need to walk for filename +
-  // attachmentId. 3-level part nesting covers the common
-  // multipart/mixed[multipart/related[image|file]] cases.
   const fieldsFilter = encodeURIComponent(
     'id,threadId,historyId,internalDate,labelIds,snippet,'
     + 'payload(mimeType,filename,headers(name,value),'
@@ -212,6 +254,7 @@ export default async function handler(req, res) {
       date: m.internalDate ? Number(m.internalDate) : Date.parse(headerVal(headers, 'Date') || ''),
       unread: (m.labelIds || []).includes('UNREAD'),
       hasAttachments: detectAttachments(m.payload),
+      provider: 'gmail',
     })
     if (m.historyId) {
       try {
@@ -222,9 +265,6 @@ export default async function handler(req, res) {
   }
   emails.sort((a, b) => (b.date || 0) - (a.date || 0))
 
-  // Post-filters live AFTER the metadata fan-out so they can inspect headers
-  // and thread tails. 'awaiting' requires extra threads.get fan-out; 'empty'
-  // is the no-seed escape hatch for clients / prospects buckets.
   let filtered = emails
   if (postFilter === 'empty') {
     filtered = []
@@ -237,5 +277,6 @@ export default async function handler(req, res) {
     bucket: bucketSlug,
     historyId: latestHistory ? latestHistory.toString() : null,
     mode: 'live',
+    provider: 'gmail',
   })
 }

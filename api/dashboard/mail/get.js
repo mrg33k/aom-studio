@@ -1,13 +1,17 @@
-// GET /api/dashboard/mail/get?id=<gmail-message-id>
-// Returns the full body of a single Gmail message so the EA can read + reply.
+// GET /api/dashboard/mail/get?id=<message-id>&connection_id=<id>
+// Returns the full body of a single message for Gmail or Outlook.
+// Branches on integration_slug from the connection row.
 //
 // Response: {
 //   id, threadId, from, to, cc, subject, date, snippet,
 //   bodyText, bodyHtml,
-//   inReplyTo, references,   // headers needed to thread the reply
+//   inReplyTo, references,   // headers for threading replies
+//   attachments, inline,     // Gmail only (populated); Outlook: [] for now
+//   provider                 // 'gmail' | 'outlook'
 // }
 
 import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch, decodeBase64Url } from '../../_lib/gmailClient.js'
+import { getOutlookTokenByConnection, graphFetch } from '../../_lib/outlookClient.js'
 import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 
 function parseFrom(header) {
@@ -28,7 +32,6 @@ function headerVal(headers, name) {
   return h?.value || ''
 }
 
-// Walks the MIME tree picking the first text/plain + first text/html part.
 function extractBodies(payload) {
   let text = ''
   let html = ''
@@ -46,11 +49,6 @@ function extractBodies(payload) {
   return { text, html }
 }
 
-// R15 (2026-05-25) — walk the MIME tree collecting attachment parts. Gmail
-// flags real attachments via filename + body.attachmentId. Parts with a
-// Content-ID header AND a parent multipart/related are inline images that
-// the HTML body references via cid:<id>; we expose them in `inline` so the
-// frontend can swap cid: URLs for /api/dashboard/mail/attachment fetches.
 function extractAttachments(payload) {
   const attachments = []
   const inline = []
@@ -70,13 +68,67 @@ function extractAttachments(payload) {
       if (isInline && contentId) inline.push(item)
       else attachments.push(item)
     } else if (attachmentId && isInline && contentId && mime.startsWith('image/')) {
-      // Inline image without a filename — still useful for cid swap.
       inline.push({ attachmentId, filename: '', mimeType: mime, size, contentId })
     }
     if (Array.isArray(part.parts)) part.parts.forEach(walk)
   }
   walk(payload)
   return { attachments, inline }
+}
+
+// ─────────────────────────────────────────────────────────
+// Outlook message fetcher via Microsoft Graph
+// GET /me/messages/{id}?$select=…
+// Normalises the Graph response to the same shape as Gmail.
+// ─────────────────────────────────────────────────────────
+async function getOutlookMessage(accessToken, id) {
+  // internetMessageHeaders contains RFC-2822 headers (In-Reply-To, References, Message-Id, etc.)
+  const select = [
+    'id', 'conversationId', 'subject', 'bodyPreview',
+    'body', 'from', 'toRecipients', 'ccRecipients',
+    'receivedDateTime', 'isRead', 'hasAttachments',
+    'internetMessageId', 'internetMessageHeaders',
+  ].join(',')
+  const r = await graphFetch(accessToken, `/messages/${encodeURIComponent(id)}?$select=${encodeURIComponent(select)}`)
+  if (!r.ok) {
+    const text = await r.text().catch(() => '')
+    return { error: `graph-get ${r.status}: ${text.slice(0, 200)}`, status: r.status }
+  }
+  const m = await r.json()
+
+  const inetHeaders = Array.isArray(m.internetMessageHeaders) ? m.internetMessageHeaders : []
+  function inetHeader(name) {
+    const h = inetHeaders.find(x => (x.name || '').toLowerCase() === name.toLowerCase())
+    return h?.value || ''
+  }
+
+  function graphAddr(addr) {
+    if (!addr?.emailAddress) return { name: '', email: '' }
+    return { name: addr.emailAddress.name || '', email: (addr.emailAddress.address || '').toLowerCase() }
+  }
+
+  const bodyContent = m.body?.content || ''
+  const bodyType = (m.body?.contentType || 'html').toLowerCase()
+
+  return {
+    id: m.id,
+    threadId: m.conversationId || m.id,
+    historyId: null,
+    from: graphAddr(m.from),
+    to: (m.toRecipients || []).map(graphAddr),
+    cc: (m.ccRecipients || []).map(graphAddr),
+    subject: m.subject || '(no subject)',
+    date: m.receivedDateTime ? new Date(m.receivedDateTime).getTime() : 0,
+    snippet: m.bodyPreview || '',
+    bodyText: bodyType === 'text' ? bodyContent : '',
+    bodyHtml: bodyType === 'html' ? bodyContent : '',
+    attachments: [], // full attachment list requires /me/messages/{id}/attachments call
+    inline: [],
+    messageId: m.internetMessageId || inetHeader('Message-Id'),
+    inReplyTo: inetHeader('In-Reply-To'),
+    references: inetHeader('References'),
+    provider: 'outlook',
+  }
 }
 
 export default async function handler(req, res) {
@@ -94,18 +146,33 @@ export default async function handler(req, res) {
 
   const connectionId = (req.query?.connection_id || '').toString() || null
   let creds
+  let providerSlug = 'gmail'
+
   if (connectionId) {
+    let connectionRow
     try {
-      await assertCanUseConnection(userId, connectionId)
+      connectionRow = await assertCanUseConnection(userId, connectionId)
     } catch (e) {
       return res.status(e.status || 403).json({ error: e.message })
     }
+    providerSlug = connectionRow?.integration_slug || 'gmail'
+
+    if (providerSlug === 'outlook') {
+      creds = await getOutlookTokenByConnection(connectionId)
+      if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
+      const result = await getOutlookMessage(creds.accessToken, id)
+      if (result.error) return res.status(502).json({ error: result.error })
+      return res.status(200).json(result)
+    }
+
+    // Gmail path
     creds = await getGmailTokenByConnection(connectionId)
   } else {
     creds = await getGmailToken(userId)
   }
   if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
 
+  // ── Gmail path (original) ────────────────────────────────
   const r = await gmailFetch(creds.accessToken, `/messages/${encodeURIComponent(id)}?format=full`)
   if (!r.ok) {
     const text = await r.text().catch(() => '')
@@ -133,5 +200,6 @@ export default async function handler(req, res) {
     messageId: headerVal(headers, 'Message-Id') || headerVal(headers, 'Message-ID'),
     inReplyTo: headerVal(headers, 'In-Reply-To'),
     references: headerVal(headers, 'References'),
+    provider: 'gmail',
   })
 }
