@@ -2715,7 +2715,10 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
    left off" fills the space and SCROLLS (all 30, not the old 6-row cap), the
    composer is docked under it, and neither one hides the other. The collapse-on-
    compose rule is gone with it. */
-[data-cv6] .convo-ready.is-none .convo-rest2 { align-items:stretch; }
+/* min-height:0 is load-bearing: as a flex item its default min-height:auto let the
+   column grow to the full 30-row content height (2094px in a 733px pane), which
+   pushed the docked composer clean off the bottom of the screen. */
+[data-cv6] .convo-ready.is-none .convo-rest2 { align-items:stretch; min-height:0; }
 [data-cv6] .convo-ready.is-none .restcol {
   display:flex; flex-direction:column; min-height:0; height:100%;
   margin:0 auto; padding:20px 0 4px; box-sizing:border-box;
