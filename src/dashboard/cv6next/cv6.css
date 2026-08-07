@@ -2783,14 +2783,18 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 /* Corner-logo thinking mark in the routing modal. */
 [data-cv6] .cv6-intake-thinking-mark { width:40px; height:40px; flex:none; }
 @media (max-width:899px) {
-  [data-cv6] .cv6-workspace-canvas { scroll-snap-type:x mandatory; scrollbar-width:none; }
+  /* Native snap-paging is OFF on mobile (Patrik 2026-08-06): it walks the opposite way
+     to the swipe he asked for (left = Home, right = next chat), and two mechanisms
+     fighting over one gesture is worse than either. JS-driven swipe handles navigation;
+     overflow-x:hidden prevents the anti-hijack walk from bailing on the canvas. */
+  [data-cv6] .cv6-workspace-canvas { scroll-snap-type:none; scrollbar-width:none; overflow-x:hidden; scroll-behavior:smooth; }
   [data-cv6] .cv6-workspace-canvas::-webkit-scrollbar { display:none; }
   [data-cv6] .cv6-workspace-base,
   [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base,
   [data-cv6] .cv6-workspace-column {
     flex:0 0 100%;
     width:100%;
-    scroll-snap-align:start;
+    scroll-snap-align:none;
   }
   [data-cv6] .cv6-workspace-column { border-left:0; box-shadow:none; }
 }

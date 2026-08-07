@@ -39,6 +39,7 @@ import NewComposer from './NewComposer.jsx';
 import IntakeComposer from './IntakeComposer.jsx';
 import { playNotifyChime } from './notifyChime.js';
 import AlertsPanel from './AlertsPanel.jsx';
+import { useChatSwipe } from './useChatSwipe.js';
 import { registerPushWorker } from './pushNotifications.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
 import { useIntakeRoute } from './data/useIntakeRoute.js';
@@ -1484,6 +1485,16 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     if (prev === null) return;
     if (keys.some((k) => !prev.has(k))) playNotifyChime();
   }, [unreadKeySig]);
+
+  // The shell owns the mobile swipe but only Home knows the recents ORDER, so it
+  // publishes the room objects (already in openRecent form) whenever the list changes.
+  const recentOrderSig = recentList.map((r) => r.key).join('|');
+  useEffect(() => {
+    try {
+      const rooms = recentList.map((r) => recentRoomObj(r)).filter(Boolean);
+      window.dispatchEvent(new CustomEvent('cv6:recent-rooms', { detail: rooms }));
+    } catch { /* noop */ }
+  }, [recentOrderSig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   recentWithNav.count = recentList.count != null ? recentList.count : recentWithNav.length;
   recentWithNav.has = recentWithNav.length ? 'has' : 'none';
@@ -3442,6 +3453,36 @@ export default function CornerCV6() {
     setKnavZone(id);
     try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
   }, [worldId]);
+
+  // ---- Mobile swipe inside a chat (Patrik 2026-08-06, direction confirmed twice) ----
+  // Swipe LEFT -> Home. Swipe RIGHT -> the next chat in "Pick up where you left off".
+  //
+  // PLACEMENT IS LOAD-BEARING: this sits directly below onOpenRoom because naming it in
+  // a dependency array before its `const` runs is a temporal-dead-zone ReferenceError,
+  // which blanks the entire dashboard at every screen size. That shipped once. Do not
+  // move this block above onOpenRoom.
+  const recentRoomsRef = useRef([]);
+  useEffect(() => {
+    const onRecents = (e) => { recentRoomsRef.current = Array.isArray(e.detail) ? e.detail : []; };
+    window.addEventListener('cv6:recent-rooms', onRecents);
+    return () => window.removeEventListener('cv6:recent-rooms', onRecents);
+  }, []);
+
+  const swipeHome = useCallback(() => {
+    const canvas = workspaceCanvasRef.current;
+    if (canvas) canvas.scrollTo({ left: 0, behavior: 'smooth' });
+    setActiveColumnId('');
+  }, []);
+
+  const swipeNextChat = useCallback(() => {
+    const rooms = recentRoomsRef.current;
+    if (!rooms.length) return;
+    const openIdx = rooms.findIndex((r) => `chat:${roomColumnKey(r)}` === activeColumnId);
+    const next = rooms[(openIdx + 1) % rooms.length];
+    if (next) onOpenRoom(next, worldId);
+  }, [activeColumnId, onOpenRoom, worldId]);
+
+  useChatSwipe({ enabled: !isDesktop && !!activeColumnId, onHome: swipeHome, onNextChat: swipeNextChat });
 
   const onOpenEmailColumn = useCallback(() => {
     setWorkspaceColumns((columns) => columns.some((column) => column.id === 'email') ? columns : [...columns, { id: 'email', type: 'email' }]);
