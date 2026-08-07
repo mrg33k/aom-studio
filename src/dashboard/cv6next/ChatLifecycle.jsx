@@ -945,12 +945,12 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   const awaiting = awaitingProp != null ? awaitingProp : (!!lastMsg && lastMsg.isUser);
   // Per-room running tasks + goal-step signal — drives the topbar work indicator.
   const { tasks: roomTasks, promises: roomPromises } = useRunningTasks(fullRoom || room);
-  const hasRoomWork = !!(
-    awaiting ||
-    roomTasks.length > 0 ||
-    roomPromises.length > 0 ||
-    (goal?.checklist || []).some((s) => s.state === 'active')
-  );
+  // EMERGENCY DISABLE (2026-08-07, room session): forced false while the React #300
+  // crash on chat-open is isolated (RoomWorkList itself already returns null
+  // unconditionally and the crash persisted, so this topbar icon + its dropdown mount
+  // are next on the suspect list). Hook calls above are left in place on purpose --
+  // only the derived boolean changes, so no hook is added or removed here.
+  const hasRoomWork = false; // was: !!(awaiting || roomTasks.length > 0 || roomPromises.length > 0 || (goal?.checklist || []).some((s) => s.state === 'active'));
   const liveProgressKey = useMemo(() => (liveSteps || []).map((step) => [
     step?.id,
     step?.step_index,

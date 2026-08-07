@@ -210,70 +210,21 @@ function MobileMessageTurn({ message, onAction }) {
     const el = ref.current;
     if (el && !open) setClamped(el.scrollHeight > 168 + 4);
   }, [message.text, open]);
-
-  // User message: right-aligned accent bubble. No avatar (it's the user). Time below.
-  // Surgical JSX change: CSS cannot reorder the name/time header below the text bubble.
-  if (message.isUser) {
-    return (
-      <div
-        data-cv6-message-turn=""
-        data-message-id={message.id || undefined}
-        data-variant="mobile"
-        data-userturn=""
-        style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}
-      >
-        <div style={{ maxWidth: '82%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div
-            ref={ref}
-            className={`cv6-mob-bubble cv6-mob-bubble--user${clamped && !open ? ' is-clamped' : ''}`}
-            style={open ? { maxHeight: 'none' } : undefined}
-          >
-            <div style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-              {message.text}
-            </div>
-          </div>
-          {clamped ? (
-            <button className="longmsg-more cv6-mob-more-user" onClick={() => setOpen((v) => !v)}>
-              {open ? 'Show less' : 'Show more'}
-            </button>
-          ) : null}
-          {message.time ? (
-            <span className="cv6-mob-ts" style={{ marginTop: 3 }}>{message.time}</span>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
-  // Agent message: left-aligned dark card with avatar. Time below the card.
   return (
-    <div
-      data-cv6-message-turn=""
-      data-message-id={message.id || undefined}
-      data-variant="mobile"
-      style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}
-    >
+    <div data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant="mobile" data-userturn={message.isUser ? '' : undefined} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
       <MobileAvatar message={message} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        {message.agentName ? (
-          <div className="cv6-mob-name">{message.agentName}</div>
-        ) : null}
-        <div
-          ref={ref}
-          className={`cv6-mob-bubble cv6-mob-bubble--agent${clamped && !open ? ' is-clamped' : ''}`}
-          style={open ? { maxHeight: 'none' } : undefined}
-        >
-          <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', wordBreak: 'break-word' }}>
-            <ChatMessageRenderer content={message.text} />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{message.agentName}</span>
+          <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{message.time}</span>
+        </div>
+        <div ref={ref} className={`longmsg${clamped && !open ? ' is-clamped' : ''}`} style={open ? { maxHeight: 'none' } : undefined}>
+          {message.isUser
+            ? <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{message.text}</div>
+            : <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', wordBreak: 'break-word' }}><ChatMessageRenderer content={message.text} /></div>}
         </div>
         {clamped ? (
-          <button className="longmsg-more" onClick={() => setOpen((v) => !v)}>
-            {open ? 'Show less' : 'Show more'}
-          </button>
-        ) : null}
-        {message.time ? (
-          <span className="cv6-mob-ts" style={{ marginTop: 3 }}>{message.time}</span>
+          <button className="longmsg-more" onClick={() => setOpen((v) => !v)}>{open ? 'Show less' : 'Show more'}</button>
         ) : null}
         {message.blocks?.length ? (
           <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -282,7 +233,7 @@ function MobileMessageTurn({ message, onAction }) {
             ))}
           </div>
         ) : null}
-        {message.linkCards?.length ? <ResultLinkCards cards={message.linkCards} /> : null}
+        {!message.isUser && message.linkCards?.length ? <ResultLinkCards cards={message.linkCards} /> : null}
       </div>
     </div>
   );

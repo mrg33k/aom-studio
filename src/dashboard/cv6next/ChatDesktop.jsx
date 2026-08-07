@@ -626,12 +626,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const roomGoal = useGoalThread(worldId, selected);
   // Per-room running tasks — used by the work-indicator icon to know if anything is active.
   const { tasks: roomTasks, promises: roomPromises } = useRunningTasks(selected);
-  const hasRoomWork = !!(selected && (
-    awaiting ||
-    roomTasks.length > 0 ||
-    roomPromises.length > 0 ||
-    (roomGoal?.checklist || []).some((s) => s.state === 'active')
-  ));
+  // EMERGENCY DISABLE (2026-08-07, room session): see the matching note in
+  // ChatLifecycle.jsx — forced false while the chat-open React #300 crash is isolated.
+  const hasRoomWork = false; // was: !!(selected && (awaiting || roomTasks.length > 0 || roomPromises.length > 0 || (roomGoal?.checklist || []).some((s) => s.state === 'active')));
   const lastActiveLabel = (() => {
     const m = messages?.[messages.length - 1];
     if (!m?.ts) return null;
