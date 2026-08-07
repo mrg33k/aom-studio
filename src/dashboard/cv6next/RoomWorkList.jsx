@@ -36,6 +36,26 @@ function shorten(text, max = 58) {
   return `${s.slice(0, max - 1)}…`;
 }
 
+// Admission gate: block prose chat filler that is not a real action item.
+// "I'll let you know", "Sounds like a plan", "Noted" → not items.
+// Concrete tasks ("Review the draft", "Deploy to staging") → pass through.
+const PROSE_PREFIXES = /^(i['']?(ll|ve|m|d|will|have|am)|we['']?(ll|ve|d|re|will|have|are)|sounds|let me know|happy to|please note|sure[.,!]|got it|noted|thanks|thank you|understood|will do|no problem|of course|great[.,!])/i;
+function isActionItem(text) {
+  if (!text) return false;
+  const t = text.trim();
+  if (t.length < 4) return false;
+  if (PROSE_PREFIXES.test(t)) return false;
+  return true;
+}
+
+// Humanize the "who owns this" label. 'this room' is obvious in a room-scoped
+// panel — hide it. 'sub-agent' is jargon — map to 'In progress'.
+function humanizeOwner(owner) {
+  if (!owner || owner === 'this room') return '';
+  if (owner === 'sub-agent') return 'In progress';
+  return owner;
+}
+
 function roomKeyFor(room) {
   if (!room) return '';
   if (room.isMission) return `m:${room.missionSlug || room.id}`;
@@ -103,8 +123,8 @@ export default function RoomWorkList({ room, goal }) {
   const roomSteps = useMemo(() => {
     const list = Array.isArray(goal?.checklist) ? goal.checklist : [];
     return list
-      .filter((s) => s.label)
-      .map((s) => ({ key: `step:${s.label}`, label: s.label, state: s.state, owner: 'this room', since: null }));
+      .filter((s) => s.label && isActionItem(s.label))
+      .map((s) => ({ key: `step:${s.label}`, label: s.label, state: s.state, owner: '', since: null }));
   }, [goal]);
 
   const activeLabels = useMemo(
@@ -114,8 +134,8 @@ export default function RoomWorkList({ room, goal }) {
   const stepStarts = useStepStarts(roomKeyFor(room), activeLabels);
 
   const agentItems = useMemo(() => ([
-    ...tasks.map((t) => ({ key: `task:${t.id}`, label: t.title, state: 'active', owner: 'sub-agent', since: t.since ? new Date(t.since).getTime() : null })),
-    ...promises.map((p) => ({ key: `promise:${p.id}`, label: p.title, state: 'active', owner: 'sub-agent', since: p.since ? new Date(p.since).getTime() : null })),
+    ...tasks.map((t) => ({ key: `task:${t.id}`, label: t.title, state: 'active', owner: '', since: t.since ? new Date(t.since).getTime() : null })),
+    ...promises.map((p) => ({ key: `promise:${p.id}`, label: p.title, state: 'active', owner: '', since: p.since ? new Date(p.since).getTime() : null })),
   ]), [tasks, promises]);
 
   // A room's full step list is its whole history — 44 rows in Corner on the day this
@@ -170,8 +190,9 @@ export default function RoomWorkList({ room, goal }) {
               textDecoration: item.state === 'done' ? 'line-through' : 'none',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{shorten(item.label)}</span>
-            {/* Which of the two kinds of worker, in two words, never a paragraph. */}
-            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--faint)', flex: 'none', letterSpacing: '.02em' }}>{item.owner}</span>
+            {humanizeOwner(item.owner) ? (
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--faint)', flex: 'none', letterSpacing: '.02em' }}>{humanizeOwner(item.owner)}</span>
+            ) : null}
             <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: timer ? 'var(--accent)' : 'transparent', minWidth: 34, textAlign: 'right', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
               {timer}
             </span>

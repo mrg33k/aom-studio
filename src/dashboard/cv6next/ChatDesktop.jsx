@@ -147,7 +147,7 @@ function ShelfToggle({ label, value, options, onChange }) {
 // The room's files panel: everything that crossed this chat, nothing else.
 // The whole row is the primary open action. Amber is reserved for an item that
 // is still in the waiting-review queue; ordinary files keep a quiet chevron.
-export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, needsReview, status, windowFull = false }) {
+export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, needsReview, status, windowFull = false, compact = false }) {
   const CAP = 80; // newest per section; a busy room can carry hundreds
   const [prefs, setPrefs] = useState(readFilesPrefs);
   const setPref = (patch) => setPrefs((prev) => {
@@ -155,6 +155,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     try { localStorage.setItem(FILES_PREF_KEY, JSON.stringify(next)); } catch { /* private mode — session only */ }
     return next;
   });
+  const [extraOpen, setExtraOpen] = useState(false);
   const { layout, order, grouped } = prefs;
   const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
   const openItem = (it) => {
@@ -265,7 +266,37 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   // "All in order" is the chronological view: one timeline across both senders,
   // which is the thing the two grouped sections cannot show.
   const timeline = inOrder([...fromAgent, ...youSent]);
-  const toolbar = (
+  // On mobile (compact=true): show Order toggle + an icon button that reveals Layout
+  // and Grouping inline. Three toggles in a 340px sheet leave no room for anything else.
+  const extraControls = (
+    <>
+      <ShelfToggle label="Layout" value={layout} onChange={(id) => setPref({ layout: id })}
+        options={[{ id: 'list', label: 'List' }, { id: 'grid', label: 'Grid' }]} />
+      <ShelfToggle label="Grouping" value={grouped ? 'grouped' : 'all'} onChange={(id) => setPref({ grouped: id === 'grouped' })}
+        options={[
+          { id: 'grouped', label: 'By sender', title: 'Group by who sent it' },
+          { id: 'all', label: 'All in order', title: 'One timeline, everything in the order it arrived' },
+        ]} />
+    </>
+  );
+  const toolbar = compact ? (
+    <div style={{ margin: '0 4px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <ShelfToggle label="Order" value={order} onChange={(id) => setPref({ order: id })}
+          options={[{ id: 'newest', label: 'Newest' }, { id: 'oldest', label: 'Oldest' }]} />
+        <button type="button" aria-label="More options" aria-expanded={extraOpen ? 'true' : 'false'}
+          onClick={() => setExtraOpen((v) => !v)}
+          style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--divider)', background: extraOpen ? 'var(--accent)' : 'var(--surface-2)', color: extraOpen ? '#fff' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+        </button>
+      </div>
+      {extraOpen ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginTop: 7 }}>
+          {extraControls}
+        </div>
+      ) : null}
+    </div>
+  ) : (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', margin: '0 4px 11px' }}>
       <ShelfToggle label="Layout" value={layout} onChange={(id) => setPref({ layout: id })}
         options={[{ id: 'list', label: 'List' }, { id: 'grid', label: 'Grid' }]} />

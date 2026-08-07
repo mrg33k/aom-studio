@@ -71,6 +71,55 @@ function groupByDay(messages) {
   return groups;
 }
 
+// Fix 2 — System alert detection.
+// Messages from the "Systems" agent (elon) that contain raw technical content —
+// JSON blobs, log filenames with timestamps, Python tracebacks — are not meant
+// for the chat stream. They should go to a collapsed status strip.
+// Conservative heuristic: only catch clear technical dumps, not natural language
+// status updates the Systems agent also sends.
+const SYS_ALERT_RE = /(\{[\s\S]{0,400}"[^"]+"\s*:)|(^\s*Traceback \(most recent)|(^\s*  File ")|(\d{4}-\d{2}-\d{2}[T_]\d{2}[:-]\d{2}[:-]\d{2}.*\.(log|jsonl|txt))/m;
+function isSystemAlertMsg(m) {
+  if (m.agentName !== 'Systems') return false;
+  const t = String(m.text || '').trim();
+  if (!t) return false;
+  return SYS_ALERT_RE.test(t);
+}
+
+// One collapsed bar that holds all system alert messages for this room.
+// Tap to expand; shows plain-language summary (no raw JSON, no log paths).
+function SystemAlertStrip({ alerts }) {
+  const [open, setOpen] = useState(false);
+  if (!alerts || !alerts.length) return null;
+  const count = alerts.length;
+  return (
+    <div style={{ margin: '0 0 10px', borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', overflow: 'hidden' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{ width: '100%', padding: '9px 13px', display: 'flex', alignItems: 'center', gap: 9, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--warn)', flex: 'none' }} />
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--muted)', letterSpacing: '.02em' }}>
+          {count} system {count === 1 ? 'log entry' : 'log entries'}
+        </span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+          style={{ color: 'var(--faint)', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .18s' }}>
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {open ? (
+        <div style={{ borderTop: '1px solid var(--divider)', padding: '8px 13px 10px' }}>
+          {alerts.map((m) => (
+            <div key={m.id || m.ts} style={{ padding: '4px 0', fontSize: 11.5, color: 'var(--faint)', fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.5 }}>
+              <span style={{ color: 'var(--muted)', fontWeight: 600, fontFamily: 'var(--font-sans)', marginRight: 6 }}>{m.time}</span>
+              {String(m.text || '').slice(0, 400)}{(m.text || '').length > 400 ? '…' : ''}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Avatar({ m }) {
   const tint = m.agentTint === 'accent' ? 'var(--accent)' : `var(--${m.agentTint || 'muted'}, var(--muted))`;
   return (
@@ -396,14 +445,36 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
 // Files drawer shows (this chat's files, From agent / You sent — drop 1),
 // reachable from the chat header and from the composer's command menu. Mounted
 // only while open, so the fetch happens on first open, not on every room visit.
-function RoomFilesSheet({ worldId, room, onClose, onReview }) {
+// columnMode=false (mobile): full-width bottom sheet anchored to bottom of screen.
+// columnMode=true (desktop column): right-side side panel (Patrik ruling 2026-07-20).
+function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }) {
   const { fromAgent, youSent, status, windowFull } = useRoomCrossings(worldId, room);
+  const isMobile = !columnMode;
+  const panelStyle = isMobile
+    ? {
+        position: 'absolute', left: 0, right: 0, bottom: 0,
+        height: '85vh', maxHeight: 'calc(100% - 44px)',
+        background: 'var(--ground)',
+        borderTopLeftRadius: 22, borderTopRightRadius: 22,
+        borderTop: '1px solid var(--hair)',
+        boxShadow: '0 -22px 54px -22px rgba(0,0,0,.65)',
+        display: 'flex', flexDirection: 'column',
+        padding: `14px 16px max(22px, env(safe-area-inset-bottom, 0px))`,
+      }
+    : {
+        position: 'absolute', top: 0, right: 0, bottom: 0,
+        width: 340, maxWidth: '88%',
+        background: 'var(--ground)',
+        borderTopLeftRadius: 22, borderBottomLeftRadius: 22,
+        borderLeft: '1px solid var(--hair)',
+        boxShadow: '-22px 0 54px -22px rgba(0,0,0,.65)',
+        display: 'flex', flexDirection: 'column',
+        padding: '14px 16px max(22px, env(safe-area-inset-bottom, 0px))',
+      };
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
-      {/* Files and goals come from the RIGHT (Patrik ruling 2026-07-20); the rooms
-          menu comes from the left. A side panel, not a bottom sheet. */}
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 340, maxWidth: '88%', background: 'var(--ground)', borderTopLeftRadius: 22, borderBottomLeftRadius: 22, borderLeft: '1px solid var(--hair)', boxShadow: '-22px 0 54px -22px rgba(0,0,0,.65)', display: 'flex', flexDirection: 'column', padding: '14px 16px max(22px, env(safe-area-inset-bottom, 0px))' }}>
+      <div style={panelStyle}>
         <div style={{ width: 38, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '6px auto 12px', flex: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flex: 'none' }}>
           <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Files in this room</span>
@@ -415,13 +486,8 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
           </div>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          {/* Tapping a file here opens it in the review viewer. FilesShelf.openItem
-              only routes to onReview when a file "needs attention" (needsReview),
-              which this sheet doesn't pass — so every tap fell through to onLocate.
-              onLocate was onClose, so a tap just shut the sheet instead of opening
-              the file (Patrik 2026-07-21). Point onLocate at the same open-in-viewer
-              handler so any file opens on tap. */}
-          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={onReview} />
+          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull}
+            onReview={onReview} onLocate={onReview} compact={isMobile} />
         </div>
       </div>
     </div>
@@ -450,7 +516,18 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   const bottomRef = useRef(null);
   const [showJump, setShowJump] = useState(false);
 
-  const groups = useMemo(() => groupByDay(messages || []), [messages]);
+  // Fix 2 — split raw system alert messages out of the thread before grouping.
+  // They render in a separate collapsed strip above the conversation, not inline.
+  const { threadMessages, systemAlerts } = useMemo(() => {
+    const thread = [];
+    const alerts = [];
+    for (const m of (messages || [])) {
+      if (isSystemAlertMsg(m)) alerts.push(m);
+      else thread.push(m);
+    }
+    return { threadMessages: thread, systemAlerts: alerts };
+  }, [messages]);
+  const groups = useMemo(() => groupByDay(threadMessages), [threadMessages]);
   const older = groups.slice(0, -1);
   const latest = groups[groups.length - 1] || null;
 
@@ -625,6 +702,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
         <SendCtx.Provider value={onSend || (() => {})}>
         <ReviewCtx.Provider value={(file) => { if (file) reviewHandoff([file]); }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          {/* Fix 2: system alert messages (raw JSON, log filenames, tracebacks from the
+              Systems agent) are pulled out of the thread and shown here as a collapsed
+              status strip. Tap to expand. Never renders inline as a chat turn. */}
+          <SystemAlertStrip alerts={systemAlerts} />
           {/* Per-room action items (Patrik 2026-08-06): what is happening in THIS room,
               the room agent's own steps and any dispatched sub-agent work, one short line
               each with a live counter. Renders nothing when the room has no work. */}
@@ -747,6 +828,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
 
       {filesSheetOpen && (
         <RoomFilesSheet worldId={worldId} room={fullRoom}
+          columnMode={columnMode}
           onClose={() => setFilesSheetOpen(false)}
           onReview={(it) => { setFilesSheetOpen(false); onOpenReview?.(it ? [it] : null); }} />
       )}
