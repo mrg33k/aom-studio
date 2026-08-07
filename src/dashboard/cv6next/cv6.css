@@ -3455,3 +3455,183 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 }
 /* When composer is collapsed, jumplive moves up (no composer to clear) */
 [data-cv6].cv6-chat-composer-collapsed .jumplive { bottom: 80px !important; }
+
+/* ── R2b: Mobile chat CHAT screen reskin ──────────────────────────────────── */
+/* §2 + §9c: one fixed-height working card + rounded message bubbles.          */
+/* Tokens copied exactly from kit-FINAL-2026-06-20. No hex invented.           */
+
+/* ── Step card (inline chat placement, expandable=false) ──── */
+/* §9c structural-change exception: RoomWorkList renders this when expandable=false.
+   The card is fixed-height — cross-fading step text means no accumulated vertical space. */
+[data-cv6] .cv6-step-card {
+  margin: 8px 0 10px;
+  padding: 12px 14px 10px;
+  border-radius: 0 14px 14px 0;
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  font-family: var(--font-sans);
+}
+/* Header row: spinner + state title + step counter */
+[data-cv6] .cv6-sc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+/* Small circular spinner — 14px, accent color */
+[data-cv6] .cv6-sc-spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  flex: none;
+  animation: cv6ScSpin .8s linear infinite;
+}
+@keyframes cv6ScSpin { to { transform: rotate(360deg); } }
+/* State title: "Thinking it through" */
+[data-cv6] .cv6-sc-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+  flex: 1;
+  letter-spacing: -.01em;
+}
+/* Step counter: "Step 3 of 4" — right-aligned, tabular nums */
+[data-cv6] .cv6-sc-counter {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+/* Current step text — fades in when step changes (key-driven remount) */
+[data-cv6] .cv6-sc-current {
+  font-size: 13px;
+  color: var(--fg);
+  line-height: 1.4;
+  animation: cv6ScFadeIn .22s ease;
+}
+@keyframes cv6ScFadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* Ghost previous-step line — fades out, then JSX unmounts it */
+[data-cv6] .cv6-sc-prev {
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.4;
+  margin-top: 2px;
+  animation: cv6ScFadeOut .45s ease forwards;
+}
+@keyframes cv6ScFadeOut { from { opacity: 0.32; } to { opacity: 0; } }
+/* Progress bar row: slim bar + percentage */
+[data-cv6] .cv6-sc-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+[data-cv6] .cv6-sc-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,.10);
+  border-radius: 2px;
+  overflow: hidden;
+}
+[data-app-theme="light"] [data-cv6] .cv6-sc-bar { background: rgba(0,0,0,.10); }
+[data-cv6] .cv6-sc-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .45s ease;
+}
+/* Indeterminate shimmer — §5: no % on this path, no proportional fill */
+[data-cv6] .cv6-sc-bar.is-indeterminate .cv6-sc-bar-fill {
+  width: 38% !important;
+  transition: none;
+  animation: cv6ScShimmer 1.6s ease-in-out infinite;
+}
+@keyframes cv6ScShimmer {
+  0%   { transform: translateX(-210%); }
+  100% { transform: translateX(360%); }
+}
+[data-cv6] .cv6-sc-pct {
+  font-size: 11px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: right;
+  flex: none;
+}
+/* prefers-reduced-motion: instant text swap, keep bar width transition only */
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] .cv6-sc-spin    { animation: none; border-top-color: var(--accent); opacity: .7; }
+  [data-cv6] .cv6-sc-current { animation: none; }
+  [data-cv6] .cv6-sc-prev    { animation: none; opacity: 0; }
+  [data-cv6] .cv6-sc-bar.is-indeterminate .cv6-sc-bar-fill { animation: none; width: 50% !important; }
+  /* bar width transition is kept — spec says "keep only the bar width transition" */
+}
+
+/* ── Mobile chat message bubbles ──────────────────────────── */
+/* User: right-aligned accent bubble. Agent: dark surface card with avatar.
+   §8a: small JSX restructure in MobileMessageTurn required (CSS cannot reorder
+   the time label from header-above to footer-below the bubble without JSX change). */
+
+/* Shared bubble base */
+[data-cv6] .cv6-mob-bubble {
+  position: relative;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  max-height: 168px;
+  overflow: hidden;
+}
+[data-cv6] .cv6-mob-bubble.is-clamped::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 64px;
+  pointer-events: none;
+}
+
+/* User bubble */
+[data-cv6] .cv6-mob-bubble--user {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 18px 18px 4px 18px;
+  align-self: flex-end;
+}
+[data-cv6] .cv6-mob-bubble--user.is-clamped::after {
+  background: linear-gradient(transparent, var(--accent));
+}
+[data-cv6] .cv6-mob-bubble--user * { color: #fff !important; }
+/* Show more button for user bubbles — white text on accent bg */
+[data-cv6] .longmsg-more.cv6-mob-more-user { color: rgba(255,255,255,.8); }
+
+/* Agent bubble */
+[data-cv6] .cv6-mob-bubble--agent {
+  background: var(--surface-2);
+  border: 1px solid var(--hair);
+  color: var(--fg);
+  padding: 10px 14px;
+  border-radius: 4px 18px 18px 18px;
+}
+[data-cv6] .cv6-mob-bubble--agent.is-clamped::after {
+  background: linear-gradient(transparent, var(--surface-2));
+}
+
+/* Timestamp — small, below the bubble */
+[data-cv6] .cv6-mob-ts {
+  display: block;
+  font-size: 10.5px;
+  color: var(--faint);
+  font-family: var(--font-mono);
+}
+
+/* Agent name above the bubble — same treatment as .gname */
+[data-cv6] .cv6-mob-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
