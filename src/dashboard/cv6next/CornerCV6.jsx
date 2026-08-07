@@ -780,7 +780,6 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const [agentsOpen, setAgentsOpen] = useState(false);
   // Keyboard navigation state (desktop only): tracks selected row in All Rooms list.
   // -1 = nothing selected. 0..agentsLen-1 = agents. agentsLen..agentsLen+projLen-1 = projects.
-  const [alertsOpen, setAlertsOpen] = useState(false);
   const [knavSelectedIdx, setKnavSelectedIdx] = useState(-1);
   // Read inside the keydown handler, which is registered once and must not go
   // stale on every zone change.
@@ -1177,9 +1176,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     // Search opens the command palette (room/agent search), not the nav menu.
     openCommandK: () => (onCommandK ? onCommandK() : onOpenNav?.()), search: () => (onCommandK ? onCommandK() : onOpenNav?.()), openNav: () => onOpenNav?.(),
-    // The bell was a no-op. It now opens the alerts panel, which is where turning on
-    // phone notifications lives (Patrik 2026-08-06).
-    openNotifications: () => setAlertsOpen((open) => !open), openProfile: () => {}, toggleTheme: () => {},
+    // The home template's own bell (the live shell draws its own in DesktopNav).
+    openNotifications: () => { try { window.dispatchEvent(new CustomEvent('cv6:open-alerts')); } catch { /* noop */ } },
+    openProfile: () => {}, toggleTheme: () => {},
     // The quiet + beside All rooms is specifically the New project entry point.
     newRoom: () => setComposerOpen('project'),
     // Catch Up deck navigation (desktop arrows + mobile next). Clamp against the LIVE deck
@@ -1579,7 +1578,6 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         quickSend={quickSend}
         onClose={() => { setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null); }}
       />
-      <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} worldId={worldId} />
       <HomeFilesPanel
         host={filesOpen && knavOpenedRoom ? convoColHost : null}
         worldId={worldId}
@@ -3269,7 +3267,13 @@ export default function CornerCV6() {
   // Home owns ↑/↓ and → while the zone is the rail; this shell owns ←/→ once the
   // zone is a column. ← off the leftmost column lands you back in the rail at the
   // top of "Pick up where you left off", so you can keep walking with ↓.
+  const [alertsOpen, setAlertsOpen] = useState(false);
   const [knavZone, setKnavZone] = useState('rail');
+  useEffect(() => {
+    const open = () => setAlertsOpen(true);
+    window.addEventListener('cv6:open-alerts', open);
+    return () => window.removeEventListener('cv6:open-alerts', open);
+  }, []);
   const knavZoneRef = useRef('rail');
   useEffect(() => { knavZoneRef.current = knavZone; }, [knavZone]);
   // A closed column must never keep the keys — fall back to the rail.
@@ -3567,7 +3571,8 @@ export default function CornerCV6() {
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
-      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings')} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} worldId={worldId} />
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(job) => {
         if (job?.live && job?.id) {
