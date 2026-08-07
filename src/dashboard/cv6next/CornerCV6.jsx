@@ -38,6 +38,8 @@ import { roomProjectSlug, buildChecklistRoomOptions } from './data/roomKeys.js';
 import NewComposer from './NewComposer.jsx';
 import IntakeComposer from './IntakeComposer.jsx';
 import { playNotifyChime } from './notifyChime.js';
+import AlertsPanel from './AlertsPanel.jsx';
+import { registerPushWorker } from './pushNotifications.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
 import { useIntakeRoute } from './data/useIntakeRoute.js';
 import { supabase } from '../lib/supabase.js';
@@ -778,9 +780,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const [agentsOpen, setAgentsOpen] = useState(false);
   // Keyboard navigation state (desktop only): tracks selected row in All Rooms list.
   // -1 = nothing selected. 0..agentsLen-1 = agents. agentsLen..agentsLen+projLen-1 = projects.
+  const [alertsOpen, setAlertsOpen] = useState(false);
   const [knavSelectedIdx, setKnavSelectedIdx] = useState(-1);
   // Read inside the keydown handler, which is registered once and must not go
   // stale on every zone change.
+  // Re-register on load: a device that already granted permission must keep its
+  // worker, or push silently stops working after a deploy.
+  useEffect(() => { registerPushWorker(); }, []);
   const knavZoneRef = useRef(knavZone);
   useEffect(() => { knavZoneRef.current = knavZone; }, [knavZone]);
   // Coming back out of a chat (← off the leftmost column) lands on the FIRST row of
@@ -1171,7 +1177,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     // Search opens the command palette (room/agent search), not the nav menu.
     openCommandK: () => (onCommandK ? onCommandK() : onOpenNav?.()), search: () => (onCommandK ? onCommandK() : onOpenNav?.()), openNav: () => onOpenNav?.(),
-    openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
+    // The bell was a no-op. It now opens the alerts panel, which is where turning on
+    // phone notifications lives (Patrik 2026-08-06).
+    openNotifications: () => setAlertsOpen((open) => !open), openProfile: () => {}, toggleTheme: () => {},
     // The quiet + beside All rooms is specifically the New project entry point.
     newRoom: () => setComposerOpen('project'),
     // Catch Up deck navigation (desktop arrows + mobile next). Clamp against the LIVE deck
@@ -1571,6 +1579,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         quickSend={quickSend}
         onClose={() => { setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null); }}
       />
+      <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} worldId={worldId} />
       <HomeFilesPanel
         host={filesOpen && knavOpenedRoom ? convoColHost : null}
         worldId={worldId}
