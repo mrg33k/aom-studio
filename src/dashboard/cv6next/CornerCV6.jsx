@@ -39,7 +39,6 @@ import NewComposer from './NewComposer.jsx';
 import IntakeComposer from './IntakeComposer.jsx';
 import { playNotifyChime } from './notifyChime.js';
 import AlertsPanel from './AlertsPanel.jsx';
-import RoomWorkList from './RoomWorkList.jsx';
 import { registerPushWorker } from './pushNotifications.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
 import { useIntakeRoute } from './data/useIntakeRoute.js';
@@ -1961,24 +1960,6 @@ function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose, exp
   const liveSteps = isDemo ? [] : rt.liveSteps; // the agent's real activity, for the building live thread
   const goal = isDemo ? null : useGoalThread(worldId, room);
   const hasGoal = !!goal;
-  // Per-room action items live INSIDE the room column, portaled into the template's
-  // host. The full-page Chat tool mounts RoomWorkList directly; the columns are
-  // template-driven, so they need this (Patrik 2026-08-06).
-  const [worklistHost, setWorklistHost] = useState(null);
-  useEffect(() => {
-    // The template re-binds (innerHTML reset) on every realtime tick, so the host node
-    // is replaced periodically. Poll rather than resolve once, or the portal ends up
-    // pointing at a detached node and the panel silently vanishes. 300ms, not rAF —
-    // this is a re-attach check, not an animation.
-    const find = () => {
-      const el = document.querySelector('[data-cv6-worklist]');
-      setWorklistHost((prev) => (prev === el ? prev : el || null));
-    };
-    find();
-    const id = setInterval(find, 300);
-    return () => clearInterval(id);
-  }, []);
-
   const liveThread = Array.isArray(messages) && messages.some((m) => m.blocks?.length > 0);
   const html = useMemo(() => composeChatMobile(hasGoal), [hasGoal]);
   const data = useMemo(() => ({
@@ -2005,7 +1986,6 @@ function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose, exp
   // and the goal thread is just the latest turn (design: the visual chat language).
   return (
     <>
-    {worklistHost ? createPortal(<RoomWorkList room={activeRoom} goal={goal} />, worklistHost) : null}
     <ChatLifecycle
       room={{ name: isDemo ? 'DEMO: Block Showcase' : activeRoom.name, initials: activeRoom.initials || '·', statusText: isDemo ? 'demo' : (activeRoom.hasCustomTitle && activeRoom.specialistTitle ? `${activeRoom.specialistTitle} specialist` : activeRoom.statusText || ''), status: activeRoom.status || 'ready' }}
       fullRoom={isDemo ? null : activeRoom} worldId={worldId} projectId={parentProject?.databaseId || activeRoom?.databaseId || ''}

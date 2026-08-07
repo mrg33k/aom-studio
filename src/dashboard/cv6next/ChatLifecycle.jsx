@@ -29,6 +29,7 @@ import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
+import RoomWorkList from './RoomWorkList.jsx';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -600,6 +601,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
         <SendCtx.Provider value={onSend || (() => {})}>
         <ReviewCtx.Provider value={(file) => { if (file) reviewHandoff([file]); }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          {/* Per-room action items (Patrik 2026-08-06): what is happening in THIS room,
+              the room agent's own steps and any dispatched sub-agent work, one short line
+              each with a live counter. Renders nothing when the room has no work. */}
+          <RoomWorkList room={fullRoom || room} goal={goal} />
           {empty ? (
               <div className="empty" style={{ marginTop: 40 }}>
                 <div className="e-t">No messages with {room.name} yet</div>
