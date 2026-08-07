@@ -78,8 +78,12 @@ export function useChatSwipe({ enabled, onHome, onNextChat }) {
         node = node.parentElement;
       }
 
-      if (dx < 0) homeRef.current?.();   // finger left  -> Home
-      else nextRef.current?.();          // finger right -> next recent chat
+      // Direction confirmed backwards on real device (Patrik 2026-08-06, task 0d632c0a).
+      // dx<0 = finger moved left = content scrolls right = navigate to next chat (right of canvas).
+      // dx>0 = finger moved right = content scrolls left = navigate to Home (left of canvas).
+      console.log('[useChatSwipe] gesture dx:', dx, dx < 0 ? '→ nextChat' : '→ home'); // unconditional for lab verification
+      if (dx < 0) nextRef.current?.();   // finger left  -> next recent chat
+      else homeRef.current?.();          // finger right -> Home
     };
 
     window.addEventListener('touchstart', onStart, { passive: true });
