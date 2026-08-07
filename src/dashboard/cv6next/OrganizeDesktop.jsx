@@ -12,6 +12,7 @@ import { useOrganize } from './data/useOrganize.js';
 import { useReview } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { useReviewPinUI } from './ReviewPins.jsx';
+import { useDocZoom } from './useDocZoom.jsx';
 import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
@@ -132,7 +133,11 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
   // Pins ride the review identity (same store the Review tool used — history intact).
   const { pins, addPin, deletePin } = usePins(openReviewId, worldId);
   const wrapRef = useRef(null);
-  const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef, pins, addPin, deletePin });
+  const { overlay: pinOverlay, openPinById, circleMode, circleToggle } = useReviewPinUI({ wrapRef, pins, addPin, deletePin });
+  // Zoom on desktop (Patrik 2026-08-07). Trackpad pinch arrives as ctrlKey+wheel and
+  // is treated as a real pinch; the −/%/+ cluster and the + - 0 keys cover a mouse,
+  // which has no pinch at all.
+  const { zoomControls, anchor: toolAnchor } = useDocZoom({ wrapRef, drawing: circleMode });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
   useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)
   useHtmlDocs(wrapRef); // hydrate sandboxed HTML/web-page shells
@@ -294,7 +299,8 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
       bodyHtml: del.id ? (del.bodyHtml || VIEWER_LOADING_HTML) : VIEWER_NONE_HTML,
       file: del.id ? del.file : (openedRow ? openedRow.name : ''),
       title: del.id ? del.title : (openedRow?.name || 'No file selected'),
-      pins: pins.map((p) => ({ id: p.id, n: p.n, x: p.x, y: p.y })),
+      // Circled comment: the marker rides the ring's top edge, not its centre.
+      pins: pins.map((p) => ({ id: p.id, n: p.n, x: p.x, y: p.ry > 0 ? Math.max(0, p.y - p.ry) : p.y })),
       comments: pins.map((p) => ({ id: p.id, n: p.n, text: p.text, anchor: p.anchor })),
       openCount: pins.length,
       notesWord: pins.length === 1 ? 'note' : 'notes',
@@ -384,6 +390,12 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
   return (
     <div ref={wrapRef} onInput={onSearchInput} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={DESKTOP_HTML} data={bindData} actions={actions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
+      {zoomControls}
+      {toolAnchor && (
+        <div style={{ position: 'absolute', top: toolAnchor.top + 38, right: toolAnchor.right, zIndex: 24 }}>
+          {circleToggle}
+        </div>
+      )}
       {ctxOverlay}
       {pinOverlay}
       {notice && (

@@ -12,6 +12,7 @@ import { useOrganize } from './data/useOrganize.js';
 import { useReview } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { useReviewPinUI } from './ReviewPins.jsx';
+import { useDocZoom } from './useDocZoom.jsx';
 import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
@@ -191,8 +192,28 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
   }, [openReviewId]);
 
   const { pins, addPin, deletePin } = usePins(openReviewId, worldId);
-  const { overlay: pinOverlay, openPinById } = useReviewPinUI({
+  const { overlay: pinOverlay, openPinById, circleMode, circleToggle } = useReviewPinUI({
     wrapRef, pins, addPin, deletePin, enabled: !!pickedFileId, isMobile: true,
+  });
+
+  // Swipe left/right through the OPEN FOLDER while viewing one of its files — this
+  // is the surface Patrik meant by "the different files in the folder" (2026-08-07):
+  // Files is where you browse a folder, so the gesture walks data.files in the order
+  // the list shows, not some other collection.
+  const folderFiles = data.files;
+  const stepFile = useCallback((dir) => {
+    const list = folderFiles || [];
+    if (list.length < 2) return;
+    const at = list.findIndex((f) => f.id === pickedFileId);
+    if (at < 0) return;
+    const next = list[(at + (dir === 'next' ? 1 : -1) + list.length) % list.length];
+    if (next && next.id !== pickedFileId) tapFile(next.id);
+  }, [folderFiles, pickedFileId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pinch to zoom the open file. Live while the red pen is armed (you zoom in to
+  // circle a detail) — it just stops competing for the drag.
+  const { zoomControls, anchor: toolAnchor } = useDocZoom({
+    wrapRef, enabled: !!pickedFileId, drawing: circleMode, onSwipe: stepFile,
   });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
   useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)
@@ -266,7 +287,9 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
       bodyHtml: del.id ? (del.bodyHtml || VIEWER_LOADING_HTML) : VIEWER_LOADING_HTML,
       file: del.id ? del.file : (openedRow ? openedRow.name : ''),
       title: del.id ? del.title : (openedRow?.name || ''),
-      pins: pins.map((p) => ({ id: p.id, n: p.n, x: p.x, y: p.y })),
+      // A circled comment stores the ring's CENTRE; its numbered marker rides the
+      // ring's top edge so it never covers what was circled.
+      pins: pins.map((p) => ({ id: p.id, n: p.n, x: p.x, y: p.ry > 0 ? Math.max(0, p.y - p.ry) : p.y })),
       comments: pins.map((p) => ({ id: p.id, n: p.n, text: p.text, anchor: p.anchor })),
       openCount: pins.length,
       notesWord: pins.length === 1 ? 'note' : 'notes',
@@ -383,8 +406,17 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
   ) : null;
 
   return (
-    <div ref={wrapRef} onInput={onSearchInput} style={{ position: 'relative', width: '100%', height: '100%' }}>
+    // data-swipe-guard: while a file is open this screen owns left/right (previous /
+    // next file in the folder). Without it useChatSwipe fires too and navigates the
+    // app away mid-swipe — the same collision the Files sheet hit.
+    <div ref={wrapRef} onInput={onSearchInput} data-swipe-guard={pickedFileId ? '' : undefined} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={html} data={bindData} actions={actions} state={screenState} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
+      {pickedFileId ? zoomControls : null}
+      {pickedFileId && toolAnchor && (
+        <div style={{ position: 'absolute', top: toolAnchor.top + 38, right: toolAnchor.right, zIndex: 24 }}>
+          {circleToggle}
+        </div>
+      )}
       {noticeToast}
       {pinOverlay}
       {changesOpen && (
