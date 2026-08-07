@@ -39,6 +39,7 @@ import NewComposer from './NewComposer.jsx';
 import IntakeComposer from './IntakeComposer.jsx';
 import { playNotifyChime } from './notifyChime.js';
 import AlertsPanel from './AlertsPanel.jsx';
+import { useChatSwipe } from './useChatSwipe.js';
 import { registerPushWorker } from './pushNotifications.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
 import { useIntakeRoute } from './data/useIntakeRoute.js';
@@ -1475,6 +1476,16 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // SET of unread rooms, not a count: two rooms going unread while one is read nets to
   // zero and would otherwise stay silent. Never fires on first paint — arriving at a
   // dashboard with a backlog is not a new message (Patrik 2026-08-06).
+  // The shell drives the mobile swipe but only Home knows the recents ORDER, so it
+  // publishes the room objects (already in openRecent form) whenever the list changes.
+  const recentOrderSig = recentList.map((r) => r.key).join('|');
+  useEffect(() => {
+    try {
+      const rooms = recentList.map((r) => recentRoomObj(r)).filter(Boolean);
+      window.dispatchEvent(new CustomEvent('cv6:recent-rooms', { detail: rooms }));
+    } catch { /* noop */ }
+  }, [recentOrderSig]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const unreadKeySig = recentList.filter((r) => r.unread).map((r) => r.key).sort().join('|');
   const prevUnreadRef = useRef(null);
   useEffect(() => {
@@ -3256,10 +3267,44 @@ export default function CornerCV6() {
       const columnRight = columnLeft + column.offsetWidth;
       // Keep the simple adjacent layout still when the focused room already fits.
       // Only reveal the clipped edge once enough columns overflow the viewport.
-      if (columnLeft < visibleLeft) canvas.scrollTo({ left: columnLeft, behavior: 'smooth' });
+      // Mobile is a full-width pager: the requested room must land squarely on screen
+      // every time, not only when it happens to be clipped. On desktop keep the quiet
+      // behaviour — only move when the column is actually out of view.
+      const paging = canvas.clientWidth > 0 && column.offsetWidth >= canvas.clientWidth - 1;
+      if (paging) canvas.scrollTo({ left: columnLeft, behavior: 'smooth' });
+      else if (columnLeft < visibleLeft) canvas.scrollTo({ left: columnLeft, behavior: 'smooth' });
       else if (columnRight > visibleRight) canvas.scrollTo({ left: columnRight - canvas.clientWidth, behavior: 'smooth' });
     });
-  }, [activeColumnId, workspaceColumns.length]);
+  }, [activeColumnId, workspaceColumns.length, columnFocusTick]);
+
+  // ---- Mobile swipe inside a chat (Patrik 2026-08-06) ----------------------
+  // Left goes Home, right goes to the NEXT room in the recents list — his words,
+  // confirmed with him before building because it inverts the native pager.
+  const recentKeysRef = useRef([]);
+  useEffect(() => {
+    const onRecents = (e) => { recentKeysRef.current = Array.isArray(e.detail) ? e.detail : []; };
+    window.addEventListener('cv6:recent-rooms', onRecents);
+    return () => window.removeEventListener('cv6:recent-rooms', onRecents);
+  }, []);
+
+  const swipeHome = useCallback(() => {
+    const canvas = workspaceCanvasRef.current;
+    if (canvas) canvas.scrollTo({ left: 0, behavior: 'smooth' });
+    setActiveColumnId('');
+    setKnavZone('rail');
+  }, []);
+
+  const swipeNextChat = useCallback(() => {
+    const rooms = recentKeysRef.current;
+    if (!rooms.length) return;
+    // Where are we now? Match the open column against the recents list, then step one
+    // past it. Falling back to the first room means a swipe always does something.
+    const openIdx = rooms.findIndex((r) => `chat:${roomColumnKey(r)}` === activeColumnId);
+    const next = rooms[(openIdx + 1) % rooms.length];
+    if (next) onOpenRoom(next, worldId);
+  }, [activeColumnId, onOpenRoom, worldId]);
+
+  useChatSwipe({ enabled: !isDesktop && !!activeColumnId, onHome: swipeHome, onNextChat: swipeNextChat });
 
   // ---- Arrow navigation across the workspace (Patrik 2026-08-06) ------------
   // One idea: the arrow keys always belong to exactly ONE surface — either the
@@ -3268,6 +3313,11 @@ export default function CornerCV6() {
   // zone is a column. ← off the leftmost column lands you back in the rail at the
   // top of "Pick up where you left off", so you can keep walking with ↓.
   const [alertsOpen, setAlertsOpen] = useState(false);
+  // Bumped on every request to focus a column. Without it the scroll effect keys on
+  // activeColumnId alone, so tapping a room that is ALREADY the active column changes
+  // no state and nothing moves — which on mobile, after swiping back to Home, reads as
+  // "I tap a chat and nothing happens" (Patrik 2026-08-06).
+  const [columnFocusTick, setColumnFocusTick] = useState(0);
   const [knavZone, setKnavZone] = useState('rail');
   useEffect(() => {
     const open = () => setAlertsOpen(true);
@@ -3426,6 +3476,7 @@ export default function CornerCV6() {
     const column = { id, type: 'chat', room, worldId: wid || worldId };
     setWorkspaceColumns((columns) => columns.some((item) => item.id === id) ? columns : [...columns, column]);
     setActiveColumnId(id);
+    setColumnFocusTick((n) => n + 1);
     // Opening a room hands it the arrow keys, so → out of the rail walks straight
     // into the chat you just opened (and ← walks straight back out).
     setKnavZone(id);
@@ -3435,6 +3486,7 @@ export default function CornerCV6() {
   const onOpenEmailColumn = useCallback(() => {
     setWorkspaceColumns((columns) => columns.some((column) => column.id === 'email') ? columns : [...columns, { id: 'email', type: 'email' }]);
     setActiveColumnId('email');
+    setColumnFocusTick((n) => n + 1);
     return true;
   }, []);
 
@@ -3444,6 +3496,7 @@ export default function CornerCV6() {
   const onOpenWorkersColumn = useCallback(() => {
     setWorkspaceColumns((columns) => columns.some((column) => column.id === 'workers') ? columns : [...columns, { id: 'workers', type: 'workers' }]);
     setActiveColumnId('workers');
+    setColumnFocusTick((n) => n + 1);
     return true;
   }, []);
 
