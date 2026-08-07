@@ -7,9 +7,10 @@
 // dispatching anything. The old card only knew the system's version, so a room could be
 // visibly busy and show nothing, or show a single row for a dozen moving parts.
 //
-// So this merges two sources into ONE checklist:
+// So this merges three sources into ONE projection:
 //   this room  — the room agent's own goal steps (done / working / next)
 //   sub-agent  — dispatched jobs and promised come-backs (useRunningTasks)
+//   this turn  — the live bridge step, falling back to the user's latest ask
 //
 // Shape follows the action-items list Patrik screenshotted: a checkbox, a SHORT label,
 // nothing else. Plus the thing he asked for that the screenshot didn't have — a live
@@ -17,6 +18,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRunningTasks } from './data/useRunningTasks.js';
+import { currentTurnWorkLabel, liveWorkLabels } from './data/roomWorkProjection.js';
 
 // Elapsed as the shortest true thing: 42s, 7m, 1h04.
 function elapsedLabel(ms) {
@@ -128,12 +130,15 @@ const STEP_CARD_OPENERS = ['Reading your message', 'Thinking it through', 'Worki
 // §5 compliance:
 //   - If goal.checklist has real steps: progress = activeStepIndex/totalSteps (genuine N/M).
 //   - Else (only synthetic awaiting or agent tasks with no count): indeterminate, no % or fill.
-function StepCard({ roomSteps, agentItems, awaiting, awaitingSince }) {
+function StepCard({ roomSteps, agentItems, awaiting, liveSteps, currentAsk }) {
   // --- data ---
   const totalSteps = roomSteps.length;
   const activeStepIdx = roomSteps.findIndex((s) => s.state === 'active');  // 0-based in checklist
   const activeStep = activeStepIdx >= 0 ? roomSteps[activeStepIdx] : null;
   const prevStep = activeStepIdx > 0 ? roomSteps[activeStepIdx - 1] : (roomSteps.filter((s) => s.state === 'done').slice(-1)[0] || null);
+  const liveLabels = liveWorkLabels(liveSteps);
+  const liveLabel = awaiting ? liveLabels[liveLabels.length - 1] : '';
+  const previousLiveLabel = awaiting && liveLabels.length > 1 ? liveLabels[liveLabels.length - 2] : '';
 
   // Real measured progress: step N of M (1-based, genuine from checklist). §5 §5.
   const hasRealProgress = totalSteps > 0 && activeStepIdx >= 0;
@@ -141,14 +146,17 @@ function StepCard({ roomSteps, agentItems, awaiting, awaitingSince }) {
   const stepM = hasRealProgress ? totalSteps : null;
   const progressPct = hasRealProgress ? Math.round((stepN / stepM) * 100) : null;
 
-  // Active label: real step label, or 'Working…' for synthetic awaiting only.
-  const activeLabel = activeStep?.label
+  // The bridge's current activity is the freshest description while this turn is live.
+  // Fall through to checklist/task truth, then name the user's ask instead of showing
+  // an unexplained generic "Working" row.
+  const activeLabel = liveLabel
+    || activeStep?.label
     || (agentItems.length ? agentItems[0]?.label : null)
-    || (awaiting ? 'Working…' : null)
+    || (awaiting ? currentTurnWorkLabel({ currentAsk }) : null)
     || '';
 
   // Previous done step label for the ghost cross-fade line.
-  const prevLabel = prevStep?.label || '';
+  const prevLabel = previousLiveLabel || prevStep?.label || '';
 
   // Cycle LIVE_OPENERS by wall-clock so the card title feels alive.
   const stateTitle = STEP_CARD_OPENERS[Math.floor(Date.now() / 2500) % STEP_CARD_OPENERS.length];
@@ -175,7 +183,7 @@ function StepCard({ roomSteps, agentItems, awaiting, awaitingSince }) {
   if (!activeLabel) return null;
 
   return (
-    <div className="cv6-step-card" data-testid="cv6-step-card">
+    <div className="cv6-step-card" data-testid="cv6-step-card" data-cv6-live-work="">
       {/* Row 1: small spinner + state title + step counter */}
       <div className="cv6-sc-header">
         <span className="cv6-sc-spin" aria-hidden="true" />
@@ -205,7 +213,7 @@ function StepCard({ roomSteps, agentItems, awaiting, awaitingSince }) {
 }
 
 // expandable — when true (dropdown mode) "+N more" is a button that expands the list.
-export default function RoomWorkList({ room, goal, awaiting, awaitingSince, expandable = false }) {
+export default function RoomWorkList({ room, goal, awaiting, awaitingSince, liveSteps, currentAsk, expandable = false }) {
   const { tasks, promises } = useRunningTasks(room);
   const [now, setNow] = useState(() => Date.now());
   const [localExpanded, setLocalExpanded] = useState(false);
@@ -238,14 +246,13 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, expa
   // context, and a peek at what is next. Never more than 6 rows.
   //
   // Synthetic fallback (Patrik 2026-08-07): the room agent is mid-turn (awaiting=true)
-  // but hasn't emitted a goal-thread checklist step yet — show a generic "Working" row
-  // so the action-items panel appears the instant a message is sent, not only once a
-  // structured step arrives. Only fires when no more-specific active roomStep already
-  // covers it (no double-up).
+  // but hasn't emitted a goal-thread checklist step yet. It inherits the current bridge
+  // activity or the user's ask, so Action items never claims only "Working" with no object.
+  // It still fires only when no more-specific active roomStep already covers the turn.
   const items = useMemo(() => {
     const hasActiveStep = roomSteps.some((s) => s.state === 'active');
     const synthetic = awaiting && !hasActiveStep
-      ? [{ key: 'synthetic:working', label: 'Working', state: 'active', owner: '', since: awaitingSince || null }]
+      ? [{ key: 'synthetic:working', label: currentTurnWorkLabel({ liveSteps, currentAsk }), state: 'active', owner: '', since: awaitingSince || null }]
       : [];
     const all = [...roomSteps, ...agentItems, ...synthetic];
     const active = all.filter((i) => i.state === 'active');
@@ -262,7 +269,7 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, expa
     const nextUp = localExpanded ? roomSteps.filter((i) => i.state === 'pending') : [];
     const cap = localExpanded ? 100 : 6;
     return [...doneTail, ...active, ...nextUp].slice(0, cap);
-  }, [roomSteps, agentItems, awaiting, awaitingSince, localExpanded]);
+  }, [roomSteps, agentItems, awaiting, awaitingSince, liveSteps, currentAsk, localExpanded]);
   const running = items.filter((i) => i.state === 'active').length;
   const remaining = roomSteps.filter((i) => i.state === 'pending').length - items.filter((i) => i.state === 'pending').length;
 
@@ -288,7 +295,8 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, expa
           roomSteps={roomSteps}
           agentItems={agentItems}
           awaiting={awaiting}
-          awaitingSince={awaitingSince}
+          liveSteps={liveSteps}
+          currentAsk={currentAsk}
         />
       </>
     );

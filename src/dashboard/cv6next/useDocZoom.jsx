@@ -174,12 +174,17 @@ export function useDocZoom({ wrapRef, enabled = true, drawing = false, onSwipe, 
       }
       if (doc) {
         apply();
+        // BOTTOM-right of the viewer frame, not the top: the template already parks
+        // its "Click anywhere to comment" pill on the top-right and the two stacked
+        // on top of each other on the live page. Bottom-right is also where a zoom
+        // control belongs by convention (maps, PDF readers), and on mobile it sits
+        // clear of both the pin bar and the verdict bar below the doc.
         const wr = wrap.getBoundingClientRect();
         const par = doc.parentElement;
         const dr = (par || doc).getBoundingClientRect();
-        const top = Math.max(8, dr.top - wr.top + 10);
-        const right = Math.max(8, wr.right - dr.right + 10);
-        setAnchor((a) => (a && Math.abs(a.top - top) < 2 && Math.abs(a.right - right) < 2 ? a : { top, right }));
+        const bottom = Math.max(8, wr.bottom - dr.bottom + 12);
+        const right = Math.max(8, wr.right - dr.right + 12);
+        setAnchor((a) => (a && Math.abs(a.bottom - bottom) < 2 && Math.abs(a.right - right) < 2 ? a : { bottom, right }));
       } else {
         setAnchor(null);
       }
@@ -385,7 +390,7 @@ export function useDocZoom({ wrapRef, enabled = true, drawing = false, onSwipe, 
   const zoomControls = (enabled && anchor) ? (
     <ZoomControls
       scale={scale}
-      top={anchor.top}
+      bottom={anchor.bottom}
       right={anchor.right}
       onIn={() => zoomBy(STEP)}
       onOut={() => zoomBy(1 / STEP)}
@@ -402,7 +407,7 @@ export function useDocZoom({ wrapRef, enabled = true, drawing = false, onSwipe, 
 // The visible control, parked on the viewer's top-right corner. Present at 1x
 // too — a zoom you can only discover by guessing a gesture is not a feature on
 // desktop, which is exactly the gap Patrik hit.
-function ZoomControls({ scale, top, right, onIn, onOut, onReset }) {
+function ZoomControls({ scale, bottom, right, onIn, onOut, onReset }) {
   const btn = {
     width: 28, height: 28, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
     border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', padding: 0,
@@ -414,7 +419,7 @@ function ZoomControls({ scale, top, right, onIn, onOut, onReset }) {
       data-zoom-controls=""
       onMouseDown={(e) => e.stopPropagation()}
       style={{
-        position: 'absolute', top, right, zIndex: 24,
+        position: 'absolute', bottom, right, zIndex: 24,
         display: 'flex', alignItems: 'center', gap: 2,
         background: 'rgba(5,8,11,0.72)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 2,

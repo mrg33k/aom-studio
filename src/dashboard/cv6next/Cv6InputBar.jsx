@@ -20,8 +20,11 @@ import SlashCommandAutocomplete from '../components/cv3/SlashCommandAutocomplete
 import IntegrationsModal from '../components/cv3/IntegrationsModal.jsx';
 import { PasteChipBar, shouldChipPaste } from '../components/cv3/shared/PasteChip.jsx';
 import { IMAGE_TOOLS } from '../components/cv3/shared/ImageGenPicker.jsx';
+import { MODEL_OPTIONS } from '../components/cv3/chat/chatConstants.js';
+import { authFetch } from '../lib/authFetch.js';
 import { CornerLoaderMark } from '../cv6kit/FullscreenLoading.jsx';
 import RoomChecklistPanel from './RoomChecklistPanel.jsx';
+import { resolveEffectiveRoomModel, roomModelPreferenceKey } from './data/modelPreferences.js';
 import {
   useChatCore,
   useChatComposerCtx,
@@ -44,6 +47,8 @@ const I = {
   chev: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>,
   x: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>,
   checklist: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.2 1.2L6.5 5M3 12l1.2 1.2L6.5 11M3 18l1.2 1.2L6.5 17"/></svg>,
+  brain: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 4.5A3.5 3.5 0 0 0 6 8v1a3 3 0 0 0-1 5.83V16a3 3 0 0 0 3 3h1.5M14.5 4.5A3.5 3.5 0 0 1 18 8v1a3 3 0 0 1 1 5.83V16a3 3 0 0 1-3 3h-1.5M12 3v18M8 9h4M12 15h4" /></svg>,
+  check: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg>,
 };
 
 // Composer action buttons split into two families (Patrik 2026-08-06): voice and
@@ -55,9 +60,19 @@ const UTILITY_BTN = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
+function modelOption(id) {
+  return MODEL_OPTIONS.find((option) => option.id === id)
+    || { id, label: id || 'Model unavailable', desc: 'Saved room model' };
+}
+
+function shortModelLabel(id) {
+  if (id === 'default') return 'Auto · Claude';
+  return modelOption(id).label.replace(/^Claude\s+/, '');
+}
+
 function MenuRow({ icon, label, detail, hasSubmenu, onClick, tint, testid }) {
   return (
-    <button type="button" data-testid={testid} onClick={onClick}
+    <button type="button" className="cv6-command-row" data-testid={testid} onClick={onClick}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, height: detail ? 46 : 40, padding: '0 10px', borderRadius: 9, border: 'none', background: 'transparent', color: tint || 'var(--fg)', cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-sans)' }}
       onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
@@ -74,7 +89,15 @@ function MenuRow({ icon, label, detail, hasSubmenu, onClick, tint, testid }) {
 }
 
 // The commands popover — CV6 surface card floating above the sparkles button.
-function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
+function CommandsMenu({
+  open,
+  setOpen,
+  onOpenFiles,
+  onOpenIntegrations,
+  interactionMode,
+  setInteractionMode,
+  model,
+}) {
   const wrapRef = useRef(null);
   const [view, setView] = useState('root');
   const { selectedImageTool, setSelectedImageTool } = useChatComposerCtx();
@@ -91,8 +114,12 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
   return (
     <div ref={wrapRef} data-testid="cv6-commands-menu" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 'none' }}>
       <button type="button" className="cv6-composer-util" title="Commands" data-testid="cv6-commands-menu-button" onClick={() => setOpen((o) => !o)}
-        style={{ ...UTILITY_BTN, cursor: 'pointer', background: open || selectedImageTool ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${open ? 'var(--accent)' : 'var(--hair)'}`, color: open || selectedImageTool || isRecording ? 'var(--accent)' : 'var(--muted)', transition: 'background .15s, color .15s, border-color .15s' }}>
+        aria-label="Commands"
+        style={{ ...UTILITY_BTN, width: 'auto', minWidth: 38, padding: '0 10px', gap: 7, cursor: 'pointer', background: open || selectedImageTool ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${open ? 'var(--accent)' : 'var(--hair)'}`, color: open || selectedImageTool || isRecording ? 'var(--accent)' : 'var(--muted)', transition: 'background .15s, color .15s, border-color .15s' }}>
         {isRecording ? I.stop : I.sparkles}
+        <span data-testid="cv6-current-model" style={{ color: open ? 'var(--accent)' : 'var(--fg)', font: '700 11.5px var(--font-sans)', whiteSpace: 'nowrap' }}>
+          {model.loading ? 'Model…' : model.shortLabel}
+        </span>
       </button>
       {open ? (
         <>
@@ -102,10 +129,25 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
             visually competing with the panel). */}
         <div data-testid="cv6-commands-menu-scrim" onClick={() => setOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 44, background: 'rgba(0,0,0,.38)' }} />
-        <div data-testid="cv6-commands-menu-popover" style={{ position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, minWidth: 252, background: 'rgba(13,17,23,.96)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)', padding: 6, zIndex: 45, fontFamily: 'var(--font-sans)' }}>
+        <div data-testid="cv6-commands-menu-popover" style={{ position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, minWidth: 272, maxWidth: 'calc(100vw - 32px)', background: 'var(--composer-solid, var(--surface))', color: 'var(--fg)', border: '1px solid var(--hair)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.38)', padding: 6, zIndex: 45, fontFamily: 'var(--font-sans)' }}>
           {view === 'root' ? (
             <>
               <div className="eyebrow" style={{ padding: '7px 10px 6px' }}>Commands</div>
+              <div data-testid="cv6-commands-mode-toggle" role="group" aria-label="Response mode"
+                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, margin: '0 4px 6px', padding: 3, borderRadius: 11, background: 'var(--composer-card-solid, var(--surface-2))', border: '1px solid var(--hair)' }}>
+                {['work', 'plan'].map((mode) => {
+                  const active = interactionMode === mode;
+                  return (
+                    <button key={mode} type="button" className="cv6-command-mode" aria-pressed={active} onClick={() => setInteractionMode?.(mode)}
+                      style={{ height: 32, borderRadius: 8, border: active ? '1px solid var(--hair)' : '1px solid transparent', background: active ? 'var(--composer-solid, var(--surface))' : 'transparent', color: active ? 'var(--fg)' : 'var(--muted)', boxShadow: active ? '0 2px 7px rgba(0,0,0,.12)' : 'none', font: '700 11.5px var(--font-sans)', cursor: 'pointer', textTransform: 'capitalize' }}>
+                      {mode}
+                    </button>
+                  );
+                })}
+              </div>
+              <MenuRow icon={I.brain} label={`Model: ${model.label}`}
+                detail={`${model.sourceLabel} · fallback on limits`} hasSubmenu
+                onClick={() => setView('model')} testid="cv6-commands-model" />
               <MenuRow icon={I.image} label="Image generation" detail="Gemini · Ideogram · OpenAI" hasSubmenu
                 onClick={() => setView('image-gen')} testid="cv6-commands-image-gen" />
               <MenuRow icon={isRecording ? I.stop : I.record} label={isRecording ? 'Stop recording' : 'Record conversation'}
@@ -118,7 +160,7 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
               <MenuRow icon={I.plug} label="Integrations" detail="Connect tools and accounts"
                 onClick={() => { onOpenIntegrations(); setOpen(false); }} testid="cv6-commands-integrations" />
             </>
-          ) : (
+          ) : view === 'image-gen' ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px 6px' }}>
                 <button type="button" onClick={() => setView('root')} style={{ width: 20, height: 20, borderRadius: 6, background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>{I.back}</button>
@@ -129,6 +171,28 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
                   onClick={() => { setSelectedImageTool(tool.id); setOpen(false); }}
                   testid={`cv6-commands-image-gen-${tool.id}`} />
               ))}
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px 6px' }}>
+                <button type="button" onClick={() => setView('root')} aria-label="Back to commands" style={{ width: 20, height: 20, borderRadius: 6, background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>{I.back}</button>
+                <span className="eyebrow">Model for this room</span>
+              </div>
+              {MODEL_OPTIONS.map((option) => {
+                const selected = model.roomSelection === option.id;
+                const label = option.id === 'default' ? 'Auto (workspace)' : option.label;
+                const detail = option.id === 'default' ? `Currently resolves to ${model.inheritedLabel}` : option.desc;
+                return (
+                  <MenuRow key={option.id} icon={selected ? I.check : I.brain} label={label} detail={detail}
+                    tint={selected ? 'var(--accent)' : null}
+                    onClick={async () => {
+                      const saved = await model.select(option.id);
+                      if (saved) setOpen(false);
+                    }}
+                    testid={`cv6-commands-model-${option.id}`} />
+                );
+              })}
+              {model.error ? <div role="status" style={{ padding: '7px 10px', color: 'var(--error, #e5484d)', fontSize: 11.5 }}>Could not save that model. Try again.</div> : null}
             </>
           )}
         </div>
@@ -155,6 +219,63 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [caret, setCaret] = useState(null);
+  const preferenceKey = roomModelPreferenceKey(room);
+  const [modelPrefs, setModelPrefs] = useState({});
+  const [modelLoading, setModelLoading] = useState(true);
+  const [modelSaving, setModelSaving] = useState(false);
+  const [modelError, setModelError] = useState(false);
+
+  const loadModelPrefs = useCallback(() => {
+    if (!worldId || !preferenceKey) {
+      setModelPrefs({});
+      setModelLoading(false);
+      return Promise.resolve({});
+    }
+    setModelLoading(true);
+    return authFetch(`/api/dashboard/agent-model?client=${encodeURIComponent(worldId)}`)
+      .then((response) => response.ok ? response.json() : { models: {} })
+      .then(({ models }) => {
+        const next = models && typeof models === 'object' ? models : {};
+        setModelPrefs(next);
+        return next;
+      })
+      .catch(() => {
+        setModelPrefs({});
+        setModelError(true);
+        return {};
+      })
+      .finally(() => setModelLoading(false));
+  }, [preferenceKey, worldId]);
+
+  useEffect(() => {
+    loadModelPrefs();
+    window.addEventListener('aom-model-pref-changed', loadModelPrefs);
+    return () => window.removeEventListener('aom-model-pref-changed', loadModelPrefs);
+  }, [loadModelPrefs]);
+
+  const selectRoomModel = useCallback(async (nextModel) => {
+    if (!worldId || !preferenceKey || modelSaving) return false;
+    const previous = modelPrefs;
+    setModelSaving(true);
+    setModelError(false);
+    setModelPrefs((current) => ({ ...current, [preferenceKey]: nextModel }));
+    try {
+      const response = await authFetch('/api/dashboard/agent-model', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: preferenceKey, model: nextModel, client_id: worldId }),
+      });
+      if (!response.ok) throw new Error('Preference save failed');
+      window.dispatchEvent(new Event('aom-model-pref-changed'));
+      return true;
+    } catch {
+      setModelPrefs(previous);
+      setModelError(true);
+      return false;
+    } finally {
+      setModelSaving(false);
+    }
+  }, [modelPrefs, modelSaving, preferenceKey, worldId]);
   // /clear asks before it acts. Room settings' "Clear chat" arms the same way, and
   // this is reachable by typing two characters and pressing Enter — far easier to
   // hit by accident. Nothing is deleted either way: room-reset archives the visible
@@ -197,6 +318,21 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
   const hasContent = input.trim().length > 0 || (pasteChips?.length > 0);
   const roomName = selectedAgent?.name || selectedProject?.name || 'the room';
   const toolName = selectedImageTool ? (IMAGE_TOOLS.find((t) => t.id === selectedImageTool)?.name || selectedImageTool) : null;
+  const effectiveModel = resolveEffectiveRoomModel(modelPrefs, preferenceKey);
+  const effectiveModelOption = modelOption(effectiveModel.id);
+  const workspaceModel = String(modelPrefs?._all || '').trim();
+  const inheritedModel = workspaceModel && workspaceModel !== 'default' ? workspaceModel : 'default';
+  const model = {
+    label: effectiveModelOption.label,
+    shortLabel: shortModelLabel(effectiveModel.id),
+    sourceLabel: effectiveModel.source === 'room' ? 'Set for this room' : effectiveModel.source === 'workspace' ? 'Workspace setting' : 'Automatic route',
+    inheritedLabel: modelOption(inheritedModel).label,
+    roomSelection: String(modelPrefs?.[preferenceKey] || 'default'),
+    loading: modelLoading,
+    saving: modelSaving,
+    error: modelError,
+    select: selectRoomModel,
+  };
 
   return (
     <div className={`cv6-floating-composer${checklistOpen ? ' is-checklist-open' : ''}`} style={{ width: '100%', maxWidth: 680, margin: '0 auto', fontFamily: 'var(--font-sans)', padding: checklistOpen ? 14 : 12, borderRadius: 26, background: 'var(--composer-solid, #131317)', border: '1px solid var(--hair)', boxShadow: '0 22px 52px -22px rgba(0,0,0,.88)', transition: 'padding .18s ease, background .18s ease' }}>
@@ -250,7 +386,11 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
             }}
             surface={(room?.isProject || room?.isMission) ? 'project' : '1on1'}
             panelStyle={{ background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', minHeight: 50, borderRadius: 17, background: 'var(--composer-card-solid, var(--surface-2))', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 15px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', minHeight: 50, borderRadius: 17, background: 'var(--composer-card-solid, var(--surface-2))', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 10px 0 7px' }}>
+            <button type="button" className="cv6-composer-attach" title="Files" aria-label="Attach and upload files" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+              style={{ width: 36, height: 36, borderRadius: 11, border: 'none', background: 'transparent', color: uploading ? 'var(--accent)' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: uploading ? 'wait' : 'pointer', padding: 0 }}>
+              {uploading ? <CornerLoaderMark compact className="cv6-upload-loader" /> : I.attach}
+            </button>
             <input
               ref={inputRef}
               data-testid="cv6-chat-input"
@@ -270,15 +410,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
           </div>
         </div>}
         <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: checklistOpen ? 12 : 10 }}>
-          <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} />
-          <button type="button" className="cv6-composer-util" title="Files" aria-label="Attach and upload files" onClick={() => fileInputRef.current?.click()} disabled={uploading}
-            style={{ ...UTILITY_BTN, background: 'var(--surface-2)', border: '1px solid var(--hair)', color: uploading ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer' }}>
-            {uploading ? <CornerLoaderMark compact className="cv6-upload-loader" /> : I.attach}
-          </button>
-          <button type="button" className="cv6-mode-toggle cv6-composer-util" aria-label={`Currently in ${interactionMode} mode. Switch to ${interactionMode === 'plan' ? 'work' : 'plan'} mode`} title={interactionMode === 'plan' ? 'Plan mode: think until we decide' : 'Work mode: go go go'} onClick={() => setInteractionMode?.(interactionMode === 'plan' ? 'work' : 'plan')}
-            style={{ height: 34, padding: '0 12px', borderRadius: 10, border: `1px solid ${interactionMode === 'plan' ? 'var(--accent)' : 'var(--hair)'}`, background: interactionMode === 'plan' ? 'var(--accent-weak)' : 'var(--surface-2)', color: interactionMode === 'plan' ? 'var(--accent)' : 'var(--muted)', font: '700 11.5px var(--font-sans)', cursor: 'pointer' }}>
-            {interactionMode === 'plan' ? 'Plan' : 'Work'}
-          </button>
+          <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} interactionMode={interactionMode} setInteractionMode={setInteractionMode} model={model} />
           <button type="button" className="cv6-composer-util" data-testid="room-checklist-toggle" title={checklistOpen ? 'Back to message' : 'Room checklists'} aria-label={checklistOpen ? 'Close room checklists' : 'Open room checklists'} aria-pressed={checklistOpen}
             onClick={() => { setCommandsOpen(false); setChecklistOpen((open) => !open); }}
             style={{ ...UTILITY_BTN, background: checklistOpen ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${checklistOpen ? 'var(--accent)' : 'var(--hair)'}`, color: checklistOpen ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer' }}>

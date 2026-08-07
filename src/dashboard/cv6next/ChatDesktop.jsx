@@ -14,7 +14,7 @@ import { useRoomThread, useGoalThread, rowAttachments } from './data/useRoomThre
 import { titleForAgent } from './data/agentTitles.js';
 import { buildChecklistRoomOptions } from './data/roomKeys.js';
 
-import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
+import { SendCtx, ReviewCtx } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
@@ -658,6 +658,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     }
     return ask ? { ...(goal || {}), title: ask } : goal;
   }, [goal, messages]);
+  const currentAskTitle = useMemo(() => {
+    for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
+      if (messages[i]?.isUser && messages[i].text) return messages[i].text;
+    }
+    return goal?.title || '';
+  }, [goal?.title, messages]);
 
   // A "Review"/"Review all" tap on a message attachment must OPEN the Review tool on
   // those exact files (live), not post a chat message. handleReview hands us a single
@@ -1070,7 +1076,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <>
                       <button type="button" className="cv6-chat-more-scrim" aria-label="Close activity panel" onClick={() => setWorkOpen(false)} />
                       <div className="cv6-work-dropdown" role="region" aria-label="Active work">
-                        <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} expandable />
+                        <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} expandable />
                       </div>
                     </>
                   ) : null}
@@ -1081,17 +1087,15 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       to match the kit design (templates/chat.html) and reflow to full width on mobile. */}
                   <div style={{ maxWidth: 660, margin: '0 auto', width: '100%' }}>
                     {/* The thread is the conversation (Patrik 2026-06-29): messages stream in as
-                        they land and each finished turn shows its step thread inline; while the
-                        agent works, its LIVE step thread builds right under the just-sent message,
-                        ticking pending → working → done like the step-thread kit animation. */}
+                        they land and finished structured turns stay inline. Current work uses the
+                        fixed-height progress card below, so steps change in place at the tail. */}
                     <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />
-                    {awaiting ? <WorkingTurn room={selected} liveSteps={liveSteps} goal={askGoal} /> : null}
                     {/* Background work came BACK to the thread (Patrik 2026-08-06). Sending it
                         to a separate window meant a busy room looked idle, and only ever showed
                         dispatched sub-agent jobs. This lists both kinds, per room, short, with a
                         live counter on each. The Background work window still exists for the
                         world-wide view. */}
-                    <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} />
+                    <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
                     {/* Only renders when the FRONT DOOR chose this room automatically — names
                         the destination the user never got to see, and moves the message in one
                         tap if it guessed wrong (corner:front-door R8). */}

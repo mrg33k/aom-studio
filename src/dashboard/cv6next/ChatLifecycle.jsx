@@ -1074,6 +1074,14 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     }
     return ask ? { ...(goal || {}), title: ask } : goal;
   }, [goal, messages]);
+  // A standing room goal can outlive several turns. Activity's immediate fallback must
+  // name the message the agent just received, not that older umbrella goal.
+  const currentAskTitle = useMemo(() => {
+    for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
+      if (messages[i]?.isUser && messages[i].text) return messages[i].text;
+    }
+    return goal?.title || '';
+  }, [goal?.title, messages]);
 
   // ── Mobile composer collapse → FAB (task 24452dfa, 2026-08-07) ──────────
   // Composer starts open on room entry; collapses to a FAB after successful send.
@@ -1251,7 +1259,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
             <>
               <button type="button" className="cv6-chat-more-scrim" aria-label="Close activity panel" onClick={() => setWorkOpen(false)} />
               <div className="cv6-work-dropdown" role="region" aria-label="Active work">
-                <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} expandable />
+                <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} expandable />
               </div>
             </>
           ) : null}
@@ -1271,10 +1279,6 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               Systems agent) are pulled out of the thread and shown here as a collapsed
               status strip. Tap to expand. Never renders inline as a chat turn. */}
           <SystemAlertStrip alerts={systemAlerts} />
-          {/* Per-room action items (Patrik 2026-08-06): what is happening in THIS room,
-              the room agent's own steps and any dispatched sub-agent work, one short line
-              each with a live counter. Renders nothing when the room has no work. */}
-          <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} />
           {empty ? (
               <div className="empty" style={{ marginTop: 40 }}>
                 <div className="e-t">No messages with {room.name} yet</div>
@@ -1300,7 +1304,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
                     awaiting={awaiting}
                     renderBlocks="goalBody"
                     renderAttachments="mobileGallery"
-                    renderLiveWork="goalBody"
+                    renderLiveWork="none"
                     allowBlocks
                     allowAttachments
                     allowLinkCards
@@ -1314,6 +1318,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               )}
             </>
           )}
+          {/* One live surface at the conversation tail in every room state. It replaces
+              the old accumulating WorkingTurn steps; bridge steps now animate through
+              this fixed-height card and the same projection names the Activity dropdown. */}
+          <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
           {/* In-flight background work left the thread (corner:one-corner M19): it lives
               in the Background work window, reached from the drawer menu. */}
           {/* Only renders when the FRONT DOOR chose this room automatically. No projects /

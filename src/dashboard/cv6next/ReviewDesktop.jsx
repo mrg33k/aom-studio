@@ -416,7 +416,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
       {zoomControls}
       {toolAnchor && (
-        <div style={{ position: 'absolute', top: toolAnchor.top + 38, right: toolAnchor.right, zIndex: 24 }}>
+        <div style={{ position: 'absolute', bottom: toolAnchor.bottom + 40, right: toolAnchor.right, zIndex: 24 }}>
           {circleToggle}
         </div>
       )}

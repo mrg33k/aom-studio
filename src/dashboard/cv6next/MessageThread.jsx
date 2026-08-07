@@ -368,7 +368,7 @@ function MobileMessageThread({
           live
         />
       ) : null}
-      {showLive && renderLiveWork !== 'goalBody' ? <WorkingTurn room={room} liveSteps={liveSteps} goal={askGoal} /> : null}
+      {showLive && renderLiveWork === 'workingTurn' ? <WorkingTurn room={room} liveSteps={liveSteps} goal={askGoal} /> : null}
     </div>
   );
 }
@@ -455,7 +455,7 @@ export function Cv6MessageThread({
               <GoalThreadBody goal={askGoal} blocks={liveBlocks} header={false} />
             </div>
           ) : null}
-          {showLive && renderLiveWork !== 'goalBody' ? <WorkingTurn room={room} liveSteps={liveSteps} goal={askGoal} /> : null}
+          {showLive && renderLiveWork === 'workingTurn' ? <WorkingTurn room={room} liveSteps={liveSteps} goal={askGoal} /> : null}
         </div>
       </ReviewCtx.Provider>
     </SendCtx.Provider>

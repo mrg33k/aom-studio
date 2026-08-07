@@ -392,7 +392,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
       <TemplateScreen html={DESKTOP_HTML} data={bindData} actions={actions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
       {zoomControls}
       {toolAnchor && (
-        <div style={{ position: 'absolute', top: toolAnchor.top + 38, right: toolAnchor.right, zIndex: 24 }}>
+        <div style={{ position: 'absolute', bottom: toolAnchor.bottom + 40, right: toolAnchor.right, zIndex: 24 }}>
           {circleToggle}
         </div>
       )}
