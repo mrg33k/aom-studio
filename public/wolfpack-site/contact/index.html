@@ -60,8 +60,10 @@ br.d{display:none}
 .head{position:sticky;top:0;z-index:60;background:var(--nav);border-bottom:1px solid var(--line);
   transition:box-shadow .3s}
 body.scrolled .head{box-shadow:0 1px 18px rgba(0,0,0,.09)}
-.head .wrap{display:flex;align-items:center;gap:var(--s4);height:var(--s9)}
-.head .logo{height:72px;width:auto;flex:none}
+.head .wrap{display:flex;align-items:center;gap:var(--s4);height:64px}
+.brand{display:flex;align-items:center;gap:var(--s3);flex:none}
+.brandmark{height:40px;width:auto;flex:none}
+.brandword{height:34px;width:auto;flex:none}
 .logo-dk{display:none}
 :root[data-theme="dark"] .logo-lt{display:none}
 :root[data-theme="dark"] .logo-dk{display:block}
@@ -82,7 +84,7 @@ body.menu .burger i{background:transparent}
 body.menu .burger i::before{transform:translateY(6px) rotate(45deg)}
 body.menu .burger i::after{transform:translateY(-6px) rotate(-45deg)}
 .head-cta{display:none}
-.sheet{position:fixed;inset:var(--s9) 0 0;z-index:55;background:var(--nav);padding:var(--s6) var(--pad);
+.sheet{position:fixed;inset:var(--s8) 0 0;z-index:55;background:var(--nav);padding:var(--s6) var(--pad);
   display:flex;flex-direction:column;gap:var(--s2);overflow-y:auto;
   opacity:0;visibility:hidden;transform:translateY(-8px);
   transition:opacity .3s ease,transform .3s var(--ease),visibility .3s}
@@ -375,7 +377,9 @@ body.reqopen .reqdrawer{transform:none}
 /* ============================ FOOTER ============================ */
 .foot{background:#0C0E12;color:#F2F1EC;padding:var(--s7) 0}
 .foot .wrap{display:flex;flex-direction:column;gap:var(--s5)}
-.foot img{height:56px;width:auto}
+.foot .brand{gap:var(--s3)}
+.foot .brandmark{height:40px}
+.foot .brandword{height:34px}
 .foot .fr{display:flex;flex-direction:column;gap:var(--s4);font-size:var(--t2)}
 .foot .fr>*{display:flex;align-items:flex-start;gap:var(--s3);padding:var(--s3) 0}
 .foot .fr svg{width:20px;height:20px;flex:none;margin-top:var(--s1);fill:none;stroke:var(--blue);
@@ -485,8 +489,9 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
    ===================================================================== */
 @media (min-width:1120px){
   :root{--pad:var(--s7)}
-  .head .wrap{height:var(--s10);gap:var(--s7);padding-right:0}
-  .head .logo{height:104px}
+  .head .wrap{height:var(--s9);gap:var(--s7);padding-right:0}
+  .brandmark{height:52px}
+  .brandword{height:44px}
   .nav{display:flex;gap:var(--s6);margin-left:auto;font-family:'Archivo',sans-serif;
     font-variation-settings:'wdth' 88,'wght' 600;text-transform:uppercase;
     font-size:var(--t1);letter-spacing:.11em}
@@ -568,7 +573,8 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .way{flex-direction:column;align-items:flex-start;padding:var(--s6) var(--s5)}
   .way svg{margin-bottom:var(--s4)}
   .foot .wrap{gap:var(--s7);align-items:center}
-  .foot img{height:72px}
+  .foot .brandmark{height:48px}
+  .foot .brandword{height:40px}
   .foot .fr{flex-direction:row;align-items:center;gap:var(--s7)}
   .foot .fr .cities-row{display:none}
   .foot .fbrand .cities{display:block;margin-top:var(--s5)}
@@ -613,9 +619,11 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 <g id="i-tick-c"><circle cx="12" cy="12" r="9"/><path d="m8 12.2 2.7 2.8L16.2 9"/></g>
 </defs></svg>
 <header class="head"><div class="wrap">
-  <a href="/wolfpack-site/" aria-label="Wolfpack Companies home">
-    <img class="logo logo-lt" src="/wolfpack-site/assets/wolfpack-logo.png" alt="Wolfpack Companies LLC">
-    <img class="logo logo-dk" src="/wolfpack-site/assets/wolfpack-logo-knockout.png" alt="Wolfpack Companies LLC">
+  <a class="brand" href="/wolfpack-site/" aria-label="Wolfpack Companies home">
+    <img class="brandmark logo-lt" src="/wolfpack-site/assets/wolfpack-icon.png" alt="">
+    <img class="brandmark logo-dk" src="/wolfpack-site/assets/wolfpack-icon-knockout.png" alt="">
+    <img class="brandword logo-lt" src="/wolfpack-site/assets/wolfpack-wordmark.png" alt="">
+    <img class="brandword logo-dk" src="/wolfpack-site/assets/wolfpack-wordmark-knockout.png" alt="">
   </a>
   <nav class="nav"><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/grease-fog/">Grease &amp; FOG</a><a href="/wolfpack-site/contact/" aria-current="page">Contact</a></nav>
   <button class="tt" id="tt" aria-label="Switch between light and dark">
@@ -657,7 +665,10 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 </main>
 <footer class="foot"><div class="wrap">
   <div class="fbrand">
-    <img src="/wolfpack-site/assets/wolfpack-logo-knockout.png" alt="Wolfpack Companies LLC">
+    <div class="brand">
+      <img class="brandmark" src="/wolfpack-site/assets/wolfpack-icon-knockout.png" alt="">
+      <img class="brandword" src="/wolfpack-site/assets/wolfpack-wordmark-knockout.png" alt="Wolfpack Companies LLC">
+    </div>
     <p class="cities">Phoenix &middot; Scottsdale &middot; Paradise Valley &middot; Glendale &middot; Surprise &middot; Tempe &middot; Mesa &middot; Chandler &middot; San Tan Valley</p>
   </div>
   <div class="fr">
