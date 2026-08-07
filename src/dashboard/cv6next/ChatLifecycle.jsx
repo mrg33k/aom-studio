@@ -555,6 +555,19 @@ function mfsDisplayName(name) {
   if (!words) return raw;
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+// Thumbnail source for a 40px tile. The file host will hand back a downscaled WebP for
+// `?w=`, which is the difference between a 2.5MB screenshot and ~5KB per tile — a Files
+// panel used to pull tens of megabytes to paint a grid of 40px squares, and the tiles
+// sat empty for ~10s (Patrik 2026-08-07: "images do open very slow"). Only rag-hosted
+// files get the param; anything else is left exactly as-is. If the host does not
+// understand it the param is ignored and the original comes back, so this cannot break
+// a tile — it can only fail to speed one up.
+function mfsThumbSrc(url) {
+  if (!url || typeof url !== 'string') return url;
+  if (!url.includes('rag.aheadofmarket.com')) return url;
+  // 40 CSS px at up to 3x DPR = 120 device px.
+  return url + (url.includes('?') ? '&' : '?') + 'w=120';
+}
 // "who — Xm — 12 KB" formatted meta line.
 function mfsRelAgo(ts) {
   if (!ts) return '';
@@ -795,7 +808,7 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
                   <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15l5-5 4 4 3-3 6 6" />
                 </svg>
                 <img
-                  src={f.url}
+                  src={mfsThumbSrc(f.url)}
                   alt=""
                   loading="lazy"
                   decoding="async"
