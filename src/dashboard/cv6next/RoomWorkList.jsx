@@ -116,9 +116,15 @@ function Box({ state }) {
   return <span style={{ ...common, border: '1.5px solid var(--hair)' }} />;
 }
 
-export default function RoomWorkList({ room, goal, awaiting, awaitingSince }) {
+// expandable — when true (dropdown mode) "+N more" is a button that expands the list.
+export default function RoomWorkList({ room, goal, awaiting, awaitingSince, expandable = false }) {
   const { tasks, promises } = useRunningTasks(room);
   const [now, setNow] = useState(() => Date.now());
+  const [localExpanded, setLocalExpanded] = useState(false);
+  // Reset expanded state whenever the room changes so re-opening the dropdown on a
+  // different room doesn't inherit the previous room's expanded state.
+  const rKey = roomKeyFor(room);
+  useEffect(() => { setLocalExpanded(false); }, [rKey]);
 
   const roomSteps = useMemo(() => {
     const list = Array.isArray(goal?.checklist) ? goal.checklist : [];
@@ -158,8 +164,9 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince }) {
     if (!active.length) return [];
     const doneTail = roomSteps.filter((i) => i.state === 'done').slice(-2);
     const nextUp = roomSteps.filter((i) => i.state === 'pending').slice(0, 2);
-    return [...doneTail, ...active, ...nextUp].slice(0, 6);
-  }, [roomSteps, agentItems, awaiting, awaitingSince]);
+    const cap = localExpanded ? 100 : 6;
+    return [...doneTail, ...active, ...nextUp].slice(0, cap);
+  }, [roomSteps, agentItems, awaiting, awaitingSince, localExpanded]);
   const running = items.filter((i) => i.state === 'active').length;
   const remaining = roomSteps.filter((i) => i.state === 'pending').length - items.filter((i) => i.state === 'pending').length;
 
@@ -210,9 +217,19 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince }) {
         );
       })}
       {remaining > 0 ? (
-        <div style={{ fontSize: 10.5, color: 'var(--faint)', padding: '4px 0 2px' }}>
-          +{remaining} more on this room's list
-        </div>
+        expandable && !localExpanded ? (
+          <button
+            type="button"
+            onClick={() => setLocalExpanded(true)}
+            style={{ display: 'block', width: '100%', textAlign: 'left', border: 0, background: 'transparent', padding: '4px 0 2px', fontSize: 10.5, color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+          >
+            Show {remaining} more
+          </button>
+        ) : (
+          <div style={{ fontSize: 10.5, color: 'var(--faint)', padding: '4px 0 2px' }}>
+            +{remaining} more on this room's list
+          </div>
+        )
       ) : null}
     </div>
   );

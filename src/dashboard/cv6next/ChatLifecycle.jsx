@@ -30,6 +30,7 @@ import { useHtmlDocs } from './data/htmlDocView.js';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import RoomWorkList from './RoomWorkList.jsx';
+import { useRunningTasks } from './data/useRunningTasks.js';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -504,7 +505,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   const [filesSheetOpen, setFilesSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  useEffect(() => { setSettingsOpen(false); setMoreOpen(false); }, [fullRoom?.id, fullRoom?.missionSlug]);
+  const [workOpen, setWorkOpen] = useState(false);
+  useEffect(() => { setSettingsOpen(false); setMoreOpen(false); setWorkOpen(false); }, [fullRoom?.id, fullRoom?.missionSlug]);
   const [mComposerHost, setMComposerHost] = useState(null);
   const richComposer = !!(fullRoom && worldId);
   const roomKeyForSheet = fullRoom?.id || room?.name;
@@ -580,6 +582,14 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   // shows when you open a busy room) so mobile reads identically to the other surfaces; fall
   // back to the local "last message is mine" guess only when no signal was passed (demo).
   const awaiting = awaitingProp != null ? awaitingProp : (!!lastMsg && lastMsg.isUser);
+  // Per-room running tasks + goal-step signal — drives the topbar work indicator.
+  const { tasks: roomTasks, promises: roomPromises } = useRunningTasks(fullRoom || room);
+  const hasRoomWork = !!(
+    awaiting ||
+    roomTasks.length > 0 ||
+    roomPromises.length > 0 ||
+    (goal?.checklist || []).some((s) => s.state === 'active')
+  );
   const liveProgressKey = useMemo(() => (liveSteps || []).map((step) => [
     step?.id,
     step?.step_index,
@@ -668,10 +678,26 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
         <div className="mhactions">
-          <button type="button" className="cv6-chat-header-button" aria-label="Files" title="Files" data-testid="chat-files-button" onClick={() => { setMoreOpen(false); setFilesSheetOpen(true); }}>
+          <button type="button" className="cv6-chat-header-button" aria-label="Files" title="Files" data-testid="chat-files-button" onClick={() => { setMoreOpen(false); setWorkOpen(false); setFilesSheetOpen(true); }}>
             <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
           </button>
-          <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={moreOpen ? 'true' : 'false'} onClick={() => setMoreOpen((open) => !open)}>
+          {hasRoomWork ? (
+            <button
+              type="button"
+              className="cv6-chat-header-button"
+              aria-label="Activity"
+              title="Activity"
+              aria-expanded={workOpen ? 'true' : 'false'}
+              onClick={() => { setMoreOpen(false); setWorkOpen((o) => !o); }}
+              style={{ position: 'relative' }}
+            >
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+              </svg>
+              <span aria-hidden="true" className="cv6-worklist-spin" style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', border: '1.5px solid var(--accent)', borderTopColor: 'transparent', display: 'block' }} />
+            </button>
+          ) : null}
+          <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={moreOpen ? 'true' : 'false'} onClick={() => { setWorkOpen(false); setMoreOpen((open) => !open); }}>
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
           </button>
           {columnMode ? <ColumnExpandButton expanded={expanded} onToggle={onToggleWidth} label={room.name} /> : null}
@@ -687,6 +713,14 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
                 <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); onSearch?.(); }}>Search conversation</button>
                 <button type="button" role="menuitem" data-testid="room-settings-trigger" onClick={() => { setMoreOpen(false); setSettingsOpen(true); }}>Room settings</button>
                 <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); setComposerCollapsed((c) => !c); }}>{composerCollapsed ? 'Show composer' : 'Hide composer'}</button>
+              </div>
+            </>
+          ) : null}
+          {workOpen ? (
+            <>
+              <button type="button" className="cv6-chat-more-scrim" aria-label="Close activity panel" onClick={() => setWorkOpen(false)} />
+              <div className="cv6-work-dropdown" role="region" aria-label="Active work">
+                <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} expandable />
               </div>
             </>
           ) : null}
