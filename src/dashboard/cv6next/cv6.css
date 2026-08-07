@@ -2798,14 +2798,15 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
    the last "All rooms" row is always reachable. */
 [data-cv6][data-screen="home-mobile"] { position:relative; }
 [data-cv6][data-screen="home-mobile"] .mintake {
-  position:absolute; left:12px; right:12px; bottom:20px; z-index:6;
+  position:absolute; left:22px; right:22px; bottom:20px; z-index:6;
   margin-bottom:0;
+  width:auto; /* override [data-cv6-intake]{width:100%} — let left+right control width */
 }
 /* The list scrolls UNDER the floating box, so it needs both room to stop and a
    scrim — without it a half-row peeked out beside and below the card. */
 [data-cv6][data-screen="home-mobile"] .hbody { padding-bottom:186px; }
 [data-cv6][data-screen="home-mobile"] .mintake::before {
-  content:''; position:absolute; left:-12px; right:-12px; bottom:-20px; top:-34px;
+  content:''; position:absolute; left:-22px; right:-22px; bottom:-20px; top:-34px;
   background:linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--ground) 34%, var(--ground) 100%);
   pointer-events:none; z-index:-1;
 }

@@ -101,7 +101,7 @@ function Box({ state }) {
   const common = { width: 18, height: 18, borderRadius: 5, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' };
   if (state === 'done') {
     return (
-      <span style={{ ...common, background: 'var(--accent)', color: '#fff' }}>
+      <span style={{ ...common, background: 'var(--success)', color: '#fff' }}>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
       </span>
     );
