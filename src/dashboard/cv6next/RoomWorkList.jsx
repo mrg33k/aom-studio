@@ -116,7 +116,7 @@ function Box({ state }) {
   return <span style={{ ...common, border: '1.5px solid var(--hair)' }} />;
 }
 
-export default function RoomWorkList({ room, goal }) {
+export default function RoomWorkList({ room, goal, awaiting, awaitingSince }) {
   const { tasks, promises } = useRunningTasks(room);
   const [now, setNow] = useState(() => Date.now());
 
@@ -142,14 +142,24 @@ export default function RoomWorkList({ room, goal }) {
   // shipped. That is the wall of text Patrik explicitly does not want. This panel answers
   // "what is happening NOW", so: every running item, a little of what just finished for
   // context, and a peek at what is next. Never more than 6 rows.
+  //
+  // Synthetic fallback (Patrik 2026-08-07): the room agent is mid-turn (awaiting=true)
+  // but hasn't emitted a goal-thread checklist step yet — show a generic "Working" row
+  // so the action-items panel appears the instant a message is sent, not only once a
+  // structured step arrives. Only fires when no more-specific active roomStep already
+  // covers it (no double-up).
   const items = useMemo(() => {
-    const all = [...roomSteps, ...agentItems];
+    const hasActiveStep = roomSteps.some((s) => s.state === 'active');
+    const synthetic = awaiting && !hasActiveStep
+      ? [{ key: 'synthetic:working', label: 'Working', state: 'active', owner: '', since: awaitingSince || null }]
+      : [];
+    const all = [...roomSteps, ...agentItems, ...synthetic];
     const active = all.filter((i) => i.state === 'active');
     if (!active.length) return [];
     const doneTail = roomSteps.filter((i) => i.state === 'done').slice(-2);
     const nextUp = roomSteps.filter((i) => i.state === 'pending').slice(0, 2);
     return [...doneTail, ...active, ...nextUp].slice(0, 6);
-  }, [roomSteps, agentItems]);
+  }, [roomSteps, agentItems, awaiting, awaitingSince]);
   const running = items.filter((i) => i.state === 'active').length;
   const remaining = roomSteps.filter((i) => i.state === 'pending').length - items.filter((i) => i.state === 'pending').length;
 

@@ -619,7 +619,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav, windowMode]);
 
-  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, liveSteps } = useRoomThread(worldId, selected);
+  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps } = useRoomThread(worldId, selected);
   // The room agent's own steps — the half of "background work" the old card could not see.
   const roomGoal = useGoalThread(worldId, selected);
   const lastActiveLabel = (() => {
@@ -1055,7 +1055,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         dispatched sub-agent jobs. This lists both kinds, per room, short, with a
                         live counter on each. The Background work window still exists for the
                         world-wide view. */}
-                    <RoomWorkList room={selected} goal={roomGoal} />
+                    <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} />
                     {/* Only renders when the FRONT DOOR chose this room automatically — names
                         the destination the user never got to see, and moves the message in one
                         tap if it guessed wrong (corner:front-door R8). */}

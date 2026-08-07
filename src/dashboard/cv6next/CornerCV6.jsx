@@ -2003,7 +2003,7 @@ function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose, exp
       fullRoom={isDemo ? null : activeRoom} worldId={worldId} projectId={parentProject?.databaseId || activeRoom?.databaseId || ''}
       roomOptions={checklistRoomOptions}
       messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
-      awaiting={isDemo ? false : rt.awaiting}
+      awaiting={isDemo ? false : rt.awaiting} awaitingSince={isDemo ? null : rt.awaitingSince}
       columnMode={columnMode} onClose={onClose} expanded={expanded} onToggleWidth={onToggleWidth}
       onBack={() => onNav('back')} onSearch={() => onSearch?.()} onRoomRenamed={isDemo ? null : (name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} onClearRoom={isDemo ? null : rt.clearRoom} onSend={(text, options) => send?.(text, options)}
       onOpenReview={(files) => onNav('organize', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : ''), missionSlug: roomMissionSlug(room), needsReview: true } : null)}

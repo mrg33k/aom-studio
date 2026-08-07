@@ -494,7 +494,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp, columnMode = false, onClose, expanded = false, onToggleWidth }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -709,7 +709,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           {/* Per-room action items (Patrik 2026-08-06): what is happening in THIS room,
               the room agent's own steps and any dispatched sub-agent work, one short line
               each with a live counter. Renders nothing when the room has no work. */}
-          <RoomWorkList room={fullRoom || room} goal={goal} />
+          <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} />
           {empty ? (
               <div className="empty" style={{ marginTop: 40 }}>
                 <div className="e-t">No messages with {room.name} yet</div>
