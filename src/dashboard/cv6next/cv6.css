@@ -2737,7 +2737,17 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
   background:var(--success); box-shadow:var(--glow-online);
   animation:statPulse 1.7s infinite;
 }
-[data-cv6] .sdot.newdot.is-none { display:none; }
+/* HOLD THE SLOT, don't collapse it (2026-08-07). `display:none` let the dot
+   take zero width, so in a recent-room row the name started 10px further left
+   on every room WITHOUT a new-activity dot than on every room with one — a
+   visibly ragged left edge down the list. It was invisible while the row also
+   carried a clock icon (always present, so IT held the leading position); the
+   moment the clock came out — mobile in d9705fb0, desktop in c223d06d — the
+   raggedness surfaced. visibility:hidden keeps the 8px + gap reserved so every
+   name in the column starts on the same x. `newdot` is used ONLY by these
+   recent-room rows (2 in home-desktop, 1 in home-mobile), so this is scoped to
+   exactly the rows that need it. */
+[data-cv6] .sdot.newdot.is-none { visibility:hidden; }
 [data-cv6] .restcol .restrow .sdot.newdot.is-new,
 [data-cv6][data-screen="home-mobile"] .mresumecard .sdot.newdot.is-new { margin-right:2px; }
 
