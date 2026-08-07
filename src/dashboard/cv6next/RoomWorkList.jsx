@@ -206,6 +206,24 @@ function StepCard({ roomSteps, agentItems, awaiting, awaitingSince }) {
 
 // expandable — when true (dropdown mode) "+N more" is a button that expands the list.
 export default function RoomWorkList({ room, goal, awaiting, awaitingSince, expandable = false }) {
+  // EMERGENCY DISABLE (2026-08-07, room session), full component: disabling only the
+  // inline (!expandable) StepCard branch did NOT stop the crash -- reproduced again on
+  // production with the StepCard branch already returning null, same React invariant
+  // #300, same "This screen hit a snag" boundary, on BOTH Corner and Design (a second,
+  // unrelated room, also with real goal-thread/checklist history -- Wolfpack, with a
+  // sparse history, still opens clean). So the active-state hooks mismatch is not
+  // isolated to StepCard; it is somewhere in this component's data path (roomSteps /
+  // useStepStarts / the dropdown item list) or in one of today's other RoomWorkList call
+  // sites (the topbar work icon + dropdown, ChatLifecycle.jsx / ChatDesktop.jsx). Rather
+  // than keep guessing blind against a minified production stack (no component names
+  // survive minification for this error), disable the whole component so both surfaces
+  // this reads: the inline chat card, and the topbar dropdown are silent no-ops until a
+  // dev-mode rebuild can catch it with a readable stack. Composer collapse and the mobile
+  // swipe fix live in the SAME files that call this component and are NOT implicated --
+  // left untouched.
+  if (!room) return null;
+  return null;
+  // eslint-disable-next-line no-unreachable
   const { tasks, promises } = useRunningTasks(room);
   const [now, setNow] = useState(() => Date.now());
   const [localExpanded, setLocalExpanded] = useState(false);
