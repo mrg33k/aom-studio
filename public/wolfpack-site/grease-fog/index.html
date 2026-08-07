@@ -60,8 +60,8 @@ br.d{display:none}
 .head{position:sticky;top:0;z-index:60;background:var(--nav);border-bottom:1px solid var(--line);
   transition:box-shadow .3s}
 body.scrolled .head{box-shadow:0 1px 18px rgba(0,0,0,.09)}
-.head .wrap{display:flex;align-items:center;gap:var(--s4);height:64px}
-.head .logo{height:44px;width:auto;flex:none}
+.head .wrap{display:flex;align-items:center;gap:var(--s4);height:var(--s9)}
+.head .logo{height:72px;width:auto;flex:none}
 .logo-dk{display:none}
 :root[data-theme="dark"] .logo-lt{display:none}
 :root[data-theme="dark"] .logo-dk{display:block}
@@ -82,12 +82,12 @@ body.menu .burger i{background:transparent}
 body.menu .burger i::before{transform:translateY(6px) rotate(45deg)}
 body.menu .burger i::after{transform:translateY(-6px) rotate(-45deg)}
 .head-cta{display:none}
-.sheet{position:fixed;inset:64px 0 0;z-index:55;background:var(--nav);padding:var(--s6) var(--pad);
+.sheet{position:fixed;inset:var(--s9) 0 0;z-index:55;background:var(--nav);padding:var(--s6) var(--pad);
   display:flex;flex-direction:column;gap:var(--s2);overflow-y:auto;
   opacity:0;visibility:hidden;transform:translateY(-8px);
   transition:opacity .3s ease,transform .3s var(--ease),visibility .3s}
 body.menu .sheet{opacity:1;visibility:visible;transform:none}
-body.menu{overflow:hidden}
+body.menu,body.reqopen{overflow:hidden}
 .sheet a{padding:var(--s4) 0;border-bottom:1px solid var(--line-2);
   font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
   text-transform:uppercase;font-size:var(--t4);letter-spacing:.04em;
@@ -354,10 +354,28 @@ body.plot .hero-shot img{transform:scale(1)}
 .reqdone p{color:var(--ink-2);font-size:var(--t3);margin-top:var(--s3)}
 .reqdone p.req-q{color:var(--ink);font-size:var(--t5);margin-top:0}
 
+/* the request DRAWER — the same card above, opened from any button on any
+   page instead of a link to a whole page (Patrik, 2026-08-07). */
+.reqoverlay{position:fixed;inset:0;z-index:85;background:rgba(12,14,18,.55);
+  opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s}
+body.reqopen .reqoverlay{opacity:1;visibility:visible}
+.reqdrawer{position:fixed;top:0;right:0;bottom:0;z-index:90;width:100%;max-width:480px;
+  background:var(--panel);box-shadow:-32px 0 64px -32px rgba(18,20,15,.35);
+  transform:translateX(100%);transition:transform .4s var(--ease);
+  overflow-y:auto;-webkit-overflow-scrolling:touch}
+body.reqopen .reqdrawer{transform:none}
+.reqdrawer .reqcard{border:none;box-shadow:none;margin-top:0;max-width:none;
+  margin-left:0;margin-right:0;min-height:100%}
+.reqcard-head .reqx{margin-left:var(--s3);width:28px;height:28px;flex:none;display:grid;
+  place-items:center;color:#F2F1EC}
+.reqcard-head .reqx svg{width:16px;height:16px;fill:none;stroke:currentColor;
+  stroke-width:2;stroke-linecap:round}
+@media (prefers-reduced-motion:reduce){.reqoverlay,.reqdrawer{transition:none}}
+
 /* ============================ FOOTER ============================ */
 .foot{background:#0C0E12;color:#F2F1EC;padding:var(--s7) 0}
 .foot .wrap{display:flex;flex-direction:column;gap:var(--s5)}
-.foot img{height:44px;width:auto}
+.foot img{height:56px;width:auto}
 .foot .fr{display:flex;flex-direction:column;gap:var(--s4);font-size:var(--t2)}
 .foot .fr>*{display:flex;align-items:flex-start;gap:var(--s3);padding:var(--s3) 0}
 .foot .fr svg{width:20px;height:20px;flex:none;margin-top:var(--s1);fill:none;stroke:var(--blue);
@@ -467,8 +485,8 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
    ===================================================================== */
 @media (min-width:1120px){
   :root{--pad:var(--s7)}
-  .head .wrap{height:94px;gap:var(--s7);padding-right:0}
-  .head .logo{height:64px}
+  .head .wrap{height:var(--s10);gap:var(--s7);padding-right:0}
+  .head .logo{height:104px}
   .nav{display:flex;gap:var(--s6);margin-left:auto;font-family:'Archivo',sans-serif;
     font-variation-settings:'wdth' 88,'wght' 600;text-transform:uppercase;
     font-size:var(--t1);letter-spacing:.11em}
@@ -550,7 +568,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .way{flex-direction:column;align-items:flex-start;padding:var(--s6) var(--s5)}
   .way svg{margin-bottom:var(--s4)}
   .foot .wrap{gap:var(--s7);align-items:center}
-  .foot img{height:48px}
+  .foot img{height:72px}
   .foot .fr{flex-direction:row;align-items:center;gap:var(--s7)}
   .foot .fr .cities-row{display:none}
   .foot .fbrand .cities{display:block;margin-top:var(--s5)}
@@ -621,7 +639,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
     <p class="sub">Interceptor service, line jetting and documentation for restaurant and hospitality groups running more than one location.</p>
     <div class="cta-row">
       <a class="btn btn-p" href="tel:6025505452">602-550-5452 / Call now</a>
-      <a class="btn btn-g" href="/wolfpack-site/contact/">Get a multi-location quote</a>
+      <button class="btn btn-g" type="button" data-req-open>Get a multi-location quote</button>
     </div>
   </div>
   <div class="hero-shot"><img src="/wolfpack-site/assets/fog-hero.jpg" alt="Wolfpack technician servicing a commercial grease interceptor" fetchpriority="high"></div>
@@ -648,7 +666,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 </div></section>
 <section class="offer"><div class="wrap">
   <h2 class="display rv">Quote the whole estate.</h2>
-  <a class="btn rv" href="/wolfpack-site/contact/">Get a multi-location quote</a>
+  <button class="btn rv" type="button" data-req-open>Get a multi-location quote</button>
 </div></section></main>
 <footer class="foot"><div class="wrap">
   <div class="fbrand">
@@ -716,6 +734,176 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
     b.classList.toggle('docked', y>520);
     last=y;
   },{passive:true});
+})();
+</script>
+<div class="reqoverlay" data-req-close></div>
+<aside class="reqdrawer" id="reqDrawer" aria-hidden="true" aria-label="Request a walkthrough">
+  <div class="reqcard" id="req">
+    <div class="reqcard-head">
+      <span class="dot"></span><b>Request a walkthrough</b><span class="rstep" id="reqStepLabel">Start</span>
+      <button class="reqx" type="button" data-req-close aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="reqprog"><i id="reqBar"></i></div>
+
+    <div data-panel="0">
+      <div class="reqbody">
+        <p class="req-q">Which one<br>are you?</p>
+        <p class="req-qsub">Two different answers. Pick yours and skip the rest.</p>
+        <div class="reqfork">
+          <button class="reqpick" type="button" data-go="emergency">
+            <svg viewBox="0 0 24 24"><use href="#i-alert"/></svg>
+            <div><b>A line is down right now</b><span>Do not fill in a form. Call.</span></div><i>&rarr;</i>
+          </button>
+          <button class="reqpick" type="button" data-go="1">
+            <svg viewBox="0 0 24 24"><use href="#i-building"/></svg>
+            <div><b>I manage multiple properties</b><span>Request a walkthrough. Three fields.</span></div><i>&rarr;</i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div data-panel="emergency" hidden>
+      <div class="reqbody">
+        <p class="req-q">Call. We<br>answer.</p>
+        <div class="reqemer">
+          <span class="num">602-550-5452</span>
+          <p>A person picks up, 24 hours a day. Crews dispatch from Phoenix.</p>
+        </div>
+      </div>
+      <div class="reqfoot">
+        <a class="btn btn-p" href="tel:6025505452">Call now</a>
+        <button class="reqback" type="button" data-go="0">&larr; Not an emergency</button>
+      </div>
+    </div>
+
+    <div data-panel="1" hidden>
+      <div class="reqbody">
+        <p class="req-q">How many<br>properties?</p>
+        <p class="req-qsub">This tells us who walks the site with you.</p>
+        <div class="reqchips" id="reqChips">
+          <button class="reqchip" type="button" aria-pressed="false">1</button>
+          <button class="reqchip" type="button" aria-pressed="false">2 to 5</button>
+          <button class="reqchip" type="button" aria-pressed="false">6 to 15</button>
+          <button class="reqchip" type="button" aria-pressed="false">16 to 40</button>
+          <button class="reqchip" type="button" aria-pressed="false">More than 40</button>
+        </div>
+      </div>
+      <div class="reqfoot">
+        <button class="btn btn-p" type="button" id="reqCont" disabled>Continue</button>
+        <button class="reqback" type="button" data-go="0">&larr; Back</button>
+      </div>
+    </div>
+
+    <div data-panel="2" hidden>
+      <form class="reqbody" id="reqForm" novalidate>
+        <p class="req-q">Where do<br>we send it?</p>
+        <p class="req-qsub">Three fields. We come back same business day.</p>
+        <div class="fields">
+          <div class="field"><label for="f-name">Name</label>
+            <input id="f-name" name="name" type="text" autocomplete="name" required>
+            <p class="err">Please add your name.</p></div>
+          <div class="field"><label for="f-co">Company</label>
+            <input id="f-co" name="company" type="text" autocomplete="organization">
+            <p class="err">Please add your company.</p></div>
+          <div class="field"><label for="f-tel">Phone</label>
+            <input id="f-tel" name="phone" type="tel" autocomplete="tel" required inputmode="tel">
+            <p class="err">Please add a number we can call back.</p></div>
+        </div>
+      </form>
+      <div class="reqfoot">
+        <button class="btn btn-p" type="submit" form="reqForm" id="reqSend">Send request</button>
+        <button class="reqback" type="button" data-go="1">&larr; Back</button>
+      </div>
+    </div>
+
+    <div data-panel="3" hidden>
+      <div class="reqbody">
+        <div class="reqdone">
+          <div class="tick"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
+          <p class="req-q">Got it.</p>
+          <p>We come back the same business day. If the line will not wait, call <a href="tel:6025505452" class="blue"><b>602-550-5452</b></a> and a person answers.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+<script>
+(function(){
+  var body=document.body, drawer=document.getElementById('reqDrawer');
+  var card=document.getElementById('req');
+  var panels=[].slice.call(card.querySelectorAll('[data-panel]'));
+  var bar=document.getElementById('reqBar');
+  var stepLabel=document.getElementById('reqStepLabel');
+  var meta={'0':['Start',0],'emergency':['Emergency',100],'1':['Step 1 of 2',50],
+    '2':['Step 2 of 2',100],'3':['Done',100]};
+  var chosenProperties='', lastFocus=null;
+
+  function go(id){
+    panels.forEach(function(p){ p.hidden = p.dataset.panel !== id; });
+    var m=meta[id];
+    stepLabel.textContent=m[0];
+    bar.style.width=m[1]+'%';
+    drawer.scrollTop=0;
+  }
+  card.querySelectorAll('[data-go]').forEach(function(b){
+    b.addEventListener('click',function(){ go(b.dataset.go); });
+  });
+
+  var chips=[].slice.call(card.querySelectorAll('#reqChips .reqchip'));
+  var cont=document.getElementById('reqCont');
+  chips.forEach(function(c){
+    c.addEventListener('click',function(){
+      chips.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      c.setAttribute('aria-pressed','true');
+      chosenProperties=c.textContent;
+      cont.disabled=false;
+    });
+  });
+  cont.addEventListener('click',function(){ go('2'); });
+
+  var f=document.getElementById('reqForm');
+  f.addEventListener('submit',function(e){
+    e.preventDefault();
+    var ok=true;
+    [].slice.call(f.querySelectorAll('input')).forEach(function(el){
+      var fld=el.closest('.field'), bad=el.hasAttribute('required')&&!el.value.trim();
+      fld.classList.toggle('bad',bad); if(bad)ok=false;
+    });
+    if(!ok){ var first=f.querySelector('.field.bad input'); if(first)first.focus(); return; }
+    /* No form endpoint is wired yet — the request is held on the device and the
+       page tells the truth about what happened. Wiring this to Wolfpack's inbox
+       is a one-line change once Ross names the address it should land in. */
+    try{ localStorage.setItem('wp-request', JSON.stringify({
+      name:f.name.value, company:f.company.value, phone:f.phone.value,
+      properties:chosenProperties
+    })); }catch(err){}
+    go('3');
+  });
+  [].slice.call(f.querySelectorAll('input')).forEach(function(el){
+    el.addEventListener('input',function(){ el.closest('.field').classList.remove('bad'); });
+  });
+
+  /* open / close — from any page, any button carrying data-req-open */
+  function openDrawer(){
+    lastFocus=document.activeElement;
+    body.classList.add('reqopen');
+    drawer.setAttribute('aria-hidden','false');
+    var x=drawer.querySelector('.reqx'); if(x)x.focus();
+  }
+  function closeDrawer(){
+    body.classList.remove('reqopen');
+    drawer.setAttribute('aria-hidden','true');
+    if(lastFocus&&lastFocus.focus)lastFocus.focus();
+  }
+  document.addEventListener('click',function(e){
+    if(e.target.closest('[data-req-open]')){ e.preventDefault(); openDrawer(); return; }
+    if(e.target.closest('[data-req-close]')){ closeDrawer(); }
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&body.classList.contains('reqopen')) closeDrawer();
+  });
 })();
 </script>
 </body></html>
