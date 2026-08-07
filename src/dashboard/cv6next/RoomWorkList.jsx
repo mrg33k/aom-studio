@@ -36,6 +36,26 @@ function shorten(text, max = 58) {
   return `${s.slice(0, max - 1)}…`;
 }
 
+// Admission gate (Steffen 2026-08-06 Fix 4): reject items that are chat sentences, not
+// action items. A string with no verb-anchored end-state (starts with a pronoun + "I'll",
+// "Let me", "I will", "I'll", "I'll let", "Let me know", "I'm", "I am" …) is something an
+// agent *said*, not something it *will do*. Also reject strings that contain no non-trivial
+// verb at all — a one-word label or a raw log path is not an action item either.
+const PROSE_PREFIXES = /^(i'?ll|let me|i will|i'm|i am|i can|i've|i have|we'll|we will|you'll)\b/i;
+function isActionItem(label) {
+  const s = String(label || '').trim();
+  if (!s) return false;
+  if (PROSE_PREFIXES.test(s)) return false;
+  return true;
+}
+
+// Humanize the internal "sub-agent" owner label to something the user can understand.
+function humanizeOwner(owner) {
+  if (!owner || owner === 'sub-agent') return 'In progress';
+  if (owner === 'this room') return '';
+  return owner;
+}
+
 function roomKeyFor(room) {
   if (!room) return '';
   if (room.isMission) return `m:${room.missionSlug || room.id}`;
@@ -103,8 +123,8 @@ export default function RoomWorkList({ room, goal }) {
   const roomSteps = useMemo(() => {
     const list = Array.isArray(goal?.checklist) ? goal.checklist : [];
     return list
-      .filter((s) => s.label)
-      .map((s) => ({ key: `step:${s.label}`, label: s.label, state: s.state, owner: 'this room', since: null }));
+      .filter((s) => s.label && isActionItem(s.label))
+      .map((s) => ({ key: `step:${s.label}`, label: s.label, state: s.state, owner: '', since: null }));
   }, [goal]);
 
   const activeLabels = useMemo(
@@ -114,8 +134,8 @@ export default function RoomWorkList({ room, goal }) {
   const stepStarts = useStepStarts(roomKeyFor(room), activeLabels);
 
   const agentItems = useMemo(() => ([
-    ...tasks.map((t) => ({ key: `task:${t.id}`, label: t.title, state: 'active', owner: 'sub-agent', since: t.since ? new Date(t.since).getTime() : null })),
-    ...promises.map((p) => ({ key: `promise:${p.id}`, label: p.title, state: 'active', owner: 'sub-agent', since: p.since ? new Date(p.since).getTime() : null })),
+    ...tasks.map((t) => ({ key: `task:${t.id}`, label: t.title, state: 'active', owner: 'In progress', since: t.since ? new Date(t.since).getTime() : null })),
+    ...promises.map((p) => ({ key: `promise:${p.id}`, label: p.title, state: 'active', owner: 'In progress', since: p.since ? new Date(p.since).getTime() : null })),
   ]), [tasks, promises]);
 
   // A room's full step list is its whole history — 44 rows in Corner on the day this
@@ -170,8 +190,10 @@ export default function RoomWorkList({ room, goal }) {
               textDecoration: item.state === 'done' ? 'line-through' : 'none',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{shorten(item.label)}</span>
-            {/* Which of the two kinds of worker, in two words, never a paragraph. */}
-            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--faint)', flex: 'none', letterSpacing: '.02em' }}>{item.owner}</span>
+            {/* Owner label — never expose internal identifiers like "sub-agent". */}
+            {humanizeOwner(item.owner) ? (
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--faint)', flex: 'none', letterSpacing: '.02em' }}>{humanizeOwner(item.owner)}</span>
+            ) : null}
             <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: timer ? 'var(--accent)' : 'transparent', minWidth: 34, textAlign: 'right', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
               {timer}
             </span>
