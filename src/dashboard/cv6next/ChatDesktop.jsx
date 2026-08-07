@@ -801,6 +801,36 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // Email and rooms append page-owned workspace columns; they never replace
   // this conversation or escape into browser windows.
   const [composerOpen, setComposerOpen] = useState(false);
+
+  // ── In-chat composer collapse → FAB (task 24452dfa, 2026-08-07) ──────────
+  // Opens on room entry (false = open). After a successful send it collapses
+  // to a FAB; tapping the FAB re-opens and focuses the input.
+  const [composerCollapsed, setComposerCollapsed] = useState(false);
+  const composerCollapseTimerRef = useRef(null);
+  // Reset to open whenever the selected room changes.
+  useEffect(() => {
+    setComposerCollapsed(false);
+    clearTimeout(composerCollapseTimerRef.current);
+  }, [selected?.id, selected?.missionSlug]);
+  // Wrap send so a successful post triggers the collapse (120ms delay lets the
+  // optimistic bubble render before the composer exits, so the eye reads "sent").
+  const sendAndCollapse = useCallback(async (text, opts) => {
+    const result = await send(text, opts);
+    if (result !== false) {
+      clearTimeout(composerCollapseTimerRef.current);
+      composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
+    }
+    return result;
+  }, [send]);
+  const expandComposer = useCallback(() => {
+    setComposerCollapsed(false);
+    clearTimeout(composerCollapseTimerRef.current);
+    // Focus the input after the CSS transition completes (~220ms).
+    setTimeout(() => {
+      const box = composerHost?.querySelector('input:not([type="file"]):not([type="hidden"]), textarea');
+      if (box) box.focus();
+    }, 60);
+  }, [composerHost]);
   const { inboxItems = [] } = useDataContext() || {};
   // Files waiting on review are attention too (xhigh review finding 4): the
   // waiting queue, grouped per room, joins the same amber badges the needs-you
@@ -940,8 +970,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
           </div>}
 
           {/* The selected conversation remains alive while other rooms and Email
-              append beside it as independent workspace columns. */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              append beside it as independent workspace columns. position:relative
+              hosts the composer FAB when the composer is collapsed. */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
             {selected ? (
               <>
                 <div className="desktop-room-header">
@@ -977,7 +1008,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     </>
                   ) : null}
                 </div>
-                <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
+                <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: composerCollapsed ? '22px 24px 88px' : '22px 24px' }}>
                   {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
                       the thread + its tables/charts centered instead of stretched. Set to 660px
                       to match the kit design (templates/chat.html) and reflow to full width on mobile. */}
@@ -1007,10 +1038,41 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>
-                {/* Rich CV4 composer host — Cv6FullComposer portals its ThreadInputBar
-                    (command menu, voice, image gen, attachments) in here. It sends
-                    through the same useRoomThread.send the thread already polls. */}
-                <div ref={setComposerHost} style={{ borderTop: '1px solid var(--divider)', padding: '12px 24px' }} />
+                {/* Rich CV4 composer host — wrapped in a collapsible container.
+                    The wrapper animates shut on send (slides+fades down, 220ms).
+                    A collapse handle lets Patrik minimize manually at any time.
+                    The FAB (rendered below as a sibling) re-expands on tap. */}
+                <div className={`cv6-composer-wrap${composerCollapsed ? ' is-collapsed' : ''}`}>
+                  {/* Collapse button — sits on the border line, top-right, 28×22px target */}
+                  <div style={{ borderTop: '1px solid var(--divider)', display: 'flex', justifyContent: 'flex-end', padding: '3px 16px 0' }}>
+                    <button
+                      type="button"
+                      className="cv6-composer-collapse-btn"
+                      onClick={() => setComposerCollapsed(true)}
+                      aria-label="Collapse composer"
+                      title="Collapse"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6 6 6-6" /></svg>
+                    </button>
+                  </div>
+                  <div ref={setComposerHost} style={{ padding: '6px 24px 12px' }} />
+                </div>
+                {/* FAB — appears bottom-right when the composer is collapsed. Springs in
+                    via CSS (scale 0.5→1, cubic-bezier spring) so the motion reads as
+                    "it went there." Tap reopens + focuses the input. */}
+                <button
+                  type="button"
+                  className={`cv6-chat-fab${composerCollapsed ? ' is-visible' : ''}`}
+                  onClick={expandComposer}
+                  aria-label="Open composer — type a message"
+                  title="Type a message"
+                >
+                  {/* Pen / compose icon */}
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
               </>
             ) : (
               <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>Pick a room on the left to open its thread.</div>
@@ -1131,7 +1193,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         worldId={worldId}
         agents={agents}
         roomOptions={checklistRoomOptions}
-        quickSend={send}
+        quickSend={sendAndCollapse}
         onOpenFiles={() => setDrawerView('files')}
       />
       {/* "+ New" — the one shared creation flow (NewComposer), rehomed to the rail. */}

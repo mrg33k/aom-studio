@@ -465,11 +465,34 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     return ask ? { ...(goal || {}), title: ask } : goal;
   }, [goal, messages]);
 
+  // ── Mobile composer collapse → FAB (task 24452dfa, 2026-08-07) ──────────
+  // Composer starts open on room entry; collapses to a FAB after successful send.
+  const [composerCollapsed, setComposerCollapsed] = useState(false);
+  const composerCollapseTimerRef = useRef(null);
+  // Reset to open whenever the room changes.
+  useEffect(() => {
+    setComposerCollapsed(false);
+    clearTimeout(composerCollapseTimerRef.current);
+  }, [roomKeyForSheet]);
+  // Wrap the incoming onSend so a successful post triggers the collapse.
+  const onSendAndCollapse = useCallback(async (text, opts) => {
+    const result = await onSend?.(text, opts);
+    if (result !== false) {
+      clearTimeout(composerCollapseTimerRef.current);
+      composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
+    }
+    return result;
+  }, [onSend]);
+
   const submit = async () => {
     const t = draft.trim();
     if (!t || localReadOnly) return;
     const ok = await onSend?.(t);
-    if (ok !== false) setDraft('');
+    if (ok !== false) {
+      setDraft('');
+      clearTimeout(composerCollapseTimerRef.current);
+      composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
+    }
   };
 
   // Live work owns one place: the tail of the conversation. Older behavior pinned the
@@ -586,6 +609,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               <div className="cv6-chat-more-menu" role="menu" aria-label={`More for ${room.name}`}>
                 <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); onSearch?.(); }}>Search conversation</button>
                 <button type="button" role="menuitem" data-testid="room-settings-trigger" onClick={() => { setMoreOpen(false); setSettingsOpen(true); }}>Room settings</button>
+                <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); setComposerCollapsed((c) => !c); }}>{composerCollapsed ? 'Show composer' : 'Hide composer'}</button>
               </div>
             </>
           ) : null}
@@ -669,15 +693,18 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
       {richComposer ? (
         <>
           {/* The rich composer (CV4 functionality, CV6 look: attach, command menu,
-              slash commands, image gen, voice) portals into this host. */}
-          <div className="mcomposer" ref={setMComposerHost}
+              slash commands, image gen, voice) portals into this host.
+              cv6-mcomposer-host adds the collapse transition (opacity+translateY). */}
+          <div className={`mcomposer cv6-mcomposer-host${composerCollapsed ? ' is-collapsed' : ''}`}
+            ref={setMComposerHost}
             style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }} />
           <Cv6FullComposer target={mComposerHost} room={fullRoom} worldId={worldId} agents={[]}
-            roomOptions={roomOptions} quickSend={onSend} onOpenFiles={() => setFilesSheetOpen(true)}
+            roomOptions={roomOptions} quickSend={onSendAndCollapse} onOpenFiles={() => setFilesSheetOpen(true)}
             onClearRoom={onClearRoom} />
         </>
       ) : (
-      <div className="mcomposer" style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
+      <div className={`mcomposer cv6-mcomposer-host${composerCollapsed ? ' is-collapsed' : ''}`}
+        style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
         {dictate.supported && (
           <button onClick={dictate.toggle} aria-label={dictate.listening ? 'Stop dictation' : 'Speak your message'}
             title={dictate.listening ? 'Listening… tap to stop' : 'Speak your message'}
@@ -697,6 +724,26 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
         </button>
       </div>
       )}
+      {/* Mobile FAB — springs in when the composer collapses (cv6-chat-fab.is-visible). */}
+      <button
+        type="button"
+        className={`cv6-chat-fab${composerCollapsed ? ' is-visible' : ''}`}
+        onClick={() => {
+          setComposerCollapsed(false);
+          clearTimeout(composerCollapseTimerRef.current);
+          // Focus after the CSS transition (220ms) so the keyboard opens immediately.
+          setTimeout(() => {
+            mComposerHost?.querySelector('input:not([type="file"]):not([type="hidden"]), textarea')?.focus();
+          }, 60);
+        }}
+        aria-label="Open composer — type a message"
+        title="Type a message"
+      >
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+      </button>
 
       {filesSheetOpen && (
         <RoomFilesSheet worldId={worldId} room={fullRoom}

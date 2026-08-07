@@ -2940,3 +2940,100 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
    IS the answer, so that sentence lived in loose prose above the thread. */
 [data-cv6] .sheadline { font-size:14.5px; font-weight:650; line-height:1.45; color:var(--fg); letter-spacing:-.01em; padding-bottom:3px; }
 [data-cv6] .sheadline + .sbullet { margin-top:2px; }
+
+/* ── In-chat composer: collapses to a FAB after send (task 24452dfa, 2026-08-07) ──────────
+   The composer wrapper animates shut on send (slides + fades DOWN, 220ms ease-in).
+   A floating action button springs in at the same moment (scale+fade, spring curve).
+   Tapping the FAB re-opens the composer and focuses the input.
+   The collapse button (chevron-down in the wrapper top-right, or the mobile header)
+   lets Patrik collapse manually at any time. On room entry the composer always starts open.
+   ──────────────────────────────────────────────────────────────────────────────────────── */
+
+/* Wrapper that collapses the composer area */
+[data-cv6] .cv6-composer-wrap {
+  overflow: hidden;
+  max-height: 220px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: max-height 0.22s cubic-bezier(0.4,0,1,1),
+              opacity 0.18s ease,
+              transform 0.2s cubic-bezier(0.4,0,1,1);
+}
+[data-cv6] .cv6-composer-wrap.is-collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+/* Small chevron-down collapse button, rendered above the composer border */
+[data-cv6] .cv6-composer-collapse-btn {
+  width: 28px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+[data-cv6] .cv6-composer-collapse-btn:hover,
+[data-cv6] .cv6-composer-collapse-btn:focus-visible {
+  color: var(--muted);
+  background: var(--surface-2);
+  outline: none;
+}
+
+/* Floating action button — appears bottom-right of the chat column after collapse */
+[data-cv6] .cv6-chat-fab {
+  position: absolute;
+  bottom: 20px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 28px -8px rgba(0,0,0,.72), 0 2px 8px -2px rgba(0,0,0,.38);
+  transform: scale(0.5);
+  opacity: 0;
+  transition: transform 0.24s cubic-bezier(0.34,1.56,0.64,1), opacity 0.16s ease;
+  z-index: 12;
+  pointer-events: none;
+}
+[data-cv6] .cv6-chat-fab.is-visible {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: all;
+}
+[data-cv6] .cv6-chat-fab:hover { filter: brightness(1.12); }
+[data-cv6] .cv6-chat-fab:active { transform: scale(0.94); }
+
+/* Mobile: FAB anchors just above the safe-area so it sits where the composer was */
+@media (max-width: 899px) {
+  [data-cv6] .cv6-chat-fab {
+    right: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+  }
+}
+
+/* Mobile composer host — transition class for smooth collapse */
+[data-cv6] .cv6-mcomposer-host {
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.4,0,1,1);
+}
+[data-cv6] .cv6-mcomposer-host.is-collapsed {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+/* When composer is collapsed, jumplive moves up (no composer to clear) */
+[data-cv6].cv6-chat-composer-collapsed .jumplive { bottom: 80px !important; }
