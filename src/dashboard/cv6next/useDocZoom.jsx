@@ -324,8 +324,14 @@ export function useDocZoom({ wrapRef, enabled = true, drawing = false, onSwipe, 
       if (!doc || !par || !par.contains(e.target)) return;
       if (e.ctrlKey || e.metaKey) {
         // macOS trackpad pinch arrives here — this IS desktop pinch-to-zoom.
+        // deltaY is clamped because the two devices that land here are wildly
+        // different: a trackpad pinch streams many events of ±1..10, while ctrl +
+        // a mouse wheel sends one event of ±120. Unclamped, exp(1.2) makes a single
+        // notch a 3.3x jump — measured on the live page, 196% to the 600% ceiling in
+        // one click. ±40 caps a single event at ~1.5x and leaves the trackpad smooth.
         e.preventDefault();
-        zoomAt(st.current.s * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+        const d = Math.max(-40, Math.min(40, e.deltaY));
+        zoomAt(st.current.s * Math.exp(-d * 0.01), e.clientX, e.clientY);
         return;
       }
       if (st.current.s > 1) {
