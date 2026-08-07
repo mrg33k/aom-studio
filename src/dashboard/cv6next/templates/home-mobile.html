@@ -22,6 +22,9 @@
   <div class="mhdr" style="position:relative;z-index:2;background:transparent;border-bottom-color:rgba(255,255,255,.08);">
     <div class="mhtitle"><img class="hlogo" src="/cv6/assets/corner-logo-white.svg" alt="Corner"></div>
     <div class="mhactions">
+      <!-- New room moved up here from the All-rooms row (Patrik 2026-08-07): plain "+" icon,
+           no text label, same .ib treatment as Search/Menu, sitting left of Search. -->
+      <div class="ib" role="button" aria-label="New room" data-action="newRoom"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
       <!-- Patrik 2026-07-18: Search sits left of Menu, both top-right (matches every other screen). -->
       <div class="ib" role="button" aria-label="Search" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
       <div class="ib" role="button" aria-label="Menu" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
@@ -32,9 +35,51 @@
          matches desktop, which retired its Catch Up column 2026-06-30. Home is
          "Pick up where you left off" + All Rooms; the needs-you inbox lives on its
          own Catch Up screen, reached from the nav. -->
-    <!-- "Pick up where you left off" resume section removed from mobile Home per Patrik
-         2026-08-07 (screenshot IMG_2972.jpeg) — All rooms is now the first thing shown. -->
-    <div class="roomshdr rooms-directory-head"><span><span class="eyebrow">All rooms</span><small>Projects and specialists</small></span><button class="newroom-btn" data-action="newRoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New room</button></div>
+    <!-- Patrik 2026-08-07: "All rooms" is the ONE heading for this whole screen now — the
+         old "Recently active" eyebrow/headline/pill treatment is gone. Recent (pick-up-
+         where-you-left-off) cards render right under this heading with no label of their
+         own, then Agent rooms + Projects follow. New-room button moved to the header bar. -->
+    <div class="roomshdr rooms-directory-head"><span><span class="eyebrow">All rooms</span><small>Projects and specialists</small></span></div>
+    <div class="mresume" data-mod="is-:recent.has">
+      <!-- Vertical list: first card is the HERO (most-recently-active), rest are quiet.
+           Hero vs quiet distinction is CSS-only via :first-child — no markup toggle needed.
+           `.mresumecard` stays the row class — the long-press rename/move menu resolves
+           its hits by that class name. -->
+      <div class="mresumelist">
+        <div class="mresumecard" data-each="recent" data-action="openRecent" data-arg="rec.key" data-mod="is-:rec.tint">
+          <!-- Avatar circle with room initial. Hero: accent-filled, larger. Quiet: surface-2. -->
+          <div class="mresume-av"><span data-bind="rec.initial">B</span></div>
+          <div class="mresumebody">
+            <!-- Name line. Hero: display-size font via CSS. Quiet: 14px. rsub removed from layout
+                 (it was added in d9705fb0 but the approved Amplify render does not show sub-type
+                 labels — removed to match the visual contract). -->
+            <div class="mresume-nameline"><span class="rn" data-bind="rec.name">Bridge</span></div>
+            <!-- Status row: hero only (CSS shows :first-child, hides :not(:first-child)).
+                 Lime dot + status word from data. §5: statusLabel='working' only when
+                 world has real running tasks; 'active' otherwise — never fabricated. -->
+            <div class="mresume-statusrow">
+              <span class="sdot mresume-herodot"></span>
+              <span class="mresume-statusword" data-bind="rec.statusLabel">working</span>
+            </div>
+            <!-- Preview line: KEEP on every card. Single most important instruction per §1.
+                 Hidden on empty by CSS :empty. -->
+            <span class="rprev" data-bind="rec.preview">agents reporting duplicate messages</span>
+            <!-- Progress bar: hero only (CSS shows :first-child, hides :not(:first-child)).
+                 §5: indeterminate shimmer — no fill %, no proportional fill.
+                 Real per-room progress is not available on the home recent list; degraded
+                 to an indeterminate indicator per the hard constraint. -->
+            <div class="mresume-bar"><div class="mresume-bar-fill"></div></div>
+          </div>
+          <!-- Trail: time + unread dot, right-aligned. Hero: time only at top-right (CSS
+               positions .mresume-trail absolute top-right on :first-child). Quiet: dot + time
+               inline on right. -->
+          <div class="mresume-trail">
+            <span class="mono mresumeage" data-bind="rec.age">1m</span>
+            <span class="sdot newdot" data-mod="is-:rec.dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="room-directory">
       <div class="rooms agent-rooms">
       <!-- Agents accordion: one header row that expands its roster in place -->
@@ -47,8 +92,6 @@
       <!-- ONE row per curated agent (titles), shown only while the accordion is open -->
       <div class="room agentrow" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" data-bind="room.name">Web</span></div>
       </div>
-      <!-- Recent rooms now live in the "Pick up where you left off" section above All rooms
-           (Patrik 2026-07-07); the old buried strip was removed to avoid a double render. -->
       <div class="project-list-head"><span>Projects</span><span class="mono" data-bind="projects.count">12</span></div>
       <div class="project-list">
       <!-- ONE template row per project -->
