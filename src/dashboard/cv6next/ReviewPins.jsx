@@ -18,6 +18,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 const ACCENT = '#0066FF'; // design accent (outside [data-cv6] scope, so no var(--accent))
 const POP_W = 230;        // design popover width
+// Markup red. Patrik 2026-08-07: "when I'm leaving comments I'd like to be able to
+// circle things in red." One colour, not a palette — this is a correction mark, and
+// a colour picker would turn a one-second gesture into a decision.
+const MARKUP_RED = '#FF3B30';
+const SVG_NS = 'http://www.w3.org/2000/svg';
+// Below this (as a fraction of the artwork) a drag is a slip of the finger, not a
+// circle — fall back to a plain point pin rather than saving a dot-sized ring.
+const MIN_CIRCLE = 0.012;
 
 // Clamp the popover inside the wrapper so a right-edge pin doesn't push it off-screen.
 function clampPos(px, py, wrap) {
@@ -30,23 +38,37 @@ function clampPos(px, py, wrap) {
 }
 
 export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = true, isMobile = false }) {
-  // null | { mode:'compose', xFrac, yFrac, t, left, top } | { mode:'view', pinId, left, top }
+  // null | { mode:'compose', xFrac, yFrac, t, shape?, left, top } | { mode:'view', pinId, left, top }
   const [ui, setUi] = useState(null);
+  // Circle mode: while ON, dragging across the artwork draws a red ring and the
+  // comment composer opens on that ring instead of on a point.
+  const [circleMode, setCircleMode] = useState(false);
 
   // The delegated listener stays bound once; everything it needs rides refs so a
   // pins/addPin identity change never forces an unbind (which is what killed the old one).
-  const stateRef = useRef({ pins, addPin, enabled, ui });
-  stateRef.current = { pins, addPin, enabled, ui };
+  const stateRef = useRef({ pins, addPin, enabled, ui, circleMode });
+  stateRef.current = { pins, addPin, enabled, ui, circleMode };
+  // The ring being dragged right now (doc fractions, 0..1). Kept off React state so
+  // every pointermove repaints the SVG directly instead of re-rendering the tree.
+  const draftRef = useRef(null);
+  const drawCirclesRef = useRef(() => {});
 
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
 
     const onClick = (e) => {
-      const { enabled: on, ui: open } = stateRef.current;
+      const { enabled: on, ui: open, circleMode: drawing } = stateRef.current;
       if (!on) return;
       // Clicks inside an open popover belong to the popover.
       if (e.target.closest('[data-review-popover]')) return;
+      // The zoom controls and the circle toggle are chrome, not the artwork.
+      if (e.target.closest('[data-zoom-controls],[data-circle-toggle]')) return;
+      // A click that merely ENDED a gesture is not a request to comment. useDocZoom
+      // flags a pan/pinch/swipe on the wrapper, and circle mode owns its own drags —
+      // without this, letting go of a two-finger zoom dropped a comment popover.
+      if (wrap.dataset.pzMoved === '1') return;
+      if (drawing) return;
       // The Pin-mode toggle rides inside iframe-based viewers (PDF / live site), whose
       // content swallows clicks. It flips its sibling .pinshield — a transparent layer
       // that hands clicks back to this listener — on and off. Pure DOM state: the body
@@ -119,6 +141,136 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
   }, [wrapRef]);
 
   const close = useCallback(() => setUi(null), []);
+
+  // ── Red circle markup (Patrik 2026-08-07) ──────────────────────────────────
+  // The rings live in ONE <svg> injected as a child of .doc, not as React nodes
+  // over the top. That is what makes them survive zoom: .doc is the element
+  // useDocZoom transforms, so a child svg with viewBox "0 0 100 100" and
+  // preserveAspectRatio="none" scales, pans and stays glued to the artwork for
+  // free. `vector-effect: non-scaling-stroke` keeps the pen 2.5px wide on screen
+  // at every zoom level — without it the ring stretches into an oval smear on a
+  // non-square image and thickens to a blob at 6x.
+  // It is injected imperatively (and re-injected on every tick) because
+  // TemplateScreen wipes .doc's innerHTML on unrelated data ticks.
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return undefined;
+
+    const draw = () => {
+      const doc = wrap.querySelector('.doc');
+      if (!doc) return;
+      const rings = (stateRef.current.pins || []).filter((p) => p.rx > 0 && p.ry > 0);
+      const draft = draftRef.current;
+      let layer = doc.querySelector('svg[data-review-circles]');
+      if (!rings.length && !draft) { layer?.remove(); return; }
+      if (!layer) {
+        layer = document.createElementNS(SVG_NS, 'svg');
+        layer.setAttribute('data-review-circles', '1');
+        layer.setAttribute('viewBox', '0 0 100 100');
+        layer.setAttribute('preserveAspectRatio', 'none');
+        layer.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible;';
+        doc.appendChild(layer);
+      }
+      const sig = `${rings.map((p) => `${p.id}:${p.x}:${p.y}:${p.rx}:${p.ry}`).join(',')}|${draft ? `${draft.x}:${draft.y}:${draft.rx}:${draft.ry}` : ''}`;
+      if (layer.dataset.sig === sig) return;
+      layer.dataset.sig = sig;
+      layer.textContent = '';
+      const ring = (cx, cy, rx, ry, isDraft) => {
+        const el = document.createElementNS(SVG_NS, 'ellipse');
+        el.setAttribute('cx', cx); el.setAttribute('cy', cy);
+        el.setAttribute('rx', Math.max(0.5, rx)); el.setAttribute('ry', Math.max(0.5, ry));
+        el.setAttribute('fill', 'none');
+        el.setAttribute('stroke', MARKUP_RED);
+        el.setAttribute('stroke-width', isDraft ? '2' : '2.5');
+        el.setAttribute('stroke-linecap', 'round');
+        el.setAttribute('vector-effect', 'non-scaling-stroke');
+        // A dashed ring reads as "still drawing"; it goes solid once it is saved.
+        if (isDraft) el.setAttribute('stroke-dasharray', '5 4');
+        // Red on a red photo is invisible — the drop shadow is what keeps the mark
+        // legible on artwork we do not control.
+        el.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,.5))';
+        layer.appendChild(el);
+      };
+      rings.forEach((p) => ring(p.x, p.y, p.rx, p.ry, false));
+      if (draft) ring(draft.x * 100, draft.y * 100, draft.rx * 100, draft.ry * 100, true);
+    };
+    drawCirclesRef.current = draw;
+    draw();
+
+    // Drawing gesture. Pointer events cover finger, pen and mouse in one path, and
+    // setPointerCapture keeps the ring following a drag that leaves the artwork.
+    let drag = null;
+    const docFrac = (doc, cx, cy) => {
+      const r = doc.getBoundingClientRect();
+      return {
+        x: Math.min(1, Math.max(0, (cx - r.left) / r.width)),
+        y: Math.min(1, Math.max(0, (cy - r.top) / r.height)),
+      };
+    };
+
+    const onDown = (e) => {
+      if (!stateRef.current.enabled || !stateRef.current.circleMode) return;
+      if (e.target.closest('[data-review-popover],[data-zoom-controls],[data-circle-toggle]')) return;
+      const doc = e.target.closest('.doc');
+      if (!doc || !wrap.contains(doc)) return;
+      e.preventDefault();
+      drag = { doc, from: docFrac(doc, e.clientX, e.clientY), moved: false };
+      try { e.target.setPointerCapture?.(e.pointerId); } catch { /* not capturable */ }
+    };
+    const onMove = (e) => {
+      if (!drag) return;
+      e.preventDefault();
+      const to = docFrac(drag.doc, e.clientX, e.clientY);
+      const rx = Math.abs(to.x - drag.from.x) / 2;
+      const ry = Math.abs(to.y - drag.from.y) / 2;
+      if (!drag.moved && rx < 0.004 && ry < 0.004) return;
+      drag.moved = true;
+      // Drag corner-to-corner, like a marquee — the ring is inscribed in it.
+      draftRef.current = { x: (to.x + drag.from.x) / 2, y: (to.y + drag.from.y) / 2, rx, ry };
+      draw();
+    };
+    const onUp = (e) => {
+      if (!drag) return;
+      const { doc } = drag;
+      const started = drag.from;
+      drag = null;
+      const d = draftRef.current;
+      draftRef.current = null;
+      // Below the slip threshold there is no circle — treat it as a point pin so a
+      // mistimed tap in circle mode still lets you leave the comment.
+      const shape = (d && d.rx >= MIN_CIRCLE && d.ry >= MIN_CIRCLE) ? d : null;
+      const centre = shape || { x: started.x, y: started.y };
+      // Hold the ring on screen while the composer is open, so you can see what you
+      // circled as you type. It is cleared when the comment saves or is cancelled.
+      draftRef.current = shape;
+      draw();
+      const video = doc.querySelector('video');
+      const t = (video && Number.isFinite(video.currentTime)) ? video.currentTime : null;
+      const wrapRect = wrap.getBoundingClientRect();
+      const pos = clampPos(e.clientX - wrapRect.left + 10, e.clientY - wrapRect.top + 10, wrap);
+      setUi({ mode: 'compose', xFrac: centre.x, yFrac: centre.y, t, shape, ...pos });
+    };
+
+    wrap.addEventListener('pointerdown', onDown);
+    wrap.addEventListener('pointermove', onMove);
+    wrap.addEventListener('pointerup', onUp);
+    wrap.addEventListener('pointercancel', onUp);
+    return () => {
+      wrap.removeEventListener('pointerdown', onDown);
+      wrap.removeEventListener('pointermove', onMove);
+      wrap.removeEventListener('pointerup', onUp);
+      wrap.removeEventListener('pointercancel', onUp);
+    };
+  }, [wrapRef, enabled]);
+
+  // Leaving circle mode (or closing the composer) drops any ring that was never
+  // committed — an orphan red ring with no comment behind it is a lie on the file.
+  useEffect(() => {
+    if (!circleMode) { draftRef.current = null; drawCirclesRef.current?.(); }
+  }, [circleMode]);
+  useEffect(() => {
+    if (!ui) { draftRef.current = null; drawCirclesRef.current?.(); }
+  }, [ui]);
 
   // ── DS7 video player chrome (design-system (7) ui_kits/tools/review.html) ──
   // Builds the scrub bar under the video (play button · mono current time · 6px track
@@ -242,6 +394,10 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
       const marksEl = wrap.querySelector('[data-vmarks]');
       if (video && marksEl) renderMarkers(marksEl);
       applyPinVisibility();
+      // Re-inject the red-circle layer on the same tick: TemplateScreen's innerHTML
+      // rebuild takes the svg with it, so without this the rings vanish on the next
+      // data tick and only come back when you reopen the file.
+      drawCirclesRef.current?.();
     };
     const iv = setInterval(tick, 600);
     const mo = new MutationObserver(tick);
@@ -255,15 +411,17 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
 
   // Popover open/close changes which pin is force-shown — re-apply immediately.
   useEffect(() => { applyVisRef.current(); }, [ui]);
+  // A saved or deleted circle must land now, not on the next 600ms tick.
+  useEffect(() => { drawCirclesRef.current?.(); }, [pins]);
 
   const overlay = ui ? (
     <PinPopover
       ui={ui}
       pins={pins}
       onSubmit={async (text) => {
-        const t = ui.t;
+        const { t, shape } = ui;
         setUi(null);
-        await addPin?.(ui.xFrac, ui.yFrac, text, t);
+        await addPin?.(ui.xFrac, ui.yFrac, text, t, shape);
       }}
       onDelete={async (pinId) => {
         setUi(null);
@@ -273,7 +431,45 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
     />
   ) : null;
 
-  return { overlay, openPinById, closePinUI: close };
+  // The toggle that arms the red pen. Rendered by the caller next to the zoom
+  // controls so the two viewer tools sit together instead of one being a gesture
+  // nobody can find.
+  const circleToggle = enabled ? (
+    <CircleToggle on={circleMode} onToggle={() => setCircleMode((v) => !v)} />
+  ) : null;
+
+  return { overlay, openPinById, closePinUI: close, circleMode, setCircleMode, circleToggle };
+}
+
+// Red-pen toggle. Off it is quiet chrome; on it turns red and says what to do,
+// because "your next drag draws instead of taps" is a mode change and a silent
+// mode change is how you lose people.
+function CircleToggle({ on, onToggle }) {
+  return (
+    <button
+      type="button"
+      data-circle-toggle=""
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle(); }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      aria-pressed={on}
+      title={on ? 'Circle mode on — drag to circle, then comment' : 'Circle something in red'}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: on ? '0 12px' : '0 9px',
+        borderRadius: 12, cursor: 'pointer', userSelect: 'none',
+        border: `1px solid ${on ? MARKUP_RED : 'rgba(255,255,255,0.1)'}`,
+        background: on ? MARKUP_RED : 'rgba(5,8,11,0.72)',
+        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+        color: '#fff', fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-sans, system-ui)',
+        boxShadow: '0 6px 20px -8px rgba(0,0,0,.6)',
+      }}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : MARKUP_RED} strokeWidth="2.2" strokeLinecap="round">
+        <ellipse cx="12" cy="12" rx="9" ry="7.5" />
+      </svg>
+      {on ? 'Drag to circle' : null}
+    </button>
+  );
 }
 
 function PinPopover({ ui, pins, onSubmit, onDelete, onClose }) {
@@ -326,7 +522,7 @@ function PinPopover({ ui, pins, onSubmit, onDelete, onClose }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } if (e.key === 'Escape') onClose(); }}
-        placeholder={ui.t != null ? 'Comment on this frame…' : 'Comment on this spot…'}
+        placeholder={ui.shape ? 'What about this?…' : (ui.t != null ? 'Comment on this frame…' : 'Comment on this spot…')}
         rows={3}
         style={{ width: '100%', boxSizing: 'border-box', resize: 'none', border: '1px solid #e7e5e2', borderRadius: 8, padding: '8px 10px', fontSize: 13, lineHeight: 1.5, color: '#333', fontFamily: 'inherit', outline: 'none', marginBottom: 10 }}
       />

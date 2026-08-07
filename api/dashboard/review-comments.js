@@ -85,6 +85,16 @@ export default async function handler(req, res) {
       const x = num(req.body.x, 0, 1), y = num(req.body.y, 0, 1);
       if (x == null || y == null) return res.status(400).json({ error: 'x,y required for point comment' });
       entry.x = Math.round(x * 1e4) / 1e4; entry.y = Math.round(y * 1e4) / 1e4;
+      // A CIRCLED comment (Patrik 2026-08-07: "when I'm leaving comments I'd like
+      // to be able to circle things in red") carries radii as fractions of the
+      // artwork's width/height, so x,y stay the circle's CENTRE and the existing
+      // point-pin behaviour is unchanged when they are absent. Old rows have no
+      // rx/ry and keep rendering as plain pins — this is purely additive.
+      const rx = num(req.body.rx, 0, 1), ry = num(req.body.ry, 0, 1);
+      if (rx != null && ry != null && rx > 0 && ry > 0) {
+        entry.rx = Math.round(rx * 1e4) / 1e4;
+        entry.ry = Math.round(ry * 1e4) / 1e4;
+      }
       const pt = num(req.body.t, 0, 1e6); // a point pinned on a still video frame carries its time too
       if (pt != null) entry.t = Math.round(pt * 1000) / 1000;
     }

@@ -16,10 +16,15 @@ function toPin(c, i) {
     x: Math.round((Number(c.x) || 0) * 1000) / 10, // 0..1 -> 0..100 (%)
     y: Math.round((Number(c.y) || 0) * 1000) / 10,
     t: c.t != null ? Number(c.t) : null,
+    // A circled comment carries radii (fractions of the artwork -> % like x/y).
+    // Absent on every pre-2026-08-07 comment, which keeps rendering as a plain pin.
+    rx: c.rx != null ? Math.round((Number(c.rx) || 0) * 1000) / 10 : 0,
+    ry: c.ry != null ? Math.round((Number(c.ry) || 0) * 1000) / 10 : 0,
     text: c.text || '',
-    // For the comment row's sub-label: a video frame pin shows its timestamp,
-    // a doc/image pin shows nothing (the marker carries the location visually).
-    anchor: c.t != null ? `at ${fmtTime(c.t)}` : '',
+    // For the comment row's sub-label: a video frame pin shows its timestamp, a
+    // circled spot says so (that is what makes the note findable in a long list),
+    // a plain doc/image pin shows nothing — its marker carries the location.
+    anchor: c.t != null ? `at ${fmtTime(c.t)}` : (c.rx != null && c.ry != null ? 'circled' : ''),
   };
 }
 
@@ -56,9 +61,11 @@ export function usePins(deliverableId, worldId = null) {
   useEffect(() => { setPins([]); load(); }, [load]);
 
   // Create a point pin. x,y are 0..1 fractions of the viewer; t (optional) is the
-  // video frame time in seconds. text is the human comment. Optimistically appends,
-  // then reloads from the store to pick up the server id + ordering.
-  const addPin = useCallback(async (xFrac, yFrac, text, t) => {
+  // video frame time in seconds. text is the human comment. `shape` (optional)
+  // carries { rx, ry } when the user circled a region instead of tapping a spot —
+  // x,y are then the circle's centre. Optimistically appends, then reloads from
+  // the store to pick up the server id + ordering.
+  const addPin = useCallback(async (xFrac, yFrac, text, t, shape) => {
     if (!deliverableId || !text || !String(text).trim()) return null;
     const body = {
       action: 'add', world: worldId, deliverable: deliverableId, type: 'point',
@@ -67,6 +74,10 @@ export function usePins(deliverableId, worldId = null) {
       text: String(text).trim(),
     };
     if (t != null && Number.isFinite(Number(t))) body.t = Number(t);
+    if (shape && Number(shape.rx) > 0 && Number(shape.ry) > 0) {
+      body.rx = Math.min(1, Math.max(0, Number(shape.rx)));
+      body.ry = Math.min(1, Math.max(0, Number(shape.ry)));
+    }
     try {
       const r = await authFetch('/api/dashboard/review-comments', {
         method: 'POST',

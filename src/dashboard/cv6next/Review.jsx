@@ -7,6 +7,7 @@ import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useReviewPinUI } from './ReviewPins.jsx';
+import { useDocZoom } from './useDocZoom.jsx';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
@@ -133,8 +134,29 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   // Pin-comments delegate from this stable wrapper (a listener on the template's inner DOM
   // dies on TemplateScreen's first innerHTML rebuild) and use the design popover composer.
   const readRef = useRef(null);
-  const { overlay: pinOverlay, openPinById } = useReviewPinUI({
+  const { overlay: pinOverlay, openPinById, circleMode, circleToggle } = useReviewPinUI({
     wrapRef: readRef, pins, addPin, deletePin, enabled: screen === 'read', isMobile: true,
+  });
+
+  // Swipe between the files in this folder while reading one (Patrik 2026-08-07:
+  // "swipe it left and right to look at the different files in the folder once I'm
+  // viewing a file"). The folder IS the review queue for the current scope, so the
+  // gesture walks the same list the pick screen shows, in the same order. It only
+  // fires at 1x zoom — see useDocZoom.
+  const queueItems = data.queue.items;
+  const stepFile = useCallback((dir) => {
+    const items = (queueItems || []).filter((i) => i.id && !String(i.id).startsWith('__section__'));
+    if (items.length < 2) return;
+    const at = items.findIndex((i) => i.id === pickedId);
+    if (at < 0) return;
+    const next = items[(at + (dir === 'next' ? 1 : -1) + items.length) % items.length];
+    if (next && next.id !== pickedId) onOpenDeliverable(next.id);
+  }, [queueItems, pickedId, onOpenDeliverable]);
+
+  // Pinch to zoom on the file itself. Stays live while circle mode is armed — you
+  // zoom in to circle a detail — it just stops competing for the drag.
+  const { zoomControls, anchor: toolAnchor } = useDocZoom({
+    wrapRef: readRef, enabled: screen === 'read', drawing: circleMode, onSwipe: stepFile,
   });
   usePdfDocs(readRef, screen === 'read');
   useDocxDocs(readRef, screen === 'read');
@@ -216,7 +238,10 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
         id: p.id,
         n: p.n,
         x: p.x,
-        y: p.y,
+        // A circled comment stores the ring's CENTRE, but its numbered marker sits
+        // on the top edge of the ring — parked in the middle it covers the very
+        // thing that was circled.
+        y: p.ry > 0 ? Math.max(0, p.y - p.ry) : p.y,
       })),
       comments: pins.map((p) => ({
         id: p.id,
@@ -284,8 +309,17 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   };
 
   return (
-    <div ref={readRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+    // data-swipe-guard: the reading surface owns its own horizontal gestures now
+    // (previous/next file). Without it useChatSwipe would ALSO fire and throw the
+    // whole review screen away mid-swipe — the same collision the Files sheet hit.
+    <div ref={readRef} data-swipe-guard="" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={readHtml} data={readData} actions={readActions} aliases={readAliases} state={state} style={{ width: '100%', height: '100%' }} />
+      {zoomControls}
+      {toolAnchor && (
+        <div style={{ position: 'absolute', top: toolAnchor.top + 38, right: toolAnchor.right, zIndex: 24 }}>
+          {circleToggle}
+        </div>
+      )}
       {noticeToast}
       {pinOverlay}
       {changesOpen && (

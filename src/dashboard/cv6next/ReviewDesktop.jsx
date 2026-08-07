@@ -7,6 +7,7 @@ import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useReviewPinUI } from './ReviewPins.jsx';
+import { useDocZoom } from './useDocZoom.jsx';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import { authFetch } from '../lib/authFetch';
@@ -113,7 +114,12 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // TemplateScreen's innerHTML rebuilds — binding to the inner DOM dies on the first data
   // tick) + the design popover composer/viewer rendered outside the template DOM.
   const viewerRef = useRef(null);
-  const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef: viewerRef, pins, addPin, deletePin });
+  const { overlay: pinOverlay, openPinById, circleMode, circleToggle } = useReviewPinUI({ wrapRef: viewerRef, pins, addPin, deletePin });
+  // Zoom on desktop (Patrik 2026-08-07: "technically I need a way to zoom on
+  // desktop as well"). Trackpad pinch arrives as ctrlKey+wheel and is handled as a
+  // real pinch; the −/%/+ cluster and the + - 0 keys cover a mouse, which has no
+  // pinch at all — that is the case the mobile gesture work left uncovered.
+  const { zoomControls, anchor: toolAnchor } = useDocZoom({ wrapRef: viewerRef, drawing: circleMode });
   usePdfDocs(viewerRef);
   useDocxDocs(viewerRef);
   useHtmlDocs(viewerRef);
@@ -283,7 +289,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
         id: p.id,
         n: p.n,
         x: p.x,
-        y: p.y,
+        // Circled comment: the marker rides the top edge of the ring, not its
+        // centre, so it never sits on top of what was circled.
+        y: p.ry > 0 ? Math.max(0, p.y - p.ry) : p.y,
       })),
       // Convert pins to the comment list shape for the right-panel.
       comments: pins.map((p) => ({
@@ -370,6 +378,19 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const idx = pid ? items.findIndex((i) => i.id === pid) : -1;
+      // Left/Right walk the folder the same way the mobile swipe does, so the two
+      // surfaces answer "show me the next file" with the same mental model.
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const next = items[idx + 1];
+        if (next) advance(next.id);
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (idx > 0) advance(items[idx - 1].id);
+        return;
+      }
       if (e.key === 'j' || e.key === 'ArrowDown') {
         e.preventDefault();
         const next = items[idx + 1];
@@ -393,6 +414,12 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   return (
     <div ref={viewerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
+      {zoomControls}
+      {toolAnchor && (
+        <div style={{ position: 'absolute', top: toolAnchor.top + 38, right: toolAnchor.right, zIndex: 24 }}>
+          {circleToggle}
+        </div>
+      )}
       {/* review-loop: transient verdict feedback. With an action attached (the
           dismiss toast's Undo — R15b design gate) it's a real control. */}
       {notice && (
@@ -441,7 +468,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
           color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--font-mono,ui-monospace,monospace)',
           zIndex: 40, letterSpacing: 0.3, whiteSpace: 'nowrap', userSelect: 'none',
         }}>
-          {[['j', 'next'], ['k', 'prev'], ['a', 'approve']].map(([key, label]) => (
+          {[['j', 'next'], ['k', 'prev'], ['a', 'approve'], ['←→', 'files'], ['+ −', 'zoom']].map(([key, label]) => (
             <span key={key}>
               <span style={{ color: 'rgba(255,255,255,0.62)', fontWeight: 700 }}>{key}</span>
               {' '}{label}

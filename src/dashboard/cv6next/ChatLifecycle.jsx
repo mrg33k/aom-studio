@@ -24,6 +24,7 @@ import { supabase } from '../lib/supabase.js';
 import { buildDeliverableBody } from './data/useReview.js';
 import { chatFileToReviewTarget } from './data/previewResolve.js';
 import { normalizeReviewHandoff } from './data/reviewTargetResolve.js';
+import { useDocZoom } from './useDocZoom.jsx';
 import { usePdfDocs } from './data/pdfDocView.js';
 import { useDocxDocs } from './data/docxDocView.js';
 import { useHtmlDocs } from './data/htmlDocView.js';
@@ -300,8 +301,16 @@ function FileCollectionViewer({ files, startIndex = 0, onClose, onReview }) {
   const [idx, setIdx] = useState(Math.max(0, Math.min(startIndex, files.length - 1)));
   const f = files[idx] || files[0];
   const kind = fileKind(f.fileName, f.fileMime);
-  const go = (d) => setIdx((i) => (i + d + files.length) % files.length);
+  const go = useCallback((d) => setIdx((i) => (i + d + files.length) % files.length), [files.length]);
   const stageRef = useRef(null);
+  const cardRef = useRef(null);
+  // Pinch/wheel zoom on the open file, and a swipe to walk the rest of the files
+  // that came in with it — the same two gestures the Review viewer has, so a file
+  // behaves the same whether you opened it from the conversation or from Review.
+  const { zoomControls } = useDocZoom({
+    wrapRef: cardRef,
+    onSwipe: (dir) => { if (files.length > 1) go(dir === 'next' ? 1 : -1); },
+  });
   const [body, setBody] = useState(null); // null = loading; { html, type } when built
   // Hydrate any pdf/docx/html shells the injected body carries.
   usePdfDocs(stageRef);
@@ -332,8 +341,12 @@ function FileCollectionViewer({ files, startIndex = 0, onClose, onReview }) {
     wrap.querySelectorAll('.pinshield,.pinmode-toggle').forEach((n) => n.remove());
   }, [body]);
   return (
-    <div className="fcviewer" onClick={onClose}>
-      <div className="fcviewer-card" onClick={(e) => e.stopPropagation()}>
+    // data-swipe-guard: this modal owns left/right now (previous/next file). Without
+    // it useChatSwipe would fire too and navigate the whole app to another chat
+    // out from under the open file.
+    <div className="fcviewer" data-swipe-guard="" onClick={onClose}>
+      <div ref={cardRef} className="fcviewer-card" style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+        {zoomControls}
         <div className="fcv-top">
           <div className="mback" style={{ width: 32, height: 32 }} onClick={onClose} role="button" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg></div>
           <div style={{ flex: 1, minWidth: 0 }}>
