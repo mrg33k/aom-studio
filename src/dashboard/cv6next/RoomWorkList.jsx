@@ -118,8 +118,20 @@ export default function RoomWorkList({ room, goal }) {
     ...promises.map((p) => ({ key: `promise:${p.id}`, label: p.title, state: 'active', owner: 'sub-agent', since: p.since ? new Date(p.since).getTime() : null })),
   ]), [tasks, promises]);
 
-  const items = useMemo(() => [...roomSteps, ...agentItems], [roomSteps, agentItems]);
+  // A room's full step list is its whole history — 44 rows in Corner on the day this
+  // shipped. That is the wall of text Patrik explicitly does not want. This panel answers
+  // "what is happening NOW", so: every running item, a little of what just finished for
+  // context, and a peek at what is next. Never more than 6 rows.
+  const items = useMemo(() => {
+    const all = [...roomSteps, ...agentItems];
+    const active = all.filter((i) => i.state === 'active');
+    if (!active.length) return [];
+    const doneTail = roomSteps.filter((i) => i.state === 'done').slice(-2);
+    const nextUp = roomSteps.filter((i) => i.state === 'pending').slice(0, 2);
+    return [...doneTail, ...active, ...nextUp].slice(0, 6);
+  }, [roomSteps, agentItems]);
   const running = items.filter((i) => i.state === 'active').length;
+  const remaining = roomSteps.filter((i) => i.state === 'pending').length - items.filter((i) => i.state === 'pending').length;
 
   // One shared tick for every counter, and only while something is actually running.
   useEffect(() => {
@@ -128,8 +140,8 @@ export default function RoomWorkList({ room, goal }) {
     return () => clearInterval(id);
   }, [running]);
 
-  // Nothing in flight and nothing finished = no panel. An empty "Working" box on a quiet
-  // room is exactly the dead surface this is meant to replace.
+  // Nothing running = no panel at all. A standing "Working" box on a quiet room is the
+  // dead surface this is meant to replace, and a backlog is not work in flight.
   if (!items.length) return null;
 
   return (
@@ -161,11 +173,16 @@ export default function RoomWorkList({ room, goal }) {
             {/* Which of the two kinds of worker, in two words, never a paragraph. */}
             <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--faint)', flex: 'none', letterSpacing: '.02em' }}>{item.owner}</span>
             <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: timer ? 'var(--accent)' : 'transparent', minWidth: 34, textAlign: 'right', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
-              {timer || '—'}
+              {timer}
             </span>
           </div>
         );
       })}
+      {remaining > 0 ? (
+        <div style={{ fontSize: 10.5, color: 'var(--faint)', padding: '4px 0 2px' }}>
+          +{remaining} more on this room's list
+        </div>
+      ) : null}
     </div>
   );
 }
