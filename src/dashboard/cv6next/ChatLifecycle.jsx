@@ -392,18 +392,45 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
 }
 
 // ── Files in this room, from chat (Patrik #1, chat-surface WD40 R1) ──────────
-// A CV6 bottom sheet over the conversation: the SAME crossings panel the desktop
+// A CV6 sheet over the conversation: the SAME crossings panel the desktop
 // Files drawer shows (this chat's files, From agent / You sent — drop 1),
 // reachable from the chat header and from the composer's command menu. Mounted
 // only while open, so the fetch happens on first open, not on every room visit.
-function RoomFilesSheet({ worldId, room, onClose, onReview }) {
+//
+// Geometry:
+//   Desktop (columnMode): right-side panel, 340px wide, slides from right
+//     (Patrik ruling 2026-07-20: files/goals come from the right).
+//   Mobile (!columnMode): full-width bottom sheet, 85vh tall, slides from bottom
+//     (Steffen 2026-08-06 Fix 5c: right-panel clips content on a phone).
+//     Uses compact FilesShelf toolbar (Fix 5b).
+function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }) {
   const { fromAgent, youSent, status, windowFull } = useRoomCrossings(worldId, room);
+  const isMobile = !columnMode;
+  const panelStyle = isMobile
+    ? {
+        position: 'absolute', left: 0, right: 0, bottom: 0,
+        height: '85vh', maxHeight: 'calc(100% - 44px)',
+        background: 'var(--ground)',
+        borderTopLeftRadius: 22, borderTopRightRadius: 22,
+        borderTop: '1px solid var(--hair)',
+        boxShadow: '0 -22px 54px -22px rgba(0,0,0,.65)',
+        display: 'flex', flexDirection: 'column',
+        padding: `14px 16px max(22px, env(safe-area-inset-bottom, 0px))`,
+      }
+    : {
+        position: 'absolute', top: 0, right: 0, bottom: 0,
+        width: 340, maxWidth: '88%',
+        background: 'var(--ground)',
+        borderTopLeftRadius: 22, borderBottomLeftRadius: 22,
+        borderLeft: '1px solid var(--hair)',
+        boxShadow: '-22px 0 54px -22px rgba(0,0,0,.65)',
+        display: 'flex', flexDirection: 'column',
+        padding: '14px 16px max(22px, env(safe-area-inset-bottom, 0px))',
+      };
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
-      {/* Files and goals come from the RIGHT (Patrik ruling 2026-07-20); the rooms
-          menu comes from the left. A side panel, not a bottom sheet. */}
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 340, maxWidth: '88%', background: 'var(--ground)', borderTopLeftRadius: 22, borderBottomLeftRadius: 22, borderLeft: '1px solid var(--hair)', boxShadow: '-22px 0 54px -22px rgba(0,0,0,.65)', display: 'flex', flexDirection: 'column', padding: '14px 16px max(22px, env(safe-area-inset-bottom, 0px))' }}>
+      <div style={panelStyle}>
         <div style={{ width: 38, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '6px auto 12px', flex: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flex: 'none' }}>
           <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Files in this room</span>
@@ -421,7 +448,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview }) {
               onLocate was onClose, so a tap just shut the sheet instead of opening
               the file (Patrik 2026-07-21). Point onLocate at the same open-in-viewer
               handler so any file opens on tap. */}
-          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={onReview} />
+          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull} onReview={onReview} onLocate={onReview} compact={isMobile} />
         </div>
       </div>
     </div>
@@ -700,6 +727,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
 
       {filesSheetOpen && (
         <RoomFilesSheet worldId={worldId} room={fullRoom}
+          columnMode={columnMode}
           onClose={() => setFilesSheetOpen(false)}
           onReview={(it) => { setFilesSheetOpen(false); onOpenReview?.(it ? [it] : null); }} />
       )}

@@ -135,7 +135,7 @@ function ShelfToggle({ label, value, options, onChange }) {
         const on = opt.id === value;
         return (
           <button type="button" key={opt.id} aria-pressed={on ? 'true' : 'false'} title={opt.title || opt.label} onClick={() => onChange(opt.id)}
-            style={{ height: 24, padding: '0 9px', borderRadius: 7, border: 'none', cursor: on ? 'default' : 'pointer', background: on ? 'var(--accent)' : 'transparent', color: on ? '#fff' : 'var(--muted)', font: '600 11px var(--font-sans)', whiteSpace: 'nowrap' }}>
+            style={{ height: 24, padding: '0 9px', borderRadius: 7, border: 'none', cursor: on ? 'default' : 'pointer', background: on ? '#B58A38' : 'transparent', color: on ? '#000' : 'var(--muted)', font: '600 11px var(--font-sans)', whiteSpace: 'nowrap' }}>
             {opt.label}
           </button>
         );
@@ -147,7 +147,7 @@ function ShelfToggle({ label, value, options, onChange }) {
 // The room's files panel: everything that crossed this chat, nothing else.
 // The whole row is the primary open action. Amber is reserved for an item that
 // is still in the waiting-review queue; ordinary files keep a quiet chevron.
-export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, needsReview, status, windowFull = false }) {
+export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, needsReview, status, windowFull = false, compact = false }) {
   const CAP = 80; // newest per section; a busy room can carry hundreds
   const [prefs, setPrefs] = useState(readFilesPrefs);
   const setPref = (patch) => setPrefs((prev) => {
@@ -156,6 +156,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     return next;
   });
   const { layout, order, grouped } = prefs;
+  const [extraOpen, setExtraOpen] = useState(false);
   const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
   const openItem = (it) => {
     // Photos and videos (and anything flagged for review) open in the in-app
@@ -265,7 +266,38 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   // "All in order" is the chronological view: one timeline across both senders,
   // which is the thing the two grouped sections cannot show.
   const timeline = inOrder([...fromAgent, ...youSent]);
-  const toolbar = (
+  // compact=true (mobile sheet): show only the Order sort toggle + a settings icon
+  // that expands the secondary controls (layout + grouping). Prevents six stacked
+  // controls from consuming a phone's screen before any file rows appear (Steffen 2026-08-06 Fix 5b).
+  const extraControls = (
+    <>
+      <ShelfToggle label="Layout" value={layout} onChange={(id) => setPref({ layout: id })}
+        options={[{ id: 'list', label: 'List' }, { id: 'grid', label: 'Grid' }]} />
+      <ShelfToggle label="Grouping" value={grouped ? 'grouped' : 'all'} onChange={(id) => setPref({ grouped: id === 'grouped' })}
+        options={[
+          { id: 'grouped', label: 'By sender', title: 'Group by who sent it' },
+          { id: 'all', label: 'All in order', title: 'One timeline, everything in the order it arrived' },
+        ]} />
+    </>
+  );
+  const toolbar = compact ? (
+    <div style={{ margin: '0 4px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <ShelfToggle label="Order" value={order} onChange={(id) => setPref({ order: id })}
+          options={[{ id: 'newest', label: 'Newest' }, { id: 'oldest', label: 'Oldest' }]} />
+        <button type="button" aria-label="More options" aria-expanded={extraOpen ? 'true' : 'false'}
+          onClick={() => setExtraOpen((v) => !v)}
+          style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--divider)', background: extraOpen ? '#B58A38' : 'var(--surface-2)', color: extraOpen ? '#000' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+        </button>
+      </div>
+      {extraOpen ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginTop: 7 }}>
+          {extraControls}
+        </div>
+      ) : null}
+    </div>
+  ) : (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', margin: '0 4px 11px' }}>
       <ShelfToggle label="Layout" value={layout} onChange={(id) => setPref({ layout: id })}
         options={[{ id: 'list', label: 'List' }, { id: 'grid', label: 'Grid' }]} />
