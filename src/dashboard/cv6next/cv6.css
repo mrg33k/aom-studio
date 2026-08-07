@@ -2917,3 +2917,9 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6kit] .chips.is-choice .chip-btn.is-recommended .chip-dot {
   border-color:var(--accent); background:var(--accent);
 }
+
+/* Summary headline (2026-08-06): the BLUF bottom line. The card already had
+   bullets and tickable actions; it had nowhere to put the one sentence that
+   IS the answer, so that sentence lived in loose prose above the thread. */
+[data-cv6] .sheadline { font-size:14.5px; font-weight:650; line-height:1.45; color:var(--fg); letter-spacing:-.01em; padding-bottom:3px; }
+[data-cv6] .sheadline + .sbullet { margin-top:2px; }
