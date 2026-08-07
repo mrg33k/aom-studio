@@ -18,6 +18,7 @@ import { SendCtx, ReviewCtx, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
+import RoomWorkList from './RoomWorkList.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import NewComposer from './NewComposer.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
@@ -588,6 +589,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   }, [selected, onNav, windowMode]);
 
   const { messages, archivedMessages, blocks, send, clearRoom, awaiting, liveSteps } = useRoomThread(worldId, selected);
+  // The room agent's own steps — the half of "background work" the old card could not see.
+  const roomGoal = useGoalThread(worldId, selected);
   const lastActiveLabel = (() => {
     const m = messages?.[messages.length - 1];
     if (!m?.ts) return null;
@@ -985,8 +988,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         ticking pending → working → done like the step-thread kit animation. */}
                     <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />
                     {awaiting ? <WorkingTurn room={selected} liveSteps={liveSteps} goal={askGoal} /> : null}
-                    {/* In-flight background work left the thread (corner:one-corner M19): it
-                        lives in the Background work window, pinned in the rail below. */}
+                    {/* Background work came BACK to the thread (Patrik 2026-08-06). Sending it
+                        to a separate window meant a busy room looked idle, and only ever showed
+                        dispatched sub-agent jobs. This lists both kinds, per room, short, with a
+                        live counter on each. The Background work window still exists for the
+                        world-wide view. */}
+                    <RoomWorkList room={selected} goal={roomGoal} />
                     {/* Only renders when the FRONT DOOR chose this room automatically — names
                         the destination the user never got to see, and moves the message in one
                         tap if it guessed wrong (corner:front-door R8). */}
