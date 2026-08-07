@@ -2194,7 +2194,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
-[data-cv6][data-screen="home-mobile"] .rooms-directory-head { margin:28px 0 12px; }
+[data-cv6][data-screen="home-mobile"] .rooms-directory-head { margin:12px 0 12px; }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head > span { display:flex; flex-direction:column; gap:3px; }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head small { color:var(--faint); font-size:12px; }
 [data-cv6][data-screen="home-mobile"] .newroom-btn {
