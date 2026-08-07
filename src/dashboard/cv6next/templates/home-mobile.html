@@ -47,15 +47,13 @@
            `.mresumecard` stays the row class — the long-press rename/move menu
            resolves its hits by that class name. -->
       <div class="mresumelist">
-        <div class="mresumecard" data-each="recent" data-action="openRecent" data-arg="rec.key" data-mod="is-:rec.tint">
+        <div class="mresumecard" data-each="recent" data-action="openRecent" data-arg="rec.key">
           <span class="sdot is-none newdot" data-mod="is-:rec.dot"></span>
-          <svg class="mresume-clock" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="m12 6 0 6 4 2"/></svg>
           <div class="mresumebody">
-            <div class="mresume-top"><span class="rn" data-bind="rec.name">Deal Bank</span><span class="rsub" data-bind="rec.sub">Space Rising</span></div>
+            <div class="mresume-top"><span class="rn" data-bind="rec.name">Deal Bank</span><span class="rsub" data-bind="rec.sub">Agent room</span></div>
             <span class="rprev" data-bind="rec.preview">Shipped the fix; the deploy is live and verified.</span>
           </div>
           <span class="mono mresumeage" data-bind="rec.age">2h</span>
-          <svg class="mresume-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
         </div>
       </div>
     </div>

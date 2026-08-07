@@ -1474,7 +1474,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // FIX B-mod: inject roomOpen so the template can add .is-open to the active rail row.
   // `dot` drives the green "they just messaged you" mark on the recent rows. It is the
   // unread flag the inbox feed already carried and nothing rendered (Patrik 2026-08-06).
-  const recentWithNav = recentList.map((r) => ({ ...r, knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off', roomOpen: knavOpenedKey === `rec:${r.key}` ? 'open' : 'off', dot: r.unread ? 'new' : 'none' }));
+  // Normalize the type-label to ONE taxonomy axis so the home rows never show a raw slug,
+  // a project name, or a mixed bag of taxonomies (Steffen 2026-08-06 Fix 3).
+  const recentTypeLabel = (r) => (r.kind === 'project' ? 'Project' : r.kind === 'mission' ? 'Mission' : 'Agent room');
+  const recentWithNav = recentList.map((r) => ({ ...r, sub: recentTypeLabel(r), knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off', roomOpen: knavOpenedKey === `rec:${r.key}` ? 'open' : 'off', dot: r.unread ? 'new' : 'none' }));
   // Ring once when a room goes unread that was not unread a moment ago. Keyed by the
   // SET of unread rooms, not a count: two rooms going unread while one is read nets to
   // zero and would otherwise stay silent. Never fires on first paint — arriving at a
