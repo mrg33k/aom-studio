@@ -467,25 +467,68 @@ function mfsTypeLabel(kind, name) {
   if (ext === 'ts' || ext === 'js' || ext === 'jsx' || ext === 'tsx') return ext.toUpperCase();
   return (ext.slice(0, 4).toUpperCase()) || 'FILE';
 }
-// Background for type chip (opaque, for contrast).
+// Background for type chip. SOLID, not a tint: the approved corner-files-add.png frame
+// draws these as full-strength swatches (blue MD, amber JSON) and the shipped build had
+// them at 16% alpha, which is most of why Patrik said the screen "looks off from how you
+// designed it" (2026-08-07). Unknown types stay neutral so the colour still means something.
 function mfsChipBg(kind, name) {
   const ext = mfsExt(name);
-  if (kind === 'video') return 'rgba(236,72,153,.16)';
-  if (kind === 'pdf') return 'rgba(245,158,11,.16)';
-  if (ext === 'json') return 'rgba(245,158,11,.16)';
-  if (ext === 'csv' || ext === 'xlsx' || ext === 'xls' || ext === 'tsv') return 'rgba(16,185,129,.16)';
-  if (ext === 'md' || ext === 'markdown' || ext === 'doc' || ext === 'docx') return 'var(--accent-weak)';
-  return 'var(--chip)';
-}
-// Foreground color for type chip label — matches bg hue.
-function mfsChipFg(kind, name) {
-  const ext = mfsExt(name);
-  if (kind === 'video') return '#ec4899';
+  if (kind === 'video') return '#db2777';
   if (kind === 'pdf') return '#f59e0b';
   if (ext === 'json') return '#f59e0b';
   if (ext === 'csv' || ext === 'xlsx' || ext === 'xls' || ext === 'tsv') return '#10b981';
-  if (ext === 'md' || ext === 'markdown' || ext === 'doc' || ext === 'docx') return 'var(--accent)';
+  if (ext === 'md' || ext === 'markdown' || ext === 'doc' || ext === 'docx') return '#2563eb';
+  return 'var(--chip)';
+}
+// Foreground for the monogram. Picked per swatch for contrast, not by hue-matching:
+// white clears 4.5:1 on the blue and pink, but only ~2:1 on amber and green, so those
+// two carry near-black instead. An 11px bold monogram gets no large-text exemption.
+function mfsChipFg(kind, name) {
+  const ext = mfsExt(name);
+  if (kind === 'video') return '#fff';
+  if (kind === 'pdf' || ext === 'json') return '#231a05';
+  if (ext === 'csv' || ext === 'xlsx' || ext === 'xls' || ext === 'tsv') return '#04231a';
+  if (ext === 'md' || ext === 'markdown' || ext === 'doc' || ext === 'docx') return '#fff';
   return 'var(--muted)';
+}
+// Save a file to the device for real. The shipped build called window.open(url), which
+// opens a tab — Patrik 2026-08-07: "when you hit it, it should actually save something".
+// A bare <a download> does nothing cross-origin (files live on rag.aheadofmarket.com, the
+// app on lab.aheadofmarket.com), so fetch the bytes and hand the browser a same-origin
+// blob. Verified the host sends access-control-allow-origin:*, so the fetch is allowed.
+async function mfsSaveFile(f) {
+  if (!f?.url) return { ok: false, reason: 'no-url' };
+  const filename = f.name || 'file';
+  try {
+    const res = await fetch(f.url, { mode: 'cors', credentials: 'omit' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoking immediately can cancel the download on some mobile browsers.
+    setTimeout(() => { try { URL.revokeObjectURL(href); } catch (_) { /* noop */ } }, 60000);
+    return { ok: true };
+  } catch (err) {
+    // CORS refused, offline, or the blob path is unavailable: still attempt a direct
+    // download rather than silently doing nothing, and report which path was taken.
+    try {
+      const a = document.createElement('a');
+      a.href = f.url;
+      a.download = filename;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return { ok: true, degraded: true };
+    } catch (_) {
+      return { ok: false, reason: String(err && err.message ? err.message : err).slice(0, 80) };
+    }
+  }
 }
 // Filter classification: doc and data are separate chip types.
 function mfsIsData(f) { return ['json','csv','xlsx','xls','tsv'].includes(mfsExt(f.name)); }
@@ -526,6 +569,7 @@ function SwipeFileRow({ id, onSave, openId, setOpenId, children }) {
   const snappedRef = useRef(false);
   const SAVE_W = 80;
   const THRESHOLD = 48;
+  const isOpen = openId === id;
 
   // Close this row if another row was opened elsewhere.
   useEffect(() => {
@@ -584,10 +628,13 @@ function SwipeFileRow({ id, onSave, openId, setOpenId, children }) {
   }, [onSave, setOpenId]);
 
   return (
-    <div className="cv6-fs-swipe-wrap">
-      {/* Save panel revealed behind the row (accent blue) */}
-      <div className="cv6-fs-save-panel" aria-hidden="true">
-        <button type="button" className="cv6-fs-save-btn" onClick={doSave}>
+    <div className={`cv6-fs-swipe-wrap${isOpen ? ' is-open' : ''}`}>
+      {/* Save panel sitting BEHIND the row. It is only ever seen because the row slides
+          off it — the row layer is opaque, so at rest this is completely covered.
+          aria-hidden while closed keeps a control nobody can see out of the a11y tree;
+          the same action is always reachable from the ⋮ menu. */}
+      <div className="cv6-fs-save-panel" aria-hidden={isOpen ? undefined : 'true'}>
+        <button type="button" className="cv6-fs-save-btn" onClick={doSave} tabIndex={isOpen ? 0 : -1}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 15V3M8 11l4 4 4-4" /><path d="M4 20h16" />
           </svg>
@@ -612,6 +659,24 @@ function SwipeFileRow({ id, onSave, openId, setOpenId, children }) {
 function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [swipeOpenId, setSwipeOpenId] = useState(null);
+  const [menuFile, setMenuFile] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  // One receipt path for every way a file can be saved (swipe panel or ⋮ menu), so the
+  // user always gets told what happened instead of guessing whether the tap registered.
+  const saveFile = useCallback(async (f) => {
+    setToast({ state: 'saving', name: f?.name || '' });
+    const r = await mfsSaveFile(f);
+    setToast(r.ok
+      ? { state: 'ok', name: f?.name || '', degraded: !!r.degraded }
+      : { state: 'err', name: f?.name || '' });
+  }, []);
+
+  useEffect(() => {
+    if (!toast || toast.state === 'saving') return undefined;
+    const t = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // Merge + deduplicate + sort newest-first (same logic as FilesShelf canonical()).
   const allFiles = useMemo(() => {
@@ -681,7 +746,7 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
     const rowId = `${f.url || f.name}-${i}`;
     const isNew = mfsIsNew(f);
     return (
-      <SwipeFileRow key={rowId} id={rowId} onSave={() => { if (f.url) window.open(f.url, '_blank', 'noopener'); }} openId={swipeOpenId} setOpenId={setSwipeOpenId}>
+      <SwipeFileRow key={rowId} id={rowId} onSave={() => saveFile(f)} openId={swipeOpenId} setOpenId={setSwipeOpenId}>
         <button type="button" className="cv6-fs-row" onClick={() => openFile(f)} aria-label={`Open ${f.name}`}>
           {/* Type chip or real thumbnail */}
           <span
@@ -718,26 +783,30 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
           </div>
           {/* "New" chip for session arrivals */}
           {isNew && <span className="cv6-fs-new-chip" aria-label="New file">New</span>}
-          {/* Overflow ⋮ — 44pt tap target */}
-          <button
-            type="button"
-            className="cv6-fs-overflow"
-            aria-label="More options"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg width="4" height="16" viewBox="0 0 4 20" fill="currentColor" aria-hidden="true">
-              <circle cx="2" cy="2" r="2" /><circle cx="2" cy="10" r="2" /><circle cx="2" cy="18" r="2" />
-            </svg>
-          </button>
+        </button>
+        {/* Overflow ⋮ — 44pt tap target. Sibling of the row, not a child: a <button>
+            may not contain a <button>, and nesting it meant the name column ran
+            underneath instead of ending before it. */}
+        <button
+          type="button"
+          className="cv6-fs-overflow"
+          aria-label={`More options for ${f.name}`}
+          onClick={(e) => { e.stopPropagation(); setMenuFile(f); }}
+        >
+          <svg width="4" height="16" viewBox="0 0 4 20" fill="currentColor" aria-hidden="true">
+            <circle cx="2" cy="2" r="2" /><circle cx="2" cy="10" r="2" /><circle cx="2" cy="18" r="2" />
+          </svg>
         </button>
       </SwipeFileRow>
     );
   };
 
-  const renderSection = (label, files) => {
+  // `recent` = the carded treatment in the approved frame. Today's arrivals sit in cards;
+  // everything older is a plain list. That contrast is the hierarchy Patrik signed off on.
+  const renderSection = (label, files, recent) => {
     if (!files.length) return null;
     return (
-      <div key={label} className="cv6-fs-section">
+      <div key={label} className={`cv6-fs-section${recent ? ' cv6-fs-section--recent' : ''}`}>
         <div className="cv6-fs-section-hdr">{label}</div>
         {files.map(renderRow)}
       </div>
@@ -763,14 +832,51 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
       </div>
       {/* Scrollable file list — grouped by date */}
       <div className="cv6-fs-list" role="tabpanel">
-        {renderSection('TODAY', today)}
-        {renderSection('EARLIER', earlier)}
+        {renderSection('TODAY', today, true)}
+        {renderSection('EARLIER', earlier, false)}
         {!today.length && !earlier.length && (
           <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>
             No {activeFilter !== 'all' ? activeFilter + ' ' : ''}files yet
           </div>
         )}
       </div>
+      {/* ⋮ action sheet */}
+      {menuFile && (
+        <div className="cv6-fs-menu-scrim" onClick={() => setMenuFile(null)} role="presentation">
+          <div className="cv6-fs-menu" onClick={(e) => e.stopPropagation()} role="menu" aria-label={`Actions for ${menuFile.name}`}>
+            <div className="cv6-fs-menu-title">{menuFile.name}</div>
+            <button type="button" className="cv6-fs-menu-item" role="menuitem"
+              onClick={() => { const f = menuFile; setMenuFile(null); openFile(f); }}>Open</button>
+            <button type="button" className="cv6-fs-menu-item" role="menuitem"
+              onClick={() => { const f = menuFile; setMenuFile(null); saveFile(f); }}>Save to device</button>
+            <button type="button" className="cv6-fs-menu-item" role="menuitem"
+              onClick={async () => {
+                const f = menuFile; setMenuFile(null);
+                try {
+                  await navigator.clipboard.writeText(f.url || '');
+                  setToast({ state: 'ok', name: 'Link copied', copied: true });
+                } catch (_) {
+                  setToast({ state: 'err', name: 'Link copied', copied: true });
+                }
+              }}>Copy link</button>
+            <button type="button" className="cv6-fs-menu-item" role="menuitem"
+              style={{ color: 'var(--muted)' }} onClick={() => setMenuFile(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
+      {/* Save receipt — never claim a save happened without showing it did */}
+      {toast && (
+        <div className={`cv6-fs-toast${toast.state === 'err' ? ' cv6-fs-toast--err' : ''}`} role="status" aria-live="polite">
+          {toast.copied
+            ? <span>{toast.state === 'ok' ? 'Link copied' : "Couldn't copy the link"}</span>
+            : (
+              <>
+                <span>{toast.state === 'saving' ? 'Saving' : toast.state === 'ok' ? 'Saved' : "Couldn't save"}</span>
+                <span className="cv6-fs-toast-name">{toast.name}</span>
+              </>
+            )}
+        </div>
+      )}
     </>
   );
 }

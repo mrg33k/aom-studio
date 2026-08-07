@@ -2752,8 +2752,16 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 [data-cv6][data-screen="home-mobile"] .mresumecard .sdot.newdot.is-new { margin-right:2px; }
 
 /* Which column the arrow keys are standing in (Patrik 2026-08-06). Without a mark
-   you cannot tell where ←/→ will take you next, and the first press feels random. */
-[data-cv6] .cv6-workspace-column[data-knav-zone="on"] { box-shadow:inset 0 0 0 1.5px var(--accent); }
+   you cannot tell where ←/→ will take you next, and the first press feels random.
+   DESKTOP ONLY (Patrik 2026-08-07: "an outline over the chat boxes when I swipe into
+   them"). onOpenRoom sets knavZone on every open including mobile, where there are no
+   arrow keys to stand anywhere — so this painted a 1.5px accent ring around the whole
+   chat every time he swiped in. The mobile block below zeroes .cv6-workspace-column's
+   box-shadow, but this rule carries an extra attribute selector and won the cascade.
+   Gating it at the breakpoint fixes the cause instead of racing specificity. */
+@media (min-width:900px) {
+  [data-cv6] .cv6-workspace-column[data-knav-zone="on"] { box-shadow:inset 0 0 0 1.5px var(--accent); }
+}
 
 [data-cv6] button { border-radius:999px !important; }
 /* ...except the composer's secondary controls (Patrik 2026-08-06). Voice and Send
@@ -3767,6 +3775,8 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Containing block for the ⋮ sheet and the save receipt. */
+  position: relative;
 }
 /* Scrollable file list */
 [data-cv6] .cv6-fs-list {
@@ -3792,6 +3802,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-swipe-wrap {
   position: relative;
   overflow: hidden;
+  margin-bottom: 4px;
 }
 /* Save panel revealed on left-swipe (dx < 0 = finger moves left) */
 [data-cv6] .cv6-fs-save-panel {
@@ -3804,24 +3815,79 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 0;
 }
 [data-cv6] .cv6-fs-save-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   border: none;
   background: transparent;
   color: #fff;
   font: 700 11px var(--font-sans);
   cursor: pointer;
   padding: 0;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
 }
-/* Translating content layer — JS drives transform directly during gesture */
+/* Translating content layer — JS drives transform directly during gesture.
+   MUST be opaque and stacked above the panel. Without a background this layer is
+   transparent, so the accent Save panel behind it shows on EVERY row at rest —
+   Patrik 2026-08-07: "the save is always there, but it needs to be a swipe over
+   interaction". Measured on the live app before the fix: computed background of
+   .cv6-fs-swipe-inner was rgba(0,0,0,0), panel painted at x 294-374 on all 41 rows. */
 [data-cv6] .cv6-fs-swipe-inner {
+  position: relative;
+  z-index: 1;
+  background: var(--ground);
+  display: flex;
+  align-items: center;
+  gap: 4px;
   will-change: transform;
   /* Allow vertical scroll to still work while enabling horizontal swipe detection */
   touch-action: pan-y;
+}
+/* Recent files sit in cards, older files in a plain list — the hierarchy in the
+   approved corner-files-add.png frame. The card fill is what the swipe reveals from. */
+[data-cv6] .cv6-fs-section--recent .cv6-fs-swipe-wrap {
+  border-radius: 16px;
+  margin-bottom: 8px;
+}
+[data-cv6] .cv6-fs-section--recent .cv6-fs-swipe-inner {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  padding: 0 12px;
+}
+[data-cv6] .cv6-fs-swipe-wrap.is-open .cv6-fs-swipe-inner { box-shadow: -8px 0 16px -8px rgba(0,0,0,.55); }
+/* Saved confirmation pill — the receipt that the save actually happened */
+[data-cv6] .cv6-fs-toast {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--hair);
+  box-shadow: 0 12px 32px -12px rgba(0,0,0,.7);
+  color: var(--fg);
+  font: 600 13px var(--font-sans);
+}
+[data-cv6] .cv6-fs-toast--err { color: #fca5a5; }
+[data-cv6] .cv6-fs-toast-name {
+  color: var(--muted);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* ── File row ─────────────────────────────────────────────────────────────── */
@@ -3832,11 +3898,16 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   padding: 10px 0;
   border: none;
   background: transparent;
-  width: 100%;
+  /* Sibling of the ⋮ button now, not its parent — a <button> may not contain a
+     <button>. Flexing keeps the name column ending before the ⋮ instead of
+     running under it. */
+  flex: 1 1 auto;
+  min-width: 0;
   text-align: left;
   font-family: var(--font-sans);
   cursor: pointer;
   min-height: 56px; /* ≥44pt vertical target */
+  border-radius: 12px;
 }
 [data-cv6] .cv6-fs-row:active { opacity: .8; }
 
@@ -3939,3 +4010,46 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   border-radius: 10px;
 }
 [data-cv6] .cv6-fs-overflow:active { background: var(--chip); }
+
+/* ⋮ action sheet — the overflow control used to be a dead button (onClick was a
+   bare stopPropagation). It now opens the same three things the row can do. */
+[data-cv6] .cv6-fs-menu-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: flex-end;
+}
+[data-cv6] .cv6-fs-menu {
+  width: 100%;
+  background: var(--surface);
+  border-top: 1px solid var(--hair);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  padding: 8px 12px max(20px, env(safe-area-inset-bottom, 0px));
+}
+[data-cv6] .cv6-fs-menu-title {
+  padding: 12px 12px 8px;
+  font: 600 13px var(--font-sans);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-cv6] .cv6-fs-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: 600 15px var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 12px;
+}
+[data-cv6] .cv6-fs-menu-item:active { background: var(--chip); }
