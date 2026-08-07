@@ -1379,6 +1379,43 @@
 }
 [data-cv6] .topbar .av { border:0; }
 
+/* ── iPad preview (task 4680b019, branch ipad-preview-density) ─────────────
+   JS threshold lowered from 900px → 768px so iPad Air portrait (834px) gets
+   the desktop layout instead of the phone view. These CSS rules accompany that
+   change:
+   1. Tablet topbar compact: shrink from 80px to 60px at 768-1024px so the bar
+      eats less vertical space relative to the content below it.
+   2. Workspace undo: the (max-width:899px) block stacks all workspace columns
+      to 100% width (phone behaviour). At 768-899px we now have desktop JSX, so
+      override those stacking rules back to normal desktop flow for the home view.
+   PREVIEW ONLY — parked on this branch pending Patrik approval. */
+@media (min-width: 768px) and (max-width: 1024px) {
+  [data-cv6] { --cv6-topbar-height: 60px; }
+}
+@media (min-width: 768px) and (max-width: 899px) {
+  /* Undo the mobile 100%-width stacking so the desktop canvas layout works.
+     The (max-width:899px) block sets flex:0 0 100% / width:100% on the base
+     and columns — these overrides restore the desktop defaults. */
+  [data-cv6] .cv6-workspace-canvas {
+    scroll-snap-type: proximity !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+  [data-cv6] .cv6-workspace-base {
+    flex: 1 0 100% !important;
+    width: auto !important;
+  }
+  [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base {
+    flex: 0 0 clamp(320px, 45vw, 560px) !important;
+    width: auto !important;
+  }
+  [data-cv6] .cv6-workspace-column {
+    flex: 0 0 360px !important;
+    width: auto !important;
+    scroll-snap-align: none;
+  }
+}
+
 [data-cv6] .mhdr {
   flex:0 0 var(--cv6-mobile-header-height) !important;
   width:100%;

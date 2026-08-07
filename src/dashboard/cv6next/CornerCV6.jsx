@@ -85,13 +85,16 @@ function roomSummarySentences(md, max = 2) {
   return out;
 }
 
-// ── viewport: desktop layout at >=900px, the phone layout below ──
+// ── viewport: desktop layout at >=768px, the phone layout below ──
+// ipad-preview-density (task 4680b019): lowered from 900px → 768px so iPad Air
+// portrait (834px) gets the desktop layout instead of the blown-up phone view.
+// This is a branch preview — awaiting Patrik approval before merging to main.
 function useIsDesktop() {
   const [desktop, setDesktop] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 900px)').matches : true);
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true);
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    const mq = window.matchMedia('(min-width: 900px)');
+    const mq = window.matchMedia('(min-width: 768px)');
     const on = () => setDesktop(mq.matches);
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
