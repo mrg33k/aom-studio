@@ -2890,6 +2890,184 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   [data-cv6] .cv6-work-dropdown { position:fixed; top:calc(env(safe-area-inset-top,0px) + 66px); right:12px; }
 }
 
+/* ── ACTION ITEMS RESKIN (R2c, task 42021fa1) ──────────────────────────────────────
+   Three states clearly different at a glance: active (hero), todo (quiet), done (dimmed).
+   Tokens from kit-FINAL-2026-06-20/tokens/themes.css — never eyeballed. No gold in Corner.
+   All three themes (dark/light/glass) adapt automatically via var() tokens.
+   §5 compliance: progress bar is indeterminate (no percentage, no proportional fill).
+   Typography: Inter var(--font-sans), normal-width, sentence case — NOT condensed, NOT uppercase.
+   Applies to both inline RoomWorkList and the .cv6-work-dropdown placement (same component).
+   ─────────────────────────────────────────────────────────────────────────────────────── */
+
+/* Header title */
+[data-cv6] .cv6-wl-title {
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:-.015em;
+  color:var(--fg);
+  font-family:var(--font-sans);
+}
+
+/* "N running" pill badge */
+[data-cv6] .cv6-wl-running-badge {
+  display:inline-flex;
+  align-items:center;
+  padding:2px 9px;
+  border-radius:var(--radius-pill,50px);
+  background:var(--accent);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  font-family:var(--font-sans);
+  letter-spacing:.01em;
+  white-space:nowrap;
+  line-height:18px;
+}
+
+/* ── Item card wrapper ── */
+[data-cv6] .cv6-wl-item {
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  border-radius:11px;
+  padding:10px 11px;
+  margin-bottom:5px;
+  background:var(--surface);
+  border:1px solid var(--hair);
+}
+[data-cv6] .cv6-wl-item:last-child { margin-bottom:0; }
+
+/* Active / hero card: accent-weak fill + solid accent left edge */
+[data-cv6] .cv6-wl-item--active {
+  background:var(--accent-weak);
+  border-color:transparent;
+  border-left:3px solid var(--accent);
+  padding-left:9px; /* compensate for 2px wider border so content stays aligned */
+}
+
+/* Done card: dimmed, no border */
+[data-cv6] .cv6-wl-item--done {
+  background:transparent;
+  border-color:transparent;
+  opacity:0.6;
+}
+
+/* ── Content column ── */
+[data-cv6] .cv6-wl-content {
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── Label (item text) ──
+   Normal-width Inter, sentence case. Typography is not a preference (MOBILE-BUILD-SPEC §3).
+   Active: 15px/600 — quiet items: 13px/500. Never condensed, never uppercase. */
+[data-cv6] .cv6-wl-label {
+  font-size:13px;
+  font-weight:500;
+  line-height:1.35;
+  color:var(--fg);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-label {
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:-.01em;
+  white-space:normal; /* allow wrap at hero size */
+  overflow:visible;
+  text-overflow:clip;
+}
+[data-cv6] .cv6-wl-item--done .cv6-wl-label {
+  text-decoration:line-through;
+  color:var(--faint);
+}
+
+/* ── Owner subtitle ── */
+[data-cv6] .cv6-wl-owner {
+  font-size:11px;
+  font-weight:400;
+  color:var(--muted);
+  margin-top:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-family:var(--font-sans);
+}
+
+/* ── Progress bar: active items only, indeterminate (§5) ──
+   No percentage. No proportional fill. A shimmer passes through a fixed-width chunk.
+   Reported: real per-task progress is unavailable from the checklist / useRunningTasks
+   data model — items have no completion percentage. Indeterminate is the correct fallback. */
+[data-cv6] .cv6-wl-bar {
+  height:3px;
+  border-radius:2px;
+  /* Track: semi-opaque white readable on accent-weak background */
+  background:rgba(255,255,255,.14);
+  overflow:hidden;
+  margin:8px 0 2px;
+}
+[data-cv6] .cv6-wl-bar-fill {
+  height:100%;
+  border-radius:2px;
+  background:var(--accent);
+  width:38%;
+  animation:cv6WlBarShimmer 1.8s ease-in-out infinite;
+}
+@keyframes cv6WlBarShimmer {
+  0%   { transform:translateX(-220%); }
+  100% { transform:translateX(380%); }
+}
+@media (prefers-reduced-motion:reduce) {
+  [data-cv6] .cv6-wl-bar-fill { animation:none; width:55%; opacity:.5; }
+}
+
+/* ── Status row: state-word + elapsed time ── */
+[data-cv6] .cv6-wl-status {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin-top:5px;
+}
+
+/* Lime pulse dot — active state only */
+[data-cv6] .cv6-wl-dot {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--status-working, #A3E635);
+  flex:none;
+  animation:statPulse 1.7s infinite; /* reuses statPulse already defined in this file */
+}
+
+/* State word: "running" / "to do" / "done" */
+[data-cv6] .cv6-wl-state-word {
+  font-size:11px;
+  font-weight:500;
+  color:var(--muted);
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-state-word {
+  font-weight:600;
+  color:var(--status-working, #A3E635); /* lime to match the dot */
+}
+
+/* Elapsed time — right-aligned via margin-left:auto */
+[data-cv6] .cv6-wl-time {
+  margin-left:auto;
+  font-size:11px;
+  font-family:var(--font-mono);
+  color:var(--muted);
+  font-variant-numeric:tabular-nums;
+  flex:none;
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-time { color:var(--accent); }
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
 /* R11 one-page workspace. Home/tools stay mounted as the base column while
    every room and Email appends an independent, fixed-width sibling. The page
    never navigates away; overflow belongs to this horizontal canvas. */
