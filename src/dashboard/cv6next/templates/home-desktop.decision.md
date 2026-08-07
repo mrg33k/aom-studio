@@ -106,10 +106,19 @@ already burned one lesson on an agent deciding an element was noise — Steffen 
 tint bars for deletion and was wrong, they carried real project identity. I may be making
 the mirror of that mistake in the other direction.
 
-**Theme and width coverage is one shot, not a sweep.** I verified dark theme at 1440px.
-The alignment fix touches a shared rule that also governs the mobile row, and I did NOT
-re-shoot mobile at 390px, nor check light or glass theme. `visibility:hidden` is
-theme-agnostic so I expect it to hold, but expecting is not checking.
+**Theme coverage is one shot, not a sweep.** I verified dark theme only. I did NOT check
+light or glass. `visibility:hidden` is theme-agnostic so I expect it to hold, but expecting
+is not checking.
+
+*Resolved after first signing (mobile, 390px):* I had listed mobile as unverified. I then
+shot it — `Screenshots/mobile-390-aligned.png` — and the answer is better than "it holds":
+mobile Home was RESTRUCTURED today by another worker (`ac8ee953`, `68681e0d`, `e9adc18a`),
+so its rows now lead with an avatar circle, not the status dot, and the activity dot has
+moved to the right edge beside the age. Every name lines up at the same x. My CSS change
+is inert on that layout rather than beneficial, which is a different claim than the one I
+made in the commit message for `d3e78254` ("this also corrects mobile") — that sentence was
+true of yesterday's mobile markup and is now stale. Recording it rather than quietly
+letting it stand.
 
 **I flagged a defect instead of fixing it and I might have that boundary wrong.** The
 centre digest renders 10 recent rows while its own template comment says it "caps itself
