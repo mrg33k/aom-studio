@@ -53,6 +53,7 @@ import { useCommandContext, useDataContext } from './providers/DataContext.jsx';
 import { titleForAgent } from './data/agentTitles.js';
 import { chatWindowRouteFromSearch } from './data/chatWindowRoute.js';
 import { useDemoBlocksFeed } from './data/useDemoBlocks.js';
+import { useRunningTasks } from './data/useRunningTasks.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
 import inboxRaw from './templates/support-inbox.html?raw';
@@ -425,6 +426,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const { refetch: refetchHomeData } = useDataContext();
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
+  // World-level running tasks for home screen hero-card status + active count pill.
+  // null scope = world-scoped (all running tasks across all rooms).
+  const { tasks: worldTasks } = useRunningTasks(null);
   // corner:front-door: the front-door composer's brain-to-room wiring. Type a
   // task → route it (continue / existing / editable-new) → open + seed.
   const intake = useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject });
@@ -1472,7 +1476,22 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // `dot` drives the green "they just messaged you" mark on the recent rows. It is the
   // unread flag the inbox feed already carried and nothing rendered (Patrik 2026-08-06).
   const recentTypeLabel = (r) => (r.kind === 'project' ? 'Project' : r.kind === 'mission' ? 'Mission' : 'Agent room');
-  const recentWithNav = recentList.map((r) => ({ ...r, sub: recentTypeLabel(r), knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off', roomOpen: knavOpenedKey === `rec:${r.key}` ? 'open' : 'off', dot: r.unread ? 'new' : 'none' }));
+  // Hero card status: if any world tasks are running, the most-recently-active room
+  // is likely where the work is happening — show "working". Otherwise show "active"
+  // (it is, by definition, the most recently active room). §5: status label is honest
+  // about world state, not fabricated.
+  const heroStatusLabel = worldTasks.length > 0 ? 'working' : 'active';
+  const recentWithNav = recentList.map((r, idx) => ({
+    ...r,
+    sub: recentTypeLabel(r),
+    // Avatar circle initial — first letter of room name, uppercased.
+    initial: (r.name || '?').charAt(0).toUpperCase(),
+    // Hero status label shown only on first card (CSS :first-child controls display).
+    statusLabel: idx === 0 ? heroStatusLabel : '',
+    knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off',
+    roomOpen: knavOpenedKey === `rec:${r.key}` ? 'open' : 'off',
+    dot: r.unread ? 'new' : 'none',
+  }));
   // Ring once when a room goes unread that was not unread a moment ago. Keyed by the
   // SET of unread rooms, not a count: two rooms going unread while one is read nets to
   // zero and would otherwise stay silent. Never fires on first paint — arriving at a
@@ -1533,6 +1552,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   }));
   const convo = { messages: convoMessages, has: convoMessages.length ? 'has' : 'none', loading: knavOpenedRoom && !convoMessages.length ? 'on' : 'off' };
 
+  // Active count for the home header pill — total recently-active rooms.
+  const activeCount = String(recentWithNav.length || '');
+
   const homeData = {
     ...data,
     catchUp: catchUpRender,
@@ -1544,6 +1566,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     room: displayedRoom,
     goal: displayedGoal,
     convo,
+    activeCount,
   };
   // Start-a-mission / New-project composer overlay (the All-rooms "New") — the shared
   // NewComposer flow. On create, bump missionReload so the tree/room lists refetch.

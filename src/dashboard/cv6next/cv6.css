@@ -1985,6 +1985,215 @@
 [data-cv6][data-screen="home-mobile"] .mresumecard .rprev:empty { display:none; }
 [data-cv6][data-screen="home-mobile"] .mresumeage { flex:none; font-size:10.5px; color:var(--faint); }
 [data-cv6][data-screen="home-mobile"] .mresume-chev { flex:none; color:var(--faint); }
+
+/* ── HOME AMPLIFY RESKIN (R2a, task 8431e715) ─────────────────────────────────────
+   Tokens from kit-FINAL-2026-06-20/tokens/themes.css — never eyeballed.
+   Three themes (dark/light/glass): all use var() tokens so they adapt automatically.
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* Active count pill in header */
+[data-cv6][data-screen="home-mobile"] .mhome-active-pill {
+  /* inline-block (not inline-flex) so the " active" text-node space renders correctly.
+     Flexbox collapses leading whitespace on text nodes as anonymous flex items. */
+  display:inline-block;
+  margin-top:10px;
+  line-height:24px;
+  padding:0 10px;
+  border-radius:var(--radius-pill,50px);
+  background:var(--accent);
+  color:#fff;
+  font-size:11.5px;
+  font-weight:700;
+  font-family:var(--font-sans);
+  letter-spacing:.01em;
+  white-space:nowrap;
+}
+/* Hide pill when activeCount is empty (no recent rooms) */
+[data-cv6][data-screen="home-mobile"] .mhome-active-pill:empty { display:none; }
+
+/* ── Avatar circle (all cards) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-av {
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:var(--surface-2);
+  border:1px solid var(--hair);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+  font-weight:700;
+  color:var(--fg);
+  flex:none;
+  flex-shrink:0;
+  text-transform:uppercase;
+}
+
+/* ── Name-line (all cards) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-nameline {
+  display:flex;
+  align-items:baseline;
+  min-width:0;
+}
+
+/* ── Status row: hero only ── */
+[data-cv6][data-screen="home-mobile"] .mresume-statusrow {
+  display:none; /* hidden on quiet cards; hero overrides below */
+  align-items:center;
+  gap:5px;
+  margin-top:4px;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-herodot {
+  width:7px;
+  height:7px;
+  background:var(--status-working, var(--lime-400, #A3E635));
+  flex:none;
+  animation:statPulse 1.7s infinite;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-statusword {
+  font-size:11.5px;
+  font-weight:600;
+  color:var(--status-working, var(--lime-400, #A3E635));
+  text-transform:lowercase;
+}
+
+/* ── Progress bar: hero only, indeterminate (§5) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-bar {
+  display:none; /* hidden on quiet cards; hero overrides below */
+  height:5px;
+  border-radius:3px;
+  /* Track: semi-opaque white so it reads against the accent-weak hero background */
+  background:rgba(255,255,255,.12);
+  overflow:hidden;
+  margin-top:8px;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-bar-fill {
+  height:100%;
+  border-radius:3px;
+  background:var(--accent);
+  /* Indeterminate shimmer: no percentage, no proportional fill — §5 */
+  width:40%;
+  animation:mresumeBarShimmer 1.8s ease-in-out infinite;
+}
+@keyframes mresumeBarShimmer {
+  0%   { transform:translateX(-200%); }
+  100% { transform:translateX(350%); }
+}
+/* Respect prefers-reduced-motion — keep bar visible but static */
+@media (prefers-reduced-motion:reduce) {
+  [data-cv6][data-screen="home-mobile"] .mresume-bar-fill { animation:none; width:60%; opacity:.6; }
+}
+
+/* ── Trail (time + unread dot, right side) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-trail {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:4px;
+  flex:none;
+}
+/* Quiet cards: trail is row (dot + time side by side) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresume-trail {
+  flex-direction:row;
+  align-items:center;
+  gap:5px;
+  align-self:flex-start; /* align with name row, not stretched */
+}
+
+/* ── HERO CARD — :first-child ── */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child {
+  background:var(--accent-weak);
+  border-color:transparent;
+  border-left:3px solid var(--accent);
+  border-radius:14px;
+  align-items:flex-start;
+  padding:14px 14px 14px 16px;
+  gap:12px;
+  min-height:96px;
+}
+/* Suppress the ::before tint bar on hero — the left accent border is the identity signal */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child::before {
+  display:none;
+}
+/* Hero avatar: accent-filled circle */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-av {
+  width:42px;
+  height:42px;
+  font-size:18px;
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  flex-shrink:0;
+}
+/* Hero name: display size */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .rn {
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:-.025em;
+  line-height:1.15;
+  white-space:normal; /* allow wrap at display size */
+  overflow:visible;
+  text-overflow:clip;
+}
+/* Hero status row: show */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-statusrow {
+  display:flex;
+}
+/* Hero preview: slightly more visible */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .rprev {
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+/* Hero progress bar: show (indeterminate — §5: no percentage, no proportional fill) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-bar {
+  display:block;
+}
+/* Hero trail: time at top only, smaller; dot hidden (status handled by mresume-statusrow) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-trail {
+  position:absolute;
+  top:14px;
+  right:14px;
+  flex-direction:column;
+  align-items:flex-end;
+}
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-trail .newdot {
+  display:none; /* status conveyed by the hero status row instead */
+}
+/* Hero body: takes full width under the avatar */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresumebody {
+  flex:1;
+  min-width:0;
+  /* Account for absolute-positioned trail so text does not overlap it */
+  padding-right:38px;
+}
+
+/* ── QUIET CARDS — :not(:first-child) ── */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) {
+  align-items:center;
+}
+/* Quiet card avatar: smaller, surface-2 (already the default, but explicit for clarity) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresume-av {
+  width:32px;
+  height:32px;
+  font-size:12px;
+}
+/* Quiet card name: standard size */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .rn {
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:-.01em;
+}
+/* Quiet: body is a column flex taking remaining space */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresumebody {
+  flex:1;
+  min-width:0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head { margin:28px 0 12px; }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head > span { display:flex; flex-direction:column; gap:3px; }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head small { color:var(--faint); font-size:12px; }
