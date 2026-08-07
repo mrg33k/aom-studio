@@ -1,0 +1,112 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {
+      "path": "templates/chat-list.html",
+      "language": "html",
+      "sizeLines": 41,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/chat.html",
+      "language": "html",
+      "sizeLines": 216,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/command.html",
+      "language": "html",
+      "sizeLines": 318,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/home-desktop.html",
+      "language": "html",
+      "sizeLines": 135,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/home-mobile.html",
+      "language": "html",
+      "sizeLines": 228,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/kit.html",
+      "language": "html",
+      "sizeLines": 279,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/livescribe.html",
+      "language": "html",
+      "sizeLines": 212,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/onboarding.html",
+      "language": "html",
+      "sizeLines": 137,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/organize.html",
+      "language": "html",
+      "sizeLines": 305,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/review.html",
+      "language": "html",
+      "sizeLines": 181,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/settings.html",
+      "language": "html",
+      "sizeLines": 93,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/states-extra.html",
+      "language": "html",
+      "sizeLines": 67,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/support-inbox.html",
+      "language": "html",
+      "sizeLines": 167,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/support-thread.html",
+      "language": "html",
+      "sizeLines": 72,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/tracker.html",
+      "language": "html",
+      "sizeLines": 270,
+      "fileCategory": "markup"
+    }
+  ],
+  "batchImportData": {
+    "templates/chat-list.html": [],
+    "templates/chat.html": [],
+    "templates/command.html": [],
+    "templates/home-desktop.html": [],
+    "templates/home-mobile.html": [],
+    "templates/kit.html": [],
+    "templates/livescribe.html": [],
+    "templates/onboarding.html": [],
+    "templates/organize.html": [],
+    "templates/review.html": [],
+    "templates/settings.html": [],
+    "templates/states-extra.html": [],
+    "templates/support-inbox.html": [],
+    "templates/support-thread.html": [],
+    "templates/tracker.html": []
+  }
+}

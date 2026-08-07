@@ -1,0 +1,56 @@
+{
+  "nodes": [
+    {
+      "id": "file:cv6.css",
+      "type": "file",
+      "name": "cv6.css",
+      "filePath": "cv6.css",
+      "summary": "The single-import CV6 stylesheet: design tokens (color scales, semantic surface/text/accent vars, radii, fonts), frame layout, and every screen-primitive class for the CV6 dashboard surface. Defines dark, light, and glass themes plus reduced-motion and per-screen variants, all scoped under [data-cv6].",
+      "tags": ["design-system", "design-tokens", "theming", "stylesheet", "component-styles"],
+      "complexity": "complex",
+      "languageNotes": "All rules are namespaced under [data-cv6] and theme swaps flip [data-theme] (dark/light/glass) on the mount wrapper or [data-app-theme] on the app root, so a single import re-skins every screen without per-screen CSS."
+    },
+    {
+      "id": "file:PinLayer.jsx",
+      "type": "file",
+      "name": "PinLayer.jsx",
+      "filePath": "PinLayer.jsx",
+      "summary": "Interactive overlay layer for the CV6 viewer that lets users drop numbered comment pins by clicking empty space and re-open existing pins. Positioned absolutely over doc/image/video/website viewers via a crosshair-cursor wrapper.",
+      "tags": ["component", "overlay", "event-handler", "annotation", "react-hook"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:PinLayer.jsx:PinLayer",
+      "type": "function",
+      "name": "PinLayer",
+      "filePath": "PinLayer.jsx",
+      "lineRange": [8, 81],
+      "summary": "React function component that renders children plus a click-sensitive layer; on empty-space click it computes pin x/y offsets from the container's bounding rect and calls onAddPin, renders each pin as a numbered circle invoking onOpenPin, and shows a 'Click anywhere to comment' hint when no pins exist.",
+      "tags": ["component", "event-handler", "overlay", "annotation"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:PinLayer.jsx",
+      "target": "function:PinLayer.jsx:PinLayer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:PinLayer.jsx",
+      "target": "function:PinLayer.jsx:PinLayer",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cv6.css",
+      "target": "file:CornerCV6.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

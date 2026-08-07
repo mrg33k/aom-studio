@@ -1,0 +1,289 @@
+{
+  "nodes": [
+    {
+      "id": "file:Campaign.jsx",
+      "type": "file",
+      "name": "Campaign.jsx",
+      "filePath": "Campaign.jsx",
+      "summary": "Mission-control screen for the Email > Campaign cold-outreach tool: a today-first dashboard combining a health strip, goal progress, pipeline stages, per-city detail, an activity feed, and a multi-step campaign creation wizard.",
+      "tags": ["component", "dashboard", "campaign", "outreach", "wizard"],
+      "complexity": "complex",
+      "languageNotes": "Single large JSX module holding one default-exported screen plus ~14 private presentational sub-components and helpers; all data comes through the useCampaign hooks."
+    },
+    {
+      "id": "file:EmailShell.jsx",
+      "type": "file",
+      "name": "EmailShell.jsx",
+      "filePath": "EmailShell.jsx",
+      "summary": "Segmented-tab shell for the Email tool that flips between the existing Inbox (Support) surface and the Campaign mission-control tool, persisting the active tab per session in sessionStorage.",
+      "tags": ["component", "tab-shell", "layout", "email"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:data/useCampaign.js",
+      "type": "file",
+      "name": "useCampaign.js",
+      "filePath": "data/useCampaign.js",
+      "summary": "Data-fetching React hooks (authFetch + world param + interval polling) backing the Campaign tool: list, detail, health, contacts, city detail, activity feed, and a campaign-action mutator.",
+      "tags": ["hook", "data-fetching", "polling", "api-client", "service"],
+      "complexity": "moderate",
+      "languageNotes": "Follows the useCommandTracker pattern; health polls fast (5s) with payload diffing to skip needless re-renders, detail polls slower (20s)."
+    },
+    {
+      "id": "function:Campaign.jsx:Campaign",
+      "type": "function",
+      "name": "Campaign",
+      "filePath": "Campaign.jsx",
+      "lineRange": [841, 1015],
+      "summary": "Top-level default-exported Campaign screen: wires the campaign data hooks, manages selected campaign/city/stage/wizard state, and composes the health strip, today cards, pipeline, city detail, and activity feed.",
+      "tags": ["component", "entry-point", "container", "state-management"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:Campaign.jsx:CreateWizard",
+      "type": "function",
+      "name": "CreateWizard",
+      "filePath": "Campaign.jsx",
+      "lineRange": [405, 684],
+      "summary": "Multi-step wizard for creating a campaign: name and message template, audience selection (CSV upload or dataset filter with live preview), mail connection choice, and launch via authFetch.",
+      "tags": ["component", "wizard", "form", "validation"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:Campaign.jsx:MessageCard",
+      "type": "function",
+      "name": "MessageCard",
+      "filePath": "Campaign.jsx",
+      "lineRange": [709, 837],
+      "summary": "Editable template card that previews the campaign email against a sample contact, exposes merge fields, and saves subject/body edits via authFetch.",
+      "tags": ["component", "editor", "template", "form"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:Campaign.jsx:CityDetail",
+      "type": "function",
+      "name": "CityDetail",
+      "filePath": "Campaign.jsx",
+      "lineRange": [300, 375],
+      "summary": "Per-city detail panel showing merge fields, next-stage actions, recent replies, and a merged event/send timeline for a single contact.",
+      "tags": ["component", "detail-view", "timeline"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:Campaign.jsx:TodayCards",
+      "type": "function",
+      "name": "TodayCards",
+      "filePath": "Campaign.jsx",
+      "lineRange": [166, 239],
+      "summary": "Today-first action cards surfacing replies to handle and follow-ups due, each carrying exactly one tap to act on it.",
+      "tags": ["component", "dashboard", "action-cards"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:Campaign.jsx:StageList",
+      "type": "function",
+      "name": "StageList",
+      "filePath": "Campaign.jsx",
+      "lineRange": [264, 296],
+      "summary": "Paginated contact list for a selected pipeline stage, showing city population figures with load-more support.",
+      "tags": ["component", "list", "pagination"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:Campaign.jsx:HealthStrip",
+      "type": "function",
+      "name": "HealthStrip",
+      "filePath": "Campaign.jsx",
+      "lineRange": [85, 131],
+      "summary": "Health strip answering 'is it running?' in two seconds via a status light plus a one-tap fix for the current problem.",
+      "tags": ["component", "status", "health"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:Campaign.jsx:GoalStrip",
+      "type": "function",
+      "name": "GoalStrip",
+      "filePath": "Campaign.jsx",
+      "lineRange": [135, 162],
+      "summary": "Goal progress strip rendering the campaign's completion percentage toward its target.",
+      "tags": ["component", "progress", "goal"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:Campaign.jsx:PipelineBar",
+      "type": "function",
+      "name": "PipelineBar",
+      "filePath": "Campaign.jsx",
+      "lineRange": [243, 262],
+      "summary": "Horizontal pipeline bar rendering each ordered stage as a tappable segment that drills into its contact list.",
+      "tags": ["component", "pipeline", "navigation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:Campaign.jsx:ActivityFeed",
+      "type": "function",
+      "name": "ActivityFeed",
+      "filePath": "Campaign.jsx",
+      "lineRange": [379, 394],
+      "summary": "Recent-activity feed listing the latest campaign events with relative timestamps.",
+      "tags": ["component", "feed", "activity"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:Campaign.jsx:fmtWhen",
+      "type": "function",
+      "name": "fmtWhen",
+      "filePath": "Campaign.jsx",
+      "lineRange": [30, 40],
+      "summary": "Formats an ISO timestamp into a friendly relative label (time today, 'Tomorrow', or short date), reused throughout the screen.",
+      "tags": ["utility", "date", "formatting"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:Campaign.jsx:healthLine",
+      "type": "function",
+      "name": "healthLine",
+      "filePath": "Campaign.jsx",
+      "lineRange": [55, 66],
+      "summary": "Builds the human-readable one-line summary describing the campaign's current health state and next scheduled action.",
+      "tags": ["utility", "health", "formatting"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:Campaign.jsx:StatusLight",
+      "type": "function",
+      "name": "StatusLight",
+      "filePath": "Campaign.jsx",
+      "lineRange": [42, 53],
+      "summary": "Small colored status dot indicating the running/waiting/paused/problem state of a campaign.",
+      "tags": ["component", "status", "indicator"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:EmailShell.jsx:EmailShell",
+      "type": "function",
+      "name": "EmailShell",
+      "filePath": "EmailShell.jsx",
+      "lineRange": [14, 75],
+      "summary": "Segmented shell component switching between the Inbox and Campaign tabs, persisting the choice to sessionStorage and passing worldId into the Campaign tool.",
+      "tags": ["component", "tab-shell", "entry-point", "email"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useCampaign.js:useCampaignList",
+      "type": "function",
+      "name": "useCampaignList",
+      "filePath": "data/useCampaign.js",
+      "lineRange": [15, 48],
+      "summary": "Hook that loads the campaign list and setup state for a world and refreshes it on a polling interval.",
+      "tags": ["hook", "data-fetching", "polling"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useCampaign.js:useCampaignDetail",
+      "type": "function",
+      "name": "useCampaignDetail",
+      "filePath": "data/useCampaign.js",
+      "lineRange": [50, 66],
+      "summary": "Hook that fetches a single campaign's detail by id and world with periodic refresh.",
+      "tags": ["hook", "data-fetching", "polling"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:data/useCampaign.js:useCampaignHealth",
+      "type": "function",
+      "name": "useCampaignHealth",
+      "filePath": "data/useCampaign.js",
+      "lineRange": [68, 88],
+      "summary": "Hook that fast-polls (5s) campaign health, diffing serialized payloads to avoid needless re-renders of the health strip.",
+      "tags": ["hook", "data-fetching", "polling", "health"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useCampaign.js:useCampaignContacts",
+      "type": "function",
+      "name": "useCampaignContacts",
+      "filePath": "data/useCampaign.js",
+      "lineRange": [90, 111],
+      "summary": "Hook that fetches paginated campaign contacts filtered by stage, supporting append/load-more accumulation and totals.",
+      "tags": ["hook", "data-fetching", "pagination"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useCampaign.js:useCityDetail",
+      "type": "function",
+      "name": "useCityDetail",
+      "filePath": "data/useCampaign.js",
+      "lineRange": [113, 125],
+      "summary": "Hook that loads a single contact/city's detail with a mounted-guard flag to discard stale async writes.",
+      "tags": ["hook", "data-fetching"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:data/useCampaign.js:useCampaignActivity",
+      "type": "function",
+      "name": "useCampaignActivity",
+      "filePath": "data/useCampaign.js",
+      "lineRange": [127, 142],
+      "summary": "Hook that fetches the campaign activity feed for a world/campaign with periodic refresh.",
+      "tags": ["hook", "data-fetching", "polling"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:data/useCampaign.js:useCampaignActions",
+      "type": "function",
+      "name": "useCampaignActions",
+      "filePath": "data/useCampaign.js",
+      "lineRange": [145, 165],
+      "summary": "Hook returning a busy-tracked action dispatcher that POSTs campaign actions via authFetch and re-runs an onDone callback to refresh state.",
+      "tags": ["hook", "mutation", "api-client"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {"source": "file:EmailShell.jsx", "target": "file:Campaign.jsx", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:Campaign.jsx", "target": "file:data/useCampaign.js", "type": "imports", "direction": "forward", "weight": 0.7},
+
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:Campaign", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:CreateWizard", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:MessageCard", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:CityDetail", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:TodayCards", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:StageList", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:HealthStrip", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:GoalStrip", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:PipelineBar", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:ActivityFeed", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:fmtWhen", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:healthLine", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:StatusLight", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:EmailShell.jsx", "target": "function:EmailShell.jsx:EmailShell", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignList", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignDetail", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignHealth", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignContacts", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCityDetail", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignActivity", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignActions", "type": "contains", "direction": "forward", "weight": 1.0},
+
+    {"source": "file:Campaign.jsx", "target": "function:Campaign.jsx:Campaign", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:EmailShell.jsx", "target": "function:EmailShell.jsx:EmailShell", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignList", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignDetail", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignHealth", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignContacts", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCityDetail", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignActivity", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:data/useCampaign.js", "target": "function:data/useCampaign.js:useCampaignActions", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "function:EmailShell.jsx:EmailShell", "target": "function:Campaign.jsx:Campaign", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:Campaign.jsx:Campaign", "target": "function:data/useCampaign.js:useCampaignList", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:Campaign.jsx:Campaign", "target": "function:data/useCampaign.js:useCampaignDetail", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:Campaign.jsx:Campaign", "target": "function:data/useCampaign.js:useCampaignHealth", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:Campaign.jsx:Campaign", "target": "function:data/useCampaign.js:useCampaignActions", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:Campaign.jsx:StageList", "target": "function:data/useCampaign.js:useCampaignContacts", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:Campaign.jsx:MessageCard", "target": "function:data/useCampaign.js:useCampaignContacts", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:Campaign.jsx:CityDetail", "target": "function:data/useCampaign.js:useCityDetail", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:Campaign.jsx:ActivityFeed", "target": "function:data/useCampaign.js:useCampaignActivity", "type": "calls", "direction": "forward", "weight": 0.8}
+  ]
+}

@@ -1,0 +1,130 @@
+[
+  {
+    "id": "layer:root-navigation",
+    "name": "Root & Navigation",
+    "description": "The CV6 root view-machine (CornerCV6) that routes to every screen, the shared responsive nav rail, and the persistent live-agent activity dock mounted in the shell.",
+    "nodeIds": [
+      "file:ActivityDock.jsx",
+      "file:CornerCV6.jsx",
+      "file:SharedNav.jsx"
+    ]
+  },
+  {
+    "id": "layer:screens",
+    "name": "Screen Views",
+    "description": "Responsive screen components — Onboarding, Organize, Review, Settings, Support, Campaign, LiveScribe, Search and their router/Desktop/Mobile triads plus review-pin and tree-context overlays.",
+    "nodeIds": [
+      "file:Campaign.jsx",
+      "file:EmailShell.jsx",
+      "file:LiveScribe.jsx",
+      "file:Onboarding.jsx",
+      "file:OnboardingDesktop.jsx",
+      "file:OnboardingMobile.jsx",
+      "file:Organize.jsx",
+      "file:OrganizeDesktop.jsx",
+      "file:OrganizeMobile.jsx",
+      "file:PinLayer.jsx",
+      "file:Review.jsx",
+      "file:ReviewChanges.jsx",
+      "file:ReviewDesktop.jsx",
+      "file:ReviewPins.jsx",
+      "file:Search.jsx",
+      "file:Settings.jsx",
+      "file:SettingsDesktop.jsx",
+      "file:SettingsMobile.jsx",
+      "file:SupportDesktop.jsx",
+      "file:SupportThread.jsx",
+      "file:TreeContextMenu.jsx"
+    ]
+  },
+  {
+    "id": "layer:chat",
+    "name": "Chat & Messaging",
+    "description": "The chat feature cluster: desktop/mobile chat orchestrators, goal-thread and block renderers, message thread and attachment views, composers, and result-link cards.",
+    "nodeIds": [
+      "file:BlockRenderer.jsx",
+      "file:ChatDesktop.jsx",
+      "file:ChatGoalThread.jsx",
+      "file:ChatLifecycle.jsx",
+      "file:Cv6FullComposer.jsx",
+      "file:Cv6InputBar.jsx",
+      "file:MessageAttachments.jsx",
+      "file:MessageThread.jsx",
+      "file:NewComposer.jsx",
+      "file:ResultLinkCard.jsx"
+    ]
+  },
+  {
+    "id": "layer:data-hooks",
+    "name": "Data Hooks & State",
+    "description": "The view-model wiring layer — use* React hooks, the shared DataContext provider, and document/media/link helper modules that feed real data and demo fixtures to the screens.",
+    "nodeIds": [
+      "file:data/agentTitles.js",
+      "file:data/blockSchema.js",
+      "file:data/docxDocView.js",
+      "file:data/htmlDocView.js",
+      "file:data/mediaFallback.js",
+      "file:data/pdfDocView.js",
+      "file:data/resultLinks.js",
+      "file:data/useCampaign.js",
+      "file:data/useCommandTracker.js",
+      "file:data/useDemoBlocks.js",
+      "file:data/useDictation.js",
+      "file:data/useHomeData.js",
+      "file:data/useLiveScribe.js",
+      "file:data/useOnboarding.js",
+      "file:data/useOrganize.js",
+      "file:data/usePins.js",
+      "file:data/useReview.js",
+      "file:data/useRoomThread.js",
+      "file:data/useSettings.js",
+      "file:data/useSupportInbox.js",
+      "file:providers/DataContext.jsx"
+    ]
+  },
+  {
+    "id": "layer:seed-data",
+    "name": "Seed & Contract Data",
+    "description": "Static JSON UI-contract and seed files under data/ that define binding shapes and sample content for each screen (chat, home, command, tracker, support, kit).",
+    "nodeIds": [
+      "config:data/chat-list.json",
+      "config:data/chat.json",
+      "config:data/command.json",
+      "config:data/home-desktop.json",
+      "config:data/home-mobile.json",
+      "config:data/kit.json",
+      "config:data/support-inbox.json",
+      "config:data/tracker.json"
+    ]
+  },
+  {
+    "id": "layer:design-templates",
+    "name": "Design Templates",
+    "description": "Static HTML design mockups under templates/ — one reference per screen — that document the intended visual design and are not runtime code.",
+    "nodeIds": [
+      "document:templates/chat-list.html",
+      "document:templates/chat.html",
+      "document:templates/command.html",
+      "document:templates/home-desktop.html",
+      "document:templates/home-mobile.html",
+      "document:templates/kit.html",
+      "document:templates/livescribe.html",
+      "document:templates/onboarding.html",
+      "document:templates/organize.html",
+      "document:templates/review.html",
+      "document:templates/settings.html",
+      "document:templates/states-extra.html",
+      "document:templates/support-inbox.html",
+      "document:templates/support-thread.html",
+      "document:templates/tracker.html"
+    ]
+  },
+  {
+    "id": "layer:styling",
+    "name": "Styling & Design Tokens",
+    "description": "The cv6.css stylesheet holding the CV6 design-token system, theming variables, and shared component styles imported by the shell.",
+    "nodeIds": [
+      "file:cv6.css"
+    ]
+  }
+]

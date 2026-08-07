@@ -1,0 +1,23 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {"path": "data/chat-list.json", "language": "json", "sizeLines": 39, "fileCategory": "config"},
+    {"path": "data/chat.json", "language": "json", "sizeLines": 53, "fileCategory": "config"},
+    {"path": "data/command.json", "language": "json", "sizeLines": 37, "fileCategory": "config"},
+    {"path": "data/home-desktop.json", "language": "json", "sizeLines": 96, "fileCategory": "config"},
+    {"path": "data/home-mobile.json", "language": "json", "sizeLines": 58, "fileCategory": "config"},
+    {"path": "data/kit.json", "language": "json", "sizeLines": 73, "fileCategory": "config"},
+    {"path": "data/support-inbox.json", "language": "json", "sizeLines": 102, "fileCategory": "config"},
+    {"path": "data/tracker.json", "language": "json", "sizeLines": 70, "fileCategory": "config"}
+  ],
+  "batchImportData": {
+    "data/chat-list.json": [],
+    "data/chat.json": [],
+    "data/command.json": [],
+    "data/home-desktop.json": [],
+    "data/home-mobile.json": [],
+    "data/kit.json": [],
+    "data/support-inbox.json": [],
+    "data/tracker.json": []
+  }
+}

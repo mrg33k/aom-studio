@@ -171,7 +171,22 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // A fresher timestamp-only bump (projectRooms/missionRooms carry no text) must not erase
   // a preview a message-carrying bump already provided (Steffen R4 send-back: the digest
   // earns its width with the last-message line).
-  const bump = (key, entry) => { const prev = recentMap[key]; if (!prev || entry.ts > prev.ts) recentMap[key] = { ...entry, preview: entry.preview || (prev && prev.preview) || '' }; };
+  // `unread` is sticky the same way `preview` is: a later timestamp-only bump (which
+  // carries no unread signal) must not silently clear the green dot an inbox ping set.
+  // It clears on its own — recentMap is rebuilt each poll, and a read room stops
+  // appearing in inboxItems (Patrik 2026-08-06).
+  const bump = (key, entry) => {
+    const prev = recentMap[key];
+    if (!prev || entry.ts > prev.ts) {
+      recentMap[key] = {
+        ...entry,
+        preview: entry.preview || (prev && prev.preview) || '',
+        unread: !!(entry.unread || (prev && prev.unread)),
+      };
+    } else if (entry.unread && prev) {
+      prev.unread = true;
+    }
+  };
   // A mission whose "parent project" label merely echoes the room's own name (a slug that
   // resolves to no real project, e.g. outreach -> "Outreach | Outreach") tells the user
   // nothing — fall back to the honest generic label instead.
@@ -183,11 +198,11 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (it.missionSlug) {
       const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
       const nm = missionLabel(it.missionSlug) || it.missionSlug;
-      bump('m:' + missionRecencyKey(it.missionSlug), { key: 'm:' + missionRecencyKey(it.missionSlug), id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: nm, sub: missionSub(pn, nm), ts, preview });
+      bump('m:' + missionRecencyKey(it.missionSlug), { key: 'm:' + missionRecencyKey(it.missionSlug), id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: nm, sub: missionSub(pn, nm), ts, preview, unread: true });
     } else if (it.project) {
-      bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts, preview });
+      bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts, preview, unread: true });
     } else if (it.agent) {
-      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: agentNameBySlug[it.agent] || titleForAgent(it.agent), sub: 'Direct chat', ts, preview });
+      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: agentNameBySlug[it.agent] || titleForAgent(it.agent), sub: 'Direct chat', ts, preview, unread: true });
     }
   }
   for (const p of projectRooms || []) {

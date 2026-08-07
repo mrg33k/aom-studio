@@ -1,0 +1,425 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 4,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "Onboarding.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 17,
+      "nonEmptyLines": 14,
+      "functions": [
+        {
+          "name": "Onboarding",
+          "startLine": 9,
+          "endLine": 17,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "Onboarding",
+          "line": 9,
+          "isDefault": true
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "Onboarding",
+          "callee": "useMediaQuery",
+          "lineNumber": 10
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "OnboardingDesktop.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 83,
+      "nonEmptyLines": 76,
+      "functions": [
+        {
+          "name": "composeOnboardingDesktop",
+          "startLine": 21,
+          "endLine": 34,
+          "params": [
+            "raw",
+            "screenName"
+          ]
+        },
+        {
+          "name": "OnboardingDesktop",
+          "startLine": 38,
+          "endLine": 83,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "OnboardingDesktop",
+          "line": 38,
+          "isDefault": true
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "new DOMParser().parseFromString",
+          "lineNumber": 22
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "[...doc.querySelectorAll('[data-cv6][data-screen]')].find",
+          "lineNumber": 23
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "doc.querySelectorAll",
+          "lineNumber": 23
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "n.getAttribute",
+          "lineNumber": 24
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "screen.setAttribute",
+          "lineNumber": 27
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "new DOMParser().parseFromString",
+          "lineNumber": 29
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "sd.querySelectorAll('[data-state=\"loading\"], [data-state=\"error\"], [data-state=\"empty\"]').forEach",
+          "lineNumber": 30
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "sd.querySelectorAll",
+          "lineNumber": 30
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "screen.appendChild",
+          "lineNumber": 31
+        },
+        {
+          "caller": "composeOnboardingDesktop",
+          "callee": "b.cloneNode",
+          "lineNumber": 31
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "useWorldId",
+          "lineNumber": 39
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "useOnboarding",
+          "lineNumber": 40
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "setStepIndex",
+          "lineNumber": 45
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "setStepIndex",
+          "lineNumber": 50
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "setStepIndex",
+          "lineNumber": 55
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "onNav",
+          "lineNumber": 58
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "localStorage.setItem",
+          "lineNumber": 66
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "document.documentElement.setAttribute",
+          "lineNumber": 67
+        },
+        {
+          "caller": "OnboardingDesktop",
+          "callee": "setTheme",
+          "lineNumber": 68
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "OnboardingMobile.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 80,
+      "nonEmptyLines": 73,
+      "functions": [
+        {
+          "name": "composeOnboardingMobile",
+          "startLine": 19,
+          "endLine": 31,
+          "params": [
+            "raw",
+            "screenName"
+          ]
+        },
+        {
+          "name": "OnboardingMobile",
+          "startLine": 35,
+          "endLine": 80,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "OnboardingMobile",
+          "line": 35,
+          "isDefault": true
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "new DOMParser().parseFromString",
+          "lineNumber": 20
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "[...doc.querySelectorAll('[data-cv6][data-screen]')].find",
+          "lineNumber": 21
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "doc.querySelectorAll",
+          "lineNumber": 21
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "n.getAttribute",
+          "lineNumber": 22
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "screen.setAttribute",
+          "lineNumber": 25
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "new DOMParser().parseFromString",
+          "lineNumber": 26
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "sd.querySelectorAll('[data-state=\"loading\"], [data-state=\"error\"], [data-state=\"empty\"]').forEach",
+          "lineNumber": 27
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "sd.querySelectorAll",
+          "lineNumber": 27
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "screen.appendChild",
+          "lineNumber": 28
+        },
+        {
+          "caller": "composeOnboardingMobile",
+          "callee": "b.cloneNode",
+          "lineNumber": 28
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "useWorldId",
+          "lineNumber": 36
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "useOnboarding",
+          "lineNumber": 37
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "setStepIndex",
+          "lineNumber": 42
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "setStepIndex",
+          "lineNumber": 47
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "setStepIndex",
+          "lineNumber": 52
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "onNav",
+          "lineNumber": 55
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "localStorage.setItem",
+          "lineNumber": 63
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "document.documentElement.setAttribute",
+          "lineNumber": 64
+        },
+        {
+          "caller": "OnboardingMobile",
+          "callee": "setTheme",
+          "lineNumber": 65
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "data/useOnboarding.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 182,
+      "nonEmptyLines": 166,
+      "functions": [
+        {
+          "name": "useOnboarding",
+          "startLine": 21,
+          "endLine": 182,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "useOnboarding",
+          "line": 21,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "useOnboarding",
+          "callee": "useState",
+          "lineNumber": 22
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "useState",
+          "lineNumber": 23
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "useState",
+          "lineNumber": 24
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "localStorage.getItem",
+          "lineNumber": 26
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "useState",
+          "lineNumber": 30
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "useEffect",
+          "lineNumber": 33
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "supabase.auth.onAuthStateChange",
+          "lineNumber": 35
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "setClientIdFromUser",
+          "lineNumber": 37
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "setCurrentUser",
+          "lineNumber": 38
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "setState",
+          "lineNumber": 39
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "sub?.unsubscribe",
+          "lineNumber": 42
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "useEffect",
+          "lineNumber": 46
+        },
+        {
+          "caller": "handleStorageChange",
+          "callee": "setTheme",
+          "lineNumber": 49
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "window.addEventListener",
+          "lineNumber": 52
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "window.removeEventListener",
+          "lineNumber": 53
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "useMemo",
+          "lineNumber": 58
+        },
+        {
+          "caller": "useOnboarding",
+          "callee": "STEP_SEQUENCE.map",
+          "lineNumber": 69
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    }
+  ]
+}

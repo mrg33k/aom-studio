@@ -1,0 +1,6242 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "2387585ac0e347ec10aefb09a255364d65212b86",
+  "generatedAt": "2026-07-18T01:12:23.083Z",
+  "files": {
+    "ActivityDock.jsx": {
+      "filePath": "ActivityDock.jsx",
+      "contentHash": "128b88cca2eaa33e2f2710bb41931c027b8cb9f336f8b4d43aca386bf43d9618",
+      "functions": [
+        {
+          "name": "ActivityDock",
+          "params": [],
+          "exported": false,
+          "lineCount": 252
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useRef"
+          ]
+        },
+        {
+          "source": "./data/useCommandTracker.js",
+          "specifiers": [
+            "useCommand"
+          ]
+        },
+        {
+          "source": "./data/agentTitles.js",
+          "specifiers": [
+            "titleForAgent"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 283,
+      "hasStructuralAnalysis": true
+    },
+    "BlockRenderer.jsx": {
+      "filePath": "BlockRenderer.jsx",
+      "contentHash": "2cc7ad806cffafb9e7063b876db34122a04754a2e52cedf1d3e5bd2f056669cd",
+      "functions": [
+        {
+          "name": "num",
+          "params": [
+            "v"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "ActionChips",
+          "params": [],
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "normalizeData",
+          "params": [
+            "b"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "EmailBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 69
+        },
+        {
+          "name": "SummaryBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 61
+        },
+        {
+          "name": "ArtifactBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 73
+        },
+        {
+          "name": "AudioBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "VideoBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "DataBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 61
+        },
+        {
+          "name": "ChoiceBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "QuestionBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "CodeBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 59
+        },
+        {
+          "name": "ThinkingBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "RepliesBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "ConfirmBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "GalleryBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 43
+        },
+        {
+          "name": "Result",
+          "params": [],
+          "exported": true,
+          "lineCount": 51
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "./ChatGoalThread.jsx",
+          "specifiers": [
+            "ReviewCtx"
+          ]
+        }
+      ],
+      "exports": [
+        "ActionChips",
+        "Result"
+      ],
+      "totalLines": 641,
+      "hasStructuralAnalysis": true
+    },
+    "Campaign.jsx": {
+      "filePath": "Campaign.jsx",
+      "contentHash": "6f563b39f7bea8a853159df4b4189d732e2866d11f50b535c769ca70c9467e32",
+      "functions": [
+        {
+          "name": "fmtWhen",
+          "params": [
+            "iso"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "StatusLight",
+          "params": [],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "healthLine",
+          "params": [
+            "health"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "btnPrimary",
+          "params": [
+            "danger"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "HealthStrip",
+          "params": [],
+          "exported": false,
+          "lineCount": 47
+        },
+        {
+          "name": "GoalStrip",
+          "params": [],
+          "exported": false,
+          "lineCount": 28
+        },
+        {
+          "name": "TodayCards",
+          "params": [],
+          "exported": false,
+          "lineCount": 74
+        },
+        {
+          "name": "PipelineBar",
+          "params": [],
+          "exported": false,
+          "lineCount": 20
+        },
+        {
+          "name": "StageList",
+          "params": [],
+          "exported": false,
+          "lineCount": 33
+        },
+        {
+          "name": "CityDetail",
+          "params": [],
+          "exported": false,
+          "lineCount": 76
+        },
+        {
+          "name": "ActivityFeed",
+          "params": [],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "CreateWizard",
+          "params": [],
+          "exported": false,
+          "lineCount": 280
+        },
+        {
+          "name": "renderTemplate",
+          "params": [
+            "template",
+            "contact"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "MessageCard",
+          "params": [],
+          "exported": false,
+          "lineCount": 129
+        },
+        {
+          "name": "Campaign",
+          "params": [],
+          "exported": true,
+          "lineCount": 175
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useEffect",
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "./data/useCampaign.js",
+          "specifiers": [
+            "useCampaignList",
+            "useCampaignDetail",
+            "useCampaignHealth",
+            "useCampaignContacts",
+            "useCityDetail",
+            "useCampaignActivity",
+            "useCampaignActions"
+          ]
+        },
+        {
+          "source": "../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../cv6kit/FullscreenLoading.jsx",
+          "specifiers": [
+            "CornerLogoLoader"
+          ]
+        }
+      ],
+      "exports": [
+        "Campaign"
+      ],
+      "totalLines": 1016,
+      "hasStructuralAnalysis": true
+    },
+    "ChatDesktop.jsx": {
+      "filePath": "ChatDesktop.jsx",
+      "contentHash": "15c99ccf327022bcb00b14198e9f4b82fe1d8d63ec6b42da2f88558c1b5e253e",
+      "functions": [
+        {
+          "name": "NavTile",
+          "params": [],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "RoomRow",
+          "params": [],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "missionLabelClean",
+          "params": [
+            "n"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "missionDot",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "fileKind",
+          "params": [
+            "name",
+            "mime"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "fileHref",
+          "params": [
+            "url"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "extractLinks",
+          "params": [
+            "text"
+          ],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "linkLabel",
+          "params": [
+            "url"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "relAgo",
+          "params": [
+            "ts"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "humanSize",
+          "params": [
+            "bytes"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "shelfItems",
+          "params": [
+            "messages"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "itemMeta",
+          "params": [
+            "it"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "libKindLabel",
+          "params": [
+            "k"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "pillFilter",
+          "params": [
+            "items",
+            "pill"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "fileGlyph",
+          "params": [
+            "kind"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "FilesShelf",
+          "params": [],
+          "exported": true,
+          "lineCount": 69
+        },
+        {
+          "name": "useRoomLibrary",
+          "params": [
+            "projectSlug",
+            "messages",
+            "uploadScope"
+          ],
+          "exported": true,
+          "lineCount": 88
+        },
+        {
+          "name": "flattenMissions",
+          "params": [
+            "nodes"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "ProjectGroup",
+          "params": [],
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "dayKeyD",
+          "params": [
+            "ts"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "dayLabelD",
+          "params": [
+            "ts"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "groupByDayD",
+          "params": [
+            "messages"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "DesktopDayCard",
+          "params": [],
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "PlainThread",
+          "params": [],
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "ChatDesktop",
+          "params": [],
+          "exported": true,
+          "lineCount": 431
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useMemo",
+            "useRef",
+            "useEffect",
+            "useCallback"
+          ]
+        },
+        {
+          "source": "./data/useHomeData.js",
+          "specifiers": [
+            "useChatList",
+            "useProjectMissions"
+          ]
+        },
+        {
+          "source": "../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../lib/supabase.js",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "./data/useRoomThread.js",
+          "specifiers": [
+            "useRoomThread",
+            "useGoalThread"
+          ]
+        },
+        {
+          "source": "./ChatGoalThread.jsx",
+          "specifiers": [
+            "SendCtx",
+            "ReviewCtx",
+            "WorkingTurn"
+          ]
+        },
+        {
+          "source": "./Cv6FullComposer.jsx",
+          "specifiers": [
+            "Cv6FullComposer"
+          ]
+        },
+        {
+          "source": "./MessageThread.jsx",
+          "specifiers": [
+            "Cv6MessageThread"
+          ]
+        }
+      ],
+      "exports": [
+        "fileKind",
+        "shelfItems",
+        "libKindLabel",
+        "FilesShelf",
+        "useRoomLibrary",
+        "ChatDesktop"
+      ],
+      "totalLines": 925,
+      "hasStructuralAnalysis": true
+    },
+    "ChatGoalThread.jsx": {
+      "filePath": "ChatGoalThread.jsx",
+      "contentHash": "f1294fdcd68e884a0bb3be7caad84a067881127b60e6b210ce236f1851f5b3ce",
+      "functions": [
+        {
+          "name": "num",
+          "params": [
+            "v"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "buildSteps",
+          "params": [
+            "blocks"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "liveStepsToBlocks",
+          "params": [
+            "liveSteps"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "WorkingTurn",
+          "params": [],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "normalizeData",
+          "params": [
+            "b"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "actionGlyph",
+          "params": [
+            "text"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "StepRow",
+          "params": [],
+          "exported": false,
+          "lineCount": 52
+        },
+        {
+          "name": "Result",
+          "params": [],
+          "exported": false,
+          "lineCount": 39
+        },
+        {
+          "name": "ActionChips",
+          "params": [],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "EmailBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 37
+        },
+        {
+          "name": "SummaryBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 38
+        },
+        {
+          "name": "ArtifactBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 34
+        },
+        {
+          "name": "AudioBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "VideoBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "DataBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 45
+        },
+        {
+          "name": "ChoiceBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "ChoiceEchoBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "QuestionBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "CodeBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 40
+        },
+        {
+          "name": "ThinkingBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "RepliesBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "ConfirmBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "GalleryBlock",
+          "params": [],
+          "exported": false,
+          "lineCount": 20
+        },
+        {
+          "name": "useThreadSend",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "useThreadReview",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "GoalThreadBody",
+          "params": [],
+          "exported": true,
+          "lineCount": 41
+        },
+        {
+          "name": "WorkDoneCard",
+          "params": [],
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "AgentBlocks",
+          "params": [],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "PlanCheck",
+          "params": [],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "HandoffBtn",
+          "params": [],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "PlanRow",
+          "params": [],
+          "exported": false,
+          "lineCount": 27
+        },
+        {
+          "name": "ProposalRow",
+          "params": [],
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "PlanPanel",
+          "params": [],
+          "exported": true,
+          "lineCount": 53
+        },
+        {
+          "name": "ChatGoalThread",
+          "params": [],
+          "exported": true,
+          "lineCount": 42
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useMemo",
+            "useState"
+          ]
+        }
+      ],
+      "exports": [
+        "buildSteps",
+        "liveStepsToBlocks",
+        "WorkingTurn",
+        "ActionChips",
+        "GoalThreadBody",
+        "WorkDoneCard",
+        "AgentBlocks",
+        "PlanPanel",
+        "SendCtx",
+        "ReviewCtx",
+        "ChatGoalThread"
+      ],
+      "totalLines": 961,
+      "hasStructuralAnalysis": true
+    },
+    "ChatLifecycle.jsx": {
+      "filePath": "ChatLifecycle.jsx",
+      "contentHash": "dead0f65956754efd10117ca07466766af6e957d6cfa34c03606f8c2d20134d4",
+      "functions": [
+        {
+          "name": "avTint",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "avRing",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "dotColor",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "dayKey",
+          "params": [
+            "ts"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "dayLabel",
+          "params": [
+            "ts"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "groupByDay",
+          "params": [
+            "messages"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "Avatar",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "Message",
+          "params": [],
+          "exported": false,
+          "lineCount": 37
+        },
+        {
+          "name": "fileKind",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "fmtSize",
+          "params": [
+            "n"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "FileGlyph",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "FileGallery",
+          "params": [],
+          "exported": false,
+          "lineCount": 62
+        },
+        {
+          "name": "FileCollectionViewer",
+          "params": [],
+          "exported": false,
+          "lineCount": 37
+        },
+        {
+          "name": "GoalTurn",
+          "params": [],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "renderItems",
+          "params": [
+            "items",
+            "onOpenFile",
+            "goal",
+            "onReview",
+            "onSend"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "DayCard",
+          "params": [],
+          "exported": false,
+          "lineCount": 31
+        },
+        {
+          "name": "RoomFilesSheet",
+          "params": [],
+          "exported": false,
+          "lineCount": 23
+        },
+        {
+          "name": "ChatLifecycle",
+          "params": [],
+          "exported": true,
+          "lineCount": 252
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useMemo",
+            "useState",
+            "useRef",
+            "useEffect",
+            "useCallback"
+          ]
+        },
+        {
+          "source": "./ChatGoalThread.jsx",
+          "specifiers": [
+            "GoalThreadBody",
+            "SendCtx",
+            "ReviewCtx",
+            "liveStepsToBlocks"
+          ]
+        },
+        {
+          "source": "./BlockRenderer.jsx",
+          "specifiers": [
+            "Result"
+          ]
+        },
+        {
+          "source": "./ResultLinkCard.jsx",
+          "specifiers": [
+            "ResultLinkCards"
+          ]
+        },
+        {
+          "source": "./data/useDictation.js",
+          "specifiers": [
+            "useDictation"
+          ]
+        },
+        {
+          "source": "../components/ChatMessageRenderer.jsx",
+          "specifiers": [
+            "ChatMessageRenderer"
+          ]
+        },
+        {
+          "source": "./Cv6FullComposer.jsx",
+          "specifiers": [
+            "Cv6FullComposer"
+          ]
+        },
+        {
+          "source": "./ChatDesktop.jsx",
+          "specifiers": [
+            "FilesShelf",
+            "useRoomLibrary"
+          ]
+        },
+        {
+          "source": "./MessageThread.jsx",
+          "specifiers": [
+            "Cv6MessageThread"
+          ]
+        },
+        {
+          "source": "../lib/supabase.js",
+          "specifiers": [
+            "supabase"
+          ]
+        }
+      ],
+      "exports": [
+        "ChatLifecycle"
+      ],
+      "totalLines": 591,
+      "hasStructuralAnalysis": true
+    },
+    "CornerCV6.jsx": {
+      "filePath": "CornerCV6.jsx",
+      "contentHash": "85e064a9927e6951cc7b683a29566493dc8e75be2307648381f852f10dcab5e7",
+      "functions": [
+        {
+          "name": "roomSummarySentences",
+          "params": [
+            "md"
+          ],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "useIsDesktop",
+          "params": [],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "composeScreen",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 46
+        },
+        {
+          "name": "composeChatMobile",
+          "params": [
+            "withGoal"
+          ],
+          "exported": false,
+          "lineCount": 23
+        },
+        {
+          "name": "trackerRowForItem",
+          "params": [
+            "tracker",
+            "itemText"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "postTrackerApi",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "Cv6QuickThread",
+          "params": [],
+          "exported": false,
+          "lineCount": 41
+        },
+        {
+          "name": "cardToRoom",
+          "params": [
+            "card"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "InlineBubbleThread",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "CatchUpModal",
+          "params": [],
+          "exported": false,
+          "lineCount": 38
+        },
+        {
+          "name": "HomeFilesPanel",
+          "params": [],
+          "exported": false,
+          "lineCount": 65
+        },
+        {
+          "name": "Home",
+          "params": [],
+          "exported": false,
+          "lineCount": 1061
+        },
+        {
+          "name": "ChatList",
+          "params": [],
+          "exported": false,
+          "lineCount": 59
+        },
+        {
+          "name": "SupportInbox",
+          "params": [],
+          "exported": false,
+          "lineCount": 219
+        },
+        {
+          "name": "Chat",
+          "params": [],
+          "exported": false,
+          "lineCount": 48
+        },
+        {
+          "name": "Command",
+          "params": [],
+          "exported": false,
+          "lineCount": 154
+        },
+        {
+          "name": "withBugTruth",
+          "params": [
+            "b"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "Tracker",
+          "params": [],
+          "exported": false,
+          "lineCount": 233
+        },
+        {
+          "name": "initialViewFromUrl",
+          "params": [],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "initialFilesTargetFromUrl",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "demoBlocksRequested",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "demoCatchUpModalRequested",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "demoHomeQuickThreadRequested",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "demoMobileChatLifecycleRequested",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "demoFilePreviewsRequested",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "demoGlobalMotionRequested",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "globalMotionTheme",
+          "params": [],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "DemoChatBlocks",
+          "params": [],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "DemoCatchUpModal",
+          "params": [],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "DemoHomeQuickThread",
+          "params": [],
+          "exported": false,
+          "lineCount": 75
+        },
+        {
+          "name": "DemoMobileChatLifecycle",
+          "params": [],
+          "exported": false,
+          "lineCount": 100
+        },
+        {
+          "name": "DemoFilePreviews",
+          "params": [],
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "DemoGlobalMotion",
+          "params": [],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "CornerCV6",
+          "params": [],
+          "exported": true,
+          "lineCount": 190
+        }
+      ],
+      "classes": [
+        {
+          "name": "ScreenBoundary",
+          "methods": [
+            "constructor",
+            "getDerivedStateFromError",
+            "componentDidUpdate",
+            "render"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 17
+        }
+      ],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState",
+            "useEffect",
+            "useCallback",
+            "useRef",
+            "Component"
+          ]
+        },
+        {
+          "source": "react-dom",
+          "specifiers": [
+            "createPortal"
+          ]
+        },
+        {
+          "source": "./cv6.css",
+          "specifiers": []
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./Cv6FullComposer.jsx",
+          "specifiers": [
+            "Cv6FullComposer"
+          ]
+        },
+        {
+          "source": "../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../cv6kit/AssignButton.jsx",
+          "specifiers": [
+            "AssignButton"
+          ]
+        },
+        {
+          "source": "./TreeContextMenu.jsx",
+          "specifiers": [
+            "useTreeContextMenu",
+            "renameNode",
+            "moveNode",
+            "createNode",
+            "archiveNode",
+            "findMissionNode"
+          ]
+        },
+        {
+          "source": "./ActivityDock.jsx",
+          "specifiers": [
+            "ActivityDock"
+          ]
+        },
+        {
+          "source": "./ChatGoalThread.jsx",
+          "specifiers": [
+            "GoalThreadBody",
+            "SendCtx"
+          ]
+        },
+        {
+          "source": "./ChatLifecycle.jsx",
+          "specifiers": [
+            "ChatLifecycle"
+          ]
+        },
+        {
+          "source": "./ChatDesktop.jsx",
+          "specifiers": [
+            "ChatDesktop",
+            "FilesShelf",
+            "fileKind",
+            "libKindLabel",
+            "shelfItems"
+          ]
+        },
+        {
+          "source": "./MessageThread.jsx",
+          "specifiers": [
+            "Cv6MessageThread"
+          ]
+        },
+        {
+          "source": "./SupportDesktop.jsx",
+          "specifiers": [
+            "SupportDesktop",
+            "normalizeLinks"
+          ]
+        },
+        {
+          "source": "./EmailShell.jsx",
+          "specifiers": [
+            "EmailShell"
+          ]
+        },
+        {
+          "source": "./Organize.jsx",
+          "specifiers": [
+            "Organize"
+          ]
+        },
+        {
+          "source": "./Settings.jsx",
+          "specifiers": [
+            "Settings"
+          ]
+        },
+        {
+          "source": "./Onboarding.jsx",
+          "specifiers": [
+            "Onboarding"
+          ]
+        },
+        {
+          "source": "./LiveScribe.jsx",
+          "specifiers": [
+            "LiveScribe"
+          ]
+        },
+        {
+          "source": "./Search.jsx",
+          "specifiers": [
+            "Search"
+          ]
+        },
+        {
+          "source": "./SharedNav.jsx",
+          "specifiers": [
+            "MobileNav",
+            "DesktopNav"
+          ]
+        },
+        {
+          "source": "../cv6kit/FullscreenLoading.jsx",
+          "specifiers": [
+            "CornerLogoLoader"
+          ]
+        },
+        {
+          "source": "./data/useHomeData.js",
+          "specifiers": [
+            "useHome",
+            "useProjectMissions",
+            "shapeProjectState",
+            "createMissionInProject",
+            "useChatList"
+          ]
+        },
+        {
+          "source": "./NewComposer.jsx",
+          "specifiers": [
+            "NewComposer"
+          ]
+        },
+        {
+          "source": "../lib/supabase.js",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "../lib/fixtureClient.js",
+          "specifiers": [
+            "demoFixtureActive"
+          ]
+        },
+        {
+          "source": "./data/useSupportInbox.js",
+          "specifiers": [
+            "useSupportInbox"
+          ]
+        },
+        {
+          "source": "./data/useReview.js",
+          "specifiers": [
+            "useReviewWaitingCount"
+          ]
+        },
+        {
+          "source": "./data/useRoomThread.js",
+          "specifiers": [
+            "useRoomThread",
+            "useGoalThread"
+          ]
+        },
+        {
+          "source": "./data/useCommandTracker.js",
+          "specifiers": [
+            "useCommand",
+            "useTrackerBugs"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "./providers/DataContext.jsx",
+          "specifiers": [
+            "useCommandContext"
+          ]
+        },
+        {
+          "source": "./data/agentTitles.js",
+          "specifiers": [
+            "titleForAgent"
+          ]
+        },
+        {
+          "source": "./data/useDemoBlocks.js",
+          "specifiers": [
+            "useDemoBlocksFeed"
+          ]
+        },
+        {
+          "source": "./templates/home-desktop.html?raw",
+          "specifiers": [
+            "homeDesktopRaw"
+          ]
+        },
+        {
+          "source": "./templates/home-mobile.html?raw",
+          "specifiers": [
+            "homeMobileRaw"
+          ]
+        },
+        {
+          "source": "./templates/support-inbox.html?raw",
+          "specifiers": [
+            "inboxRaw"
+          ]
+        },
+        {
+          "source": "./templates/support-thread.html?raw",
+          "specifiers": [
+            "supportThreadRaw"
+          ]
+        },
+        {
+          "source": "./templates/chat.html?raw",
+          "specifiers": [
+            "chatRaw"
+          ]
+        },
+        {
+          "source": "./templates/kit.html?raw",
+          "specifiers": [
+            "kitRaw"
+          ]
+        },
+        {
+          "source": "./templates/command.html?raw",
+          "specifiers": [
+            "commandRaw"
+          ]
+        },
+        {
+          "source": "./templates/tracker.html?raw",
+          "specifiers": [
+            "trackerRaw"
+          ]
+        },
+        {
+          "source": "./templates/chat-list.html?raw",
+          "specifiers": [
+            "chatListRaw"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "CornerCV6"
+      ],
+      "totalLines": 2913,
+      "hasStructuralAnalysis": true
+    },
+    "cv6.css": {
+      "filePath": "cv6.css",
+      "contentHash": "d287a68a3ea89509c86f9ce5c0fdbfd1a2de9c67049aa6812d2bce1a69656d8d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1692,
+      "hasStructuralAnalysis": false
+    },
+    "Cv6FullComposer.jsx": {
+      "filePath": "Cv6FullComposer.jsx",
+      "contentHash": "3d09f865850ee42654eb7a5199886bbf47d53515a115424e69d0be275e1dc829",
+      "functions": [
+        {
+          "name": "composerLive",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "mapRoom",
+          "params": [
+            "room",
+            "agents"
+          ],
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "Cv6FullComposerInner",
+          "params": [],
+          "exported": false,
+          "lineCount": 200
+        },
+        {
+          "name": "ReadOnlyComposer",
+          "params": [],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "MiniComposer",
+          "params": [],
+          "exported": false,
+          "lineCount": 35
+        }
+      ],
+      "classes": [
+        {
+          "name": "Cv6FullComposer",
+          "methods": [
+            "constructor",
+            "getDerivedStateFromError",
+            "componentDidCatch",
+            "componentDidUpdate",
+            "render"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 13
+        }
+      ],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "Component",
+            "useCallback",
+            "useEffect",
+            "useMemo",
+            "useRef",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-dom",
+          "specifiers": [
+            "createPortal"
+          ]
+        },
+        {
+          "source": "../CornerContext.jsx",
+          "specifiers": [
+            "CornerNavProvider"
+          ]
+        },
+        {
+          "source": "../lib/supabase.js",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "../lib/fixtureClient.js",
+          "specifiers": [
+            "demoFixtureActive"
+          ]
+        },
+        {
+          "source": "../lib/authFetch.js",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../components/cv3/chat/ChatPanelContext.jsx",
+          "specifiers": [
+            "ChatCoreProvider",
+            "ChatMessagesProvider",
+            "ChatVoiceProvider",
+            "ChatRecordingProvider",
+            "ChatAttachmentsProvider",
+            "ChatComposerProvider",
+            "ChatSettingsProvider",
+            "ChatContextMenuProvider"
+          ]
+        },
+        {
+          "source": "../components/cv3/chat/useChatAttachments.js",
+          "specifiers": [
+            "useChatAttachments"
+          ]
+        },
+        {
+          "source": "../components/cv3/chat/useChatRecording.js",
+          "specifiers": [
+            "useChatRecording"
+          ]
+        },
+        {
+          "source": "../components/cv3/chat/useChatSettings.js",
+          "specifiers": [
+            "useChatSettings"
+          ]
+        },
+        {
+          "source": "../components/cv3/thread/VoiceModeBar.jsx",
+          "specifiers": [
+            "VoiceModeBar"
+          ]
+        },
+        {
+          "source": "./Cv6InputBar.jsx",
+          "specifiers": [
+            "Cv6InputBar"
+          ]
+        },
+        {
+          "source": "../components/VoiceChat.jsx",
+          "specifiers": [
+            "VoiceChat"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 350,
+      "hasStructuralAnalysis": true
+    },
+    "Cv6InputBar.jsx": {
+      "filePath": "Cv6InputBar.jsx",
+      "contentHash": "63aeb6d6c2dc5eceb4c13dacdc7ba3b1f7f2a8b552dec7c14804fde07fdedcb0",
+      "functions": [
+        {
+          "name": "MenuRow",
+          "params": [],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "CommandsMenu",
+          "params": [],
+          "exported": false,
+          "lineCount": 63
+        },
+        {
+          "name": "Cv6InputBar",
+          "params": [],
+          "exported": true,
+          "lineCount": 105
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useCallback",
+            "useEffect",
+            "useRef",
+            "useState"
+          ]
+        },
+        {
+          "source": "../components/cv3/SlashCommandAutocomplete.jsx",
+          "specifiers": [
+            "SlashCommandAutocomplete"
+          ]
+        },
+        {
+          "source": "../components/cv3/IntegrationsModal.jsx",
+          "specifiers": [
+            "IntegrationsModal"
+          ]
+        },
+        {
+          "source": "../components/cv3/shared/PasteChip.jsx",
+          "specifiers": [
+            "PasteChipBar",
+            "shouldChipPaste"
+          ]
+        },
+        {
+          "source": "../components/cv3/shared/ImageGenPicker.jsx",
+          "specifiers": [
+            "IMAGE_TOOLS"
+          ]
+        },
+        {
+          "source": "../cv6kit/FullscreenLoading.jsx",
+          "specifiers": [
+            "CornerLoaderMark"
+          ]
+        },
+        {
+          "source": "../components/cv3/chat/ChatPanelContext.jsx",
+          "specifiers": [
+            "useChatCore",
+            "useChatComposerCtx",
+            "useChatAttachmentsCtx",
+            "useChatVoiceCtx",
+            "useChatRecordingCtx"
+          ]
+        }
+      ],
+      "exports": [
+        "Cv6InputBar"
+      ],
+      "totalLines": 235,
+      "hasStructuralAnalysis": true
+    },
+    "data/agentTitles.js": {
+      "filePath": "data/agentTitles.js",
+      "contentHash": "3b683fff6ddf26628a29391b2f58f1a663c29a38fd2f5ede9344e1303ca5d580",
+      "functions": [
+        {
+          "name": "agentKey",
+          "params": [
+            "a"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "cap",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "titleForAgent",
+          "params": [
+            "a"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "curateTitledAgents",
+          "params": [],
+          "exported": true,
+          "lineCount": 28
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../../../data/agent-profiles.js",
+          "specifiers": [
+            "agentProfiles"
+          ]
+        }
+      ],
+      "exports": [
+        "AGENT_TITLES",
+        "DASHBOARD_AGENTS",
+        "titleForAgent",
+        "curateTitledAgents"
+      ],
+      "totalLines": 98,
+      "hasStructuralAnalysis": true
+    },
+    "data/blockSchema.js": {
+      "filePath": "data/blockSchema.js",
+      "contentHash": "09b254d8256961974bf625ee5eb74b3cf82b979d8fbadfe01c2c91b84e71da37",
+      "functions": [
+        {
+          "name": "createStepBlock",
+          "params": [
+            "index",
+            "title"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createSuccessBlock",
+          "params": [
+            "index"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createSnagBlock",
+          "params": [
+            "index"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createQuestionBlock",
+          "params": [
+            "index",
+            "text"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createDataBlock",
+          "params": [
+            "index",
+            "title",
+            "columns",
+            "rows"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createSummaryBlock",
+          "params": [
+            "index"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createCodeBlock",
+          "params": [
+            "index",
+            "code"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createChoiceBlock",
+          "params": [
+            "index"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createChoiceEchoBlock",
+          "params": [
+            "index"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "createGalleryBlock",
+          "params": [
+            "index"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "BLOCK_TYPES",
+        "createStepBlock",
+        "createSuccessBlock",
+        "createSnagBlock",
+        "createQuestionBlock",
+        "createDataBlock",
+        "createSummaryBlock",
+        "createCodeBlock",
+        "createChoiceBlock",
+        "createChoiceEchoBlock",
+        "createGalleryBlock"
+      ],
+      "totalLines": 262,
+      "hasStructuralAnalysis": true
+    },
+    "data/chat-list.json": {
+      "filePath": "data/chat-list.json",
+      "contentHash": "8d7b0e6000b6b31aac27d71b0761c710a303028788b1e6ed4a3bbf589f1fa5e2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 40,
+      "hasStructuralAnalysis": true
+    },
+    "data/chat.json": {
+      "filePath": "data/chat.json",
+      "contentHash": "dae45393fbd2c1571ffd47e8a3322c6cddf1beecc9ad6a316477d5898f0c7e84",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 54,
+      "hasStructuralAnalysis": true
+    },
+    "data/command.json": {
+      "filePath": "data/command.json",
+      "contentHash": "f4cc58e83e6774da61d9a2debfddfe24daf48a163e4aca03e1d87133c2235890",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 38,
+      "hasStructuralAnalysis": true
+    },
+    "data/docxDocView.js": {
+      "filePath": "data/docxDocView.js",
+      "contentHash": "dcae2de241aaf5bd6af1ea3c1c6c251ff49b09c5ea5b8a9ace18c2d384fbc016",
+      "functions": [
+        {
+          "name": "escAttr",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "docxShellHtml",
+          "params": [
+            "src",
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "isDocxName",
+          "params": [
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "errorCard",
+          "params": [
+            "src",
+            "name",
+            "why"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "sanitize",
+          "params": [
+            "html"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "hydrateOne",
+          "params": [
+            "node",
+            "registry"
+          ],
+          "exported": false,
+          "lineCount": 34
+        },
+        {
+          "name": "useDocxDocs",
+          "params": [
+            "wrapRef"
+          ],
+          "exported": true,
+          "lineCount": 27
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect"
+          ]
+        },
+        {
+          "source": "../../cv6kit/cornerLogoLoaderMarkup.js",
+          "specifiers": [
+            "cornerLogoLoaderMarkup"
+          ]
+        }
+      ],
+      "exports": [
+        "docxShellHtml",
+        "isDocxName",
+        "useDocxDocs"
+      ],
+      "totalLines": 153,
+      "hasStructuralAnalysis": true
+    },
+    "data/home-desktop.json": {
+      "filePath": "data/home-desktop.json",
+      "contentHash": "a09f9c26e6de61109cd07ee3b527d532e3184cb6ceacb11e68be81ace3e8fb9d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 97,
+      "hasStructuralAnalysis": true
+    },
+    "data/home-mobile.json": {
+      "filePath": "data/home-mobile.json",
+      "contentHash": "4ee003b6c37cebf612b02cd0d4a4488cc43c925a090bd2df7b62bd8e310e21e9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "data/htmlDocView.js": {
+      "filePath": "data/htmlDocView.js",
+      "contentHash": "f4953c71bc813100c42ed684ef9f40c41f848085cdf5bda13800f5b737a54a0f",
+      "functions": [
+        {
+          "name": "escAttr",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "pinControls",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "isHtmlName",
+          "params": [
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "htmlShellHtml",
+          "params": [
+            "src",
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "dirname",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "joinPath",
+          "params": [
+            "base",
+            "relative"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "isPassthroughUrl",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "assetUrl",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "rewriteCssUrls",
+          "params": [
+            "css",
+            "ctx"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "rewriteHtmlForPreview",
+          "params": [
+            "source",
+            "src"
+          ],
+          "exported": true,
+          "lineCount": 46
+        },
+        {
+          "name": "errorCard",
+          "params": [
+            "src",
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "hydrateOne",
+          "params": [
+            "node",
+            "registry"
+          ],
+          "exported": false,
+          "lineCount": 33
+        },
+        {
+          "name": "useHtmlDocs",
+          "params": [
+            "wrapRef"
+          ],
+          "exported": true,
+          "lineCount": 25
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect"
+          ]
+        },
+        {
+          "source": "../../cv6kit/cornerLogoLoaderMarkup.js",
+          "specifiers": [
+            "cornerLogoLoaderMarkup"
+          ]
+        }
+      ],
+      "exports": [
+        "isHtmlName",
+        "htmlShellHtml",
+        "rewriteHtmlForPreview",
+        "useHtmlDocs"
+      ],
+      "totalLines": 217,
+      "hasStructuralAnalysis": true
+    },
+    "data/kit.json": {
+      "filePath": "data/kit.json",
+      "contentHash": "2661693bb90631d38fcf78fcf9c22093a7a903fdd3df01c55bd113b7d8b97c4e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    "data/mediaFallback.js": {
+      "filePath": "data/mediaFallback.js",
+      "contentHash": "d195b50935d2c83b438389e6f9a162717709048a85a0e4c47a2b8a7f5ebd9ef2",
+      "functions": [
+        {
+          "name": "installMediaErr",
+          "params": [],
+          "exported": false,
+          "lineCount": 60
+        },
+        {
+          "name": "mediaAttrs",
+          "params": [
+            "src",
+            "kind"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "mediaAttrs"
+      ],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "data/pdfDocView.js": {
+      "filePath": "data/pdfDocView.js",
+      "contentHash": "6b297301fb25c5d7888e7035fa063ef4bc70e4e0ac28f630a55d97fe44e3df38",
+      "functions": [
+        {
+          "name": "escAttr",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "pdfShellHtml",
+          "params": [
+            "src",
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "errorCard",
+          "params": [
+            "src",
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "hydrateOne",
+          "params": [
+            "node",
+            "registry"
+          ],
+          "exported": false,
+          "lineCount": 93
+        },
+        {
+          "name": "disposeEntry",
+          "params": [
+            "entry"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "usePdfDocs",
+          "params": [
+            "wrapRef"
+          ],
+          "exported": true,
+          "lineCount": 27
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect"
+          ]
+        },
+        {
+          "source": "../../cv6kit/cornerLogoLoaderMarkup.js",
+          "specifiers": [
+            "cornerLogoLoaderMarkup"
+          ]
+        }
+      ],
+      "exports": [
+        "pdfShellHtml",
+        "usePdfDocs"
+      ],
+      "totalLines": 191,
+      "hasStructuralAnalysis": true
+    },
+    "data/resultLinks.js": {
+      "filePath": "data/resultLinks.js",
+      "contentHash": "c338c91769373a09e3dc132f62e97055bf5622381eed52dd4fd17b0154fe3ae6",
+      "functions": [
+        {
+          "name": "cleanUrl",
+          "params": [
+            "u"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "isCardable",
+          "params": [
+            "url"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "extractLinkCards",
+          "params": [],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "stripTrailingCardUrl",
+          "params": [
+            "text",
+            "cards"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "extractLinkCards",
+        "stripTrailingCardUrl"
+      ],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "data/support-inbox.json": {
+      "filePath": "data/support-inbox.json",
+      "contentHash": "64159c74d88d8e193e85a2333d66cc982c029e58059e15b044f9e73233342f7e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 103,
+      "hasStructuralAnalysis": true
+    },
+    "data/tracker.json": {
+      "filePath": "data/tracker.json",
+      "contentHash": "9e44b9ac087674c31edfe29481b2c2ab32bf40e0aff4523d3444288c4ae6592e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "data/useCampaign.js": {
+      "filePath": "data/useCampaign.js",
+      "contentHash": "8eb35329b31d7f9f8f437bdd5d40913e508689130498d20aa372a1822cd2baab",
+      "functions": [
+        {
+          "name": "getJson",
+          "params": [
+            "url"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "useCampaignList",
+          "params": [
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 34
+        },
+        {
+          "name": "useCampaignDetail",
+          "params": [
+            "campaignId",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "useCampaignHealth",
+          "params": [
+            "campaignId",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "useCampaignContacts",
+          "params": [
+            "campaignId",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "useCityDetail",
+          "params": [
+            "campaignId",
+            "worldId",
+            "contactId"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "useCampaignActivity",
+          "params": [
+            "campaignId",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "useCampaignActions",
+          "params": [
+            "campaignId",
+            "worldId",
+            "onDone"
+          ],
+          "exported": true,
+          "lineCount": 21
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useCallback",
+            "useRef"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        }
+      ],
+      "exports": [
+        "useCampaignList",
+        "useCampaignDetail",
+        "useCampaignHealth",
+        "useCampaignContacts",
+        "useCityDetail",
+        "useCampaignActivity",
+        "useCampaignActions"
+      ],
+      "totalLines": 166,
+      "hasStructuralAnalysis": true
+    },
+    "data/useCommandTracker.js": {
+      "filePath": "data/useCommandTracker.js",
+      "contentHash": "1a3145851a58b4d4593476bd9ec877da5e0b72d83eca8bc57f44f5f06a5f3a0e",
+      "functions": [
+        {
+          "name": "initials",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "withCount",
+          "params": [
+            "arr",
+            "count"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "tintFor",
+          "params": [
+            "seed"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "titleCase",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "cap",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "firstLine",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "relTime",
+          "params": [
+            "ts"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "checklistFromSteps",
+          "params": [
+            "steps",
+            "live",
+            "storeKey"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "bareKey",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "projectOf",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "normalizeRoomKey",
+          "params": [
+            "key"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "cleanCell",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "oneLineGoal",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "roomNameFor",
+          "params": [
+            "key"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "hasOpenQuestion",
+          "params": [
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "routineRoomKey",
+          "params": [
+            "rt"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "loopCadence",
+          "params": [
+            "rt"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "relDur",
+          "params": [
+            "ms"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "loopFailing",
+          "params": [
+            "rt"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "shapeLoopRow",
+          "params": [
+            "rt",
+            "now",
+            "last"
+          ],
+          "exported": false,
+          "lineCount": 34
+        },
+        {
+          "name": "shapeCommand",
+          "params": [],
+          "exported": false,
+          "lineCount": 392
+        },
+        {
+          "name": "useCommand",
+          "params": [
+            "worldIdArg"
+          ],
+          "exported": true,
+          "lineCount": 485
+        },
+        {
+          "name": "bugStatus",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "severityToPriority",
+          "params": [
+            "sev"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "ticketPriority",
+          "params": [
+            "p"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "trackerShape",
+          "params": [
+            "t",
+            "activeId"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "useTrackerBugs",
+          "params": [
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 246
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useMemo",
+            "useRef",
+            "useCallback"
+          ]
+        },
+        {
+          "source": "../../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/clientConfig",
+          "specifiers": [
+            "getClientId",
+            "setClientIdFromUser"
+          ]
+        },
+        {
+          "source": "../../hooks/useCurrentUserSlug",
+          "specifiers": [
+            "useCurrentUserSlug"
+          ]
+        },
+        {
+          "source": "../../hooks/useDataPipe",
+          "specifiers": [
+            "useDataPipe"
+          ]
+        },
+        {
+          "source": "./agentTitles.js",
+          "specifiers": [
+            "titleForAgent",
+            "AGENT_TITLES"
+          ]
+        },
+        {
+          "source": "../../../../api/_lib/commandTruth.js",
+          "specifiers": [
+            "classifyCommandRoomStatus",
+            "isCommandBookkeepingStamp"
+          ]
+        }
+      ],
+      "exports": [
+        "useWorldId",
+        "useCommand",
+        "useTrackerBugs"
+      ],
+      "totalLines": 1374,
+      "hasStructuralAnalysis": true
+    },
+    "data/useDemoBlocks.js": {
+      "filePath": "data/useDemoBlocks.js",
+      "contentHash": "3e28216bf9c2e02444763282f95eeac1675461bb053715d4520b829eb077303e",
+      "functions": [
+        {
+          "name": "useDemoBlocks",
+          "params": [],
+          "exported": true,
+          "lineCount": 225
+        },
+        {
+          "name": "useDemoBlocksFeed",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./blockSchema.js",
+          "specifiers": [
+            "createStepBlock",
+            "createSuccessBlock",
+            "createSnagBlock",
+            "createQuestionBlock",
+            "createDataBlock",
+            "createSummaryBlock",
+            "createCodeBlock",
+            "createChoiceBlock",
+            "createChoiceEchoBlock",
+            "createGalleryBlock"
+          ]
+        }
+      ],
+      "exports": [
+        "useDemoBlocks",
+        "useDemoBlocksFeed"
+      ],
+      "totalLines": 257,
+      "hasStructuralAnalysis": true
+    },
+    "data/useDictation.js": {
+      "filePath": "data/useDictation.js",
+      "contentHash": "03f4526ded365410bc32ad4e25d24eb1198e8908a5c8c72e4873cabedb725874",
+      "functions": [
+        {
+          "name": "useDictation",
+          "params": [
+            "onText"
+          ],
+          "exported": true,
+          "lineCount": 51
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useRef",
+            "useEffect",
+            "useCallback"
+          ]
+        }
+      ],
+      "exports": [
+        "dictationSupported",
+        "useDictation"
+      ],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "data/useHomeData.js": {
+      "filePath": "data/useHomeData.js",
+      "contentHash": "8370e8a18c7d68d36977a3bca9e9bb89b92dfcb591d6b31304184afa97950323",
+      "functions": [
+        {
+          "name": "initials",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "agentStatus",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "statusText",
+          "params": [
+            "status"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "tintFor",
+          "params": [
+            "seed"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "cap",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "firstLine",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "missionLabel",
+          "params": [
+            "missionSlug"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "detectAttachment",
+          "params": [
+            "text"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "normalizePreview",
+          "params": [
+            "text"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "relTime",
+          "params": [
+            "ts"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "shapeHome",
+          "params": [],
+          "exported": true,
+          "lineCount": 141
+        },
+        {
+          "name": "useHome",
+          "params": [],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "chatStatus",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "shapeChatList",
+          "params": [],
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "useChatList",
+          "params": [],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "missionStatus",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "shapeProjectState",
+          "params": [
+            "project",
+            "missions"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "slugify",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "createMissionInProject",
+          "params": [],
+          "exported": true,
+          "lineCount": 26
+        },
+        {
+          "name": "createProjectFromHome",
+          "params": [],
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "useProjectMissions",
+          "params": [
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 20
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useMemo"
+          ]
+        },
+        {
+          "source": "../../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/tenantContext.jsx",
+          "specifiers": [
+            "useTenantContext"
+          ]
+        },
+        {
+          "source": "../providers/DataContext.jsx",
+          "specifiers": [
+            "useDataContext"
+          ]
+        },
+        {
+          "source": "./agentTitles.js",
+          "specifiers": [
+            "curateTitledAgents",
+            "titleForAgent"
+          ]
+        }
+      ],
+      "exports": [
+        "shapeHome",
+        "useHome",
+        "shapeChatList",
+        "useChatList",
+        "shapeProjectState",
+        "createMissionInProject",
+        "createProjectFromHome",
+        "useProjectMissions"
+      ],
+      "totalLines": 397,
+      "hasStructuralAnalysis": true
+    },
+    "data/useLiveScribe.js": {
+      "filePath": "data/useLiveScribe.js",
+      "contentHash": "b2e80f881071e191d9b0e5af32d996ed3839c5d35b9ecc4881b22cda541a9da6",
+      "functions": [
+        {
+          "name": "formatTime",
+          "params": [
+            "seconds"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "blobToBase64",
+          "params": [
+            "blob"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "pickAudioMime",
+          "params": [],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "useLiveScribe",
+          "params": [],
+          "exported": true,
+          "lineCount": 356
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useCallback",
+            "useRef"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        }
+      ],
+      "exports": [
+        "useLiveScribe"
+      ],
+      "totalLines": 429,
+      "hasStructuralAnalysis": true
+    },
+    "data/useOnboarding.js": {
+      "filePath": "data/useOnboarding.js",
+      "contentHash": "638616818abe9fe05fc4b2648a8cfeb5c0f50e81f88e6c830da1a17524bf9519",
+      "functions": [
+        {
+          "name": "useOnboarding",
+          "params": [],
+          "exported": true,
+          "lineCount": 162
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useMemo"
+          ]
+        },
+        {
+          "source": "../../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/clientConfig",
+          "specifiers": [
+            "setClientIdFromUser"
+          ]
+        }
+      ],
+      "exports": [
+        "useOnboarding"
+      ],
+      "totalLines": 183,
+      "hasStructuralAnalysis": true
+    },
+    "data/useOrganize.js": {
+      "filePath": "data/useOrganize.js",
+      "contentHash": "e4911879a3f132297aa4cff9758363fa751b03d786e2ace116931c121458b310",
+      "functions": [
+        {
+          "name": "tintFor",
+          "params": [
+            "seed"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "ssRead",
+          "params": [
+            "key"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "ssWrite",
+          "params": [
+            "key",
+            "val"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "relTime",
+          "params": [
+            "d"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "formatSize",
+          "params": [
+            "bytes"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "resolveKind",
+          "params": [
+            "dbKind",
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "missionOf",
+          "params": [
+            "relPath"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "fileKind",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "uploadKind",
+          "params": [
+            "name",
+            "mime"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "uploadMissionKey",
+          "params": [
+            "missionSlug",
+            "projectSlug"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "initialsOf",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "escapeHtml",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "safeHref",
+          "params": [
+            "escapedHref"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "inlineMd",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "parseMarkdown",
+          "params": [
+            "content"
+          ],
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "dataFilePreview",
+          "params": [
+            "content"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "nonTextPreview",
+          "params": [
+            "name",
+            "kind"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "cornerPathOf",
+          "params": [
+            "row",
+            "worldId"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "imageBodyHtml",
+          "params": [
+            "f",
+            "worldId"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "pdfBodyHtml",
+          "params": [
+            "src",
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "useOrganize",
+          "params": [],
+          "exported": true,
+          "lineCount": 786
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useCallback",
+            "useRef"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "./mediaFallback",
+          "specifiers": [
+            "mediaAttrs"
+          ]
+        },
+        {
+          "source": "./pdfDocView",
+          "specifiers": [
+            "pdfShellHtml"
+          ]
+        },
+        {
+          "source": "./docxDocView",
+          "specifiers": [
+            "docxShellHtml",
+            "isDocxName"
+          ]
+        },
+        {
+          "source": "./htmlDocView",
+          "specifiers": [
+            "htmlShellHtml",
+            "isHtmlName"
+          ]
+        },
+        {
+          "source": "../../../../api/_lib/fileRef.js",
+          "specifiers": [
+            "fileRefFromProjectFileRow",
+            "fileRefFromUploadRow"
+          ]
+        },
+        {
+          "source": "../../cv6kit/cornerLogoLoaderMarkup.js",
+          "specifiers": [
+            "cornerLogoLoaderMarkup"
+          ]
+        }
+      ],
+      "exports": [
+        "useOrganize"
+      ],
+      "totalLines": 1079,
+      "hasStructuralAnalysis": true
+    },
+    "data/usePins.js": {
+      "filePath": "data/usePins.js",
+      "contentHash": "8c7ec4ec3a97bbf4ea059ec0f572806af4cad46d0ee291b4ff09c85e0064adaa",
+      "functions": [
+        {
+          "name": "toPin",
+          "params": [
+            "c",
+            "i"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "fmtTime",
+          "params": [
+            "sec"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "usePins",
+          "params": [
+            "deliverableId"
+          ],
+          "exported": true,
+          "lineCount": 62
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useCallback",
+            "useEffect",
+            "useRef"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        }
+      ],
+      "exports": [
+        "usePins"
+      ],
+      "totalLines": 95,
+      "hasStructuralAnalysis": true
+    },
+    "data/useReview.js": {
+      "filePath": "data/useReview.js",
+      "contentHash": "039b4e2bcee57c3c68fdb974a4e113bb5d4309fd95cc691be673a9b3183d01eb",
+      "functions": [
+        {
+          "name": "escapeHtml",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "authFetchT",
+          "params": [
+            "url"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "readJsonOrNull",
+          "params": [
+            "response"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "downloadDeliverable",
+          "params": [
+            "item"
+          ],
+          "exported": false,
+          "lineCount": 31
+        },
+        {
+          "name": "buildDeliverableBody",
+          "params": [
+            "item"
+          ],
+          "exported": true,
+          "lineCount": 134
+        },
+        {
+          "name": "thumbFor",
+          "params": [
+            "path",
+            "type"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "groupSequences",
+          "params": [
+            "items"
+          ],
+          "exported": false,
+          "lineCount": 39
+        },
+        {
+          "name": "initials",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "tintFor",
+          "params": [
+            "seed"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "relTime",
+          "params": [
+            "d"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "typeLabel",
+          "params": [
+            "type"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "typeGlyph",
+          "params": [
+            "type"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "looksBinary",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "typeKeyOf",
+          "params": [
+            "name",
+            "mime"
+          ],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "reviewItemsFromFiles",
+          "params": [
+            "files"
+          ],
+          "exported": true,
+          "lineCount": 48
+        },
+        {
+          "name": "mapQueueItem",
+          "params": [
+            "it",
+            "openId"
+          ],
+          "exported": false,
+          "lineCount": 66
+        },
+        {
+          "name": "useReview",
+          "params": [],
+          "exported": true,
+          "lineCount": 673
+        },
+        {
+          "name": "useReviewWaitingCount",
+          "params": [],
+          "exported": true,
+          "lineCount": 40
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useCallback",
+            "useRef"
+          ]
+        },
+        {
+          "source": "marked",
+          "specifiers": [
+            "marked"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "../../lib/fixtureClient.js",
+          "specifiers": [
+            "demoFixtureActive"
+          ]
+        },
+        {
+          "source": "./agentTitles",
+          "specifiers": [
+            "titleForAgent"
+          ]
+        },
+        {
+          "source": "./mediaFallback",
+          "specifiers": [
+            "mediaAttrs"
+          ]
+        },
+        {
+          "source": "./pdfDocView",
+          "specifiers": [
+            "pdfShellHtml"
+          ]
+        },
+        {
+          "source": "./docxDocView",
+          "specifiers": [
+            "docxShellHtml",
+            "isDocxName"
+          ]
+        },
+        {
+          "source": "./htmlDocView",
+          "specifiers": [
+            "htmlShellHtml",
+            "isHtmlName"
+          ]
+        },
+        {
+          "source": "../../../../api/_lib/fileRef.js",
+          "specifiers": [
+            "createFileRef"
+          ]
+        },
+        {
+          "source": "../../cv6kit/cornerLogoLoaderMarkup.js",
+          "specifiers": [
+            "cornerLogoLoaderMarkup"
+          ]
+        }
+      ],
+      "exports": [
+        "buildDeliverableBody",
+        "reviewItemsFromFiles",
+        "useReview",
+        "useReviewWaitingCount"
+      ],
+      "totalLines": 1234,
+      "hasStructuralAnalysis": true
+    },
+    "data/useRoomThread.js": {
+      "filePath": "data/useRoomThread.js",
+      "contentHash": "618a7019aad65b2f2264509ddd7c13d9db678958acc32f4c682aeef6d9bf2320",
+      "functions": [
+        {
+          "name": "initials",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "cap",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "tintFor",
+          "params": [
+            "seed"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "hhmm",
+          "params": [
+            "ts"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "cleanFileRef",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "cornerPathFromText",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "displayNameFromFileRef",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "workStepsToBlocks",
+          "params": [
+            "steps"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "injectWorkSteps",
+          "params": [
+            "list",
+            "stepsByParent",
+            "awaiting",
+            "awaitingId"
+          ],
+          "exported": false,
+          "lineCount": 24
+        },
+        {
+          "name": "threadCacheKey",
+          "params": [
+            "worldId",
+            "room"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "useRoomThread",
+          "params": [
+            "worldId",
+            "room"
+          ],
+          "exported": true,
+          "lineCount": 420
+        },
+        {
+          "name": "roomKeyFor",
+          "params": [
+            "room"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "useGoalThread",
+          "params": [
+            "worldId",
+            "room"
+          ],
+          "exported": true,
+          "lineCount": 34
+        },
+        {
+          "name": "useRoomPlan",
+          "params": [
+            "worldId",
+            "room"
+          ],
+          "exported": true,
+          "lineCount": 64
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useCallback",
+            "useRef",
+            "useMemo"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/supabase.js",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "../../lib/fixtureClient.js",
+          "specifiers": [
+            "demoFixtureActive"
+          ]
+        },
+        {
+          "source": "./agentTitles.js",
+          "specifiers": [
+            "titleForAgent"
+          ]
+        },
+        {
+          "source": "./resultLinks.js",
+          "specifiers": [
+            "extractLinkCards",
+            "stripTrailingCardUrl"
+          ]
+        }
+      ],
+      "exports": [
+        "useRoomThread",
+        "useGoalThread",
+        "useRoomPlan"
+      ],
+      "totalLines": 659,
+      "hasStructuralAnalysis": true
+    },
+    "data/useSettings.js": {
+      "filePath": "data/useSettings.js",
+      "contentHash": "7a98cf98fe7e1882a5168eda4379857e19fc5071ca8759dcfb3877ae06a34a1f",
+      "functions": [
+        {
+          "name": "initials",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "useSettings",
+          "params": [],
+          "exported": true,
+          "lineCount": 126
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useMemo"
+          ]
+        },
+        {
+          "source": "../../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/clientConfig",
+          "specifiers": [
+            "setClientIdFromUser"
+          ]
+        }
+      ],
+      "exports": [
+        "useSettings"
+      ],
+      "totalLines": 143,
+      "hasStructuralAnalysis": true
+    },
+    "data/useSupportInbox.js": {
+      "filePath": "data/useSupportInbox.js",
+      "contentHash": "a281db8590d97c37982b810d14c1a2775b1d50a0a4cf1b5e43a5d57f3e1ebaf3",
+      "functions": [
+        {
+          "name": "initials",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "tintFor",
+          "params": [
+            "seed"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "relTime",
+          "params": [
+            "d"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "firstLine",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "latencyLabel",
+          "params": [
+            "seconds"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "parseWishMessage",
+          "params": [
+            "message"
+          ],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "useSupportInbox",
+          "params": [
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 123
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useCallback",
+            "useRef"
+          ]
+        },
+        {
+          "source": "../../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        }
+      ],
+      "exports": [
+        "latencyLabel",
+        "useSupportInbox"
+      ],
+      "totalLines": 195,
+      "hasStructuralAnalysis": true
+    },
+    "EmailShell.jsx": {
+      "filePath": "EmailShell.jsx",
+      "contentHash": "788646f5ab8014868709c03b6662f588e976b7fc2c2d31af387a9863e7b2dbaf",
+      "functions": [
+        {
+          "name": "EmailShell",
+          "params": [],
+          "exported": true,
+          "lineCount": 62
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState"
+          ]
+        },
+        {
+          "source": "./Campaign.jsx",
+          "specifiers": [
+            "Campaign"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        }
+      ],
+      "exports": [
+        "EmailShell"
+      ],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "LiveScribe.jsx": {
+      "filePath": "LiveScribe.jsx",
+      "contentHash": "26aa833be53848b735904fe0a8eb0516617d69a4d34c3ffa916a3add38963ed7",
+      "functions": [
+        {
+          "name": "composeLiveScribe",
+          "params": [
+            "raw",
+            "screenName"
+          ],
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "LiveScribe",
+          "params": [],
+          "exported": true,
+          "lineCount": 35
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../cv6kit/useMediaQuery.js",
+          "specifiers": [
+            "useMediaQuery"
+          ]
+        },
+        {
+          "source": "./data/useLiveScribe.js",
+          "specifiers": [
+            "useLiveScribe"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./templates/livescribe.html?raw",
+          "specifiers": [
+            "template"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "LiveScribe"
+      ],
+      "totalLines": 90,
+      "hasStructuralAnalysis": true
+    },
+    "MessageAttachments.jsx": {
+      "filePath": "MessageAttachments.jsx",
+      "contentHash": "c35b71ff159c673ee7f1d3b6ed711083ca38434e6f9f2468d9427fa2da5ffe04",
+      "functions": [
+        {
+          "name": "fileKind",
+          "params": [
+            "name",
+            "mime"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "fileHref",
+          "params": [
+            "url"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "downloadProps",
+          "params": [
+            "file"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "formatSize",
+          "params": [
+            "bytes"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "fileGlyph",
+          "params": [
+            "kind"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "downloadGlyph",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "SingleImage",
+          "params": [],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "ImageGallery",
+          "params": [],
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "GalleryLightbox",
+          "params": [],
+          "exported": false,
+          "lineCount": 45
+        },
+        {
+          "name": "SingleFile",
+          "params": [],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "FileCollection",
+          "params": [],
+          "exported": false,
+          "lineCount": 63
+        },
+        {
+          "name": "MessageAttachments",
+          "params": [],
+          "exported": true,
+          "lineCount": 25
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useMemo"
+          ]
+        }
+      ],
+      "exports": [
+        "MessageAttachments"
+      ],
+      "totalLines": 281,
+      "hasStructuralAnalysis": true
+    },
+    "MessageThread.jsx": {
+      "filePath": "MessageThread.jsx",
+      "contentHash": "8cb4ef4ac835f003da839bde123a1fbafaf436dd4b65aa263262b736dc7525e5",
+      "functions": [
+        {
+          "name": "groupMessagesBySender",
+          "params": [
+            "list"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "hasMessageExtras",
+          "params": [
+            "m"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "Cv6MessageExtras",
+          "params": [],
+          "exported": true,
+          "lineCount": 31
+        },
+        {
+          "name": "Cv6MessageTurn",
+          "params": [],
+          "exported": true,
+          "lineCount": 40
+        },
+        {
+          "name": "Cv6MessageGroup",
+          "params": [],
+          "exported": true,
+          "lineCount": 65
+        },
+        {
+          "name": "defaultAskGoal",
+          "params": [
+            "messages",
+            "goal"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "MobileAvatar",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "MobileMessageTurn",
+          "params": [],
+          "exported": false,
+          "lineCount": 36
+        },
+        {
+          "name": "MobileGoalTurn",
+          "params": [],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "MobileMessageThread",
+          "params": [],
+          "exported": false,
+          "lineCount": 66
+        },
+        {
+          "name": "Cv6MessageThread",
+          "params": [],
+          "exported": true,
+          "lineCount": 88
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useEffect",
+            "useRef",
+            "useState"
+          ]
+        },
+        {
+          "source": "../components/ChatMessageRenderer.jsx",
+          "specifiers": [
+            "ChatMessageRenderer"
+          ]
+        },
+        {
+          "source": "./MessageAttachments.jsx",
+          "specifiers": [
+            "MessageAttachments"
+          ]
+        },
+        {
+          "source": "./ResultLinkCard.jsx",
+          "specifiers": [
+            "ResultLinkCards"
+          ]
+        },
+        {
+          "source": "./BlockRenderer.jsx",
+          "specifiers": [
+            "Result"
+          ]
+        },
+        {
+          "source": "./ChatGoalThread.jsx",
+          "specifiers": [
+            "SendCtx",
+            "ReviewCtx",
+            "AgentBlocks",
+            "GoalThreadBody",
+            "WorkingTurn",
+            "liveStepsToBlocks",
+            "ActionChips"
+          ]
+        }
+      ],
+      "exports": [
+        "groupMessagesBySender",
+        "Cv6MessageExtras",
+        "Cv6MessageTurn",
+        "Cv6MessageGroup",
+        "Cv6MessageThread"
+      ],
+      "totalLines": 400,
+      "hasStructuralAnalysis": true
+    },
+    "NewComposer.jsx": {
+      "filePath": "NewComposer.jsx",
+      "contentHash": "eba1d1f0eac5caa095f4a75a2e7f83f767bfebd722b163024f088b64a9043ddc",
+      "functions": [
+        {
+          "name": "composerAgentLabel",
+          "params": [
+            "a"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "NewComposer",
+          "params": [],
+          "exported": true,
+          "lineCount": 153
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useMemo",
+            "useRef",
+            "useState"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./data/useHomeData.js",
+          "specifiers": [
+            "createMissionInProject",
+            "createProjectFromHome"
+          ]
+        },
+        {
+          "source": "../lib/supabase",
+          "specifiers": [
+            "supabase"
+          ]
+        }
+      ],
+      "exports": [
+        "NewComposer"
+      ],
+      "totalLines": 267,
+      "hasStructuralAnalysis": true
+    },
+    "Onboarding.jsx": {
+      "filePath": "Onboarding.jsx",
+      "contentHash": "71e35f47b96809eb4c268374abd09e05663e843a03fc4d5480abdd7f25b656a5",
+      "functions": [
+        {
+          "name": "Onboarding",
+          "params": [],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../cv6kit/useMediaQuery.js",
+          "specifiers": [
+            "useMediaQuery"
+          ]
+        },
+        {
+          "source": "./OnboardingDesktop.jsx",
+          "specifiers": [
+            "OnboardingDesktop"
+          ]
+        },
+        {
+          "source": "./OnboardingMobile.jsx",
+          "specifiers": [
+            "OnboardingMobile"
+          ]
+        }
+      ],
+      "exports": [
+        "Onboarding"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "OnboardingDesktop.jsx": {
+      "filePath": "OnboardingDesktop.jsx",
+      "contentHash": "75a9da445c48af2f11678cf74406e34bb0637b731abd3b0296c9995e54b8bb02",
+      "functions": [
+        {
+          "name": "composeOnboardingDesktop",
+          "params": [
+            "raw",
+            "screenName"
+          ],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "OnboardingDesktop",
+          "params": [],
+          "exported": true,
+          "lineCount": 46
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo"
+          ]
+        },
+        {
+          "source": "./data/useOnboarding.js",
+          "specifiers": [
+            "useOnboarding"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./templates/onboarding.html?raw",
+          "specifiers": [
+            "template"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "OnboardingDesktop"
+      ],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "OnboardingMobile.jsx": {
+      "filePath": "OnboardingMobile.jsx",
+      "contentHash": "e2c92ce476e676b48337d6d6847888b084b70424405d805e3905bf930117e768",
+      "functions": [
+        {
+          "name": "composeOnboardingMobile",
+          "params": [
+            "raw",
+            "screenName"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "OnboardingMobile",
+          "params": [],
+          "exported": true,
+          "lineCount": 46
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo"
+          ]
+        },
+        {
+          "source": "./data/useOnboarding.js",
+          "specifiers": [
+            "useOnboarding"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./templates/onboarding.html?raw",
+          "specifiers": [
+            "template"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "OnboardingMobile"
+      ],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "Organize.jsx": {
+      "filePath": "Organize.jsx",
+      "contentHash": "70f17122efcd71d50229ba31ce3c75602cab19f436b518c8120065c8a8ce56ab",
+      "functions": [
+        {
+          "name": "Organize",
+          "params": [],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React"
+          ]
+        },
+        {
+          "source": "../cv6kit/useMediaQuery.js",
+          "specifiers": [
+            "useMediaQuery"
+          ]
+        },
+        {
+          "source": "./OrganizeDesktop",
+          "specifiers": [
+            "OrganizeDesktop"
+          ]
+        },
+        {
+          "source": "./OrganizeMobile",
+          "specifiers": [
+            "OrganizeMobile"
+          ]
+        }
+      ],
+      "exports": [
+        "Organize"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "OrganizeDesktop.jsx": {
+      "filePath": "OrganizeDesktop.jsx",
+      "contentHash": "699019bb902f430e8bc61cafd6abd9ca8d638e6a1529a301bce1e6336a1cc26f",
+      "functions": [
+        {
+          "name": "composeOrganize",
+          "params": [
+            "raw",
+            "screenName"
+          ],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "buildWaitingMap",
+          "params": [
+            "itemsAll"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "buildDecidedMap",
+          "params": [
+            "decidedRaw"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "OrganizeDesktop",
+          "params": [],
+          "exported": true,
+          "lineCount": 381
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useRef",
+            "useEffect",
+            "useCallback",
+            "useState"
+          ]
+        },
+        {
+          "source": "./data/useOrganize.js",
+          "specifiers": [
+            "useOrganize"
+          ]
+        },
+        {
+          "source": "./data/useReview.js",
+          "specifiers": [
+            "useReview"
+          ]
+        },
+        {
+          "source": "./data/usePins.js",
+          "specifiers": [
+            "usePins"
+          ]
+        },
+        {
+          "source": "./ReviewPins.jsx",
+          "specifiers": [
+            "useReviewPinUI"
+          ]
+        },
+        {
+          "source": "./data/pdfDocView.js",
+          "specifiers": [
+            "usePdfDocs"
+          ]
+        },
+        {
+          "source": "./data/docxDocView.js",
+          "specifiers": [
+            "useDocxDocs"
+          ]
+        },
+        {
+          "source": "./data/htmlDocView.js",
+          "specifiers": [
+            "useHtmlDocs"
+          ]
+        },
+        {
+          "source": "./ReviewChanges.jsx",
+          "specifiers": [
+            "ReviewChangesOverlay",
+            "compileChanges"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "../cv6kit/cornerLogoLoaderMarkup.js",
+          "specifiers": [
+            "cornerLogoLoaderMarkup"
+          ]
+        },
+        {
+          "source": "./TreeContextMenu.jsx",
+          "specifiers": [
+            "useTreeContextMenu",
+            "renameNode",
+            "moveNode",
+            "createNode",
+            "archiveNode",
+            "findMissionNode"
+          ]
+        },
+        {
+          "source": "./NewComposer.jsx",
+          "specifiers": [
+            "NewComposer"
+          ]
+        },
+        {
+          "source": "../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "../../../api/_lib/fileRef.js",
+          "specifiers": [
+            "buildFileRefIdentityMap"
+          ]
+        },
+        {
+          "source": "./templates/organize.html?raw",
+          "specifiers": [
+            "template"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "buildWaitingMap",
+        "buildDecidedMap",
+        "OrganizeDesktop"
+      ],
+      "totalLines": 458,
+      "hasStructuralAnalysis": true
+    },
+    "OrganizeMobile.jsx": {
+      "filePath": "OrganizeMobile.jsx",
+      "contentHash": "b8b9bb8f0a902b6d8a7b673df4947f7945e65ed1d03d3452893b4d06ab5009ee",
+      "functions": [
+        {
+          "name": "screenByLabel",
+          "params": [
+            "doc",
+            "label"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "finalizeScreen",
+          "params": [
+            "screen",
+            "readyEl"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "composePicker",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "composeBrowse",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "composeView",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "OrganizeMobile",
+          "params": [],
+          "exported": true,
+          "lineCount": 303
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useRef",
+            "useEffect",
+            "useMemo",
+            "useCallback"
+          ]
+        },
+        {
+          "source": "./data/useOrganize.js",
+          "specifiers": [
+            "useOrganize"
+          ]
+        },
+        {
+          "source": "./data/useReview.js",
+          "specifiers": [
+            "useReview"
+          ]
+        },
+        {
+          "source": "./data/usePins.js",
+          "specifiers": [
+            "usePins"
+          ]
+        },
+        {
+          "source": "./ReviewPins.jsx",
+          "specifiers": [
+            "useReviewPinUI"
+          ]
+        },
+        {
+          "source": "./data/pdfDocView.js",
+          "specifiers": [
+            "usePdfDocs"
+          ]
+        },
+        {
+          "source": "./data/docxDocView.js",
+          "specifiers": [
+            "useDocxDocs"
+          ]
+        },
+        {
+          "source": "./data/htmlDocView.js",
+          "specifiers": [
+            "useHtmlDocs"
+          ]
+        },
+        {
+          "source": "./ReviewChanges.jsx",
+          "specifiers": [
+            "ReviewChangesOverlay",
+            "compileChanges"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "../cv6kit/cornerLogoLoaderMarkup.js",
+          "specifiers": [
+            "cornerLogoLoaderMarkup"
+          ]
+        },
+        {
+          "source": "./NewComposer.jsx",
+          "specifiers": [
+            "NewComposer"
+          ]
+        },
+        {
+          "source": "../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "./OrganizeDesktop.jsx",
+          "specifiers": [
+            "buildWaitingMap",
+            "buildDecidedMap"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "./templates/organize.html?raw",
+          "specifiers": [
+            "template"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "OrganizeMobile"
+      ],
+      "totalLines": 417,
+      "hasStructuralAnalysis": true
+    },
+    "PinLayer.jsx": {
+      "filePath": "PinLayer.jsx",
+      "contentHash": "3ff8cdd0f3934ec7f6f94c3d8e8721d8df87c9756ba83cf238ba35c9fee56f4b",
+      "functions": [
+        {
+          "name": "PinLayer",
+          "params": [],
+          "exported": true,
+          "lineCount": 74
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useRef",
+            "useCallback"
+          ]
+        }
+      ],
+      "exports": [
+        "PinLayer"
+      ],
+      "totalLines": 82,
+      "hasStructuralAnalysis": true
+    },
+    "providers/DataContext.jsx": {
+      "filePath": "providers/DataContext.jsx",
+      "contentHash": "600748d1f0f5169719271cf8ada127a3f4d2ce0c0f36ad7634cac7cd241e5f48",
+      "functions": [
+        {
+          "name": "DataProvider",
+          "params": [],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "CommandProvider",
+          "params": [],
+          "exported": true,
+          "lineCount": 30
+        },
+        {
+          "name": "useDataContext",
+          "params": [],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "useCommandContext",
+          "params": [],
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "createContext",
+            "useContext",
+            "useRef",
+            "useCallback",
+            "useEffect",
+            "useState"
+          ]
+        },
+        {
+          "source": "../../hooks/useDataPipe",
+          "specifiers": [
+            "useDataPipe"
+          ]
+        },
+        {
+          "source": "../../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "../data/useCommandTracker",
+          "specifiers": [
+            "useCommand",
+            "useTrackerBugs"
+          ]
+        }
+      ],
+      "exports": [
+        "DataProvider",
+        "CommandProvider",
+        "useDataContext",
+        "useCommandContext"
+      ],
+      "totalLines": 107,
+      "hasStructuralAnalysis": true
+    },
+    "ResultLinkCard.jsx": {
+      "filePath": "ResultLinkCard.jsx",
+      "contentHash": "362044e0b1f18aff6d4e5eccf8759fadd5aedc16f308b54777f3d6e06367b4ac",
+      "functions": [
+        {
+          "name": "hostOf",
+          "params": [
+            "url"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "ResultLinkCards",
+          "params": [],
+          "exported": true,
+          "lineCount": 33
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React"
+          ]
+        }
+      ],
+      "exports": [
+        "ResultLinkCards"
+      ],
+      "totalLines": 45,
+      "hasStructuralAnalysis": true
+    },
+    "Review.jsx": {
+      "filePath": "Review.jsx",
+      "contentHash": "d42c0b2df42cd239c58c94a0ad18ec46aeea639da81a51ff2daf10d4192270ad",
+      "functions": [
+        {
+          "name": "composeReviewScreen",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "Review",
+          "params": [],
+          "exported": true,
+          "lineCount": 255
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useMemo",
+            "useCallback",
+            "useRef",
+            "useEffect"
+          ]
+        },
+        {
+          "source": "./data/useReview.js",
+          "specifiers": [
+            "useReview",
+            "reviewItemsFromFiles"
+          ]
+        },
+        {
+          "source": "./data/usePins.js",
+          "specifiers": [
+            "usePins"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./ReviewPins.jsx",
+          "specifiers": [
+            "useReviewPinUI"
+          ]
+        },
+        {
+          "source": "./ReviewChanges.jsx",
+          "specifiers": [
+            "ReviewChangesOverlay",
+            "compileChanges"
+          ]
+        },
+        {
+          "source": "./data/pdfDocView.js",
+          "specifiers": [
+            "usePdfDocs"
+          ]
+        },
+        {
+          "source": "./data/docxDocView.js",
+          "specifiers": [
+            "useDocxDocs"
+          ]
+        },
+        {
+          "source": "./data/htmlDocView.js",
+          "specifiers": [
+            "useHtmlDocs"
+          ]
+        },
+        {
+          "source": "./templates/review.html?raw",
+          "specifiers": [
+            "reviewRaw"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "Review"
+      ],
+      "totalLines": 308,
+      "hasStructuralAnalysis": true
+    },
+    "ReviewChanges.jsx": {
+      "filePath": "ReviewChanges.jsx",
+      "contentHash": "14d18137e8e6b6a4734ed90a0e30f5297fbd0fb8b2b18953ef5defd92553f57f",
+      "functions": [
+        {
+          "name": "compileChanges",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "ReviewChangesOverlay",
+          "params": [],
+          "exported": true,
+          "lineCount": 110
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState"
+          ]
+        }
+      ],
+      "exports": [
+        "compileChanges",
+        "ReviewChangesOverlay"
+      ],
+      "totalLines": 143,
+      "hasStructuralAnalysis": true
+    },
+    "ReviewDesktop.jsx": {
+      "filePath": "ReviewDesktop.jsx",
+      "contentHash": "4cce0a397bc9e93df0777fedcc231f05d81b44248945358f91f4a84239e4874c",
+      "functions": [
+        {
+          "name": "composeDesktopReview",
+          "params": [
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 41
+        },
+        {
+          "name": "ReviewDesktop",
+          "params": [],
+          "exported": true,
+          "lineCount": 392
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useMemo",
+            "useEffect",
+            "useRef",
+            "useCallback"
+          ]
+        },
+        {
+          "source": "./data/useReview.js",
+          "specifiers": [
+            "useReview",
+            "reviewItemsFromFiles"
+          ]
+        },
+        {
+          "source": "./data/usePins.js",
+          "specifiers": [
+            "usePins"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./ReviewPins.jsx",
+          "specifiers": [
+            "useReviewPinUI"
+          ]
+        },
+        {
+          "source": "./ReviewChanges.jsx",
+          "specifiers": [
+            "ReviewChangesOverlay",
+            "compileChanges"
+          ]
+        },
+        {
+          "source": "./TreeContextMenu.jsx",
+          "specifiers": [
+            "useTreeContextMenu",
+            "renameNode",
+            "moveNode",
+            "createNode",
+            "archiveNode",
+            "findMissionNode"
+          ]
+        },
+        {
+          "source": "../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "./data/pdfDocView.js",
+          "specifiers": [
+            "usePdfDocs"
+          ]
+        },
+        {
+          "source": "./data/docxDocView.js",
+          "specifiers": [
+            "useDocxDocs"
+          ]
+        },
+        {
+          "source": "./data/htmlDocView.js",
+          "specifiers": [
+            "useHtmlDocs"
+          ]
+        },
+        {
+          "source": "./templates/review.html?raw",
+          "specifiers": [
+            "reviewRaw"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "ReviewDesktop"
+      ],
+      "totalLines": 453,
+      "hasStructuralAnalysis": true
+    },
+    "ReviewPins.jsx": {
+      "filePath": "ReviewPins.jsx",
+      "contentHash": "2c7d2b1ca30488d438e0d27d87da0ec1525a7a7688c86ca73b789a5d8336f469",
+      "functions": [
+        {
+          "name": "clampPos",
+          "params": [
+            "px",
+            "py",
+            "wrap"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "useReviewPinUI",
+          "params": [],
+          "exported": true,
+          "lineCount": 240
+        },
+        {
+          "name": "PinPopover",
+          "params": [],
+          "exported": false,
+          "lineCount": 61
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useRef",
+            "useEffect",
+            "useCallback"
+          ]
+        }
+      ],
+      "exports": [
+        "useReviewPinUI"
+      ],
+      "totalLines": 334,
+      "hasStructuralAnalysis": true
+    },
+    "Search.jsx": {
+      "filePath": "Search.jsx",
+      "contentHash": "1a010cda6075cfc7a8cc6f36d4585761152175e3aff9db094b51cdafd285f60f",
+      "functions": [
+        {
+          "name": "useIsDesktop",
+          "params": [],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "Highlight",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "Glyph",
+          "params": [],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "Search",
+          "params": [],
+          "exported": true,
+          "lineCount": 84
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useMemo"
+          ]
+        },
+        {
+          "source": "./data/useHomeData.js",
+          "specifiers": [
+            "useChatList",
+            "useProjectMissions"
+          ]
+        }
+      ],
+      "exports": [
+        "Search"
+      ],
+      "totalLines": 133,
+      "hasStructuralAnalysis": true
+    },
+    "Settings.jsx": {
+      "filePath": "Settings.jsx",
+      "contentHash": "8c34a1c8aad73e5e1c6e3401d8ea7ff384551abaeef4b639caac0223da7e1dd4",
+      "functions": [
+        {
+          "name": "Settings",
+          "params": [],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../cv6kit/useMediaQuery.js",
+          "specifiers": [
+            "useMediaQuery"
+          ]
+        },
+        {
+          "source": "./SettingsDesktop.jsx",
+          "specifiers": [
+            "SettingsDesktop"
+          ]
+        },
+        {
+          "source": "./SettingsMobile.jsx",
+          "specifiers": [
+            "SettingsMobile"
+          ]
+        }
+      ],
+      "exports": [
+        "Settings"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "SettingsDesktop.jsx": {
+      "filePath": "SettingsDesktop.jsx",
+      "contentHash": "bf5aae5168c435ce93d95d4c9380b292edc6a66cc7d69b4e24eb251ba6117ce9",
+      "functions": [
+        {
+          "name": "composeSettingsDesktop",
+          "params": [
+            "raw",
+            "screenName"
+          ],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "SettingsDesktop",
+          "params": [],
+          "exported": true,
+          "lineCount": 49
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useMemo"
+          ]
+        },
+        {
+          "source": "./data/useSettings.js",
+          "specifiers": [
+            "useSettings"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./templates/settings.html?raw",
+          "specifiers": [
+            "template"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "SettingsDesktop"
+      ],
+      "totalLines": 94,
+      "hasStructuralAnalysis": true
+    },
+    "SettingsMobile.jsx": {
+      "filePath": "SettingsMobile.jsx",
+      "contentHash": "c22954671e88982596ea6f2c54e0d271629d35a204d774aa7fc7b99d0e646cc0",
+      "functions": [
+        {
+          "name": "composeSettingsMobile",
+          "params": [
+            "raw",
+            "screenName"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "SettingsMobile",
+          "params": [],
+          "exported": true,
+          "lineCount": 64
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useMemo"
+          ]
+        },
+        {
+          "source": "./data/useSettings.js",
+          "specifiers": [
+            "useSettings"
+          ]
+        },
+        {
+          "source": "../lib/tenantContext.jsx",
+          "specifiers": [
+            "useWorldId"
+          ]
+        },
+        {
+          "source": "../cv6kit/TemplateScreen.jsx",
+          "specifiers": [
+            "TemplateScreen"
+          ]
+        },
+        {
+          "source": "./templates/settings.html?raw",
+          "specifiers": [
+            "template"
+          ]
+        },
+        {
+          "source": "./templates/states-extra.html?raw",
+          "specifiers": [
+            "statesRaw"
+          ]
+        }
+      ],
+      "exports": [
+        "SettingsMobile"
+      ],
+      "totalLines": 104,
+      "hasStructuralAnalysis": true
+    },
+    "SharedNav.jsx": {
+      "filePath": "SharedNav.jsx",
+      "contentHash": "a375e2ac0473df3c4455bb108e9e946a85d1b073c0bbe712b9e52ca3fde39571",
+      "functions": [
+        {
+          "name": "Icon",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "SearchGlyph",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "Badge",
+          "params": [],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "ThemeSeg",
+          "params": [],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "DesktopNav",
+          "params": [],
+          "exported": true,
+          "lineCount": 30
+        },
+        {
+          "name": "MobileNav",
+          "params": [],
+          "exported": true,
+          "lineCount": 40
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useEffect"
+          ]
+        }
+      ],
+      "exports": [
+        "NAV_TOOLS",
+        "DesktopNav",
+        "MobileNav"
+      ],
+      "totalLines": 182,
+      "hasStructuralAnalysis": true
+    },
+    "SupportDesktop.jsx": {
+      "filePath": "SupportDesktop.jsx",
+      "contentHash": "8e822b2f4dd0b7d0696572c52bd3506f4f8d7b636a8092978c74f7aa0c09714b",
+      "functions": [
+        {
+          "name": "normalizeLinks",
+          "params": [
+            "str"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Star",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "InboxRow",
+          "params": [],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "chipStyle",
+          "params": [
+            "primary"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "useSupportActivity",
+          "params": [
+            "selected",
+            "isWish"
+          ],
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "trimAgentText",
+          "params": [
+            "text"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "AgentWorkPanel",
+          "params": [],
+          "exported": false,
+          "lineCount": 49
+        },
+        {
+          "name": "SupportDesktop",
+          "params": [],
+          "exported": true,
+          "lineCount": 367
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useMemo",
+            "useEffect",
+            "useRef",
+            "useCallback"
+          ]
+        },
+        {
+          "source": "./data/useSupportInbox.js",
+          "specifiers": [
+            "useSupportInbox",
+            "latencyLabel"
+          ]
+        },
+        {
+          "source": "./SupportThread.jsx",
+          "specifiers": [
+            "SupportThread"
+          ]
+        },
+        {
+          "source": "../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        },
+        {
+          "source": "../cv6kit/FullscreenLoading.jsx",
+          "specifiers": [
+            "FullscreenLoading"
+          ]
+        }
+      ],
+      "exports": [
+        "normalizeLinks",
+        "SupportDesktop"
+      ],
+      "totalLines": 523,
+      "hasStructuralAnalysis": true
+    },
+    "SupportThread.jsx": {
+      "filePath": "SupportThread.jsx",
+      "contentHash": "b5c8153d17a40c9e12ffdf9cc8eef4774ca4067ef39d33834af0ff1f6af66c83",
+      "functions": [
+        {
+          "name": "relTime",
+          "params": [
+            "d"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "firstLine",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "ThreadMessage",
+          "params": [],
+          "exported": false,
+          "lineCount": 62
+        },
+        {
+          "name": "SupportThread",
+          "params": [],
+          "exported": true,
+          "lineCount": 102
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "React",
+            "useState",
+            "useEffect",
+            "useRef"
+          ]
+        },
+        {
+          "source": "../lib/authFetch",
+          "specifiers": [
+            "authFetch"
+          ]
+        }
+      ],
+      "exports": [
+        "SupportThread"
+      ],
+      "totalLines": 210,
+      "hasStructuralAnalysis": true
+    },
+    "templates/chat-list.html": {
+      "filePath": "templates/chat-list.html",
+      "contentHash": "88cd2f9f83379d595a99b502f98d8ac000957b54289386bffdfc5307bce49e18",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 42,
+      "hasStructuralAnalysis": false
+    },
+    "templates/chat.html": {
+      "filePath": "templates/chat.html",
+      "contentHash": "b6822df44ae1522c85ddc3de1cffa6c7fd8e8f01ede8b1c230bbbb118d1345e8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 217,
+      "hasStructuralAnalysis": false
+    },
+    "templates/command.html": {
+      "filePath": "templates/command.html",
+      "contentHash": "a8528223bedef3d53645394632a2028d3fd93812fda0f569176a915e25ac666f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 319,
+      "hasStructuralAnalysis": false
+    },
+    "templates/home-desktop.html": {
+      "filePath": "templates/home-desktop.html",
+      "contentHash": "4379b718ccb1848590aee4ed330f7de28f39988599901a2a97c5b0d774a0c55a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 136,
+      "hasStructuralAnalysis": false
+    },
+    "templates/home-mobile.html": {
+      "filePath": "templates/home-mobile.html",
+      "contentHash": "4954ff08b42d79523ce95a1b45bbf2cea716c612d7f50c1b2c7c8b2f8bdb20df",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 229,
+      "hasStructuralAnalysis": false
+    },
+    "templates/kit.html": {
+      "filePath": "templates/kit.html",
+      "contentHash": "8f4cd45e608a3ecdf0e383221129f9f9bd72a0fc60574fa1cedffae649b7673b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 280,
+      "hasStructuralAnalysis": false
+    },
+    "templates/livescribe.html": {
+      "filePath": "templates/livescribe.html",
+      "contentHash": "1300a19e6812e6c1e7690f739524bb672f91ca2b52effa3e9bf845f9dc57a3d1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 213,
+      "hasStructuralAnalysis": false
+    },
+    "templates/onboarding.html": {
+      "filePath": "templates/onboarding.html",
+      "contentHash": "0cf9cbdaa005df6fb4c8db4587ecfe80f3ce3b035d49885e657806fdfeb6cd2f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 138,
+      "hasStructuralAnalysis": false
+    },
+    "templates/organize.html": {
+      "filePath": "templates/organize.html",
+      "contentHash": "9852a1375b1cbf105ee8f0f13e4db77b249f9afaf307c16b3eddce1f0d0bfe4c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 306,
+      "hasStructuralAnalysis": false
+    },
+    "templates/review.html": {
+      "filePath": "templates/review.html",
+      "contentHash": "cf3d7add2b94b20b4df44c557669215f058700bbd615d8fe254d6114f168ef15",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 182,
+      "hasStructuralAnalysis": false
+    },
+    "templates/settings.html": {
+      "filePath": "templates/settings.html",
+      "contentHash": "472f25c11794cbae8266b90420a9107236a8bbcb3a668c4cee7bbc4f1f2c308d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 94,
+      "hasStructuralAnalysis": false
+    },
+    "templates/states-extra.html": {
+      "filePath": "templates/states-extra.html",
+      "contentHash": "b55ab914cf030f0dfc578a840a7d948c756813b0c9c6bbcd2f2cbabb5d52270e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": false
+    },
+    "templates/support-inbox.html": {
+      "filePath": "templates/support-inbox.html",
+      "contentHash": "b89d9419c940da06c182872914da3181fca42e18117cd0b4d5dbde64b04e909a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 168,
+      "hasStructuralAnalysis": false
+    },
+    "templates/support-thread.html": {
+      "filePath": "templates/support-thread.html",
+      "contentHash": "9e33d713047b23294be3589dcd335eb430637c929ce21408a62d48779396e36b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": false
+    },
+    "templates/tracker.html": {
+      "filePath": "templates/tracker.html",
+      "contentHash": "d288d5a095fabba13b0f00514483f622fdd45dae7c5ec7a5ec5931a3ed28e33d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 271,
+      "hasStructuralAnalysis": false
+    },
+    "TreeContextMenu.jsx": {
+      "filePath": "TreeContextMenu.jsx",
+      "contentHash": "fba8523adad05dc95990f36033711cdbeac8204edfd063162ae8c1dadcfbd691",
+      "functions": [
+        {
+          "name": "activeTheme",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "clampToViewport",
+          "params": [
+            "x",
+            "y",
+            "w",
+            "h"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "PencilIcon",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "MoveIcon",
+          "params": [],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "FolderIcon",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "FolderPlusIcon",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "ArchiveIcon",
+          "params": [],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "MenuRow",
+          "params": [],
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "useTreeContextMenu",
+          "params": [],
+          "exported": true,
+          "lineCount": 257
+        },
+        {
+          "name": "renameNode",
+          "params": [
+            "authFetch",
+            "target",
+            "newName",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "archiveNode",
+          "params": [
+            "authFetch",
+            "target",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "moveNode",
+          "params": [
+            "authFetch",
+            "target",
+            "destProjectSlug",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "slugifyName",
+          "params": [
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "parentPathFor",
+          "params": [
+            "target",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "createNode",
+          "params": [
+            "authFetch",
+            "target",
+            "name",
+            "worldId"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "findMissionNode",
+          "params": [
+            "tree",
+            "fullSlug",
+            "leafSlug"
+          ],
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useCallback",
+            "useRef"
+          ]
+        },
+        {
+          "source": "react-dom",
+          "specifiers": [
+            "createPortal"
+          ]
+        }
+      ],
+      "exports": [
+        "useTreeContextMenu",
+        "renameNode",
+        "archiveNode",
+        "moveNode",
+        "slugifyName",
+        "parentPathFor",
+        "createNode",
+        "findMissionNode"
+      ],
+      "totalLines": 518,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

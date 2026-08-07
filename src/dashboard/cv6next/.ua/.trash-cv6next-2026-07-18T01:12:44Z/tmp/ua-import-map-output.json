@@ -1,0 +1,234 @@
+{
+  "scriptCompleted": true,
+  "stats": {
+    "filesScanned": 80,
+    "filesWithImports": 31,
+    "totalEdges": 113
+  },
+  "importMap": {
+    ".ua/.understandignore": [],
+    "ActivityDock.jsx": [
+      "data/agentTitles.js",
+      "data/useCommandTracker.js"
+    ],
+    "BlockRenderer.jsx": [
+      "ChatGoalThread.jsx"
+    ],
+    "Campaign.jsx": [
+      "data/useCampaign.js"
+    ],
+    "ChatDesktop.jsx": [
+      "ChatGoalThread.jsx",
+      "Cv6FullComposer.jsx",
+      "data/useHomeData.js",
+      "data/useRoomThread.js",
+      "MessageThread.jsx"
+    ],
+    "ChatGoalThread.jsx": [],
+    "ChatLifecycle.jsx": [
+      "BlockRenderer.jsx",
+      "ChatDesktop.jsx",
+      "ChatGoalThread.jsx",
+      "Cv6FullComposer.jsx",
+      "data/useDictation.js",
+      "MessageThread.jsx",
+      "ResultLinkCard.jsx"
+    ],
+    "CornerCV6.jsx": [
+      "ActivityDock.jsx",
+      "ChatDesktop.jsx",
+      "ChatGoalThread.jsx",
+      "ChatLifecycle.jsx",
+      "cv6.css",
+      "Cv6FullComposer.jsx",
+      "data/agentTitles.js",
+      "data/useCommandTracker.js",
+      "data/useDemoBlocks.js",
+      "data/useHomeData.js",
+      "data/useReview.js",
+      "data/useRoomThread.js",
+      "data/useSupportInbox.js",
+      "EmailShell.jsx",
+      "LiveScribe.jsx",
+      "MessageThread.jsx",
+      "NewComposer.jsx",
+      "Onboarding.jsx",
+      "Organize.jsx",
+      "providers/DataContext.jsx",
+      "Search.jsx",
+      "Settings.jsx",
+      "SharedNav.jsx",
+      "SupportDesktop.jsx",
+      "TreeContextMenu.jsx"
+    ],
+    "cv6.css": [],
+    "Cv6FullComposer.jsx": [
+      "Cv6InputBar.jsx"
+    ],
+    "Cv6InputBar.jsx": [],
+    "data/agentTitles.js": [],
+    "data/blockSchema.js": [],
+    "data/chat-list.json": [],
+    "data/chat.json": [],
+    "data/command.json": [],
+    "data/docxDocView.js": [],
+    "data/home-desktop.json": [],
+    "data/home-mobile.json": [],
+    "data/htmlDocView.js": [],
+    "data/kit.json": [],
+    "data/mediaFallback.js": [],
+    "data/pdfDocView.js": [],
+    "data/resultLinks.js": [],
+    "data/support-inbox.json": [],
+    "data/tracker.json": [],
+    "data/useCampaign.js": [],
+    "data/useCommandTracker.js": [
+      "data/agentTitles.js"
+    ],
+    "data/useDemoBlocks.js": [
+      "data/blockSchema.js"
+    ],
+    "data/useDictation.js": [],
+    "data/useHomeData.js": [
+      "data/agentTitles.js",
+      "providers/DataContext.jsx"
+    ],
+    "data/useLiveScribe.js": [],
+    "data/useOnboarding.js": [],
+    "data/useOrganize.js": [
+      "data/docxDocView.js",
+      "data/htmlDocView.js",
+      "data/mediaFallback.js",
+      "data/pdfDocView.js"
+    ],
+    "data/usePins.js": [],
+    "data/useReview.js": [
+      "data/agentTitles.js",
+      "data/docxDocView.js",
+      "data/htmlDocView.js",
+      "data/mediaFallback.js",
+      "data/pdfDocView.js"
+    ],
+    "data/useRoomThread.js": [
+      "data/agentTitles.js",
+      "data/resultLinks.js"
+    ],
+    "data/useSettings.js": [],
+    "data/useSupportInbox.js": [],
+    "EmailShell.jsx": [
+      "Campaign.jsx"
+    ],
+    "LiveScribe.jsx": [
+      "data/useLiveScribe.js"
+    ],
+    "MessageAttachments.jsx": [],
+    "MessageThread.jsx": [
+      "BlockRenderer.jsx",
+      "ChatGoalThread.jsx",
+      "MessageAttachments.jsx",
+      "ResultLinkCard.jsx"
+    ],
+    "NewComposer.jsx": [
+      "data/useHomeData.js"
+    ],
+    "Onboarding.jsx": [
+      "OnboardingDesktop.jsx",
+      "OnboardingMobile.jsx"
+    ],
+    "OnboardingDesktop.jsx": [
+      "data/useOnboarding.js"
+    ],
+    "OnboardingMobile.jsx": [
+      "data/useOnboarding.js"
+    ],
+    "Organize.jsx": [
+      "OrganizeDesktop.jsx",
+      "OrganizeMobile.jsx"
+    ],
+    "OrganizeDesktop.jsx": [
+      "data/docxDocView.js",
+      "data/htmlDocView.js",
+      "data/pdfDocView.js",
+      "data/useOrganize.js",
+      "data/usePins.js",
+      "data/useReview.js",
+      "NewComposer.jsx",
+      "ReviewChanges.jsx",
+      "ReviewPins.jsx",
+      "TreeContextMenu.jsx"
+    ],
+    "OrganizeMobile.jsx": [
+      "data/docxDocView.js",
+      "data/htmlDocView.js",
+      "data/pdfDocView.js",
+      "data/useOrganize.js",
+      "data/usePins.js",
+      "data/useReview.js",
+      "NewComposer.jsx",
+      "OrganizeDesktop.jsx",
+      "ReviewChanges.jsx",
+      "ReviewPins.jsx"
+    ],
+    "PinLayer.jsx": [],
+    "providers/DataContext.jsx": [
+      "data/useCommandTracker.js"
+    ],
+    "ResultLinkCard.jsx": [],
+    "Review.jsx": [
+      "data/docxDocView.js",
+      "data/htmlDocView.js",
+      "data/pdfDocView.js",
+      "data/usePins.js",
+      "data/useReview.js",
+      "ReviewChanges.jsx",
+      "ReviewPins.jsx"
+    ],
+    "ReviewChanges.jsx": [],
+    "ReviewDesktop.jsx": [
+      "data/docxDocView.js",
+      "data/htmlDocView.js",
+      "data/pdfDocView.js",
+      "data/usePins.js",
+      "data/useReview.js",
+      "ReviewChanges.jsx",
+      "ReviewPins.jsx",
+      "TreeContextMenu.jsx"
+    ],
+    "ReviewPins.jsx": [],
+    "Search.jsx": [
+      "data/useHomeData.js"
+    ],
+    "Settings.jsx": [
+      "SettingsDesktop.jsx",
+      "SettingsMobile.jsx"
+    ],
+    "SettingsDesktop.jsx": [
+      "data/useSettings.js"
+    ],
+    "SettingsMobile.jsx": [
+      "data/useSettings.js"
+    ],
+    "SharedNav.jsx": [],
+    "SupportDesktop.jsx": [
+      "data/useSupportInbox.js",
+      "SupportThread.jsx"
+    ],
+    "SupportThread.jsx": [],
+    "templates/chat-list.html": [],
+    "templates/chat.html": [],
+    "templates/command.html": [],
+    "templates/home-desktop.html": [],
+    "templates/home-mobile.html": [],
+    "templates/kit.html": [],
+    "templates/livescribe.html": [],
+    "templates/onboarding.html": [],
+    "templates/organize.html": [],
+    "templates/review.html": [],
+    "templates/settings.html": [],
+    "templates/states-extra.html": [],
+    "templates/support-inbox.html": [],
+    "templates/support-thread.html": [],
+    "templates/tracker.html": [],
+    "TreeContextMenu.jsx": []
+  }
+}

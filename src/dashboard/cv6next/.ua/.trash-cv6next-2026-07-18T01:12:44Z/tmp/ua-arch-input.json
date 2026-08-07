@@ -1,0 +1,2795 @@
+{
+ "fileNodes": [
+  {
+   "id": "file:ActivityDock.jsx",
+   "type": "file",
+   "name": "ActivityDock.jsx",
+   "filePath": "ActivityDock.jsx",
+   "summary": "Floating background-activity dock that mounts in the CornerCV6 shell and follows across every screen, showing live Claude agent sessions from /api/dashboard/active-agents with a sample fallback when idle.",
+   "tags": [
+    "component",
+    "activity-dock",
+    "live-data",
+    "overlay",
+    "agents"
+   ]
+  },
+  {
+   "id": "file:CornerCV6.jsx",
+   "type": "file",
+   "name": "CornerCV6.jsx",
+   "filePath": "CornerCV6.jsx",
+   "summary": "Root entry component for the CV6 dashboard surface that /dashboard now renders; mounts every screen (Home, Chat, Support, Command, Tracker, LiveScribe, Search) as a fill-in template fed real data, with a view-machine router and demo fixtures.",
+   "tags": [
+    "entry-point",
+    "root-component",
+    "router",
+    "dashboard",
+    "screen-composition"
+   ]
+  },
+  {
+   "id": "file:LiveScribe.jsx",
+   "type": "file",
+   "name": "LiveScribe.jsx",
+   "filePath": "LiveScribe.jsx",
+   "summary": "Live Scribe meeting-capture tool screen (the 8th nav tool), grafted from the design-system livescribe template and driven by the useLiveScribe hook for real 15s-chunk audio recording and Gemini transcription.",
+   "tags": [
+    "component",
+    "tool-screen",
+    "livescribe",
+    "audio",
+    "template-driven"
+   ]
+  },
+  {
+   "id": "file:NewComposer.jsx",
+   "type": "file",
+   "name": "NewComposer.jsx",
+   "filePath": "NewComposer.jsx",
+   "summary": "The single start-a-mission / new-project creation overlay for the whole surface, opened from every entry point (Home and Organize on both breakpoints) and hitting createMissionInProject / createProjectFromHome.",
+   "tags": [
+    "component",
+    "composer",
+    "overlay",
+    "mission-creation",
+    "factory"
+   ]
+  },
+  {
+   "id": "file:Search.jsx",
+   "type": "file",
+   "name": "Search.jsx",
+   "filePath": "Search.jsx",
+   "summary": "Global command-K search (mobile field + desktop palette) built in React because it is input-driven; filters Rooms and Missions client-side from the same hooks Home and Chat use and opens the selected room.",
+   "tags": [
+    "component",
+    "search",
+    "command-palette",
+    "client-filter"
+   ]
+  },
+  {
+   "id": "file:SharedNav.jsx",
+   "type": "file",
+   "name": "SharedNav.jsx",
+   "filePath": "SharedNav.jsx",
+   "summary": "The one canonical navigation, rendered as a desktop tool bar and a mobile drawer that both read the same ordered NAV_TOOLS list so icons, order, and active state never drift between screens.",
+   "tags": [
+    "component",
+    "navigation",
+    "shared-ui",
+    "responsive"
+   ]
+  },
+  {
+   "id": "file:SupportDesktop.jsx",
+   "type": "file",
+   "name": "SupportDesktop.jsx",
+   "filePath": "SupportDesktop.jsx",
+   "summary": "Desktop Support screen: an Open/Waiting inbox rail plus an email-review pane with AI summary, original email, suggested actions, and a reply composer, where every control is wired to a real backend (send-staged, reply, resolve, tracker, assign).",
+   "tags": [
+    "component",
+    "support-desk",
+    "inbox",
+    "email",
+    "api-handler"
+   ]
+  },
+  {
+   "id": "file:SupportThread.jsx",
+   "type": "file",
+   "name": "SupportThread.jsx",
+   "filePath": "SupportThread.jsx",
+   "summary": "Conversation card rendering the real Gmail chain behind one support ask from /api/support/thread \u2014 every inbound and outbound message in order, latest expanded and earlier ones collapsed, with a single-message fallback when no thread exists.",
+   "tags": [
+    "component",
+    "support-desk",
+    "thread",
+    "email",
+    "conversation"
+   ]
+  },
+  {
+   "id": "file:data/agentTitles.js",
+   "type": "file",
+   "name": "agentTitles.js",
+   "filePath": "data/agentTitles.js",
+   "summary": "Central agent-privacy map: exposes agents as role titles rather than persona names everywhere (roster, Catch Up feed, headers), via the AGENT_TITLES slug-to-title map and the ordered DASHBOARD_AGENTS set.",
+   "tags": [
+    "data-model",
+    "agents",
+    "privacy",
+    "title-mapping",
+    "utility"
+   ]
+  },
+  {
+   "id": "file:data/blockSchema.js",
+   "type": "file",
+   "name": "blockSchema.js",
+   "filePath": "data/blockSchema.js",
+   "summary": "Defines the CV6 chat message block schema: the BLOCK_TYPES catalog (step, success, snag, question, data, summary, code, choice, gallery, etc.) plus small factory helpers to build each block, layered additively on top of a message's plain text.",
+   "tags": [
+    "schema-definition",
+    "data-model",
+    "chat",
+    "blocks",
+    "factory"
+   ]
+  },
+  {
+   "id": "file:data/resultLinks.js",
+   "type": "file",
+   "name": "resultLinks.js",
+   "filePath": "data/resultLinks.js",
+   "summary": "Decides which links in an agent message deserve a tappable card, pulling from the structured completion payload first and then any http(s) URL in the agent's text so completed web work always lands as a card rather than a bare URL.",
+   "tags": [
+    "utility",
+    "links",
+    "chat",
+    "cards",
+    "parsing"
+   ]
+  },
+  {
+   "id": "file:data/useCommandTracker.js",
+   "type": "file",
+   "name": "useCommandTracker.js",
+   "filePath": "data/useCommandTracker.js",
+   "summary": "Provides the real data hooks behind the Command screen (live agent activity dock + 24h room ledger via useCommand) and the Tracker screen (the real CV6 bug list via useTrackerBugs), with no fabricated data.",
+   "tags": [
+    "hook",
+    "live-data",
+    "command",
+    "tracker",
+    "data-source"
+   ]
+  },
+  {
+   "id": "file:data/useDemoBlocks.js",
+   "type": "file",
+   "name": "useDemoBlocks.js",
+   "filePath": "data/useDemoBlocks.js",
+   "summary": "Demo block feed for exercising CV6 chat block rendering, assembling a clearly-labelled DEMO stream from the blockSchema factories, activated via ?demo=blocks so it can never be mistaken for real data.",
+   "tags": [
+    "hook",
+    "demo",
+    "fixture",
+    "chat",
+    "blocks"
+   ]
+  },
+  {
+   "id": "file:data/useHomeData.js",
+   "type": "file",
+   "name": "useHomeData.js",
+   "filePath": "data/useHomeData.js",
+   "summary": "Shapes the real Home-screen data (agents, projects, the needs-you Catch Up) from the shared useDataPipe context into the Home fill-in templates, and exposes chat-list, project-mission, and creation helpers used across the surface.",
+   "tags": [
+    "hook",
+    "data-source",
+    "home",
+    "wiring",
+    "factory"
+   ]
+  },
+  {
+   "id": "file:data/useLiveScribe.js",
+   "type": "file",
+   "name": "useLiveScribe.js",
+   "filePath": "data/useLiveScribe.js",
+   "summary": "Live Scribe capture hook that records audio in 15-second chunks, transcribes each via Gemini, extracts action items and decisions every third chunk, and saves the finished session to cm_state, reporting template-friendly state.",
+   "tags": [
+    "hook",
+    "audio",
+    "transcription",
+    "livescribe",
+    "live-data"
+   ]
+  },
+  {
+   "id": "file:data/useRoomThread.js",
+   "type": "file",
+   "name": "useRoomThread.js",
+   "filePath": "data/useRoomThread.js",
+   "summary": "Shapes one room's real conversation from /api/dashboard/supabase-messages into the agent-chat Turn contract (oldest to newest), and exposes goal-thread and room-plan hooks plus work-step-to-block injection for the chat surface.",
+   "tags": [
+    "hook",
+    "data-source",
+    "chat",
+    "thread",
+    "wiring"
+   ]
+  },
+  {
+   "id": "file:data/useSupportInbox.js",
+   "type": "file",
+   "name": "useSupportInbox.js",
+   "filePath": "data/useSupportInbox.js",
+   "summary": "Wires the real support flow into the { state, data } contract the support-inbox template expects, filtering out no-reply senders and reporting loading/empty/error honestly instead of faking rows.",
+   "tags": [
+    "hook",
+    "data-source",
+    "support-desk",
+    "inbox",
+    "wiring"
+   ]
+  },
+  {
+   "id": "file:providers/DataContext.jsx",
+   "type": "file",
+   "name": "DataContext.jsx",
+   "filePath": "providers/DataContext.jsx",
+   "summary": "Single shared data source for the whole dashboard: one DataProvider wraps useDataPipe at the top level and one CommandProvider wraps useCommand/useTrackerBugs, collapsing 6+ redundant polling loops and Supabase subscriptions into one and adding client-side caching.",
+   "tags": [
+    "provider",
+    "context",
+    "state-management",
+    "performance",
+    "singleton"
+   ]
+  },
+  {
+   "id": "file:Organize.jsx",
+   "type": "file",
+   "name": "Organize.jsx",
+   "filePath": "Organize.jsx",
+   "summary": "Viewport router for the CV6 Organize tool; mounts OrganizeDesktop or OrganizeMobile based on a max-width:899px media query and forwards nav/search/assign props.",
+   "tags": [
+    "component",
+    "entry-point",
+    "responsive",
+    "organize",
+    "router"
+   ]
+  },
+  {
+   "id": "file:OrganizeDesktop.jsx",
+   "type": "file",
+   "name": "OrganizeDesktop.jsx",
+   "filePath": "OrganizeDesktop.jsx",
+   "summary": "Desktop layout for the Organize tool that binds the useOrganize data hook to the wired template, wiring the file tree, doc/media viewers, pins, review-changes overlay, and tree context menu.",
+   "tags": [
+    "component",
+    "organize",
+    "file-tree",
+    "desktop",
+    "template-binding"
+   ]
+  },
+  {
+   "id": "file:OrganizeMobile.jsx",
+   "type": "file",
+   "name": "OrganizeMobile.jsx",
+   "filePath": "OrganizeMobile.jsx",
+   "summary": "Mobile layout for the Organize tool with picker/browse/view screens; composes each screen from the useOrganize data and reuses the desktop viewers, pins, and composer.",
+   "tags": [
+    "component",
+    "organize",
+    "mobile",
+    "screen-composition",
+    "template-binding"
+   ]
+  },
+  {
+   "id": "file:Review.jsx",
+   "type": "file",
+   "name": "Review.jsx",
+   "filePath": "Review.jsx",
+   "summary": "Mobile/compact Review tool screen that composes the deliverables review queue from the useReview hook and wires approve, request-changes, and pin-comment interactions.",
+   "tags": [
+    "component",
+    "review",
+    "mobile",
+    "deliverables",
+    "template-binding"
+   ]
+  },
+  {
+   "id": "file:ReviewChanges.jsx",
+   "type": "file",
+   "name": "ReviewChanges.jsx",
+   "filePath": "ReviewChanges.jsx",
+   "summary": "Overlay that compiles a reviewer's requested changes (comments and pins) into a single change list before it is sent back to the agent as a decision event.",
+   "tags": [
+    "component",
+    "review",
+    "overlay",
+    "request-changes",
+    "event-handler"
+   ]
+  },
+  {
+   "id": "file:ReviewDesktop.jsx",
+   "type": "file",
+   "name": "ReviewDesktop.jsx",
+   "filePath": "ReviewDesktop.jsx",
+   "summary": "Desktop layout for the Review tool that binds the useReview queue to the wired template and wires deliverable viewing, pin comments, request-changes overlay, and the tree context menu.",
+   "tags": [
+    "component",
+    "review",
+    "desktop",
+    "deliverables",
+    "template-binding"
+   ]
+  },
+  {
+   "id": "file:ReviewPins.jsx",
+   "type": "file",
+   "name": "ReviewPins.jsx",
+   "filePath": "ReviewPins.jsx",
+   "summary": "Pin-comment UI layer for the Review viewer; provides the useReviewPinUI hook and a PinPopover portal for placing point comments on docs, images, and video frames.",
+   "tags": [
+    "component",
+    "hook",
+    "review",
+    "pins",
+    "annotation"
+   ]
+  },
+  {
+   "id": "file:TreeContextMenu.jsx",
+   "type": "file",
+   "name": "TreeContextMenu.jsx",
+   "filePath": "TreeContextMenu.jsx",
+   "summary": "Right-click / long-press context menu shared by Home, Organize, and Review project/mission rows; exposes the useTreeContextMenu hook plus rename, move, archive, and create node actions against the dashboard API.",
+   "tags": [
+    "component",
+    "hook",
+    "context-menu",
+    "tree",
+    "api-handler"
+   ]
+  },
+  {
+   "id": "file:data/docxDocView.js",
+   "type": "file",
+   "name": "docxDocView.js",
+   "filePath": "data/docxDocView.js",
+   "summary": "Docx preview helper for Organize/Review viewers; renders a shell, sanitizes converted HTML, and provides the useDocxDocs hook that hydrates .docx nodes in the wrapper.",
+   "tags": [
+    "utility",
+    "hook",
+    "document-preview",
+    "docx",
+    "sanitization"
+   ]
+  },
+  {
+   "id": "file:data/htmlDocView.js",
+   "type": "file",
+   "name": "htmlDocView.js",
+   "filePath": "data/htmlDocView.js",
+   "summary": "HTML file preview helper that rewrites relative asset URLs and CSS references for safe in-viewer rendering and provides the useHtmlDocs hook to hydrate .html preview nodes.",
+   "tags": [
+    "utility",
+    "hook",
+    "document-preview",
+    "html",
+    "url-rewrite"
+   ]
+  },
+  {
+   "id": "file:data/mediaFallback.js",
+   "type": "file",
+   "name": "mediaFallback.js",
+   "filePath": "data/mediaFallback.js",
+   "summary": "Installs a single global media-error handler that swaps a failed video/audio/img element in place for a 'Couldn't load / Retry' card with a cache-busted retry, shared by Organize and Review previews.",
+   "tags": [
+    "utility",
+    "media",
+    "error-handler",
+    "fallback"
+   ]
+  },
+  {
+   "id": "file:data/pdfDocView.js",
+   "type": "file",
+   "name": "pdfDocView.js",
+   "filePath": "data/pdfDocView.js",
+   "summary": "PDF preview helper that renders a viewer shell and provides the usePdfDocs hook to hydrate and dispose PDF preview nodes in the Organize/Review wrappers.",
+   "tags": [
+    "utility",
+    "hook",
+    "document-preview",
+    "pdf",
+    "lifecycle"
+   ]
+  },
+  {
+   "id": "file:data/useOrganize.js",
+   "type": "file",
+   "name": "useOrganize.js",
+   "filePath": "data/useOrganize.js",
+   "summary": "Core Organize data hook that reads the project_files disk mirror metadata, lazily fetches and previews file content (markdown, images, PDFs, media), and shapes it to the wired Organize template contract.",
+   "tags": [
+    "hook",
+    "organize",
+    "data-model",
+    "file-preview",
+    "service"
+   ]
+  },
+  {
+   "id": "file:data/usePins.js",
+   "type": "file",
+   "name": "usePins.js",
+   "filePath": "data/usePins.js",
+   "summary": "Hook managing pin-comment state for the Review tool, persisting point comments (x/y fractions plus optional video time) to the review-comments API so they survive refresh and reach the agent's fix-list.",
+   "tags": [
+    "hook",
+    "review",
+    "pins",
+    "data-model",
+    "persistence"
+   ]
+  },
+  {
+   "id": "file:data/useReview.js",
+   "type": "file",
+   "name": "useReview.js",
+   "filePath": "data/useReview.js",
+   "summary": "Core Review data hook that loads the real deliverables queue from the review-queue API, builds each deliverable's rendered body, groups sequences, and wires approve / request-changes as real decision events.",
+   "tags": [
+    "hook",
+    "review",
+    "data-model",
+    "deliverables",
+    "service"
+   ]
+  },
+  {
+   "id": "file:BlockRenderer.jsx",
+   "type": "file",
+   "name": "BlockRenderer.jsx",
+   "filePath": "BlockRenderer.jsx",
+   "summary": "Structured-block rendering library for CV6 chat: a `Result` dispatcher plus one component per agent block type (email, summary, artifact, data table, code diff, gallery, question, confirm) and shared `ActionChips`.",
+   "tags": [
+    "component",
+    "renderer",
+    "chat-blocks",
+    "ui",
+    "cv6"
+   ]
+  },
+  {
+   "id": "file:ChatDesktop.jsx",
+   "type": "file",
+   "name": "ChatDesktop.jsx",
+   "filePath": "ChatDesktop.jsx",
+   "summary": "Desktop CV6 chat surface: three-pane layout with room/project navigation, a files shelf, and the message thread, backed by room-library aggregation and agent-control actions (handoff, pause, retask).",
+   "tags": [
+    "component",
+    "chat",
+    "desktop",
+    "entry-point",
+    "cv6"
+   ]
+  },
+  {
+   "id": "file:ChatGoalThread.jsx",
+   "type": "file",
+   "name": "ChatGoalThread.jsx",
+   "filePath": "ChatGoalThread.jsx",
+   "summary": "The Goal Thread rendering core: turns agent blocks and live steps into a structured work timeline (step rows, work-done cards, plan panel, proposals) and re-declares the block components plus the Send/Review contexts.",
+   "tags": [
+    "component",
+    "goal-thread",
+    "chat-blocks",
+    "cv6",
+    "renderer"
+   ]
+  },
+  {
+   "id": "file:ChatLifecycle.jsx",
+   "type": "file",
+   "name": "ChatLifecycle.jsx",
+   "filePath": "ChatLifecycle.jsx",
+   "summary": "Mobile/lifecycle chat orchestrator that assembles the full chat experience \u2014 day-grouped messages, goal turns, file galleries, dictation, room files sheet, and the composer \u2014 pulling renderers from the other CV6 chat modules.",
+   "tags": [
+    "component",
+    "chat",
+    "orchestrator",
+    "mobile",
+    "cv6"
+   ]
+  },
+  {
+   "id": "file:Cv6FullComposer.jsx",
+   "type": "file",
+   "name": "Cv6FullComposer.jsx",
+   "filePath": "Cv6FullComposer.jsx",
+   "summary": "The full CV6 message composer: a portal-mounted input experience with attachments, recording, voice mode, and slash commands, wrapped in an error-boundary class with read-only and mini fallbacks.",
+   "tags": [
+    "component",
+    "composer",
+    "input",
+    "cv6"
+   ]
+  },
+  {
+   "id": "file:Cv6InputBar.jsx",
+   "type": "file",
+   "name": "Cv6InputBar.jsx",
+   "filePath": "Cv6InputBar.jsx",
+   "summary": "The CV6 chat input bar: text field with slash-command autocomplete, image-tool and integrations pickers, paste-chip handling, and a commands menu.",
+   "tags": [
+    "component",
+    "input",
+    "composer",
+    "cv6"
+   ]
+  },
+  {
+   "id": "file:MessageAttachments.jsx",
+   "type": "file",
+   "name": "MessageAttachments.jsx",
+   "filePath": "MessageAttachments.jsx",
+   "summary": "Renders message attachments \u2014 single images, image galleries with a lightbox, and file collections with download/review actions \u2014 dispatched by attachment shape.",
+   "tags": [
+    "component",
+    "attachments",
+    "files",
+    "gallery"
+   ]
+  },
+  {
+   "id": "file:MessageThread.jsx",
+   "type": "file",
+   "name": "MessageThread.jsx",
+   "filePath": "MessageThread.jsx",
+   "summary": "Message thread renderer for CV6: groups messages by sender, renders desktop and mobile message turns, attaches goal-thread bodies, result blocks, attachments, and link cards per message.",
+   "tags": [
+    "component",
+    "chat",
+    "message-thread",
+    "renderer",
+    "cv6"
+   ]
+  },
+  {
+   "id": "file:ResultLinkCard.jsx",
+   "type": "file",
+   "name": "ResultLinkCard.jsx",
+   "filePath": "ResultLinkCard.jsx",
+   "summary": "Small component rendering a row of link preview cards (host + label) for URLs surfaced in an agent result.",
+   "tags": [
+    "component",
+    "link-card",
+    "ui",
+    "cv6"
+   ]
+  },
+  {
+   "id": "file:data/useDictation.js",
+   "type": "file",
+   "name": "useDictation.js",
+   "filePath": "data/useDictation.js",
+   "summary": "React hook wrapping the browser SpeechRecognition API to provide push-to-talk dictation, emitting transcribed text to a callback.",
+   "tags": [
+    "hook",
+    "dictation",
+    "speech-recognition",
+    "utility"
+   ]
+  },
+  {
+   "id": "file:Onboarding.jsx",
+   "type": "file",
+   "name": "Onboarding.jsx",
+   "filePath": "Onboarding.jsx",
+   "summary": "Responsive router for the CV6 first-run onboarding flow; mounts OnboardingDesktop or OnboardingMobile based on a viewport media query.",
+   "tags": [
+    "component",
+    "responsive",
+    "router",
+    "onboarding",
+    "entry-point"
+   ]
+  },
+  {
+   "id": "file:OnboardingDesktop.jsx",
+   "type": "file",
+   "name": "OnboardingDesktop.jsx",
+   "filePath": "OnboardingDesktop.jsx",
+   "summary": "Desktop onboarding screen that composes the wired HTML template with loading/error/empty states and binds real onboarding data plus step-progression actions via TemplateScreen.",
+   "tags": [
+    "component",
+    "onboarding",
+    "desktop",
+    "template-driven",
+    "ui"
+   ]
+  },
+  {
+   "id": "file:OnboardingMobile.jsx",
+   "type": "file",
+   "name": "OnboardingMobile.jsx",
+   "filePath": "OnboardingMobile.jsx",
+   "summary": "Mobile onboarding screen that mounts the full-width onboarding template with a step indicator and binds real data plus back/skip/next progression via TemplateScreen.",
+   "tags": [
+    "component",
+    "onboarding",
+    "mobile",
+    "template-driven",
+    "ui"
+   ]
+  },
+  {
+   "id": "file:data/useOnboarding.js",
+   "type": "file",
+   "name": "useOnboarding.js",
+   "filePath": "data/useOnboarding.js",
+   "summary": "React hook backing the guided first-run onboarding flow: tracks auth, step index, and theme, and shapes the step/connection/agent/theme view model consumed by the desktop and mobile screens.",
+   "tags": [
+    "hook",
+    "onboarding",
+    "data-model",
+    "state-management",
+    "service"
+   ]
+  },
+  {
+   "id": "file:Settings.jsx",
+   "type": "file",
+   "name": "Settings.jsx",
+   "filePath": "Settings.jsx",
+   "summary": "Responsive router for the CV6 Settings screen that renders the desktop or mobile variant based on a media-query breakpoint.",
+   "tags": [
+    "component",
+    "responsive",
+    "router",
+    "settings"
+   ]
+  },
+  {
+   "id": "file:SettingsDesktop.jsx",
+   "type": "file",
+   "name": "SettingsDesktop.jsx",
+   "filePath": "SettingsDesktop.jsx",
+   "summary": "Desktop variant of the CV6 Settings screen; composes the static HTML shell with live data from useSettings and wires nav, search, and theme controls.",
+   "tags": [
+    "component",
+    "settings",
+    "desktop",
+    "dom-composition"
+   ]
+  },
+  {
+   "id": "file:SettingsMobile.jsx",
+   "type": "file",
+   "name": "SettingsMobile.jsx",
+   "filePath": "SettingsMobile.jsx",
+   "summary": "Mobile variant of the CV6 Settings screen with a list/detail two-view flow; composes the static HTML shell with live data from useSettings.",
+   "tags": [
+    "component",
+    "settings",
+    "mobile",
+    "dom-composition"
+   ]
+  },
+  {
+   "id": "file:data/useSettings.js",
+   "type": "file",
+   "name": "useSettings.js",
+   "filePath": "data/useSettings.js",
+   "summary": "Data hook backing both Settings variants; loads the authenticated user, projects, and theme, and derives the settings view model consumed by the UI.",
+   "tags": [
+    "hook",
+    "data-model",
+    "service",
+    "state-management"
+   ]
+  },
+  {
+   "id": "file:Campaign.jsx",
+   "type": "file",
+   "name": "Campaign.jsx",
+   "filePath": "Campaign.jsx",
+   "summary": "Mission-control screen for the Email > Campaign cold-outreach tool: a today-first dashboard combining a health strip, goal progress, pipeline stages, per-city detail, an activity feed, and a multi-step campaign creation wizard.",
+   "tags": [
+    "component",
+    "dashboard",
+    "campaign",
+    "outreach",
+    "wizard"
+   ]
+  },
+  {
+   "id": "file:EmailShell.jsx",
+   "type": "file",
+   "name": "EmailShell.jsx",
+   "filePath": "EmailShell.jsx",
+   "summary": "Segmented-tab shell for the Email tool that flips between the existing Inbox (Support) surface and the Campaign mission-control tool, persisting the active tab per session in sessionStorage.",
+   "tags": [
+    "component",
+    "tab-shell",
+    "layout",
+    "email"
+   ]
+  },
+  {
+   "id": "file:data/useCampaign.js",
+   "type": "file",
+   "name": "useCampaign.js",
+   "filePath": "data/useCampaign.js",
+   "summary": "Data-fetching React hooks (authFetch + world param + interval polling) backing the Campaign tool: list, detail, health, contacts, city detail, activity feed, and a campaign-action mutator.",
+   "tags": [
+    "hook",
+    "data-fetching",
+    "polling",
+    "api-client",
+    "service"
+   ]
+  },
+  {
+   "id": "config:data/chat-list.json",
+   "type": "config",
+   "name": "chat-list.json",
+   "filePath": "data/chat-list.json",
+   "summary": "Data-binding contract for the mobile chat-list screen, declaring the live/needs-you counts, the agent row shape (id, name, initials, tint, status), actions, states, and modifier rules the wired template fills with real data.",
+   "tags": [
+    "configuration",
+    "ui-contract",
+    "chat",
+    "template-data",
+    "cv6"
+   ]
+  },
+  {
+   "id": "config:data/chat.json",
+   "type": "config",
+   "name": "chat.json",
+   "filePath": "data/chat.json",
+   "summary": "Data-binding contract for the Chat Goal Thread tool across desktop and mobile, composing message blocks from the agent-chat kit and defining the rooms/agents/goal vocabulary, actions, and states the thread renders.",
+   "tags": [
+    "configuration",
+    "ui-contract",
+    "chat",
+    "goal-thread",
+    "template-data"
+   ]
+  },
+  {
+   "id": "config:data/command.json",
+   "type": "config",
+   "name": "command.json",
+   "filePath": "data/command.json",
+   "summary": "Data-binding contract for the Command tool screen, describing the goal ledger, background-activity dock, and focused goal-detail regions plus their counts, actions, and states.",
+   "tags": [
+    "configuration",
+    "ui-contract",
+    "command",
+    "activity-dock",
+    "template-data"
+   ]
+  },
+  {
+   "id": "config:data/home-desktop.json",
+   "type": "config",
+   "name": "home-desktop.json",
+   "filePath": "data/home-desktop.json",
+   "summary": "Data-binding contract for the desktop Home screen, shaped to useHomeData: it declares the agents, projects, needs-you catch-up inbox, and conversation/goal column field shapes, actions, states, and responsive modifiers.",
+   "tags": [
+    "configuration",
+    "ui-contract",
+    "home",
+    "desktop",
+    "template-data"
+   ]
+  },
+  {
+   "id": "config:data/home-mobile.json",
+   "type": "config",
+   "name": "home-mobile.json",
+   "filePath": "data/home-mobile.json",
+   "summary": "Data-binding contract for the mobile Home screen, sharing the desktop Home rooms/agents/projects vocabulary and declaring the mobile-specific data shapes, actions, and states its wired template renders.",
+   "tags": [
+    "configuration",
+    "ui-contract",
+    "home",
+    "mobile",
+    "template-data"
+   ]
+  },
+  {
+   "id": "config:data/kit.json",
+   "type": "config",
+   "name": "kit.json",
+   "filePath": "data/kit.json",
+   "summary": "Element-kit contract for the shared agent-chat vocabulary, defining the reusable turn/message/block templates (avatar, status, stacked blocks, user reply bubble) cloned across Chat, Support, Command, and Live Scribe.",
+   "tags": [
+    "configuration",
+    "ui-kit",
+    "agent-chat",
+    "component-library",
+    "template-data"
+   ]
+  },
+  {
+   "id": "config:data/support-inbox.json",
+   "type": "config",
+   "name": "support-inbox.json",
+   "filePath": "data/support-inbox.json",
+   "summary": "Data-binding contract for the Support inbox tool, declaring the thread list, message shapes, tint enums, actions, states, and shared rules that useSupportInbox fills with the real support flow data.",
+   "tags": [
+    "configuration",
+    "ui-contract",
+    "support",
+    "inbox",
+    "template-data"
+   ]
+  },
+  {
+   "id": "config:data/tracker.json",
+   "type": "config",
+   "name": "tracker.json",
+   "filePath": "data/tracker.json",
+   "summary": "Data-binding contract for the Tracker tool (CV6 bug tracker), describing the desktop switcher/bug-table/detail regions and the mobile list, switch, and detail states with their bug row shapes and actions.",
+   "tags": [
+    "configuration",
+    "ui-contract",
+    "tracker",
+    "bug-tracker",
+    "template-data"
+   ]
+  },
+  {
+   "id": "document:templates/chat-list.html",
+   "type": "document",
+   "name": "chat-list.html",
+   "filePath": "templates/chat-list.html",
+   "summary": "Static design mockup for the mobile Chat list screen: an Agents section (avatar, live status dot, last-message snippet, needs-you count) and a Projects section (folder glyph, rollup status), with All/Agents/Projects/Needs-you filter chips; tapping a row opens the Goal Thread.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "chat",
+    "mobile",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/chat.html",
+   "type": "document",
+   "name": "chat.html",
+   "filePath": "templates/chat.html",
+   "summary": "Static design mockup for the Chat / Goal Thread tool in both desktop (rooms rail, conversation thread, agent control drawer) and mobile layouts; the thread's step blocks (done, snag+decision, working, upcoming) compose from the shared agent-chat kit.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "chat",
+    "goal-thread",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/command.html",
+   "type": "document",
+   "name": "command.html",
+   "filePath": "templates/command.html",
+   "summary": "Static design mockup for the Command tool: a goal ledger of every room's current goal, a background-activity dock aggregating running jobs, and a goal-detail panel that drives the master-loop (checklist, scheduled loops, master-loop watch); desktop + mobile.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "command",
+    "master-loop",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/home-desktop.html",
+   "type": "document",
+   "name": "home-desktop.html",
+   "filePath": "templates/home-desktop.html",
+   "summary": "Static design mockup for the desktop Home surface (now two columns): an All Rooms rail with the agents/recently-active/projects-and-missions tree, plus the selected room's Conversation column; anchors the shared room/agent/mission vocabulary reused across every CV6 screen.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "home",
+    "desktop",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/home-mobile.html",
+   "type": "document",
+   "name": "home-mobile.html",
+   "filePath": "templates/home-mobile.html",
+   "summary": "Static design mockup for the mobile Home surface across two navigation states: (A) Pick-up-where-you-left-off + All Rooms, and (B) a project opened to its general chat and mission list; shares the desktop Home room/mission data vocabulary.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "home",
+    "mobile",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/kit.html",
+   "type": "document",
+   "name": "kit.html",
+   "filePath": "templates/kit.html",
+   "summary": "Static design mockup and reference kit for the agent-chat element vocabulary, labeled once: turn anatomy (avatar + stacked typed blocks), communication blocks (success / question / snag), data outputs and more, meant to be wired once and reused across Chat, Support, Command, and Live Scribe.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "component-kit",
+    "agent-chat",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/livescribe.html",
+   "type": "document",
+   "name": "livescribe.html",
+   "filePath": "templates/livescribe.html",
+   "summary": "Static design mockup for the Live Scribe tool: a live-capture surface with recording timer, animated waveform, and a start/stop capture button plus transcript turns; desktop and mobile screens.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "livescribe",
+    "transcription",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/onboarding.html",
+   "type": "document",
+   "name": "onboarding.html",
+   "filePath": "templates/onboarding.html",
+   "summary": "Static design mockup for the guided first-run Onboarding flow through the Settings 'Environment' surface (connect sources \u2192 agents & permissions \u2192 theme \u2192 first goal \u2192 Home); desktop split layout plus mobile, with step content that swaps by current step.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "onboarding",
+    "setup",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/organize.html",
+   "type": "document",
+   "name": "organize.html",
+   "filePath": "templates/organize.html",
+   "summary": "Static design mockup for the Organize file tool: desktop project-tree \u2192 file-list \u2192 file-preview layout, and mobile browse+multi-select with a Move/Rename/Share/Delete action bar, a move-to-folder sheet, and a file view/review screen.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "organize",
+    "file-management",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/review.html",
+   "type": "document",
+   "name": "review.html",
+   "filePath": "templates/review.html",
+   "summary": "Static design mockup for the Review tool: a deliverable queue (project\u2192mission tree over the scoped deliverable list), a deliverable viewer with pin-comments, and an approve / request-changes decision panel; the viewer swaps by deliverable type (doc/photo/video/siteshot/sitelive), with the document viewer shown as canonical.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "review",
+    "approval",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/settings.html",
+   "type": "document",
+   "name": "settings.html",
+   "filePath": "templates/settings.html",
+   "summary": "Static design mockup for the Settings 'Environment' master surface: the connections list (email and other sources agents can act on), rooms & scope controls, and shared-room awareness messaging that governs which rooms and people can reach each connection.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "settings",
+    "configuration",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/states-extra.html",
+   "type": "document",
+   "name": "states-extra.html",
+   "filePath": "templates/states-extra.html",
+   "summary": "Static design mockup for the shared empty / loading / error state fragment reused by every CV6 tool; the same markup carries tool-specific copy through data-bind and is shown by swapping which data-state block renders, so tools never redraw these states themselves.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "shared-fragment",
+    "empty-states",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "document:templates/support-inbox.html",
+   "type": "document",
+   "name": "support-inbox.html",
+   "filePath": "templates/support-inbox.html",
+   "summary": "Static design mockup for the mobile Support inbox: a list of incoming emails/asks with avatar tints, status chips, and filter chips, delivered as the shippable device-content fragment (specimen framing and fake status bar stripped).",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "support",
+    "inbox",
+    "mobile"
+   ]
+  },
+  {
+   "id": "document:templates/support-thread.html",
+   "type": "document",
+   "name": "support-thread.html",
+   "filePath": "templates/support-thread.html",
+   "summary": "Static design mockup for the mobile Support email-thread view: the real original email (sender, body, time) bound from the tapped inbox item, an agent-summary card that shows real bullets or plainly states why not (pending/failed/needs-assign), expandable quoted history, and a reply-via-agent action held until the email becomes an ask.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "support",
+    "email-thread",
+    "mobile"
+   ]
+  },
+  {
+   "id": "document:templates/tracker.html",
+   "type": "document",
+   "name": "tracker.html",
+   "filePath": "templates/tracker.html",
+   "summary": "Static design mockup for the Tracker (bug) tool: desktop tracker switcher, bug table, and bug detail; mobile A) bug list with attachments and a live-agent strip, B) bug detail with assign-to-agent, and C) an agent-working-live view.",
+   "tags": [
+    "documentation",
+    "design-mockup",
+    "tracker",
+    "bug-tracking",
+    "ui-template"
+   ]
+  },
+  {
+   "id": "file:cv6.css",
+   "type": "file",
+   "name": "cv6.css",
+   "filePath": "cv6.css",
+   "summary": "The single-import CV6 stylesheet: design tokens (color scales, semantic surface/text/accent vars, radii, fonts), frame layout, and every screen-primitive class for the CV6 dashboard surface. Defines dark, light, and glass themes plus reduced-motion and per-screen variants, all scoped under [data-cv6].",
+   "tags": [
+    "design-system",
+    "design-tokens",
+    "theming",
+    "stylesheet",
+    "component-styles"
+   ]
+  },
+  {
+   "id": "file:PinLayer.jsx",
+   "type": "file",
+   "name": "PinLayer.jsx",
+   "filePath": "PinLayer.jsx",
+   "summary": "Interactive overlay layer for the CV6 viewer that lets users drop numbered comment pins by clicking empty space and re-open existing pins. Positioned absolutely over doc/image/video/website viewers via a crosshair-cursor wrapper.",
+   "tags": [
+    "component",
+    "overlay",
+    "event-handler",
+    "annotation",
+    "react-hook"
+   ]
+  }
+ ],
+ "importEdges": [
+  {
+   "source": "file:ActivityDock.jsx",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ActivityDock.jsx",
+   "target": "file:data/useCommandTracker.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:ActivityDock.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:ChatDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:ChatLifecycle.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:cv6.css",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Cv6FullComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useCommandTracker.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useDemoBlocks.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useHomeData.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useRoomThread.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useSupportInbox.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:EmailShell.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:LiveScribe.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:MessageThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:NewComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Onboarding.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Organize.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:providers/DataContext.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Search.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Settings.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:SharedNav.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:SupportDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:TreeContextMenu.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:LiveScribe.jsx",
+   "target": "file:data/useLiveScribe.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:NewComposer.jsx",
+   "target": "file:data/useHomeData.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Search.jsx",
+   "target": "file:data/useHomeData.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:SupportDesktop.jsx",
+   "target": "file:data/useSupportInbox.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:SupportDesktop.jsx",
+   "target": "file:SupportThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useCommandTracker.js",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useDemoBlocks.js",
+   "target": "file:data/blockSchema.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useHomeData.js",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useHomeData.js",
+   "target": "file:providers/DataContext.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useRoomThread.js",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useRoomThread.js",
+   "target": "file:data/resultLinks.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:providers/DataContext.jsx",
+   "target": "file:data/useCommandTracker.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Organize.jsx",
+   "target": "file:OrganizeDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Organize.jsx",
+   "target": "file:OrganizeMobile.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/useOrganize.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/usePins.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:NewComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:ReviewChanges.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:ReviewPins.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:TreeContextMenu.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/useOrganize.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/usePins.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:NewComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:OrganizeDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:ReviewChanges.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:ReviewPins.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/usePins.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:ReviewChanges.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:ReviewPins.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/usePins.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:ReviewChanges.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:ReviewPins.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:TreeContextMenu.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useOrganize.js",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useOrganize.js",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useOrganize.js",
+   "target": "file:data/mediaFallback.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useOrganize.js",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/mediaFallback.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:BlockRenderer.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:Cv6FullComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:data/useHomeData.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:data/useRoomThread.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:MessageThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:BlockRenderer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:ChatDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:Cv6FullComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:data/useDictation.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:MessageThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:ResultLinkCard.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Cv6FullComposer.jsx",
+   "target": "file:Cv6InputBar.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:MessageThread.jsx",
+   "target": "file:BlockRenderer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:MessageThread.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:MessageThread.jsx",
+   "target": "file:MessageAttachments.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:MessageThread.jsx",
+   "target": "file:ResultLinkCard.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Onboarding.jsx",
+   "target": "file:OnboardingDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Onboarding.jsx",
+   "target": "file:OnboardingMobile.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OnboardingDesktop.jsx",
+   "target": "file:data/useOnboarding.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OnboardingMobile.jsx",
+   "target": "file:data/useOnboarding.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Settings.jsx",
+   "target": "file:SettingsDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Settings.jsx",
+   "target": "file:SettingsMobile.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:SettingsDesktop.jsx",
+   "target": "file:data/useSettings.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:SettingsMobile.jsx",
+   "target": "file:data/useSettings.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:EmailShell.jsx",
+   "target": "file:Campaign.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Campaign.jsx",
+   "target": "file:data/useCampaign.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  }
+ ],
+ "allEdges": [
+  {
+   "source": "file:ActivityDock.jsx",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ActivityDock.jsx",
+   "target": "file:data/useCommandTracker.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:ActivityDock.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:ChatDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:ChatLifecycle.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:cv6.css",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Cv6FullComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useCommandTracker.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useDemoBlocks.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useHomeData.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useRoomThread.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:data/useSupportInbox.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:EmailShell.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:LiveScribe.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:MessageThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:NewComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Onboarding.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Organize.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:providers/DataContext.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Search.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:Settings.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:SharedNav.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:SupportDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:CornerCV6.jsx",
+   "target": "file:TreeContextMenu.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:LiveScribe.jsx",
+   "target": "file:data/useLiveScribe.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:NewComposer.jsx",
+   "target": "file:data/useHomeData.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Search.jsx",
+   "target": "file:data/useHomeData.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:SupportDesktop.jsx",
+   "target": "file:data/useSupportInbox.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:SupportDesktop.jsx",
+   "target": "file:SupportThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useCommandTracker.js",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useDemoBlocks.js",
+   "target": "file:data/blockSchema.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useHomeData.js",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useHomeData.js",
+   "target": "file:providers/DataContext.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useRoomThread.js",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useRoomThread.js",
+   "target": "file:data/resultLinks.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:providers/DataContext.jsx",
+   "target": "file:data/useCommandTracker.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Organize.jsx",
+   "target": "file:OrganizeDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Organize.jsx",
+   "target": "file:OrganizeMobile.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/useOrganize.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/usePins.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:NewComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:ReviewChanges.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:ReviewPins.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeDesktop.jsx",
+   "target": "file:TreeContextMenu.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/useOrganize.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/usePins.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:NewComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:OrganizeDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:ReviewChanges.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OrganizeMobile.jsx",
+   "target": "file:ReviewPins.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/usePins.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:ReviewChanges.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Review.jsx",
+   "target": "file:ReviewPins.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/usePins.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:data/useReview.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:ReviewChanges.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:ReviewPins.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ReviewDesktop.jsx",
+   "target": "file:TreeContextMenu.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useOrganize.js",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useOrganize.js",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useOrganize.js",
+   "target": "file:data/mediaFallback.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useOrganize.js",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/agentTitles.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/docxDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/htmlDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/mediaFallback.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:data/useReview.js",
+   "target": "file:data/pdfDocView.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:BlockRenderer.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:Cv6FullComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:data/useHomeData.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:data/useRoomThread.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatDesktop.jsx",
+   "target": "file:MessageThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:BlockRenderer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:ChatDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:Cv6FullComposer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:data/useDictation.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:MessageThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:ChatLifecycle.jsx",
+   "target": "file:ResultLinkCard.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Cv6FullComposer.jsx",
+   "target": "file:Cv6InputBar.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:MessageThread.jsx",
+   "target": "file:BlockRenderer.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:MessageThread.jsx",
+   "target": "file:ChatGoalThread.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:MessageThread.jsx",
+   "target": "file:MessageAttachments.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:MessageThread.jsx",
+   "target": "file:ResultLinkCard.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Onboarding.jsx",
+   "target": "file:OnboardingDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Onboarding.jsx",
+   "target": "file:OnboardingMobile.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OnboardingDesktop.jsx",
+   "target": "file:data/useOnboarding.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:OnboardingMobile.jsx",
+   "target": "file:data/useOnboarding.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Settings.jsx",
+   "target": "file:SettingsDesktop.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Settings.jsx",
+   "target": "file:SettingsMobile.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:SettingsDesktop.jsx",
+   "target": "file:data/useSettings.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:SettingsMobile.jsx",
+   "target": "file:data/useSettings.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:EmailShell.jsx",
+   "target": "file:Campaign.jsx",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "file:Campaign.jsx",
+   "target": "file:data/useCampaign.js",
+   "type": "imports",
+   "direction": "forward",
+   "weight": 0.7
+  },
+  {
+   "source": "config:data/command.json",
+   "target": "file:data/useCommandTracker.js",
+   "type": "related",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "config:data/tracker.json",
+   "target": "file:data/useCommandTracker.js",
+   "type": "related",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "config:data/home-desktop.json",
+   "target": "file:data/useHomeData.js",
+   "type": "related",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "config:data/home-mobile.json",
+   "target": "file:data/useHomeData.js",
+   "type": "related",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "config:data/support-inbox.json",
+   "target": "file:data/useSupportInbox.js",
+   "type": "related",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/chat.html",
+   "target": "file:ChatDesktop.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/chat.html",
+   "target": "file:ChatLifecycle.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/organize.html",
+   "target": "file:OrganizeDesktop.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/review.html",
+   "target": "file:ReviewDesktop.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/home-desktop.html",
+   "target": "file:CornerCV6.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/livescribe.html",
+   "target": "file:LiveScribe.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/onboarding.html",
+   "target": "file:OnboardingDesktop.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/settings.html",
+   "target": "file:SettingsDesktop.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/support-inbox.html",
+   "target": "file:SupportDesktop.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "document:templates/support-thread.html",
+   "target": "file:SupportThread.jsx",
+   "type": "documents",
+   "direction": "forward",
+   "weight": 0.5
+  },
+  {
+   "source": "file:cv6.css",
+   "target": "file:CornerCV6.jsx",
+   "type": "related",
+   "direction": "forward",
+   "weight": 0.5
+  }
+ ]
+}

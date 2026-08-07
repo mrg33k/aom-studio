@@ -1,0 +1,1013 @@
+{
+  "scriptCompleted": true,
+  "entryPointCandidates": [
+    {
+      "id": "file:CornerCV6.jsx",
+      "score": 6,
+      "name": "CornerCV6.jsx",
+      "type": "file",
+      "summary": "Root entry component for the CV6 dashboard surface that /dashboard now renders; mounts every screen (Home, Chat, Support, Command, Tracker, LiveScribe, Search) as a fill-in template fed real data, with a view-machine router and demo fixtures."
+    },
+    {
+      "id": "file:ChatDesktop.jsx",
+      "score": 5,
+      "name": "ChatDesktop.jsx",
+      "type": "file",
+      "summary": "Desktop CV6 chat surface: three-pane layout with room/project navigation, a files shelf, and the message thread, backed by room-library aggregation and agent-control actions (handoff, pause, retask)."
+    },
+    {
+      "id": "file:Organize.jsx",
+      "score": 4,
+      "name": "Organize.jsx",
+      "type": "file",
+      "summary": "Viewport router for the CV6 Organize tool; mounts OrganizeDesktop or OrganizeMobile based on a max-width:899px media query and forwards nav/search/assign props."
+    },
+    {
+      "id": "file:Onboarding.jsx",
+      "score": 4,
+      "name": "Onboarding.jsx",
+      "type": "file",
+      "summary": "Responsive router for the CV6 first-run onboarding flow; mounts OnboardingDesktop or OnboardingMobile based on a viewport media query."
+    },
+    {
+      "id": "file:ReviewDesktop.jsx",
+      "score": 3,
+      "name": "ReviewDesktop.jsx",
+      "type": "file",
+      "summary": "Desktop layout for the Review tool that binds the useReview queue to the wired template and wires deliverable viewing, pin comments, request-changes overlay, and the tree context menu."
+    }
+  ],
+  "fanInRanking": [
+    {
+      "id": "file:data/agentTitles.js",
+      "fanIn": 6,
+      "name": "agentTitles.js"
+    },
+    {
+      "id": "file:data/docxDocView.js",
+      "fanIn": 6,
+      "name": "docxDocView.js"
+    },
+    {
+      "id": "file:data/htmlDocView.js",
+      "fanIn": 6,
+      "name": "htmlDocView.js"
+    },
+    {
+      "id": "file:data/pdfDocView.js",
+      "fanIn": 6,
+      "name": "pdfDocView.js"
+    },
+    {
+      "id": "file:ChatGoalThread.jsx",
+      "fanIn": 5,
+      "name": "ChatGoalThread.jsx"
+    },
+    {
+      "id": "file:data/useReview.js",
+      "fanIn": 5,
+      "name": "useReview.js"
+    },
+    {
+      "id": "file:data/useHomeData.js",
+      "fanIn": 4,
+      "name": "useHomeData.js"
+    },
+    {
+      "id": "file:data/usePins.js",
+      "fanIn": 4,
+      "name": "usePins.js"
+    },
+    {
+      "id": "file:ReviewChanges.jsx",
+      "fanIn": 4,
+      "name": "ReviewChanges.jsx"
+    },
+    {
+      "id": "file:ReviewPins.jsx",
+      "fanIn": 4,
+      "name": "ReviewPins.jsx"
+    },
+    {
+      "id": "file:Cv6FullComposer.jsx",
+      "fanIn": 3,
+      "name": "Cv6FullComposer.jsx"
+    },
+    {
+      "id": "file:data/useCommandTracker.js",
+      "fanIn": 3,
+      "name": "useCommandTracker.js"
+    },
+    {
+      "id": "file:MessageThread.jsx",
+      "fanIn": 3,
+      "name": "MessageThread.jsx"
+    },
+    {
+      "id": "file:NewComposer.jsx",
+      "fanIn": 3,
+      "name": "NewComposer.jsx"
+    },
+    {
+      "id": "file:TreeContextMenu.jsx",
+      "fanIn": 3,
+      "name": "TreeContextMenu.jsx"
+    },
+    {
+      "id": "file:BlockRenderer.jsx",
+      "fanIn": 2,
+      "name": "BlockRenderer.jsx"
+    },
+    {
+      "id": "file:ChatDesktop.jsx",
+      "fanIn": 2,
+      "name": "ChatDesktop.jsx"
+    },
+    {
+      "id": "file:data/mediaFallback.js",
+      "fanIn": 2,
+      "name": "mediaFallback.js"
+    },
+    {
+      "id": "file:data/useOnboarding.js",
+      "fanIn": 2,
+      "name": "useOnboarding.js"
+    },
+    {
+      "id": "file:data/useOrganize.js",
+      "fanIn": 2,
+      "name": "useOrganize.js"
+    }
+  ],
+  "fanOutRanking": [
+    {
+      "id": "file:CornerCV6.jsx",
+      "fanOut": 25,
+      "name": "CornerCV6.jsx"
+    },
+    {
+      "id": "file:OrganizeDesktop.jsx",
+      "fanOut": 10,
+      "name": "OrganizeDesktop.jsx"
+    },
+    {
+      "id": "file:OrganizeMobile.jsx",
+      "fanOut": 10,
+      "name": "OrganizeMobile.jsx"
+    },
+    {
+      "id": "file:ReviewDesktop.jsx",
+      "fanOut": 8,
+      "name": "ReviewDesktop.jsx"
+    },
+    {
+      "id": "file:ChatLifecycle.jsx",
+      "fanOut": 7,
+      "name": "ChatLifecycle.jsx"
+    },
+    {
+      "id": "file:Review.jsx",
+      "fanOut": 7,
+      "name": "Review.jsx"
+    },
+    {
+      "id": "file:ChatDesktop.jsx",
+      "fanOut": 5,
+      "name": "ChatDesktop.jsx"
+    },
+    {
+      "id": "file:data/useReview.js",
+      "fanOut": 5,
+      "name": "useReview.js"
+    },
+    {
+      "id": "file:data/useOrganize.js",
+      "fanOut": 4,
+      "name": "useOrganize.js"
+    },
+    {
+      "id": "file:MessageThread.jsx",
+      "fanOut": 4,
+      "name": "MessageThread.jsx"
+    },
+    {
+      "id": "file:ActivityDock.jsx",
+      "fanOut": 2,
+      "name": "ActivityDock.jsx"
+    },
+    {
+      "id": "file:data/useHomeData.js",
+      "fanOut": 2,
+      "name": "useHomeData.js"
+    },
+    {
+      "id": "file:data/useRoomThread.js",
+      "fanOut": 2,
+      "name": "useRoomThread.js"
+    },
+    {
+      "id": "file:Onboarding.jsx",
+      "fanOut": 2,
+      "name": "Onboarding.jsx"
+    },
+    {
+      "id": "file:Organize.jsx",
+      "fanOut": 2,
+      "name": "Organize.jsx"
+    },
+    {
+      "id": "file:Settings.jsx",
+      "fanOut": 2,
+      "name": "Settings.jsx"
+    },
+    {
+      "id": "file:SupportDesktop.jsx",
+      "fanOut": 2,
+      "name": "SupportDesktop.jsx"
+    },
+    {
+      "id": "file:BlockRenderer.jsx",
+      "fanOut": 1,
+      "name": "BlockRenderer.jsx"
+    },
+    {
+      "id": "file:Campaign.jsx",
+      "fanOut": 1,
+      "name": "Campaign.jsx"
+    },
+    {
+      "id": "file:Cv6FullComposer.jsx",
+      "fanOut": 1,
+      "name": "Cv6FullComposer.jsx"
+    }
+  ],
+  "bfsTraversal": {
+    "startNode": "file:CornerCV6.jsx",
+    "order": [
+      "file:CornerCV6.jsx",
+      "file:ActivityDock.jsx",
+      "file:ChatDesktop.jsx",
+      "file:ChatGoalThread.jsx",
+      "file:ChatLifecycle.jsx",
+      "file:Cv6FullComposer.jsx",
+      "file:EmailShell.jsx",
+      "file:LiveScribe.jsx",
+      "file:MessageThread.jsx",
+      "file:NewComposer.jsx",
+      "file:Onboarding.jsx",
+      "file:Organize.jsx",
+      "file:Search.jsx",
+      "file:Settings.jsx",
+      "file:SharedNav.jsx",
+      "file:SupportDesktop.jsx",
+      "file:TreeContextMenu.jsx",
+      "file:cv6.css",
+      "file:data/agentTitles.js",
+      "file:data/useCommandTracker.js",
+      "file:data/useDemoBlocks.js",
+      "file:data/useHomeData.js",
+      "file:data/useReview.js",
+      "file:data/useRoomThread.js",
+      "file:data/useSupportInbox.js",
+      "file:providers/DataContext.jsx",
+      "file:BlockRenderer.jsx",
+      "file:ResultLinkCard.jsx",
+      "file:data/useDictation.js",
+      "file:Cv6InputBar.jsx",
+      "file:Campaign.jsx",
+      "file:data/useLiveScribe.js",
+      "file:MessageAttachments.jsx",
+      "file:OnboardingDesktop.jsx",
+      "file:OnboardingMobile.jsx",
+      "file:OrganizeDesktop.jsx",
+      "file:OrganizeMobile.jsx",
+      "file:SettingsDesktop.jsx",
+      "file:SettingsMobile.jsx",
+      "file:SupportThread.jsx",
+      "file:data/blockSchema.js",
+      "file:data/docxDocView.js",
+      "file:data/htmlDocView.js",
+      "file:data/mediaFallback.js",
+      "file:data/pdfDocView.js",
+      "file:data/resultLinks.js",
+      "file:data/useCampaign.js",
+      "file:data/useOnboarding.js",
+      "file:ReviewChanges.jsx",
+      "file:ReviewPins.jsx",
+      "file:data/useOrganize.js",
+      "file:data/usePins.js",
+      "file:data/useSettings.js"
+    ],
+    "depthMap": {
+      "file:CornerCV6.jsx": 0,
+      "file:ActivityDock.jsx": 1,
+      "file:ChatDesktop.jsx": 1,
+      "file:ChatGoalThread.jsx": 1,
+      "file:ChatLifecycle.jsx": 1,
+      "file:Cv6FullComposer.jsx": 1,
+      "file:EmailShell.jsx": 1,
+      "file:LiveScribe.jsx": 1,
+      "file:MessageThread.jsx": 1,
+      "file:NewComposer.jsx": 1,
+      "file:Onboarding.jsx": 1,
+      "file:Organize.jsx": 1,
+      "file:Search.jsx": 1,
+      "file:Settings.jsx": 1,
+      "file:SharedNav.jsx": 1,
+      "file:SupportDesktop.jsx": 1,
+      "file:TreeContextMenu.jsx": 1,
+      "file:cv6.css": 1,
+      "file:data/agentTitles.js": 1,
+      "file:data/useCommandTracker.js": 1,
+      "file:data/useDemoBlocks.js": 1,
+      "file:data/useHomeData.js": 1,
+      "file:data/useReview.js": 1,
+      "file:data/useRoomThread.js": 1,
+      "file:data/useSupportInbox.js": 1,
+      "file:providers/DataContext.jsx": 1,
+      "file:BlockRenderer.jsx": 2,
+      "file:ResultLinkCard.jsx": 2,
+      "file:data/useDictation.js": 2,
+      "file:Cv6InputBar.jsx": 2,
+      "file:Campaign.jsx": 2,
+      "file:data/useLiveScribe.js": 2,
+      "file:MessageAttachments.jsx": 2,
+      "file:OnboardingDesktop.jsx": 2,
+      "file:OnboardingMobile.jsx": 2,
+      "file:OrganizeDesktop.jsx": 2,
+      "file:OrganizeMobile.jsx": 2,
+      "file:SettingsDesktop.jsx": 2,
+      "file:SettingsMobile.jsx": 2,
+      "file:SupportThread.jsx": 2,
+      "file:data/blockSchema.js": 2,
+      "file:data/docxDocView.js": 2,
+      "file:data/htmlDocView.js": 2,
+      "file:data/mediaFallback.js": 2,
+      "file:data/pdfDocView.js": 2,
+      "file:data/resultLinks.js": 2,
+      "file:data/useCampaign.js": 3,
+      "file:data/useOnboarding.js": 3,
+      "file:ReviewChanges.jsx": 3,
+      "file:ReviewPins.jsx": 3,
+      "file:data/useOrganize.js": 3,
+      "file:data/usePins.js": 3,
+      "file:data/useSettings.js": 3
+    },
+    "byDepth": {
+      "0": [
+        "file:CornerCV6.jsx"
+      ],
+      "1": [
+        "file:ActivityDock.jsx",
+        "file:ChatDesktop.jsx",
+        "file:ChatGoalThread.jsx",
+        "file:ChatLifecycle.jsx",
+        "file:Cv6FullComposer.jsx",
+        "file:EmailShell.jsx",
+        "file:LiveScribe.jsx",
+        "file:MessageThread.jsx",
+        "file:NewComposer.jsx",
+        "file:Onboarding.jsx",
+        "file:Organize.jsx",
+        "file:Search.jsx",
+        "file:Settings.jsx",
+        "file:SharedNav.jsx",
+        "file:SupportDesktop.jsx",
+        "file:TreeContextMenu.jsx",
+        "file:cv6.css",
+        "file:data/agentTitles.js",
+        "file:data/useCommandTracker.js",
+        "file:data/useDemoBlocks.js",
+        "file:data/useHomeData.js",
+        "file:data/useReview.js",
+        "file:data/useRoomThread.js",
+        "file:data/useSupportInbox.js",
+        "file:providers/DataContext.jsx"
+      ],
+      "2": [
+        "file:BlockRenderer.jsx",
+        "file:ResultLinkCard.jsx",
+        "file:data/useDictation.js",
+        "file:Cv6InputBar.jsx",
+        "file:Campaign.jsx",
+        "file:data/useLiveScribe.js",
+        "file:MessageAttachments.jsx",
+        "file:OnboardingDesktop.jsx",
+        "file:OnboardingMobile.jsx",
+        "file:OrganizeDesktop.jsx",
+        "file:OrganizeMobile.jsx",
+        "file:SettingsDesktop.jsx",
+        "file:SettingsMobile.jsx",
+        "file:SupportThread.jsx",
+        "file:data/blockSchema.js",
+        "file:data/docxDocView.js",
+        "file:data/htmlDocView.js",
+        "file:data/mediaFallback.js",
+        "file:data/pdfDocView.js",
+        "file:data/resultLinks.js"
+      ],
+      "3": [
+        "file:data/useCampaign.js",
+        "file:data/useOnboarding.js",
+        "file:ReviewChanges.jsx",
+        "file:ReviewPins.jsx",
+        "file:data/useOrganize.js",
+        "file:data/usePins.js",
+        "file:data/useSettings.js"
+      ]
+    }
+  },
+  "nonCodeFiles": {
+    "documentation": [
+      {
+        "id": "document:templates/chat-list.html",
+        "name": "chat-list.html",
+        "type": "document",
+        "summary": "Static design mockup for the mobile Chat list screen: an Agents section (avatar, live status dot, last-message snippet, needs-you count) and a Projects section (folder glyph, rollup status), with All/Agents/Projects/Needs-you filter chips; tapping a row opens the Goal Thread."
+      },
+      {
+        "id": "document:templates/chat.html",
+        "name": "chat.html",
+        "type": "document",
+        "summary": "Static design mockup for the Chat / Goal Thread tool in both desktop (rooms rail, conversation thread, agent control drawer) and mobile layouts; the thread's step blocks (done, snag+decision, working, upcoming) compose from the shared agent-chat kit."
+      },
+      {
+        "id": "document:templates/command.html",
+        "name": "command.html",
+        "type": "document",
+        "summary": "Static design mockup for the Command tool: a goal ledger of every room's current goal, a background-activity dock aggregating running jobs, and a goal-detail panel that drives the master-loop (checklist, scheduled loops, master-loop watch); desktop + mobile."
+      },
+      {
+        "id": "document:templates/home-desktop.html",
+        "name": "home-desktop.html",
+        "type": "document",
+        "summary": "Static design mockup for the desktop Home surface (now two columns): an All Rooms rail with the agents/recently-active/projects-and-missions tree, plus the selected room's Conversation column; anchors the shared room/agent/mission vocabulary reused across every CV6 screen."
+      },
+      {
+        "id": "document:templates/home-mobile.html",
+        "name": "home-mobile.html",
+        "type": "document",
+        "summary": "Static design mockup for the mobile Home surface across two navigation states: (A) Pick-up-where-you-left-off + All Rooms, and (B) a project opened to its general chat and mission list; shares the desktop Home room/mission data vocabulary."
+      },
+      {
+        "id": "document:templates/kit.html",
+        "name": "kit.html",
+        "type": "document",
+        "summary": "Static design mockup and reference kit for the agent-chat element vocabulary, labeled once: turn anatomy (avatar + stacked typed blocks), communication blocks (success / question / snag), data outputs and more, meant to be wired once and reused across Chat, Support, Command, and Live Scribe."
+      },
+      {
+        "id": "document:templates/livescribe.html",
+        "name": "livescribe.html",
+        "type": "document",
+        "summary": "Static design mockup for the Live Scribe tool: a live-capture surface with recording timer, animated waveform, and a start/stop capture button plus transcript turns; desktop and mobile screens."
+      },
+      {
+        "id": "document:templates/onboarding.html",
+        "name": "onboarding.html",
+        "type": "document",
+        "summary": "Static design mockup for the guided first-run Onboarding flow through the Settings 'Environment' surface (connect sources → agents & permissions → theme → first goal → Home); desktop split layout plus mobile, with step content that swaps by current step."
+      },
+      {
+        "id": "document:templates/organize.html",
+        "name": "organize.html",
+        "type": "document",
+        "summary": "Static design mockup for the Organize file tool: desktop project-tree → file-list → file-preview layout, and mobile browse+multi-select with a Move/Rename/Share/Delete action bar, a move-to-folder sheet, and a file view/review screen."
+      },
+      {
+        "id": "document:templates/review.html",
+        "name": "review.html",
+        "type": "document",
+        "summary": "Static design mockup for the Review tool: a deliverable queue (project→mission tree over the scoped deliverable list), a deliverable viewer with pin-comments, and an approve / request-changes decision panel; the viewer swaps by deliverable type (doc/photo/video/siteshot/sitelive), with the document viewer shown as canonical."
+      },
+      {
+        "id": "document:templates/settings.html",
+        "name": "settings.html",
+        "type": "document",
+        "summary": "Static design mockup for the Settings 'Environment' master surface: the connections list (email and other sources agents can act on), rooms & scope controls, and shared-room awareness messaging that governs which rooms and people can reach each connection."
+      },
+      {
+        "id": "document:templates/states-extra.html",
+        "name": "states-extra.html",
+        "type": "document",
+        "summary": "Static design mockup for the shared empty / loading / error state fragment reused by every CV6 tool; the same markup carries tool-specific copy through data-bind and is shown by swapping which data-state block renders, so tools never redraw these states themselves."
+      },
+      {
+        "id": "document:templates/support-inbox.html",
+        "name": "support-inbox.html",
+        "type": "document",
+        "summary": "Static design mockup for the mobile Support inbox: a list of incoming emails/asks with avatar tints, status chips, and filter chips, delivered as the shippable device-content fragment (specimen framing and fake status bar stripped)."
+      },
+      {
+        "id": "document:templates/support-thread.html",
+        "name": "support-thread.html",
+        "type": "document",
+        "summary": "Static design mockup for the mobile Support email-thread view: the real original email (sender, body, time) bound from the tapped inbox item, an agent-summary card that shows real bullets or plainly states why not (pending/failed/needs-assign), expandable quoted history, and a reply-via-agent action held until the email becomes an ask."
+      },
+      {
+        "id": "document:templates/tracker.html",
+        "name": "tracker.html",
+        "type": "document",
+        "summary": "Static design mockup for the Tracker (bug) tool: desktop tracker switcher, bug table, and bug detail; mobile A) bug list with attachments and a live-agent strip, B) bug detail with assign-to-agent, and C) an agent-working-live view."
+      }
+    ],
+    "infrastructure": [],
+    "data": [],
+    "config": [
+      {
+        "id": "config:data/chat-list.json",
+        "name": "chat-list.json",
+        "type": "config",
+        "summary": "Data-binding contract for the mobile chat-list screen, declaring the live/needs-you counts, the agent row shape (id, name, initials, tint, status), actions, states, and modifier rules the wired template fills with real data."
+      },
+      {
+        "id": "config:data/chat.json",
+        "name": "chat.json",
+        "type": "config",
+        "summary": "Data-binding contract for the Chat Goal Thread tool across desktop and mobile, composing message blocks from the agent-chat kit and defining the rooms/agents/goal vocabulary, actions, and states the thread renders."
+      },
+      {
+        "id": "config:data/command.json",
+        "name": "command.json",
+        "type": "config",
+        "summary": "Data-binding contract for the Command tool screen, describing the goal ledger, background-activity dock, and focused goal-detail regions plus their counts, actions, and states."
+      },
+      {
+        "id": "config:data/home-desktop.json",
+        "name": "home-desktop.json",
+        "type": "config",
+        "summary": "Data-binding contract for the desktop Home screen, shaped to useHomeData: it declares the agents, projects, needs-you catch-up inbox, and conversation/goal column field shapes, actions, states, and responsive modifiers."
+      },
+      {
+        "id": "config:data/home-mobile.json",
+        "name": "home-mobile.json",
+        "type": "config",
+        "summary": "Data-binding contract for the mobile Home screen, sharing the desktop Home rooms/agents/projects vocabulary and declaring the mobile-specific data shapes, actions, and states its wired template renders."
+      },
+      {
+        "id": "config:data/kit.json",
+        "name": "kit.json",
+        "type": "config",
+        "summary": "Element-kit contract for the shared agent-chat vocabulary, defining the reusable turn/message/block templates (avatar, status, stacked blocks, user reply bubble) cloned across Chat, Support, Command, and Live Scribe."
+      },
+      {
+        "id": "config:data/support-inbox.json",
+        "name": "support-inbox.json",
+        "type": "config",
+        "summary": "Data-binding contract for the Support inbox tool, declaring the thread list, message shapes, tint enums, actions, states, and shared rules that useSupportInbox fills with the real support flow data."
+      },
+      {
+        "id": "config:data/tracker.json",
+        "name": "tracker.json",
+        "type": "config",
+        "summary": "Data-binding contract for the Tracker tool (CV6 bug tracker), describing the desktop switcher/bug-table/detail regions and the mobile list, switch, and detail states with their bug row shapes and actions."
+      }
+    ]
+  },
+  "clusters": [],
+  "layers": {
+    "count": 7,
+    "list": [
+      {
+        "id": "layer:root-navigation",
+        "name": "Root & Navigation",
+        "description": "The CV6 root view-machine (CornerCV6) that routes to every screen, the shared responsive nav rail, and the persistent live-agent activity dock mounted in the shell."
+      },
+      {
+        "id": "layer:screens",
+        "name": "Screen Views",
+        "description": "Responsive screen components — Onboarding, Organize, Review, Settings, Support, Campaign, LiveScribe, Search and their router/Desktop/Mobile triads plus review-pin and tree-context overlays."
+      },
+      {
+        "id": "layer:chat",
+        "name": "Chat & Messaging",
+        "description": "The chat feature cluster: desktop/mobile chat orchestrators, goal-thread and block renderers, message thread and attachment views, composers, and result-link cards."
+      },
+      {
+        "id": "layer:data-hooks",
+        "name": "Data Hooks & State",
+        "description": "The view-model wiring layer — use* React hooks, the shared DataContext provider, and document/media/link helper modules that feed real data and demo fixtures to the screens."
+      },
+      {
+        "id": "layer:seed-data",
+        "name": "Seed & Contract Data",
+        "description": "Static JSON UI-contract and seed files under data/ that define binding shapes and sample content for each screen (chat, home, command, tracker, support, kit)."
+      },
+      {
+        "id": "layer:design-templates",
+        "name": "Design Templates",
+        "description": "Static HTML design mockups under templates/ — one reference per screen — that document the intended visual design and are not runtime code."
+      },
+      {
+        "id": "layer:styling",
+        "name": "Styling & Design Tokens",
+        "description": "The cv6.css stylesheet holding the CV6 design-token system, theming variables, and shared component styles imported by the shell."
+      }
+    ]
+  },
+  "nodeSummaryIndex": {
+    "file:ActivityDock.jsx": {
+      "name": "ActivityDock.jsx",
+      "type": "file",
+      "summary": "Floating background-activity dock that mounts in the CornerCV6 shell and follows across every screen, showing live Claude agent sessions from /api/dashboard/active-agents with a sample fallback when idle."
+    },
+    "file:CornerCV6.jsx": {
+      "name": "CornerCV6.jsx",
+      "type": "file",
+      "summary": "Root entry component for the CV6 dashboard surface that /dashboard now renders; mounts every screen (Home, Chat, Support, Command, Tracker, LiveScribe, Search) as a fill-in template fed real data, with a view-machine router and demo fixtures."
+    },
+    "file:LiveScribe.jsx": {
+      "name": "LiveScribe.jsx",
+      "type": "file",
+      "summary": "Live Scribe meeting-capture tool screen (the 8th nav tool), grafted from the design-system livescribe template and driven by the useLiveScribe hook for real 15s-chunk audio recording and Gemini transcription."
+    },
+    "file:NewComposer.jsx": {
+      "name": "NewComposer.jsx",
+      "type": "file",
+      "summary": "The single start-a-mission / new-project creation overlay for the whole surface, opened from every entry point (Home and Organize on both breakpoints) and hitting createMissionInProject / createProjectFromHome."
+    },
+    "file:Search.jsx": {
+      "name": "Search.jsx",
+      "type": "file",
+      "summary": "Global command-K search (mobile field + desktop palette) built in React because it is input-driven; filters Rooms and Missions client-side from the same hooks Home and Chat use and opens the selected room."
+    },
+    "file:SharedNav.jsx": {
+      "name": "SharedNav.jsx",
+      "type": "file",
+      "summary": "The one canonical navigation, rendered as a desktop tool bar and a mobile drawer that both read the same ordered NAV_TOOLS list so icons, order, and active state never drift between screens."
+    },
+    "file:SupportDesktop.jsx": {
+      "name": "SupportDesktop.jsx",
+      "type": "file",
+      "summary": "Desktop Support screen: an Open/Waiting inbox rail plus an email-review pane with AI summary, original email, suggested actions, and a reply composer, where every control is wired to a real backend (send-staged, reply, resolve, tracker, assign)."
+    },
+    "file:SupportThread.jsx": {
+      "name": "SupportThread.jsx",
+      "type": "file",
+      "summary": "Conversation card rendering the real Gmail chain behind one support ask from /api/support/thread — every inbound and outbound message in order, latest expanded and earlier ones collapsed, with a single-message fallback when no thread exists."
+    },
+    "file:data/agentTitles.js": {
+      "name": "agentTitles.js",
+      "type": "file",
+      "summary": "Central agent-privacy map: exposes agents as role titles rather than persona names everywhere (roster, Catch Up feed, headers), via the AGENT_TITLES slug-to-title map and the ordered DASHBOARD_AGENTS set."
+    },
+    "file:data/blockSchema.js": {
+      "name": "blockSchema.js",
+      "type": "file",
+      "summary": "Defines the CV6 chat message block schema: the BLOCK_TYPES catalog (step, success, snag, question, data, summary, code, choice, gallery, etc.) plus small factory helpers to build each block, layered additively on top of a message's plain text."
+    },
+    "file:data/resultLinks.js": {
+      "name": "resultLinks.js",
+      "type": "file",
+      "summary": "Decides which links in an agent message deserve a tappable card, pulling from the structured completion payload first and then any http(s) URL in the agent's text so completed web work always lands as a card rather than a bare URL."
+    },
+    "file:data/useCommandTracker.js": {
+      "name": "useCommandTracker.js",
+      "type": "file",
+      "summary": "Provides the real data hooks behind the Command screen (live agent activity dock + 24h room ledger via useCommand) and the Tracker screen (the real CV6 bug list via useTrackerBugs), with no fabricated data."
+    },
+    "file:data/useDemoBlocks.js": {
+      "name": "useDemoBlocks.js",
+      "type": "file",
+      "summary": "Demo block feed for exercising CV6 chat block rendering, assembling a clearly-labelled DEMO stream from the blockSchema factories, activated via ?demo=blocks so it can never be mistaken for real data."
+    },
+    "file:data/useHomeData.js": {
+      "name": "useHomeData.js",
+      "type": "file",
+      "summary": "Shapes the real Home-screen data (agents, projects, the needs-you Catch Up) from the shared useDataPipe context into the Home fill-in templates, and exposes chat-list, project-mission, and creation helpers used across the surface."
+    },
+    "file:data/useLiveScribe.js": {
+      "name": "useLiveScribe.js",
+      "type": "file",
+      "summary": "Live Scribe capture hook that records audio in 15-second chunks, transcribes each via Gemini, extracts action items and decisions every third chunk, and saves the finished session to cm_state, reporting template-friendly state."
+    },
+    "file:data/useRoomThread.js": {
+      "name": "useRoomThread.js",
+      "type": "file",
+      "summary": "Shapes one room's real conversation from /api/dashboard/supabase-messages into the agent-chat Turn contract (oldest to newest), and exposes goal-thread and room-plan hooks plus work-step-to-block injection for the chat surface."
+    },
+    "file:data/useSupportInbox.js": {
+      "name": "useSupportInbox.js",
+      "type": "file",
+      "summary": "Wires the real support flow into the { state, data } contract the support-inbox template expects, filtering out no-reply senders and reporting loading/empty/error honestly instead of faking rows."
+    },
+    "file:providers/DataContext.jsx": {
+      "name": "DataContext.jsx",
+      "type": "file",
+      "summary": "Single shared data source for the whole dashboard: one DataProvider wraps useDataPipe at the top level and one CommandProvider wraps useCommand/useTrackerBugs, collapsing 6+ redundant polling loops and Supabase subscriptions into one and adding client-side caching."
+    },
+    "file:Organize.jsx": {
+      "name": "Organize.jsx",
+      "type": "file",
+      "summary": "Viewport router for the CV6 Organize tool; mounts OrganizeDesktop or OrganizeMobile based on a max-width:899px media query and forwards nav/search/assign props."
+    },
+    "file:OrganizeDesktop.jsx": {
+      "name": "OrganizeDesktop.jsx",
+      "type": "file",
+      "summary": "Desktop layout for the Organize tool that binds the useOrganize data hook to the wired template, wiring the file tree, doc/media viewers, pins, review-changes overlay, and tree context menu."
+    },
+    "file:OrganizeMobile.jsx": {
+      "name": "OrganizeMobile.jsx",
+      "type": "file",
+      "summary": "Mobile layout for the Organize tool with picker/browse/view screens; composes each screen from the useOrganize data and reuses the desktop viewers, pins, and composer."
+    },
+    "file:Review.jsx": {
+      "name": "Review.jsx",
+      "type": "file",
+      "summary": "Mobile/compact Review tool screen that composes the deliverables review queue from the useReview hook and wires approve, request-changes, and pin-comment interactions."
+    },
+    "file:ReviewChanges.jsx": {
+      "name": "ReviewChanges.jsx",
+      "type": "file",
+      "summary": "Overlay that compiles a reviewer's requested changes (comments and pins) into a single change list before it is sent back to the agent as a decision event."
+    },
+    "file:ReviewDesktop.jsx": {
+      "name": "ReviewDesktop.jsx",
+      "type": "file",
+      "summary": "Desktop layout for the Review tool that binds the useReview queue to the wired template and wires deliverable viewing, pin comments, request-changes overlay, and the tree context menu."
+    },
+    "file:ReviewPins.jsx": {
+      "name": "ReviewPins.jsx",
+      "type": "file",
+      "summary": "Pin-comment UI layer for the Review viewer; provides the useReviewPinUI hook and a PinPopover portal for placing point comments on docs, images, and video frames."
+    },
+    "file:TreeContextMenu.jsx": {
+      "name": "TreeContextMenu.jsx",
+      "type": "file",
+      "summary": "Right-click / long-press context menu shared by Home, Organize, and Review project/mission rows; exposes the useTreeContextMenu hook plus rename, move, archive, and create node actions against the dashboard API."
+    },
+    "file:data/docxDocView.js": {
+      "name": "docxDocView.js",
+      "type": "file",
+      "summary": "Docx preview helper for Organize/Review viewers; renders a shell, sanitizes converted HTML, and provides the useDocxDocs hook that hydrates .docx nodes in the wrapper."
+    },
+    "file:data/htmlDocView.js": {
+      "name": "htmlDocView.js",
+      "type": "file",
+      "summary": "HTML file preview helper that rewrites relative asset URLs and CSS references for safe in-viewer rendering and provides the useHtmlDocs hook to hydrate .html preview nodes."
+    },
+    "file:data/mediaFallback.js": {
+      "name": "mediaFallback.js",
+      "type": "file",
+      "summary": "Installs a single global media-error handler that swaps a failed video/audio/img element in place for a 'Couldn't load / Retry' card with a cache-busted retry, shared by Organize and Review previews."
+    },
+    "file:data/pdfDocView.js": {
+      "name": "pdfDocView.js",
+      "type": "file",
+      "summary": "PDF preview helper that renders a viewer shell and provides the usePdfDocs hook to hydrate and dispose PDF preview nodes in the Organize/Review wrappers."
+    },
+    "file:data/useOrganize.js": {
+      "name": "useOrganize.js",
+      "type": "file",
+      "summary": "Core Organize data hook that reads the project_files disk mirror metadata, lazily fetches and previews file content (markdown, images, PDFs, media), and shapes it to the wired Organize template contract."
+    },
+    "file:data/usePins.js": {
+      "name": "usePins.js",
+      "type": "file",
+      "summary": "Hook managing pin-comment state for the Review tool, persisting point comments (x/y fractions plus optional video time) to the review-comments API so they survive refresh and reach the agent's fix-list."
+    },
+    "file:data/useReview.js": {
+      "name": "useReview.js",
+      "type": "file",
+      "summary": "Core Review data hook that loads the real deliverables queue from the review-queue API, builds each deliverable's rendered body, groups sequences, and wires approve / request-changes as real decision events."
+    },
+    "file:BlockRenderer.jsx": {
+      "name": "BlockRenderer.jsx",
+      "type": "file",
+      "summary": "Structured-block rendering library for CV6 chat: a `Result` dispatcher plus one component per agent block type (email, summary, artifact, data table, code diff, gallery, question, confirm) and shared `ActionChips`."
+    },
+    "file:ChatDesktop.jsx": {
+      "name": "ChatDesktop.jsx",
+      "type": "file",
+      "summary": "Desktop CV6 chat surface: three-pane layout with room/project navigation, a files shelf, and the message thread, backed by room-library aggregation and agent-control actions (handoff, pause, retask)."
+    },
+    "file:ChatGoalThread.jsx": {
+      "name": "ChatGoalThread.jsx",
+      "type": "file",
+      "summary": "The Goal Thread rendering core: turns agent blocks and live steps into a structured work timeline (step rows, work-done cards, plan panel, proposals) and re-declares the block components plus the Send/Review contexts."
+    },
+    "file:ChatLifecycle.jsx": {
+      "name": "ChatLifecycle.jsx",
+      "type": "file",
+      "summary": "Mobile/lifecycle chat orchestrator that assembles the full chat experience — day-grouped messages, goal turns, file galleries, dictation, room files sheet, and the composer — pulling renderers from the other CV6 chat modules."
+    },
+    "file:Cv6FullComposer.jsx": {
+      "name": "Cv6FullComposer.jsx",
+      "type": "file",
+      "summary": "The full CV6 message composer: a portal-mounted input experience with attachments, recording, voice mode, and slash commands, wrapped in an error-boundary class with read-only and mini fallbacks."
+    },
+    "file:Cv6InputBar.jsx": {
+      "name": "Cv6InputBar.jsx",
+      "type": "file",
+      "summary": "The CV6 chat input bar: text field with slash-command autocomplete, image-tool and integrations pickers, paste-chip handling, and a commands menu."
+    },
+    "file:MessageAttachments.jsx": {
+      "name": "MessageAttachments.jsx",
+      "type": "file",
+      "summary": "Renders message attachments — single images, image galleries with a lightbox, and file collections with download/review actions — dispatched by attachment shape."
+    },
+    "file:MessageThread.jsx": {
+      "name": "MessageThread.jsx",
+      "type": "file",
+      "summary": "Message thread renderer for CV6: groups messages by sender, renders desktop and mobile message turns, attaches goal-thread bodies, result blocks, attachments, and link cards per message."
+    },
+    "file:ResultLinkCard.jsx": {
+      "name": "ResultLinkCard.jsx",
+      "type": "file",
+      "summary": "Small component rendering a row of link preview cards (host + label) for URLs surfaced in an agent result."
+    },
+    "file:data/useDictation.js": {
+      "name": "useDictation.js",
+      "type": "file",
+      "summary": "React hook wrapping the browser SpeechRecognition API to provide push-to-talk dictation, emitting transcribed text to a callback."
+    },
+    "file:Onboarding.jsx": {
+      "name": "Onboarding.jsx",
+      "type": "file",
+      "summary": "Responsive router for the CV6 first-run onboarding flow; mounts OnboardingDesktop or OnboardingMobile based on a viewport media query."
+    },
+    "file:OnboardingDesktop.jsx": {
+      "name": "OnboardingDesktop.jsx",
+      "type": "file",
+      "summary": "Desktop onboarding screen that composes the wired HTML template with loading/error/empty states and binds real onboarding data plus step-progression actions via TemplateScreen."
+    },
+    "file:OnboardingMobile.jsx": {
+      "name": "OnboardingMobile.jsx",
+      "type": "file",
+      "summary": "Mobile onboarding screen that mounts the full-width onboarding template with a step indicator and binds real data plus back/skip/next progression via TemplateScreen."
+    },
+    "file:data/useOnboarding.js": {
+      "name": "useOnboarding.js",
+      "type": "file",
+      "summary": "React hook backing the guided first-run onboarding flow: tracks auth, step index, and theme, and shapes the step/connection/agent/theme view model consumed by the desktop and mobile screens."
+    },
+    "file:Settings.jsx": {
+      "name": "Settings.jsx",
+      "type": "file",
+      "summary": "Responsive router for the CV6 Settings screen that renders the desktop or mobile variant based on a media-query breakpoint."
+    },
+    "file:SettingsDesktop.jsx": {
+      "name": "SettingsDesktop.jsx",
+      "type": "file",
+      "summary": "Desktop variant of the CV6 Settings screen; composes the static HTML shell with live data from useSettings and wires nav, search, and theme controls."
+    },
+    "file:SettingsMobile.jsx": {
+      "name": "SettingsMobile.jsx",
+      "type": "file",
+      "summary": "Mobile variant of the CV6 Settings screen with a list/detail two-view flow; composes the static HTML shell with live data from useSettings."
+    },
+    "file:data/useSettings.js": {
+      "name": "useSettings.js",
+      "type": "file",
+      "summary": "Data hook backing both Settings variants; loads the authenticated user, projects, and theme, and derives the settings view model consumed by the UI."
+    },
+    "file:Campaign.jsx": {
+      "name": "Campaign.jsx",
+      "type": "file",
+      "summary": "Mission-control screen for the Email > Campaign cold-outreach tool: a today-first dashboard combining a health strip, goal progress, pipeline stages, per-city detail, an activity feed, and a multi-step campaign creation wizard."
+    },
+    "file:EmailShell.jsx": {
+      "name": "EmailShell.jsx",
+      "type": "file",
+      "summary": "Segmented-tab shell for the Email tool that flips between the existing Inbox (Support) surface and the Campaign mission-control tool, persisting the active tab per session in sessionStorage."
+    },
+    "file:data/useCampaign.js": {
+      "name": "useCampaign.js",
+      "type": "file",
+      "summary": "Data-fetching React hooks (authFetch + world param + interval polling) backing the Campaign tool: list, detail, health, contacts, city detail, activity feed, and a campaign-action mutator."
+    },
+    "config:data/chat-list.json": {
+      "name": "chat-list.json",
+      "type": "config",
+      "summary": "Data-binding contract for the mobile chat-list screen, declaring the live/needs-you counts, the agent row shape (id, name, initials, tint, status), actions, states, and modifier rules the wired template fills with real data."
+    },
+    "config:data/chat.json": {
+      "name": "chat.json",
+      "type": "config",
+      "summary": "Data-binding contract for the Chat Goal Thread tool across desktop and mobile, composing message blocks from the agent-chat kit and defining the rooms/agents/goal vocabulary, actions, and states the thread renders."
+    },
+    "config:data/command.json": {
+      "name": "command.json",
+      "type": "config",
+      "summary": "Data-binding contract for the Command tool screen, describing the goal ledger, background-activity dock, and focused goal-detail regions plus their counts, actions, and states."
+    },
+    "config:data/home-desktop.json": {
+      "name": "home-desktop.json",
+      "type": "config",
+      "summary": "Data-binding contract for the desktop Home screen, shaped to useHomeData: it declares the agents, projects, needs-you catch-up inbox, and conversation/goal column field shapes, actions, states, and responsive modifiers."
+    },
+    "config:data/home-mobile.json": {
+      "name": "home-mobile.json",
+      "type": "config",
+      "summary": "Data-binding contract for the mobile Home screen, sharing the desktop Home rooms/agents/projects vocabulary and declaring the mobile-specific data shapes, actions, and states its wired template renders."
+    },
+    "config:data/kit.json": {
+      "name": "kit.json",
+      "type": "config",
+      "summary": "Element-kit contract for the shared agent-chat vocabulary, defining the reusable turn/message/block templates (avatar, status, stacked blocks, user reply bubble) cloned across Chat, Support, Command, and Live Scribe."
+    },
+    "config:data/support-inbox.json": {
+      "name": "support-inbox.json",
+      "type": "config",
+      "summary": "Data-binding contract for the Support inbox tool, declaring the thread list, message shapes, tint enums, actions, states, and shared rules that useSupportInbox fills with the real support flow data."
+    },
+    "config:data/tracker.json": {
+      "name": "tracker.json",
+      "type": "config",
+      "summary": "Data-binding contract for the Tracker tool (CV6 bug tracker), describing the desktop switcher/bug-table/detail regions and the mobile list, switch, and detail states with their bug row shapes and actions."
+    },
+    "document:templates/chat-list.html": {
+      "name": "chat-list.html",
+      "type": "document",
+      "summary": "Static design mockup for the mobile Chat list screen: an Agents section (avatar, live status dot, last-message snippet, needs-you count) and a Projects section (folder glyph, rollup status), with All/Agents/Projects/Needs-you filter chips; tapping a row opens the Goal Thread."
+    },
+    "document:templates/chat.html": {
+      "name": "chat.html",
+      "type": "document",
+      "summary": "Static design mockup for the Chat / Goal Thread tool in both desktop (rooms rail, conversation thread, agent control drawer) and mobile layouts; the thread's step blocks (done, snag+decision, working, upcoming) compose from the shared agent-chat kit."
+    },
+    "document:templates/command.html": {
+      "name": "command.html",
+      "type": "document",
+      "summary": "Static design mockup for the Command tool: a goal ledger of every room's current goal, a background-activity dock aggregating running jobs, and a goal-detail panel that drives the master-loop (checklist, scheduled loops, master-loop watch); desktop + mobile."
+    },
+    "document:templates/home-desktop.html": {
+      "name": "home-desktop.html",
+      "type": "document",
+      "summary": "Static design mockup for the desktop Home surface (now two columns): an All Rooms rail with the agents/recently-active/projects-and-missions tree, plus the selected room's Conversation column; anchors the shared room/agent/mission vocabulary reused across every CV6 screen."
+    },
+    "document:templates/home-mobile.html": {
+      "name": "home-mobile.html",
+      "type": "document",
+      "summary": "Static design mockup for the mobile Home surface across two navigation states: (A) Pick-up-where-you-left-off + All Rooms, and (B) a project opened to its general chat and mission list; shares the desktop Home room/mission data vocabulary."
+    },
+    "document:templates/kit.html": {
+      "name": "kit.html",
+      "type": "document",
+      "summary": "Static design mockup and reference kit for the agent-chat element vocabulary, labeled once: turn anatomy (avatar + stacked typed blocks), communication blocks (success / question / snag), data outputs and more, meant to be wired once and reused across Chat, Support, Command, and Live Scribe."
+    },
+    "document:templates/livescribe.html": {
+      "name": "livescribe.html",
+      "type": "document",
+      "summary": "Static design mockup for the Live Scribe tool: a live-capture surface with recording timer, animated waveform, and a start/stop capture button plus transcript turns; desktop and mobile screens."
+    },
+    "document:templates/onboarding.html": {
+      "name": "onboarding.html",
+      "type": "document",
+      "summary": "Static design mockup for the guided first-run Onboarding flow through the Settings 'Environment' surface (connect sources → agents & permissions → theme → first goal → Home); desktop split layout plus mobile, with step content that swaps by current step."
+    },
+    "document:templates/organize.html": {
+      "name": "organize.html",
+      "type": "document",
+      "summary": "Static design mockup for the Organize file tool: desktop project-tree → file-list → file-preview layout, and mobile browse+multi-select with a Move/Rename/Share/Delete action bar, a move-to-folder sheet, and a file view/review screen."
+    },
+    "document:templates/review.html": {
+      "name": "review.html",
+      "type": "document",
+      "summary": "Static design mockup for the Review tool: a deliverable queue (project→mission tree over the scoped deliverable list), a deliverable viewer with pin-comments, and an approve / request-changes decision panel; the viewer swaps by deliverable type (doc/photo/video/siteshot/sitelive), with the document viewer shown as canonical."
+    },
+    "document:templates/settings.html": {
+      "name": "settings.html",
+      "type": "document",
+      "summary": "Static design mockup for the Settings 'Environment' master surface: the connections list (email and other sources agents can act on), rooms & scope controls, and shared-room awareness messaging that governs which rooms and people can reach each connection."
+    },
+    "document:templates/states-extra.html": {
+      "name": "states-extra.html",
+      "type": "document",
+      "summary": "Static design mockup for the shared empty / loading / error state fragment reused by every CV6 tool; the same markup carries tool-specific copy through data-bind and is shown by swapping which data-state block renders, so tools never redraw these states themselves."
+    },
+    "document:templates/support-inbox.html": {
+      "name": "support-inbox.html",
+      "type": "document",
+      "summary": "Static design mockup for the mobile Support inbox: a list of incoming emails/asks with avatar tints, status chips, and filter chips, delivered as the shippable device-content fragment (specimen framing and fake status bar stripped)."
+    },
+    "document:templates/support-thread.html": {
+      "name": "support-thread.html",
+      "type": "document",
+      "summary": "Static design mockup for the mobile Support email-thread view: the real original email (sender, body, time) bound from the tapped inbox item, an agent-summary card that shows real bullets or plainly states why not (pending/failed/needs-assign), expandable quoted history, and a reply-via-agent action held until the email becomes an ask."
+    },
+    "document:templates/tracker.html": {
+      "name": "tracker.html",
+      "type": "document",
+      "summary": "Static design mockup for the Tracker (bug) tool: desktop tracker switcher, bug table, and bug detail; mobile A) bug list with attachments and a live-agent strip, B) bug detail with assign-to-agent, and C) an agent-working-live view."
+    },
+    "file:cv6.css": {
+      "name": "cv6.css",
+      "type": "file",
+      "summary": "The single-import CV6 stylesheet: design tokens (color scales, semantic surface/text/accent vars, radii, fonts), frame layout, and every screen-primitive class for the CV6 dashboard surface. Defines dark, light, and glass themes plus reduced-motion and per-screen variants, all scoped under [data-cv6]."
+    },
+    "file:PinLayer.jsx": {
+      "name": "PinLayer.jsx",
+      "type": "file",
+      "summary": "Interactive overlay layer for the CV6 viewer that lets users drop numbered comment pins by clicking empty space and re-open existing pins. Positioned absolutely over doc/image/video/website viewers via a crosshair-cursor wrapper."
+    }
+  },
+  "totalNodes": 79,
+  "totalEdges": 480,
+  "meta": {
+    "allNodesInInput": 255,
+    "fileLevelNodes": 79,
+    "liftedDepEdges": 113,
+    "topDecileFanOutThreshold": 5,
+    "bottomQuartileFanInThreshold": 0
+  }
+}

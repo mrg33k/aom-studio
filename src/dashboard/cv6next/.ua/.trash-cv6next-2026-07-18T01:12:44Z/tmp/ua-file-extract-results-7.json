@@ -1,0 +1,585 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 8,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "data/chat-list.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 39,
+      "nonEmptyLines": 36,
+      "sections": [
+        {
+          "heading": "screen",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "title",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "source",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "fragment",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "stylesheet",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "wrapper",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "note",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "data",
+          "level": 1,
+          "line": 10
+        },
+        {
+          "heading": "actions",
+          "level": 1,
+          "line": 27
+        },
+        {
+          "heading": "states",
+          "level": 1,
+          "line": 34
+        },
+        {
+          "heading": "modifierRule",
+          "level": 1,
+          "line": 38
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "data/chat.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 53,
+      "nonEmptyLines": 50,
+      "sections": [
+        {
+          "heading": "screen",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "title",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "source",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "fragment",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "stylesheet",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "screens",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "composesFrom",
+          "level": 1,
+          "line": 11
+        },
+        {
+          "heading": "sharesVocabularyWith",
+          "level": 1,
+          "line": 12
+        },
+        {
+          "heading": "data",
+          "level": 1,
+          "line": 14
+        },
+        {
+          "heading": "actions",
+          "level": 1,
+          "line": 29
+        },
+        {
+          "heading": "states",
+          "level": 1,
+          "line": 48
+        },
+        {
+          "heading": "modifierRule",
+          "level": 1,
+          "line": 52
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 12
+      }
+    },
+    {
+      "path": "data/command.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 37,
+      "nonEmptyLines": 34,
+      "sections": [
+        {
+          "heading": "screen",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "title",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "source",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "fragment",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "stylesheet",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "screens",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "sharesVocabularyWith",
+          "level": 1,
+          "line": 11
+        },
+        {
+          "heading": "data",
+          "level": 1,
+          "line": 13
+        },
+        {
+          "heading": "actions",
+          "level": 1,
+          "line": 24
+        },
+        {
+          "heading": "states",
+          "level": 1,
+          "line": 35
+        },
+        {
+          "heading": "modifierRule",
+          "level": 1,
+          "line": 36
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "data/home-desktop.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 96,
+      "nonEmptyLines": 92,
+      "sections": [
+        {
+          "heading": "screen",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "title",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "source",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "fragment",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "stylesheet",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "wrapper",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "note",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "data",
+          "level": 1,
+          "line": 10
+        },
+        {
+          "heading": "actions",
+          "level": 1,
+          "line": 60
+        },
+        {
+          "heading": "states",
+          "level": 1,
+          "line": 81
+        },
+        {
+          "heading": "modifiers",
+          "level": 1,
+          "line": 88
+        },
+        {
+          "heading": "modifierRule",
+          "level": 1,
+          "line": 95
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 12
+      }
+    },
+    {
+      "path": "data/home-mobile.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 58,
+      "nonEmptyLines": 55,
+      "sections": [
+        {
+          "heading": "screen",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "title",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "source",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "fragment",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "stylesheet",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "wrapper",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "sharesVocabularyWith",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "note",
+          "level": 1,
+          "line": 9
+        },
+        {
+          "heading": "data",
+          "level": 1,
+          "line": 11
+        },
+        {
+          "heading": "actions",
+          "level": 1,
+          "line": 34
+        },
+        {
+          "heading": "states",
+          "level": 1,
+          "line": 51
+        },
+        {
+          "heading": "modifierRule",
+          "level": 1,
+          "line": 57
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 12
+      }
+    },
+    {
+      "path": "data/kit.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 73,
+      "nonEmptyLines": 71,
+      "sections": [
+        {
+          "heading": "kit",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "title",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "source",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "fragment",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "stylesheet",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "note",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "wrapper",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "elements",
+          "level": 1,
+          "line": 10
+        },
+        {
+          "heading": "modifierRule",
+          "level": 1,
+          "line": 71
+        },
+        {
+          "heading": "states",
+          "level": 1,
+          "line": 54
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 10
+      }
+    },
+    {
+      "path": "data/support-inbox.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 102,
+      "nonEmptyLines": 97,
+      "sections": [
+        {
+          "heading": "screen",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "title",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "source",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "fragment",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "stylesheet",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "wrapper",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "screens",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "data",
+          "level": 1,
+          "line": 13
+        },
+        {
+          "heading": "actions",
+          "level": 1,
+          "line": 69
+        },
+        {
+          "heading": "states",
+          "level": 1,
+          "line": 84
+        },
+        {
+          "heading": "shared",
+          "level": 1,
+          "line": 91
+        },
+        {
+          "heading": "rules",
+          "level": 1,
+          "line": 95
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 12
+      }
+    },
+    {
+      "path": "data/tracker.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 70,
+      "nonEmptyLines": 67,
+      "sections": [
+        {
+          "heading": "screen",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "title",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "source",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "fragment",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "stylesheet",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "screens",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "data",
+          "level": 1,
+          "line": 22
+        },
+        {
+          "heading": "actions",
+          "level": 1,
+          "line": 48
+        },
+        {
+          "heading": "states",
+          "level": 1,
+          "line": 12
+        },
+        {
+          "heading": "modifierRule",
+          "level": 1,
+          "line": 69
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 10
+      }
+    }
+  ]
+}

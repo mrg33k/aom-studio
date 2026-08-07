@@ -1,0 +1,37 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {"path": "Organize.jsx", "language": "javascript", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "OrganizeDesktop.jsx", "language": "javascript", "sizeLines": 457, "fileCategory": "code"},
+    {"path": "OrganizeMobile.jsx", "language": "javascript", "sizeLines": 416, "fileCategory": "code"},
+    {"path": "Review.jsx", "language": "javascript", "sizeLines": 307, "fileCategory": "code"},
+    {"path": "ReviewChanges.jsx", "language": "javascript", "sizeLines": 142, "fileCategory": "code"},
+    {"path": "ReviewDesktop.jsx", "language": "javascript", "sizeLines": 452, "fileCategory": "code"},
+    {"path": "ReviewPins.jsx", "language": "javascript", "sizeLines": 333, "fileCategory": "code"},
+    {"path": "TreeContextMenu.jsx", "language": "javascript", "sizeLines": 517, "fileCategory": "code"},
+    {"path": "data/docxDocView.js", "language": "javascript", "sizeLines": 152, "fileCategory": "code"},
+    {"path": "data/htmlDocView.js", "language": "javascript", "sizeLines": 216, "fileCategory": "code"},
+    {"path": "data/mediaFallback.js", "language": "javascript", "sizeLines": 83, "fileCategory": "code"},
+    {"path": "data/pdfDocView.js", "language": "javascript", "sizeLines": 190, "fileCategory": "code"},
+    {"path": "data/useOrganize.js", "language": "javascript", "sizeLines": 1078, "fileCategory": "code"},
+    {"path": "data/usePins.js", "language": "javascript", "sizeLines": 94, "fileCategory": "code"},
+    {"path": "data/useReview.js", "language": "javascript", "sizeLines": 1233, "fileCategory": "code"}
+  ],
+  "batchImportData": {
+    "Organize.jsx": ["OrganizeDesktop.jsx", "OrganizeMobile.jsx"],
+    "OrganizeDesktop.jsx": ["data/docxDocView.js", "data/htmlDocView.js", "data/pdfDocView.js", "data/useOrganize.js", "data/usePins.js", "data/useReview.js", "NewComposer.jsx", "ReviewChanges.jsx", "ReviewPins.jsx", "TreeContextMenu.jsx"],
+    "OrganizeMobile.jsx": ["data/docxDocView.js", "data/htmlDocView.js", "data/pdfDocView.js", "data/useOrganize.js", "data/usePins.js", "data/useReview.js", "NewComposer.jsx", "OrganizeDesktop.jsx", "ReviewChanges.jsx", "ReviewPins.jsx"],
+    "Review.jsx": ["data/docxDocView.js", "data/htmlDocView.js", "data/pdfDocView.js", "data/usePins.js", "data/useReview.js", "ReviewChanges.jsx", "ReviewPins.jsx"],
+    "ReviewChanges.jsx": [],
+    "ReviewDesktop.jsx": ["data/docxDocView.js", "data/htmlDocView.js", "data/pdfDocView.js", "data/usePins.js", "data/useReview.js", "ReviewChanges.jsx", "ReviewPins.jsx", "TreeContextMenu.jsx"],
+    "ReviewPins.jsx": [],
+    "TreeContextMenu.jsx": [],
+    "data/docxDocView.js": [],
+    "data/htmlDocView.js": [],
+    "data/mediaFallback.js": [],
+    "data/pdfDocView.js": [],
+    "data/useOrganize.js": ["data/docxDocView.js", "data/htmlDocView.js", "data/mediaFallback.js", "data/pdfDocView.js"],
+    "data/usePins.js": [],
+    "data/useReview.js": ["data/agentTitles.js", "data/docxDocView.js", "data/htmlDocView.js", "data/mediaFallback.js", "data/pdfDocView.js"]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {"path": "Campaign.jsx", "language": "javascript", "sizeLines": 1015, "fileCategory": "code"},
+    {"path": "EmailShell.jsx", "language": "javascript", "sizeLines": 75, "fileCategory": "code"},
+    {"path": "data/useCampaign.js", "language": "javascript", "sizeLines": 165, "fileCategory": "code"}
+  ],
+  "batchImportData": {
+    "Campaign.jsx": ["data/useCampaign.js"],
+    "EmailShell.jsx": ["Campaign.jsx"],
+    "data/useCampaign.js": []
+  }
+}

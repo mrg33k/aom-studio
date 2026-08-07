@@ -1,0 +1,35 @@
+{
+  "issues": [],
+  "warnings": [
+    "Node 'config:data/chat-list.json' has no edges (orphan)",
+    "Node 'config:data/chat.json' has no edges (orphan)",
+    "Node 'config:data/kit.json' has no edges (orphan)",
+    "Node 'document:templates/chat-list.html' has no edges (orphan)",
+    "Node 'document:templates/command.html' has no edges (orphan)",
+    "Node 'document:templates/home-mobile.html' has no edges (orphan)",
+    "Node 'document:templates/kit.html' has no edges (orphan)",
+    "Node 'document:templates/states-extra.html' has no edges (orphan)",
+    "Node 'document:templates/tracker.html' has no edges (orphan)"
+  ],
+  "stats": {
+    "totalNodes": 255,
+    "totalEdges": 480,
+    "totalLayers": 7,
+    "tourSteps": 13,
+    "nodeTypes": {
+      "file": 56,
+      "function": 174,
+      "class": 2,
+      "config": 8,
+      "document": 15
+    },
+    "edgeTypes": {
+      "imports": 113,
+      "contains": 176,
+      "exports": 106,
+      "calls": 69,
+      "related": 6,
+      "documents": 10
+    }
+  }
+}

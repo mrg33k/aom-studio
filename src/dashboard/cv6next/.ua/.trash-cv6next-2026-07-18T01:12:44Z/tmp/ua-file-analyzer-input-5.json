@@ -1,0 +1,15 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {"path": "Settings.jsx", "language": "javascript", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "SettingsDesktop.jsx", "language": "javascript", "sizeLines": 93, "fileCategory": "code"},
+    {"path": "SettingsMobile.jsx", "language": "javascript", "sizeLines": 103, "fileCategory": "code"},
+    {"path": "data/useSettings.js", "language": "javascript", "sizeLines": 142, "fileCategory": "code"}
+  ],
+  "batchImportData": {
+    "Settings.jsx": ["SettingsDesktop.jsx", "SettingsMobile.jsx"],
+    "SettingsDesktop.jsx": ["data/useSettings.js"],
+    "SettingsMobile.jsx": ["data/useSettings.js"],
+    "data/useSettings.js": []
+  }
+}

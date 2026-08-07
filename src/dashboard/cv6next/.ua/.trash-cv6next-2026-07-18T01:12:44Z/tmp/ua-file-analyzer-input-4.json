@@ -1,0 +1,42 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {
+      "path": "Onboarding.jsx",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "OnboardingDesktop.jsx",
+      "language": "javascript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "OnboardingMobile.jsx",
+      "language": "javascript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useOnboarding.js",
+      "language": "javascript",
+      "sizeLines": 182,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "Onboarding.jsx": [
+      "OnboardingDesktop.jsx",
+      "OnboardingMobile.jsx"
+    ],
+    "OnboardingDesktop.jsx": [
+      "data/useOnboarding.js"
+    ],
+    "OnboardingMobile.jsx": [
+      "data/useOnboarding.js"
+    ],
+    "data/useOnboarding.js": []
+  }
+}

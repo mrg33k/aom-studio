@@ -1,0 +1,226 @@
+{
+  "nodes": [
+    {
+      "id": "document:templates/chat-list.html",
+      "type": "document",
+      "name": "chat-list.html",
+      "filePath": "templates/chat-list.html",
+      "summary": "Static design mockup for the mobile Chat list screen: an Agents section (avatar, live status dot, last-message snippet, needs-you count) and a Projects section (folder glyph, rollup status), with All/Agents/Projects/Needs-you filter chips; tapping a row opens the Goal Thread.",
+      "tags": ["documentation", "design-mockup", "chat", "mobile", "ui-template"],
+      "complexity": "simple",
+      "languageNotes": "Wired template using data-each for repeating rows and data-mod=\"is-:path\" for per-item status/tint modifiers; scoped under [data-cv6]."
+    },
+    {
+      "id": "document:templates/chat.html",
+      "type": "document",
+      "name": "chat.html",
+      "filePath": "templates/chat.html",
+      "summary": "Static design mockup for the Chat / Goal Thread tool in both desktop (rooms rail, conversation thread, agent control drawer) and mobile layouts; the thread's step blocks (done, snag+decision, working, upcoming) compose from the shared agent-chat kit.",
+      "tags": ["documentation", "design-mockup", "chat", "goal-thread", "ui-template"],
+      "complexity": "complex",
+      "languageNotes": "Canonical sample thread demonstrates the .step*/choice-card/pill-chip vocabulary; per-item lists use data-each, per-item visuals use data-mod=\"is-:path\"."
+    },
+    {
+      "id": "document:templates/command.html",
+      "type": "document",
+      "name": "command.html",
+      "filePath": "templates/command.html",
+      "summary": "Static design mockup for the Command tool: a goal ledger of every room's current goal, a background-activity dock aggregating running jobs, and a goal-detail panel that drives the master-loop (checklist, scheduled loops, master-loop watch); desktop + mobile.",
+      "tags": ["documentation", "design-mockup", "command", "master-loop", "ui-template"],
+      "complexity": "complex",
+      "languageNotes": "Heavily annotated with wd40/Steffen design-round rationale; loop rows reuse astat status chips and cadence <select> primitives."
+    },
+    {
+      "id": "document:templates/home-desktop.html",
+      "type": "document",
+      "name": "home-desktop.html",
+      "filePath": "templates/home-desktop.html",
+      "summary": "Static design mockup for the desktop Home surface (now two columns): an All Rooms rail with the agents/recently-active/projects-and-missions tree, plus the selected room's Conversation column; anchors the shared room/agent/mission vocabulary reused across every CV6 screen.",
+      "tags": ["documentation", "design-mockup", "home", "desktop", "ui-template"],
+      "complexity": "moderate",
+      "languageNotes": "Uses data-cv6-keep anchors so React portals (Cv6QuickThread, composer, Files overlay) graft into stable host nodes across re-binds."
+    },
+    {
+      "id": "document:templates/home-mobile.html",
+      "type": "document",
+      "name": "home-mobile.html",
+      "filePath": "templates/home-mobile.html",
+      "summary": "Static design mockup for the mobile Home surface across two navigation states: (A) Pick-up-where-you-left-off + All Rooms, and (B) a project opened to its general chat and mission list; shares the desktop Home room/mission data vocabulary.",
+      "tags": ["documentation", "design-mockup", "home", "mobile", "ui-template"],
+      "complexity": "complex",
+      "languageNotes": "Two mountable [data-cv6] screens in one file; retains layered background (bg1/bg2) and safe-area handling for the mobile frame."
+    },
+    {
+      "id": "document:templates/kit.html",
+      "type": "document",
+      "name": "kit.html",
+      "filePath": "templates/kit.html",
+      "summary": "Static design mockup and reference kit for the agent-chat element vocabulary, labeled once: turn anatomy (avatar + stacked typed blocks), communication blocks (success / question / snag), data outputs and more, meant to be wired once and reused across Chat, Support, Command, and Live Scribe.",
+      "tags": ["documentation", "design-mockup", "component-kit", "agent-chat", "ui-template"],
+      "complexity": "complex",
+      "languageNotes": "Each block is a labeled clone-source template; per-item variation via data-mod=\"is-:kind\" on a base class that owns the look (no inline color)."
+    },
+    {
+      "id": "document:templates/livescribe.html",
+      "type": "document",
+      "name": "livescribe.html",
+      "filePath": "templates/livescribe.html",
+      "summary": "Static design mockup for the Live Scribe tool: a live-capture surface with recording timer, animated waveform, and a start/stop capture button plus transcript turns; desktop and mobile screens.",
+      "tags": ["documentation", "design-mockup", "livescribe", "transcription", "ui-template"],
+      "complexity": "complex",
+      "languageNotes": "Keeps .capbtn styles inside the screen div because composeLiveScribe ships only the screen's outerHTML; head-level styles never reach the live page."
+    },
+    {
+      "id": "document:templates/onboarding.html",
+      "type": "document",
+      "name": "onboarding.html",
+      "filePath": "templates/onboarding.html",
+      "summary": "Static design mockup for the guided first-run Onboarding flow through the Settings 'Environment' surface (connect sources → agents & permissions → theme → first goal → Home); desktop split layout plus mobile, with step content that swaps by current step.",
+      "tags": ["documentation", "design-mockup", "onboarding", "setup", "ui-template"],
+      "complexity": "moderate",
+      "languageNotes": "Shares the Settings data model; Connect step wired as canonical, progress dots/bar reflect step.state."
+    },
+    {
+      "id": "document:templates/organize.html",
+      "type": "document",
+      "name": "organize.html",
+      "filePath": "templates/organize.html",
+      "summary": "Static design mockup for the Organize file tool: desktop project-tree → file-list → file-preview layout, and mobile browse+multi-select with a Move/Rename/Share/Delete action bar, a move-to-folder sheet, and a file view/review screen.",
+      "tags": ["documentation", "design-mockup", "organize", "file-management", "ui-template"],
+      "complexity": "complex",
+      "languageNotes": "Reuses the same left-rail project/mission selection pattern that Review's queue uses; lists via data-each, per-item visuals via data-mod."
+    },
+    {
+      "id": "document:templates/review.html",
+      "type": "document",
+      "name": "review.html",
+      "filePath": "templates/review.html",
+      "summary": "Static design mockup for the Review tool: a deliverable queue (project→mission tree over the scoped deliverable list), a deliverable viewer with pin-comments, and an approve / request-changes decision panel; the viewer swaps by deliverable type (doc/photo/video/siteshot/sitelive), with the document viewer shown as canonical.",
+      "tags": ["documentation", "design-mockup", "review", "approval", "ui-template"],
+      "complexity": "moderate",
+      "languageNotes": "Viewer region is type-switched by deliverable.type; desktop queue→viewer→decision and mobile list→read→decide flows in one file."
+    },
+    {
+      "id": "document:templates/settings.html",
+      "type": "document",
+      "name": "settings.html",
+      "filePath": "templates/settings.html",
+      "summary": "Static design mockup for the Settings 'Environment' master surface: the connections list (email and other sources agents can act on), rooms & scope controls, and shared-room awareness messaging that governs which rooms and people can reach each connection.",
+      "tags": ["documentation", "design-mockup", "settings", "configuration", "ui-template"],
+      "complexity": "moderate",
+      "languageNotes": "Section nav swaps content by section; connection controls shown disabled (\"coming soon\") as a design placeholder."
+    },
+    {
+      "id": "document:templates/states-extra.html",
+      "type": "document",
+      "name": "states-extra.html",
+      "filePath": "templates/states-extra.html",
+      "summary": "Static design mockup for the shared empty / loading / error state fragment reused by every CV6 tool; the same markup carries tool-specific copy through data-bind and is shown by swapping which data-state block renders, so tools never redraw these states themselves.",
+      "tags": ["documentation", "design-mockup", "shared-fragment", "empty-states", "ui-template"],
+      "complexity": "simple",
+      "languageNotes": "Bindable copy (empty/loading/error title+body) plus emptyAction/retry/viewOffline actions let one fragment serve all tools."
+    },
+    {
+      "id": "document:templates/support-inbox.html",
+      "type": "document",
+      "name": "support-inbox.html",
+      "filePath": "templates/support-inbox.html",
+      "summary": "Static design mockup for the mobile Support inbox: a list of incoming emails/asks with avatar tints, status chips, and filter chips, delivered as the shippable device-content fragment (specimen framing and fake status bar stripped).",
+      "tags": ["documentation", "design-mockup", "support", "inbox", "mobile"],
+      "complexity": "moderate",
+      "languageNotes": "Pilot fill-in template with an inline wiring legend; empty/loading/error reuse the shared states.html fragment rather than redrawing."
+    },
+    {
+      "id": "document:templates/support-thread.html",
+      "type": "document",
+      "name": "support-thread.html",
+      "filePath": "templates/support-thread.html",
+      "summary": "Static design mockup for the mobile Support email-thread view: the real original email (sender, body, time) bound from the tapped inbox item, an agent-summary card that shows real bullets or plainly states why not (pending/failed/needs-assign), expandable quoted history, and a reply-via-agent action held until the email becomes an ask.",
+      "tags": ["documentation", "design-mockup", "support", "email-thread", "mobile"],
+      "complexity": "moderate",
+      "languageNotes": "Encodes an honesty contract: no fabricated bullets and no infinite spinner; reply only exists once a mailbox row becomes an ask."
+    },
+    {
+      "id": "document:templates/tracker.html",
+      "type": "document",
+      "name": "tracker.html",
+      "filePath": "templates/tracker.html",
+      "summary": "Static design mockup for the Tracker (bug) tool: desktop tracker switcher, bug table, and bug detail; mobile A) bug list with attachments and a live-agent strip, B) bug detail with assign-to-agent, and C) an agent-working-live view.",
+      "tags": ["documentation", "design-mockup", "tracker", "bug-tracking", "ui-template"],
+      "complexity": "complex",
+      "languageNotes": "Lists via data-each; per-item bug status/priority visuals via data-mod=\"is-:path\"; desktop + three mobile states in one file."
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:templates/chat.html",
+      "target": "file:ChatDesktop.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/chat.html",
+      "target": "file:ChatLifecycle.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/organize.html",
+      "target": "file:OrganizeDesktop.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/review.html",
+      "target": "file:ReviewDesktop.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/home-desktop.html",
+      "target": "file:CornerCV6.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/livescribe.html",
+      "target": "file:LiveScribe.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/onboarding.html",
+      "target": "file:OnboardingDesktop.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/settings.html",
+      "target": "file:SettingsDesktop.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/support-inbox.html",
+      "target": "file:SupportDesktop.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:templates/support-thread.html",
+      "target": "file:SupportThread.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

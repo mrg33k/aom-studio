@@ -1,0 +1,369 @@
+{
+  "nodes": [
+    {
+      "id": "file:data/docxDocView.js",
+      "type": "file",
+      "name": "docxDocView.js",
+      "filePath": "data/docxDocView.js",
+      "summary": "Docx preview helper for Organize/Review viewers; renders a shell, sanitizes converted HTML, and provides the useDocxDocs hook that hydrates .docx nodes in the wrapper.",
+      "tags": ["utility", "hook", "document-preview", "docx", "sanitization"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:data/htmlDocView.js",
+      "type": "file",
+      "name": "htmlDocView.js",
+      "filePath": "data/htmlDocView.js",
+      "summary": "HTML file preview helper that rewrites relative asset URLs and CSS references for safe in-viewer rendering and provides the useHtmlDocs hook to hydrate .html preview nodes.",
+      "tags": ["utility", "hook", "document-preview", "html", "url-rewrite"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:data/mediaFallback.js",
+      "type": "file",
+      "name": "mediaFallback.js",
+      "filePath": "data/mediaFallback.js",
+      "summary": "Installs a single global media-error handler that swaps a failed video/audio/img element in place for a 'Couldn't load / Retry' card with a cache-busted retry, shared by Organize and Review previews.",
+      "tags": ["utility", "media", "error-handler", "fallback"],
+      "complexity": "moderate",
+      "languageNotes": "Builds the error card with real DOM and listeners (no nested-attribute string escaping) and does not wrap the element, so ReviewPins' scrub-bar host lookup stays intact."
+    },
+    {
+      "id": "file:data/pdfDocView.js",
+      "type": "file",
+      "name": "pdfDocView.js",
+      "filePath": "data/pdfDocView.js",
+      "summary": "PDF preview helper that renders a viewer shell and provides the usePdfDocs hook to hydrate and dispose PDF preview nodes in the Organize/Review wrappers.",
+      "tags": ["utility", "hook", "document-preview", "pdf", "lifecycle"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:data/useOrganize.js",
+      "type": "file",
+      "name": "useOrganize.js",
+      "filePath": "data/useOrganize.js",
+      "summary": "Core Organize data hook that reads the project_files disk mirror metadata, lazily fetches and previews file content (markdown, images, PDFs, media), and shapes it to the wired Organize template contract.",
+      "tags": ["hook", "organize", "data-model", "file-preview", "service"],
+      "complexity": "complex",
+      "languageNotes": "Metadata-only listing so a 7k-file world never ships all its text; content fetched lazily on open and cached, with video streaming direct off the rag tunnel rather than the Vercel raw proxy."
+    },
+    {
+      "id": "file:data/usePins.js",
+      "type": "file",
+      "name": "usePins.js",
+      "filePath": "data/usePins.js",
+      "summary": "Hook managing pin-comment state for the Review tool, persisting point comments (x/y fractions plus optional video time) to the review-comments API so they survive refresh and reach the agent's fix-list.",
+      "tags": ["hook", "review", "pins", "data-model", "persistence"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:data/useReview.js",
+      "type": "file",
+      "name": "useReview.js",
+      "filePath": "data/useReview.js",
+      "summary": "Core Review data hook that loads the real deliverables queue from the review-queue API, builds each deliverable's rendered body, groups sequences, and wires approve / request-changes as real decision events.",
+      "tags": ["hook", "review", "data-model", "deliverables", "service"],
+      "complexity": "complex",
+      "languageNotes": "Renders deliverable bodies via marked (gfm) and shares the doc/media view helpers and agent-title curation; no fake data, all decisions are real events."
+    },
+    {
+      "id": "function:data/docxDocView.js:sanitize",
+      "type": "function",
+      "name": "sanitize",
+      "filePath": "data/docxDocView.js",
+      "lineRange": [74, 88],
+      "summary": "Sanitizes converted docx HTML before injection into the preview, stripping unsafe markup.",
+      "tags": ["sanitization", "docx", "security"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:data/docxDocView.js:hydrateOne",
+      "type": "function",
+      "name": "hydrateOne",
+      "filePath": "data/docxDocView.js",
+      "lineRange": [90, 123],
+      "summary": "Fetches and converts a single .docx source, sanitizes the HTML, and injects it into the preview node while tracking it in the registry.",
+      "tags": ["docx", "document-preview", "hydration"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/docxDocView.js:useDocxDocs",
+      "type": "function",
+      "name": "useDocxDocs",
+      "filePath": "data/docxDocView.js",
+      "lineRange": [126, 152],
+      "summary": "Hook that scans the wrapper ref for pending docx preview nodes each tick and hydrates them, maintaining a registry across re-renders.",
+      "tags": ["hook", "docx", "document-preview"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/htmlDocView.js:assetUrl",
+      "type": "function",
+      "name": "assetUrl",
+      "filePath": "data/htmlDocView.js",
+      "lineRange": [71, 91],
+      "summary": "Resolves a relative asset reference inside a previewed HTML file to an absolute in-viewer URL, passing through already-absolute URLs.",
+      "tags": ["html", "url-rewrite", "utility"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/htmlDocView.js:rewriteHtmlForPreview",
+      "type": "function",
+      "name": "rewriteHtmlForPreview",
+      "filePath": "data/htmlDocView.js",
+      "lineRange": [101, 146],
+      "summary": "Rewrites a raw HTML source's asset and CSS URLs to viewer-safe paths so the file previews correctly without breaking relative references.",
+      "tags": ["html", "url-rewrite", "document-preview"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/htmlDocView.js:hydrateOne",
+      "type": "function",
+      "name": "hydrateOne",
+      "filePath": "data/htmlDocView.js",
+      "lineRange": [158, 190],
+      "summary": "Fetches a single HTML file, rewrites it for preview, and injects it into the preview node while registering it for cleanup.",
+      "tags": ["html", "document-preview", "hydration"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/htmlDocView.js:useHtmlDocs",
+      "type": "function",
+      "name": "useHtmlDocs",
+      "filePath": "data/htmlDocView.js",
+      "lineRange": [192, 216],
+      "summary": "Hook that scans the wrapper ref for pending HTML preview nodes and hydrates them each tick, maintaining a registry across re-renders.",
+      "tags": ["hook", "html", "document-preview"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/mediaFallback.js:installMediaErr",
+      "type": "function",
+      "name": "installMediaErr",
+      "filePath": "data/mediaFallback.js",
+      "lineRange": [15, 74],
+      "summary": "Installs the global window.__cornerMediaErr handler that replaces a failed media element in place with a visible 'Couldn't load / Retry' card and a cache-busted retry.",
+      "tags": ["media", "error-handler", "dom", "fallback"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/mediaFallback.js:mediaAttrs",
+      "type": "function",
+      "name": "mediaAttrs",
+      "filePath": "data/mediaFallback.js",
+      "lineRange": [80, 83],
+      "summary": "Returns the shared inline attributes (including the onerror hook) to attach to a media element so load failures route to the global fallback card.",
+      "tags": ["media", "utility", "error-handler"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:data/pdfDocView.js:hydrateOne",
+      "type": "function",
+      "name": "hydrateOne",
+      "filePath": "data/pdfDocView.js",
+      "lineRange": [60, 152],
+      "summary": "Loads and renders a single PDF into its preview node, wiring the viewer and tracking the entry in the registry for later disposal.",
+      "tags": ["pdf", "document-preview", "hydration"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/pdfDocView.js:usePdfDocs",
+      "type": "function",
+      "name": "usePdfDocs",
+      "filePath": "data/pdfDocView.js",
+      "lineRange": [164, 190],
+      "summary": "Hook that scans the wrapper ref for pending PDF preview nodes, hydrates them, and disposes them on cleanup, maintaining a registry across re-renders.",
+      "tags": ["hook", "pdf", "document-preview", "lifecycle"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useOrganize.js:parseMarkdown",
+      "type": "function",
+      "name": "parseMarkdown",
+      "filePath": "data/useOrganize.js",
+      "lineRange": [150, 191],
+      "summary": "Renders markdown file content to safe preview HTML, handling inline formatting and escaped hrefs for the Organize viewer.",
+      "tags": ["organize", "markdown", "serialization"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useOrganize.js:nonTextPreview",
+      "type": "function",
+      "name": "nonTextPreview",
+      "filePath": "data/useOrganize.js",
+      "lineRange": [219, 233],
+      "summary": "Builds a placeholder preview card for non-text files (by name and detected kind) that cannot be rendered inline.",
+      "tags": ["organize", "file-preview", "utility"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:data/useOrganize.js:useOrganize",
+      "type": "function",
+      "name": "useOrganize",
+      "filePath": "data/useOrganize.js",
+      "lineRange": [293, 1078],
+      "summary": "Main Organize hook that loads the project_files disk mirror, tracks selection and open state, lazily fetches/caches and previews file content, and exposes the shaped data the Organize screens bind to.",
+      "tags": ["hook", "organize", "data-model", "file-preview", "service"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:data/usePins.js:toPin",
+      "type": "function",
+      "name": "toPin",
+      "filePath": "data/usePins.js",
+      "lineRange": [12, 24],
+      "summary": "Maps a stored review-comment row into the pin shape the template binds (index, x/y in percent, text, optional video time).",
+      "tags": ["review", "pins", "data-shaping"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:data/usePins.js:usePins",
+      "type": "function",
+      "name": "usePins",
+      "filePath": "data/usePins.js",
+      "lineRange": [33, 94],
+      "summary": "Hook that loads, adds, and persists pin point-comments for a deliverable against the review-comments API so annotations survive refresh and reach the agent.",
+      "tags": ["hook", "review", "pins", "persistence"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useReview.js:downloadDeliverable",
+      "type": "function",
+      "name": "downloadDeliverable",
+      "filePath": "data/useReview.js",
+      "lineRange": [57, 87],
+      "summary": "Fetches a deliverable's bytes through an authenticated request and triggers a browser download of the file.",
+      "tags": ["review", "download", "api-handler"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useReview.js:buildDeliverableBody",
+      "type": "function",
+      "name": "buildDeliverableBody",
+      "filePath": "data/useReview.js",
+      "lineRange": [96, 229],
+      "summary": "Builds the rendered HTML body for a review deliverable by type, dispatching to the markdown/doc/media view helpers and wiring media-wait loaders and fallbacks.",
+      "tags": ["review", "deliverables", "serialization", "document-preview"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:data/useReview.js:groupSequences",
+      "type": "function",
+      "name": "groupSequences",
+      "filePath": "data/useReview.js",
+      "lineRange": [252, 290],
+      "summary": "Groups related deliverable items into sequences so multi-part outputs render together in the review queue.",
+      "tags": ["review", "deliverables", "grouping"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useReview.js:typeKeyOf",
+      "type": "function",
+      "name": "typeKeyOf",
+      "filePath": "data/useReview.js",
+      "lineRange": [369, 385],
+      "summary": "Derives a canonical deliverable type key from a file name and MIME type to drive labels, glyphs, and body rendering.",
+      "tags": ["review", "classification", "utility"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:data/useReview.js:reviewItemsFromFiles",
+      "type": "function",
+      "name": "reviewItemsFromFiles",
+      "filePath": "data/useReview.js",
+      "lineRange": [391, 438],
+      "summary": "Transforms raw file rows into review queue items, assigning type, labels, thumbnails, and tint for the queue panel.",
+      "tags": ["review", "deliverables", "data-shaping"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useReview.js:mapQueueItem",
+      "type": "function",
+      "name": "mapQueueItem",
+      "filePath": "data/useReview.js",
+      "lineRange": [447, 512],
+      "summary": "Maps a raw queue row into the full review item the template binds, resolving open state, agent title, body, and decision affordances.",
+      "tags": ["review", "deliverables", "data-shaping", "template-binding"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:data/useReview.js:useReview",
+      "type": "function",
+      "name": "useReview",
+      "filePath": "data/useReview.js",
+      "lineRange": [514, 1186],
+      "summary": "Main Review hook that loads the deliverables queue with search/sort, opens and renders deliverable bodies, and wires approve and request-changes as real decision events.",
+      "tags": ["hook", "review", "data-model", "deliverables", "service"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:data/useReview.js:useReviewWaitingCount",
+      "type": "function",
+      "name": "useReviewWaitingCount",
+      "filePath": "data/useReview.js",
+      "lineRange": [1194, 1233],
+      "summary": "Lightweight hook that returns the count of deliverables waiting on a review decision, used for the nav badge.",
+      "tags": ["hook", "review", "badge", "state"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    { "source": "file:data/useOrganize.js", "target": "file:data/docxDocView.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+    { "source": "file:data/useOrganize.js", "target": "file:data/htmlDocView.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+    { "source": "file:data/useOrganize.js", "target": "file:data/mediaFallback.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+    { "source": "file:data/useOrganize.js", "target": "file:data/pdfDocView.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+
+    { "source": "file:data/useReview.js", "target": "file:data/agentTitles.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+    { "source": "file:data/useReview.js", "target": "file:data/docxDocView.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+    { "source": "file:data/useReview.js", "target": "file:data/htmlDocView.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+    { "source": "file:data/useReview.js", "target": "file:data/mediaFallback.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+    { "source": "file:data/useReview.js", "target": "file:data/pdfDocView.js", "type": "imports", "direction": "forward", "weight": 0.7 },
+
+    { "source": "file:data/docxDocView.js", "target": "function:data/docxDocView.js:sanitize", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/docxDocView.js", "target": "function:data/docxDocView.js:hydrateOne", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/docxDocView.js", "target": "function:data/docxDocView.js:useDocxDocs", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/htmlDocView.js", "target": "function:data/htmlDocView.js:assetUrl", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/htmlDocView.js", "target": "function:data/htmlDocView.js:rewriteHtmlForPreview", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/htmlDocView.js", "target": "function:data/htmlDocView.js:hydrateOne", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/htmlDocView.js", "target": "function:data/htmlDocView.js:useHtmlDocs", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/mediaFallback.js", "target": "function:data/mediaFallback.js:installMediaErr", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/mediaFallback.js", "target": "function:data/mediaFallback.js:mediaAttrs", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/pdfDocView.js", "target": "function:data/pdfDocView.js:hydrateOne", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/pdfDocView.js", "target": "function:data/pdfDocView.js:usePdfDocs", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useOrganize.js", "target": "function:data/useOrganize.js:parseMarkdown", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useOrganize.js", "target": "function:data/useOrganize.js:nonTextPreview", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useOrganize.js", "target": "function:data/useOrganize.js:useOrganize", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/usePins.js", "target": "function:data/usePins.js:toPin", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/usePins.js", "target": "function:data/usePins.js:usePins", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:downloadDeliverable", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:buildDeliverableBody", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:groupSequences", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:typeKeyOf", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:reviewItemsFromFiles", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:mapQueueItem", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:useReview", "type": "contains", "direction": "forward", "weight": 1.0 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:useReviewWaitingCount", "type": "contains", "direction": "forward", "weight": 1.0 },
+
+    { "source": "file:data/docxDocView.js", "target": "function:data/docxDocView.js:useDocxDocs", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/htmlDocView.js", "target": "function:data/htmlDocView.js:rewriteHtmlForPreview", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/htmlDocView.js", "target": "function:data/htmlDocView.js:useHtmlDocs", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/mediaFallback.js", "target": "function:data/mediaFallback.js:mediaAttrs", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/pdfDocView.js", "target": "function:data/pdfDocView.js:usePdfDocs", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useOrganize.js", "target": "function:data/useOrganize.js:useOrganize", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/usePins.js", "target": "function:data/usePins.js:usePins", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:buildDeliverableBody", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:reviewItemsFromFiles", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:useReview", "type": "exports", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/useReview.js:useReviewWaitingCount", "type": "exports", "direction": "forward", "weight": 0.8 },
+
+    { "source": "file:data/useOrganize.js", "target": "function:data/docxDocView.js:useDocxDocs", "type": "calls", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useOrganize.js", "target": "function:data/htmlDocView.js:useHtmlDocs", "type": "calls", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useOrganize.js", "target": "function:data/pdfDocView.js:usePdfDocs", "type": "calls", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useOrganize.js", "target": "function:data/mediaFallback.js:mediaAttrs", "type": "calls", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/docxDocView.js:useDocxDocs", "type": "calls", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/htmlDocView.js:useHtmlDocs", "type": "calls", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/pdfDocView.js:usePdfDocs", "type": "calls", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/mediaFallback.js:mediaAttrs", "type": "calls", "direction": "forward", "weight": 0.8 },
+    { "source": "file:data/useReview.js", "target": "function:data/agentTitles.js:titleForAgent", "type": "calls", "direction": "forward", "weight": 0.8 }
+  ]
+}

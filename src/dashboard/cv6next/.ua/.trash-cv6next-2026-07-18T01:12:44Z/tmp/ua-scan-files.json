@@ -1,0 +1,503 @@
+{
+  "scriptCompleted": true,
+  "files": [
+    {
+      "path": ".ua/.understandignore",
+      "language": "unknown",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "ActivityDock.jsx",
+      "language": "javascript",
+      "sizeLines": 282,
+      "fileCategory": "code"
+    },
+    {
+      "path": "BlockRenderer.jsx",
+      "language": "javascript",
+      "sizeLines": 640,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Campaign.jsx",
+      "language": "javascript",
+      "sizeLines": 1015,
+      "fileCategory": "code"
+    },
+    {
+      "path": "ChatDesktop.jsx",
+      "language": "javascript",
+      "sizeLines": 924,
+      "fileCategory": "code"
+    },
+    {
+      "path": "ChatGoalThread.jsx",
+      "language": "javascript",
+      "sizeLines": 960,
+      "fileCategory": "code"
+    },
+    {
+      "path": "ChatLifecycle.jsx",
+      "language": "javascript",
+      "sizeLines": 590,
+      "fileCategory": "code"
+    },
+    {
+      "path": "CornerCV6.jsx",
+      "language": "javascript",
+      "sizeLines": 2912,
+      "fileCategory": "code"
+    },
+    {
+      "path": "cv6.css",
+      "language": "css",
+      "sizeLines": 1691,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "Cv6FullComposer.jsx",
+      "language": "javascript",
+      "sizeLines": 349,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Cv6InputBar.jsx",
+      "language": "javascript",
+      "sizeLines": 234,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/agentTitles.js",
+      "language": "javascript",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/blockSchema.js",
+      "language": "javascript",
+      "sizeLines": 261,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/chat-list.json",
+      "language": "json",
+      "sizeLines": 39,
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/chat.json",
+      "language": "json",
+      "sizeLines": 53,
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/command.json",
+      "language": "json",
+      "sizeLines": 37,
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/docxDocView.js",
+      "language": "javascript",
+      "sizeLines": 152,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/home-desktop.json",
+      "language": "json",
+      "sizeLines": 96,
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/home-mobile.json",
+      "language": "json",
+      "sizeLines": 58,
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/htmlDocView.js",
+      "language": "javascript",
+      "sizeLines": 216,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/kit.json",
+      "language": "json",
+      "sizeLines": 73,
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/mediaFallback.js",
+      "language": "javascript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/pdfDocView.js",
+      "language": "javascript",
+      "sizeLines": 190,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/resultLinks.js",
+      "language": "javascript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/support-inbox.json",
+      "language": "json",
+      "sizeLines": 102,
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/tracker.json",
+      "language": "json",
+      "sizeLines": 70,
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/useCampaign.js",
+      "language": "javascript",
+      "sizeLines": 165,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useCommandTracker.js",
+      "language": "javascript",
+      "sizeLines": 1373,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useDemoBlocks.js",
+      "language": "javascript",
+      "sizeLines": 256,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useDictation.js",
+      "language": "javascript",
+      "sizeLines": 68,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useHomeData.js",
+      "language": "javascript",
+      "sizeLines": 396,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useLiveScribe.js",
+      "language": "javascript",
+      "sizeLines": 428,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useOnboarding.js",
+      "language": "javascript",
+      "sizeLines": 182,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useOrganize.js",
+      "language": "javascript",
+      "sizeLines": 1078,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/usePins.js",
+      "language": "javascript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useReview.js",
+      "language": "javascript",
+      "sizeLines": 1233,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useRoomThread.js",
+      "language": "javascript",
+      "sizeLines": 658,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useSettings.js",
+      "language": "javascript",
+      "sizeLines": 142,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useSupportInbox.js",
+      "language": "javascript",
+      "sizeLines": 194,
+      "fileCategory": "code"
+    },
+    {
+      "path": "EmailShell.jsx",
+      "language": "javascript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "LiveScribe.jsx",
+      "language": "javascript",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "MessageAttachments.jsx",
+      "language": "javascript",
+      "sizeLines": 280,
+      "fileCategory": "code"
+    },
+    {
+      "path": "MessageThread.jsx",
+      "language": "javascript",
+      "sizeLines": 399,
+      "fileCategory": "code"
+    },
+    {
+      "path": "NewComposer.jsx",
+      "language": "javascript",
+      "sizeLines": 266,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Onboarding.jsx",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "OnboardingDesktop.jsx",
+      "language": "javascript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "OnboardingMobile.jsx",
+      "language": "javascript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Organize.jsx",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "OrganizeDesktop.jsx",
+      "language": "javascript",
+      "sizeLines": 457,
+      "fileCategory": "code"
+    },
+    {
+      "path": "OrganizeMobile.jsx",
+      "language": "javascript",
+      "sizeLines": 416,
+      "fileCategory": "code"
+    },
+    {
+      "path": "PinLayer.jsx",
+      "language": "javascript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "providers/DataContext.jsx",
+      "language": "javascript",
+      "sizeLines": 106,
+      "fileCategory": "code"
+    },
+    {
+      "path": "ResultLinkCard.jsx",
+      "language": "javascript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Review.jsx",
+      "language": "javascript",
+      "sizeLines": 307,
+      "fileCategory": "code"
+    },
+    {
+      "path": "ReviewChanges.jsx",
+      "language": "javascript",
+      "sizeLines": 142,
+      "fileCategory": "code"
+    },
+    {
+      "path": "ReviewDesktop.jsx",
+      "language": "javascript",
+      "sizeLines": 452,
+      "fileCategory": "code"
+    },
+    {
+      "path": "ReviewPins.jsx",
+      "language": "javascript",
+      "sizeLines": 333,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Search.jsx",
+      "language": "javascript",
+      "sizeLines": 132,
+      "fileCategory": "code"
+    },
+    {
+      "path": "Settings.jsx",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "SettingsDesktop.jsx",
+      "language": "javascript",
+      "sizeLines": 93,
+      "fileCategory": "code"
+    },
+    {
+      "path": "SettingsMobile.jsx",
+      "language": "javascript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "SharedNav.jsx",
+      "language": "javascript",
+      "sizeLines": 181,
+      "fileCategory": "code"
+    },
+    {
+      "path": "SupportDesktop.jsx",
+      "language": "javascript",
+      "sizeLines": 522,
+      "fileCategory": "code"
+    },
+    {
+      "path": "SupportThread.jsx",
+      "language": "javascript",
+      "sizeLines": 209,
+      "fileCategory": "code"
+    },
+    {
+      "path": "templates/chat-list.html",
+      "language": "html",
+      "sizeLines": 41,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/chat.html",
+      "language": "html",
+      "sizeLines": 216,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/command.html",
+      "language": "html",
+      "sizeLines": 318,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/home-desktop.html",
+      "language": "html",
+      "sizeLines": 135,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/home-mobile.html",
+      "language": "html",
+      "sizeLines": 228,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/kit.html",
+      "language": "html",
+      "sizeLines": 279,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/livescribe.html",
+      "language": "html",
+      "sizeLines": 212,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/onboarding.html",
+      "language": "html",
+      "sizeLines": 137,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/organize.html",
+      "language": "html",
+      "sizeLines": 305,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/review.html",
+      "language": "html",
+      "sizeLines": 181,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/settings.html",
+      "language": "html",
+      "sizeLines": 93,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/states-extra.html",
+      "language": "html",
+      "sizeLines": 67,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/support-inbox.html",
+      "language": "html",
+      "sizeLines": 167,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/support-thread.html",
+      "language": "html",
+      "sizeLines": 72,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/tracker.html",
+      "language": "html",
+      "sizeLines": 270,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "TreeContextMenu.jsx",
+      "language": "javascript",
+      "sizeLines": 517,
+      "fileCategory": "code"
+    }
+  ],
+  "totalFiles": 80,
+  "filteredByIgnore": 0,
+  "estimatedComplexity": "moderate",
+  "stats": {
+    "filesScanned": 80,
+    "byCategory": {
+      "code": 56,
+      "markup": 16,
+      "config": 8
+    },
+    "byLanguage": {
+      "unknown": 1,
+      "javascript": 55,
+      "css": 1,
+      "json": 8,
+      "html": 15
+    }
+  }
+}

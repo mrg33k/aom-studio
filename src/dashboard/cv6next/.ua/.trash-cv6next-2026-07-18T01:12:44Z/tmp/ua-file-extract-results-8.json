@@ -1,0 +1,127 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 15,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "templates/chat-list.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 41,
+      "nonEmptyLines": 39,
+      "metrics": {}
+    },
+    {
+      "path": "templates/chat.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 216,
+      "nonEmptyLines": 213,
+      "metrics": {}
+    },
+    {
+      "path": "templates/command.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 318,
+      "nonEmptyLines": 314,
+      "metrics": {}
+    },
+    {
+      "path": "templates/home-desktop.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 135,
+      "nonEmptyLines": 127,
+      "metrics": {}
+    },
+    {
+      "path": "templates/home-mobile.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 228,
+      "nonEmptyLines": 221,
+      "metrics": {}
+    },
+    {
+      "path": "templates/kit.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 279,
+      "nonEmptyLines": 265,
+      "metrics": {}
+    },
+    {
+      "path": "templates/livescribe.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 212,
+      "nonEmptyLines": 211,
+      "metrics": {}
+    },
+    {
+      "path": "templates/onboarding.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 137,
+      "nonEmptyLines": 134,
+      "metrics": {}
+    },
+    {
+      "path": "templates/organize.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 305,
+      "nonEmptyLines": 298,
+      "metrics": {}
+    },
+    {
+      "path": "templates/review.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 181,
+      "nonEmptyLines": 177,
+      "metrics": {}
+    },
+    {
+      "path": "templates/settings.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 93,
+      "nonEmptyLines": 89,
+      "metrics": {}
+    },
+    {
+      "path": "templates/states-extra.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 67,
+      "nonEmptyLines": 62,
+      "metrics": {}
+    },
+    {
+      "path": "templates/support-inbox.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 167,
+      "nonEmptyLines": 150,
+      "metrics": {}
+    },
+    {
+      "path": "templates/support-thread.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 72,
+      "nonEmptyLines": 63,
+      "metrics": {}
+    },
+    {
+      "path": "templates/tracker.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "totalLines": 270,
+      "nonEmptyLines": 261,
+      "metrics": {}
+    }
+  ]
+}

@@ -1,0 +1,1362 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "louvain",
+  "totalFiles": 80,
+  "totalBatches": 9,
+  "exportsByPath": {
+    ".ua/.understandignore": [],
+    "ActivityDock.jsx": [],
+    "BlockRenderer.jsx": [
+      "ActionChips",
+      "Result"
+    ],
+    "Campaign.jsx": [
+      "Campaign"
+    ],
+    "ChatDesktop.jsx": [
+      "fileKind",
+      "shelfItems",
+      "libKindLabel",
+      "FilesShelf",
+      "useRoomLibrary",
+      "ChatDesktop"
+    ],
+    "ChatGoalThread.jsx": [
+      "buildSteps",
+      "liveStepsToBlocks",
+      "WorkingTurn",
+      "ActionChips",
+      "GoalThreadBody",
+      "WorkDoneCard",
+      "AgentBlocks",
+      "PlanPanel",
+      "SendCtx",
+      "ReviewCtx",
+      "ChatGoalThread"
+    ],
+    "ChatLifecycle.jsx": [
+      "ChatLifecycle"
+    ],
+    "CornerCV6.jsx": [
+      "CornerCV6"
+    ],
+    "Cv6FullComposer.jsx": [],
+    "Cv6InputBar.jsx": [
+      "Cv6InputBar"
+    ],
+    "data/agentTitles.js": [
+      "AGENT_TITLES",
+      "DASHBOARD_AGENTS",
+      "titleForAgent",
+      "curateTitledAgents"
+    ],
+    "data/blockSchema.js": [
+      "BLOCK_TYPES",
+      "createStepBlock",
+      "createSuccessBlock",
+      "createSnagBlock",
+      "createQuestionBlock",
+      "createDataBlock",
+      "createSummaryBlock",
+      "createCodeBlock",
+      "createChoiceBlock",
+      "createChoiceEchoBlock",
+      "createGalleryBlock"
+    ],
+    "data/docxDocView.js": [
+      "docxShellHtml",
+      "isDocxName",
+      "useDocxDocs"
+    ],
+    "data/htmlDocView.js": [
+      "isHtmlName",
+      "htmlShellHtml",
+      "rewriteHtmlForPreview",
+      "useHtmlDocs"
+    ],
+    "data/mediaFallback.js": [
+      "mediaAttrs"
+    ],
+    "data/pdfDocView.js": [
+      "pdfShellHtml",
+      "usePdfDocs"
+    ],
+    "data/resultLinks.js": [
+      "extractLinkCards",
+      "stripTrailingCardUrl"
+    ],
+    "data/useCampaign.js": [
+      "useCampaignList",
+      "useCampaignDetail",
+      "useCampaignHealth",
+      "useCampaignContacts",
+      "useCityDetail",
+      "useCampaignActivity",
+      "useCampaignActions"
+    ],
+    "data/useCommandTracker.js": [
+      "useWorldId",
+      "useCommand",
+      "useTrackerBugs"
+    ],
+    "data/useDemoBlocks.js": [
+      "useDemoBlocks",
+      "useDemoBlocksFeed"
+    ],
+    "data/useDictation.js": [
+      "dictationSupported",
+      "useDictation"
+    ],
+    "data/useHomeData.js": [
+      "shapeHome",
+      "useHome",
+      "shapeChatList",
+      "useChatList",
+      "shapeProjectState",
+      "createMissionInProject",
+      "createProjectFromHome",
+      "useProjectMissions"
+    ],
+    "data/useLiveScribe.js": [
+      "useLiveScribe"
+    ],
+    "data/useOnboarding.js": [
+      "useOnboarding"
+    ],
+    "data/useOrganize.js": [
+      "useOrganize"
+    ],
+    "data/usePins.js": [
+      "usePins"
+    ],
+    "data/useReview.js": [
+      "buildDeliverableBody",
+      "reviewItemsFromFiles",
+      "useReview",
+      "useReviewWaitingCount"
+    ],
+    "data/useRoomThread.js": [
+      "useRoomThread",
+      "useGoalThread",
+      "useRoomPlan"
+    ],
+    "data/useSettings.js": [
+      "useSettings"
+    ],
+    "data/useSupportInbox.js": [
+      "latencyLabel",
+      "useSupportInbox"
+    ],
+    "EmailShell.jsx": [
+      "EmailShell"
+    ],
+    "LiveScribe.jsx": [
+      "LiveScribe"
+    ],
+    "MessageAttachments.jsx": [
+      "MessageAttachments"
+    ],
+    "MessageThread.jsx": [
+      "groupMessagesBySender",
+      "Cv6MessageExtras",
+      "Cv6MessageTurn",
+      "Cv6MessageGroup",
+      "Cv6MessageThread"
+    ],
+    "NewComposer.jsx": [
+      "NewComposer"
+    ],
+    "Onboarding.jsx": [
+      "Onboarding"
+    ],
+    "OnboardingDesktop.jsx": [
+      "OnboardingDesktop"
+    ],
+    "OnboardingMobile.jsx": [
+      "OnboardingMobile"
+    ],
+    "Organize.jsx": [
+      "Organize"
+    ],
+    "OrganizeDesktop.jsx": [
+      "buildWaitingMap",
+      "buildDecidedMap",
+      "OrganizeDesktop"
+    ],
+    "OrganizeMobile.jsx": [
+      "OrganizeMobile"
+    ],
+    "PinLayer.jsx": [
+      "PinLayer"
+    ],
+    "providers/DataContext.jsx": [
+      "DataProvider",
+      "CommandProvider",
+      "useDataContext",
+      "useCommandContext"
+    ],
+    "ResultLinkCard.jsx": [
+      "ResultLinkCards"
+    ],
+    "Review.jsx": [
+      "Review"
+    ],
+    "ReviewChanges.jsx": [
+      "compileChanges",
+      "ReviewChangesOverlay"
+    ],
+    "ReviewDesktop.jsx": [
+      "ReviewDesktop"
+    ],
+    "ReviewPins.jsx": [
+      "useReviewPinUI"
+    ],
+    "Search.jsx": [
+      "Search"
+    ],
+    "Settings.jsx": [
+      "Settings"
+    ],
+    "SettingsDesktop.jsx": [
+      "SettingsDesktop"
+    ],
+    "SettingsMobile.jsx": [
+      "SettingsMobile"
+    ],
+    "SharedNav.jsx": [
+      "NAV_TOOLS",
+      "DesktopNav",
+      "MobileNav"
+    ],
+    "SupportDesktop.jsx": [
+      "normalizeLinks",
+      "SupportDesktop"
+    ],
+    "SupportThread.jsx": [
+      "SupportThread"
+    ],
+    "TreeContextMenu.jsx": [
+      "useTreeContextMenu",
+      "renameNode",
+      "archiveNode",
+      "moveNode",
+      "slugifyName",
+      "parentPathFor",
+      "createNode",
+      "findMissionNode"
+    ]
+  },
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "path": "ActivityDock.jsx",
+          "language": "javascript",
+          "sizeLines": 282,
+          "fileCategory": "code"
+        },
+        {
+          "path": "CornerCV6.jsx",
+          "language": "javascript",
+          "sizeLines": 2912,
+          "fileCategory": "code"
+        },
+        {
+          "path": "LiveScribe.jsx",
+          "language": "javascript",
+          "sizeLines": 89,
+          "fileCategory": "code"
+        },
+        {
+          "path": "NewComposer.jsx",
+          "language": "javascript",
+          "sizeLines": 266,
+          "fileCategory": "code"
+        },
+        {
+          "path": "Search.jsx",
+          "language": "javascript",
+          "sizeLines": 132,
+          "fileCategory": "code"
+        },
+        {
+          "path": "SharedNav.jsx",
+          "language": "javascript",
+          "sizeLines": 181,
+          "fileCategory": "code"
+        },
+        {
+          "path": "SupportDesktop.jsx",
+          "language": "javascript",
+          "sizeLines": 522,
+          "fileCategory": "code"
+        },
+        {
+          "path": "SupportThread.jsx",
+          "language": "javascript",
+          "sizeLines": 209,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/agentTitles.js",
+          "language": "javascript",
+          "sizeLines": 97,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/blockSchema.js",
+          "language": "javascript",
+          "sizeLines": 261,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/resultLinks.js",
+          "language": "javascript",
+          "sizeLines": 62,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useCommandTracker.js",
+          "language": "javascript",
+          "sizeLines": 1373,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useDemoBlocks.js",
+          "language": "javascript",
+          "sizeLines": 256,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useHomeData.js",
+          "language": "javascript",
+          "sizeLines": 396,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useLiveScribe.js",
+          "language": "javascript",
+          "sizeLines": 428,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useRoomThread.js",
+          "language": "javascript",
+          "sizeLines": 658,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useSupportInbox.js",
+          "language": "javascript",
+          "sizeLines": 194,
+          "fileCategory": "code"
+        },
+        {
+          "path": "providers/DataContext.jsx",
+          "language": "javascript",
+          "sizeLines": 106,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "ActivityDock.jsx": [
+          "data/agentTitles.js",
+          "data/useCommandTracker.js"
+        ],
+        "CornerCV6.jsx": [
+          "ActivityDock.jsx",
+          "ChatDesktop.jsx",
+          "ChatGoalThread.jsx",
+          "ChatLifecycle.jsx",
+          "cv6.css",
+          "Cv6FullComposer.jsx",
+          "data/agentTitles.js",
+          "data/useCommandTracker.js",
+          "data/useDemoBlocks.js",
+          "data/useHomeData.js",
+          "data/useReview.js",
+          "data/useRoomThread.js",
+          "data/useSupportInbox.js",
+          "EmailShell.jsx",
+          "LiveScribe.jsx",
+          "MessageThread.jsx",
+          "NewComposer.jsx",
+          "Onboarding.jsx",
+          "Organize.jsx",
+          "providers/DataContext.jsx",
+          "Search.jsx",
+          "Settings.jsx",
+          "SharedNav.jsx",
+          "SupportDesktop.jsx",
+          "TreeContextMenu.jsx"
+        ],
+        "LiveScribe.jsx": [
+          "data/useLiveScribe.js"
+        ],
+        "NewComposer.jsx": [
+          "data/useHomeData.js"
+        ],
+        "Search.jsx": [
+          "data/useHomeData.js"
+        ],
+        "SharedNav.jsx": [],
+        "SupportDesktop.jsx": [
+          "data/useSupportInbox.js",
+          "SupportThread.jsx"
+        ],
+        "SupportThread.jsx": [],
+        "data/agentTitles.js": [],
+        "data/blockSchema.js": [],
+        "data/resultLinks.js": [],
+        "data/useCommandTracker.js": [
+          "data/agentTitles.js"
+        ],
+        "data/useDemoBlocks.js": [
+          "data/blockSchema.js"
+        ],
+        "data/useHomeData.js": [
+          "data/agentTitles.js",
+          "providers/DataContext.jsx"
+        ],
+        "data/useLiveScribe.js": [],
+        "data/useRoomThread.js": [
+          "data/agentTitles.js",
+          "data/resultLinks.js"
+        ],
+        "data/useSupportInbox.js": [],
+        "providers/DataContext.jsx": [
+          "data/useCommandTracker.js"
+        ]
+      },
+      "neighborMap": {
+        "CornerCV6.jsx": [
+          {
+            "path": "ChatDesktop.jsx",
+            "batchIndex": 3,
+            "symbols": [
+              "fileKind",
+              "shelfItems",
+              "libKindLabel",
+              "FilesShelf",
+              "useRoomLibrary",
+              "ChatDesktop"
+            ]
+          },
+          {
+            "path": "ChatGoalThread.jsx",
+            "batchIndex": 3,
+            "symbols": [
+              "buildSteps",
+              "liveStepsToBlocks",
+              "WorkingTurn",
+              "ActionChips",
+              "GoalThreadBody",
+              "WorkDoneCard",
+              "AgentBlocks",
+              "PlanPanel",
+              "SendCtx",
+              "ReviewCtx",
+              "ChatGoalThread"
+            ]
+          },
+          {
+            "path": "ChatLifecycle.jsx",
+            "batchIndex": 3,
+            "symbols": [
+              "ChatLifecycle"
+            ]
+          },
+          {
+            "path": "cv6.css",
+            "batchIndex": 9,
+            "symbols": []
+          },
+          {
+            "path": "Cv6FullComposer.jsx",
+            "batchIndex": 3,
+            "symbols": []
+          },
+          {
+            "path": "data/useReview.js",
+            "batchIndex": 2,
+            "symbols": [
+              "buildDeliverableBody",
+              "reviewItemsFromFiles",
+              "useReview",
+              "useReviewWaitingCount"
+            ]
+          },
+          {
+            "path": "EmailShell.jsx",
+            "batchIndex": 6,
+            "symbols": [
+              "EmailShell"
+            ]
+          },
+          {
+            "path": "MessageThread.jsx",
+            "batchIndex": 3,
+            "symbols": [
+              "groupMessagesBySender",
+              "Cv6MessageExtras",
+              "Cv6MessageTurn",
+              "Cv6MessageGroup",
+              "Cv6MessageThread"
+            ]
+          },
+          {
+            "path": "Onboarding.jsx",
+            "batchIndex": 4,
+            "symbols": [
+              "Onboarding"
+            ]
+          },
+          {
+            "path": "Organize.jsx",
+            "batchIndex": 2,
+            "symbols": [
+              "Organize"
+            ]
+          },
+          {
+            "path": "Settings.jsx",
+            "batchIndex": 5,
+            "symbols": [
+              "Settings"
+            ]
+          },
+          {
+            "path": "TreeContextMenu.jsx",
+            "batchIndex": 2,
+            "symbols": [
+              "useTreeContextMenu",
+              "renameNode",
+              "archiveNode",
+              "moveNode",
+              "slugifyName",
+              "parentPathFor",
+              "createNode",
+              "findMissionNode"
+            ]
+          }
+        ],
+        "NewComposer.jsx": [
+          {
+            "path": "OrganizeDesktop.jsx",
+            "batchIndex": 2,
+            "symbols": [
+              "buildWaitingMap",
+              "buildDecidedMap",
+              "OrganizeDesktop"
+            ]
+          },
+          {
+            "path": "OrganizeMobile.jsx",
+            "batchIndex": 2,
+            "symbols": [
+              "OrganizeMobile"
+            ]
+          }
+        ],
+        "data/agentTitles.js": [
+          {
+            "path": "data/useReview.js",
+            "batchIndex": 2,
+            "symbols": [
+              "buildDeliverableBody",
+              "reviewItemsFromFiles",
+              "useReview",
+              "useReviewWaitingCount"
+            ]
+          }
+        ],
+        "data/useHomeData.js": [
+          {
+            "path": "ChatDesktop.jsx",
+            "batchIndex": 3,
+            "symbols": [
+              "fileKind",
+              "shelfItems",
+              "libKindLabel",
+              "FilesShelf",
+              "useRoomLibrary",
+              "ChatDesktop"
+            ]
+          }
+        ],
+        "data/useRoomThread.js": [
+          {
+            "path": "ChatDesktop.jsx",
+            "batchIndex": 3,
+            "symbols": [
+              "fileKind",
+              "shelfItems",
+              "libKindLabel",
+              "FilesShelf",
+              "useRoomLibrary",
+              "ChatDesktop"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 2,
+      "files": [
+        {
+          "path": "Organize.jsx",
+          "language": "javascript",
+          "sizeLines": 17,
+          "fileCategory": "code"
+        },
+        {
+          "path": "OrganizeDesktop.jsx",
+          "language": "javascript",
+          "sizeLines": 457,
+          "fileCategory": "code"
+        },
+        {
+          "path": "OrganizeMobile.jsx",
+          "language": "javascript",
+          "sizeLines": 416,
+          "fileCategory": "code"
+        },
+        {
+          "path": "Review.jsx",
+          "language": "javascript",
+          "sizeLines": 307,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ReviewChanges.jsx",
+          "language": "javascript",
+          "sizeLines": 142,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ReviewDesktop.jsx",
+          "language": "javascript",
+          "sizeLines": 452,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ReviewPins.jsx",
+          "language": "javascript",
+          "sizeLines": 333,
+          "fileCategory": "code"
+        },
+        {
+          "path": "TreeContextMenu.jsx",
+          "language": "javascript",
+          "sizeLines": 517,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/docxDocView.js",
+          "language": "javascript",
+          "sizeLines": 152,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/htmlDocView.js",
+          "language": "javascript",
+          "sizeLines": 216,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/mediaFallback.js",
+          "language": "javascript",
+          "sizeLines": 83,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/pdfDocView.js",
+          "language": "javascript",
+          "sizeLines": 190,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useOrganize.js",
+          "language": "javascript",
+          "sizeLines": 1078,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/usePins.js",
+          "language": "javascript",
+          "sizeLines": 94,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useReview.js",
+          "language": "javascript",
+          "sizeLines": 1233,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "Organize.jsx": [
+          "OrganizeDesktop.jsx",
+          "OrganizeMobile.jsx"
+        ],
+        "OrganizeDesktop.jsx": [
+          "data/docxDocView.js",
+          "data/htmlDocView.js",
+          "data/pdfDocView.js",
+          "data/useOrganize.js",
+          "data/usePins.js",
+          "data/useReview.js",
+          "NewComposer.jsx",
+          "ReviewChanges.jsx",
+          "ReviewPins.jsx",
+          "TreeContextMenu.jsx"
+        ],
+        "OrganizeMobile.jsx": [
+          "data/docxDocView.js",
+          "data/htmlDocView.js",
+          "data/pdfDocView.js",
+          "data/useOrganize.js",
+          "data/usePins.js",
+          "data/useReview.js",
+          "NewComposer.jsx",
+          "OrganizeDesktop.jsx",
+          "ReviewChanges.jsx",
+          "ReviewPins.jsx"
+        ],
+        "Review.jsx": [
+          "data/docxDocView.js",
+          "data/htmlDocView.js",
+          "data/pdfDocView.js",
+          "data/usePins.js",
+          "data/useReview.js",
+          "ReviewChanges.jsx",
+          "ReviewPins.jsx"
+        ],
+        "ReviewChanges.jsx": [],
+        "ReviewDesktop.jsx": [
+          "data/docxDocView.js",
+          "data/htmlDocView.js",
+          "data/pdfDocView.js",
+          "data/usePins.js",
+          "data/useReview.js",
+          "ReviewChanges.jsx",
+          "ReviewPins.jsx",
+          "TreeContextMenu.jsx"
+        ],
+        "ReviewPins.jsx": [],
+        "TreeContextMenu.jsx": [],
+        "data/docxDocView.js": [],
+        "data/htmlDocView.js": [],
+        "data/mediaFallback.js": [],
+        "data/pdfDocView.js": [],
+        "data/useOrganize.js": [
+          "data/docxDocView.js",
+          "data/htmlDocView.js",
+          "data/mediaFallback.js",
+          "data/pdfDocView.js"
+        ],
+        "data/usePins.js": [],
+        "data/useReview.js": [
+          "data/agentTitles.js",
+          "data/docxDocView.js",
+          "data/htmlDocView.js",
+          "data/mediaFallback.js",
+          "data/pdfDocView.js"
+        ]
+      },
+      "neighborMap": {
+        "Organize.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ],
+        "OrganizeDesktop.jsx": [
+          {
+            "path": "NewComposer.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "NewComposer"
+            ]
+          }
+        ],
+        "OrganizeMobile.jsx": [
+          {
+            "path": "NewComposer.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "NewComposer"
+            ]
+          }
+        ],
+        "TreeContextMenu.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ],
+        "data/useReview.js": [
+          {
+            "path": "data/agentTitles.js",
+            "batchIndex": 1,
+            "symbols": [
+              "AGENT_TITLES",
+              "DASHBOARD_AGENTS",
+              "titleForAgent",
+              "curateTitledAgents"
+            ]
+          },
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 3,
+      "files": [
+        {
+          "path": "BlockRenderer.jsx",
+          "language": "javascript",
+          "sizeLines": 640,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ChatDesktop.jsx",
+          "language": "javascript",
+          "sizeLines": 924,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ChatGoalThread.jsx",
+          "language": "javascript",
+          "sizeLines": 960,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ChatLifecycle.jsx",
+          "language": "javascript",
+          "sizeLines": 590,
+          "fileCategory": "code"
+        },
+        {
+          "path": "Cv6FullComposer.jsx",
+          "language": "javascript",
+          "sizeLines": 349,
+          "fileCategory": "code"
+        },
+        {
+          "path": "Cv6InputBar.jsx",
+          "language": "javascript",
+          "sizeLines": 234,
+          "fileCategory": "code"
+        },
+        {
+          "path": "MessageAttachments.jsx",
+          "language": "javascript",
+          "sizeLines": 280,
+          "fileCategory": "code"
+        },
+        {
+          "path": "MessageThread.jsx",
+          "language": "javascript",
+          "sizeLines": 399,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ResultLinkCard.jsx",
+          "language": "javascript",
+          "sizeLines": 44,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useDictation.js",
+          "language": "javascript",
+          "sizeLines": 68,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "BlockRenderer.jsx": [
+          "ChatGoalThread.jsx"
+        ],
+        "ChatDesktop.jsx": [
+          "ChatGoalThread.jsx",
+          "Cv6FullComposer.jsx",
+          "data/useHomeData.js",
+          "data/useRoomThread.js",
+          "MessageThread.jsx"
+        ],
+        "ChatGoalThread.jsx": [],
+        "ChatLifecycle.jsx": [
+          "BlockRenderer.jsx",
+          "ChatDesktop.jsx",
+          "ChatGoalThread.jsx",
+          "Cv6FullComposer.jsx",
+          "data/useDictation.js",
+          "MessageThread.jsx",
+          "ResultLinkCard.jsx"
+        ],
+        "Cv6FullComposer.jsx": [
+          "Cv6InputBar.jsx"
+        ],
+        "Cv6InputBar.jsx": [],
+        "MessageAttachments.jsx": [],
+        "MessageThread.jsx": [
+          "BlockRenderer.jsx",
+          "ChatGoalThread.jsx",
+          "MessageAttachments.jsx",
+          "ResultLinkCard.jsx"
+        ],
+        "ResultLinkCard.jsx": [],
+        "data/useDictation.js": []
+      },
+      "neighborMap": {
+        "ChatDesktop.jsx": [
+          {
+            "path": "data/useHomeData.js",
+            "batchIndex": 1,
+            "symbols": [
+              "shapeHome",
+              "useHome",
+              "shapeChatList",
+              "useChatList",
+              "shapeProjectState",
+              "createMissionInProject",
+              "createProjectFromHome",
+              "useProjectMissions"
+            ]
+          },
+          {
+            "path": "data/useRoomThread.js",
+            "batchIndex": 1,
+            "symbols": [
+              "useRoomThread",
+              "useGoalThread",
+              "useRoomPlan"
+            ]
+          },
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ],
+        "ChatGoalThread.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ],
+        "ChatLifecycle.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ],
+        "Cv6FullComposer.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ],
+        "MessageThread.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 4,
+      "files": [
+        {
+          "path": "Onboarding.jsx",
+          "language": "javascript",
+          "sizeLines": 17,
+          "fileCategory": "code"
+        },
+        {
+          "path": "OnboardingDesktop.jsx",
+          "language": "javascript",
+          "sizeLines": 83,
+          "fileCategory": "code"
+        },
+        {
+          "path": "OnboardingMobile.jsx",
+          "language": "javascript",
+          "sizeLines": 80,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useOnboarding.js",
+          "language": "javascript",
+          "sizeLines": 182,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "Onboarding.jsx": [
+          "OnboardingDesktop.jsx",
+          "OnboardingMobile.jsx"
+        ],
+        "OnboardingDesktop.jsx": [
+          "data/useOnboarding.js"
+        ],
+        "OnboardingMobile.jsx": [
+          "data/useOnboarding.js"
+        ],
+        "data/useOnboarding.js": []
+      },
+      "neighborMap": {
+        "Onboarding.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 5,
+      "files": [
+        {
+          "path": "Settings.jsx",
+          "language": "javascript",
+          "sizeLines": 17,
+          "fileCategory": "code"
+        },
+        {
+          "path": "SettingsDesktop.jsx",
+          "language": "javascript",
+          "sizeLines": 93,
+          "fileCategory": "code"
+        },
+        {
+          "path": "SettingsMobile.jsx",
+          "language": "javascript",
+          "sizeLines": 103,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useSettings.js",
+          "language": "javascript",
+          "sizeLines": 142,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "Settings.jsx": [
+          "SettingsDesktop.jsx",
+          "SettingsMobile.jsx"
+        ],
+        "SettingsDesktop.jsx": [
+          "data/useSettings.js"
+        ],
+        "SettingsMobile.jsx": [
+          "data/useSettings.js"
+        ],
+        "data/useSettings.js": []
+      },
+      "neighborMap": {
+        "Settings.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 6,
+      "files": [
+        {
+          "path": "Campaign.jsx",
+          "language": "javascript",
+          "sizeLines": 1015,
+          "fileCategory": "code"
+        },
+        {
+          "path": "EmailShell.jsx",
+          "language": "javascript",
+          "sizeLines": 75,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/useCampaign.js",
+          "language": "javascript",
+          "sizeLines": 165,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "Campaign.jsx": [
+          "data/useCampaign.js"
+        ],
+        "EmailShell.jsx": [
+          "Campaign.jsx"
+        ],
+        "data/useCampaign.js": []
+      },
+      "neighborMap": {
+        "EmailShell.jsx": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 7,
+      "files": [
+        {
+          "path": "data/chat-list.json",
+          "language": "json",
+          "sizeLines": 39,
+          "fileCategory": "config"
+        },
+        {
+          "path": "data/chat.json",
+          "language": "json",
+          "sizeLines": 53,
+          "fileCategory": "config"
+        },
+        {
+          "path": "data/command.json",
+          "language": "json",
+          "sizeLines": 37,
+          "fileCategory": "config"
+        },
+        {
+          "path": "data/home-desktop.json",
+          "language": "json",
+          "sizeLines": 96,
+          "fileCategory": "config"
+        },
+        {
+          "path": "data/home-mobile.json",
+          "language": "json",
+          "sizeLines": 58,
+          "fileCategory": "config"
+        },
+        {
+          "path": "data/kit.json",
+          "language": "json",
+          "sizeLines": 73,
+          "fileCategory": "config"
+        },
+        {
+          "path": "data/support-inbox.json",
+          "language": "json",
+          "sizeLines": 102,
+          "fileCategory": "config"
+        },
+        {
+          "path": "data/tracker.json",
+          "language": "json",
+          "sizeLines": 70,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "data/chat-list.json": [],
+        "data/chat.json": [],
+        "data/command.json": [],
+        "data/home-desktop.json": [],
+        "data/home-mobile.json": [],
+        "data/kit.json": [],
+        "data/support-inbox.json": [],
+        "data/tracker.json": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 8,
+      "files": [
+        {
+          "path": "templates/chat-list.html",
+          "language": "html",
+          "sizeLines": 41,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/chat.html",
+          "language": "html",
+          "sizeLines": 216,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/command.html",
+          "language": "html",
+          "sizeLines": 318,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/home-desktop.html",
+          "language": "html",
+          "sizeLines": 135,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/home-mobile.html",
+          "language": "html",
+          "sizeLines": 228,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/kit.html",
+          "language": "html",
+          "sizeLines": 279,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/livescribe.html",
+          "language": "html",
+          "sizeLines": 212,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/onboarding.html",
+          "language": "html",
+          "sizeLines": 137,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/organize.html",
+          "language": "html",
+          "sizeLines": 305,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/review.html",
+          "language": "html",
+          "sizeLines": 181,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/settings.html",
+          "language": "html",
+          "sizeLines": 93,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/states-extra.html",
+          "language": "html",
+          "sizeLines": 67,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/support-inbox.html",
+          "language": "html",
+          "sizeLines": 167,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/support-thread.html",
+          "language": "html",
+          "sizeLines": 72,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "templates/tracker.html",
+          "language": "html",
+          "sizeLines": 270,
+          "fileCategory": "markup"
+        }
+      ],
+      "batchImportData": {
+        "templates/chat-list.html": [],
+        "templates/chat.html": [],
+        "templates/command.html": [],
+        "templates/home-desktop.html": [],
+        "templates/home-mobile.html": [],
+        "templates/kit.html": [],
+        "templates/livescribe.html": [],
+        "templates/onboarding.html": [],
+        "templates/organize.html": [],
+        "templates/review.html": [],
+        "templates/settings.html": [],
+        "templates/states-extra.html": [],
+        "templates/support-inbox.html": [],
+        "templates/support-thread.html": [],
+        "templates/tracker.html": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 9,
+      "files": [
+        {
+          "path": ".ua/.understandignore",
+          "language": "unknown",
+          "sizeLines": 43,
+          "fileCategory": "code"
+        },
+        {
+          "path": "cv6.css",
+          "language": "css",
+          "sizeLines": 1691,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "PinLayer.jsx",
+          "language": "javascript",
+          "sizeLines": 81,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        ".ua/.understandignore": [],
+        "cv6.css": [],
+        "PinLayer.jsx": []
+      },
+      "neighborMap": {
+        "cv6.css": [
+          {
+            "path": "CornerCV6.jsx",
+            "batchIndex": 1,
+            "symbols": [
+              "CornerCV6"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

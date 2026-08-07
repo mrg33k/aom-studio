@@ -1,0 +1,27 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {"path": "BlockRenderer.jsx", "language": "javascript", "sizeLines": 640, "fileCategory": "code"},
+    {"path": "ChatDesktop.jsx", "language": "javascript", "sizeLines": 924, "fileCategory": "code"},
+    {"path": "ChatGoalThread.jsx", "language": "javascript", "sizeLines": 960, "fileCategory": "code"},
+    {"path": "ChatLifecycle.jsx", "language": "javascript", "sizeLines": 590, "fileCategory": "code"},
+    {"path": "Cv6FullComposer.jsx", "language": "javascript", "sizeLines": 349, "fileCategory": "code"},
+    {"path": "Cv6InputBar.jsx", "language": "javascript", "sizeLines": 234, "fileCategory": "code"},
+    {"path": "MessageAttachments.jsx", "language": "javascript", "sizeLines": 280, "fileCategory": "code"},
+    {"path": "MessageThread.jsx", "language": "javascript", "sizeLines": 399, "fileCategory": "code"},
+    {"path": "ResultLinkCard.jsx", "language": "javascript", "sizeLines": 44, "fileCategory": "code"},
+    {"path": "data/useDictation.js", "language": "javascript", "sizeLines": 68, "fileCategory": "code"}
+  ],
+  "batchImportData": {
+    "BlockRenderer.jsx": ["ChatGoalThread.jsx"],
+    "ChatDesktop.jsx": ["ChatGoalThread.jsx", "Cv6FullComposer.jsx", "data/useHomeData.js", "data/useRoomThread.js", "MessageThread.jsx"],
+    "ChatGoalThread.jsx": [],
+    "ChatLifecycle.jsx": ["BlockRenderer.jsx", "ChatDesktop.jsx", "ChatGoalThread.jsx", "Cv6FullComposer.jsx", "data/useDictation.js", "MessageThread.jsx", "ResultLinkCard.jsx"],
+    "Cv6FullComposer.jsx": ["Cv6InputBar.jsx"],
+    "Cv6InputBar.jsx": [],
+    "MessageAttachments.jsx": [],
+    "MessageThread.jsx": ["BlockRenderer.jsx", "ChatGoalThread.jsx", "MessageAttachments.jsx", "ResultLinkCard.jsx"],
+    "ResultLinkCard.jsx": [],
+    "data/useDictation.js": []
+  }
+}

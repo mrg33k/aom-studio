@@ -1,0 +1,80 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 2,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "cv6.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 1691,
+      "nonEmptyLines": 1567,
+      "metrics": {}
+    },
+    {
+      "path": "PinLayer.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 81,
+      "nonEmptyLines": 75,
+      "functions": [
+        {
+          "name": "PinLayer",
+          "startLine": 8,
+          "endLine": 81,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "PinLayer",
+          "line": 8,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "PinLayer",
+          "callee": "useRef",
+          "lineNumber": 9
+        },
+        {
+          "caller": "PinLayer",
+          "callee": "useCallback",
+          "lineNumber": 11
+        },
+        {
+          "caller": "PinLayer",
+          "callee": "containerRef.current?.getBoundingClientRect",
+          "lineNumber": 14
+        },
+        {
+          "caller": "PinLayer",
+          "callee": "onAddPin",
+          "lineNumber": 18
+        },
+        {
+          "caller": "PinLayer",
+          "callee": "pins.map",
+          "lineNumber": 36
+        },
+        {
+          "caller": "PinLayer",
+          "callee": "e.stopPropagation",
+          "lineNumber": 48
+        },
+        {
+          "caller": "PinLayer",
+          "callee": "onOpenPin",
+          "lineNumber": 49
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    }
+  ]
+}

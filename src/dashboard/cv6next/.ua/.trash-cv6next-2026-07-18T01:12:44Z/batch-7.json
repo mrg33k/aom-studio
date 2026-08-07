@@ -1,0 +1,115 @@
+{
+  "nodes": [
+    {
+      "id": "config:data/chat-list.json",
+      "type": "config",
+      "name": "chat-list.json",
+      "filePath": "data/chat-list.json",
+      "summary": "Data-binding contract for the mobile chat-list screen, declaring the live/needs-you counts, the agent row shape (id, name, initials, tint, status), actions, states, and modifier rules the wired template fills with real data.",
+      "tags": ["configuration", "ui-contract", "chat", "template-data", "cv6"],
+      "complexity": "simple",
+      "languageNotes": "Not seed data but a CV6 template binding spec: it maps data-each/data-bind hooks in wired/mobile/chat-list.html to typed field shapes rather than holding concrete records."
+    },
+    {
+      "id": "config:data/chat.json",
+      "type": "config",
+      "name": "chat.json",
+      "filePath": "data/chat.json",
+      "summary": "Data-binding contract for the Chat Goal Thread tool across desktop and mobile, composing message blocks from the agent-chat kit and defining the rooms/agents/goal vocabulary, actions, and states the thread renders.",
+      "tags": ["configuration", "ui-contract", "chat", "goal-thread", "template-data"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:data/command.json",
+      "type": "config",
+      "name": "command.json",
+      "filePath": "data/command.json",
+      "summary": "Data-binding contract for the Command tool screen, describing the goal ledger, background-activity dock, and focused goal-detail regions plus their counts, actions, and states.",
+      "tags": ["configuration", "ui-contract", "command", "activity-dock", "template-data"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:data/home-desktop.json",
+      "type": "config",
+      "name": "home-desktop.json",
+      "filePath": "data/home-desktop.json",
+      "summary": "Data-binding contract for the desktop Home screen, shaped to useHomeData: it declares the agents, projects, needs-you catch-up inbox, and conversation/goal column field shapes, actions, states, and responsive modifiers.",
+      "tags": ["configuration", "ui-contract", "home", "desktop", "template-data"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:data/home-mobile.json",
+      "type": "config",
+      "name": "home-mobile.json",
+      "filePath": "data/home-mobile.json",
+      "summary": "Data-binding contract for the mobile Home screen, sharing the desktop Home rooms/agents/projects vocabulary and declaring the mobile-specific data shapes, actions, and states its wired template renders.",
+      "tags": ["configuration", "ui-contract", "home", "mobile", "template-data"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:data/kit.json",
+      "type": "config",
+      "name": "kit.json",
+      "filePath": "data/kit.json",
+      "summary": "Element-kit contract for the shared agent-chat vocabulary, defining the reusable turn/message/block templates (avatar, status, stacked blocks, user reply bubble) cloned across Chat, Support, Command, and Live Scribe.",
+      "tags": ["configuration", "ui-kit", "agent-chat", "component-library", "template-data"],
+      "complexity": "moderate",
+      "languageNotes": "A component-vocabulary spec: each element carries a `what` description plus a typed `data.shape`, so consuming screens compose from one canonical set of chat block templates."
+    },
+    {
+      "id": "config:data/support-inbox.json",
+      "type": "config",
+      "name": "support-inbox.json",
+      "filePath": "data/support-inbox.json",
+      "summary": "Data-binding contract for the Support inbox tool, declaring the thread list, message shapes, tint enums, actions, states, and shared rules that useSupportInbox fills with the real support flow data.",
+      "tags": ["configuration", "ui-contract", "support", "inbox", "template-data"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:data/tracker.json",
+      "type": "config",
+      "name": "tracker.json",
+      "filePath": "data/tracker.json",
+      "summary": "Data-binding contract for the Tracker tool (CV6 bug tracker), describing the desktop switcher/bug-table/detail regions and the mobile list, switch, and detail states with their bug row shapes and actions.",
+      "tags": ["configuration", "ui-contract", "tracker", "bug-tracker", "template-data"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:data/command.json",
+      "target": "file:data/useCommandTracker.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:data/tracker.json",
+      "target": "file:data/useCommandTracker.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:data/home-desktop.json",
+      "target": "file:data/useHomeData.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:data/home-mobile.json",
+      "target": "file:data/useHomeData.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:data/support-inbox.json",
+      "target": "file:data/useSupportInbox.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

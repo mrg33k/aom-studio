@@ -1,0 +1,11 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {"path": "cv6.css", "language": "css", "sizeLines": 1691, "fileCategory": "markup"},
+    {"path": "PinLayer.jsx", "language": "javascript", "sizeLines": 81, "fileCategory": "code"}
+  ],
+  "batchImportData": {
+    "cv6.css": [],
+    "PinLayer.jsx": []
+  }
+}

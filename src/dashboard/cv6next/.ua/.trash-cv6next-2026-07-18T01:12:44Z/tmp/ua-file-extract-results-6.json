@@ -1,0 +1,1851 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 3,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "Campaign.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 1015,
+      "nonEmptyLines": 958,
+      "functions": [
+        {
+          "name": "fmtWhen",
+          "startLine": 30,
+          "endLine": 40,
+          "params": [
+            "iso"
+          ]
+        },
+        {
+          "name": "StatusLight",
+          "startLine": 42,
+          "endLine": 53,
+          "params": []
+        },
+        {
+          "name": "healthLine",
+          "startLine": 55,
+          "endLine": 66,
+          "params": [
+            "health"
+          ]
+        },
+        {
+          "name": "btnPrimary",
+          "startLine": 72,
+          "endLine": 76,
+          "params": [
+            "danger"
+          ]
+        },
+        {
+          "name": "HealthStrip",
+          "startLine": 85,
+          "endLine": 131,
+          "params": []
+        },
+        {
+          "name": "GoalStrip",
+          "startLine": 135,
+          "endLine": 162,
+          "params": []
+        },
+        {
+          "name": "TodayCards",
+          "startLine": 166,
+          "endLine": 239,
+          "params": []
+        },
+        {
+          "name": "PipelineBar",
+          "startLine": 243,
+          "endLine": 262,
+          "params": []
+        },
+        {
+          "name": "StageList",
+          "startLine": 264,
+          "endLine": 296,
+          "params": []
+        },
+        {
+          "name": "CityDetail",
+          "startLine": 300,
+          "endLine": 375,
+          "params": []
+        },
+        {
+          "name": "ActivityFeed",
+          "startLine": 379,
+          "endLine": 394,
+          "params": []
+        },
+        {
+          "name": "CreateWizard",
+          "startLine": 405,
+          "endLine": 684,
+          "params": []
+        },
+        {
+          "name": "renderTemplate",
+          "startLine": 693,
+          "endLine": 700,
+          "params": [
+            "template",
+            "contact"
+          ]
+        },
+        {
+          "name": "MessageCard",
+          "startLine": 709,
+          "endLine": 837,
+          "params": []
+        },
+        {
+          "name": "Campaign",
+          "startLine": 841,
+          "endLine": 1015,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "Campaign",
+          "line": 841,
+          "isDefault": true
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "fmtWhen",
+          "callee": "d.toDateString",
+          "lineNumber": 34
+        },
+        {
+          "caller": "fmtWhen",
+          "callee": "nowD.toDateString",
+          "lineNumber": 34
+        },
+        {
+          "caller": "fmtWhen",
+          "callee": "nowD.getTime",
+          "lineNumber": 35
+        },
+        {
+          "caller": "fmtWhen",
+          "callee": "d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace",
+          "lineNumber": 36
+        },
+        {
+          "caller": "fmtWhen",
+          "callee": "d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase",
+          "lineNumber": 36
+        },
+        {
+          "caller": "fmtWhen",
+          "callee": "d.toLocaleTimeString",
+          "lineNumber": 36
+        },
+        {
+          "caller": "fmtWhen",
+          "callee": "d.toDateString",
+          "lineNumber": 38
+        },
+        {
+          "caller": "fmtWhen",
+          "callee": "tmr.toDateString",
+          "lineNumber": 38
+        },
+        {
+          "caller": "fmtWhen",
+          "callee": "d.toLocaleDateString",
+          "lineNumber": 39
+        },
+        {
+          "caller": "healthLine",
+          "callee": "fmtWhen",
+          "lineNumber": 59
+        },
+        {
+          "caller": "healthLine",
+          "callee": "fmtWhen",
+          "lineNumber": 61
+        },
+        {
+          "caller": "onFix",
+          "callee": "window.open",
+          "lineNumber": 91
+        },
+        {
+          "caller": "onFix",
+          "callee": "act",
+          "lineNumber": 98
+        },
+        {
+          "caller": "HealthStrip",
+          "callee": "healthLine",
+          "lineNumber": 110
+        },
+        {
+          "caller": "HealthStrip",
+          "callee": "btnPrimary",
+          "lineNumber": 116
+        },
+        {
+          "caller": "GoalStrip",
+          "callee": "Math.min",
+          "lineNumber": 138
+        },
+        {
+          "caller": "GoalStrip",
+          "callee": "Math.round",
+          "lineNumber": 138
+        },
+        {
+          "caller": "TodayCards",
+          "callee": "btnPrimary",
+          "lineNumber": 193
+        },
+        {
+          "caller": "TodayCards",
+          "callee": "act",
+          "lineNumber": 193
+        },
+        {
+          "caller": "TodayCards",
+          "callee": "replies.map",
+          "lineNumber": 199
+        },
+        {
+          "caller": "TodayCards",
+          "callee": "onOpenCity",
+          "lineNumber": 200
+        },
+        {
+          "caller": "TodayCards",
+          "callee": "fmtWhen",
+          "lineNumber": 207
+        },
+        {
+          "caller": "TodayCards",
+          "callee": "follow.map",
+          "lineNumber": 212
+        },
+        {
+          "caller": "TodayCards",
+          "callee": "onOpenCity",
+          "lineNumber": 213
+        },
+        {
+          "caller": "TodayCards",
+          "callee": "fmtWhen",
+          "lineNumber": 219
+        },
+        {
+          "caller": "PipelineBar",
+          "callee": "PIPE_ORDER.map",
+          "lineNumber": 246
+        },
+        {
+          "caller": "PipelineBar",
+          "callee": "onStage",
+          "lineNumber": 249
+        },
+        {
+          "caller": "StageList",
+          "callee": "useCampaignContacts",
+          "lineNumber": 265
+        },
+        {
+          "caller": "StageList",
+          "callee": "total.toLocaleString",
+          "lineNumber": 270
+        },
+        {
+          "caller": "StageList",
+          "callee": "STAGE_LABELS[stage]?.toLowerCase",
+          "lineNumber": 270
+        },
+        {
+          "caller": "StageList",
+          "callee": "rows.map",
+          "lineNumber": 272
+        },
+        {
+          "caller": "StageList",
+          "callee": "onOpenCity",
+          "lineNumber": 273
+        },
+        {
+          "caller": "StageList",
+          "callee": "Number(r.merge_fields.population).toLocaleString",
+          "lineNumber": 285
+        },
+        {
+          "caller": "StageList",
+          "callee": "Number",
+          "lineNumber": 285
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "useCityDetail",
+          "lineNumber": 301
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "(data?.events || []).filter",
+          "lineNumber": 304
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "[\n    ...(data?.events || []),\n    ...(data?.sends || []).map((s) => ({\n      id: `send-${s.sent_at}`, kind: 'sent', summary: 'Email sent', created_at: s.sent_at,\n    })),\n  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice",
+          "lineNumber": 306
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "[\n    ...(data?.events || []),\n    ...(data?.sends || []).map((s) => ({\n      id: `send-${s.sent_at}`, kind: 'sent', summary: 'Email sent', created_at: s.sent_at,\n    })),\n  ].sort",
+          "lineNumber": 306
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "(data?.sends || []).map",
+          "lineNumber": 308
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "Number(mf.population).toLocaleString",
+          "lineNumber": 333
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "Number",
+          "lineNumber": 333
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "(NEXT[ct.stage] || []).map",
+          "lineNumber": 339
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "act",
+          "lineNumber": 341
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "STAGE_LABELS[s].toLowerCase",
+          "lineNumber": 342
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "replies.slice(0, 3).map",
+          "lineNumber": 351
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "replies.slice",
+          "lineNumber": 351
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "fmtWhen",
+          "lineNumber": 353
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "timeline.map",
+          "lineNumber": 364
+        },
+        {
+          "caller": "CityDetail",
+          "callee": "fmtWhen",
+          "lineNumber": 366
+        },
+        {
+          "caller": "ActivityFeed",
+          "callee": "useCampaignActivity",
+          "lineNumber": 380
+        },
+        {
+          "caller": "ActivityFeed",
+          "callee": "(feed || []).slice(0, 20).map",
+          "lineNumber": 386
+        },
+        {
+          "caller": "ActivityFeed",
+          "callee": "(feed || []).slice",
+          "lineNumber": 386
+        },
+        {
+          "caller": "ActivityFeed",
+          "callee": "fmtWhen",
+          "lineNumber": 388
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 406
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 407
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 408
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 409
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 410
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 411
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 412
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 413
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 414
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 415
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useState",
+          "lineNumber": 416
+        },
+        {
+          "caller": "set",
+          "callee": "setF",
+          "lineNumber": 417
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "useEffect",
+          "lineNumber": 419
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "authFetch('/api/dashboard/mail/connections', { credentials: 'include' })\n      .then((r) => r.json())\n      .then((d) => {\n        const list = d.connections || [];\n        setConnections(list);\n        if (list.length === 1) setConnId(list[0].id);\n      })\n      .catch",
+          "lineNumber": 420
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "authFetch('/api/dashboard/mail/connections', { credentials: 'include' })\n      .then((r) => r.json())\n      .then",
+          "lineNumber": 420
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "authFetch('/api/dashboard/mail/connections', { credentials: 'include' })\n      .then",
+          "lineNumber": 420
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "authFetch",
+          "lineNumber": 420
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "r.json",
+          "lineNumber": 421
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setConnections",
+          "lineNumber": 424
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setConnId",
+          "lineNumber": 425
+        },
+        {
+          "caller": "post",
+          "callee": "authFetch",
+          "lineNumber": 431
+        },
+        {
+          "caller": "post",
+          "callee": "JSON.stringify",
+          "lineNumber": 433
+        },
+        {
+          "caller": "post",
+          "callee": "r.json",
+          "lineNumber": 435
+        },
+        {
+          "caller": "previewCsv",
+          "callee": "setCsvText",
+          "lineNumber": 439
+        },
+        {
+          "caller": "previewCsv",
+          "callee": "setCsvInfo",
+          "lineNumber": 440
+        },
+        {
+          "caller": "previewCsv",
+          "callee": "text.trim",
+          "lineNumber": 441
+        },
+        {
+          "caller": "previewCsv",
+          "callee": "post",
+          "lineNumber": 442
+        },
+        {
+          "caller": "previewCsv",
+          "callee": "setCsvInfo",
+          "lineNumber": 443
+        },
+        {
+          "caller": "previewDataset",
+          "callee": "dsFilters.states.split(/[,\\s]+/).map((s) => s.trim().toUpperCase()).filter",
+          "lineNumber": 448
+        },
+        {
+          "caller": "previewDataset",
+          "callee": "dsFilters.states.split(/[,\\s]+/).map",
+          "lineNumber": 448
+        },
+        {
+          "caller": "previewDataset",
+          "callee": "dsFilters.states.split",
+          "lineNumber": 448
+        },
+        {
+          "caller": "previewDataset",
+          "callee": "s.trim().toUpperCase",
+          "lineNumber": 448
+        },
+        {
+          "caller": "previewDataset",
+          "callee": "s.trim",
+          "lineNumber": 448
+        },
+        {
+          "caller": "previewDataset",
+          "callee": "post",
+          "lineNumber": 451
+        },
+        {
+          "caller": "previewDataset",
+          "callee": "setDsPreview",
+          "lineNumber": 452
+        },
+        {
+          "caller": "launch",
+          "callee": "setBusy",
+          "lineNumber": 456
+        },
+        {
+          "caller": "launch",
+          "callee": "setError",
+          "lineNumber": 457
+        },
+        {
+          "caller": "launch",
+          "callee": "connections.find",
+          "lineNumber": 458
+        },
+        {
+          "caller": "launch",
+          "callee": "dsFilters.states.split(/[,\\s]+/).map((s) => s.trim().toUpperCase()).filter",
+          "lineNumber": 464
+        },
+        {
+          "caller": "launch",
+          "callee": "dsFilters.states.split(/[,\\s]+/).map",
+          "lineNumber": 464
+        },
+        {
+          "caller": "launch",
+          "callee": "dsFilters.states.split",
+          "lineNumber": 464
+        },
+        {
+          "caller": "launch",
+          "callee": "s.trim().toUpperCase",
+          "lineNumber": 464
+        },
+        {
+          "caller": "launch",
+          "callee": "s.trim",
+          "lineNumber": 464
+        },
+        {
+          "caller": "launch",
+          "callee": "post",
+          "lineNumber": 470
+        },
+        {
+          "caller": "launch",
+          "callee": "onCreated",
+          "lineNumber": 477
+        },
+        {
+          "caller": "launch",
+          "callee": "setError",
+          "lineNumber": 478
+        },
+        {
+          "caller": "launch",
+          "callee": "setError",
+          "lineNumber": 480
+        },
+        {
+          "caller": "launch",
+          "callee": "String",
+          "lineNumber": 480
+        },
+        {
+          "caller": "launch",
+          "callee": "setBusy",
+          "lineNumber": 482
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "f.name.trim",
+          "lineNumber": 493
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "f.template_subject.trim",
+          "lineNumber": 495
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "f.template_body.trim",
+          "lineNumber": 495
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "W_STEPS.map",
+          "lineNumber": 513
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "set",
+          "lineNumber": 528
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "set",
+          "lineNumber": 533
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "set",
+          "lineNumber": 537
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setAudType",
+          "lineNumber": 546
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setAudType",
+          "lineNumber": 547
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "previewCsv",
+          "lineNumber": 556
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "String",
+          "lineNumber": 556
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "rd.readAsText",
+          "lineNumber": 557
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setDsFilters",
+          "lineNumber": 572
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setDsFilters",
+          "lineNumber": 577
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setDsFilters",
+          "lineNumber": 581
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "Number(dsPreview.count).toLocaleString",
+          "lineNumber": 587
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "Number",
+          "lineNumber": 587
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "set",
+          "lineNumber": 601
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "set",
+          "lineNumber": 609
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setConnId",
+          "lineNumber": 619
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "connections.map",
+          "lineNumber": 621
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "set",
+          "lineNumber": 629
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "set",
+          "lineNumber": 633
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "set",
+          "lineNumber": 637
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "Number(dsPreview?.count || 0).toLocaleString",
+          "lineNumber": 654
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "Number",
+          "lineNumber": 654
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "connections.find",
+          "lineNumber": 661
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setStep",
+          "lineNumber": 668
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "btnPrimary",
+          "lineNumber": 671
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "setStep",
+          "lineNumber": 671
+        },
+        {
+          "caller": "CreateWizard",
+          "callee": "btnPrimary",
+          "lineNumber": 676
+        },
+        {
+          "caller": "renderTemplate",
+          "callee": "String((contact && contact.name) || '').trim",
+          "lineNumber": 696
+        },
+        {
+          "caller": "renderTemplate",
+          "callee": "String",
+          "lineNumber": 696
+        },
+        {
+          "caller": "renderTemplate",
+          "callee": "nm.split",
+          "lineNumber": 697
+        },
+        {
+          "caller": "renderTemplate",
+          "callee": "String(template || '').replace",
+          "lineNumber": 699
+        },
+        {
+          "caller": "renderTemplate",
+          "callee": "String",
+          "lineNumber": 699
+        },
+        {
+          "caller": "renderTemplate",
+          "callee": "String",
+          "lineNumber": 699
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "useState",
+          "lineNumber": 710
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "useState",
+          "lineNumber": 711
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "useState",
+          "lineNumber": 712
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "useState",
+          "lineNumber": 713
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "useCampaignContacts",
+          "lineNumber": 715
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "useEffect",
+          "lineNumber": 718
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "setEditing",
+          "lineNumber": 718
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "setSaveState",
+          "lineNumber": 718
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "renderTemplate",
+          "lineNumber": 724
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "renderTemplate",
+          "lineNumber": 725
+        },
+        {
+          "caller": "startEdit",
+          "callee": "setSubject",
+          "lineNumber": 731
+        },
+        {
+          "caller": "startEdit",
+          "callee": "setBody",
+          "lineNumber": 732
+        },
+        {
+          "caller": "startEdit",
+          "callee": "setEditing",
+          "lineNumber": 733
+        },
+        {
+          "caller": "startEdit",
+          "callee": "setSaveState",
+          "lineNumber": 733
+        },
+        {
+          "caller": "save",
+          "callee": "setSaveState",
+          "lineNumber": 737
+        },
+        {
+          "caller": "save",
+          "callee": "authFetch",
+          "lineNumber": 739
+        },
+        {
+          "caller": "save",
+          "callee": "JSON.stringify",
+          "lineNumber": 741
+        },
+        {
+          "caller": "save",
+          "callee": "r.json",
+          "lineNumber": 743
+        },
+        {
+          "caller": "save",
+          "callee": "setEditing",
+          "lineNumber": 745
+        },
+        {
+          "caller": "save",
+          "callee": "setSaveState",
+          "lineNumber": 745
+        },
+        {
+          "caller": "save",
+          "callee": "onSaved",
+          "lineNumber": 746
+        },
+        {
+          "caller": "save",
+          "callee": "setSaveState",
+          "lineNumber": 748
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "setSubject",
+          "lineNumber": 766
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "setBody",
+          "lineNumber": 773
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "Array.isArray",
+          "lineNumber": 776
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "campaign.merge_fields.map",
+          "lineNumber": 779
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "btnPrimary",
+          "lineNumber": 823
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "setEditing",
+          "lineNumber": 829
+        },
+        {
+          "caller": "MessageCard",
+          "callee": "setSaveState",
+          "lineNumber": 829
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useCampaignList",
+          "lineNumber": 842
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useState",
+          "lineNumber": 843
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useState",
+          "lineNumber": 844
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useState",
+          "lineNumber": 845
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useState",
+          "lineNumber": 846
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useState",
+          "lineNumber": 847
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useEffect",
+          "lineNumber": 849
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setSelectedId",
+          "lineNumber": 850
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useCampaignDetail",
+          "lineNumber": 853
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useCampaignHealth",
+          "lineNumber": 854
+        },
+        {
+          "caller": "Campaign",
+          "callee": "useCampaignActions",
+          "lineNumber": 855
+        },
+        {
+          "caller": "Campaign",
+          "callee": "reloadHealth",
+          "lineNumber": 856
+        },
+        {
+          "caller": "Campaign",
+          "callee": "reloadDetail",
+          "lineNumber": 857
+        },
+        {
+          "caller": "Campaign",
+          "callee": "(campaigns || []).find",
+          "lineNumber": 860
+        },
+        {
+          "caller": "Campaign",
+          "callee": "btnPrimary",
+          "lineNumber": 906
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setWizard",
+          "lineNumber": 906
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setSelectedId",
+          "lineNumber": 920
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setCityId",
+          "lineNumber": 920
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setStage",
+          "lineNumber": 920
+        },
+        {
+          "caller": "Campaign",
+          "callee": "(campaigns || []).map",
+          "lineNumber": 927
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setWizard",
+          "lineNumber": 934
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setCityId",
+          "lineNumber": 943
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setFlagged",
+          "lineNumber": 944
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setStage",
+          "lineNumber": 944
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setStage",
+          "lineNumber": 949
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setFlagged",
+          "lineNumber": 949
+        },
+        {
+          "caller": "Campaign",
+          "callee": "act",
+          "lineNumber": 964
+        },
+        {
+          "caller": "Campaign",
+          "callee": "act",
+          "lineNumber": 968
+        },
+        {
+          "caller": "Campaign",
+          "callee": "act",
+          "lineNumber": 970
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setCityId",
+          "lineNumber": 981
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setWizard",
+          "lineNumber": 1009
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setWizard",
+          "lineNumber": 1010
+        },
+        {
+          "caller": "Campaign",
+          "callee": "reloadList",
+          "lineNumber": 1010
+        },
+        {
+          "caller": "Campaign",
+          "callee": "setSelectedId",
+          "lineNumber": 1010
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 15,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "EmailShell.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 75,
+      "nonEmptyLines": 71,
+      "functions": [
+        {
+          "name": "EmailShell",
+          "startLine": 14,
+          "endLine": 75,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "EmailShell",
+          "line": 14,
+          "isDefault": true
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "EmailShell",
+          "callee": "useState",
+          "lineNumber": 15
+        },
+        {
+          "caller": "EmailShell",
+          "callee": "sessionStorage.getItem",
+          "lineNumber": 16
+        },
+        {
+          "caller": "setTab",
+          "callee": "setTabState",
+          "lineNumber": 19
+        },
+        {
+          "caller": "setTab",
+          "callee": "sessionStorage.setItem",
+          "lineNumber": 20
+        },
+        {
+          "caller": "EmailShell",
+          "callee": "useWorldId",
+          "lineNumber": 22
+        },
+        {
+          "caller": "seg",
+          "callee": "setTab",
+          "lineNumber": 27
+        },
+        {
+          "caller": "EmailShell",
+          "callee": "seg",
+          "lineNumber": 64
+        },
+        {
+          "caller": "EmailShell",
+          "callee": "seg",
+          "lineNumber": 65
+        },
+        {
+          "caller": "EmailShell",
+          "callee": "setTab",
+          "lineNumber": 71
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "data/useCampaign.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 165,
+      "nonEmptyLines": 157,
+      "functions": [
+        {
+          "name": "getJson",
+          "startLine": 9,
+          "endLine": 13,
+          "params": [
+            "url"
+          ]
+        },
+        {
+          "name": "useCampaignList",
+          "startLine": 15,
+          "endLine": 48,
+          "params": [
+            "worldId"
+          ]
+        },
+        {
+          "name": "useCampaignDetail",
+          "startLine": 50,
+          "endLine": 66,
+          "params": [
+            "campaignId",
+            "worldId"
+          ]
+        },
+        {
+          "name": "useCampaignHealth",
+          "startLine": 68,
+          "endLine": 88,
+          "params": [
+            "campaignId",
+            "worldId"
+          ]
+        },
+        {
+          "name": "useCampaignContacts",
+          "startLine": 90,
+          "endLine": 111,
+          "params": [
+            "campaignId",
+            "worldId"
+          ]
+        },
+        {
+          "name": "useCityDetail",
+          "startLine": 113,
+          "endLine": 125,
+          "params": [
+            "campaignId",
+            "worldId",
+            "contactId"
+          ]
+        },
+        {
+          "name": "useCampaignActivity",
+          "startLine": 127,
+          "endLine": 142,
+          "params": [
+            "campaignId",
+            "worldId"
+          ]
+        },
+        {
+          "name": "useCampaignActions",
+          "startLine": 145,
+          "endLine": 165,
+          "params": [
+            "campaignId",
+            "worldId",
+            "onDone"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "useCampaignList",
+          "line": 15,
+          "isDefault": false
+        },
+        {
+          "name": "useCampaignDetail",
+          "line": 50,
+          "isDefault": false
+        },
+        {
+          "name": "useCampaignHealth",
+          "line": 68,
+          "isDefault": false
+        },
+        {
+          "name": "useCampaignContacts",
+          "line": 90,
+          "isDefault": false
+        },
+        {
+          "name": "useCityDetail",
+          "line": 113,
+          "isDefault": false
+        },
+        {
+          "name": "useCampaignActivity",
+          "line": 127,
+          "isDefault": false
+        },
+        {
+          "name": "useCampaignActions",
+          "line": 145,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "getJson",
+          "callee": "authFetch",
+          "lineNumber": 10
+        },
+        {
+          "caller": "getJson",
+          "callee": "r.json",
+          "lineNumber": 12
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "useState",
+          "lineNumber": 16
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "useState",
+          "lineNumber": 17
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "useState",
+          "lineNumber": 18
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "useCallback",
+          "lineNumber": 19
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "setCampaigns",
+          "lineNumber": 22
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "setCampaignSetup",
+          "lineNumber": 23
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "setError",
+          "lineNumber": 31
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "getJson(`/api/dashboard/campaigns?world=${encodeURIComponent(worldId)}`)\n      .then((d) => {\n        setCampaigns(d.campaigns || []);\n        setCampaignSetup(d.campaign_setup || null);\n        setError(null);\n      })\n      .catch",
+          "lineNumber": 34
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "getJson(`/api/dashboard/campaigns?world=${encodeURIComponent(worldId)}`)\n      .then",
+          "lineNumber": 34
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "getJson",
+          "lineNumber": 34
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "encodeURIComponent",
+          "lineNumber": 34
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "setCampaigns",
+          "lineNumber": 36
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "setCampaignSetup",
+          "lineNumber": 37
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "setError",
+          "lineNumber": 38
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "setError",
+          "lineNumber": 40
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "String",
+          "lineNumber": 40
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "useEffect",
+          "lineNumber": 42
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "load",
+          "lineNumber": 43
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "setInterval",
+          "lineNumber": 44
+        },
+        {
+          "caller": "useCampaignList",
+          "callee": "clearInterval",
+          "lineNumber": 45
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "useState",
+          "lineNumber": 51
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "useState",
+          "lineNumber": 52
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "useCallback",
+          "lineNumber": 53
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "getJson(`/api/dashboard/campaigns?world=${encodeURIComponent(worldId)}&id=${campaignId}`)\n      .then((d) => { setDetail(d); setError(null); })\n      .catch",
+          "lineNumber": 55
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "getJson(`/api/dashboard/campaigns?world=${encodeURIComponent(worldId)}&id=${campaignId}`)\n      .then",
+          "lineNumber": 55
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "getJson",
+          "lineNumber": 55
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "encodeURIComponent",
+          "lineNumber": 55
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "setDetail",
+          "lineNumber": 56
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "setError",
+          "lineNumber": 56
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "setError",
+          "lineNumber": 57
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "String",
+          "lineNumber": 57
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "useEffect",
+          "lineNumber": 59
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "setDetail",
+          "lineNumber": 60
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "load",
+          "lineNumber": 61
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "setInterval",
+          "lineNumber": 62
+        },
+        {
+          "caller": "useCampaignDetail",
+          "callee": "clearInterval",
+          "lineNumber": 63
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "useState",
+          "lineNumber": 69
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "useRef",
+          "lineNumber": 70
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "useCallback",
+          "lineNumber": 71
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "getJson(`/api/dashboard/campaign-health?world=${encodeURIComponent(worldId)}&id=${campaignId}`)\n      .then((d) => {\n        const s = JSON.stringify(d.health);\n        if (s !== last.current) { last.current = s; setHealth(d.health); }\n      })\n      .catch",
+          "lineNumber": 73
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "getJson(`/api/dashboard/campaign-health?world=${encodeURIComponent(worldId)}&id=${campaignId}`)\n      .then",
+          "lineNumber": 73
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "getJson",
+          "lineNumber": 73
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "encodeURIComponent",
+          "lineNumber": 73
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "JSON.stringify",
+          "lineNumber": 75
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "setHealth",
+          "lineNumber": 76
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "useEffect",
+          "lineNumber": 80
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "setHealth",
+          "lineNumber": 81
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "load",
+          "lineNumber": 83
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "setInterval",
+          "lineNumber": 84
+        },
+        {
+          "caller": "useCampaignHealth",
+          "callee": "clearInterval",
+          "lineNumber": 85
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "useState",
+          "lineNumber": 91
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "useState",
+          "lineNumber": 92
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "useState",
+          "lineNumber": 93
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "useCallback",
+          "lineNumber": 94
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "String",
+          "lineNumber": 96
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "String",
+          "lineNumber": 96
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "params.set",
+          "lineNumber": 97
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "params.set",
+          "lineNumber": 98
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "params.set",
+          "lineNumber": 99
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "getJson(`/api/dashboard/campaign-contacts?${params}`)\n      .then((d) => {\n        setRows((prev) => (append && prev ? [...prev, ...d.contacts] : d.contacts));\n        setTotal(d.total || 0);\n        setOffset(off + (d.contacts || []).length);\n      })\n      .catch",
+          "lineNumber": 100
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "getJson(`/api/dashboard/campaign-contacts?${params}`)\n      .then",
+          "lineNumber": 100
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "getJson",
+          "lineNumber": 100
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "setRows",
+          "lineNumber": 102
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "setTotal",
+          "lineNumber": 103
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "setOffset",
+          "lineNumber": 104
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "useEffect",
+          "lineNumber": 108
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "setRows",
+          "lineNumber": 108
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "setOffset",
+          "lineNumber": 108
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "load",
+          "lineNumber": 108
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "useCallback",
+          "lineNumber": 109
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "load",
+          "lineNumber": 109
+        },
+        {
+          "caller": "useCampaignContacts",
+          "callee": "load",
+          "lineNumber": 110
+        },
+        {
+          "caller": "useCityDetail",
+          "callee": "useState",
+          "lineNumber": 114
+        },
+        {
+          "caller": "useCityDetail",
+          "callee": "useEffect",
+          "lineNumber": 115
+        },
+        {
+          "caller": "useCityDetail",
+          "callee": "setData",
+          "lineNumber": 116
+        },
+        {
+          "caller": "useCityDetail",
+          "callee": "getJson(`/api/dashboard/campaign-contacts?world=${encodeURIComponent(worldId)}&id=${campaignId}&contact=${contactId}`)\n      .then((d) => { if (!dead) setData(d); })\n      .catch",
+          "lineNumber": 119
+        },
+        {
+          "caller": "useCityDetail",
+          "callee": "getJson(`/api/dashboard/campaign-contacts?world=${encodeURIComponent(worldId)}&id=${campaignId}&contact=${contactId}`)\n      .then",
+          "lineNumber": 119
+        },
+        {
+          "caller": "useCityDetail",
+          "callee": "getJson",
+          "lineNumber": 119
+        },
+        {
+          "caller": "useCityDetail",
+          "callee": "encodeURIComponent",
+          "lineNumber": 119
+        },
+        {
+          "caller": "useCityDetail",
+          "callee": "setData",
+          "lineNumber": 120
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "useState",
+          "lineNumber": 128
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "useCallback",
+          "lineNumber": 129
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "getJson(`/api/dashboard/campaign-activity?world=${encodeURIComponent(worldId)}&id=${campaignId}&limit=${limit}`)\n      .then((d) => setFeed(d.feed || []))\n      .catch",
+          "lineNumber": 131
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "getJson(`/api/dashboard/campaign-activity?world=${encodeURIComponent(worldId)}&id=${campaignId}&limit=${limit}`)\n      .then",
+          "lineNumber": 131
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "getJson",
+          "lineNumber": 131
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "encodeURIComponent",
+          "lineNumber": 131
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "setFeed",
+          "lineNumber": 132
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "useEffect",
+          "lineNumber": 135
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "setFeed",
+          "lineNumber": 136
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "load",
+          "lineNumber": 137
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "setInterval",
+          "lineNumber": 138
+        },
+        {
+          "caller": "useCampaignActivity",
+          "callee": "clearInterval",
+          "lineNumber": 139
+        },
+        {
+          "caller": "useCampaignActions",
+          "callee": "useState",
+          "lineNumber": 146
+        },
+        {
+          "caller": "useCampaignActions",
+          "callee": "useCallback",
+          "lineNumber": 147
+        },
+        {
+          "caller": "useCampaignActions",
+          "callee": "setBusy",
+          "lineNumber": 149
+        },
+        {
+          "caller": "useCampaignActions",
+          "callee": "authFetch",
+          "lineNumber": 151
+        },
+        {
+          "caller": "useCampaignActions",
+          "callee": "JSON.stringify",
+          "lineNumber": 155
+        },
+        {
+          "caller": "useCampaignActions",
+          "callee": "r.json",
+          "lineNumber": 157
+        },
+        {
+          "caller": "useCampaignActions",
+          "callee": "onDone",
+          "lineNumber": 158
+        },
+        {
+          "caller": "useCampaignActions",
+          "callee": "setBusy",
+          "lineNumber": 161
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 7,
+        "functionCount": 8,
+        "classCount": 0
+      }
+    }
+  ]
+}

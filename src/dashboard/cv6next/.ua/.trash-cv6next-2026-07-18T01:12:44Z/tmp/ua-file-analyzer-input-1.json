@@ -1,0 +1,43 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "batchFiles": [
+    {"path": "ActivityDock.jsx", "language": "javascript", "sizeLines": 282, "fileCategory": "code"},
+    {"path": "CornerCV6.jsx", "language": "javascript", "sizeLines": 2912, "fileCategory": "code"},
+    {"path": "LiveScribe.jsx", "language": "javascript", "sizeLines": 89, "fileCategory": "code"},
+    {"path": "NewComposer.jsx", "language": "javascript", "sizeLines": 266, "fileCategory": "code"},
+    {"path": "Search.jsx", "language": "javascript", "sizeLines": 132, "fileCategory": "code"},
+    {"path": "SharedNav.jsx", "language": "javascript", "sizeLines": 181, "fileCategory": "code"},
+    {"path": "SupportDesktop.jsx", "language": "javascript", "sizeLines": 522, "fileCategory": "code"},
+    {"path": "SupportThread.jsx", "language": "javascript", "sizeLines": 209, "fileCategory": "code"},
+    {"path": "data/agentTitles.js", "language": "javascript", "sizeLines": 97, "fileCategory": "code"},
+    {"path": "data/blockSchema.js", "language": "javascript", "sizeLines": 261, "fileCategory": "code"},
+    {"path": "data/resultLinks.js", "language": "javascript", "sizeLines": 62, "fileCategory": "code"},
+    {"path": "data/useCommandTracker.js", "language": "javascript", "sizeLines": 1373, "fileCategory": "code"},
+    {"path": "data/useDemoBlocks.js", "language": "javascript", "sizeLines": 256, "fileCategory": "code"},
+    {"path": "data/useHomeData.js", "language": "javascript", "sizeLines": 396, "fileCategory": "code"},
+    {"path": "data/useLiveScribe.js", "language": "javascript", "sizeLines": 428, "fileCategory": "code"},
+    {"path": "data/useRoomThread.js", "language": "javascript", "sizeLines": 658, "fileCategory": "code"},
+    {"path": "data/useSupportInbox.js", "language": "javascript", "sizeLines": 194, "fileCategory": "code"},
+    {"path": "providers/DataContext.jsx", "language": "javascript", "sizeLines": 106, "fileCategory": "code"}
+  ],
+  "batchImportData": {
+    "ActivityDock.jsx": ["data/agentTitles.js", "data/useCommandTracker.js"],
+    "CornerCV6.jsx": ["ActivityDock.jsx", "ChatDesktop.jsx", "ChatGoalThread.jsx", "ChatLifecycle.jsx", "cv6.css", "Cv6FullComposer.jsx", "data/agentTitles.js", "data/useCommandTracker.js", "data/useDemoBlocks.js", "data/useHomeData.js", "data/useReview.js", "data/useRoomThread.js", "data/useSupportInbox.js", "EmailShell.jsx", "LiveScribe.jsx", "MessageThread.jsx", "NewComposer.jsx", "Onboarding.jsx", "Organize.jsx", "providers/DataContext.jsx", "Search.jsx", "Settings.jsx", "SharedNav.jsx", "SupportDesktop.jsx", "TreeContextMenu.jsx"],
+    "LiveScribe.jsx": ["data/useLiveScribe.js"],
+    "NewComposer.jsx": ["data/useHomeData.js"],
+    "Search.jsx": ["data/useHomeData.js"],
+    "SharedNav.jsx": [],
+    "SupportDesktop.jsx": ["data/useSupportInbox.js", "SupportThread.jsx"],
+    "SupportThread.jsx": [],
+    "data/agentTitles.js": [],
+    "data/blockSchema.js": [],
+    "data/resultLinks.js": [],
+    "data/useCommandTracker.js": ["data/agentTitles.js"],
+    "data/useDemoBlocks.js": ["data/blockSchema.js"],
+    "data/useHomeData.js": ["data/agentTitles.js", "providers/DataContext.jsx"],
+    "data/useLiveScribe.js": [],
+    "data/useRoomThread.js": ["data/agentTitles.js", "data/resultLinks.js"],
+    "data/useSupportInbox.js": [],
+    "providers/DataContext.jsx": ["data/useCommandTracker.js"]
+  }
+}

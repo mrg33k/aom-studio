@@ -37,6 +37,7 @@ import { savedRoomExists, missionTreesFromResponse } from './data/lastRoomValida
 import { roomProjectSlug, buildChecklistRoomOptions } from './data/roomKeys.js';
 import NewComposer from './NewComposer.jsx';
 import IntakeComposer from './IntakeComposer.jsx';
+import { playNotifyChime } from './notifyChime.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
 import { useIntakeRoute } from './data/useIntakeRoute.js';
 import { supabase } from '../lib/supabase.js';
@@ -1460,7 +1461,23 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
 
   // tag rows from the selected node's key
   // FIX B-mod: inject roomOpen so the template can add .is-open to the active rail row.
-  const recentWithNav = recentList.map((r) => ({ ...r, knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off', roomOpen: knavOpenedKey === `rec:${r.key}` ? 'open' : 'off' }));
+  // `dot` drives the green "they just messaged you" mark on the recent rows. It is the
+  // unread flag the inbox feed already carried and nothing rendered (Patrik 2026-08-06).
+  const recentWithNav = recentList.map((r) => ({ ...r, knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off', roomOpen: knavOpenedKey === `rec:${r.key}` ? 'open' : 'off', dot: r.unread ? 'new' : 'none' }));
+  // Ring once when a room goes unread that was not unread a moment ago. Keyed by the
+  // SET of unread rooms, not a count: two rooms going unread while one is read nets to
+  // zero and would otherwise stay silent. Never fires on first paint — arriving at a
+  // dashboard with a backlog is not a new message (Patrik 2026-08-06).
+  const unreadKeySig = recentList.filter((r) => r.unread).map((r) => r.key).sort().join('|');
+  const prevUnreadRef = useRef(null);
+  useEffect(() => {
+    const keys = unreadKeySig ? unreadKeySig.split('|') : [];
+    const prev = prevUnreadRef.current;
+    prevUnreadRef.current = new Set(keys);
+    if (prev === null) return;
+    if (keys.some((k) => !prev.has(k))) playNotifyChime();
+  }, [unreadKeySig]);
+
   recentWithNav.count = recentList.count != null ? recentList.count : recentWithNav.length;
   recentWithNav.has = recentWithNav.length ? 'has' : 'none';
   const agentsWithNav = agentsList.map((a) => ({ ...a, knavSel: selectedKey === `a:${a.id}` ? 'sel' : 'off', roomOpen: knavOpenedKey === `a:${a.id}` ? 'open' : 'off' }));

@@ -1,0 +1,405 @@
+{
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/src/dashboard/cv6next",
+  "files": [
+    {
+      "path": ".ua/.understandignore",
+      "language": "unknown",
+      "fileCategory": "code"
+    },
+    {
+      "path": "ActivityDock.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "BlockRenderer.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "Campaign.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "ChatDesktop.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "ChatGoalThread.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "ChatLifecycle.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "CornerCV6.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "cv6.css",
+      "language": "css",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "Cv6FullComposer.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "Cv6InputBar.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/agentTitles.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/blockSchema.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/chat-list.json",
+      "language": "json",
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/chat.json",
+      "language": "json",
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/command.json",
+      "language": "json",
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/docxDocView.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/home-desktop.json",
+      "language": "json",
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/home-mobile.json",
+      "language": "json",
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/htmlDocView.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/kit.json",
+      "language": "json",
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/mediaFallback.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/pdfDocView.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/resultLinks.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/support-inbox.json",
+      "language": "json",
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/tracker.json",
+      "language": "json",
+      "fileCategory": "config"
+    },
+    {
+      "path": "data/useCampaign.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useCommandTracker.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useDemoBlocks.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useDictation.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useHomeData.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useLiveScribe.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useOnboarding.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useOrganize.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/usePins.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useReview.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useRoomThread.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useSettings.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/useSupportInbox.js",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "EmailShell.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "LiveScribe.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "MessageAttachments.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "MessageThread.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "NewComposer.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "Onboarding.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "OnboardingDesktop.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "OnboardingMobile.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "Organize.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "OrganizeDesktop.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "OrganizeMobile.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "PinLayer.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "providers/DataContext.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "ResultLinkCard.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "Review.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "ReviewChanges.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "ReviewDesktop.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "ReviewPins.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "Search.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "Settings.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "SettingsDesktop.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "SettingsMobile.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "SharedNav.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "SupportDesktop.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "SupportThread.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    },
+    {
+      "path": "templates/chat-list.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/chat.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/command.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/home-desktop.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/home-mobile.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/kit.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/livescribe.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/onboarding.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/organize.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/review.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/settings.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/states-extra.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/support-inbox.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/support-thread.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "templates/tracker.html",
+      "language": "html",
+      "fileCategory": "markup"
+    },
+    {
+      "path": "TreeContextMenu.jsx",
+      "language": "javascript",
+      "fileCategory": "code"
+    }
+  ]
+}
