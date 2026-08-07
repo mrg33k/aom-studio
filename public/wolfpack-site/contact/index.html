@@ -285,10 +285,7 @@ body.plot .hero-shot img{transform:scale(1)}
   text-transform:uppercase;font-size:var(--t3);letter-spacing:.03em;line-height:1.2}
 .way p{margin-top:var(--s1);color:var(--ink-2);font-size:var(--t2)}
 
-/* the form */
-.formcard{border:1px solid var(--line);background:var(--panel);padding:var(--s6) var(--s5) var(--s5);
-  margin-top:var(--s5)}
-.formcard h2{font-size:var(--t5)}
+/* the form fields (step 2 of the request card, below) */
 .fields{margin-top:var(--s6);display:flex;flex-direction:column;gap:var(--s5)}
 .field label{display:block;font-family:'Archivo',sans-serif;
   font-variation-settings:'wdth' 88,'wght' 700;font-size:var(--t1);letter-spacing:.14em;
@@ -303,17 +300,59 @@ body.plot .hero-shot img{transform:scale(1)}
 .field.bad input,.field.bad select{border-color:#C7502F}
 .field .err{display:none;margin-top:var(--s2);font-size:var(--t2);color:#C7502F}
 .field.bad .err{display:block}
-.formcard .btn{margin-top:var(--s6);width:100%;display:block}
-.fine{margin-top:var(--s4);text-align:center;font-family:'IBM Plex Mono',monospace;
-  font-size:var(--t1);letter-spacing:.08em;color:var(--ink-3)}
-.sent{display:none;text-align:center;padding:var(--s6) 0}
-.sent svg{width:56px;height:56px;margin:0 auto var(--s5);fill:none;stroke:var(--blue);
-  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.sent h3{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
-  text-transform:uppercase;font-size:var(--t5)}
-.sent p{margin-top:var(--s4);color:var(--ink-2)}
-.formcard.done .fields,.formcard.done .btn,.formcard.done .fine,.formcard.done h2{display:none}
-.formcard.done .sent{display:block}
+
+/* the request card: fork -> chips -> fields -> done. Ambition ContactDrawer's
+   interaction model (progress bar, staged reveals, chip choices, success
+   panel), adapted in-page instead of a slide-out drawer since this site is
+   plain URLs, not an SPA. */
+.reqcard{position:relative;border:1px solid var(--line);background:var(--panel);
+  margin-top:var(--s5);box-shadow:0 32px 64px -32px rgba(18,20,15,.28)}
+.reqcard-head{background:#0C0E12;color:#F2F1EC;display:flex;align-items:center;gap:var(--s3);
+  padding:var(--s4) var(--s5)}
+.reqcard-head .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none}
+.reqcard-head b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  text-transform:uppercase;font-size:var(--t2);letter-spacing:.12em}
+.reqcard-head .rstep{margin-left:auto;white-space:nowrap;font-size:var(--t1);
+  letter-spacing:.14em;text-transform:uppercase;color:#9CA09A}
+.reqprog{height:4px;background:var(--line-2)}
+.reqprog i{display:block;height:100%;background:var(--blue);width:0;transition:width .4s var(--ease)}
+.reqbody{padding:var(--s6) var(--s5) var(--s5)}
+.reqfoot{padding:0 var(--s5) var(--s5)}
+.req-q{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 80,'wght' 800;
+  text-transform:uppercase;font-size:var(--t5);line-height:1.03;letter-spacing:-.005em}
+.req-qsub{color:var(--ink-2);font-size:var(--t3);margin-top:var(--s2)}
+.reqfork{display:grid;gap:var(--s3);margin-top:var(--s5)}
+.reqpick{display:grid;grid-template-columns:32px 1fr 16px;align-items:center;gap:var(--s4);
+  text-align:left;border:1px solid var(--line);background:var(--panel-2);padding:var(--s4);
+  transition:border-color .2s,transform .2s var(--ease);width:100%}
+.reqpick:hover{border-color:var(--blue);transform:translateX(3px)}
+.reqpick svg{width:24px;height:24px;fill:none;stroke:var(--blue);stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.reqpick b{display:block;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  text-transform:uppercase;font-size:var(--t3);letter-spacing:.02em}
+.reqpick span{display:block;color:var(--ink-2);font-size:var(--t2);margin-top:var(--s1)}
+.reqpick i{color:var(--ink-3);font-style:normal;font-size:var(--t4)}
+.reqchips{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s5)}
+.reqchip{border:1px solid var(--line);background:var(--panel-2);padding:var(--s3) var(--s5);
+  font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 600;
+  text-transform:uppercase;font-size:var(--t2);letter-spacing:.04em;transition:.16s}
+.reqchip:hover{border-color:var(--blue);color:var(--blue)}
+.reqchip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.reqback{display:block;margin-top:var(--s3);font-size:var(--t2);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);text-align:center;width:100%}
+.reqback:hover{color:var(--ink)}
+.reqemer{margin-top:var(--s5);border:1px solid var(--line);padding:var(--s5);
+  text-align:center;background:var(--panel-2)}
+.reqemer .num{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 80,'wght' 800;
+  font-size:var(--t7);letter-spacing:-.01em;display:block;line-height:1.1}
+.reqemer p{color:var(--ink-2);font-size:var(--t3);margin-top:var(--s2)}
+.reqdone{text-align:center;padding:var(--s3) 0}
+.reqdone .tick{width:56px;height:56px;border-radius:50%;background:var(--blue);
+  margin:0 auto var(--s5);display:grid;place-items:center}
+.reqdone .tick svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round}
+.reqdone p{color:var(--ink-2);font-size:var(--t3);margin-top:var(--s3)}
+.reqdone p.req-q{color:var(--ink);font-size:var(--t5);margin-top:0}
 
 /* ============================ FOOTER ============================ */
 .foot{background:#0C0E12;color:#F2F1EC;padding:var(--s7) 0}
@@ -400,7 +439,9 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .cities-grid{grid-template-columns:repeat(3,1fr)}
   .city.wide{grid-column:auto}
   .ways{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s4)}
-  .formcard{padding:var(--s7) var(--s7) var(--s6);max-width:600px;margin-left:auto;margin-right:auto}
+  .reqcard{max-width:600px;margin-left:auto;margin-right:auto}
+  .reqbody{padding:var(--s7) var(--s7) var(--s6)}
+  .reqfoot{padding:0 var(--s7) var(--s6)}
   .dock{display:none}
   body.docked .foot{padding-bottom:var(--s7)}
   .offer h2{max-width:none}
@@ -591,34 +632,93 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 </div></section>
 
 <section class="sec alt" id="request"><div class="wrap">
-  <form class="formcard" id="req" novalidate>
-    <h2 class="display">Request a site walkthrough</h2>
-    <div class="fields">
-      <div class="field"><label for="f-name">Name</label>
-        <input id="f-name" name="name" type="text" autocomplete="name" required>
-        <p class="err">Please add your name.</p></div>
-      <div class="field"><label for="f-co">Company</label>
-        <input id="f-co" name="company" type="text" autocomplete="organization">
-        <p class="err">Please add your company.</p></div>
-      <div class="field"><label for="f-tel">Phone</label>
-        <input id="f-tel" name="phone" type="tel" autocomplete="tel" required inputmode="tel">
-        <p class="err">Please add a number we can call back.</p></div>
-      <div class="field"><label for="f-n">Number of properties</label>
-        <select id="f-n" name="properties" required>
-          <option value="">Select</option>
-          <option>1</option><option>2 to 5</option><option>6 to 15</option>
-          <option>16 to 40</option><option>More than 40</option>
-        </select>
-        <p class="err">Please pick a range.</p></div>
+  <div class="reqcard" id="req">
+    <div class="reqcard-head">
+      <span class="dot"></span><b>Request a walkthrough</b><span class="rstep" id="reqStepLabel">Start</span>
     </div>
-    <button class="btn btn-p" type="submit">Send request</button>
-    <p class="fine">Four fields only.</p>
-    <div class="sent">
-      <svg viewBox="0 0 24 24"><use href="#i-tick-c"/></svg>
-      <h3>Request received</h3>
-      <p>We will call you back to book the walkthrough. If the line is down right now, call <a href="tel:6025505452" class="blue"><b>602-550-5452</b></a> and we answer.</p>
+    <div class="reqprog"><i id="reqBar"></i></div>
+
+    <div data-panel="0">
+      <div class="reqbody">
+        <p class="req-q">Which one<br>are you?</p>
+        <p class="req-qsub">Two different answers. Pick yours and skip the rest.</p>
+        <div class="reqfork">
+          <button class="reqpick" type="button" data-go="emergency">
+            <svg viewBox="0 0 24 24"><use href="#i-alert"/></svg>
+            <div><b>A line is down right now</b><span>Do not fill in a form. Call.</span></div><i>&rarr;</i>
+          </button>
+          <button class="reqpick" type="button" data-go="1">
+            <svg viewBox="0 0 24 24"><use href="#i-building"/></svg>
+            <div><b>I manage multiple properties</b><span>Request a walkthrough. Three fields.</span></div><i>&rarr;</i>
+          </button>
+        </div>
+      </div>
     </div>
-  </form>
+
+    <div data-panel="emergency" hidden>
+      <div class="reqbody">
+        <p class="req-q">Call. We<br>answer.</p>
+        <div class="reqemer">
+          <span class="num">602-550-5452</span>
+          <p>A person picks up, 24 hours a day. Crews dispatch from Phoenix.</p>
+        </div>
+      </div>
+      <div class="reqfoot">
+        <a class="btn btn-p" href="tel:6025505452">Call now</a>
+        <button class="reqback" type="button" data-go="0">&larr; Not an emergency</button>
+      </div>
+    </div>
+
+    <div data-panel="1" hidden>
+      <div class="reqbody">
+        <p class="req-q">How many<br>properties?</p>
+        <p class="req-qsub">This tells us who walks the site with you.</p>
+        <div class="reqchips" id="reqChips">
+          <button class="reqchip" type="button" aria-pressed="false">1</button>
+          <button class="reqchip" type="button" aria-pressed="false">2 to 5</button>
+          <button class="reqchip" type="button" aria-pressed="false">6 to 15</button>
+          <button class="reqchip" type="button" aria-pressed="false">16 to 40</button>
+          <button class="reqchip" type="button" aria-pressed="false">More than 40</button>
+        </div>
+      </div>
+      <div class="reqfoot">
+        <button class="btn btn-p" type="button" id="reqCont" disabled>Continue</button>
+        <button class="reqback" type="button" data-go="0">&larr; Back</button>
+      </div>
+    </div>
+
+    <div data-panel="2" hidden>
+      <form class="reqbody" id="reqForm" novalidate>
+        <p class="req-q">Where do<br>we send it?</p>
+        <p class="req-qsub">Three fields. We come back same business day.</p>
+        <div class="fields">
+          <div class="field"><label for="f-name">Name</label>
+            <input id="f-name" name="name" type="text" autocomplete="name" required>
+            <p class="err">Please add your name.</p></div>
+          <div class="field"><label for="f-co">Company</label>
+            <input id="f-co" name="company" type="text" autocomplete="organization">
+            <p class="err">Please add your company.</p></div>
+          <div class="field"><label for="f-tel">Phone</label>
+            <input id="f-tel" name="phone" type="tel" autocomplete="tel" required inputmode="tel">
+            <p class="err">Please add a number we can call back.</p></div>
+        </div>
+      </form>
+      <div class="reqfoot">
+        <button class="btn btn-p" type="submit" form="reqForm" id="reqSend">Send request</button>
+        <button class="reqback" type="button" data-go="1">&larr; Back</button>
+      </div>
+    </div>
+
+    <div data-panel="3" hidden>
+      <div class="reqbody">
+        <div class="reqdone">
+          <div class="tick"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
+          <p class="req-q">Got it.</p>
+          <p>We come back the same business day. If the line will not wait, call <a href="tel:6025505452" class="blue"><b>602-550-5452</b></a> and a person answers.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div></section>
 
 <section class="sec" id="area"><div class="wrap">
@@ -629,26 +729,56 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 
 <script>
 (function(){
-  var f=document.getElementById('req');
+  var card=document.getElementById('req');
+  var panels=[].slice.call(card.querySelectorAll('[data-panel]'));
+  var bar=document.getElementById('reqBar');
+  var stepLabel=document.getElementById('reqStepLabel');
+  var meta={'0':['Start',0],'emergency':['Emergency',100],'1':['Step 1 of 2',50],
+    '2':['Step 2 of 2',100],'3':['Done',100]};
+  var chosenProperties='';
+
+  function go(id){
+    panels.forEach(function(p){ p.hidden = p.dataset.panel !== id; });
+    var m=meta[id];
+    stepLabel.textContent=m[0];
+    bar.style.width=m[1]+'%';
+    card.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  card.querySelectorAll('[data-go]').forEach(function(b){
+    b.addEventListener('click',function(){ go(b.dataset.go); });
+  });
+
+  var chips=[].slice.call(document.querySelectorAll('#reqChips .reqchip'));
+  var cont=document.getElementById('reqCont');
+  chips.forEach(function(c){
+    c.addEventListener('click',function(){
+      chips.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      c.setAttribute('aria-pressed','true');
+      chosenProperties=c.textContent;
+      cont.disabled=false;
+    });
+  });
+  cont.addEventListener('click',function(){ go('2'); });
+
+  var f=document.getElementById('reqForm');
   f.addEventListener('submit',function(e){
     e.preventDefault();
     var ok=true;
-    [].slice.call(f.querySelectorAll('input,select')).forEach(function(el){
+    [].slice.call(f.querySelectorAll('input')).forEach(function(el){
       var fld=el.closest('.field'), bad=el.hasAttribute('required')&&!el.value.trim();
       fld.classList.toggle('bad',bad); if(bad)ok=false;
     });
-    if(!ok){ var first=f.querySelector('.field.bad input,.field.bad select'); if(first)first.focus(); return; }
+    if(!ok){ var first=f.querySelector('.field.bad input'); if(first)first.focus(); return; }
     /* No form endpoint is wired yet — the request is held on the device and the
        page tells the truth about what happened. Wiring this to Wolfpack's inbox
        is a one-line change once Ross names the address it should land in. */
     try{ localStorage.setItem('wp-request', JSON.stringify({
       name:f.name.value, company:f.company.value, phone:f.phone.value,
-      properties:f.properties.value
+      properties:chosenProperties
     })); }catch(err){}
-    f.classList.add('done');
-    f.scrollIntoView({behavior:'smooth',block:'center'});
+    go('3');
   });
-  [].slice.call(f.querySelectorAll('input,select')).forEach(function(el){
+  [].slice.call(f.querySelectorAll('input')).forEach(function(el){
     el.addEventListener('input',function(){ el.closest('.field').classList.remove('bad'); });
   });
 })();
