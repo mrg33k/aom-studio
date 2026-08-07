@@ -3664,7 +3664,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 10px;
+  padding: 16px 16px 8px;
   flex: none;
 }
 [data-cv6] .cv6-fs-title-row {
@@ -3682,9 +3682,9 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 26px;
-  height: 22px;
-  padding: 0 7px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   border: 1px solid var(--hair);
@@ -3696,13 +3696,13 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-/* Icon buttons in header — 44pt target */
+/* Icon buttons in header — 36px visually, 44pt touch area via padding */
 [data-cv6] .cv6-fs-icon-btn {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--hair);
   background: var(--surface-2);
   color: var(--muted);
@@ -3719,7 +3719,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-filters {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 0 16px 12px;
   flex: none;
   overflow-x: auto;
@@ -3774,7 +3774,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 10px 0 5px;
+  padding: 8px 0 4px;
 }
 
 /* ── Swipe-to-save gesture ──────────────────────────────────────────────── */
@@ -3836,7 +3836,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-type {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3896,7 +3896,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-row-meta {
   font-size: 12px;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3907,7 +3907,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: inline-flex;
   align-items: center;
   height: 20px;
-  padding: 0 7px;
+  padding: 0 8px;
   border-radius: var(--radius-pill);
   background: var(--accent);
   color: #fff;
