@@ -3807,9 +3807,11 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   cursor: pointer;
   padding: 0;
 }
-/* Translating content layer — JS drives transform directly during gesture */
+/* Translating content layer — JS drives transform directly during gesture.
+   MUST have a background or the save panel shows through when at rest. */
 [data-cv6] .cv6-fs-swipe-inner {
   will-change: transform;
+  background: var(--ground);
   /* Allow vertical scroll to still work while enabling horizontal swipe detection */
   touch-action: pan-y;
 }
