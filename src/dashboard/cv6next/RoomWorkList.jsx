@@ -251,7 +251,15 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, expa
     const active = all.filter((i) => i.state === 'active');
     if (!active.length) return [];
     const doneTail = roomSteps.filter((i) => i.state === 'done').slice(-2);
-    const nextUp = roomSteps.filter((i) => i.state === 'pending').slice(0, 2);
+    // PENDING IS A PLAN, NOT WORK (Patrik 2026-08-07): "the action items are
+    // filling up with things to do that aren't actually running… it should just
+    // be showing things that actually get done." The resting panel used to
+    // inject 2 pending steps as "next up", so a room with one thing running
+    // read as a to-do list of things nobody had started. Pending is still
+    // reachable — it's what the expanded dropdown and the "+N more" count are
+    // for — but it no longer sits in the collapsed panel pretending to be
+    // in-flight work.
+    const nextUp = localExpanded ? roomSteps.filter((i) => i.state === 'pending') : [];
     const cap = localExpanded ? 100 : 6;
     return [...doneTail, ...active, ...nextUp].slice(0, cap);
   }, [roomSteps, agentItems, awaiting, awaitingSince, localExpanded]);
