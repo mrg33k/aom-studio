@@ -51,6 +51,7 @@ const CHIP_ICONS = {
 };
 
 export function SummaryBlock({
+  headline = '',
   bullets = [
     { text: 'Wants to expand the pilot to three teams (CS + Ops, ~40 seats)' },
     { text: 'Needs revised pricing by Friday to lock budget' },
@@ -95,6 +96,7 @@ export function SummaryBlock({
 
       {/* Bullet points */}
       <div className="csum-body">
+        {headline ? <div className="sheadline">{headline}</div> : null}
         {bullets.map((bullet, idx) => (
           <div key={idx} className={`sbullet ${bullet.isWarn ? 'is-warn' : ''}`}>
             <span className="sd" />

@@ -328,6 +328,9 @@ function SummaryBlock({ block }) {
           {block.meta ? <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>{block.meta}</span> : null}
         </div>
         <div className="csum-body">
+          {block.headline ? (
+            <div className="sheadline"><ChatMessageRenderer content={block.headline} className="cv6-agent-prose" /></div>
+          ) : null}
           {bullets.map((b, i) => {
             const text = typeof b === 'string' ? b : (b.text || '');
             const warn = typeof b === 'object' && b.warn;
