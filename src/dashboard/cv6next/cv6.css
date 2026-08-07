@@ -1765,7 +1765,11 @@
 [data-cv6][data-screen^="review"] .doc.is-video,
 [data-cv6][data-screen^="review"] .doc.is-siteshot,
 [data-cv6][data-screen^="review"] .doc.is-sitefile,
-[data-cv6][data-screen^="review"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:min(760px, 100%) !important; }
+/* A media .doc hugs its artwork instead of holding a fixed 760px column. It is the
+   pin/circle coordinate space AND the element zoom scales, so a box wider than the
+   picture means you can drop a comment — or draw a red circle — in empty air beside
+   it. Seen on a tall contact sheet: an 80px-wide image inside a 760px box. */
+[data-cv6][data-screen^="review"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:fit-content !important; max-width:min(760px, 100%) !important; }
 [data-cv6][data-screen^="review"] .doc.is-image [data-bind="deliverable.file"],
 [data-cv6][data-screen^="review"] .doc.is-photo [data-bind="deliverable.file"],
 [data-cv6][data-screen^="review"] .doc.is-video [data-bind="deliverable.file"],
@@ -1826,7 +1830,7 @@
 [data-cv6][data-screen^="organize"] .doc.is-audio,
 [data-cv6][data-screen^="organize"] .doc.is-siteshot,
 [data-cv6][data-screen^="organize"] .doc.is-sitefile,
-[data-cv6][data-screen^="organize"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:min(760px, 100%) !important; }
+[data-cv6][data-screen^="organize"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:fit-content !important; max-width:min(760px, 100%) !important; }
 [data-cv6][data-screen^="organize"] .doc.is-image [data-bind="deliverable.file"],
 [data-cv6][data-screen^="organize"] .doc.is-photo [data-bind="deliverable.file"],
 [data-cv6][data-screen^="organize"] .doc.is-video [data-bind="deliverable.file"],
