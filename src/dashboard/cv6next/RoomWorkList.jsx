@@ -272,18 +272,21 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, expa
   // Non-expandable = inline chat placement. Render the one fixed-height card (Patrik:
   // "remove steps and let them animate through that awesome loading bar you made").
   // §9c grants the structural-change exception for this one surface.
+  // EMERGENCY DISABLE (2026-08-07, room session): StepCard throws React invariant #300
+  // ("rendered fewer hooks than during the previous render") the moment a room with an
+  // active step opens on the chat screen -- confirmed live on production by opening the
+  // Corner room itself (active step at the time): the mobile chat screen hits
+  // ScreenBoundary's "This screen hit a snag" every time. A quiet room (no active step ->
+  // RoomWorkList returns null above, StepCard never mounts) opens fine -- confirmed on
+  // Wolfpack -- so the crash is specific to this component's active-state path, not the
+  // screen in general. Root cause not yet isolated (a static read of StepCard/RoomWorkList
+  // shows no obvious conditional hook call; needs a local dev build with real component
+  // names in the stack, not this production bundle's minified trace). Disabling the card
+  // is safer than guessing at a fix blind -- it restores a working chat screen immediately;
+  // the dropdown Action Items panel (expandable=true, below) is a separate code path and
+  // is NOT implicated by this crash, so it stays on.
   if (!expandable) {
-    return (
-      <>
-        <style>{'@keyframes cv6WorklistSpin{to{transform:rotate(360deg)}}.cv6-worklist-spin{animation:cv6WorklistSpin .8s linear infinite}'}</style>
-        <StepCard
-          roomSteps={roomSteps}
-          agentItems={agentItems}
-          awaiting={awaiting}
-          awaitingSince={awaitingSince}
-        />
-      </>
-    );
+    return null;
   }
 
   // Expandable = dropdown mode. Keep the existing accumulating-list design.
