@@ -50,6 +50,7 @@ button{background:none;border:none;cursor:pointer}
 .label{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 700;
   font-size:var(--t1);text-transform:uppercase;letter-spacing:.16em;color:var(--blue)}
 .blue{color:var(--blue)}
+br.d{display:none}
 .mono{font-family:'IBM Plex Mono',monospace}
 .skip{position:absolute;left:-9999px}
 .skip:focus{left:var(--s4);top:var(--s4);z-index:99;background:var(--blue);color:#fff;padding:var(--s3) var(--s4)}
@@ -319,7 +320,7 @@ body.plot .hero-shot img{transform:scale(1)}
 .foot .wrap{display:flex;flex-direction:column;gap:var(--s5)}
 .foot img{height:44px;width:auto}
 .foot .fr{display:flex;flex-direction:column;gap:var(--s4);font-size:var(--t2)}
-.foot .fr>*{display:flex;align-items:flex-start;gap:var(--s3)}
+.foot .fr>*{display:flex;align-items:flex-start;gap:var(--s3);padding:var(--s3) 0}
 .foot .fr svg{width:20px;height:20px;flex:none;margin-top:var(--s1);fill:none;stroke:var(--blue);
   stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .foot .fr b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
@@ -329,7 +330,7 @@ body.plot .hero-shot img{transform:scale(1)}
 .foot .fnav{display:flex;flex-wrap:wrap;gap:var(--s3) var(--s5);
   font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 600;
   font-size:var(--t1);letter-spacing:.12em;text-transform:uppercase}
-.foot .fnav a{color:#A2A7B0;transition:color .2s}
+.foot .fnav a{color:#A2A7B0;transition:color .2s;display:inline-block;padding:var(--s3) 0}
 .foot .fnav a:hover{color:var(--blue)}
 .foot .legal{font-family:'IBM Plex Mono',monospace;font-size:var(--t1);
   letter-spacing:.08em;color:#71767F}
@@ -374,6 +375,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 /* ============================ TABLET 760+ ============================ */
 @media (min-width:760px){
   :root{--pad:var(--s7)}
+  br.d{display:inline}
   .sec{padding:var(--s8) 0}
   .sec-h{font-size:var(--t5)}
   .hero-shot{aspect-ratio:16/9}
@@ -514,11 +516,10 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 }
 @media (max-width:1119px){ .foot .fbrand .cities{display:none} }
 
-/* Full display size only once the half-column can hold the longest line. */
-@media (min-width:1360px){
-  .hero h1{font-size:var(--t8)}
-  .sec-h{font-size:var(--t6)}
-}
+/* No display-size bump above this. Measured: .hero-copy is capped at maxw/2
+   (656px), so the column never reaches the ~659px that 64px needs to hold
+   "EXPERIENCE CLEARS" on one line. 48px keeps the approved break at every
+   desktop width, and a correct break beats a bigger number. */
 </style>
 </head>
 <body>
@@ -575,7 +576,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 <main id="main"><section class="hero">
   <div class="hero-copy">
     <p class="label">Service &middot; the specialty</p>
-    <h1 class="display">Hydro jetting. The line goes back to <span class="blue">bare pipe.</span></h1>
+    <h1 class="display">Hydro jetting. <br class="d">The line goes <br class="d">back to <span class="blue">bare pipe.</span></h1>
     <p class="sub">High-pressure cleaning of commercial drain and sewer lines. Not a snake. Not a patch.</p>
     <div class="cta-row">
       <a class="btn btn-p" href="tel:6025505452">602-550-5452 / Call now</a>
