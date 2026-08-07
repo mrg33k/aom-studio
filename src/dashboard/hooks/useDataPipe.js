@@ -57,6 +57,21 @@ function inboxNeedsResponse(msg) {
   return ASK_RE.test(trimmed)
 }
 
+// The GREEN DOT feed is a different question from the "needs you" feed above.
+// inboxNeedsResponse answers "is an agent BLOCKED on Patrik" and deliberately drops
+// status updates, task-done notices and file shares — correct for the catch-up inbox,
+// wrong for "they just messaged us" (Patrik 2026-08-06). This one keeps every real
+// agent message and only strips things that were never addressed to a human.
+function unreadIsRealMessage(msg) {
+  const md = (msg && msg.metadata) || {}
+  if (md.embed_source || md.embed_id || md.embed_room || md.embed_visitor_id) return false
+  if (md.kind === 'ops-alert' || md.supervisor_alert === true) return false
+  const text = String((msg && msg.text) || '').trim()
+  if (!text) return false
+  if (/^\s*THOUGHT\b/i.test(text)) return false
+  return true
+}
+
 // A catch-up summary should read as WHAT the agent needs from Patrik, not a generic
 // status line. Strip markdown, then prefer the actual question (the last sentence
 // ending in '?'); fall back to the opening sentence. Capped so the card stays scannable.
@@ -190,6 +205,8 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
   const [rightNow, setRightNow] = useState([])
   const [completedFeed, setCompletedFeed] = useState([])
   const [inboxItems, setInboxItems] = useState([])
+  // Rooms with a new agent message Patrik has not answered — updates included.
+  const [unreadRooms, setUnreadRooms] = useState([])
   const [personalTodos, setPersonalTodos] = useState([])
   const [todoItems, setTodoItems] = useState([])
   const [punchData, setPunchData] = useState(null)
@@ -612,6 +629,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
             }
           }
           const unread = []
+          const freshRooms = [] // broad feed: any new agent message, update or question
           const seenRooms = new Set() // one card per room max
           for (const msg of [...data.messages].reverse()) { // newest first
             if (msg.role !== 'assistant' || !msg.agent) continue
@@ -624,6 +642,16 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
             const lastSeen = roomLastSeen[k]
             if (!lastSeen || msg.timestamp > lastSeen) {
               seenRooms.add(k) // this room's newest unread is now decided (handled either way)
+              // Green dot first: it fires on ANY new agent message in the room.
+              if (unreadIsRealMessage(msg)) {
+                freshRooms.push({
+                  agent: msg.agent,
+                  project: msg.project || null,
+                  missionSlug: (msg.metadata && msg.metadata.mission_slug) || null,
+                  roomKey: k,
+                  timestamp: msg.timestamp,
+                })
+              }
               // Only surface rooms where the agent is actually waiting on Patrik.
               if (!inboxNeedsResponse(msg)) continue
               const preview = summarizeAsk(msg.text)
@@ -639,6 +667,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
             }
           }
           setInboxItems(unread)
+          setUnreadRooms(freshRooms)
         }
 
         // Build punchData from Supabase tasks so pills render on production.
@@ -1001,6 +1030,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
     rightNow,
     completedFeed,
     inboxItems,
+    unreadRooms,
     yourTodos,
     personalTodos,
     todoItems,

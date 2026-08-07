@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-03T10:21:06.376Z",
+  "generated_at": "2026-08-06T23:57:15.712Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -2718,6 +2718,20 @@
       "path": "corner/users/aom/projects/ambition-mechanical/missions/recommendation-engine"
     },
     {
+      "slug": "ambition-mechanical:rosie-titles",
+      "raw_slug": "rosie-titles",
+      "folder_name": "rosie-titles",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "ambition-mechanical",
+      "workstream": null,
+      "name": "Rosie Titles",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/rosie-titles"
+    },
+    {
       "slug": "ambition-mechanical:seo-organic",
       "raw_slug": "seo-organic",
       "folder_name": "seo-organic",
@@ -2970,6 +2984,20 @@
       "path": "corner/users/aom/projects/content-engine/missions/pipeline-v1"
     },
     {
+      "slug": "corner:creative-director-routes-work-first",
+      "raw_slug": "creative-director-routes-work-first",
+      "folder_name": "creative-director-routes-work-first",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Creative Director Routes Work First",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/corner/missions/creative-director-routes-work-first"
+    },
+    {
       "slug": "corner:deck",
       "raw_slug": "deck",
       "folder_name": "deck",
@@ -2982,6 +3010,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/corner/missions/deck"
+    },
+    {
+      "slug": "corner:keep-every-agent-current",
+      "raw_slug": "keep-every-agent-current",
+      "folder_name": "keep-every-agent-current",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Keep Every Agent Current",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/corner/missions/keep-every-agent-current"
     },
     {
       "slug": "higher-orbits:documentary-scope",
@@ -4356,6 +4398,20 @@
       "path": "corner/users/aom/missions/support-desk"
     },
     {
+      "slug": "aom:system-map-for-family",
+      "raw_slug": "system-map-for-family",
+      "folder_name": "system-map-for-family",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "System Map For Family",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/system-map-for-family"
+    },
+    {
       "slug": "aom:video-hook",
       "raw_slug": "video-hook",
       "folder_name": "video-hook",
@@ -4415,8 +4471,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 120,
-      "in_flight": 120,
+      "total": 122,
+      "in_flight": 122,
       "done": 0
     },
     {
@@ -4439,8 +4495,8 @@
     },
     {
       "slug": "ambition-mechanical",
-      "total": 11,
-      "in_flight": 11,
+      "total": 12,
+      "in_flight": 12,
       "done": 0
     },
     {
@@ -4613,8 +4669,8 @@
     },
     {
       "slug": "aom",
-      "total": 39,
-      "in_flight": 39,
+      "total": 40,
+      "in_flight": 40,
       "done": 0
     }
   ]

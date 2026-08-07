@@ -81,6 +81,7 @@ export function useDataContext() {
     return {
       agents: [],
       inboxItems: [],
+      unreadRooms: [],
       projectRooms: [],
       personalTodos: [],
       missionRooms: [],

@@ -78,7 +78,7 @@ function relTime(ts) {
   return `${Math.round(h / 24)}d`;
 }
 
-export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [], agentThreadRooms = [], roomActivity = null } = {}) {
+export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [], agentThreadRooms = [], roomActivity = null, unreadRooms = [] } = {}) {
   // Agents render as TITLES (curated set), never names. id stays the agent slug so the chat
   // opens the right thread. (Agents-as-titles + Agents accordion, decided 2026-06-23.)
   const agentRooms = curateTitledAgents(agents).map((a) => {
@@ -198,11 +198,11 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (it.missionSlug) {
       const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
       const nm = missionLabel(it.missionSlug) || it.missionSlug;
-      bump('m:' + missionRecencyKey(it.missionSlug), { key: 'm:' + missionRecencyKey(it.missionSlug), id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: nm, sub: missionSub(pn, nm), ts, preview, unread: true });
+      bump('m:' + missionRecencyKey(it.missionSlug), { key: 'm:' + missionRecencyKey(it.missionSlug), id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: nm, sub: missionSub(pn, nm), ts, preview });
     } else if (it.project) {
-      bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts, preview, unread: true });
+      bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts, preview });
     } else if (it.agent) {
-      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: agentNameBySlug[it.agent] || titleForAgent(it.agent), sub: 'Direct chat', ts, preview, unread: true });
+      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: agentNameBySlug[it.agent] || titleForAgent(it.agent), sub: 'Direct chat', ts, preview });
     }
   }
   for (const p of projectRooms || []) {
@@ -263,6 +263,21 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     bump('m:' + missionRecencyKey(slug), { key: 'm:' + missionRecencyKey(slug), id: slug, kind: 'mission', missionSlug: slug, project, name: nm, sub: missionSub(pn, nm), ts, preview: '' });
   }
 
+  // Green dot: mark rooms with a new agent message from the broad unread feed. Keys are
+  // built exactly the way bump() built them above, or the dot lands on nothing.
+  // Sourced from unreadRooms, NOT inboxItems — inboxItems is the narrow "an agent is
+  // blocked on you" feed and never contains a plain status update, which is precisely
+  // the case Patrik reported as missing (2026-08-06).
+  const unreadKeys = new Set();
+  for (const u of unreadRooms || []) {
+    if (u.missionSlug) unreadKeys.add('m:' + missionRecencyKey(u.missionSlug));
+    else if (u.project) unreadKeys.add('p:' + u.project);
+    else if (u.agent) unreadKeys.add('a:' + u.agent);
+  }
+  for (const key of Object.keys(recentMap)) {
+    if (unreadKeys.has(key)) recentMap[key].unread = true;
+  }
+
   const recent = Object.values(recentMap)
     // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).
     .filter((r) => { const n = String(r.name || '').trim().toLowerCase(); return n && n !== 'undefined' && n !== 'null'; })
@@ -320,7 +335,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
 // auth-derived world (Patrik -> aom).
 export function useHome() {
   const { status, worldId } = useTenantContext();
-  const { agents, projectRooms, inboxItems, missionRooms, agentThreadRooms } = useDataContext();
+  const { agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, unreadRooms } = useDataContext();
   // The wide activity window that lets the recent list reach 30 real rooms instead of
   // the ~12 the 100-message poll can see. Shares useIntakeRoute's module cache, so the
   // front door and this list cost ONE request between them. A failure returns null and
@@ -340,7 +355,7 @@ export function useHome() {
   // when the underlying pipe arrays change). Without this, `data` was a new object every
   // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
   // list under the user's finger and making taps miss (the "can't open a chat" bug).
-  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity]);
+  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms]);
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
