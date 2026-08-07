@@ -200,11 +200,31 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
     // Drawing gesture. Pointer events cover finger, pen and mouse in one path, and
     // setPointerCapture keeps the ring following a drag that leaves the artwork.
     let drag = null;
-    const docFrac = (doc, cx, cy) => {
-      const r = doc.getBoundingClientRect();
+    // The artwork's own bounds, expressed in .doc fractions. A media .doc is not the
+    // same rectangle as the picture inside it — it also holds the filename heading,
+    // and on a tall narrow image the box is far wider than the artwork. Everything is
+    // still STORED in .doc space (one coordinate space, same as point pins, so pin
+    // markers keep rendering correctly), the drag is just clamped to the picture, so
+    // a ring cannot end up floating in the empty air beside it.
+    const artBounds = (doc) => {
+      const art = doc.querySelector('img, video');
+      const dr = doc.getBoundingClientRect();
+      if (!art || !dr.width || !dr.height) return { x0: 0, y0: 0, x1: 1, y1: 1 };
+      const ar = art.getBoundingClientRect();
+      if (!ar.width || !ar.height) return { x0: 0, y0: 0, x1: 1, y1: 1 };
       return {
-        x: Math.min(1, Math.max(0, (cx - r.left) / r.width)),
-        y: Math.min(1, Math.max(0, (cy - r.top) / r.height)),
+        x0: Math.max(0, (ar.left - dr.left) / dr.width),
+        y0: Math.max(0, (ar.top - dr.top) / dr.height),
+        x1: Math.min(1, (ar.right - dr.left) / dr.width),
+        y1: Math.min(1, (ar.bottom - dr.top) / dr.height),
+      };
+    };
+    const docFrac = (doc, cx, cy, b) => {
+      const r = doc.getBoundingClientRect();
+      const lo = b || { x0: 0, y0: 0, x1: 1, y1: 1 };
+      return {
+        x: Math.min(lo.x1, Math.max(lo.x0, (cx - r.left) / r.width)),
+        y: Math.min(lo.y1, Math.max(lo.y0, (cy - r.top) / r.height)),
       };
     };
 
@@ -214,13 +234,14 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
       const doc = e.target.closest('.doc');
       if (!doc || !wrap.contains(doc)) return;
       e.preventDefault();
-      drag = { doc, from: docFrac(doc, e.clientX, e.clientY), moved: false };
+      const bounds = artBounds(doc);
+      drag = { doc, bounds, from: docFrac(doc, e.clientX, e.clientY, bounds), moved: false };
       try { e.target.setPointerCapture?.(e.pointerId); } catch { /* not capturable */ }
     };
     const onMove = (e) => {
       if (!drag) return;
       e.preventDefault();
-      const to = docFrac(drag.doc, e.clientX, e.clientY);
+      const to = docFrac(drag.doc, e.clientX, e.clientY, drag.bounds);
       const rx = Math.abs(to.x - drag.from.x) / 2;
       const ry = Math.abs(to.y - drag.from.y) / 2;
       if (!drag.moved && rx < 0.004 && ry < 0.004) return;
