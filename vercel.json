@@ -26,7 +26,7 @@
     },
     {
       "source": "/dashboard",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/outreach-plan",

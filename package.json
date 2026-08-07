@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "node scripts/generate-briefs-index.js && node scripts/build-missions-registry.cjs && node scripts/sync-cv4-static.cjs",
-    "build": "vite build",
+    "build": "vite build && node scripts/emit-dashboard-html.mjs",
     "test:tenant-context": "node scripts/check-tenant-context.mjs; a=$?; node scripts/check-no-hardcoded-tenant-slugs.mjs; b=$?; node scripts/check-no-hardcoded-identity.mjs; c=$?; exit $(( a | b | c ))",
     "test:tenant-contract": "node scripts/check-tenant-context.mjs",
     "test:tenant-slugs": "node scripts/check-no-hardcoded-tenant-slugs.mjs",
