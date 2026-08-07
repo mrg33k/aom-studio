@@ -40,45 +40,20 @@
       <div class="mhome-intro">
         <span class="eyebrow">Recently active</span>
         <h1>Pick up where<br><em>work left off.</em></h1>
-        <!-- Active count pill: number of recently-active rooms. Hidden via CSS when activeCount is empty. -->
-        <div class="mhome-active-pill"><span data-bind="activeCount">7</span> active</div>
       </div>
-      <!-- Vertical list: first card is the HERO (most-recently-active), rest are quiet.
-           Hero vs quiet distinction is CSS-only via :first-child — no markup toggle needed.
-           `.mresumecard` stays the row class — the long-press rename/move menu resolves
-           its hits by that class name. -->
+      <!-- Vertical list, same shape as the desktop digest (Patrik 2026-08-06). The
+           side-swipe card deck hid everything past card two and looked nothing like
+           desktop. One row per recent room, newest first, capped at 20 in CSS.
+           `.mresumecard` stays the row class — the long-press rename/move menu
+           resolves its hits by that class name. -->
       <div class="mresumelist">
         <div class="mresumecard" data-each="recent" data-action="openRecent" data-arg="rec.key" data-mod="is-:rec.tint">
-          <!-- Avatar circle with room initial. Hero: accent-filled, larger. Quiet: surface-2. -->
-          <div class="mresume-av"><span data-bind="rec.initial">B</span></div>
+          <span class="sdot is-none newdot" data-mod="is-:rec.dot"></span>
           <div class="mresumebody">
-            <!-- Name line. Hero: display-size font via CSS. Quiet: 14px. rsub removed from layout
-                 (it was added in d9705fb0 but the approved Amplify render does not show sub-type
-                 labels — removed to match the visual contract). -->
-            <div class="mresume-nameline"><span class="rn" data-bind="rec.name">Bridge</span></div>
-            <!-- Status row: hero only (CSS shows :first-child, hides :not(:first-child)).
-                 Lime dot + status word from data. §5: statusLabel='working' only when
-                 world has real running tasks; 'active' otherwise — never fabricated. -->
-            <div class="mresume-statusrow">
-              <span class="sdot mresume-herodot"></span>
-              <span class="mresume-statusword" data-bind="rec.statusLabel">working</span>
-            </div>
-            <!-- Preview line: KEEP on every card. Single most important instruction per §1.
-                 Hidden on empty by CSS :empty. -->
-            <span class="rprev" data-bind="rec.preview">agents reporting duplicate messages</span>
-            <!-- Progress bar: hero only (CSS shows :first-child, hides :not(:first-child)).
-                 §5: indeterminate shimmer — no fill %, no proportional fill.
-                 Real per-room progress is not available on the home recent list; degraded
-                 to an indeterminate indicator per the hard constraint. -->
-            <div class="mresume-bar"><div class="mresume-bar-fill"></div></div>
+            <div class="mresume-top"><span class="rn" data-bind="rec.name">Deal Bank</span><span class="rsub" data-bind="rec.sub">Project</span></div>
+            <span class="rprev" data-bind="rec.preview">Shipped the fix; the deploy is live and verified.</span>
           </div>
-          <!-- Trail: time + unread dot, right-aligned. Hero: time only at top-right (CSS
-               positions .mresume-trail absolute top-right on :first-child). Quiet: dot + time
-               inline on right. -->
-          <div class="mresume-trail">
-            <span class="mono mresumeage" data-bind="rec.age">1m</span>
-            <span class="sdot newdot" data-mod="is-:rec.dot"></span>
-          </div>
+          <span class="mono mresumeage" data-bind="rec.age">2h</span>
         </div>
       </div>
     </div>
