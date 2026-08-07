@@ -3183,6 +3183,11 @@ export default function CornerCV6() {
     if (legacyEmailRequested) columns.push({ id: 'email', type: 'email' });
     return columns;
   });
+  // Bumped on every request to focus a column. Without it the scroll effect keys on
+  // activeColumnId alone, so tapping a room that is ALREADY the active column changes
+  // no state and nothing moves — which on mobile, after swiping back to Home, reads as
+  // "I tap a chat and nothing happens" (Patrik 2026-08-06).
+  const [columnFocusTick, setColumnFocusTick] = useState(0);
   const [activeColumnId, setActiveColumnId] = useState(() => legacyEmailRequested ? 'email' : (initialChatSeed?.room ? `chat:${roomColumnKey(initialChatSeed.room)}` : ''));
   const workspaceCanvasRef = useRef(null);
   const [restoredRoomPending, setRestoredRoomPending] = useState(() => Boolean(routeSeed));
@@ -3256,10 +3261,15 @@ export default function CornerCV6() {
       const columnRight = columnLeft + column.offsetWidth;
       // Keep the simple adjacent layout still when the focused room already fits.
       // Only reveal the clipped edge once enough columns overflow the viewport.
-      if (columnLeft < visibleLeft) canvas.scrollTo({ left: columnLeft, behavior: 'smooth' });
+      // Mobile is a full-width pager: the requested room must land squarely on screen
+      // every time, not only when it happens to be clipped. On desktop keep the quiet
+      // behaviour — only move when the column is actually out of view.
+      const paging = canvas.clientWidth > 0 && column.offsetWidth >= canvas.clientWidth - 1;
+      if (paging) canvas.scrollTo({ left: columnLeft, behavior: 'smooth' });
+      else if (columnLeft < visibleLeft) canvas.scrollTo({ left: columnLeft, behavior: 'smooth' });
       else if (columnRight > visibleRight) canvas.scrollTo({ left: columnRight - canvas.clientWidth, behavior: 'smooth' });
     });
-  }, [activeColumnId, workspaceColumns.length]);
+  }, [activeColumnId, workspaceColumns.length, columnFocusTick]);
 
   // ---- Arrow navigation across the workspace (Patrik 2026-08-06) ------------
   // One idea: the arrow keys always belong to exactly ONE surface — either the
@@ -3426,6 +3436,7 @@ export default function CornerCV6() {
     const column = { id, type: 'chat', room, worldId: wid || worldId };
     setWorkspaceColumns((columns) => columns.some((item) => item.id === id) ? columns : [...columns, column]);
     setActiveColumnId(id);
+    setColumnFocusTick((n) => n + 1);
     // Opening a room hands it the arrow keys, so → out of the rail walks straight
     // into the chat you just opened (and ← walks straight back out).
     setKnavZone(id);
@@ -3435,6 +3446,7 @@ export default function CornerCV6() {
   const onOpenEmailColumn = useCallback(() => {
     setWorkspaceColumns((columns) => columns.some((column) => column.id === 'email') ? columns : [...columns, { id: 'email', type: 'email' }]);
     setActiveColumnId('email');
+    setColumnFocusTick((n) => n + 1);
     return true;
   }, []);
 
@@ -3444,6 +3456,7 @@ export default function CornerCV6() {
   const onOpenWorkersColumn = useCallback(() => {
     setWorkspaceColumns((columns) => columns.some((column) => column.id === 'workers') ? columns : [...columns, { id: 'workers', type: 'workers' }]);
     setActiveColumnId('workers');
+    setColumnFocusTick((n) => n + 1);
     return true;
   }, []);
 
