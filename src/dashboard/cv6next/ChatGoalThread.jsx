@@ -197,11 +197,15 @@ function StepRow({ step }) {
           </div>
         )}
         {step.detail && !isNote ? <div className="gssub"><ChatMessageRenderer content={step.detail} className="cv6-agent-prose" /></div> : null}
-        {isActive ? (
+        {/* Progress bar: only show when there is specific detail text to display.
+            Without this guard the bar repeats step.title ("Thinking it through")
+            immediately below the gstitle row that already shows the same string —
+            producing the double-label Steffen flagged (2026-08-06 Fix 6a). */}
+        {isActive && step.detail ? (
           <div style={{ marginTop: 8, marginBottom: 6 }}>
             <div className={`cv6-live-progress${hasProgress ? ' is-determinate' : ' is-indeterminate'}`} style={{ position: 'relative', width: '100%', height: 22, borderRadius: 11, background: 'var(--surface-2)', overflow: 'hidden', border: '1px solid var(--hair)' }}>
               <i style={{ display: 'block', width: hasProgress ? `${progress}%` : '38%', height: '100%', background: 'var(--accent)', transition: 'width 0.3s ease' }} />
-              <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 9px', color: 'var(--fg)', fontSize: 10.5, fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 1px 2px var(--ground)' }}><ChatInlineRenderer content={step.detail || step.title || 'Working'} /></span>
+              <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 9px', color: 'var(--fg)', fontSize: 10.5, fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 1px 2px var(--ground)' }}><ChatInlineRenderer content={step.detail} /></span>
             </div>
           </div>
         ) : null}
