@@ -579,6 +579,13 @@ function mfsMeta(f) {
 // Direction convention matches commit 27c68aaf: dx < 0 (finger moves left)
 // reveals content on the RIGHT side of the row. No conflict with page navigation
 // swipe because this component lives inside an absolute overlay.
+// The row layer SHRINKS from its right edge rather than sliding left. Translating the
+// whole layer (the first cut of this) pushed the filename off the left edge of the
+// sheet — swiped open, "Steffen verify 390 after r1" read as "effen verify 390 after
+// r1", so the one thing you need to see before tapping Save was the thing the gesture
+// hid. The approved frame keeps the text anchored and opens space at the card's right
+// end; shrinking the width does exactly that, and the name ellipsizes instead of
+// running off-screen.
 function SwipeFileRow({ id, onSave, openId, setOpenId, children }) {
   const innerRef = useRef(null);
   const startXRef = useRef(null);
@@ -587,61 +594,61 @@ function SwipeFileRow({ id, onSave, openId, setOpenId, children }) {
   const THRESHOLD = 48;
   const isOpen = openId === id;
 
+  // `open` = px of Save panel revealed, 0..SAVE_W.
+  const setOpenPx = useCallback((px, animate) => {
+    const el = innerRef.current;
+    if (!el) return;
+    el.style.transition = animate ? 'width .2s ease' : 'none';
+    el.style.width = `calc(100% - ${px}px)`;
+  }, []);
+
   // Close this row if another row was opened elsewhere.
   useEffect(() => {
-    if (openId !== id && snappedRef.current && innerRef.current) {
-      innerRef.current.style.transition = 'transform .2s ease';
-      innerRef.current.style.transform = 'translateX(0)';
+    if (openId !== id && snappedRef.current) {
+      setOpenPx(0, true);
       snappedRef.current = false;
     }
-  }, [openId, id]);
+  }, [openId, id, setOpenPx]);
 
   const onTouchStart = useCallback((e) => {
     startXRef.current = e.touches[0].clientX;
-    if (innerRef.current) innerRef.current.style.transition = 'none';
+    setOpenPx(snappedRef.current ? SAVE_W : 0, false);
     // Close any other open row
     if (openId && openId !== id) setOpenId(null);
-  }, [openId, id, setOpenId]);
+  }, [openId, id, setOpenId, setOpenPx]);
 
   const onTouchMove = useCallback((e) => {
-    if (startXRef.current === null || !innerRef.current) return;
+    if (startXRef.current === null) return;
     const dx = e.touches[0].clientX - startXRef.current;
-    const base = snappedRef.current ? -SAVE_W : 0;
-    const next = Math.max(-SAVE_W, Math.min(0, base + dx));
-    innerRef.current.style.transform = `translateX(${next}px)`;
-  }, []);
+    const base = snappedRef.current ? SAVE_W : 0;
+    setOpenPx(Math.max(0, Math.min(SAVE_W, base - dx)), false);
+  }, [setOpenPx]);
 
   const onTouchEnd = useCallback((e) => {
-    if (startXRef.current === null || !innerRef.current) return;
+    if (startXRef.current === null) return;
     const dx = e.changedTouches[0].clientX - startXRef.current;
-    const base = snappedRef.current ? -SAVE_W : 0;
-    const net = base + dx;
-    if (!snappedRef.current && net < -THRESHOLD) {
-      innerRef.current.style.transition = 'transform .2s ease';
-      innerRef.current.style.transform = `translateX(${-SAVE_W}px)`;
+    const base = snappedRef.current ? SAVE_W : 0;
+    const net = Math.max(0, Math.min(SAVE_W, base - dx));
+    if (!snappedRef.current && net > THRESHOLD) {
+      setOpenPx(SAVE_W, true);
       snappedRef.current = true;
       setOpenId(id);
-    } else if (snappedRef.current && net > -SAVE_W + THRESHOLD) {
-      innerRef.current.style.transition = 'transform .2s ease';
-      innerRef.current.style.transform = 'translateX(0)';
+    } else if (snappedRef.current && net < SAVE_W - THRESHOLD) {
+      setOpenPx(0, true);
       snappedRef.current = false;
       setOpenId(null);
     } else {
-      innerRef.current.style.transition = 'transform .2s ease';
-      innerRef.current.style.transform = `translateX(${snappedRef.current ? -SAVE_W : 0}px)`;
+      setOpenPx(snappedRef.current ? SAVE_W : 0, true);
     }
     startXRef.current = null;
-  }, [id, setOpenId]);
+  }, [id, setOpenId, setOpenPx]);
 
   const doSave = useCallback(() => {
     onSave?.();
-    if (innerRef.current) {
-      innerRef.current.style.transition = 'transform .2s ease';
-      innerRef.current.style.transform = 'translateX(0)';
-    }
+    setOpenPx(0, true);
     snappedRef.current = false;
     setOpenId(null);
-  }, [onSave, setOpenId]);
+  }, [onSave, setOpenId, setOpenPx]);
 
   return (
     <div className={`cv6-fs-swipe-wrap${isOpen ? ' is-open' : ''}`}>

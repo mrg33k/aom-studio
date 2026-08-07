@@ -3847,7 +3847,11 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: flex;
   align-items: center;
   gap: 4px;
-  will-change: transform;
+  /* The gesture drives WIDTH, not transform — the layer shrinks from its right edge so
+     the filename stays anchored and legible while the Save panel is revealed behind it. */
+  width: 100%;
+  box-sizing: border-box;
+  will-change: width;
   /* Allow vertical scroll to still work while enabling horizontal swipe detection */
   touch-action: pan-y;
 }
@@ -3863,7 +3867,15 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   border-radius: 16px;
   padding: 0 12px;
 }
-[data-cv6] .cv6-fs-swipe-wrap.is-open .cv6-fs-swipe-inner { box-shadow: -8px 0 16px -8px rgba(0,0,0,.55); }
+/* Open state: the shrunk layer keeps the card's rounded right corners squared off
+   against the Save panel so the two read as one card, and casts a lip onto it. */
+[data-cv6] .cv6-fs-swipe-wrap.is-open .cv6-fs-swipe-inner {
+  box-shadow: 8px 0 16px -8px rgba(0,0,0,.55);
+}
+[data-cv6] .cv6-fs-section--recent .cv6-fs-swipe-wrap.is-open .cv6-fs-swipe-inner {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
 /* Saved confirmation pill — the receipt that the save actually happened */
 [data-cv6] .cv6-fs-toast {
   position: absolute;
