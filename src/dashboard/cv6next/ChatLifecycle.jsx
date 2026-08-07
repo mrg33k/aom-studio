@@ -309,6 +309,7 @@ function FileCollectionViewer({ files, startIndex = 0, onClose, onReview }) {
   // behaves the same whether you opened it from the conversation or from Review.
   const { zoomControls } = useDocZoom({
     wrapRef: cardRef,
+    fileKey: idx, // stepping to another file in the collection starts at 1x
     onSwipe: (dir) => { if (files.length > 1) go(dir === 'next' ? 1 : -1); },
   });
   const [body, setBody] = useState(null); // null = loading; { html, type } when built

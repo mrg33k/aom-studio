@@ -213,7 +213,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
   // Pinch to zoom the open file. Live while the red pen is armed (you zoom in to
   // circle a detail) — it just stops competing for the drag.
   const { zoomControls, anchor: toolAnchor } = useDocZoom({
-    wrapRef, enabled: !!pickedFileId, drawing: circleMode, onSwipe: stepFile,
+    wrapRef, enabled: !!pickedFileId, drawing: circleMode, fileKey: pickedFileId, onSwipe: stepFile,
   });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
   useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)

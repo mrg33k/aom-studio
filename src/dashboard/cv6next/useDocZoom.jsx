@@ -47,7 +47,14 @@ const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 // detail — disabling the hook would throw the zoom away at the moment you need it);
 // only the gestures that would COMPETE with the pen stand down: one-finger pan,
 // mouse-drag pan, and swipe-to-next-file. Pinch, wheel and the buttons keep working.
-export function useDocZoom({ wrapRef, enabled = true, drawing = false, onSwipe, docSelector = '.doc' }) {
+// `fileKey` identifies WHICH file is open. It is load-bearing, not decoration:
+// TemplateScreen rebuilds .doc's DOM on unrelated data ticks (a pin saving, a queue
+// refresh), so node identity cannot tell "you opened a different file" from "the same
+// file was re-rendered". Keying the reset on node identity meant your zoom snapped
+// back to 100% the moment you left a comment — caught driving the live page, invisible
+// in a static read. Node changes now carry the transform onto the new node; only a
+// real fileKey change resets to 1x.
+export function useDocZoom({ wrapRef, enabled = true, drawing = false, fileKey = null, onSwipe, docSelector = '.doc' }) {
   const [scale, setScale] = useState(1);
   const [anchor, setAnchor] = useState(null); // {top,right} of the doc's top-right, for the controls
   // Everything the listeners touch lives on a ref: they bind once and must never
@@ -165,13 +172,9 @@ export function useDocZoom({ wrapRef, enabled = true, drawing = false, onSwipe, 
     const tick = () => {
       if (disposed) return;
       const doc = findDoc();
-      if (doc !== st.current.doc) {
-        // A different file (or a rebuilt node): drop back to 1x rather than
-        // inheriting the last file's zoom, which lands you on a random crop.
-        st.current.doc = doc;
-        st.current.s = 1; st.current.x = 0; st.current.y = 0;
-        setScale(1);
-      }
+      // A REBUILT node for the same file: carry the current zoom onto it (apply()
+      // below does that). Do NOT reset here — see the fileKey note on the hook.
+      if (doc !== st.current.doc) st.current.doc = doc;
       if (doc) {
         apply();
         // BOTTOM-right of the viewer frame, not the top: the template already parks
@@ -212,6 +215,10 @@ export function useDocZoom({ wrapRef, enabled = true, drawing = false, onSwipe, 
 
   // Arming/disarming the pen changes touch-action — land it now, not on the next tick.
   useEffect(() => { apply(); }, [drawing, apply]);
+
+  // A genuinely different file starts at 1x. Inheriting the last one's zoom would
+  // open the next photo on an arbitrary crop of itself.
+  useEffect(() => { reset(); }, [fileKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Touch: pinch, pan-when-zoomed, flick-to-change-file.
   useEffect(() => {

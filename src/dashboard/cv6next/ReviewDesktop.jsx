@@ -119,7 +119,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // desktop as well"). Trackpad pinch arrives as ctrlKey+wheel and is handled as a
   // real pinch; the −/%/+ cluster and the + - 0 keys cover a mouse, which has no
   // pinch at all — that is the case the mobile gesture work left uncovered.
-  const { zoomControls, anchor: toolAnchor } = useDocZoom({ wrapRef: viewerRef, drawing: circleMode });
+  const { zoomControls, anchor: toolAnchor } = useDocZoom({ wrapRef: viewerRef, drawing: circleMode, fileKey: pickedId });
   usePdfDocs(viewerRef);
   useDocxDocs(viewerRef);
   useHtmlDocs(viewerRef);

@@ -156,7 +156,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   // Pinch to zoom on the file itself. Stays live while circle mode is armed — you
   // zoom in to circle a detail — it just stops competing for the drag.
   const { zoomControls, anchor: toolAnchor } = useDocZoom({
-    wrapRef: readRef, enabled: screen === 'read', drawing: circleMode, onSwipe: stepFile,
+    wrapRef: readRef, enabled: screen === 'read', drawing: circleMode, fileKey: pickedId, onSwipe: stepFile,
   });
   usePdfDocs(readRef, screen === 'read');
   useDocxDocs(readRef, screen === 'read');

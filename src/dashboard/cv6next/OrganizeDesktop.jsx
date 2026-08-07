@@ -137,7 +137,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
   // Zoom on desktop (Patrik 2026-08-07). Trackpad pinch arrives as ctrlKey+wheel and
   // is treated as a real pinch; the −/%/+ cluster and the + - 0 keys cover a mouse,
   // which has no pinch at all.
-  const { zoomControls, anchor: toolAnchor } = useDocZoom({ wrapRef, drawing: circleMode });
+  const { zoomControls, anchor: toolAnchor } = useDocZoom({ wrapRef, drawing: circleMode, fileKey: openReviewId });
   usePdfDocs(wrapRef); // hydrate [data-pdf-doc] shells (the M7 PDF reader)
   useDocxDocs(wrapRef); // hydrate [data-docx-doc] shells (the M9 Word reader)
   useHtmlDocs(wrapRef); // hydrate sandboxed HTML/web-page shells
