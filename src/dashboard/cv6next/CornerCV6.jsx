@@ -3277,35 +3277,6 @@ export default function CornerCV6() {
     });
   }, [activeColumnId, workspaceColumns.length, columnFocusTick]);
 
-  // ---- Mobile swipe inside a chat (Patrik 2026-08-06) ----------------------
-  // Left goes Home, right goes to the NEXT room in the recents list — his words,
-  // confirmed with him before building because it inverts the native pager.
-  const recentKeysRef = useRef([]);
-  useEffect(() => {
-    const onRecents = (e) => { recentKeysRef.current = Array.isArray(e.detail) ? e.detail : []; };
-    window.addEventListener('cv6:recent-rooms', onRecents);
-    return () => window.removeEventListener('cv6:recent-rooms', onRecents);
-  }, []);
-
-  const swipeHome = useCallback(() => {
-    const canvas = workspaceCanvasRef.current;
-    if (canvas) canvas.scrollTo({ left: 0, behavior: 'smooth' });
-    setActiveColumnId('');
-    setKnavZone('rail');
-  }, []);
-
-  const swipeNextChat = useCallback(() => {
-    const rooms = recentKeysRef.current;
-    if (!rooms.length) return;
-    // Where are we now? Match the open column against the recents list, then step one
-    // past it. Falling back to the first room means a swipe always does something.
-    const openIdx = rooms.findIndex((r) => `chat:${roomColumnKey(r)}` === activeColumnId);
-    const next = rooms[(openIdx + 1) % rooms.length];
-    if (next) onOpenRoom(next, worldId);
-  }, [activeColumnId, onOpenRoom, worldId]);
-
-  useChatSwipe({ enabled: !isDesktop && !!activeColumnId, onHome: swipeHome, onNextChat: swipeNextChat });
-
   // ---- Arrow navigation across the workspace (Patrik 2026-08-06) ------------
   // One idea: the arrow keys always belong to exactly ONE surface — either the
   // All-rooms rail ('rail') or one open chat column (its id). knavZone says which.
@@ -3482,6 +3453,39 @@ export default function CornerCV6() {
     setKnavZone(id);
     try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
   }, [worldId]);
+
+  // NOTE ON PLACEMENT: this block must live AFTER onOpenRoom. It was first written
+  // above it, and naming onOpenRoom in a dependency array before its `const` executes
+  // is a temporal-dead-zone ReferenceError that took the whole dashboard down to a
+  // blank page on every screen size (2026-08-06). Do not move it back up.
+  // ---- Mobile swipe inside a chat (Patrik 2026-08-06) ----------------------
+  // Left goes Home, right goes to the NEXT room in the recents list — his words,
+  // confirmed with him before building because it inverts the native pager.
+  const recentKeysRef = useRef([]);
+  useEffect(() => {
+    const onRecents = (e) => { recentKeysRef.current = Array.isArray(e.detail) ? e.detail : []; };
+    window.addEventListener('cv6:recent-rooms', onRecents);
+    return () => window.removeEventListener('cv6:recent-rooms', onRecents);
+  }, []);
+
+  const swipeHome = useCallback(() => {
+    const canvas = workspaceCanvasRef.current;
+    if (canvas) canvas.scrollTo({ left: 0, behavior: 'smooth' });
+    setActiveColumnId('');
+    setKnavZone('rail');
+  }, []);
+
+  const swipeNextChat = useCallback(() => {
+    const rooms = recentKeysRef.current;
+    if (!rooms.length) return;
+    // Where are we now? Match the open column against the recents list, then step one
+    // past it. Falling back to the first room means a swipe always does something.
+    const openIdx = rooms.findIndex((r) => `chat:${roomColumnKey(r)}` === activeColumnId);
+    const next = rooms[(openIdx + 1) % rooms.length];
+    if (next) onOpenRoom(next, worldId);
+  }, [activeColumnId, onOpenRoom, worldId]);
+
+  useChatSwipe({ enabled: !isDesktop && !!activeColumnId, onHome: swipeHome, onNextChat: swipeNextChat });
 
   const onOpenEmailColumn = useCallback(() => {
     setWorkspaceColumns((columns) => columns.some((column) => column.id === 'email') ? columns : [...columns, { id: 'email', type: 'email' }]);
