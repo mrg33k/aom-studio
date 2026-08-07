@@ -3682,7 +3682,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 10px;
+  padding: 16px 16px 12px;
   flex: none;
 }
 [data-cv6] .cv6-fs-title-row {
@@ -3700,9 +3700,9 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 26px;
-  height: 22px;
-  padding: 0 7px;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   border: 1px solid var(--hair);
@@ -3714,7 +3714,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 /* Icon buttons in header — 44pt target */
 [data-cv6] .cv6-fs-icon-btn {
@@ -3737,7 +3737,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-filters {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 0 16px 12px;
   flex: none;
   overflow-x: auto;
