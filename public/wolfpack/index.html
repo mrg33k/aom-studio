@@ -1,4 +1,4 @@
-<title>Wolfpack: Week 1</title>
+<title>Wolfpack: Week 2</title>
 <style>
 @font-face{
   font-family:'Druk Cond';
@@ -10,17 +10,7 @@
   --rule:#CFC8B8;--soft:#E6E0D2;--gold:#B58A38;--wash:#F3EBD9;
   --done:#1B6B3A;--doing:#8A6A1F;--doing-bg:#F7EFD9;
 }
-@media (prefers-color-scheme:dark){
-  :root{--ground:#0F0F0E;--paper:#181816;--ink:#F5F1E7;--ink-2:#C3BDAD;--ink-3:#8B8576;
-  --rule:#3A3730;--soft:#26251F;--gold:#C8A45C;--wash:#241E12;
-  --done:#2F8552;--doing:#C8A45C;--doing-bg:#241E12;}
-}
-:root[data-theme="dark"]{--ground:#0F0F0E;--paper:#181816;--ink:#F5F1E7;--ink-2:#C3BDAD;
-  --ink-3:#8B8576;--rule:#3A3730;--soft:#26251F;--gold:#C8A45C;--wash:#241E12;
-  --done:#2F8552;--doing:#C8A45C;--doing-bg:#241E12;}
-:root[data-theme="light"]{--ground:#F5F2EA;--paper:#FFFFFF;--ink:#141412;--ink-2:#45413A;
-  --ink-3:#6E685B;--rule:#CFC8B8;--soft:#E6E0D2;--gold:#B58A38;--wash:#F3EBD9;
-  --done:#1B6B3A;--doing:#8A6A1F;--doing-bg:#F7EFD9;}
+/* Light only — this update always renders on the cream house paper, never dark. */
 
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--ink);
@@ -80,19 +70,53 @@ footer{margin-top:52px;padding-top:18px;border-top:3px solid var(--ink);
   font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600;
   display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 
+/* ---- live site link ---- */
+.sitelink{display:inline-flex;align-items:center;gap:12px;margin:22px 0 2px;
+  font-family:'Druk Cond',ui-sans-serif,sans-serif;text-transform:uppercase;
+  font-size:clamp(22px,3.4vw,34px);line-height:1;letter-spacing:.01em;
+  text-decoration:none;color:var(--ink);background:var(--wash);
+  border:2px solid var(--gold);padding:16px 22px;transition:transform .18s ease,box-shadow .18s ease}
+.sitelink .u{font-family:ui-sans-serif,-apple-system,sans-serif;font-size:16px;
+  letter-spacing:.04em;text-transform:none;color:var(--gold);font-weight:700}
+.sitelink .arw{color:var(--gold);font-size:.85em}
+.sitelink:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(20,20,18,.14)}
+a.link{color:var(--gold);font-weight:700;text-decoration:none;border-bottom:2px solid var(--gold)}
+a.link:hover{background:var(--wash)}
+
+/* ---- entrance animation (plays once on open; settles visible) ---- */
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.rise{animation:rise .62s cubic-bezier(.22,.61,.36,1) both}
+.top{animation-delay:.02s}.sitelink{animation-delay:.10s}
+section:nth-of-type(1){animation-delay:.14s}
+section:nth-of-type(2){animation-delay:.22s}
+section:nth-of-type(3){animation-delay:.30s}
+section:nth-of-type(4){animation-delay:.38s}
+footer.rise{animation-delay:.46s}
+.tile,.wk,tr,.ask{animation:rise .5s cubic-bezier(.22,.61,.36,1) both}
+.tiles .tile:nth-child(2){animation-delay:.06s}.tiles .tile:nth-child(3){animation-delay:.12s}.tiles .tile:nth-child(4){animation-delay:.18s}
+.tl .wk:nth-child(2){animation-delay:.06s}.tl .wk:nth-child(3){animation-delay:.12s}.tl .wk:nth-child(4){animation-delay:.18s}
+.ask:nth-child(2){animation-delay:.08s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;opacity:1!important;transform:none!important}}
+
 @media (max-width:820px){.tl{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:520px){.tl{grid-template-columns:1fr}}
-@media print{body{background:#fff;color:#000}section{page-break-inside:avoid}}
+@media print{*{animation:none!important;opacity:1!important;transform:none!important}
+  body{background:#fff;color:#000}section{page-break-inside:avoid}}
 </style>
 
 <div class="wrap">
 
-<div class="top">
+<div class="top rise">
   <span><strong>Wolfpack</strong> &nbsp;/&nbsp; Ahead of Market</span>
-  <span>Week 1 &nbsp;/&nbsp; 31 July 2026</span>
+  <span>Week 2 &nbsp;/&nbsp; 7 August 2026</span>
 </div>
 
-<section style="border-top:0;padding-top:0;margin-top:34px">
+<a class="sitelink rise" href="https://aheadofmarket.com/wolfpack-site">
+  See your live site <span class="arw">&rarr;</span>
+  <span class="u">aheadofmarket.com/wolfpack-site</span>
+</a>
+
+<section class="rise" style="border-top:0;padding-top:0;margin-top:34px">
   <h2>Access</h2>
   <div class="tiles">
     <div class="tile"><span class="nm">Jobber</span><span class="pill go">Complete</span></div>
@@ -102,92 +126,82 @@ footer{margin-top:52px;padding-top:18px;border-top:3px solid var(--ink);
   </div>
 </section>
 
-<section>
+<section class="rise">
   <h2>The month</h2>
   <div class="tl">
-    <div class="wk now">
-      <span class="lbl">This week</span>
+    <div class="wk">
+      <span class="lbl">Week 1 &middot; done</span>
       <span class="ttl">Lay of the land</span>
     </div>
-    <div class="wk">
-      <span class="lbl">Week 2</span>
-      <span class="ttl">Build the website</span>
+    <div class="wk now">
+      <span class="lbl">This week</span>
+      <span class="ttl">Website built &amp; live</span>
     </div>
     <div class="wk">
       <span class="lbl">Week 3</span>
-      <span class="ttl">Service pages and polish</span>
+      <span class="ttl">Real photos in, first PM outreach</span>
     </div>
     <div class="wk">
       <span class="lbl">Week 4</span>
-      <span class="ttl">Website live</span>
+      <span class="ttl">Service pages polish, portfolio list live</span>
     </div>
   </div>
 </section>
 
-<section>
+<section class="rise">
   <h2>What we touched</h2>
   <div class="tw"><table>
     <tr><th>Where</th><th>What we are doing</th><th>Status</th></tr>
 
-    <tr><td class="w">Your website</td>
-      <td>One long page, no menu. Rebuilding it as real pages, including a page for property managers.</td>
+    <tr><td class="w">Your new website</td>
+      <td>Five real pages, live: home, property managers, hydro jetting, grease trap &amp; FOG, contact.
+      See it at <a class="link" href="https://aheadofmarket.com/wolfpack-site">aheadofmarket.com/wolfpack-site</a>.</td>
+      <td class="s"><span class="pill go">Done</span></td></tr>
+
+    <tr><td class="w">Request-a-quote form</td>
+      <td>Rebuilt to the same interactive quality as our best client sites. Picks your property
+      count, gets you straight to a real person.</td>
+      <td class="s"><span class="pill go">Done</span></td></tr>
+
+    <tr><td class="w">Phone &amp; tablet</td>
+      <td>Checked and fixed on every phone and iPad size, not just desktop.</td>
+      <td class="s"><span class="pill go">Done</span></td></tr>
+
+    <tr><td class="w">Thursday&rsquo;s shoot</td>
+      <td>Covered the Vecina / McCormick Ranch job. Trucks, crew, the team, aerials. Graded and
+      ready to go on the site.</td>
+      <td class="s"><span class="pill go">Done</span></td></tr>
+
+    <tr><td class="w">Real photos on the site</td>
+      <td>Swapping the stock photography for your real shoot photos. We&rsquo;re picking the
+      strongest frames and placing them now.</td>
       <td class="s"><span class="pill wip">In progress</span></td></tr>
 
     <tr><td class="w">Google profile</td>
-      <td>Adding your 16 job photos. Listing every service, including grease trap. Setting areas, hours, review requests.</td>
-      <td class="s"><span class="pill wip">In progress</span></td></tr>
-
-    <tr><td class="w">Your competitors</td>
-      <td>Tore down seven. None show a named commercial client.</td>
-      <td class="s"><span class="pill go">Done</span></td></tr>
-
-    <tr><td class="w">Your proof</td>
-      <td>Target, Ritz Carlton and Edison Midtown were buried on your site. Moving them to the front.</td>
+      <td>Confirmed live and accurate.</td>
       <td class="s"><span class="pill go">Done</span></td></tr>
 
     <tr><td class="w">Jobber</td>
-      <td>Pulling your baseline. Every report comes from your numbers.</td>
+      <td>Pulling your baseline numbers so every report from here reads off your own data.</td>
       <td class="s"><span class="pill wip">In progress</span></td></tr>
 
-    <tr><td class="w">Reviews</td>
-      <td>Automatic review requests after every job.</td>
-      <td class="s"><span class="pill wip">In progress</span></td></tr>
-
-    <tr><td class="w">Yelp</td>
-      <td>Claimed. Matching it to Google.</td>
-      <td class="s"><span class="pill wip">In progress</span></td></tr>
-
-    <tr><td class="w">LinkedIn</td>
-      <td>Where property managers look you up. Checking your page and profiles.</td>
-      <td class="s"><span class="pill wip">In progress</span></td></tr>
-
-    <tr><td class="w">Your paperwork</td>
-      <td>Insurance, license and W-9 in one packet. Ready to send within the hour of a property manager asking.</td>
-      <td class="s"><span class="pill go">Done</span></td></tr>
-
-    <tr><td class="w">Property managers</td>
-      <td>Listing every valley company that runs multiple buildings.</td>
+    <tr><td class="w">Property manager list</td>
+      <td>Starts once the site is fully dressed with your real photos.</td>
       <td class="s"><span class="pill wip">In progress</span></td></tr>
   </table></div>
 </section>
 
-<section>
+<section class="rise">
   <h2>What we need</h2>
 
   <div class="ask">
-    <span class="h">A weekly call</span>
-    <p>Monday or Tuesday. Same time every week. We set the week together.</p>
-  </div>
-
-  <div class="ask">
-    <span class="h">A shoot date</span>
-    <p>Next week or the week after. One day at your place. Your trucks, your crews on a real job,
-    photos of your team, and camera footage of a line before and after. All of it goes on the new
-    website.</p>
+    <span class="h">Two shoot dates</span>
+    <p>We got the Vecina shoot done Thursday. Still want the gas-line testimonial
+    with Brian and the Redstone staff shoot. We&rsquo;ll lock two dates on our call.</p>
   </div>
 </section>
 
-<footer>
+<footer class="rise">
   <span>Ahead of Market</span>
   <span>Back next week with more</span>
 </footer>
