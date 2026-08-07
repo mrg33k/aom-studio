@@ -63,8 +63,20 @@ export default async function handler(req, res) {
   const record = body.record || null;
 
   let payload;
+  // world is the tenant identifier that scopes which subscribed devices receive this push.
+  // The push_subscriptions table stores world_id on each device row (written at subscribe time).
+  // We derive the message's world from record.client_id (the reliable tenant column on messages —
+  // the same column every dashboard query filters on; see api/_lib/verifyTenant.js for rationale).
+  // record.world_id exists but has DB DEFAULT 'aom' and is under-written, so client_id is primary.
+  // For manual test pushes the caller must supply worldId explicitly.
+  // If the world cannot be determined: send to NOBODY — under-notify is always safer than leaking
+  // one world's room names onto another world's lock screen.
+  let world;
+
   if (record) {
     if (!isRealAgentMessage(record)) return res.status(200).json({ ok: true, skipped: 'not a user-facing agent message' });
+    world = record.client_id || record.world_id || null;
+    if (!world) return res.status(200).json({ ok: true, skipped: 'no world resolved from record — refusing to broadcast' });
     const text = String(record.text || '').replace(/\s+/g, ' ').trim();
     payload = {
       title: titleFor(record),
@@ -74,11 +86,20 @@ export default async function handler(req, res) {
     };
   } else {
     if (!body.title && !body.body) return res.status(400).json({ error: 'nothing to send' });
+    // Manual test path MUST declare a worldId — silently broadcasting to all devices is the
+    // exact bug we are fixing; require the caller to be explicit about the target world.
+    if (!body.worldId) return res.status(400).json({ error: 'worldId required — specify which world to notify' });
+    world = body.worldId;
     payload = { title: body.title || 'Corner', body: body.body || '', tag: body.tag || 'corner-test', url: body.url || '/dashboard' };
   }
 
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-  const { data: subs, error } = await db.from('push_subscriptions').select('*');
+  // Filter to only devices registered for this specific world.
+  // .eq() in Supabase maps to IS NULL-safe equality in Postgres for non-null values, but
+  // crucially: .eq('world_id', 'aom') does NOT match rows where world_id IS NULL because
+  // Postgres NULL != 'aom'. Legacy/null-world rows are therefore silently excluded, which
+  // is the correct behaviour: an unknown device should not receive any world's notifications.
+  const { data: subs, error } = await db.from('push_subscriptions').select('*').eq('world_id', world);
   if (error) return res.status(500).json({ error: error.message });
   if (!subs?.length) return res.status(200).json({ ok: true, sent: 0, note: 'no subscribed devices' });
 
