@@ -926,6 +926,9 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
       <div
         className="cv6-fs-sheet"
         onClick={(e) => e.stopPropagation()}
+        // Horizontal swipes inside this sheet are swipe-to-save. Without this the
+        // page-level chat swipe steals them and navigates to the next room instead.
+        data-swipe-guard=""
       >
         {/* Drag handle */}
         <div style={{ width: 40, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '12px auto 0', flex: 'none' }} />

@@ -69,8 +69,16 @@ export function useChatSwipe({ enabled, onHome, onNextChat }) {
       // the thread — a files strip, a code block, a wide table.
       // NOTE: overflow-x:hidden is NOT in this check — only auto/scroll trigger the
       // bail. The canvas itself has hidden on mobile so it won't short-circuit here.
+      //
+      // The scrollability test alone is not enough: a surface can own a horizontal
+      // gesture without being a scroller. The Files sheet's swipe-to-save row is
+      // exactly that — it translates on transform, scrollWidth never exceeds
+      // clientWidth, so before this guard a save-swipe ALSO navigated to the next
+      // chat and threw the sheet away mid-gesture (caught on the live app at 390px,
+      // 2026-08-07). Anything that declares data-swipe-guard keeps its own swipes.
       let node = s.target;
       while (node && node !== document.body) {
+        if (node.nodeType === 1 && node.hasAttribute('data-swipe-guard')) return;
         if (node.scrollWidth > node.clientWidth + 8) {
           const overflow = getComputedStyle(node).overflowX;
           if (overflow === 'auto' || overflow === 'scroll') return;
