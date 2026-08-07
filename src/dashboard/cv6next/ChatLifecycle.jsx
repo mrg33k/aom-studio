@@ -30,6 +30,7 @@ import { useHtmlDocs } from './data/htmlDocView.js';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import RoomWorkList from './RoomWorkList.jsx';
+import { useRunningTasks } from './data/useRunningTasks.js';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -445,56 +446,417 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
 // Files drawer shows (this chat's files, From agent / You sent — drop 1),
 // reachable from the chat header and from the composer's command menu. Mounted
 // only while open, so the fetch happens on first open, not on every room visit.
-// columnMode=false (mobile): full-width bottom sheet anchored to bottom of screen.
+// columnMode=false (mobile): ADD design bottom sheet (task dae1720a, Patrik chose it).
 // columnMode=true (desktop column): right-side side panel (Patrik ruling 2026-07-20).
+
+// ── Mobile Files Sheet helpers (ADD design, task dae1720a) ──────────────────
+// Type chip label: short extension monogram for each file kind.
+// Photos: null — they get a real thumbnail instead.
+function mfsExt(name) { return String(name || '').split('.').pop().toLowerCase(); }
+function mfsTypeLabel(kind, name) {
+  if (kind === 'photo') return null;
+  if (kind === 'video') return 'VID';
+  if (kind === 'pdf') return 'PDF';
+  const ext = mfsExt(name);
+  if (ext === 'md' || ext === 'markdown') return 'MD';
+  if (ext === 'json') return 'JSON';
+  if (ext === 'csv') return 'CSV';
+  if (ext === 'xlsx' || ext === 'xls') return 'XLS';
+  if (ext === 'doc' || ext === 'docx') return 'DOC';
+  if (ext === 'txt') return 'TXT';
+  if (ext === 'ts' || ext === 'js' || ext === 'jsx' || ext === 'tsx') return ext.toUpperCase();
+  return (ext.slice(0, 4).toUpperCase()) || 'FILE';
+}
+// Background for type chip (opaque, for contrast).
+function mfsChipBg(kind, name) {
+  const ext = mfsExt(name);
+  if (kind === 'video') return 'rgba(236,72,153,.16)';
+  if (kind === 'pdf') return 'rgba(245,158,11,.16)';
+  if (ext === 'json') return 'rgba(245,158,11,.16)';
+  if (ext === 'csv' || ext === 'xlsx' || ext === 'xls' || ext === 'tsv') return 'rgba(16,185,129,.16)';
+  if (ext === 'md' || ext === 'markdown' || ext === 'doc' || ext === 'docx') return 'var(--accent-weak)';
+  return 'var(--chip)';
+}
+// Foreground color for type chip label — matches bg hue.
+function mfsChipFg(kind, name) {
+  const ext = mfsExt(name);
+  if (kind === 'video') return '#ec4899';
+  if (kind === 'pdf') return '#f59e0b';
+  if (ext === 'json') return '#f59e0b';
+  if (ext === 'csv' || ext === 'xlsx' || ext === 'xls' || ext === 'tsv') return '#10b981';
+  if (ext === 'md' || ext === 'markdown' || ext === 'doc' || ext === 'docx') return 'var(--accent)';
+  return 'var(--muted)';
+}
+// Filter classification: doc and data are separate chip types.
+function mfsIsData(f) { return ['json','csv','xlsx','xls','tsv'].includes(mfsExt(f.name)); }
+function mfsIsDoc(f) { return f.kind !== 'photo' && f.kind !== 'video' && !mfsIsData(f); }
+// "New" = arrived in the last 15 minutes — a pragmatic proxy for "this session".
+const MFS_NEW_MS = 15 * 60 * 1000;
+function mfsIsNew(f) {
+  const ts = new Date(f.ts || 0).getTime();
+  return ts > 0 && (Date.now() - ts) < MFS_NEW_MS;
+}
+// "who — Xm — 12 KB" formatted meta line.
+function mfsRelAgo(ts) {
+  if (!ts) return '';
+  const ms = Date.now() - new Date(ts).getTime();
+  if (Number.isNaN(ms)) return '';
+  const m = Math.round(ms / 60000);
+  if (m < 1) return 'now'; if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60); if (h < 24) return `${h}h`;
+  return `${Math.round(h / 24)}d`;
+}
+function mfsHumanSize(bytes) {
+  const b = Number(bytes) || 0; if (!b) return '';
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
+  return `${(b / 1048576).toFixed(1)} MB`;
+}
+function mfsMeta(f) {
+  return [f.who, mfsRelAgo(f.ts), mfsHumanSize(f.size)].filter(Boolean).join(' — ');
+}
+
+// ── SwipeFileRow — touch gesture: left-swipe reveals 80px Save panel ────────
+// Direction convention matches commit 27c68aaf: dx < 0 (finger moves left)
+// reveals content on the RIGHT side of the row. No conflict with page navigation
+// swipe because this component lives inside an absolute overlay.
+function SwipeFileRow({ id, onSave, openId, setOpenId, children }) {
+  const innerRef = useRef(null);
+  const startXRef = useRef(null);
+  const snappedRef = useRef(false);
+  const SAVE_W = 80;
+  const THRESHOLD = 48;
+
+  // Close this row if another row was opened elsewhere.
+  useEffect(() => {
+    if (openId !== id && snappedRef.current && innerRef.current) {
+      innerRef.current.style.transition = 'transform .2s ease';
+      innerRef.current.style.transform = 'translateX(0)';
+      snappedRef.current = false;
+    }
+  }, [openId, id]);
+
+  const onTouchStart = useCallback((e) => {
+    startXRef.current = e.touches[0].clientX;
+    if (innerRef.current) innerRef.current.style.transition = 'none';
+    // Close any other open row
+    if (openId && openId !== id) setOpenId(null);
+  }, [openId, id, setOpenId]);
+
+  const onTouchMove = useCallback((e) => {
+    if (startXRef.current === null || !innerRef.current) return;
+    const dx = e.touches[0].clientX - startXRef.current;
+    const base = snappedRef.current ? -SAVE_W : 0;
+    const next = Math.max(-SAVE_W, Math.min(0, base + dx));
+    innerRef.current.style.transform = `translateX(${next}px)`;
+  }, []);
+
+  const onTouchEnd = useCallback((e) => {
+    if (startXRef.current === null || !innerRef.current) return;
+    const dx = e.changedTouches[0].clientX - startXRef.current;
+    const base = snappedRef.current ? -SAVE_W : 0;
+    const net = base + dx;
+    if (!snappedRef.current && net < -THRESHOLD) {
+      innerRef.current.style.transition = 'transform .2s ease';
+      innerRef.current.style.transform = `translateX(${-SAVE_W}px)`;
+      snappedRef.current = true;
+      setOpenId(id);
+    } else if (snappedRef.current && net > -SAVE_W + THRESHOLD) {
+      innerRef.current.style.transition = 'transform .2s ease';
+      innerRef.current.style.transform = 'translateX(0)';
+      snappedRef.current = false;
+      setOpenId(null);
+    } else {
+      innerRef.current.style.transition = 'transform .2s ease';
+      innerRef.current.style.transform = `translateX(${snappedRef.current ? -SAVE_W : 0}px)`;
+    }
+    startXRef.current = null;
+  }, [id, setOpenId]);
+
+  const doSave = useCallback(() => {
+    onSave?.();
+    if (innerRef.current) {
+      innerRef.current.style.transition = 'transform .2s ease';
+      innerRef.current.style.transform = 'translateX(0)';
+    }
+    snappedRef.current = false;
+    setOpenId(null);
+  }, [onSave, setOpenId]);
+
+  return (
+    <div className="cv6-fs-swipe-wrap">
+      {/* Save panel revealed behind the row (accent blue) */}
+      <div className="cv6-fs-save-panel" aria-hidden="true">
+        <button type="button" className="cv6-fs-save-btn" onClick={doSave}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 15V3M8 11l4 4 4-4" /><path d="M4 20h16" />
+          </svg>
+          Save
+        </button>
+      </div>
+      {/* Translating row content */}
+      <div
+        ref={innerRef}
+        className="cv6-fs-swipe-inner"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── MobileFilesContent — filter chips + grouped list (ADD design) ─────────
+function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [swipeOpenId, setSwipeOpenId] = useState(null);
+
+  // Merge + deduplicate + sort newest-first (same logic as FilesShelf canonical()).
+  const allFiles = useMemo(() => {
+    const merged = [...fromAgent, ...youSent];
+    merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
+    const seen = new Set();
+    return merged.filter((f) => {
+      const key = `${f.url || ''}::${f.name || ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [fromAgent, youSent]);
+
+  // Live counts for chip labels.
+  const counts = useMemo(() => ({
+    all: allFiles.length,
+    docs: allFiles.filter(mfsIsDoc).length,
+    images: allFiles.filter((f) => f.kind === 'photo').length,
+    data: allFiles.filter(mfsIsData).length,
+  }), [allFiles]);
+
+  // Filtered list per active chip.
+  const filtered = useMemo(() => {
+    if (activeFilter === 'docs') return allFiles.filter(mfsIsDoc);
+    if (activeFilter === 'images') return allFiles.filter((f) => f.kind === 'photo');
+    if (activeFilter === 'data') return allFiles.filter(mfsIsData);
+    return allFiles;
+  }, [allFiles, activeFilter]);
+
+  // Split into today vs earlier — "Today" = after midnight local time.
+  const todayStart = useMemo(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
+  }, []);
+  const { today, earlier } = useMemo(() => {
+    const t = []; const e = [];
+    for (const f of filtered) {
+      (new Date(f.ts || 0).getTime() >= todayStart ? t : e).push(f);
+    }
+    return { today: t, earlier: e };
+  }, [filtered, todayStart]);
+
+  // Open a file: photos/videos into the review viewer; other files in a new tab.
+  const openFile = useCallback((f) => {
+    if (f.kind === 'photo' || f.kind === 'video') { onReview?.(f); return; }
+    if (f.url) window.open(f.url, '_blank', 'noopener');
+  }, [onReview]);
+
+  if (!fromAgent.length && !youSent.length) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--faint)', fontSize: 13, padding: '32px 16px', textAlign: 'center' }}>
+        {status === 'loading' ? 'Loading files…' : 'No files have crossed this room yet.'}
+      </div>
+    );
+  }
+
+  const FILTERS = [
+    { id: 'all', label: 'All', count: counts.all },
+    { id: 'docs', label: 'Docs', count: counts.docs },
+    { id: 'images', label: 'Images', count: counts.images },
+    { id: 'data', label: 'Data', count: counts.data },
+  ].filter(({ id, count }) => id === 'all' || count > 0);
+
+  const renderRow = (f, i) => {
+    const isImg = f.kind === 'photo' && !!f.url;
+    const label = mfsTypeLabel(f.kind, f.name);
+    const rowId = `${f.url || f.name}-${i}`;
+    const isNew = mfsIsNew(f);
+    return (
+      <SwipeFileRow key={rowId} id={rowId} onSave={() => { if (f.url) window.open(f.url, '_blank', 'noopener'); }} openId={swipeOpenId} setOpenId={setSwipeOpenId}>
+        <button type="button" className="cv6-fs-row" onClick={() => openFile(f)} aria-label={`Open ${f.name}`}>
+          {/* Type chip or real thumbnail */}
+          <span
+            className={`cv6-fs-type${isImg ? ' cv6-fs-type--img' : ''}`}
+            style={isImg ? undefined : { background: mfsChipBg(f.kind, f.name), color: mfsChipFg(f.kind, f.name) }}
+          >
+            {isImg ? (
+              <>
+                {/* Placeholder visible until image loads */}
+                <svg className="cv6-fs-img-ph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15l5-5 4 4 3-3 6 6" />
+                </svg>
+                <img
+                  src={f.url}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="cv6-fs-thumb"
+                  onLoad={(e) => {
+                    e.currentTarget.classList.add('cv6-fs-thumb--loaded');
+                    const p = e.currentTarget.closest('.cv6-fs-type--img');
+                    if (p) p.classList.add('cv6-fs-type--thumb-ready');
+                  }}
+                />
+              </>
+            ) : (
+              <span className="cv6-fs-type-lbl">{label || '?'}</span>
+            )}
+          </span>
+          {/* File name + meta */}
+          <div className="cv6-fs-row-body">
+            <div className="cv6-fs-row-name">{f.name}</div>
+            <div className="cv6-fs-row-meta">{mfsMeta(f)}</div>
+          </div>
+          {/* "New" chip for session arrivals */}
+          {isNew && <span className="cv6-fs-new-chip" aria-label="New file">New</span>}
+          {/* Overflow ⋮ — 44pt tap target */}
+          <button
+            type="button"
+            className="cv6-fs-overflow"
+            aria-label="More options"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg width="4" height="16" viewBox="0 0 4 20" fill="currentColor" aria-hidden="true">
+              <circle cx="2" cy="2" r="2" /><circle cx="2" cy="10" r="2" /><circle cx="2" cy="18" r="2" />
+            </svg>
+          </button>
+        </button>
+      </SwipeFileRow>
+    );
+  };
+
+  const renderSection = (label, files) => {
+    if (!files.length) return null;
+    return (
+      <div key={label} className="cv6-fs-section">
+        <div className="cv6-fs-section-hdr">{label}</div>
+        {files.map(renderRow)}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {/* Filter chips row */}
+      <div className="cv6-fs-filters" role="tablist" aria-label="File type filter">
+        {FILTERS.map(({ id, label, count }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={activeFilter === id}
+            className={`cv6-fs-fchip${activeFilter === id ? ' cv6-fs-fchip--active' : ''}`}
+            onClick={() => setActiveFilter(id)}
+          >
+            {label}{id !== 'all' ? ` ${count}` : count > 0 ? ` ${count}` : ''}
+          </button>
+        ))}
+      </div>
+      {/* Scrollable file list — grouped by date */}
+      <div className="cv6-fs-list" role="tabpanel">
+        {renderSection('TODAY', today)}
+        {renderSection('EARLIER', earlier)}
+        {!today.length && !earlier.length && (
+          <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>
+            No {activeFilter !== 'all' ? activeFilter + ' ' : ''}files yet
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ── RoomFilesSheet — wrapper that chooses mobile (ADD) vs desktop (side panel) ─
 function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }) {
   const { fromAgent, youSent, status, windowFull } = useRoomCrossings(worldId, room);
   const isMobile = !columnMode;
-  const panelStyle = isMobile
-    ? {
-        position: 'absolute', left: 0, right: 0, bottom: 0,
-        height: '85vh', maxHeight: 'calc(100% - 44px)',
-        background: 'var(--ground)',
-        borderTopLeftRadius: 22, borderTopRightRadius: 22,
-        borderTop: '1px solid var(--hair)',
-        boxShadow: '0 -22px 54px -22px rgba(0,0,0,.65)',
-        display: 'flex', flexDirection: 'column',
-        padding: `14px 16px max(22px, env(safe-area-inset-bottom, 0px))`,
-      }
-    : {
-        position: 'absolute', top: 0, right: 0, bottom: 0,
-        width: 340, maxWidth: '88%',
-        background: 'var(--ground)',
-        borderTopLeftRadius: 22, borderBottomLeftRadius: 22,
-        borderLeft: '1px solid var(--hair)',
-        boxShadow: '-22px 0 54px -22px rgba(0,0,0,.65)',
-        display: 'flex', flexDirection: 'column',
-        padding: '14px 16px max(22px, env(safe-area-inset-bottom, 0px))',
-      };
-  return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
-      <div style={panelStyle}>
-        <div style={{ width: 38, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '6px auto 12px', flex: 'none' }} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flex: 'none' }}>
-          <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Files in this room</span>
-          <div className="ib" role="button" aria-label="Close files" title="Close files" tabIndex={0}
-            onClick={onClose}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose?.(); } }}
-            style={{ width: 32, height: 32, borderRadius: 9, cursor: 'pointer' }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+  const totalCount = fromAgent.length + youSent.length;
+
+  if (!isMobile) {
+    // Desktop: unchanged right-side panel with FilesShelf.
+    return (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
+        <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
+        <div style={{
+          position: 'absolute', top: 0, right: 0, bottom: 0,
+          width: 340, maxWidth: '88%',
+          background: 'var(--ground)',
+          borderTopLeftRadius: 22, borderBottomLeftRadius: 22,
+          borderLeft: '1px solid var(--hair)',
+          boxShadow: '-22px 0 54px -22px rgba(0,0,0,.65)',
+          display: 'flex', flexDirection: 'column',
+          padding: '14px 16px max(22px, env(safe-area-inset-bottom, 0px))',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flex: 'none' }}>
+            <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Files in this room</span>
+            <div className="ib" role="button" aria-label="Close files" tabIndex={0}
+              onClick={onClose}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose?.(); } }}
+              style={{ width: 32, height: 32, borderRadius: 9, cursor: 'pointer' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </div>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull}
+              onReview={onReview} onLocate={onReview} compact={false} />
           </div>
         </div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <FilesShelf fromAgent={fromAgent} youSent={youSent} status={status} windowFull={windowFull}
-            onReview={onReview} onLocate={onReview} compact={isMobile} />
+      </div>
+    );
+  }
+
+  // Mobile: ADD design — full-width bottom sheet (task dae1720a, Patrik's choice).
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 40 }} onClick={onClose}>
+      <div
+        className="cv6-fs-sheet"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div style={{ width: 40, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '12px auto 0', flex: 'none' }} />
+        {/* Header row: Files + count chip + select icon + close */}
+        <div className="cv6-fs-header">
+          <div className="cv6-fs-title-row">
+            <span className="cv6-fs-title">Files</span>
+            {totalCount > 0 && <span className="cv6-fs-count-chip">{totalCount}</span>}
+          </div>
+          <div className="cv6-fs-header-actions">
+            <button type="button" className="cv6-fs-icon-btn" aria-label="Select files" title="Select files">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="3" /><polyline points="9 12 12 15 16 9" />
+              </svg>
+            </button>
+            <button type="button" className="cv6-fs-icon-btn" aria-label="Close files" title="Close" onClick={onClose}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        {/* Content: filter chips + scrollable file list */}
+        <div className="cv6-fs-content">
+          <MobileFilesContent
+            fromAgent={fromAgent}
+            youSent={youSent}
+            status={status}
+            onReview={onReview}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp, columnMode = false, onClose, expanded = false, onToggleWidth }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -504,7 +866,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   const [filesSheetOpen, setFilesSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  useEffect(() => { setSettingsOpen(false); setMoreOpen(false); }, [fullRoom?.id, fullRoom?.missionSlug]);
+  const [workOpen, setWorkOpen] = useState(false);
+  useEffect(() => { setSettingsOpen(false); setMoreOpen(false); setWorkOpen(false); }, [fullRoom?.id, fullRoom?.missionSlug]);
   const [mComposerHost, setMComposerHost] = useState(null);
   const richComposer = !!(fullRoom && worldId);
   const roomKeyForSheet = fullRoom?.id || room?.name;
@@ -580,6 +943,14 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   // shows when you open a busy room) so mobile reads identically to the other surfaces; fall
   // back to the local "last message is mine" guess only when no signal was passed (demo).
   const awaiting = awaitingProp != null ? awaitingProp : (!!lastMsg && lastMsg.isUser);
+  // Per-room running tasks + goal-step signal — drives the topbar work indicator.
+  const { tasks: roomTasks, promises: roomPromises } = useRunningTasks(fullRoom || room);
+  const hasRoomWork = !!(
+    awaiting ||
+    roomTasks.length > 0 ||
+    roomPromises.length > 0 ||
+    (goal?.checklist || []).some((s) => s.state === 'active')
+  );
   const liveProgressKey = useMemo(() => (liveSteps || []).map((step) => [
     step?.id,
     step?.step_index,
@@ -668,10 +1039,26 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
         <div className="mhactions">
-          <button type="button" className="cv6-chat-header-button" aria-label="Files" title="Files" data-testid="chat-files-button" onClick={() => { setMoreOpen(false); setFilesSheetOpen(true); }}>
+          <button type="button" className="cv6-chat-header-button" aria-label="Files" title="Files" data-testid="chat-files-button" onClick={() => { setMoreOpen(false); setWorkOpen(false); setFilesSheetOpen(true); }}>
             <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
           </button>
-          <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={moreOpen ? 'true' : 'false'} onClick={() => setMoreOpen((open) => !open)}>
+          {hasRoomWork ? (
+            <button
+              type="button"
+              className="cv6-chat-header-button"
+              aria-label="Activity"
+              title="Activity"
+              aria-expanded={workOpen ? 'true' : 'false'}
+              onClick={() => { setMoreOpen(false); setWorkOpen((o) => !o); }}
+              style={{ position: 'relative' }}
+            >
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+              </svg>
+              <span aria-hidden="true" className="cv6-worklist-spin" style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', border: '1.5px solid var(--accent)', borderTopColor: 'transparent', display: 'block' }} />
+            </button>
+          ) : null}
+          <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={moreOpen ? 'true' : 'false'} onClick={() => { setWorkOpen(false); setMoreOpen((open) => !open); }}>
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
           </button>
           {columnMode ? <ColumnExpandButton expanded={expanded} onToggle={onToggleWidth} label={room.name} /> : null}
@@ -687,6 +1074,14 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
                 <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); onSearch?.(); }}>Search conversation</button>
                 <button type="button" role="menuitem" data-testid="room-settings-trigger" onClick={() => { setMoreOpen(false); setSettingsOpen(true); }}>Room settings</button>
                 <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); setComposerCollapsed((c) => !c); }}>{composerCollapsed ? 'Show composer' : 'Hide composer'}</button>
+              </div>
+            </>
+          ) : null}
+          {workOpen ? (
+            <>
+              <button type="button" className="cv6-chat-more-scrim" aria-label="Close activity panel" onClick={() => setWorkOpen(false)} />
+              <div className="cv6-work-dropdown" role="region" aria-label="Active work">
+                <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} expandable />
               </div>
             </>
           ) : null}
@@ -709,7 +1104,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           {/* Per-room action items (Patrik 2026-08-06): what is happening in THIS room,
               the room agent's own steps and any dispatched sub-agent work, one short line
               each with a live counter. Renders nothing when the room has no work. */}
-          <RoomWorkList room={fullRoom || room} goal={goal} />
+          <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} />
           {empty ? (
               <div className="empty" style={{ marginTop: 40 }}>
                 <div className="e-t">No messages with {room.name} yet</div>

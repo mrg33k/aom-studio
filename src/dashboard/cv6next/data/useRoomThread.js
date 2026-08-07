@@ -623,7 +623,7 @@ export function useRoomThread(worldId, room) {
     () => injectWorkSteps(pending.length ? [...messages, ...pending] : messages, stepsByParent, awaiting, lastSentId),
     [messages, pending, stepsByParent, awaiting, lastSentId],
   );
-  return { messages: withWork, archivedMessages, blocks, status, send, clearRoom, awaiting, liveSteps };
+  return { messages: withWork, archivedMessages, blocks, status, send, clearRoom, awaiting, awaitingSince: awaiting ? lastSentTsRef.current : null, liveSteps };
 }
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──

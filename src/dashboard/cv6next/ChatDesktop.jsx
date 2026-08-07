@@ -555,6 +555,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const [titleOverrides, setTitleOverrides] = useState({});
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [headerMoreOpen, setHeaderMoreOpen] = useState(false);
+  // Work indicator dropdown — appears in the room header when something is running.
+  const [workOpen, setWorkOpen] = useState(false);
   // World-wide in-flight count for the pinned Background work row (M19). room=null
   // deliberately: this badge answers "is anything running anywhere?".
   const { tasks: bgTasks, promises: bgPromises } = useRunningTasks(null);
@@ -566,7 +568,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   // Selected room: the one opened from elsewhere, else the first agent. {id,name,initials,isProject,status}.
   const [picked, setPicked] = useState(initialRoom || null);
-  useEffect(() => { setSettingsOpen(false); setHeaderMoreOpen(false); }, [picked?.id, picked?.missionSlug]);
+  useEffect(() => { setSettingsOpen(false); setHeaderMoreOpen(false); setWorkOpen(false); }, [picked?.id, picked?.missionSlug]);
   // ← chain (Patrik 2026-06-25): from an open thread, ArrowLeft drops back to the chat directory
   // (rail visible, no thread); ArrowLeft again goes Home. 'cleared' forces the directory state.
   const [cleared, setCleared] = useState(false);
@@ -619,9 +621,17 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav, windowMode]);
 
-  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, liveSteps } = useRoomThread(worldId, selected);
+  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps } = useRoomThread(worldId, selected);
   // The room agent's own steps — the half of "background work" the old card could not see.
   const roomGoal = useGoalThread(worldId, selected);
+  // Per-room running tasks — used by the work-indicator icon to know if anything is active.
+  const { tasks: roomTasks, promises: roomPromises } = useRunningTasks(selected);
+  const hasRoomWork = !!(selected && (
+    awaiting ||
+    roomTasks.length > 0 ||
+    roomPromises.length > 0 ||
+    (roomGoal?.checklist || []).some((s) => s.state === 'active')
+  ));
   const lastActiveLabel = (() => {
     const m = messages?.[messages.length - 1];
     if (!m?.ts) return null;
@@ -1022,10 +1032,28 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div className="desktop-room-title">{selected.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.hasCustomTitle && selected.specialistTitle ? `${selected.specialistTitle} specialist` : (goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation'))}</div>
                   </div>
-                  <button type="button" className="cv6-chat-header-button" aria-label="Files" title="Files" onClick={() => { setHeaderMoreOpen(false); setDrawerView('files'); }}>
+                  {hasRoomWork ? (
+                    <button
+                      type="button"
+                      className="cv6-chat-header-button"
+                      aria-label="Activity"
+                      title="Activity"
+                      aria-expanded={workOpen ? 'true' : 'false'}
+                      onClick={() => { setHeaderMoreOpen(false); setWorkOpen((o) => !o); }}
+                      style={{ position: 'relative' }}
+                    >
+                      {/* Checklist icon */}
+                      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                      </svg>
+                      {/* Animated dot — spins while work is in flight */}
+                      <span aria-hidden="true" className="cv6-worklist-spin" style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', border: '1.5px solid var(--accent)', borderTopColor: 'transparent', display: 'block' }} />
+                    </button>
+                  ) : null}
+                  <button type="button" className="cv6-chat-header-button" aria-label="Files" title="Files" onClick={() => { setHeaderMoreOpen(false); setWorkOpen(false); setDrawerView('files'); }}>
                     <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
                   </button>
-                  <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={headerMoreOpen ? 'true' : 'false'} onClick={() => setHeaderMoreOpen((open) => !open)}>
+                  <button type="button" className="cv6-chat-header-button" aria-label="More" title="More" aria-expanded={headerMoreOpen ? 'true' : 'false'} onClick={() => { setWorkOpen(false); setHeaderMoreOpen((open) => !open); }}>
                     <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
                   </button>
                   {headerMoreOpen ? (
@@ -1035,6 +1063,14 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); onSearch?.(); }}>Search conversation</button>
                         <button type="button" role="menuitem" data-testid="room-settings-trigger" onClick={() => { setHeaderMoreOpen(false); setSettingsOpen(true); }}>Room settings</button>
                         <button type="button" role="menuitem" onClick={() => { setHeaderMoreOpen(false); toggleFollow(); }}>{following ? 'Mute updates' : 'Follow along'}</button>
+                      </div>
+                    </>
+                  ) : null}
+                  {workOpen ? (
+                    <>
+                      <button type="button" className="cv6-chat-more-scrim" aria-label="Close activity panel" onClick={() => setWorkOpen(false)} />
+                      <div className="cv6-work-dropdown" role="region" aria-label="Active work">
+                        <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} expandable />
                       </div>
                     </>
                   ) : null}
@@ -1055,7 +1091,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         dispatched sub-agent jobs. This lists both kinds, per room, short, with a
                         live counter on each. The Background work window still exists for the
                         world-wide view. */}
-                    <RoomWorkList room={selected} goal={roomGoal} />
+                    <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} />
                     {/* Only renders when the FRONT DOOR chose this room automatically — names
                         the destination the user never got to see, and moves the message in one
                         tap if it guessed wrong (corner:front-door R8). */}

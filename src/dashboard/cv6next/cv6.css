@@ -1985,6 +1985,215 @@
 [data-cv6][data-screen="home-mobile"] .mresumecard .rprev:empty { display:none; }
 [data-cv6][data-screen="home-mobile"] .mresumeage { flex:none; font-size:10.5px; color:var(--faint); }
 [data-cv6][data-screen="home-mobile"] .mresume-chev { flex:none; color:var(--faint); }
+
+/* ── HOME AMPLIFY RESKIN (R2a, task 8431e715) ─────────────────────────────────────
+   Tokens from kit-FINAL-2026-06-20/tokens/themes.css — never eyeballed.
+   Three themes (dark/light/glass): all use var() tokens so they adapt automatically.
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* Active count pill in header */
+[data-cv6][data-screen="home-mobile"] .mhome-active-pill {
+  /* inline-block (not inline-flex) so the " active" text-node space renders correctly.
+     Flexbox collapses leading whitespace on text nodes as anonymous flex items. */
+  display:inline-block;
+  margin-top:10px;
+  line-height:24px;
+  padding:0 10px;
+  border-radius:var(--radius-pill,50px);
+  background:var(--accent);
+  color:#fff;
+  font-size:11.5px;
+  font-weight:700;
+  font-family:var(--font-sans);
+  letter-spacing:.01em;
+  white-space:nowrap;
+}
+/* Hide pill when activeCount is empty (no recent rooms) */
+[data-cv6][data-screen="home-mobile"] .mhome-active-pill:empty { display:none; }
+
+/* ── Avatar circle (all cards) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-av {
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:var(--surface-2);
+  border:1px solid var(--hair);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+  font-weight:700;
+  color:var(--fg);
+  flex:none;
+  flex-shrink:0;
+  text-transform:uppercase;
+}
+
+/* ── Name-line (all cards) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-nameline {
+  display:flex;
+  align-items:baseline;
+  min-width:0;
+}
+
+/* ── Status row: hero only ── */
+[data-cv6][data-screen="home-mobile"] .mresume-statusrow {
+  display:none; /* hidden on quiet cards; hero overrides below */
+  align-items:center;
+  gap:5px;
+  margin-top:4px;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-herodot {
+  width:7px;
+  height:7px;
+  background:var(--status-working, var(--lime-400, #A3E635));
+  flex:none;
+  animation:statPulse 1.7s infinite;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-statusword {
+  font-size:11.5px;
+  font-weight:600;
+  color:var(--status-working, var(--lime-400, #A3E635));
+  text-transform:lowercase;
+}
+
+/* ── Progress bar: hero only, indeterminate (§5) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-bar {
+  display:none; /* hidden on quiet cards; hero overrides below */
+  height:5px;
+  border-radius:3px;
+  /* Track: semi-opaque white so it reads against the accent-weak hero background */
+  background:rgba(255,255,255,.12);
+  overflow:hidden;
+  margin-top:8px;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-bar-fill {
+  height:100%;
+  border-radius:3px;
+  background:var(--accent);
+  /* Indeterminate shimmer: no percentage, no proportional fill — §5 */
+  width:40%;
+  animation:mresumeBarShimmer 1.8s ease-in-out infinite;
+}
+@keyframes mresumeBarShimmer {
+  0%   { transform:translateX(-200%); }
+  100% { transform:translateX(350%); }
+}
+/* Respect prefers-reduced-motion — keep bar visible but static */
+@media (prefers-reduced-motion:reduce) {
+  [data-cv6][data-screen="home-mobile"] .mresume-bar-fill { animation:none; width:60%; opacity:.6; }
+}
+
+/* ── Trail (time + unread dot, right side) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-trail {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:4px;
+  flex:none;
+}
+/* Quiet cards: trail is row (dot + time side by side) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresume-trail {
+  flex-direction:row;
+  align-items:center;
+  gap:5px;
+  align-self:flex-start; /* align with name row, not stretched */
+}
+
+/* ── HERO CARD — :first-child ── */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child {
+  background:var(--accent-weak);
+  border-color:transparent;
+  border-left:3px solid var(--accent);
+  border-radius:14px;
+  align-items:flex-start;
+  padding:14px 14px 14px 16px;
+  gap:12px;
+  min-height:96px;
+}
+/* Suppress the ::before tint bar on hero — the left accent border is the identity signal */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child::before {
+  display:none;
+}
+/* Hero avatar: accent-filled circle */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-av {
+  width:42px;
+  height:42px;
+  font-size:18px;
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  flex-shrink:0;
+}
+/* Hero name: display size */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .rn {
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:-.025em;
+  line-height:1.15;
+  white-space:normal; /* allow wrap at display size */
+  overflow:visible;
+  text-overflow:clip;
+}
+/* Hero status row: show */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-statusrow {
+  display:flex;
+}
+/* Hero preview: slightly more visible */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .rprev {
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+/* Hero progress bar: show (indeterminate — §5: no percentage, no proportional fill) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-bar {
+  display:block;
+}
+/* Hero trail: time at top only, smaller; dot hidden (status handled by mresume-statusrow) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-trail {
+  position:absolute;
+  top:14px;
+  right:14px;
+  flex-direction:column;
+  align-items:flex-end;
+}
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-trail .newdot {
+  display:none; /* status conveyed by the hero status row instead */
+}
+/* Hero body: takes full width under the avatar */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresumebody {
+  flex:1;
+  min-width:0;
+  /* Account for absolute-positioned trail so text does not overlap it */
+  padding-right:38px;
+}
+
+/* ── QUIET CARDS — :not(:first-child) ── */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) {
+  align-items:center;
+}
+/* Quiet card avatar: smaller, surface-2 (already the default, but explicit for clarity) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresume-av {
+  width:32px;
+  height:32px;
+  font-size:12px;
+}
+/* Quiet card name: standard size */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .rn {
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:-.01em;
+}
+/* Quiet: body is a column flex taking remaining space */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresumebody {
+  flex:1;
+  min-width:0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head { margin:28px 0 12px; }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head > span { display:flex; flex-direction:column; gap:3px; }
 [data-cv6][data-screen="home-mobile"] .rooms-directory-head small { color:var(--faint); font-size:12px; }
@@ -2644,12 +2853,220 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   cursor:pointer;
 }
 [data-cv6] .cv6-chat-more-menu > button:hover { background:var(--surface-2); }
+
+/* Work-indicator dropdown — anchored to .desktop-room-header (position:relative)
+   on desktop, and to .mhactions (position:relative) on mobile via fixed positioning.
+   Matches the More menu visual language exactly; wider to fit the work list. */
+[data-cv6] .cv6-work-dropdown {
+  position:absolute;
+  z-index:49;
+  top:calc(100% + 8px);
+  right:0;
+  width:300px;
+  border:1px solid var(--hair);
+  border-radius:14px;
+  background:var(--surface);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.58);
+  overflow:hidden;
+}
+/* The RoomWorkList inside the dropdown owns its own padding/margins; strip the
+   outer margin that assumes it lives in the scroll body. */
+[data-cv6] .cv6-work-dropdown [data-testid="cv6-room-work-list"] {
+  margin:0 !important;
+}
+
+/* Spin animation for the work indicator dot on the header icon.
+   Matches cv6WorklistSpin in RoomWorkList's inline <style>; keeping both so the
+   icon animates even before the dropdown has mounted RoomWorkList. */
+@keyframes cv6WorklistSpin { to { transform:rotate(360deg); } }
+[data-cv6] .cv6-worklist-spin { animation:cv6WorklistSpin .8s linear infinite; }
+
 @media (max-width:640px) {
   /* Match the shared mobile 44px touch floor on both axes so the icon actions
      stay true circles instead of becoming 36 x 44 rounded rectangles. */
   [data-cv6] .cv6-chat-header-button { width:44px; min-width:44px; height:44px; }
   [data-cv6] .cv6-chat-more-menu { position:fixed; top:calc(env(safe-area-inset-top,0px) + 66px); right:12px; }
+  /* On mobile the dropdown uses fixed positioning to escape the mhdr clip area. */
+  [data-cv6] .cv6-work-dropdown { position:fixed; top:calc(env(safe-area-inset-top,0px) + 66px); right:12px; }
 }
+
+/* ── ACTION ITEMS RESKIN (R2c, task 42021fa1) ──────────────────────────────────────
+   Three states clearly different at a glance: active (hero), todo (quiet), done (dimmed).
+   Tokens from kit-FINAL-2026-06-20/tokens/themes.css — never eyeballed. No gold in Corner.
+   All three themes (dark/light/glass) adapt automatically via var() tokens.
+   §5 compliance: progress bar is indeterminate (no percentage, no proportional fill).
+   Typography: Inter var(--font-sans), normal-width, sentence case — NOT condensed, NOT uppercase.
+   Applies to both inline RoomWorkList and the .cv6-work-dropdown placement (same component).
+   ─────────────────────────────────────────────────────────────────────────────────────── */
+
+/* Header title */
+[data-cv6] .cv6-wl-title {
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:-.015em;
+  color:var(--fg);
+  font-family:var(--font-sans);
+}
+
+/* "N running" pill badge */
+[data-cv6] .cv6-wl-running-badge {
+  display:inline-flex;
+  align-items:center;
+  padding:2px 9px;
+  border-radius:var(--radius-pill,50px);
+  background:var(--accent);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  font-family:var(--font-sans);
+  letter-spacing:.01em;
+  white-space:nowrap;
+  line-height:18px;
+}
+
+/* ── Item card wrapper ── */
+[data-cv6] .cv6-wl-item {
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  border-radius:11px;
+  padding:10px 11px;
+  margin-bottom:5px;
+  background:var(--surface);
+  border:1px solid var(--hair);
+}
+[data-cv6] .cv6-wl-item:last-child { margin-bottom:0; }
+
+/* Active / hero card: accent-weak fill + solid accent left edge */
+[data-cv6] .cv6-wl-item--active {
+  background:var(--accent-weak);
+  border-color:transparent;
+  border-left:3px solid var(--accent);
+  padding-left:9px; /* compensate for 2px wider border so content stays aligned */
+}
+
+/* Done card: dimmed, no border */
+[data-cv6] .cv6-wl-item--done {
+  background:transparent;
+  border-color:transparent;
+  opacity:0.6;
+}
+
+/* ── Content column ── */
+[data-cv6] .cv6-wl-content {
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── Label (item text) ──
+   Normal-width Inter, sentence case. Typography is not a preference (MOBILE-BUILD-SPEC §3).
+   Active: 15px/600 — quiet items: 13px/500. Never condensed, never uppercase. */
+[data-cv6] .cv6-wl-label {
+  font-size:13px;
+  font-weight:500;
+  line-height:1.35;
+  color:var(--fg);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-label {
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:-.01em;
+  white-space:normal; /* allow wrap at hero size */
+  overflow:visible;
+  text-overflow:clip;
+}
+[data-cv6] .cv6-wl-item--done .cv6-wl-label {
+  text-decoration:line-through;
+  color:var(--faint);
+}
+
+/* ── Owner subtitle ── */
+[data-cv6] .cv6-wl-owner {
+  font-size:11px;
+  font-weight:400;
+  color:var(--muted);
+  margin-top:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-family:var(--font-sans);
+}
+
+/* ── Progress bar: active items only, indeterminate (§5) ──
+   No percentage. No proportional fill. A shimmer passes through a fixed-width chunk.
+   Reported: real per-task progress is unavailable from the checklist / useRunningTasks
+   data model — items have no completion percentage. Indeterminate is the correct fallback. */
+[data-cv6] .cv6-wl-bar {
+  height:3px;
+  border-radius:2px;
+  /* Track: semi-opaque white readable on accent-weak background */
+  background:rgba(255,255,255,.14);
+  overflow:hidden;
+  margin:8px 0 2px;
+}
+[data-cv6] .cv6-wl-bar-fill {
+  height:100%;
+  border-radius:2px;
+  background:var(--accent);
+  width:38%;
+  animation:cv6WlBarShimmer 1.8s ease-in-out infinite;
+}
+@keyframes cv6WlBarShimmer {
+  0%   { transform:translateX(-220%); }
+  100% { transform:translateX(380%); }
+}
+@media (prefers-reduced-motion:reduce) {
+  [data-cv6] .cv6-wl-bar-fill { animation:none; width:55%; opacity:.5; }
+}
+
+/* ── Status row: state-word + elapsed time ── */
+[data-cv6] .cv6-wl-status {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin-top:5px;
+}
+
+/* Lime pulse dot — active state only */
+[data-cv6] .cv6-wl-dot {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--status-working, #A3E635);
+  flex:none;
+  animation:statPulse 1.7s infinite; /* reuses statPulse already defined in this file */
+}
+
+/* State word: "running" / "to do" / "done" */
+[data-cv6] .cv6-wl-state-word {
+  font-size:11px;
+  font-weight:500;
+  color:var(--muted);
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-state-word {
+  font-weight:600;
+  color:var(--status-working, #A3E635); /* lime to match the dot */
+}
+
+/* Elapsed time — right-aligned via margin-left:auto */
+[data-cv6] .cv6-wl-time {
+  margin-left:auto;
+  font-size:11px;
+  font-family:var(--font-mono);
+  color:var(--muted);
+  font-variant-numeric:tabular-nums;
+  flex:none;
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-time { color:var(--accent); }
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 
 /* R11 one-page workspace. Home/tools stay mounted as the base column while
    every room and Email appends an independent, fixed-width sibling. The page
@@ -2768,14 +3185,15 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
    the last "All rooms" row is always reachable. */
 [data-cv6][data-screen="home-mobile"] { position:relative; }
 [data-cv6][data-screen="home-mobile"] .mintake {
-  position:absolute; left:12px; right:12px; bottom:20px; z-index:6;
+  position:absolute; left:22px; right:22px; bottom:20px; z-index:6;
   margin-bottom:0;
+  width:auto; /* override [data-cv6-intake]{width:100%} — let left+right control width */
 }
 /* The list scrolls UNDER the floating box, so it needs both room to stop and a
    scrim — without it a half-row peeked out beside and below the card. */
 [data-cv6][data-screen="home-mobile"] .hbody { padding-bottom:186px; }
 [data-cv6][data-screen="home-mobile"] .mintake::before {
-  content:''; position:absolute; left:-12px; right:-12px; bottom:-20px; top:-34px;
+  content:''; position:absolute; left:-22px; right:-22px; bottom:-20px; top:-34px;
   background:linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--ground) 34%, var(--ground) 100%);
   pointer-events:none; z-index:-1;
 }
@@ -3037,3 +3455,477 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 }
 /* When composer is collapsed, jumplive moves up (no composer to clear) */
 [data-cv6].cv6-chat-composer-collapsed .jumplive { bottom: 80px !important; }
+
+/* ── R2b: Mobile chat CHAT screen reskin ──────────────────────────────────── */
+/* §2 + §9c: one fixed-height working card + rounded message bubbles.          */
+/* Tokens copied exactly from kit-FINAL-2026-06-20. No hex invented.           */
+
+/* ── Step card (inline chat placement, expandable=false) ──── */
+/* §9c structural-change exception: RoomWorkList renders this when expandable=false.
+   The card is fixed-height — cross-fading step text means no accumulated vertical space. */
+[data-cv6] .cv6-step-card {
+  margin: 8px 0 10px;
+  padding: 12px 14px 10px;
+  border-radius: 0 14px 14px 0;
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  font-family: var(--font-sans);
+}
+/* Header row: spinner + state title + step counter */
+[data-cv6] .cv6-sc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+/* Small circular spinner — 14px, accent color */
+[data-cv6] .cv6-sc-spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  flex: none;
+  animation: cv6ScSpin .8s linear infinite;
+}
+@keyframes cv6ScSpin { to { transform: rotate(360deg); } }
+/* State title: "Thinking it through" */
+[data-cv6] .cv6-sc-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+  flex: 1;
+  letter-spacing: -.01em;
+}
+/* Step counter: "Step 3 of 4" — right-aligned, tabular nums */
+[data-cv6] .cv6-sc-counter {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+/* Current step text — fades in when step changes (key-driven remount) */
+[data-cv6] .cv6-sc-current {
+  font-size: 13px;
+  color: var(--fg);
+  line-height: 1.4;
+  animation: cv6ScFadeIn .22s ease;
+}
+@keyframes cv6ScFadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* Ghost previous-step line — fades out, then JSX unmounts it */
+[data-cv6] .cv6-sc-prev {
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.4;
+  margin-top: 2px;
+  animation: cv6ScFadeOut .45s ease forwards;
+}
+@keyframes cv6ScFadeOut { from { opacity: 0.32; } to { opacity: 0; } }
+/* Progress bar row: slim bar + percentage */
+[data-cv6] .cv6-sc-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+[data-cv6] .cv6-sc-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,.10);
+  border-radius: 2px;
+  overflow: hidden;
+}
+[data-app-theme="light"] [data-cv6] .cv6-sc-bar { background: rgba(0,0,0,.10); }
+[data-cv6] .cv6-sc-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .45s ease;
+}
+/* Indeterminate shimmer — §5: no % on this path, no proportional fill */
+[data-cv6] .cv6-sc-bar.is-indeterminate .cv6-sc-bar-fill {
+  width: 38% !important;
+  transition: none;
+  animation: cv6ScShimmer 1.6s ease-in-out infinite;
+}
+@keyframes cv6ScShimmer {
+  0%   { transform: translateX(-210%); }
+  100% { transform: translateX(360%); }
+}
+[data-cv6] .cv6-sc-pct {
+  font-size: 11px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: right;
+  flex: none;
+}
+/* prefers-reduced-motion: instant text swap, keep bar width transition only */
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] .cv6-sc-spin    { animation: none; border-top-color: var(--accent); opacity: .7; }
+  [data-cv6] .cv6-sc-current { animation: none; }
+  [data-cv6] .cv6-sc-prev    { animation: none; opacity: 0; }
+  [data-cv6] .cv6-sc-bar.is-indeterminate .cv6-sc-bar-fill { animation: none; width: 50% !important; }
+  /* bar width transition is kept — spec says "keep only the bar width transition" */
+}
+
+/* ── Mobile chat message bubbles ──────────────────────────── */
+/* User: right-aligned accent bubble. Agent: dark surface card with avatar.
+   §8a: small JSX restructure in MobileMessageTurn required (CSS cannot reorder
+   the time label from header-above to footer-below the bubble without JSX change). */
+
+/* Shared bubble base */
+[data-cv6] .cv6-mob-bubble {
+  position: relative;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  max-height: 168px;
+  overflow: hidden;
+}
+[data-cv6] .cv6-mob-bubble.is-clamped::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 64px;
+  pointer-events: none;
+}
+
+/* User bubble */
+[data-cv6] .cv6-mob-bubble--user {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 18px 18px 4px 18px;
+  align-self: flex-end;
+}
+[data-cv6] .cv6-mob-bubble--user.is-clamped::after {
+  background: linear-gradient(transparent, var(--accent));
+}
+[data-cv6] .cv6-mob-bubble--user * { color: #fff !important; }
+/* Show more button for user bubbles — white text on accent bg */
+[data-cv6] .longmsg-more.cv6-mob-more-user { color: rgba(255,255,255,.8); }
+
+/* Agent bubble */
+[data-cv6] .cv6-mob-bubble--agent {
+  background: var(--surface-2);
+  border: 1px solid var(--hair);
+  color: var(--fg);
+  padding: 10px 14px;
+  border-radius: 4px 18px 18px 18px;
+}
+[data-cv6] .cv6-mob-bubble--agent.is-clamped::after {
+  background: linear-gradient(transparent, var(--surface-2));
+}
+
+/* Timestamp — small, below the bubble */
+[data-cv6] .cv6-mob-ts {
+  display: block;
+  font-size: 10.5px;
+  color: var(--faint);
+  font-family: var(--font-mono);
+}
+
+/* Agent name above the bubble — same treatment as .gname */
+[data-cv6] .cv6-mob-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+/* ── Mobile Files Sheet — ADD design (task dae1720a, 2026-08-06) ────────────
+   Full-width bottom sheet: filter chips, date-grouped list, real thumbnails,
+   swipe-to-save, "New" chip for session arrivals. List is the only view.
+   Three themes via var() tokens. Tap targets ≥44pt throughout.
+   Design gate: Corner — dark ground, accent blue, Inter, no gold.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Sheet panel */
+[data-cv6] .cv6-fs-sheet {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 88vh;
+  max-height: calc(100% - 44px);
+  background: var(--ground);
+  border-top: 1px solid var(--hair);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 -22px 54px -22px rgba(0,0,0,.65);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(22px, env(safe-area-inset-bottom, 0px));
+}
+
+/* Header: "Files [20]  [☐] [✕]" */
+[data-cv6] .cv6-fs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  flex: none;
+}
+[data-cv6] .cv6-fs-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-cv6] .cv6-fs-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  color: var(--fg);
+}
+[data-cv6] .cv6-fs-count-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--hair);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: var(--font-sans);
+}
+[data-cv6] .cv6-fs-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* Icon buttons in header — 44pt target */
+[data-cv6] .cv6-fs-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--hair);
+  background: var(--surface-2);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+  font-family: var(--font-sans);
+}
+[data-cv6] .cv6-fs-icon-btn:active { opacity: .7; }
+
+/* Filter chips row — horizontally scrollable if many chips */
+[data-cv6] .cv6-fs-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px 12px;
+  flex: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+[data-cv6] .cv6-fs-filters::-webkit-scrollbar { display: none; }
+/* Individual filter chip */
+[data-cv6] .cv6-fs-fchip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  min-width: 44px; /* ≥44pt tap target */
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hair);
+  background: transparent;
+  color: var(--muted);
+  font: 600 13px var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+[data-cv6] .cv6-fs-fchip--active {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+[data-cv6] .cv6-fs-fchip:active { opacity: .8; }
+
+/* Content area: filter chips (fixed) + scrollable list */
+[data-cv6] .cv6-fs-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* Scrollable file list */
+[data-cv6] .cv6-fs-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px;
+}
+
+/* Date section headers: "TODAY" / "EARLIER" */
+[data-cv6] .cv6-fs-section-hdr {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 0 5px;
+}
+
+/* ── Swipe-to-save gesture ──────────────────────────────────────────────── */
+/* Container — clips the save panel until swiped */
+[data-cv6] .cv6-fs-swipe-wrap {
+  position: relative;
+  overflow: hidden;
+}
+/* Save panel revealed on left-swipe (dx < 0 = finger moves left) */
+[data-cv6] .cv6-fs-save-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+[data-cv6] .cv6-fs-save-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font: 700 11px var(--font-sans);
+  cursor: pointer;
+  padding: 0;
+}
+/* Translating content layer — JS drives transform directly during gesture */
+[data-cv6] .cv6-fs-swipe-inner {
+  will-change: transform;
+  /* Allow vertical scroll to still work while enabling horizontal swipe detection */
+  touch-action: pan-y;
+}
+
+/* ── File row ─────────────────────────────────────────────────────────────── */
+[data-cv6] .cv6-fs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  min-height: 56px; /* ≥44pt vertical target */
+}
+[data-cv6] .cv6-fs-row:active { opacity: .8; }
+
+/* Type chip: 40×40 rounded square — extension monogram or thumbnail */
+[data-cv6] .cv6-fs-type {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: hidden;
+  position: relative;
+}
+[data-cv6] .cv6-fs-type--img {
+  background: var(--chip);
+  color: var(--muted);
+}
+/* Extension label inside the chip */
+[data-cv6] .cv6-fs-type-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: inherit;
+  line-height: 1;
+}
+/* Placeholder icon — hidden once thumbnail loads */
+[data-cv6] .cv6-fs-img-ph {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 18px;
+  height: 18px;
+  transition: opacity .2s;
+  color: var(--muted);
+}
+[data-cv6] .cv6-fs-type--thumb-ready .cv6-fs-img-ph { opacity: 0; pointer-events: none; }
+/* Real image thumbnail — fades in when loaded, does not block sheet open */
+[data-cv6] .cv6-fs-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .25s;
+}
+[data-cv6] .cv6-fs-thumb--loaded { opacity: 1; }
+
+/* Row body: name + meta */
+[data-cv6] .cv6-fs-row-body {
+  flex: 1;
+  min-width: 0;
+}
+[data-cv6] .cv6-fs-row-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-cv6] .cv6-fs-row-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "New" chip — accent pill, session arrivals */
+[data-cv6] .cv6-fs-new-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #fff;
+  font: 700 10px var(--font-sans);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* Overflow icon button — 44×44pt tap target */
+[data-cv6] .cv6-fs-overflow {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+  border-radius: 10px;
+}
+[data-cv6] .cv6-fs-overflow:active { background: var(--chip); }
