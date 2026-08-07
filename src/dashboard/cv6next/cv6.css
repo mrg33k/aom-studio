@@ -3794,8 +3794,10 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 10px 0 5px;
+  padding: 16px 0 8px;
 }
+/* First header in the list shouldn't push a 16px hole under the filter row. */
+[data-cv6] .cv6-fs-section:first-child .cv6-fs-section-hdr { padding-top: 4px; }
 
 /* ── Swipe-to-save gesture ──────────────────────────────────────────────── */
 /* Container — clips the save panel until swiped */
@@ -3853,7 +3855,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
    approved corner-files-add.png frame. The card fill is what the swipe reveals from. */
 [data-cv6] .cv6-fs-section--recent .cv6-fs-swipe-wrap {
   border-radius: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 [data-cv6] .cv6-fs-section--recent .cv6-fs-swipe-inner {
   background: var(--surface);
@@ -3895,7 +3897,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
+  padding: 8px 0;
   border: none;
   background: transparent;
   /* Sibling of the ⋮ button now, not its parent — a <button> may not contain a
@@ -3927,9 +3929,10 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   background: var(--chip);
   color: var(--muted);
 }
-/* Extension label inside the chip */
+/* Extension monogram inside the chip. 10px rendered as a smudge on a 40px tile; the
+   approved frame's "MD" measures ~15px cap-to-tile. */
 [data-cv6] .cv6-fs-type-lbl {
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: .02em;
   color: inherit;
@@ -3963,8 +3966,10 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   flex: 1;
   min-width: 0;
 }
+/* 17/12 = a 1.42 name:meta ratio. It was 15/12 (1.25) — close enough that neither line
+   led and every row read as one grey block. The approved frame runs ~1.7. */
 [data-cv6] .cv6-fs-row-name {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: -.01em;
   color: var(--fg);
@@ -3981,16 +3986,19 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   white-space: nowrap;
 }
 
-/* "New" chip — accent pill, session arrivals */
+/* "New" chip — OUTLINED accent, not a solid fill. Solid made it compete with the Save
+   panel (the only other accent-filled thing in the sheet) for the same eye; the approved
+   frame draws it as a hollow blue pill so it labels without shouting. */
 [data-cv6] .cv6-fs-new-chip {
   display: inline-flex;
   align-items: center;
-  height: 20px;
-  padding: 0 7px;
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  color: #fff;
-  font: 700 10px var(--font-sans);
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font: 600 12px var(--font-sans);
   white-space: nowrap;
   flex: none;
 }

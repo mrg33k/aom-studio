@@ -539,6 +539,22 @@ function mfsIsNew(f) {
   const ts = new Date(f.ts || 0).getTime();
   return ts > 0 && (Date.now() - ts) < MFS_NEW_MS;
 }
+// Display title for a row. The approved frame reads as a curated list ("Mobile review",
+// "Creative brief"), not a directory listing — because the extension is carried by the
+// type tile beside the name and never repeated in it. Rendering the raw filename
+// ("steffen-verify-390-recheck.png") is most of why the live screen looked wrong.
+// The true filename is never lost: it stays in the row's aria-label + title, the ⋮ menu
+// header, and the saved file on disk.
+function mfsDisplayName(name) {
+  const raw = String(name || '').trim();
+  if (!raw) return 'Untitled';
+  // Drop the extension only when it looks like one (short, alphanumeric) so a name
+  // such as "v1.2 pricing" keeps its dot.
+  const base = raw.replace(/\.[A-Za-z0-9]{1,5}$/, '') || raw;
+  const words = base.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!words) return raw;
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
 // "who — Xm — 12 KB" formatted meta line.
 function mfsRelAgo(ts) {
   if (!ts) return '';
@@ -707,17 +723,29 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
     return allFiles;
   }, [allFiles, activeFilter]);
 
-  // Split into today vs earlier — "Today" = after midnight local time.
-  const todayStart = useMemo(() => {
-    const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
-  }, []);
-  const { today, earlier } = useMemo(() => {
-    const t = []; const e = [];
+  // Split into a recent (carded) band and everything older (plain list). That contrast
+  // IS the approved frame's hierarchy — so the band has to be reachable in practice.
+  // It used to key on local midnight, which made the whole design unreachable: Patrik
+  // opened the room at 20:34 with his newest files 17h old (i.e. yesterday's calendar
+  // day), every one of the 37 fell to EARLIER, and he saw a flat list with no cards at
+  // all — "the design looks off from how you designed it" (2026-08-07). A rolling 24h
+  // window keeps "a delivery from last night" in the band where it belongs. The header
+  // still tells the truth: TODAY only when the band really is today's calendar date.
+  const MFS_RECENT_MS = 24 * 60 * 60 * 1000;
+  const { recent, earlier, recentLabel } = useMemo(() => {
+    const now = Date.now();
+    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+    const r = []; const e = [];
+    let allToday = true;
     for (const f of filtered) {
-      (new Date(f.ts || 0).getTime() >= todayStart ? t : e).push(f);
+      const ts = new Date(f.ts || 0).getTime();
+      if (ts > 0 && now - ts < MFS_RECENT_MS) {
+        r.push(f);
+        if (ts < midnight.getTime()) allToday = false;
+      } else e.push(f);
     }
-    return { today: t, earlier: e };
-  }, [filtered, todayStart]);
+    return { recent: r, earlier: e, recentLabel: r.length && allToday ? 'TODAY' : 'RECENT' };
+  }, [filtered]);
 
   // Open a file: photos/videos into the review viewer; other files in a new tab.
   const openFile = useCallback((f) => {
@@ -747,7 +775,7 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
     const isNew = mfsIsNew(f);
     return (
       <SwipeFileRow key={rowId} id={rowId} onSave={() => saveFile(f)} openId={swipeOpenId} setOpenId={setSwipeOpenId}>
-        <button type="button" className="cv6-fs-row" onClick={() => openFile(f)} aria-label={`Open ${f.name}`}>
+        <button type="button" className="cv6-fs-row" onClick={() => openFile(f)} aria-label={`Open ${f.name}`} title={f.name}>
           {/* Type chip or real thumbnail */}
           <span
             className={`cv6-fs-type${isImg ? ' cv6-fs-type--img' : ''}`}
@@ -778,7 +806,7 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
           </span>
           {/* File name + meta */}
           <div className="cv6-fs-row-body">
-            <div className="cv6-fs-row-name">{f.name}</div>
+            <div className="cv6-fs-row-name">{mfsDisplayName(f.name)}</div>
             <div className="cv6-fs-row-meta">{mfsMeta(f)}</div>
           </div>
           {/* "New" chip for session arrivals */}
@@ -832,9 +860,9 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
       </div>
       {/* Scrollable file list — grouped by date */}
       <div className="cv6-fs-list" role="tabpanel">
-        {renderSection('TODAY', today, true)}
+        {renderSection(recentLabel, recent, true)}
         {renderSection('EARLIER', earlier, false)}
-        {!today.length && !earlier.length && (
+        {!recent.length && !earlier.length && (
           <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>
             No {activeFilter !== 'all' ? activeFilter + ' ' : ''}files yet
           </div>
