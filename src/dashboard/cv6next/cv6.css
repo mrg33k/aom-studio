@@ -2867,8 +2867,14 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   padding:6px;
   border:1px solid var(--hair);
   border-radius:14px;
-  background:var(--surface);
-  box-shadow:0 18px 44px -14px rgba(0,0,0,.58);
+  /* Menus sit on top of message text, so they need an opaque reading plane even
+     when the surrounding app is using the translucent glass theme. The existing
+     composer token is solid in dark, light, and glass palettes. */
+  background:var(--composer-solid, #131317);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  isolation:isolate;
   display:flex;
   flex-direction:column;
   gap:2px;
@@ -2896,8 +2902,11 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
   width:300px;
   border:1px solid var(--hair);
   border-radius:14px;
-  background:var(--surface);
-  box-shadow:0 18px 44px -14px rgba(0,0,0,.58);
+  background:var(--composer-solid, #131317);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  isolation:isolate;
   overflow:hidden;
 }
 /* The RoomWorkList inside the dropdown owns its own padding/margins; strip the
@@ -3907,6 +3916,223 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   color: var(--fg);
   font: 600 13px var(--font-sans);
 }
+
+/* ── R19: editable room identity + truthful presence ──────────────────────── */
+[data-cv6] .cv6-room-avatar-button {
+  position:relative;
+  flex:0 0 auto;
+  min-inline-size:unset;
+  min-block-size:unset;
+  padding:0;
+  overflow:visible;
+  border:0;
+  border-radius:50% !important;
+  background-size:cover;
+  background-position:center;
+  color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18), 0 3px 12px -7px rgba(0,0,0,.8);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font:750 12px var(--font-sans);
+  letter-spacing:.02em;
+  cursor:pointer;
+  isolation:isolate;
+}
+[data-cv6] .cv6-room-avatar-button:disabled { opacity:1; cursor:default; }
+[data-cv6] .cv6-room-avatar-button::before {
+  content:"";
+  position:absolute;
+  inset:-3px;
+  border:1px solid transparent;
+  border-radius:inherit;
+  pointer-events:none;
+}
+[data-cv6] .cv6-room-avatar-button:not(:disabled):hover::before,
+[data-cv6] .cv6-room-avatar-button:not(:disabled):focus-visible::before { border-color:var(--accent); }
+[data-cv6] .cv6-room-avatar-button:focus-visible { outline:none; }
+[data-cv6] .cv6-room-presence {
+  position:absolute;
+  z-index:2;
+  right:-2px;
+  bottom:-1px;
+  width:11px;
+  height:11px;
+  border:2.5px solid var(--ground);
+  border-radius:50%;
+  background:var(--success);
+  box-shadow:0 0 0 2px var(--success-weak);
+}
+[data-cv6] .cv6-room-avatar-edit {
+  position:absolute;
+  z-index:2;
+  left:4px;
+  bottom:4px;
+  width:11px;
+  height:11px;
+  border:0;
+  border-radius:3px;
+  background:rgba(4,6,9,.58);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-style:normal;
+}
+[data-cv6] .cv6-room-identity-layer {
+  position:fixed;
+  inset:0;
+  z-index:180;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+[data-cv6] .cv6-room-identity-scrim {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  border:0;
+  border-radius:0 !important;
+  background:rgba(3,5,8,.62);
+  backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
+}
+[data-cv6] .cv6-room-identity-card {
+  position:relative;
+  width:min(390px, 100%);
+  max-height:min(680px, calc(100dvh - 40px));
+  overflow:auto;
+  padding:18px;
+  border:1px solid var(--hair);
+  border-radius:22px;
+  background:var(--surface);
+  box-shadow:0 28px 80px -22px rgba(0,0,0,.88);
+  color:var(--fg);
+  animation:cv6IdentityIn var(--dur-move) var(--ease-out) both;
+}
+@keyframes cv6IdentityIn { from { opacity:0; transform:translateY(10px) scale(.98); } to { opacity:1; transform:none; } }
+[data-cv6] .cv6-room-identity-head { display:flex; align-items:flex-start; gap:12px; }
+[data-cv6] .cv6-room-identity-head > div { flex:1; min-width:0; }
+[data-cv6] .cv6-room-identity-head span,
+[data-cv6] .cv6-room-identity-field > span,
+[data-cv6] .cv6-room-identity-colors legend { color:var(--muted); font:700 10.5px var(--font-mono); letter-spacing:.06em; text-transform:uppercase; }
+[data-cv6] .cv6-room-identity-head h2 { margin:4px 0 0; color:var(--fg); font:700 18px/1.25 var(--font-sans); letter-spacing:-.015em; }
+[data-cv6] .cv6-room-identity-head > button { width:32px; height:32px; min-width:32px; min-height:32px; border:1px solid var(--hair); background:var(--surface-2); color:var(--muted); font-size:20px; cursor:pointer; }
+[data-cv6] .cv6-room-identity-preview {
+  width:88px;
+  height:88px;
+  margin:22px auto 20px;
+  border-radius:50%;
+  background-size:cover;
+  background-position:center;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.2), 0 16px 34px -20px rgba(0,0,0,.8);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font:800 26px var(--font-sans);
+}
+[data-cv6] .cv6-room-identity-field { display:grid; gap:7px; }
+[data-cv6] .cv6-room-identity-field input {
+  height:42px;
+  border:1px solid var(--hair);
+  border-radius:12px;
+  background:var(--surface-2);
+  color:var(--fg);
+  padding:0 12px;
+  outline:none;
+  font:750 15px var(--font-sans);
+  text-transform:uppercase;
+}
+[data-cv6] .cv6-room-identity-field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-weak); }
+[data-cv6] .cv6-room-identity-colors { margin:16px 0 0; padding:0; border:0; }
+[data-cv6] .cv6-room-identity-colors > div { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
+[data-cv6] .cv6-room-identity-colors button {
+  width:30px;
+  height:30px;
+  min-width:30px;
+  min-height:30px;
+  padding:0;
+  border:2px solid transparent;
+  background:var(--swatch);
+  cursor:pointer;
+}
+[data-cv6] .cv6-room-identity-colors button[aria-pressed="true"] { border-color:var(--fg); box-shadow:0 0 0 2px var(--ground); }
+[data-cv6] .cv6-room-identity-colors label { position:relative; height:30px; display:inline-flex; align-items:center; }
+[data-cv6] .cv6-room-identity-colors label input { position:absolute; inset:0; opacity:0; width:100%; cursor:pointer; }
+[data-cv6] .cv6-room-identity-colors label span { height:30px; padding:0 10px; border:1px solid var(--hair); border-radius:15px; color:var(--muted); display:flex; align-items:center; font:650 11px var(--font-sans); }
+[data-cv6] .cv6-room-identity-picture { display:flex; gap:8px; margin-top:16px; }
+[data-cv6] .cv6-room-identity-picture > input { display:none; }
+[data-cv6] .cv6-room-identity-picture > button { height:34px; min-height:34px; padding:0 12px; border:1px solid var(--hair); background:var(--surface-2); color:var(--fg); font:650 11.5px var(--font-sans); cursor:pointer; }
+[data-cv6] .cv6-room-identity-foot { display:flex; align-items:center; gap:12px; margin-top:18px; padding-top:14px; border-top:1px solid var(--divider); }
+[data-cv6] .cv6-room-identity-foot > span { flex:1; color:var(--faint); font:500 10.5px/1.35 var(--font-sans); }
+[data-cv6] .cv6-room-identity-foot > button { height:36px; min-height:36px; padding:0 17px; border:0; background:var(--accent); color:#fff; font:700 12px var(--font-sans); cursor:pointer; }
+
+/* Unknown, ready, and idle are an absence of presence — never a gray online dot. */
+[data-cv6] .sdot.is-ready,
+[data-cv6] .sdot.is-idle { display:none; }
+
+/* Visually shorter chat controls keep generous invisible hit slop for touch. */
+[data-cv6] .cv6-chat-header-button,
+[data-cv6] button.cv6-composer-util,
+[data-cv6] button.cv6-composer-primary,
+[data-cv6] button.cv6-composer-attach { position:relative; isolation:isolate; }
+[data-cv6] .cv6-chat-header-button { width:34px; min-width:34px; height:34px; min-height:34px; min-block-size:34px; }
+[data-cv6] button.cv6-composer-util { height:32px !important; min-height:32px; min-block-size:32px; }
+[data-cv6] button.cv6-composer-primary { width:38px !important; height:38px !important; min-width:38px; min-height:38px; min-block-size:38px; }
+[data-cv6] button.cv6-composer-attach { width:34px !important; height:34px !important; min-width:34px; min-height:34px; min-block-size:34px; }
+[data-cv6] :is(.cv6-chat-header-button, button.cv6-composer-util, button.cv6-composer-primary, button.cv6-composer-attach)::before {
+  content:"";
+  position:absolute;
+  inset:-5px -4px;
+  border-radius:inherit;
+}
+[data-cv6] [data-role="composer-actions"] { gap:7px !important; margin-top:8px !important; }
+[data-cv6] .cv6-composer-wrap:has(.cv6-floating-composer.is-checklist-open) { max-height:min(620px, 72vh); }
+
+@media (max-width:640px) {
+  [data-cv6] .cv6-chat-header-button { width:36px; min-width:36px; height:36px; min-height:36px; min-block-size:36px; }
+  [data-cv6] .mhdr .mhactions { gap:6px; }
+  [data-cv6] .cv6-room-identity-layer { align-items:flex-end; padding:10px; }
+  [data-cv6] .cv6-room-identity-card { width:100%; max-height:calc(100dvh - env(safe-area-inset-top, 0px) - 18px); padding:17px; border-radius:22px; }
+}
+
+/* One motion contract: quick input feedback, short spatial movement, no competing
+   navigation while an accessibility setting asks for stillness. */
+[data-cv6] :is(.cv6-room-avatar-button, .cv6-chat-header-button, .cv6-composer-util, .cv6-composer-primary, .cv6-composer-attach) {
+  transition:color var(--dur-press) ease, background-color var(--dur-press) ease, border-color var(--dur-press) ease, box-shadow var(--dur-press) ease, scale var(--dur-press) var(--ease-out);
+}
+[data-cv6] .cv6-composer-wrap {
+  transition:max-height var(--dur-move) var(--ease-out), opacity var(--dur-press) ease, transform var(--dur-move) var(--ease-out);
+}
+@media (prefers-reduced-motion:reduce) {
+  [data-cv6], [data-cv6] * { scroll-behavior:auto !important; }
+  [data-cv6] *, [data-cv6] *::before, [data-cv6] *::after {
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+
+/* Checklists read as a compact work surface: progress stays visible when a list
+   collapses, rows have steady touch geometry, and focus never relies on color. */
+[data-cv6] .cv6-checklist-panel { overscroll-behavior:contain; }
+[data-cv6] .cv6-checklist-list { transition:border-color var(--dur-press) ease, box-shadow var(--dur-move) var(--ease-out); }
+[data-cv6] .cv6-checklist-list:focus-within { border-color:color-mix(in srgb, var(--accent) 52%, var(--hair)); box-shadow:0 12px 32px -24px rgba(0,0,0,.9), 0 0 0 2px var(--accent-weak); }
+[data-cv6] .cv6-checklist-progress { height:3px; margin:0 12px 4px; overflow:hidden; border-radius:2px; background:var(--chip); }
+[data-cv6] .cv6-checklist-progress > span { display:block; height:100%; min-width:0; border-radius:inherit; background:var(--success); transition:width var(--dur-card) var(--ease-out); }
+[data-cv6] .cv6-checklist-body { animation:cv6ChecklistOpen var(--dur-move) var(--ease-out) both; }
+@keyframes cv6ChecklistOpen { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:none; } }
+[data-cv6] .cv6-checklist-body input:focus,
+[data-cv6] .cv6-checklist-heading input:focus { border-color:var(--accent) !important; box-shadow:0 2px 0 -1px var(--accent); }
+@media (max-width:640px) {
+  [data-cv6] .cv6-checklist-heading { gap:6px !important; padding-inline:8px !important; }
+  [data-cv6] .cv6-checklist-body { padding-inline:9px !important; }
+}
 [data-cv6] .cv6-fs-toast--err { color: #fca5a5; }
 [data-cv6] .cv6-fs-toast-name {
   color: var(--muted);
@@ -4086,3 +4312,161 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   border-radius: 12px;
 }
 [data-cv6] .cv6-fs-menu-item:active { background: var(--chip); }
+
+/* ── R21: centered mobile chat + compact composer + file overview ────────── */
+
+/* A transient Files action menu is another reading plane, not a large glass
+   panel. Reuse the solid menu contract established for chat-header menus. */
+[data-cv6] .cv6-fs-menu {
+  background:var(--composer-solid, #131317);
+  box-shadow:0 -18px 44px -20px rgba(0,0,0,.82);
+}
+
+/* The sheet now has a real 44px drag target. JS drives translateY during the
+   gesture; the settled state snaps back or closes after the threshold. */
+[data-cv6] .cv6-fs-sheet {
+  background:var(--composer-solid, #131317);
+  border-top-left-radius:16px;
+  border-top-right-radius:16px;
+  transition:transform var(--dur-move) var(--ease-out);
+  will-change:transform;
+}
+[data-cv6] .cv6-fs-sheet.is-dragging { transition:none; }
+[data-cv6] button.cv6-fs-drag-zone {
+  width:100%;
+  height:34px;
+  min-height:34px;
+  padding:0;
+  border:0;
+  border-radius:0 !important;
+  background:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:none;
+  cursor:grab;
+  flex:none;
+}
+[data-cv6] button.cv6-fs-drag-zone:active { cursor:grabbing; }
+[data-cv6] .cv6-fs-drag-zone > span { width:38px; height:3px; border-radius:2px; background:var(--hair); }
+[data-cv6] .cv6-fs-header { padding:4px 14px 10px; }
+[data-cv6] .cv6-fs-title { font-size:18px; }
+[data-cv6] .cv6-fs-count-chip { height:22px; border-radius:7px; }
+[data-cv6] button.cv6-fs-icon-btn { width:34px; height:34px; border-radius:8px !important; }
+[data-cv6] button.cv6-fs-icon-btn.is-active { color:var(--accent); border-color:var(--accent); background:var(--accent-weak); }
+
+/* Compact filter rail and the now-functional selection controls. */
+[data-cv6] .cv6-fs-filters { gap:6px; padding:0 14px 10px; }
+[data-cv6] button.cv6-fs-fchip { height:30px; min-width:42px; padding:0 10px; border-radius:8px !important; font-size:12px; }
+[data-cv6] .cv6-fs-selection-bar {
+  min-height:38px;
+  margin:0 14px 8px;
+  padding:4px;
+  border:1px solid var(--hair);
+  border-radius:9px;
+  background:var(--composer-card-solid, var(--surface-2));
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+[data-cv6] .cv6-fs-selection-bar > span { flex:1; color:var(--muted); font:600 11px var(--font-sans); text-align:center; }
+[data-cv6] .cv6-fs-selection-bar > button {
+  height:28px;
+  padding:0 9px;
+  border:0;
+  border-radius:6px !important;
+  background:transparent;
+  color:var(--muted);
+  font:650 11px var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .cv6-fs-selection-bar > button.is-primary { background:var(--accent); color:#fff; }
+[data-cv6] .cv6-fs-selection-bar > button:disabled { opacity:.42; cursor:default; }
+
+/* Two columns are a high-level overview: each file owns one compact card and the
+   overflow action sits on that card, with no concealed Save layer underneath. */
+[data-cv6] .cv6-fs-list { padding:0 14px; }
+[data-cv6] .cv6-fs-section { padding-bottom:12px; }
+[data-cv6] .cv6-fs-section-hdr { padding:13px 0 7px; font-size:10px; }
+[data-cv6] .cv6-fs-section:first-child .cv6-fs-section-hdr { padding-top:2px; }
+[data-cv6] .cv6-fs-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+[data-cv6] .cv6-fs-card {
+  position:relative;
+  min-width:0;
+  min-height:126px;
+  overflow:hidden;
+  border:1px solid var(--hair);
+  border-radius:11px;
+  background:var(--composer-card-solid, var(--surface));
+  transition:border-color var(--dur-press) ease, background-color var(--dur-press) ease, transform var(--dur-press) var(--ease-out);
+}
+[data-cv6] .cv6-fs-card:active { transform:scale(.985); }
+[data-cv6] .cv6-fs-card.is-selected { border-color:var(--accent); background:color-mix(in srgb, var(--accent-weak) 58%, var(--composer-card-solid, var(--surface))); }
+[data-cv6] button.cv6-fs-card-main {
+  width:100%;
+  min-height:126px;
+  padding:12px 38px 11px 11px;
+  border:0;
+  border-radius:10px !important;
+  background:transparent;
+  color:var(--fg);
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  text-align:left;
+  cursor:pointer;
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-fs-card .cv6-fs-type { width:42px; height:42px; border-radius:8px; }
+[data-cv6] .cv6-fs-card-body { width:100%; min-width:0; margin-top:10px; }
+[data-cv6] .cv6-fs-card-name {
+  min-height:34px;
+  overflow:hidden;
+  color:var(--fg);
+  font:650 13px/1.28 var(--font-sans);
+  letter-spacing:-.005em;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+}
+[data-cv6] .cv6-fs-card-meta { margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font:500 10px var(--font-sans); }
+[data-cv6] .cv6-fs-card-new { position:absolute; top:12px; left:60px; height:20px; padding:0 6px; border:1px solid var(--accent); border-radius:5px; color:var(--accent); display:flex; align-items:center; font:700 9px var(--font-sans); text-transform:uppercase; letter-spacing:.04em; pointer-events:none; }
+[data-cv6] button.cv6-fs-card-menu {
+  position:absolute;
+  top:6px;
+  right:5px;
+  width:34px;
+  height:34px;
+  padding:0;
+  border:0;
+  border-radius:7px !important;
+  background:transparent;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+[data-cv6] button.cv6-fs-card-menu:active { background:var(--chip); }
+[data-cv6] .cv6-fs-card-check { position:absolute; top:9px; right:8px; width:22px; height:22px; border:1.5px solid var(--hair); border-radius:6px; background:var(--composer-solid, #131317); color:#fff; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+[data-cv6] .cv6-fs-card.is-selected .cv6-fs-card-check { border-color:var(--accent); background:var(--accent); }
+
+/* The one-sided per-message avatar gutter in the supplied iPhone capture pushed
+   every structured card right. Room identity already lives in the sticky header,
+   so mobile turns use the full centered transcript width. */
+@media (max-width:640px) {
+  [data-cv6] .cv6-mobile-turn-avatar { display:none !important; }
+  [data-cv6][data-screen="chat-room"] > .scrbody { padding-left:12px !important; padding-right:12px !important; padding-bottom:122px !important; }
+
+  [data-cv6] .cv6-floating-composer { padding:8px !important; border-radius:13px !important; }
+  [data-cv6] .cv6-composer-input-shell { min-height:40px !important; border-radius:8px !important; }
+  [data-cv6] button.cv6-composer-util { height:30px !important; min-height:30px; min-block-size:30px; border-radius:7px !important; }
+  [data-cv6] button.cv6-composer-primary { width:34px !important; height:34px !important; min-width:34px; min-height:34px; min-block-size:34px; border-radius:8px !important; }
+  [data-cv6] button.cv6-composer-attach { width:32px !important; height:32px !important; min-width:32px; min-height:32px; min-block-size:32px; border-radius:7px !important; }
+  [data-cv6] [data-role="composer-actions"] { gap:6px !important; margin-top:7px !important; }
+  [data-cv6] :is(button.cv6-composer-util, button.cv6-composer-primary, button.cv6-composer-attach)::before { inset:-6px -4px; }
+}
+
+@media (min-width:641px) {
+  [data-cv6] .cv6-composer-input-shell textarea { font-size:14px !important; }
+}

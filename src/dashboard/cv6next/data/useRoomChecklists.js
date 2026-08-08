@@ -16,9 +16,9 @@ export default function useRoomChecklists(worldId, roomKey) {
       if (!data) throw new Error('Could not load lists');
       setLists(Array.isArray(data.lists) ? data.lists : []);
       setStatus('ready');
-    } catch (loadError) {
+    } catch {
       setStatus('error');
-      setError(loadError?.message || 'Could not load lists');
+      setError("Couldn't open room lists. Try again.");
     }
   }, [worldId, roomKey]);
 
@@ -39,9 +39,9 @@ export default function useRoomChecklists(worldId, roomKey) {
       setLists(Array.isArray(data.lists) ? data.lists : []);
       setStatus('ready');
       return data;
-    } catch (saveError) {
+    } catch {
       setStatus('error');
-      setError(saveError?.message || 'Could not save list');
+      setError("Couldn't save that change. Your list is still here.");
       return null;
     }
   }, [worldId, roomKey]);

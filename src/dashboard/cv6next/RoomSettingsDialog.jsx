@@ -3,6 +3,7 @@ import { authFetch } from '../lib/authFetch';
 import { MODEL_OPTIONS, VOICE_OPTIONS } from '../components/cv3/chat/chatConstants.js';
 import { titleForAgent } from './data/agentTitles.js';
 import { chatWindowUrl } from './data/chatWindowRoute.js';
+import RoomAvatar from './RoomAvatar.jsx';
 
 const TABS = [
   { id: 'general', label: 'General' },
@@ -254,7 +255,7 @@ export default function RoomSettingsDialog({
       <button type="button" className="room-settings-scrim" aria-label="Close room settings" onClick={onClose} />
       <section className="room-settings-panel">
         <header className="room-settings-header">
-          <div className="room-settings-avatar">{room?.initials || '·'}</div>
+          <RoomAvatar room={room} worldId={worldId} size={48} editable={false} className="room-settings-avatar" />
           <div className="room-settings-heading">
             <div className="room-settings-kicker">Room settings</div>
             <h2 id="room-settings-title">{room?.name}</h2>

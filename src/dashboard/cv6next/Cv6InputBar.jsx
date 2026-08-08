@@ -52,12 +52,12 @@ const I = {
   check: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg>,
 };
 
-// Composer action buttons split into two families (Patrik 2026-08-06): voice and
-// Send stay the 42px round primaries; Commands/model and checklists are compact
-// rounded rectangles. Attachment now lives inside the field; Work/Plan lives in
-// Commands, so the two things you actually reach for keep the visual weight.
+// Composer action buttons split into two compact families. Commands/model and
+// checklists are low rectangular utilities; voice and Send are slightly stronger
+// square actions. All keep invisible touch slop in CSS without returning to the
+// oversized circular treatment that crowded the mobile composer.
 const UTILITY_BTN = {
-  width: 38, height: 34, borderRadius: 10, flex: 'none',
+  width: 34, height: 30, borderRadius: 7, flex: 'none',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
@@ -343,8 +343,19 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
     select: selectRoomModel,
   };
 
+  // The composer rests as a single line but grows with Shift+Enter or pasted
+  // writing. Cap it at roughly five lines so the transcript never disappears
+  // behind a draft; after that, the field scrolls internally.
+  useEffect(() => {
+    const field = inputRef.current;
+    if (!field || field.tagName !== 'TEXTAREA') return;
+    field.style.height = '0px';
+    field.style.height = `${Math.min(118, Math.max(24, field.scrollHeight))}px`;
+    field.style.overflowY = field.scrollHeight > 118 ? 'auto' : 'hidden';
+  }, [input, inputRef]);
+
   return (
-    <div className={`cv6-floating-composer${checklistOpen ? ' is-checklist-open' : ''}`} style={{ width: '100%', maxWidth: 680, margin: '0 auto', fontFamily: 'var(--font-sans)', padding: checklistOpen ? 14 : 12, borderRadius: 26, background: 'var(--composer-solid, #131317)', border: '1px solid var(--hair)', boxShadow: '0 22px 52px -22px rgba(0,0,0,.88)', transition: 'padding .18s ease, background .18s ease' }}>
+    <div className={`cv6-floating-composer${checklistOpen ? ' is-checklist-open' : ''}`} data-swipe-guard="" style={{ width: '100%', maxWidth: 700, margin: '0 auto', fontFamily: 'var(--font-sans)', padding: checklistOpen ? 12 : 9, borderRadius: 14, background: 'var(--composer-solid, #131317)', border: '1px solid var(--hair)', boxShadow: '0 18px 42px -24px rgba(0,0,0,.92)', transition: 'padding .18s ease, background .18s ease' }}>
       {/* Hidden file input — no accept filter on purpose: any file type is allowed. */}
       <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFileSelection} />
       {/* Pinned image tool + recording state, as quiet chips above the bar. */}
@@ -395,15 +406,15 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
             }}
             surface={(room?.isProject || room?.isMission) ? 'project' : '1on1'}
             panelStyle={{ background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', minHeight: 50, borderRadius: 17, background: 'var(--composer-card-solid, var(--surface-2))', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 10px 0 7px' }}>
+          <div className="cv6-composer-input-shell" style={{ display: 'flex', alignItems: 'flex-end', minHeight: 42, borderRadius: 9, background: 'var(--composer-card-solid, var(--surface-2))', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 2px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '3px 8px 3px 4px' }}>
             <button type="button" className="cv6-composer-attach" title="Files" aria-label="Attach and upload files" onClick={() => fileInputRef.current?.click()} disabled={uploading}
-              style={{ width: 36, height: 36, borderRadius: 11, border: 'none', background: 'transparent', color: uploading ? 'var(--accent)' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: uploading ? 'wait' : 'pointer', padding: 0 }}>
+              style={{ width: 32, height: 32, borderRadius: 7, border: 'none', background: 'transparent', color: uploading ? 'var(--accent)' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: uploading ? 'wait' : 'pointer', padding: 0, marginBottom: 1 }}>
               {uploading ? <CornerLoaderMark compact className="cv6-upload-loader" /> : I.attach}
             </button>
-            <input
+            <textarea
               ref={inputRef}
               data-testid="cv6-chat-input"
-              type="text"
+              rows={1}
               value={input}
               onChange={(e) => { setInput(e.target.value); updateCaret(e); }}
               onKeyDown={handleKeyDown}
@@ -414,7 +425,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
               onBlur={() => setChatInputFocused?.(false)}
               onPaste={handlePaste}
               placeholder={selectedImageTool ? 'Describe the image to generate…' : `Message ${roomName}…`}
-              style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 16, fontFamily: 'var(--font-sans)' }}
+              style={{ flex: 1, minWidth: 0, height: 24, maxHeight: 118, resize: 'none', overflowY: 'hidden', background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', padding: '3px 0', fontSize: 16, lineHeight: 1.35, fontFamily: 'var(--font-sans)' }}
             />
           </div>
         </div>}
@@ -426,12 +437,12 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
             {I.checklist}
           </button>
           <span style={{ flex: 1 }} />
-          <button type="button" title={isVoiceActive ? 'End voice chat' : 'Start voice chat'} aria-label="Talk aloud" onClick={() => setIsVoiceActive(true)}
-            style={{ width: 42, height: 42, borderRadius: '50%', border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+          <button type="button" className="cv6-composer-primary" title={isVoiceActive ? 'End voice chat' : 'Start voice chat'} aria-label="Talk aloud" onClick={() => setIsVoiceActive(true)}
+            style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
             {I.mic}
           </button>
-          <button type="button" title="Send" aria-label="Send message" onClick={handleSend} disabled={!hasContent}
-            style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', background: hasContent ? 'var(--accent)' : 'var(--surface-2)', color: hasContent ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : .72 }}>
+          <button type="button" className="cv6-composer-primary" title="Send" aria-label="Send message" onClick={handleSend} disabled={!hasContent}
+            style={{ width: 34, height: 34, borderRadius: 8, border: 'none', background: hasContent ? 'var(--accent)' : 'var(--surface-2)', color: hasContent ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : .72 }}>
             {I.send}
           </button>
         </div>

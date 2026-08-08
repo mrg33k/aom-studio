@@ -43,10 +43,14 @@ function EditableItem({ item, disabled, onEdit, onToggle, onDelete, onPlay, regi
           Now it hands focus to the next item — and past the last one, to the "add item"
           field — so a list can be typed straight through. The save is unchanged: moving
           focus fires the same onBlur commit that blur() did. */}
-      <input ref={registerInput} aria-label="Checklist item" value={text} disabled={disabled} onChange={(event) => setText(event.target.value)} onBlur={commit}
-        onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onEnter?.(); } }}
+      <input ref={registerInput} aria-label="Checklist item" aria-keyshortcuts="Enter Control+Enter Meta+Enter Escape" value={text} disabled={disabled} onChange={(event) => setText(event.target.value)} onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); commit(); onPlay?.(text.trim() || item.text); return; }
+          if (event.key === 'Enter') { event.preventDefault(); onEnter?.(); return; }
+          if (event.key === 'Escape') { event.preventDefault(); setText(item.text || ''); event.currentTarget.blur(); }
+        }}
         style={{ flex: 1, minWidth: 0, height: 40, border: 'none', borderBottom: '1px solid var(--hair)', background: 'transparent', color: item.done ? 'var(--faint)' : 'var(--fg)', textDecoration: item.done ? 'line-through' : 'none', outline: 'none', font: '500 13.5px var(--font-sans)', padding: '0 4px' }} />
-      <button type="button" aria-label={`Send ${item.text} to agent`} title="Play: send this item to the agent" disabled={disabled} onClick={onPlay}
+      <button type="button" aria-label={`Send ${item.text} to agent`} title="Play: send this item to the agent" disabled={disabled} onClick={() => onPlay?.(text.trim() || item.text)}
         style={{ ...circleButton(false), width: 38, height: 38, minWidth: 38, minHeight: 38, maxWidth: 38, maxHeight: 38, color: 'var(--accent)' }}><Icon name="play" size={14}/></button>
       <button type="button" aria-label={`Delete ${item.text}`} title="Delete item" disabled={disabled} onClick={onDelete}
         style={{ ...circleButton(false), width: 38, height: 38, minWidth: 38, minHeight: 38, maxWidth: 38, maxHeight: 38 }}><Icon name="trash" size={14}/></button>
@@ -62,6 +66,11 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
   const [deleteArmed, setDeleteArmed] = useState(false);
   useEffect(() => { setTitle(list.title || 'New list'); }, [list.title]);
   useEffect(() => { setShareOpen(false); setDeleteArmed(false); }, [list.id]);
+  useEffect(() => {
+    if (!deleteArmed) return undefined;
+    const timeout = setTimeout(() => setDeleteArmed(false), 4200);
+    return () => clearTimeout(timeout);
+  }, [deleteArmed]);
   // Enter-walks-down (Patrik 2026-08-06). Keyed by item id, not index: items get
   // deleted and re-ordered while the panel is open, and a positional array hands
   // back a stale node after a delete — focus would land on the wrong line.
@@ -120,10 +129,13 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
     setTargetRoom('');
   };
   const openCount = (list.items || []).filter((item) => !item.done).length;
+  const totalCount = (list.items || []).length;
+  const doneCount = totalCount - openCount;
+  const progress = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
 
   return (
-    <section data-testid="room-checklist-list" style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', border: '1px solid var(--hair)', borderRadius: 18, background: 'var(--composer-card-solid, #202026)', overflow: 'hidden', boxShadow: '0 10px 26px -22px rgba(0,0,0,.9)' }}>
-      <div data-role="checklist-heading" style={{ minWidth: 0, minHeight: 60, display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px 9px 12px', boxSizing: 'border-box' }}>
+    <section className="cv6-checklist-list" data-testid="room-checklist-list" aria-label={`${list.title}, ${doneCount} of ${totalCount} complete`} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', border: '1px solid var(--hair)', borderRadius: 18, background: 'var(--composer-card-solid, #202026)', overflow: 'hidden', boxShadow: '0 10px 26px -22px rgba(0,0,0,.9)' }}>
+      <div className="cv6-checklist-heading" data-role="checklist-heading" style={{ minWidth: 0, minHeight: 60, display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px 9px 12px', boxSizing: 'border-box' }}>
         <button type="button" aria-label={list.collapsed ? `Expand ${list.title}` : `Collapse ${list.title}`} aria-expanded={!list.collapsed} disabled={disabled}
           onClick={() => mutate('toggle-list', { list_id: list.id })} style={{ ...circleButton(false), width: 36, height: 36, minWidth: 36, minHeight: 36, maxWidth: 36, maxHeight: 36, background: 'transparent', borderColor: 'transparent', transform: list.collapsed ? 'none' : 'rotate(90deg)', transition: 'transform .15s' }}>
           <Icon name="chevron" size={15}/>
@@ -133,7 +145,7 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
         <input aria-label="List title" value={title} disabled={disabled} onChange={(event) => setTitle(event.target.value)} onBlur={saveTitle}
           onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (!focusFirstItem()) event.currentTarget.blur(); } }}
           style={{ flex: '1 1 auto', minWidth: 0, height: 40, border: 'none', background: 'transparent', color: 'var(--fg)', outline: 'none', font: '700 14px var(--font-sans)', textOverflow: 'ellipsis' }} />
-        <span aria-label={`${openCount} open items`} style={{ flex: 'none', font: '600 10.5px var(--font-mono)', color: 'var(--faint)', whiteSpace: 'nowrap' }}>{openCount} open</span>
+        <span aria-label={`${doneCount} of ${totalCount} items complete`} style={{ flex: 'none', font: '600 10.5px var(--font-mono)', color: doneCount && doneCount === totalCount ? 'var(--success)' : 'var(--faint)', whiteSpace: 'nowrap' }}>{doneCount}/{totalCount}</span>
         <button type="button" aria-label={`Send ${list.title} to agent`} title={openCount ? 'Play: send the whole list to the agent' : 'Nothing open to send'} disabled={disabled || !openCount}
           onClick={async () => {
             const ok = await onPlayList(list);
@@ -145,6 +157,10 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
         <button type="button" aria-label={deleteArmed ? `Confirm delete ${list.title}` : `Delete ${list.title}`} title={deleteArmed ? 'Press again to delete this list' : 'Delete list'} disabled={disabled}
           onClick={() => { if (deleteArmed) mutate('delete-list', { list_id: list.id }); else { setDeleteArmed(true); setShareOpen(false); } }}
           style={{ ...circleButton(false, deleteArmed), width: 38, height: 38, minWidth: 38, minHeight: 38, maxWidth: 38, maxHeight: 38 }}><Icon name="trash" size={15}/></button>
+      </div>
+
+      <div className="cv6-checklist-progress" role="progressbar" aria-label={`${list.title} progress`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}>
+        <span style={{ width: `${progress}%` }} />
       </div>
 
       {shareOpen ? (
@@ -172,16 +188,16 @@ function ChecklistList({ list, roomOptions, currentRoomKey, disabled, mutate, on
       ) : null}
 
       {!list.collapsed ? (
-        <div style={{ padding: '5px 12px 14px', display: 'grid', gap: 10 }}>
+        <div className="cv6-checklist-body" style={{ padding: '8px 12px 14px', display: 'grid', gap: 10 }}>
           {(list.items || []).map((item) => (
             <EditableItem key={item.id} item={item} disabled={disabled}
               registerInput={registerItemInput(item.id)} onEnter={() => focusAfter(item.id)}
               onEdit={(text) => mutate('edit-item', { list_id: list.id, item_id: item.id, text })}
               onToggle={() => mutate('toggle-item', { list_id: list.id, item_id: item.id })}
               onDelete={() => mutate('delete-item', { list_id: list.id, item_id: item.id })}
-              onPlay={async () => {
-                const ok = await onPlay(item.text);
-                onNotice(ok === false ? 'Could not reach the agent. The item is still here.' : `Sent “${item.text}” to the agent.`);
+              onPlay={async (text = item.text) => {
+                const ok = await onPlay(text);
+                onNotice(ok === false ? 'Could not reach the agent. The item is still here.' : `Sent “${text}” to the agent.`);
               }} />
           ))}
           <form onSubmit={addItem} style={{ display: 'flex', gap: 7, alignItems: 'center', marginTop: 2 }}>
@@ -203,6 +219,13 @@ export default function RoomChecklistPanel({ room, worldId, roomOptions = [], on
   const [notice, setNotice] = useState('');
   useEffect(() => { setNewListOpen(false); setNewTitle(''); setNotice(''); }, [roomKey]);
   useEffect(() => {
+    const onKey = (event) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) onClose?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  useEffect(() => {
     if (!notice) return undefined;
     const timeout = setTimeout(() => setNotice(''), 4200);
     return () => clearTimeout(timeout);
@@ -218,6 +241,10 @@ export default function RoomChecklistPanel({ room, worldId, roomOptions = [], on
     });
   }, [room, roomOptions]);
   const disabled = status === 'saving';
+  const summary = useMemo(() => {
+    const items = lists.flatMap((list) => list.items || []);
+    return { total: items.length, done: items.filter((item) => item.done).length };
+  }, [lists]);
   const createList = async (event) => {
     event.preventDefault();
     const title = newTitle.trim();
@@ -227,12 +254,12 @@ export default function RoomChecklistPanel({ room, worldId, roomOptions = [], on
   };
 
   return (
-    <div data-testid="room-checklist-panel" style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', display: 'grid', gap: 13, maxHeight: 'min(52dvh, 470px)', overflow: 'hidden' }}>
+    <div className="cv6-checklist-panel" data-testid="room-checklist-panel" role="region" aria-label={`Room checklists for ${roomChecklistLabel(room)}`} data-swipe-guard="" data-cv6-gesture-lock="" style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', display: 'grid', gap: 13, maxHeight: 'min(52dvh, 470px)', overflow: 'hidden' }}>
       <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 11, padding: '2px 3px 3px', boxSizing: 'border-box' }}>
         <span style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--accent-weak)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><Icon name="checklist"/></span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', color: 'var(--fg)', font: '700 13px var(--font-sans)' }}>Room lists</span>
-          <span style={{ display: 'block', color: 'var(--faint)', font: '500 10.5px var(--font-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{roomChecklistLabel(room)} · private until you press Play</span>
+          <span style={{ display: 'block', color: 'var(--faint)', font: '500 10.5px var(--font-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{roomChecklistLabel(room)} · {summary.total ? `${summary.done} of ${summary.total} complete` : 'private until you press Play'}</span>
         </span>
         <button type="button" aria-label="Create a new list" title="New list" onClick={() => setNewListOpen((open) => !open)} style={circleButton(newListOpen)}><Icon name="plus" size={18}/></button>
         <button type="button" aria-label="Close checklist mode" title="Back to chat" onClick={onClose} style={circleButton(false)}><Icon name="close" size={18}/></button>

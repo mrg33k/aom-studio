@@ -261,7 +261,9 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     const value = String(text || '').trim();
     if (!value || typeof quickSend !== 'function' || checklistSendingRef.current) return false;
     checklistSendingRef.current = true;
-    try { return await quickSend(value, { interactionMode }); }
+    // Keep the checklist visible: Play is one step inside list triage, not an
+    // instruction to dismiss the whole composer before the next item is handled.
+    try { return await quickSend(value, { interactionMode, keepComposerOpen: true }); }
     finally { checklistSendingRef.current = false; }
   }, [quickSend, interactionMode]);
 
@@ -273,7 +275,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     const message = formatChecklistWorkOrder(list);
     if (!message || typeof quickSend !== 'function' || checklistSendingRef.current) return false;
     checklistSendingRef.current = true;
-    try { return await quickSend(message, { interactionMode }); }
+    try { return await quickSend(message, { interactionMode, keepComposerOpen: true }); }
     finally { checklistSendingRef.current = false; }
   }, [quickSend, interactionMode]);
 

@@ -28,6 +28,23 @@ const MAX_ANGLE_RATIO = 0.6;
 // Ignore a slow drag that happens to travel far — that is a scroll, not a flick.
 const MAX_DURATION = 700;
 
+export function gestureStartsOnInteractiveControl(target) {
+  if (!target || target.nodeType !== 1) return false;
+  return Boolean(target.closest?.([
+    '[data-swipe-guard]',
+    '[data-cv6-gesture-lock]',
+    'button',
+    'a[href]',
+    'input',
+    'textarea',
+    'select',
+    '[contenteditable="true"]',
+    '[role="dialog"]',
+    '[role="menu"]',
+    '[role="slider"]',
+  ].join(',')));
+}
+
 export function useChatSwipe({ enabled, onHome, onNextChat }) {
   const start = useRef(null);
   const homeRef = useRef(onHome);
@@ -49,6 +66,9 @@ export function useChatSwipe({ enabled, onHome, onNextChat }) {
     const onStart = (e) => {
       if (e.touches?.length !== 1) { start.current = null; return; }
       const t = e.touches[0];
+      // Controls own gestures that begin on them. This keeps checklist rows,
+      // avatar editing, composer actions, and sliders from navigating the chat.
+      if (gestureStartsOnInteractiveControl(e.target)) { start.current = null; return; }
       start.current = { x: t.clientX, y: t.clientY, at: Date.now(), target: e.target };
     };
 

@@ -196,7 +196,7 @@ function defaultAskGoal(messages, goal) {
 function MobileAvatar({ message }) {
   const tint = message.agentTint === 'accent' ? 'var(--accent)' : `var(--${message.agentTint || 'muted'}, var(--muted))`;
   return (
-    <div style={{ width: 30, height: 30, borderRadius: '50%', background: message.isUser ? 'var(--accent-weak)' : 'var(--surface-2)', color: message.isUser ? 'var(--accent)' : tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flex: 'none' }}>
+    <div className="cv6-mobile-turn-avatar" style={{ width: 30, height: 30, borderRadius: '50%', background: message.isUser ? 'var(--accent-weak)' : 'var(--surface-2)', color: message.isUser ? 'var(--accent)' : tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flex: 'none' }}>
       {message.agentInitials}
     </div>
   );

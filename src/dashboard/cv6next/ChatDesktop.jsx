@@ -23,6 +23,8 @@ import RoutedHereBar from './RoutedHereBar.jsx';
 import NewComposer from './NewComposer.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import { useDataContext } from './providers/DataContext.jsx';
+import RoomAvatar from './RoomAvatar.jsx';
+import { isActiveRoomStatus } from './data/roomIdentity.js';
 
 const NAV = [
   { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
@@ -49,10 +51,10 @@ export function NeedsBadge({ count }) {
   if (!count) return null;
   return <span style={{ minWidth: 17, height: 17, borderRadius: 9, background: 'var(--warn)', color: '#1c1503', fontSize: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', flex: 'none' }}>{count}</span>;
 }
-function RoomRow({ row, open, onClick, needsCount = 0 }) {
+function RoomRow({ row, open, onClick, needsCount = 0, worldId }) {
   return (
     <div className="room" role="button" aria-current={open ? 'true' : undefined} onClick={onClick} style={{ cursor: open ? 'default' : 'pointer', background: open ? 'var(--accent-weak)' : undefined }}>
-      <span className={`sdot is-${row.status || 'ready'}`} style={{ flex: 'none' }} />
+      <RoomAvatar room={row} worldId={worldId} size={30} />
       <span className="rn" style={{ fontWeight: open ? 600 : 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</span>
       <NeedsBadge count={needsCount} />
       {row.statusLabel && !needsCount ? <span style={{ fontSize: 10.5, color: open ? 'var(--accent)' : 'var(--faint)', fontWeight: 600 }}>{row.statusLabel.toLowerCase()}</span> : null}
@@ -446,7 +448,7 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
             const on = selectedMissionSlug === missionSlug;
             return (
               <div key={missionSlug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7, paddingLeft: depth * 14 }}>
-                <span className={`sdot is-${missionDot(m.status)}`} style={{ flex: 'none' }} />
+                {isActiveRoomStatus(m.status) ? <span className="sdot is-live" style={{ flex: 'none' }} aria-label="Active" /> : null}
                 <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{titleOverrides[`m:${missionSlug}`] || missionLabelClean(m.name || m.slug)}</span>
                 <NeedsBadge count={needsByMission[missionSlug] || needsByMission[String(missionSlug).split(':').pop()] || 0} />
               </div>
@@ -862,8 +864,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // Wrap send so a successful post triggers the collapse (120ms delay lets the
   // optimistic bubble render before the composer exits, so the eye reads "sent").
   const sendAndCollapse = useCallback(async (text, opts) => {
-    const result = await send(text, opts);
-    if (result !== false) {
+    const { keepComposerOpen = false, ...sendOptions } = opts || {};
+    const result = await send(text, sendOptions);
+    if (result !== false && !keepComposerOpen) {
       clearTimeout(composerCollapseTimerRef.current);
       composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
     }
@@ -977,7 +980,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 12px' }}>
               <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Agents</div>
               <div style={{ marginBottom: 16 }}>
-                {agents.length ? agents.map((a) => <RoomRow key={a.id} row={a} needsCount={a.needsCount || 0} open={selected?.id === a.id && !selected?.isProject} onClick={() => pickAgent(a)} />)
+                {agents.length ? agents.map((a) => <RoomRow key={a.id} row={a} worldId={worldId} needsCount={a.needsCount || 0} open={selected?.id === a.id && !selected?.isProject} onClick={() => pickAgent(a)} />)
                   : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No agents yet.</div>}
               </div>
               <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Projects</div>
@@ -1023,10 +1026,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
             {selected ? (
               <>
                 <div className="desktop-room-header">
-                  <div style={{ position: 'relative', flex: 'none' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--avatar)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 15, fontWeight: 700 }}>{selected.initials || '·'}</div>
-                    <span className={`sdot is-${selected.status || 'ready'}`} style={{ position: 'absolute', bottom: -1, right: -1, width: 12, height: 12, border: '2.5px solid var(--ground)' }} />
-                  </div>
+                  <RoomAvatar room={selected} worldId={worldId} size={40} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, marginBottom: 2, fontSize: 11.5, color: 'var(--muted)' }}>
                       {windowMode
@@ -1168,7 +1168,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>{selected.isMission ? 'Mission' : selected.isProject ? 'Project room' : 'Agent on this goal'}</div>
                 <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20, position: 'relative' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span className="ava is-green" style={{ width: 34, height: 34, fontSize: 12 }}>{selected.initials || '·'}</span>
+                    <RoomAvatar room={selected} worldId={worldId} size={34} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{selected.name}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{selected.statusText || 'ready'}</div>

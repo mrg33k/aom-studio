@@ -61,8 +61,8 @@ window screenshots were inspected. The Browser skill failed to attach twice with
 captures. Commits `18f2baf3` (aom-studio) and `7fc4002e0` (AOM-EA workers) were pushed;
 listener and Email watcher services were restarted and confirmed running. Vercel
 deployment `dpl_3Y5Y1tKU18Amq9XGxjKRf35RkaGj` is Ready at
-`https://lab.aheadofmarket.com`; the deployed bundle and room-reset function were
-artifact-verified. Production UI requires sign-in, so a signed-in production
+the staging URL `https://lab.aheadofmarket.com`; the staged bundle and room-reset
+function were artifact-verified. Staging UI requires sign-in, so a signed-in staging
 walkthrough remains pending browser-tool recovery and was not represented as passed.
 
 ## 2026-07-21 - R11 one-page columns and mobile interaction corrections
@@ -81,16 +81,16 @@ of opening raw blobs or internal browser tabs.
 Commits `697a73df`, `f032d9c2`, `c8ddddd8`, `ffeb5daa`, and `84c56262` were pushed to
 `main`. The Vite build passed and all 31 CV6 Playwright scenarios passed. Vercel
 deployment `EP42M5agZkHEBGZA48Xqn7sENzvX` is Ready and aliased to
-`https://lab.aheadofmarket.com`; the production bundle contains all new column,
+the staging URL `https://lab.aheadofmarket.com`; the staged bundle contains all new column,
 dispatch, sign-off, and file-location markers. The signed robot-Chrome skill requested
 by the brief was unavailable in this session, so the final authenticated desktop/390px
-production walkthrough remains explicitly pending and the round is not represented as
+staging walkthrough remains explicitly pending and the round is not represented as
 fully signed off.
 
-## 2026-07-21 - R12 production Home load regression
+## 2026-07-21 - R12 staging Home load regression
 
 Patrik reported that Home showed `This screen hit a snag` on load. Direct authenticated
-production diagnostics reproduced it and isolated a render-time
+staging diagnostics reproduced it and isolated a render-time
 `ReferenceError: Cannot access 'Lt' before initialization`: after the missions tree
 arrived, the recent-mission rename projection called `missionLabelClean` before its
 `const` initialization later in the Home render. Moved the helper above its first use
@@ -98,10 +98,10 @@ and added a source-order regression that would fail on the shipped arrangement.
 
 The focused regression passed, the production build passed, and all 31 CV6 Playwright
 scenarios passed. Commit `6b2434e1` was pushed and Vercel deployment
-`56rpRtCYVzrvnAMKzbc7pUun6JRC` was aliased to `https://lab.aheadofmarket.com`.
-Authenticated production Chrome then loaded Home with both missions-tree requests
+`56rpRtCYVzrvnAMKzbc7pUun6JRC` was aliased to the staging URL `https://lab.aheadofmarket.com`.
+Authenticated staging Chrome then loaded Home with both missions-tree requests
 complete at desktop and 390px widths, showing the full project list and recent mission
-activity with no Corner render error. R12 is shipped and production-verified.
+activity with no Corner render error. R12 was staging-verified; that check was not production proof.
 
 ## 2026-07-21 - R13 mobile bottom spacing and keyboard composer geometry
 
@@ -118,9 +118,9 @@ double-counts the home-indicator inset, and the input uses 16px type. New node a
 390px Playwright regressions cover sibling pages, resting geometry, and a reduced/panned
 keyboard viewport. The node test passed 1/1, focused Playwright passed 1/1, all CV6
 Playwright scenarios passed 32/32, and the local plus Vercel production builds passed.
-Commit `5846f3ea` is on `main`; deployment `5NbQRNbmNdfnvFNQvNmV5Zw7QdX9` is live at
-`https://lab.aheadofmarket.com`, and its served CornerCV6 assets contain the fix. The
-production automation probe reached the expected sign-in gate, so the only remaining
+Commit `5846f3ea` is on `main`; staging deployment `5NbQRNbmNdfnvFNQvNmV5Zw7QdX9`
+was verified at `https://lab.aheadofmarket.com`, and its served CornerCV6 assets
+contained the fix. The staging automation probe reached the expected sign-in gate, so the only remaining
 signoff is a signed-in check with Apple's real on-screen keyboard on Patrik's iPhone.
 
 ## 2026-07-21 - R14 mobile recent-chat scrolling and singular live progress
@@ -139,9 +139,9 @@ mobile plus desktop follow actual step updates to the transcript tail. A real em
 touch swipe moved the rail; a fixture containing stale and current progress rendered
 one bar at the visible bottom above the composer. Focused tests passed 1/1 and 2/2, all
 34 CV6 Playwright scenarios passed, and the local and Vercel builds passed. Commit
-`acdf3020` is on `main`; deployment `CL6nDGTP3EgJ72aArTuvKeaiWGMV` is live at
-`https://lab.aheadofmarket.com`, with the new contracts confirmed in its served assets.
-Production UI automation remains sign-in gated, leaving only a real signed-in iPhone
+`acdf3020` is on `main`; staging deployment `CL6nDGTP3EgJ72aArTuvKeaiWGMV` was
+verified at `https://lab.aheadofmarket.com`, with the new contracts confirmed in its
+served assets. Staging UI automation remains sign-in gated, leaving only a real signed-in iPhone
 gesture check as final hardware signoff.
 
 ## 2026-07-21 - R15 physical mobile bottom and chat header icons
@@ -159,8 +159,8 @@ The R15 source contract passed 1/1, focused mobile viewport/action scenarios pas
 2/2, all CV6 Playwright scenarios passed 35/35, the 390px capture was visually
 inspected, and the Vite build passed. Commit `027b2d94` is on `main`; Vercel deployment
 `dpl_Ef3rDvWmv9GoL9L5moxT5yGXqK59` is Ready at
-`https://lab.aheadofmarket.com`. The served `CornerCV6-CC2bJo6q.js` and
-`CornerCV6-C9_yl5zV.css` contain the verified fix. Production remains sign-in gated,
+the staging URL `https://lab.aheadofmarket.com`. The served `CornerCV6-CC2bJo6q.js` and
+`CornerCV6-C9_yl5zV.css` contain the verified fix. Staging remains sign-in gated,
 so only Patrik's signed-in iPhone hardware check remains.
 
 ## 2026-07-21 - R16 remove the real composer spacer
@@ -176,8 +176,8 @@ red line in Patrik's screenshot, the transcript uses a flat 150px clearance, and
 keyboard-open composer retains its separate 8px offset. The R13/R15/R16 source checks
 passed 3/3, focused viewport checks passed 3/3, all CV6 Playwright scenarios passed
 36/36, the 440 x 956 capture was inspected, and the Vite build passed. Commit
-`5e53c3d7` is on `main`; deployment `dpl_HtxQeJmFNZyDcENqddS7GjpSXpyv` is Ready at
-`https://lab.aheadofmarket.com`. Its served `CornerCV6-DL-_d2F5.css` was fetched and
+`5e53c3d7` is on `main`; staging deployment `dpl_HtxQeJmFNZyDcENqddS7GjpSXpyv` was
+Ready at `https://lab.aheadofmarket.com`. Its served `CornerCV6-DL-_d2F5.css` was fetched and
 verified to contain the 20px resting rule with no safe-area inset, 150px transcript
 clearance, and 8px keyboard rule. The signed-in iPhone visual check remains decisive.
 
@@ -199,9 +199,9 @@ The 390px Home/Inbox and desktop Auto-reply captures were inspected, all 36 CV6
 Playwright scenarios passed, the focused Email rerun passed 4/4, `git diff --check`
 passed, and the production build passed with only the existing warnings. The shared
 worktree committed R17 together with a concurrent live-progress correction as
-`a24aedbb`. Deployment `J8m9UDv1nmm19xiqNatJ3kWPzzuE` is Ready at
-`https://lab.aheadofmarket.com`; fetched production assets contain the 96px logo,
-roomier Email rail, status badge, and shared message prose paths. Production remains
+`a24aedbb`. Staging deployment `J8m9UDv1nmm19xiqNatJ3kWPzzuE` was Ready at
+`https://lab.aheadofmarket.com`; fetched staging assets contained the 96px logo,
+roomier Email rail, status badge, and shared message prose paths. Staging remains
 sign-in gated, so Patrik's signed-in iPhone is the final hardware visual check.
 
 ## 2026-08-08 - R18 composer model visibility and command consolidation
@@ -237,3 +237,63 @@ aliases, and a direct fetch of the production dashboard resolved its new entry a
 CV6 assets. The served CV6 bundle contains the current-model label, attachment-in-field
 control, model preference event wiring, and honest unavailable/load/save states. R18
 is now shipped and verified on the true production URL.
+
+## 2026-08-08 - R19 checklists, motion, and editable room identities
+
+Patrik asked for clearer checklist interactions, smoother animation that cooperates
+with keyboard shortcuts and mobile gestures, editable non-gray room avatars, honest
+presence dots, and shorter chat controls. CV6 now lets an avatar be edited from the
+chat header, desktop agent rail, or room drawer with custom initials, color, or a
+compressed picture. The identity persists through workspace preferences with a local
+fallback. Only genuinely active rooms show the green presence dot; idle, ready, and
+unknown rooms show none, and the avatar's edit pencil is contained inside the avatar.
+
+Checklists now expose completion totals and progress, have deliberate focus/open
+motion, support Enter, Cmd/Ctrl+Enter, and Escape without fighting the surrounding
+panel shortcut, and remain open when a list or item is played. Swipe navigation now
+ignores interactive and gesture-locked surfaces, reduced-motion behavior is unified,
+and visually shorter header/composer buttons retain expanded invisible touch targets.
+Checklist API failures are also translated into useful UI copy.
+
+Focused Node checks passed 13/13, focused Playwright scenarios passed 4/4, and the
+production build passed. The UI was inspected at 390x844 and 1440x900 with mobile
+touch and keyboard flows, compact control sizes, active/inactive presence, and the
+avatar editor confirmed; browser console errors were empty. The round is implemented
+and verified locally. No commit or deployment was requested in this session.
+
+## 2026-08-08 - R20 readable glass chat menus
+
+Patrik reported that the top-right three-dot menu in a glass-theme chat was too
+transparent to read because conversation content showed through it. The same surface
+contract also affected the adjacent Activity dropdown. Both transient header menus
+now use the palette's solid composer plane: opaque cool ink in glass, solid dark in
+dark mode, and white in light mode. Their border language is unchanged, while a
+stronger elevation shadow and subtle inner highlight preserve a deliberate glass-era
+floating treatment without sacrificing legibility.
+
+The R19/R20 focused source contracts passed 8/8, the production build passed, and
+`git diff --check` passed. The fix is implemented and verified locally; no commit or
+deployment was requested in this follow-up.
+
+## 2026-08-08 - R21 signed-in iPhone chat and Files correction
+
+Patrik supplied three signed-in iPhone captures showing the still-transparent More
+menu in production, a one-sided avatar gutter that pushed structured conversation
+content right, an oversized rounded composer, and a Files HUD with no downward drawer
+gesture, a dead selection checkmark, an exposed swipe-save underlay, and no high-level
+grid. R20 already corrects the menu surface in the pending local batch.
+
+R21 hides repeated agent avatars inside mobile turns while preserving the room avatar
+in the header, giving the transcript symmetric margins. The composer is now a tighter
+technical card with a one-line multiline field that expands through roughly five lines;
+its visible controls are smaller and less round but retain expanded touch hit areas.
+At the transcript tail, an upward overscroll opens Files. The Files handle tracks a
+downward pull to dismiss, and the content is a two-column overview with no rendered
+swipe-save layer. The checkmark now toggles real multi-select, Select visible works per
+filter, and Save reports the batch result. Individual file actions remain in each card's
+opaque overflow sheet.
+
+The combined R19-R21 and room-checklist contracts passed 17/17, the production build
+passed, and `git diff --check` passed. Patrik explicitly requested that the complete
+polish batch be committed and deployed to `aheadofmarket.com/dashboard`; release work
+is the next transition.

@@ -32,18 +32,9 @@ import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import RoomWorkList from './RoomWorkList.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
-
-// Mobile-header avatar tint + live ring keyed to the room's agent status
-// (drop-7 redesign: avatar feels present, ring pulses when live/working).
-const AV_TINT = {
-  live:    { background: 'rgba(52,211,153,.18)', color: 'var(--success)' },
-  working: { background: 'rgba(245,176,93,.18)', color: 'var(--accent)' },
-  blocked: { background: 'rgba(251,191,36,.18)', color: 'var(--warn)' },
-};
-const DOT = { live: 'var(--success)', working: 'var(--accent)', blocked: 'var(--warn)' };
-const avTint = (s) => AV_TINT[s] || { background: 'var(--surface-2)', color: 'var(--muted)' };
-const avRing = (s) => (s === 'live' ? 'live' : s === 'working' ? 'working' : 'ready');
-const dotColor = (s) => DOT[s] || 'var(--muted)';
+import RoomAvatar from './RoomAvatar.jsx';
+import { isActiveRoomStatus } from './data/roomIdentity.js';
+import { gestureStartsOnInteractiveControl } from './useChatSwipe.js';
 
 function dayKey(ts) {
   const d = ts ? new Date(ts) : null;
@@ -722,12 +713,12 @@ function SwipeFileRow({ id, onSave, openId, setOpenId, children }) {
   );
 }
 
-// ── MobileFilesContent — filter chips + grouped list (ADD design) ─────────
-function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
+// ── MobileFilesContent — filter chips + two-column overview ───────────────
+function MobileFilesContent({ fromAgent, youSent, status, onReview, selectMode = false }) {
   const [activeFilter, setActiveFilter] = useState('all');
-  const [swipeOpenId, setSwipeOpenId] = useState(null);
   const [menuFile, setMenuFile] = useState(null);
   const [toast, setToast] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
 
   // One receipt path for every way a file can be saved (swipe panel or ⋮ menu), so the
   // user always gets told what happened instead of guessing whether the tap registered.
@@ -757,6 +748,14 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
       return true;
     });
   }, [fromAgent, youSent]);
+
+  const fileId = useCallback((f) => `${f?.url || ''}::${f?.name || ''}`, []);
+
+  useEffect(() => {
+    if (selectMode) return;
+    setSelectedIds(new Set());
+    setMenuFile(null);
+  }, [selectMode]);
 
   // Live counts for chip labels.
   const counts = useMemo(() => ({
@@ -804,6 +803,37 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
     if (f.url) window.open(f.url, '_blank', 'noopener');
   }, [onReview]);
 
+  const toggleSelected = useCallback((f) => {
+    const id = fileId(f);
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, [fileId]);
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((f) => selectedIds.has(fileId(f)));
+  const toggleAllFiltered = useCallback(() => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allFilteredSelected) filtered.forEach((f) => next.delete(fileId(f)));
+      else filtered.forEach((f) => next.add(fileId(f)));
+      return next;
+    });
+  }, [allFilteredSelected, fileId, filtered]);
+
+  const saveSelected = useCallback(async () => {
+    const chosen = allFiles.filter((f) => selectedIds.has(fileId(f)));
+    if (!chosen.length) return;
+    setToast({ state: 'saving', name: `${chosen.length} file${chosen.length === 1 ? '' : 's'}` });
+    const results = await Promise.all(chosen.map((f) => mfsSaveFile(f)));
+    const saved = results.filter((result) => result.ok).length;
+    setToast(saved === chosen.length
+      ? { state: 'ok', name: `${saved} file${saved === 1 ? '' : 's'}` }
+      : { state: 'err', name: `${saved} of ${chosen.length} files` });
+    if (saved === chosen.length) setSelectedIds(new Set());
+  }, [allFiles, fileId, selectedIds]);
+
   if (!fromAgent.length && !youSent.length) {
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--faint)', fontSize: 13, padding: '32px 16px', textAlign: 'center' }}>
@@ -819,15 +849,22 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
     { id: 'data', label: 'Data', count: counts.data },
   ].filter(({ id, count }) => id === 'all' || count > 0);
 
-  const renderRow = (f, i) => {
+  const renderCard = (f) => {
     const isImg = f.kind === 'photo' && !!f.url;
     const label = mfsTypeLabel(f.kind, f.name);
-    const rowId = `${f.url || f.name}-${i}`;
+    const rowId = fileId(f);
     const isNew = mfsIsNew(f);
+    const selected = selectedIds.has(rowId);
     return (
-      <SwipeFileRow key={rowId} id={rowId} onSave={() => saveFile(f)} openId={swipeOpenId} setOpenId={setSwipeOpenId}>
-        <button type="button" className="cv6-fs-row" onClick={() => openFile(f)} aria-label={`Open ${f.name}`} title={f.name}>
-          {/* Type chip or real thumbnail */}
+      <div key={rowId} className={`cv6-fs-card${selected ? ' is-selected' : ''}`}>
+        <button
+          type="button"
+          className="cv6-fs-card-main"
+          onClick={() => (selectMode ? toggleSelected(f) : openFile(f))}
+          aria-label={selectMode ? `${selected ? 'Deselect' : 'Select'} ${f.name}` : `Open ${f.name}`}
+          aria-pressed={selectMode ? selected : undefined}
+          title={f.name}
+        >
           <span
             className={`cv6-fs-type${isImg ? ' cv6-fs-type--img' : ''}`}
             style={isImg ? undefined : { background: mfsChipBg(f.kind, f.name), color: mfsChipFg(f.kind, f.name) }}
@@ -855,39 +892,38 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
               <span className="cv6-fs-type-lbl">{label || '?'}</span>
             )}
           </span>
-          {/* File name + meta */}
-          <div className="cv6-fs-row-body">
-            <div className="cv6-fs-row-name">{mfsDisplayName(f.name)}</div>
-            <div className="cv6-fs-row-meta">{mfsMeta(f)}</div>
+          <div className="cv6-fs-card-body">
+            <div className="cv6-fs-card-name">{mfsDisplayName(f.name)}</div>
+            <div className="cv6-fs-card-meta">{mfsMeta(f)}</div>
           </div>
-          {/* "New" chip for session arrivals */}
-          {isNew && <span className="cv6-fs-new-chip" aria-label="New file">New</span>}
         </button>
-        {/* Overflow ⋮ — 44pt tap target. Sibling of the row, not a child: a <button>
-            may not contain a <button>, and nesting it meant the name column ran
-            underneath instead of ending before it. */}
-        <button
-          type="button"
-          className="cv6-fs-overflow"
-          aria-label={`More options for ${f.name}`}
-          onClick={(e) => { e.stopPropagation(); setMenuFile(f); }}
-        >
-          <svg width="4" height="16" viewBox="0 0 4 20" fill="currentColor" aria-hidden="true">
-            <circle cx="2" cy="2" r="2" /><circle cx="2" cy="10" r="2" /><circle cx="2" cy="18" r="2" />
-          </svg>
-        </button>
-      </SwipeFileRow>
+        {isNew ? <span className="cv6-fs-card-new" aria-label="New file">New</span> : null}
+        {selectMode ? (
+          <span className="cv6-fs-card-check" aria-hidden="true">
+            {selected ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg> : null}
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="cv6-fs-card-menu"
+            aria-label={`More options for ${f.name}`}
+            onClick={(e) => { e.stopPropagation(); setMenuFile(f); }}
+          >
+            <svg width="4" height="16" viewBox="0 0 4 20" fill="currentColor" aria-hidden="true">
+              <circle cx="2" cy="2" r="2" /><circle cx="2" cy="10" r="2" /><circle cx="2" cy="18" r="2" />
+            </svg>
+          </button>
+        )}
+      </div>
     );
   };
 
-  // `recent` = the carded treatment in the approved frame. Today's arrivals sit in cards;
-  // everything older is a plain list. That contrast is the hierarchy Patrik signed off on.
   const renderSection = (label, files, recent) => {
     if (!files.length) return null;
     return (
       <div key={label} className={`cv6-fs-section${recent ? ' cv6-fs-section--recent' : ''}`}>
         <div className="cv6-fs-section-hdr">{label}</div>
-        {files.map(renderRow)}
+        <div className="cv6-fs-grid">{files.map(renderCard)}</div>
       </div>
     );
   };
@@ -909,7 +945,14 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview }) {
           </button>
         ))}
       </div>
-      {/* Scrollable file list — grouped by date */}
+      {selectMode ? (
+        <div className="cv6-fs-selection-bar" role="group" aria-label="File selection actions">
+          <button type="button" onClick={toggleAllFiltered}>{allFilteredSelected ? 'Clear visible' : 'Select visible'}</button>
+          <span>{selectedIds.size} selected</span>
+          <button type="button" className="is-primary" disabled={!selectedIds.size} onClick={saveSelected}>Save</button>
+        </div>
+      ) : null}
+      {/* Scrollable two-column file overview — grouped by date */}
       <div className="cv6-fs-list" role="tabpanel">
         {renderSection(recentLabel, recent, true)}
         {renderSection('EARLIER', earlier, false)}
@@ -965,6 +1008,39 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
   const { fromAgent, youSent, status, windowFull } = useRoomCrossings(worldId, room);
   const isMobile = !columnMode;
   const totalCount = fromAgent.length + youSent.length;
+  const [selectMode, setSelectMode] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef(null);
+  const dragDidMoveRef = useRef(false);
+
+  const startSheetDrag = useCallback((event) => {
+    if (event.touches?.length !== 1) return;
+    const y = event.touches[0].clientY;
+    dragRef.current = { startY: y, lastY: y };
+    dragDidMoveRef.current = false;
+    setDragging(true);
+  }, []);
+  const moveSheetDrag = useCallback((event) => {
+    if (!dragRef.current || event.touches?.length !== 1) return;
+    const y = event.touches[0].clientY;
+    dragRef.current.lastY = y;
+    const next = Math.max(0, y - dragRef.current.startY);
+    if (next > 8) dragDidMoveRef.current = true;
+    setDragOffset(next);
+    if (next > 0 && event.cancelable) event.preventDefault();
+  }, []);
+  const finishSheetDrag = useCallback(() => {
+    const current = dragRef.current;
+    dragRef.current = null;
+    setDragging(false);
+    if (current && current.lastY - current.startY > 72) {
+      setDragOffset(0);
+      onClose?.();
+      return;
+    }
+    setDragOffset(0);
+  }, [onClose]);
 
   if (!isMobile) {
     // Desktop: unchanged right-side panel with FilesShelf.
@@ -1003,14 +1079,34 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 40 }} onClick={onClose}>
       <div
-        className="cv6-fs-sheet"
+        className={`cv6-fs-sheet${dragging ? ' is-dragging' : ''}`}
         onClick={(e) => e.stopPropagation()}
-        // Horizontal swipes inside this sheet are swipe-to-save. Without this the
-        // page-level chat swipe steals them and navigates to the next room instead.
+        style={{ transform: `translateY(${dragOffset}px)` }}
+        // File-card actions and the vertical drawer gesture must never navigate rooms.
         data-swipe-guard=""
+        data-cv6-gesture-lock=""
       >
-        {/* Drag handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '12px auto 0', flex: 'none' }} />
+        {/* Full-width drag target: pull down to dismiss, or tap the handle. */}
+        <button
+          type="button"
+          className="cv6-fs-drag-zone"
+          aria-label="Close files"
+          title="Pull down to close"
+          onClick={(event) => {
+            if (dragDidMoveRef.current) {
+              event.preventDefault();
+              dragDidMoveRef.current = false;
+              return;
+            }
+            onClose?.();
+          }}
+          onTouchStart={startSheetDrag}
+          onTouchMove={moveSheetDrag}
+          onTouchEnd={finishSheetDrag}
+          onTouchCancel={finishSheetDrag}
+        >
+          <span />
+        </button>
         {/* Header row: Files + count chip + select icon + close */}
         <div className="cv6-fs-header">
           <div className="cv6-fs-title-row">
@@ -1018,7 +1114,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
             {totalCount > 0 && <span className="cv6-fs-count-chip">{totalCount}</span>}
           </div>
           <div className="cv6-fs-header-actions">
-            <button type="button" className="cv6-fs-icon-btn" aria-label="Select files" title="Select files">
+            <button type="button" className={`cv6-fs-icon-btn${selectMode ? ' is-active' : ''}`} aria-label={selectMode ? 'Stop selecting files' : 'Select files'} title={selectMode ? 'Done selecting' : 'Select files'} aria-pressed={selectMode} onClick={() => setSelectMode((active) => !active)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="3" /><polyline points="9 12 12 15 16 9" />
               </svg>
@@ -1037,6 +1133,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
             youSent={youSent}
             status={status}
             onReview={onReview}
+            selectMode={selectMode}
           />
         </div>
       </div>
@@ -1066,6 +1163,35 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
   const [showJump, setShowJump] = useState(false);
+  const filesLiftRef = useRef(null);
+
+  // At the newest message, a deliberate upward overscroll opens Files. Restricting
+  // the gesture to the transcript's bottom prevents normal history scrolling from
+  // unexpectedly launching a drawer; interactive cards and controls remain exempt.
+  const onFilesLiftStart = useCallback((event) => {
+    const scroller = event.currentTarget;
+    if (filesSheetOpen || event.touches?.length !== 1 || gestureStartsOnInteractiveControl(event.target)) {
+      filesLiftRef.current = null;
+      return;
+    }
+    const remaining = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+    if (remaining > 10) { filesLiftRef.current = null; return; }
+    const touch = event.touches[0];
+    filesLiftRef.current = { x: touch.clientX, y: touch.clientY };
+  }, [filesSheetOpen]);
+  const onFilesLiftEnd = useCallback((event) => {
+    const start = filesLiftRef.current;
+    filesLiftRef.current = null;
+    const touch = event.changedTouches?.[0];
+    if (!start || !touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (dy < -58 && Math.abs(dy) > Math.abs(dx) * 1.25) {
+      setMoreOpen(false);
+      setWorkOpen(false);
+      setFilesSheetOpen(true);
+    }
+  }, []);
 
   // Fix 2 — split raw system alert messages out of the thread before grouping.
   // They render in a separate collapsed strip above the conversation, not inline.
@@ -1112,8 +1238,9 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   }, [roomKeyForSheet]);
   // Wrap the incoming onSend so a successful post triggers the collapse.
   const onSendAndCollapse = useCallback(async (text, opts) => {
-    const result = await onSend?.(text, opts);
-    if (result !== false) {
+    const { keepComposerOpen = false, ...sendOptions } = opts || {};
+    const result = await onSend?.(text, sendOptions);
+    if (result !== false && !keepComposerOpen) {
       clearTimeout(composerCollapseTimerRef.current);
       composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
     }
@@ -1220,15 +1347,11 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     <div data-cv6 data-theme="dark" data-screen="chat-room" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="mhdr">
         {/* .mback removed 2026-08-07: swipe left returns Home, swipe right advances to next chat */}
-        <div className={`mh-av is-${avRing(room.status)}`} style={avTint(room.status)}>
-          {room.initials || '·'}
-          <span className="mh-ring" />
-          <span className="mh-dot" style={{ background: dotColor(room.status) }} />
-        </div>
+        <RoomAvatar room={fullRoom || room} worldId={worldId} size={40} />
         <div className="mhtitle">
           <div className="mhname">
             <span className="mttl">{room.name}</span>
-            {room.status && room.status !== 'ready' && (
+            {(isActiveRoomStatus(room.status) || room.status === 'blocked') && (
               <span className={`astat is-${room.status}`}><span className="sd" />{String(room.status).toUpperCase()}</span>
             )}
           </div>
@@ -1287,7 +1410,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
       {/* Bottom padding clears the absolutely-positioned composer (.mcomposer is
           position:absolute; bottom:0) plus the phone home indicator, so the last
           message can scroll fully into view instead of being cut off behind it. */}
-      <div ref={scrollRef} onScroll={onScroll} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(84px + env(safe-area-inset-bottom, 0px))' }}>
+      <div ref={scrollRef} onScroll={onScroll} onTouchStart={onFilesLiftStart} onTouchEnd={onFilesLiftEnd} onTouchCancel={() => { filesLiftRef.current = null; }} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(84px + env(safe-area-inset-bottom, 0px))' }}>
         {/* Cap the thread to a readable column so on iPad it stays phone-width and centered,
             instead of stretching messages + cards edge to edge. */}
         <SendCtx.Provider value={onSend || (() => {})}>

@@ -345,15 +345,15 @@ Deployment (2026-07-21):
   branches. The listener and support-mail watcher were restarted and confirmed
   running with new PIDs.
 - Vercel deployment `dpl_3Y5Y1tKU18Amq9XGxjKRf35RkaGj` completed Ready and was
-  aliased to `https://lab.aheadofmarket.com`. The deployed CornerCV6 bundle returned
+  aliased to the staging URL `https://lab.aheadofmarket.com`. The staged CornerCV6 bundle returned
   200 and contains the R10 `Open Email column`, `Clear the current screen?`, and
   `Send Back To Agent` contracts; `/api/dashboard/room-reset` returned the expected
   405 on GET, proving the function is deployed rather than missing.
-- An unauthenticated production browser reached the expected Corner sign-in gate.
-  A signed production walkthrough remains unclaimed: the in-app browser holding the
+- An unauthenticated staging browser reached the expected Corner sign-in gate.
+  A signed staging walkthrough remains unclaimed: the in-app browser holding the
   signed session could not attach because of the recorded Node runtime collision.
 
-**Status:** shipped and artifact-verified; signed-in production walkthrough pending browser-tool recovery.
+**Status:** verified on staging at the time; this record is not production proof.
 
 ### R11 - One-page columns and mobile interaction corrections
 
@@ -405,22 +405,22 @@ Verification and deployment:
 - Commits `697a73df`, `f032d9c2`, `c8ddddd8`, `ffeb5daa`, and `84c56262` were pushed
   to `main`; the parent/backend repository was not touched.
 - Vercel deployment `EP42M5agZkHEBGZA48Xqn7sENzvX` reached Ready and was aliased to
-  `https://lab.aheadofmarket.com`. The deployed `CornerCV6-pU5EDFa3.js` bundle was
+  the staging URL `https://lab.aheadofmarket.com`. The staged `CornerCV6-pU5EDFa3.js` bundle was
   fetched from the alias and contains the new `Find in chat`, `Dispatch email`,
   `Open as column`, `Cheers,`, and workspace-column contracts.
 
 Rex handoff: frontend items A1-A3, B1-B2, C1-C2, D0-D4, and E1 are landed and pushed.
 No rex-owned AOM-EA/backend/script/data file was changed. The final signed desktop +
-390px production walkthrough is still pending because the requested signed robot-Chrome
-capability is not installed in this Codex session; local Playwright and production
+390px staging walkthrough is still pending because the requested signed robot-Chrome
+capability is not installed in this Codex session; local Playwright and staging
 artifact proof do not substitute for that authentication-only acceptance pass.
 
-**Status:** shipped and artifact-verified; signed robot-Chrome acceptance pending.
+**Status:** verified on staging at the time; this record is not production proof.
 
-### R12 - Production Home load regression
+### R12 - Staging Home load regression
 
 Started 2026-07-21 after the deployed authenticated Home screen rendered the
-`This screen hit a snag` boundary. Direct production browser diagnostics confirmed
+`This screen hit a snag` boundary. Direct staging browser diagnostics confirmed
 authentication and the CV6 APIs load successfully, then captured a render-time
 `ReferenceError: Cannot access 'Lt' before initialization` after the missions tree
 arrives. This round will correct that source-order defect, add a data-loaded Home
@@ -438,15 +438,15 @@ Resolution and verification (2026-07-21):
   warnings and large-chunk advisory remain.
 - `CV6_AUDIT_BASE=http://127.0.0.1:5173 npx playwright test tests/cv6-*.spec.mjs
   --reporter=line --workers=2` passed 31/31.
-- Commit `6b2434e1` was pushed to `main`. Vercel deployment
-  `56rpRtCYVzrvnAMKzbc7pUun6JRC` reached production and was aliased to
+- Commit `6b2434e1` was pushed to `main`. Vercel staging deployment
+  `56rpRtCYVzrvnAMKzbc7pUun6JRC` was aliased to
   `https://lab.aheadofmarket.com`.
-- Authenticated production Chrome loaded Home after both live missions-tree requests
+- Authenticated staging Chrome loaded Home after both live missions-tree requests
   at desktop and 390px widths, rendered all 45 projects plus recent mission activity,
   and emitted no Corner render error. The only remaining console error is the existing
   unrelated Apollo tracking-pixel 400.
 
-**Status:** shipped and authenticated-production verified.
+**Status:** authenticated staging verification passed; this record is not production proof.
 
 ### R13 - Mobile bottom spacing and keyboard composer geometry
 
@@ -475,12 +475,12 @@ Resolution and verification (2026-07-21):
   inspected.
 - Commit `5846f3ea` was pushed to `main`. Vercel deployment
   `5NbQRNbmNdfnvFNQvNmV5Zw7QdX9` completed and was aliased to
-  `https://lab.aheadofmarket.com`; the live `CornerCV6-DLiUu_wX.js` and
+  the staging URL `https://lab.aheadofmarket.com`; the staged `CornerCV6-DLiUu_wX.js` and
   `CornerCV6-hw3-YxEv.css` assets contain the new viewport and scoped-spacing
-  contracts. An anonymous production probe correctly stopped at the sign-in gate,
+  contracts. An anonymous staging probe correctly stopped at the sign-in gate,
   so a real signed-in iPhone keyboard check remains the final hardware signoff.
 
-**Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
+**Status:** verified on staging at the time; not a production release record.
 
 ### R15 - Mobile bottom chrome removal and chat header icons
 
@@ -505,17 +505,17 @@ large-chunk warnings.
 
 Commit `027b2d94` was pushed to `main`. Vercel deployment
 `dpl_Ef3rDvWmv9GoL9L5moxT5yGXqK59` is Ready and aliased to
-`https://lab.aheadofmarket.com`; the live alias serves `CornerCV6-CC2bJo6q.js` and
+the staging URL `https://lab.aheadofmarket.com`; the staging alias serves `CornerCV6-CC2bJo6q.js` and
 `CornerCV6-C9_yl5zV.css`, whose fetched contents contain the physical-bottom shell,
 keyboard override, circular header-action, and accessible Files/More contracts.
-Production UI remains sign-in gated, so the final hardware signoff is Patrik's
+Staging UI remains sign-in gated, so the final hardware signoff is Patrik's
 signed-in iPhone check of the real home indicator and Apple keyboard.
 
-**Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
+**Status:** verified on staging at the time; not a production release record.
 
 ### R16 - Remove the real mobile composer spacer
 
-Started 2026-07-21 after Patrik verified the R15 production deployment on his signed-in
+Started 2026-07-21 after Patrik verified the R15 staging deployment on his signed-in
 iPhone and reported that the composer remained in almost the same position. R15 fixed
 the fixed-shell contract but did not remove the actual lower layout layer visible on
 hardware. This round will measure every containing block from the room composer to the
@@ -537,12 +537,12 @@ existing OutreachTracker duplicate-key and large-chunk warnings.
 
 Commit `5e53c3d7` was pushed to `main`. Vercel deployment
 `dpl_HtxQeJmFNZyDcENqddS7GjpSXpyv` is Ready and aliased to
-`https://lab.aheadofmarket.com`; the live alias serves `CornerCV6-DL-_d2F5.css`,
+the staging URL `https://lab.aheadofmarket.com`; the staging alias serves `CornerCV6-DL-_d2F5.css`,
 whose fetched composer rule is `bottom:20px` with no safe-area inset, whose transcript
-clearance is a flat 150px, and whose keyboard-open override remains 8px. Production
+clearance is a flat 150px, and whose keyboard-open override remains 8px. Staging
 UI remains sign-in gated, so Patrik's signed-in iPhone is the decisive hardware check.
 
-**Status:** shipped and deployment verified; signed-in iPhone visual signoff pending.
+**Status:** verified on staging at the time; not a production release record.
 
 ### R17 - Mobile brand scale, message typography, and Email tabs
 
@@ -580,11 +580,11 @@ The R17 files landed in combined pushed commit `a24aedbb` while a concurrent CV6
 live-progress correction was committing the shared worktree. The resulting pushed HEAD
 was re-inspected before deployment and contains both verified changes. Vercel deployment
 `J8m9UDv1nmm19xiqNatJ3kWPzzuE` is Ready and aliased to
-`https://lab.aheadofmarket.com`. The live alias returns `CornerCV6-CrU8ivnD.css` with
+the staging URL `https://lab.aheadofmarket.com`. The staging alias returns `CornerCV6-CrU8ivnD.css` with
 the 96px wordmark, 76px Email rail, 46px tab control, and tab-status rules, plus
 `CornerCV6-wE5ZM-Kk.js` with the shared agent-prose and Auto-reply status paths.
 
-**Status:** shipped and deployment assets verified; signed-in iPhone visual signoff pending.
+**Status:** verified on staging at the time; not a production release record.
 
 ### R14 - Mobile recent-chat scrolling and singular live progress
 
@@ -611,13 +611,13 @@ Resolution and verification (2026-07-21):
   and the mobile live-tail screenshot was inspected.
 - Commit `acdf3020` was pushed to `main`. Vercel deployment
   `CL6nDGTP3EgJ72aArTuvKeaiWGMV` completed and was aliased to
-  `https://lab.aheadofmarket.com`; live assets `CornerCV6-DDPBPEP3.js` and
+  the staging URL `https://lab.aheadofmarket.com`; staged assets `CornerCV6-DDPBPEP3.js` and
   `CornerCV6-Dzmcpowf.css` contain the singular-live-work and two-axis touch
-  contracts. A production UI rerun reached the expected sign-in gate, so the
+  contracts. A staging UI rerun reached the expected sign-in gate, so the
   shipped artifacts are verified and a signed-in iPhone gesture check remains
   the final hardware signoff.
 
-**Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
+**Status:** verified on staging at the time; not a production release record.
 
 ### R18 - Composer model visibility and command consolidation
 
@@ -664,3 +664,109 @@ the model label, preference-change wiring, attachment control, and honest load/s
 error markers.
 
 **Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.
+
+### R19 - Checklists, motion, and editable room identities
+
+Started 2026-08-08 from Patrik's dashboard interaction pass. This round will make
+room checklists clearer and easier to operate with touch and keyboard, normalize
+CV6 motion so shortcuts and mobile gestures do not fight animated surfaces, and
+replace ambiguous gray room identity treatments with editable room avatars. The
+avatar editor must work on desktop and mobile, support a custom color, two initials,
+or a picture, and propagate that identity through the room UI. Presence dots will
+only render when a room is genuinely active; inactive or unknown state will have no
+dot instead of suggesting an idle agent. Chat header controls and the secondary
+controls below the composer will become visually shorter while retaining usable
+touch hit areas and visible keyboard focus.
+
+Verification will cover checklist keyboard/touch operation, room identity editing,
+presence rendering, shortcut/gesture isolation, reduced-motion behavior, responsive
+browser inspection, focused regressions, and the production build.
+
+Implemented and verified locally on 2026-08-08:
+
+- Added a persistent room-identity editor that opens from room avatars on desktop and
+  mobile. A room can now use custom two-letter initials, one of eight deliberate
+  colors, or a compressed square picture; the workspace preference has a local-device
+  fallback so an API interruption does not discard the edit.
+- Replaced ambiguous gray avatar/presence treatments. Room colors are deterministic
+  and non-gray by default, active rooms get the green live dot, and inactive or
+  unknown rooms render no presence dot. The edit pencil lives inside the avatar so it
+  cannot be confused with presence.
+- Added checklist totals, per-list completion bars, clearer keyboard focus and open
+  motion, Cmd/Ctrl+Enter play, Enter-to-advance, Escape-to-revert/close, and a timed
+  delete confirmation. Playing a list or item keeps the checklist composer open.
+- Isolated swipe navigation from buttons, inputs, dialogs, checklist surfaces, and the
+  avatar editor. Consolidated motion timing and reduced-motion behavior, then made
+  chat header and composer controls visually shorter while retaining larger invisible
+  touch targets.
+- Sanitized checklist request failures so local or transient API problems show a
+  useful product message instead of a raw JSON/parser error.
+
+The focused Node suite passed 13/13, focused Playwright scenarios passed 4/4, the
+production build passed, and the live fixture was inspected at 390x844 and 1440x900.
+Mobile touch/keyboard flows, active versus inactive presence, compact button geometry,
+and the desktop avatar edit affordance were confirmed with no browser console errors.
+
+**Status:** implemented and verified locally; commit and deployment not requested.
+
+### R21 - Centered mobile chat and Files HUD interaction rebuild
+
+Started 2026-08-08 from Patrik's signed-in iPhone screenshots. The captures expose
+four connected mobile defects: agent avatars reserve a one-sided gutter that pushes
+structured conversation content right; the composer is oversized and excessively
+round; the Files HUD cannot be dismissed by dragging; and its inactive selection
+control plus swipe-save underlay create controls that appear broken or exposed. This
+round will center the conversation, rebuild the composer as a compact technical
+surface with an auto-growing multiline field, add bottom-edge swipe-up/open and
+handle swipe-down/close gestures, and replace the file list with a two-column overview
+whose selection control performs real multi-file actions.
+
+The already implemented R20 opaque chat menu remains the fix for the transparent
+three-dot menu shown in the screenshots.
+
+Implemented and verified locally on 2026-08-08:
+
+- Removed the repeated mobile agent-avatar gutter from message turns. Room identity
+  remains in the sticky header while every message, structured result, and data card
+  now receives symmetric 12px transcript margins.
+- Replaced the single-line pill input with a compact textarea that rests at one line,
+  accepts Shift+Enter, grows through roughly five lines, and then scrolls internally.
+  The composer shell, attachment, Commands, checklist, voice, and Send controls now
+  use tighter technical radii and smaller visible geometry while retaining 44px touch
+  reach through invisible hit slop.
+- Added upward overscroll at the newest message to open Files, plus a full-width drawer
+  handle that tracks a downward finger gesture and dismisses after a deliberate 72px
+  pull.
+- Replaced the mobile file rows and concealed swipe-save layer with a two-column file
+  overview. The former dead checkmark now enters real selection mode, supports selecting
+  the visible filter set, and saves the selected files with an explicit receipt.
+- Kept individual Open, Save to device, and Copy link actions in each card's overflow;
+  that action sheet now uses the same opaque reading surface as the R20 chat menu.
+
+The combined R19-R21 and room-checklist source contracts passed 17/17, the production
+build passed with only the existing dependency-age and chunk-size warnings, and
+`git diff --check` passed. Patrik requested a production release after verification.
+
+**Status:** implemented and verified; production release in progress.
+
+### R20 - Readable glass chat menus
+
+Started 2026-08-08 from Patrik's glass-theme follow-up. The chat header More menu
+and adjacent Activity dropdown currently inherit the glass theme's translucent
+surface token, allowing the conversation underneath to compete with menu labels.
+This round will give transient chat-header menus a dedicated, high-opacity surface
+in every theme, with an opaque glass-theme treatment, clear separation, and the
+existing compact positioning and controls preserved on mobile and desktop.
+
+Implemented on 2026-08-08. Both the three-dot More menu and the Activity dropdown
+now use the theme's solid composer surface instead of the translucent panel surface.
+Glass resolves to opaque cool ink (`#111820`), while dark and light retain their
+matching solid surfaces. A stronger floating shadow, subtle inner highlight, and
+isolated paint layer keep each menu distinct from the conversation underneath
+without changing its placement, size, or controls.
+
+The R19/R20 focused source contracts passed 8/8, the production build passed with
+only the existing dependency-age and bundle-size warnings, and `git diff --check`
+passed.
+
+**Status:** implemented and verified locally; commit and deployment not requested.
