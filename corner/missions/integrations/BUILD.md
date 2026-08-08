@@ -25,4 +25,11 @@ Verification:
 - The local Vercel link names project `aom-studio`.
 - Repository searches find no remaining affirmative Lab-as-production claim; remaining Lab references explicitly say staging or not production.
 
-**Status:** complete; ready to commit and push through the production-connected `main` branch.
+Release verification:
+
+- Commit `d746f68d` was pushed to `main`.
+- Vercel deployment `dpl_DuDDN31zBi3ipqkWfMuwzugGDrsA` reached Ready on project `aom-studio` and lists both `aheadofmarket.com` aliases.
+- `https://aheadofmarket.com/dashboard` serves the new production entry asset.
+- `aom-studio-lab` remained on its older `f537745c` staging deployment after the push, confirming that Lab no longer auto-deploys from `main`.
+
+**Status:** shipped and verified on canonical production; Lab remained unchanged staging.
