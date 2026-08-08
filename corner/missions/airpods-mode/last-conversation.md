@@ -72,3 +72,10 @@ actionable copy, and permits retry from the error state. Focused tests passed 8/
 the clean production build passed. Commit `43877d24` deployed READY to the verified
 `aom-studio` project; the canonical dashboard's served asset contains the R3 markers.
 The next step is another physical iPhone/AirPods conversation smoke test.
+
+## 2026-08-08 — R4 server handshake finding
+
+The stored failed session contained Google's close reason: the socket treated the
+ephemeral token as an unregistered caller. Live method/credential probes reproduced the
+failure and verified `BidiGenerateContentConstrained` reaches `setupComplete` with the
+same token. R4 opened to release that server-side method correction.

@@ -90,3 +90,10 @@ test('AirPods control is mounted in shared desktop, mobile home, and mobile chat
   assert.match(read('../src/dashboard/cv6next/ChatLifecycle.jsx'), /<AirPodsHeaderButton \/>/);
   assert.doesNotMatch(read('../src/dashboard/cv6next/airpods/AirPodsProvider.jsx'), /corner-airpods-float/);
 });
+
+test('ephemeral Gemini credentials use the constrained Live method', () => {
+  const source = readFileSync(new URL('../api/dashboard/voice-session.js', import.meta.url), 'utf8');
+  assert.match(source, /GenerativeService\.BidiGenerateContentConstrained/);
+  assert.match(source, /\?access_token=\$\{encodeURIComponent\(ephemeralToken\)\}/);
+  assert.doesNotMatch(source, /BidiGenerateContent\?key=\$\{GEMINI_API_KEY\}/);
+});

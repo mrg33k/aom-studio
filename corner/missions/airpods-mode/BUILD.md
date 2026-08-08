@@ -91,6 +91,21 @@ that are absent from the remote ledger.
 
 **Status:** complete
 
+### R4 — Constrained Gemini credential repair (2026-08-08)
+
+**Evidence:** The first physical session stored Google's WebSocket close message:
+`Method doesn't allow unregistered callers`. The API successfully minted an ephemeral
+token but paired it with the API-key-only `BidiGenerateContent` method.
+
+**Scope:** Return the verified `BidiGenerateContentConstrained` socket URL whenever the
+browser receives an ephemeral token, preserving the server-side long-lived key.
+
+**Verification:** Live production probes reproduced close 1008 on the standard method
+and reached `setupComplete` on the constrained method. API syntax, diff checks, and the
+focused AirPods suite pass (9/9).
+
+**Status:** verified — production deployment in progress
+
 ### R3 — Mobile legibility and voice handshake recovery (2026-08-08)
 
 **Evidence:** Physical iPhone/AirPods testing showed the floating panel overlapping the

@@ -602,8 +602,10 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
   // Temperature (0.0 - 2.0, default 0.8 for natural conversation)
   const temp = Math.min(2.0, Math.max(0.0, parseFloat(temperature) || 0.8));
 
-  // WebSocket URL for direct browser connection
-  const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
+  // Ephemeral tokens are accepted only by the constrained Live method. The plain
+  // BidiGenerateContent method accepts API-key callers and closes token callers with
+  // WebSocket 1008 ("unregistered callers") before setup completes.
+  const wsUrl = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained';
 
   // Setup message the client sends as first WebSocket message
   // v1beta endpoint uses "setup" as top-level key
@@ -771,7 +773,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
   }
 
   return res.status(200).json({
-    wsUrl: wsUrl.replace(`key=${GEMINI_API_KEY}`, `access_token=${encodeURIComponent(ephemeralToken)}`),
+    wsUrl: `${wsUrl}?access_token=${encodeURIComponent(ephemeralToken)}`,
     setupMessage,
     voiceName,
     temperature: temp,
