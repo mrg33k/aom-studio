@@ -115,9 +115,9 @@ function fileGlyph(kind) {
 // mount points (home panel, desktop drawer, mobile sheet) — it is one panel to the
 // user, and having it open as a grid in one place and a list in another reads as a
 // bug. A blocked/absent localStorage just means the defaults come back each time.
-const FILES_PREF_KEY = 'cv6.filesShelf.prefs';
-const FILES_PREF_DEFAULTS = { layout: 'list', order: 'newest', grouped: true };
-function readFilesPrefs() {
+export const FILES_PREF_KEY = 'cv6.filesShelf.prefs';
+export const FILES_PREF_DEFAULTS = { layout: 'grid', order: 'newest', grouped: true };
+export function readFilesPrefs() {
   try {
     const saved = JSON.parse(localStorage.getItem(FILES_PREF_KEY) || 'null');
     if (!saved || typeof saved !== 'object') return FILES_PREF_DEFAULTS;
@@ -127,6 +127,11 @@ function readFilesPrefs() {
       grouped: saved.grouped !== false,
     };
   } catch { return FILES_PREF_DEFAULTS; }
+}
+export function writeFilesPrefs(patch) {
+  const next = { ...readFilesPrefs(), ...(patch || {}) };
+  try { localStorage.setItem(FILES_PREF_KEY, JSON.stringify(next)); } catch { /* private mode — session only */ }
+  return next;
 }
 const tsOf = (it) => (new Date(it?.ts || 0).getTime() || 0);
 // A tiny segmented control — three of these make up the panel's toolbar.
@@ -154,18 +159,18 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   const [prefs, setPrefs] = useState(readFilesPrefs);
   const setPref = (patch) => setPrefs((prev) => {
     const next = { ...prev, ...patch };
-    try { localStorage.setItem(FILES_PREF_KEY, JSON.stringify(next)); } catch { /* private mode — session only */ }
+    writeFilesPrefs(next);
     return next;
   });
   const [extraOpen, setExtraOpen] = useState(false);
   const { layout, order, grouped } = prefs;
   const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
   const openItem = (it) => {
-    // Photos and videos (and anything flagged for review) open in the in-app
-    // review viewer — scrolling to the message is not useful for media, and a
-    // raw browser tab was a regression away from the viewer we already had.
+    // A Files card is a preview affordance for every supported type. Prefer the
+    // existing in-app viewer for documents as well as media; fall back to the
+    // conversation locator only when this mount has no preview handoff.
+    if (onReview) { onReview(it); return; }
     if (needsAttention(it) || it.kind === 'photo' || it.kind === 'video') {
-      if (onReview) { onReview(it); return; }
       if (it.url) { window.open(it.url, '_blank', 'noopener'); return; }
     }
     onLocate?.(it);
@@ -174,7 +179,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     const waiting = needsAttention(it);
     return (
     <button type="button" key={`${it.url || it.name}-${i}`} onClick={() => openItem(it)}
-      aria-label={`${waiting ? 'Review' : 'Find in chat'} ${it.name}`}
+      aria-label={`${waiting ? 'Review' : onReview ? 'Preview' : 'Find in chat'} ${it.name}`}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 5px', border: 'none', borderBottom: '1px solid var(--divider)', background: 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)', cursor: 'pointer', borderRadius: 8 }}>
       <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -218,11 +223,11 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     const isImage = it.kind === 'photo' && !!it.url;
     return (
       <button type="button" key={`${it.url || it.name}-${i}`} onClick={() => openItem(it)}
-        aria-label={`${waiting ? 'Review' : 'Open'} ${it.name}`} title={`${it.name}${itemMeta(it) ? ` — ${itemMeta(it)}` : ''}`}
+        aria-label={`${waiting ? 'Review' : onReview ? 'Preview' : 'Open'} ${it.name}`} title={`${it.name}${itemMeta(it) ? ` — ${itemMeta(it)}` : ''}`}
         style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 0, border: 'none', background: 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)', cursor: 'pointer', minWidth: 0 }}>
         <span style={{ position: 'relative', display: 'block', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', background: 'var(--media-tile, var(--surface-2))', border: '1px solid var(--divider)' }}>
           {isImage ? (
-            <img src={it.url} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <img src={String(it.url).includes('rag.aheadofmarket.com') ? `${it.url}${String(it.url).includes('?') ? '&' : '?'}w=440` : it.url} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
           ) : (
             <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'scale(1.7)' }}>{fileGlyph(it.kind)}</span>
           )}
@@ -338,11 +343,24 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
 // Replaces the old three-source merge (project-files disk walk + list-chat-files
 // + message-window scrape), demolished in this block per one-corner doctrine.
 // Shared by the desktop Files drawer, the mobile files sheet, and Home's files panel.
+function demoRoomCrossings(room) {
+  try {
+    if (new URLSearchParams(window.location.search).get('demo') !== 'mobile-chat-lifecycle') return null;
+    const origin = window.location.origin;
+    const ts = new Date().toISOString();
+    return [
+      { type: 'file', kind: 'photo', name: 'grid-preview.png', url: `${origin}/corner-og.png`, mime: 'image/png', ts, who: 'Renderer', size: 18500, isUser: false, messageId: 'r23-image', gateStatus: '' },
+      { type: 'file', kind: 'file', name: 'DESIGN.md', url: `${origin}/cv4-static/DESIGN.md`, mime: 'text/markdown', ts, who: 'Renderer', size: 8200, isUser: false, messageId: 'r23-document', gateStatus: '' },
+    ];
+  } catch { return null; }
+}
 export function useRoomCrossings(worldId, room) {
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState('loading');
   const [windowFull, setWindowFull] = useState(false);
   useEffect(() => {
+    const fixture = demoRoomCrossings(room);
+    if (fixture) { setItems(fixture); setWindowFull(false); setStatus('ready'); return undefined; }
     if (!worldId || !room?.id) { setItems([]); setStatus('empty'); return undefined; }
     let alive = true;
     setItems([]);
