@@ -37,7 +37,7 @@ is not available in the home recent-list data.
 
 ## measured
 
-**Chrome DevTools computed styles at 390×844 (robot Chrome, lab.aheadofmarket.com):**
+**Chrome DevTools computed styles at 390×844 (robot Chrome, Lab staging):**
 
 ```json
 {

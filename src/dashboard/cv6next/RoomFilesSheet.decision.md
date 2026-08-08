@@ -12,7 +12,7 @@ Bobby
 
 - `src/dashboard/cv6next/ChatLifecycle.jsx` (commit 0a221a0c → cf7bceaf → spacing fix)
 - `src/dashboard/cv6next/cv6.css` — `.cv6-fs-*` block appended after line 3637
-- Live: https://lab.aheadofmarket.com/dashboard (open any room → Files button)
+- Staging validation: https://lab.aheadofmarket.com/dashboard (open any room → Files button)
 
 ## call
 
@@ -20,7 +20,7 @@ Bobby
 
 **The ONE thing the user must DO:** Find and save a specific file from the room. The design gives them an obvious path: filter to the type (Docs / Images / Data), scan the grouped list newest-first, swipe left to save or tap ⋮ for more options.
 
-**Why I'm shipping this:** The approved `corner-files-add.png` styleframe specifies exactly this structure. Patrik chose it explicitly over the Amplify variant ("a more robust files is better the way that one is"). The implementation matches the frame: bottom sheet, "Files [N]" header, filter chips with live counts, TODAY/EARLIER groups, type chips with extension monograms, real lazy thumbnails for images, swipe-to-save revealing an accent panel. I verified all of this on the live URL at 390×844 in Chrome DevTools emulation.
+**Why I'm shipping this:** The approved `corner-files-add.png` styleframe specifies exactly this structure. Patrik chose it explicitly over the Amplify variant ("a more robust files is better the way that one is"). The implementation matches the frame: bottom sheet, "Files [N]" header, filter chips with live counts, TODAY/EARLIER groups, type chips with extension monograms, real lazy thumbnails for images, swipe-to-save revealing an accent panel. I verified all of this on the staging URL at 390×844 in Chrome DevTools emulation.
 
 **What I chose between:** The swipe-inner bleed-through bug (save panels visible at rest) was caught on the first screenshot and fixed before the task closed — background: var(--ground) on `.cv6-fs-swipe-inner`. I chose to fix it immediately rather than note and defer.
 
@@ -41,7 +41,7 @@ My specific cv6-fs-* block — values used (post spacing-fix):
   Font sizes: 10, 11, 12, 13, 15, 20px — 6 values, within the 8-cap ✅
   Font family: var(--font-sans) only — 1 family ✅
 
-Chrome DevTools 390×844 emulation verification (live URL):
+Chrome DevTools 390×844 emulation verification (Lab staging URL):
   - filesSheetOpen, count chip "27": ✅
   - Filter "All 27" active (filled accent): ✅
   - Filter "Images 23": clicked, list filtered to images, count correct ✅

@@ -16,11 +16,12 @@ edit, complete/reopen, delete, and Play; Play sends the exact item through the r
 existing message path with the active Work/Plan mode. Share opens a destination picker
 covering agents, projects, and nested missions, then requires Copy or Move.
 
-Verification finished at 19/19 source checks and 38/38 CV6 browser checks. The production
-build deployed as `dpl_B9itB5hQLE9vAxhWGbZhGNTyRGVa`; a concurrent deployment briefly
-took the lab alias, so the alias was explicitly restored to this verified build. Live
-asset and authenticated-route smokes passed. The public browser correctly stops at the
-Corner sign-in screen, so no production-auth bypass was used.
+Verification finished at 19/19 source checks and 38/38 CV6 browser checks. The
+production-mode build was deployed to staging as `dpl_B9itB5hQLE9vAxhWGbZhGNTyRGVa`;
+a concurrent deployment briefly took the Lab alias, so the alias was explicitly restored
+to this verified staging build. Asset and authenticated-route smokes passed. The public
+browser correctly stops at the Corner sign-in screen, so no auth bypass was used. This
+Lab check was not production verification.
 
 ## 2026-07-21 — R2 shipped
 
@@ -32,10 +33,10 @@ share panel, and inter-section spacing. The bounded internal scroll and existing
 bottom/keyboard behavior were preserved.
 
 The exact collapsed mobile state was rendered and inspected. Verification finished at
-19/19 source checks and 38/38 CV6 browser checks; the clean production build passed.
-Deployment `dpl_2oLGCBg3opcWmMP3idhpaGZTsipB` is live at
-`https://lab.aheadofmarket.com`, where the served CSS contains the solid theme tokens
-and the checklist API still enforces JWT authentication.
+19/19 source checks and 38/38 CV6 browser checks; the clean production-mode build passed.
+Staging deployment `dpl_2oLGCBg3opcWmMP3idhpaGZTsipB` was verified at
+`https://lab.aheadofmarket.com`, where the served CSS contained the solid theme tokens
+and the checklist API enforced JWT authentication. This was not production proof.
 
 ## 2026-07-21 — R3 shipped
 
@@ -47,6 +48,7 @@ panel, list, heading, scroll region, and select now share a strict width-bounded
 
 Both collapsed and expanded mobile states were rendered and inspected with every action
 fully inside the composer. Verification passed at 19/19 source checks, 38/38 browser
-checks, and a clean production build. Deployment `dpl_6maNgD89jjc4up3jbxGwWjeEACrd`
-is live at `https://lab.aheadofmarket.com`; its served bundle contains the fixed 42px
-circle geometry and the checklist API remains JWT-protected.
+checks, and a clean production-mode build. Staging deployment
+`dpl_6maNgD89jjc4up3jbxGwWjeEACrd` was verified at
+`https://lab.aheadofmarket.com`; its served bundle contained the fixed 42px circle
+geometry and the checklist API remained JWT-protected. This was not production proof.

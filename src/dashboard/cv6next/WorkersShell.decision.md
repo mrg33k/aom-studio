@@ -8,8 +8,8 @@ Rex.
 
 `src/dashboard/cv6next/WorkersShell.jsx` plus its entry points (ChatDesktop rail
 pin, DesktopNav top-bar icon, SharedNav mobile drawer row) and
-`api/dashboard/dismiss-followup.js`. Shipped in aom-studio e409d7a9 + 5656ea72,
-live on lab.aheadofmarket.com.
+`api/dashboard/dismiss-followup.js`. Shipped in aom-studio e409d7a9 + 5656ea72 and
+validated on Lab staging at lab.aheadofmarket.com; that validation was not production proof.
 
 ## call
 
@@ -30,7 +30,7 @@ queued, not smuggled in.
 
 ## measured
 
-Live spacing/type/balance census of the mounted column (chrome-devtools
+Staging spacing/type/balance census of the mounted column (chrome-devtools
 evaluate_script on lab.aheadofmarket.com, 2026-07-28):
 
 ```json
@@ -54,7 +54,7 @@ design_facts.py on the source: fonts var(--font-mono) for numerics only, weights
 600/500, borders 1px var(--accent)/var(--hair)/var(--divider), radius 10, no
 banned serif.
 
-Functional, verified live in robot Chrome: window opened with 4 promise groups;
+Functional, verified on Lab staging in robot Chrome: window opened with 4 promise groups;
 Dismiss on followup 48e2d40c removed the row, count 4->3, Supabase row
 confirmed `status='dismissed'`; Socials thread shows no card above the
 composer. Deployed chunk CornerCV6-UIwC5IcY.js carries "Background work" x4,

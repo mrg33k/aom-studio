@@ -1,35 +1,22 @@
-# corner:integrations — auto-deploy to aom-studio-lab (lab.aheadofmarket.com)
-# Triggers on pushes to `main` OR `lab` branches, or manual dispatch.
+# corner:integrations — opt-in staging deploy to aom-studio-lab.
 #
-# Root cause history (2026-08-06):
-#  - R2 added `main` to trigger branches (was lab-only for 7 days) — necessary but not sufficient.
-#  - Actual failures had two separate causes:
-#    1. VERCEL_TOKEN lacked team scope ("You do not have access to the specified account")
-#       → Fixed: replaced with fresh token that has aheads-projects-d2a4c70f team access.
-#    2. Aug-06 runner not acquired (15m timeout) — transient GitHub infra issue, not a config bug.
-#  - Pattern: use VERCEL_ORG_ID + VERCEL_PROJECT_ID env vars instead of --scope/--project flags;
-#    this is Vercel's recommended CI pattern and avoids scope resolution issues.
-#  - Added workflow_dispatch for manual re-trigger without a dummy commit.
+# Lab is not product production. This workflow is intentionally manual-only and must
+# be dispatched only when the user explicitly asks for a Lab/staging deployment.
+# Normal `main` pushes deploy through the `aom-studio` Vercel project and are verified
+# at https://aheadofmarket.com/dashboard.
 #
-# Staleness guard: the "check-staleness" job runs on schedule and alerts when origin/main
-# is ahead of the latest production deployment. Not a hard block — just an early warning.
-#
-# Deployment verification: NEVER claim fixed until `vercel ls --prod` shows a NEW Production
-# entry that post-dates the push. A triggered run is not a deployed run.
+# Vercel's `--prod` flag below selects the stable alias inside the separate Lab project;
+# it does not make Lab the AOM production environment.
 
-name: Deploy Lab to Production
+name: Deploy Lab Staging (Manual Only)
 
 on:
-  push:
-    branches:
-      - main
-      - lab
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Reason for manual deploy'
-        required: false
-        default: 'Manual redeploy'
+        description: 'Explicit reason for deploying to Lab staging'
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -43,14 +30,14 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      - name: Deploy to aom-studio-lab (production)
+      - name: Publish the Lab staging alias
         run: |
           vercel --prod --yes \
             --token ${{ secrets.VERCEL_TOKEN }}
 
-      - name: Confirm production URL
+      - name: Confirm staging URL
         run: |
-          echo "Deploy complete. Verify at: https://lab.aheadofmarket.com"
+          echo "Staging deploy complete. Verify at: https://lab.aheadofmarket.com"
           vercel ls --prod \
             --token ${{ secrets.VERCEL_TOKEN }} \
             --scope aheads-projects-d2a4c70f \

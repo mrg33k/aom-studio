@@ -58,6 +58,24 @@ The mission home is `corner/missions/corner-ui-cv4/` (in the AOM-EA repo, siblin
 
 Background sessions and parallel agents must work in a `.Codex/worktrees/<name>/` worktree (use `EnterWorktree`). The mission folder for the work goes in that worktree too, so it merges with the code.
 
+## Deployment environments
+
+**Production is the default release target.** Unless the user explicitly asks for a preview or staging deployment, publish and verify this repository against:
+
+- Vercel project: `aom-studio`
+- Canonical site: `https://aheadofmarket.com`
+- Canonical Corner dashboard: `https://aheadofmarket.com/dashboard`
+
+`aom-studio-lab` and `https://lab.aheadofmarket.com` are **staging only**. Do not deploy to Lab, use Lab as release proof, or describe Lab as production unless the user explicitly requests a Lab/staging deployment in the current task.
+
+Before any Vercel deployment:
+
+1. Verify the target project. A bare `vercel --prod` deploys to whichever project the checkout is linked to; the word `--prod` does not prove that the project is the real AOM production project.
+2. Deploy a clean, validated commit or archive so unrelated shared-workspace changes cannot leak into the release.
+3. Verify the served assets from the canonical production URL above. A successful build, Vercel preview URL, or Lab alias is not production verification.
+
+The manual Lab workflow is an explicit staging tool. Normal pushes to `main` must target the `aom-studio` production project through its Vercel Git integration.
+
 ## Pre-existing build state
 
 As of 2026-05-13: `src/dashboard/main.jsx:3` imports `./GameDashboard.jsx`, which doesn't exist in the source tree or git history. This breaks `npm run dev` until resolved. If you need to run the dev server, fix this first — don't paper over it by stubbing the import.

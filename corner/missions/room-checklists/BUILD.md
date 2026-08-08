@@ -11,7 +11,7 @@
 - Support add, rename, complete/reopen, delete, and Play-to-agent for items.
 - Support explicit Copy or Move sharing to another room.
 - Verify mobile and desktop chat paths, reload persistence, send behavior, and sharing.
-- Deploy the verified round to the Corner lab.
+- Use Corner Lab only for an explicitly requested staging verification.
 
 ### Shipped behavior
 
@@ -30,10 +30,10 @@
 - Production build passed; existing unrelated OutreachTracker duplicate-style warnings remain.
 - Live asset contains the checklist UI and `/api/dashboard/room-checklists` returns the
   expected authenticated-route guard (`401 jwt required`) when called unsigned.
-- Deployment `dpl_B9itB5hQLE9vAxhWGbZhGNTyRGVa` is aliased to
-  `https://lab.aheadofmarket.com`.
+- Staging deployment `dpl_B9itB5hQLE9vAxhWGbZhGNTyRGVa` was aliased to
+  `https://lab.aheadofmarket.com`; it is not production proof.
 
-**Status:** shipped.
+**Status:** verified on staging at the time; not a production release record.
 
 ## R2 — Opaque, roomier checklist composer
 
@@ -58,10 +58,10 @@
   duplicate-style warnings remain.
 - Live CSS exposes the solid dark/light/glass tokens and the authenticated checklist route
   returns `401 jwt required` when called unsigned with a room key.
-- Deployment `dpl_2oLGCBg3opcWmMP3idhpaGZTsipB` is explicitly aliased to
-  `https://lab.aheadofmarket.com`.
+- Staging deployment `dpl_2oLGCBg3opcWmMP3idhpaGZTsipB` was explicitly aliased to
+  `https://lab.aheadofmarket.com`; it is not production proof.
 
-**Status:** shipped.
+**Status:** verified on staging at the time; not a production release record.
 
 ## R3 — Unsqueezed circular checklist controls
 
@@ -86,7 +86,7 @@
 - Clean build from commit `552c6285` passed; existing unrelated OutreachTracker
   duplicate-style warnings remain.
 - Live bundle contains the fixed `42px` geometry and `1 / 1` aspect-ratio contract.
-- Deployment `dpl_6maNgD89jjc4up3jbxGwWjeEACrd` is explicitly aliased to
-  `https://lab.aheadofmarket.com`.
+- Staging deployment `dpl_6maNgD89jjc4up3jbxGwWjeEACrd` was explicitly aliased to
+  `https://lab.aheadofmarket.com`; it is not production proof.
 
-**Status:** shipped.
+**Status:** verified on staging at the time; not a production release record.

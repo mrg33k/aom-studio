@@ -6,7 +6,8 @@ rex (Patrik's EA terminal). My call, my name on it.
 
 ## artifact
 
-Three files, one batch, shipped 2026-08-07 and live on lab.aheadofmarket.com:
+Three files, one batch, shipped 2026-08-07 and validated on Lab staging at
+lab.aheadofmarket.com; that validation was not production proof:
 
 - `src/dashboard/cv6next/templates/home-desktop.html` — clock icon removed from both
   recent-room row variants (`.recentrow` left rail, `.restrow` centre digest). Commit
