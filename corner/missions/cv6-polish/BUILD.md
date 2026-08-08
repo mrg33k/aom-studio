@@ -688,7 +688,15 @@ mobile/desktop Playwright profile flows passed 2/2, the production Vite build pa
 the two pre-existing hardcoded `aom` defaults in `api/client-parts.js` and
 `api/prospect-report.js`; R22 adds no tenant-slug or identity violation.
 
-**Status:** implemented and verified; production release in progress.
+Released in commit `3c57b710` through Vercel deployment
+`dpl_GmMTfG8v1tTXH5T7P2Rh7H8rUFQR`. Vercel reports the deployment Ready with both
+`aheadofmarket.com` aliases. A direct fetch of `/dashboard` resolved the new
+`CornerCV6-DvTEkQ60.js` and `CornerCV6-B2cEu4QF.css` assets; the served files contain
+the profile editor, live identity event, and bottom-right pencil geometry. An unsigned
+production profile write returned `401 sign in required`, confirming the new gate is
+active.
+
+**Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.
 
 ### R19 - Checklists, motion, and editable room identities
 

@@ -305,3 +305,25 @@ resolved the new deployment, and the served `CornerCV6-Ci0TWmOq.css` plus
 `CornerCV6-Cjc9EV5h.js` contain the drawer handle, two-column grid, real selection
 copy, centered-turn rule, compact composer, and opaque menu contract. R19-R21 are now
 live; only Patrik's signed-in iPhone hardware gesture and visual confirmation remain.
+
+## 2026-08-08 - R22 profile avatars shipped to production
+
+Patrik asked that the edit icon sit at the bottom-right of profile-picture circles
+and that signed-in users be able to change their own picture, initials, and color.
+R22 extracted the room avatar controls into a shared identity dialog, moved the solid
+pencil badge to the requested corner, separated active presence onto the bottom-left,
+and added the shared editor to Settings Account plus the live desktop profile control.
+
+The avatar API now derives the caller from the signed JWT, rejects another target user,
+preserves unrelated metadata, validates image bytes, and returns/stores initials and
+color alongside the picture. Legacy CV3 uploads now send auth as well. Focused Node
+and mocked authorization checks passed 11/11, the mobile and desktop Playwright flows
+passed 2/2, the exact staged tree built successfully, and the real UI was visually
+checked at both breakpoints without browser errors. The broader tenant command still
+reports the two pre-existing hardcoded defaults in `api/client-parts.js` and
+`api/prospect-report.js`; this round introduced none.
+
+Commit `3c57b710` was pushed to `main` and deployed as
+`dpl_GmMTfG8v1tTXH5T7P2Rh7H8rUFQR`. Vercel is Ready with both Ahead of Market aliases;
+the production dashboard serves the new JS/CSS markers and anonymous writes to the
+profile endpoint return the expected `401 sign in required` response.
