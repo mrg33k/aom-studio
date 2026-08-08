@@ -327,3 +327,28 @@ Commit `3c57b710` was pushed to `main` and deployed as
 `dpl_GmMTfG8v1tTXH5T7P2Rh7H8rUFQR`. Vercel is Ready with both Ahead of Market aliases;
 the production dashboard serves the new JS/CSS markers and anonymous writes to the
 profile endpoint return the expected `401 sign in required` response.
+
+## 2026-08-08 - R23 Files previews and R24 centered iPad/desktop chat
+
+Patrik kept the R21 two-column Files direction and asked for useful resized previews
+inside grid cards without losing List mode. Files now defaults to the shared persisted
+grid, requests 440px image renditions, contains the full image instead of cropping it,
+and sends every supported file type through the existing in-app preview. The List
+switch remains explicit and persisted, and its New marker no longer collides with the
+filename.
+
+Patrik also clarified that chat was centered on phone but visually shifted on iPad and
+desktop, while iPad portrait still felt like a stretched phone. The shared lifecycle
+now has one responsive reading lane and no one-sided repeated avatar gutter. Desktop
+centers a 760px transcript; 641-899px devices use a deliberately tablet-native 720px
+header/transcript/compact-composer canvas plus a contained Files drawer. The touch and
+swipe composition remains intact instead of forcing a desktop rail into 768px.
+
+Focused source contracts passed 11/11, both Playwright flows passed 2/2, and the exact
+release tree passed the production build. Browser measurements confirmed 720px centered
+at 768x1024 and 760px centered at 1440x900. Because `origin/main` advanced with the
+separate AirPods release during the work, the scoped commit was cleanly replayed on top
+of it and pushed as `564556bb`; no unrelated dirty workspace files were included.
+Production deployment `dpl_AEAtH2XLKZNFpThkdj7tfVbVanAd` is Ready with both Ahead of
+Market aliases, and the live `/dashboard` assets contain the grid/list, resized preview,
+and centered tablet/desktop lane markers.
