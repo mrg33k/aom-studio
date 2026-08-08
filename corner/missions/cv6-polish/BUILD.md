@@ -707,7 +707,12 @@ production build passed, and the live fixture was inspected at 390x844 and 1440x
 Mobile touch/keyboard flows, active versus inactive presence, compact button geometry,
 and the desktop avatar edit affordance were confirmed with no browser console errors.
 
-**Status:** implemented and verified locally; commit and deployment not requested.
+Released in commit `f13079d0`. Clean production deployment
+`dpl_FV1epDcufk4eRkkEK9QgNQM2jCMb` is Ready and aliased to
+`https://aheadofmarket.com`; the served R19-R21 CSS and JavaScript assets were
+fetched directly through `/dashboard` and contain the shipped contracts.
+
+**Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.
 
 ### R21 - Centered mobile chat and Files HUD interaction rebuild
 
@@ -747,7 +752,14 @@ The combined R19-R21 and room-checklist source contracts passed 17/17, the produ
 build passed with only the existing dependency-age and chunk-size warnings, and
 `git diff --check` passed. Patrik requested a production release after verification.
 
-**Status:** implemented and verified; production release in progress.
+Released with R19 and R20 in commit `f13079d0`. Vercel deployment
+`dpl_FV1epDcufk4eRkkEK9QgNQM2jCMb` completed as Ready. A direct production fetch
+resolved `CornerCV6-Ci0TWmOq.css` and `CornerCV6-Cjc9EV5h.js`; those served assets
+contain the centered-turn rule, compact composer, drawer handle, two-column file
+grid, selection actions, and opaque menu surfaces.
+
+**Status:** shipped and asset-verified at `https://aheadofmarket.com/dashboard`;
+signed-in iPhone gesture/visual confirmation remains the final hardware check.
 
 ### R20 - Readable glass chat menus
 
@@ -769,4 +781,8 @@ The R19/R20 focused source contracts passed 8/8, the production build passed wit
 only the existing dependency-age and bundle-size warnings, and `git diff --check`
 passed.
 
-**Status:** implemented and verified locally; commit and deployment not requested.
+Released in commit `f13079d0` through Ready deployment
+`dpl_FV1epDcufk4eRkkEK9QgNQM2jCMb`. The production CSS asset fetched through the
+real dashboard URL contains the opaque solid-menu contract.
+
+**Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.

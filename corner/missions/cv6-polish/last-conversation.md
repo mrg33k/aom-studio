@@ -297,3 +297,11 @@ The combined R19-R21 and room-checklist contracts passed 17/17, the production b
 passed, and `git diff --check` passed. Patrik explicitly requested that the complete
 polish batch be committed and deployed to `aheadofmarket.com/dashboard`; release work
 is the next transition.
+
+Release completed in commit `f13079d0` through Vercel deployment
+`dpl_FV1epDcufk4eRkkEK9QgNQM2jCMb`. Vercel reports the deployment Ready with both
+`aheadofmarket.com` aliases. A direct request to the requested `/dashboard` route
+resolved the new deployment, and the served `CornerCV6-Ci0TWmOq.css` plus
+`CornerCV6-Cjc9EV5h.js` contain the drawer handle, two-column grid, real selection
+copy, centered-turn rule, compact composer, and opaque menu contract. R19-R21 are now
+live; only Patrik's signed-in iPhone hardware gesture and visual confirmation remain.
