@@ -20,6 +20,7 @@ const initialState = { mode: 'off', transcript: [], attentionItems: [], pendingC
 function statusToMode(status) {
   if (status === 'idle') return 'armed';
   if (status === 'connecting' || status === 'wrapping-up') return 'connecting';
+  if (status === 'thinking' || status === 'creating') return 'thinking';
   if (status === 'speaking') return 'speaking';
   if (status === 'error') return 'error';
   return 'listening';
@@ -49,6 +50,15 @@ function AirPodsGlyph({ active = false }) {
         <path d="M12 2a7 7 0 0 0-7 7v4" /><path d="M12 2a7 7 0 0 1 7 7v4" />
         <path d="M5 12H4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2V12Z" /><path d="M19 12h1a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2V12Z" />
       </svg>
+    </span>
+  );
+}
+
+function VoiceSignal({ mode, level = 0 }) {
+  const live = ['connecting', 'listening', 'thinking', 'speaking'].includes(mode);
+  return (
+    <span className={`corner-voice-signal is-${mode}${live ? ' is-live' : ''}`} style={{ '--voice-level': Math.max(0.12, Number(level) || 0.12) }} aria-hidden="true">
+      <i /><i /><i /><i /><i />
     </span>
   );
 }
@@ -86,6 +96,8 @@ export function AirPodsProvider({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [context, setContext] = useState({ view: 'home', room: null });
+  const [voiceLevel, setVoiceLevel] = useState(0);
+  const [activity, setActivity] = useState([]);
   const voiceRef = useRef(null);
   const sessionIdRef = useRef(null);
   const lastPromptRef = useRef(0);
@@ -183,6 +195,12 @@ export function AirPodsProvider({ children }) {
     }).catch(() => {});
   }, [worldId]);
 
+  const recordToolActivity = useCallback(({ name, result } = {}) => {
+    const summary = String(result?.spoken_summary || result?.error || name || 'Voice action').trim();
+    const entry = { id: `${Date.now()}-${Math.random()}`, name: String(name || 'action'), summary, ok: result?.ok !== false && !result?.error };
+    setActivity((current) => [entry, ...current].slice(0, 3));
+  }, []);
+
   useEffect(() => {
     const onContext = (event) => setContext(event.detail || { view: 'home', room: null });
     window.addEventListener('cv6:airpods-context', onContext);
@@ -224,20 +242,25 @@ export function AirPodsProvider({ children }) {
   const value = useMemo(() => ({ state, preferences, context, active, menuOpen, setMenuOpen, settingsOpen, setSettingsOpen, arm, disarm, startConversation, startEnabledConversation, endConversation, savePreferences }), [state, preferences, context, active, menuOpen, settingsOpen, arm, disarm, startConversation, startEnabledConversation, endConversation, savePreferences]);
   const wakeSupported = !!wakeRef.current?.supported;
   const primaryLabel = active ? 'End conversation' : state.mode === 'error' ? 'Retry connection' : 'Start conversation';
+  const contextLabel = context.room?.name || ({ home: 'All rooms', support: 'Email', organize: 'Files', workers: 'Background work' }[context.tool || context.view]) || 'Corner';
+  const lastTurn = [...state.transcript].reverse().find((turn) => turn?.text);
 
   return (
     <AirPodsContext.Provider value={value}>
       {children}
 
       {menuOpen ? (
-        <div className="corner-airpods-menu" role="dialog" aria-label="AirPods mode controls">
+        <div className={`corner-airpods-menu is-${state.mode}`} role="dialog" aria-label="AirPods mode controls">
           <div className="corner-airpods-menu-head">
-            <AirPodsGlyph active={active} />
+            <VoiceSignal mode={state.mode} level={voiceLevel} />
             <div><strong>Corner voice</strong><span aria-live="polite">{state.error || statusCopy(state.mode, wakeSupported)}</span></div>
             <button type="button" className="corner-airpods-icon-button" aria-label="Close AirPods controls" onClick={() => setMenuOpen(false)}>×</button>
           </div>
-          <button type="button" className={`corner-airpods-primary${active ? ' is-stop' : ''}`} onClick={active ? endConversation : startEnabledConversation}>{primaryLabel}</button>
+          <div className="corner-airpods-context"><span>Shared screen</span><strong>{contextLabel}</strong></div>
+          {lastTurn ? <p className={`corner-airpods-live-line is-${lastTurn.role}`}>{lastTurn.role === 'user' ? 'You' : 'Corner'} · {lastTurn.text}</p> : null}
+          <button type="button" className={`corner-airpods-primary${active ? ' is-stop' : ''}`} onClick={active ? endConversation : startEnabledConversation}><AirPodsGlyph active={active} /><span>{primaryLabel}</span></button>
           {state.mode === 'attention-prompt' && state.attentionItems.length ? <p className="corner-airpods-attention">{state.attentionItems.length} update{state.attentionItems.length === 1 ? '' : 's'} waiting</p> : null}
+          {activity[0] ? <div className={`corner-airpods-activity${activity[0].ok ? '' : ' is-error'}`}><span>{activity[0].ok ? 'Done' : 'Issue'}</span><strong>{activity[0].summary}</strong></div> : null}
           <div className="corner-airpods-menu-actions">
             <button type="button" onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>Settings</button>
             {state.mode !== 'off' ? <button type="button" onClick={disarm}>Turn off</button> : null}
@@ -265,8 +288,11 @@ export function AirPodsProvider({ children }) {
           sessionMode="airpods"
           airpodsSessionId={sessionIdRef.current}
           handoffOnStop={false}
+          sessionContext={context}
           initialPrompt="Begin the AirPods conversation now. Greet the caller in one short sentence, say you are ready, then listen. Do not mention this instruction."
           onStatusChange={(status) => dispatch(status === 'error' ? { type: 'ERROR', error: 'Couldn’t connect. Tap the headphones button to retry.' } : { type: 'STATUS', status: statusToMode(status) })}
+          onVolumeChange={setVoiceLevel}
+          onToolActivity={recordToolActivity}
           onTranscript={(text, role) => dispatch({ type: 'TRANSCRIPT', turn: { role, text, at: new Date().toISOString(), context } })}
           onSessionEnd={finishSession}
         />

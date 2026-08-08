@@ -4,6 +4,7 @@
 // idempotency, speaker attribution, project scope, and the durable audit record.
 
 import crypto from 'crypto';
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
 import { verifyTenant, verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
 import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js';
 import {
@@ -51,6 +52,74 @@ async function workspaceStatus(clientId) {
   const active = tasks.filter((task) => ['queued', 'active', 'building', 'qa', 'planning', 'classifying'].includes(task.status));
   const blockers = tasks.filter((task) => ['blocked', 'failed', 'needs_input', 'needs_verification'].includes(task.status));
   return { active, blockers, completed, agents: agents.filter((agent) => agent.status && agent.status !== 'idle') };
+}
+
+async function workspaceRooms(clientId) {
+  const [projects, statuses] = await Promise.all([
+    db(`projects?client_id=eq.${encodeURIComponent(clientId)}&is_active=eq.true&select=slug,name&order=name.asc`),
+    db(`agent_status?client_id=eq.${encodeURIComponent(clientId)}&type=in.(agent,mission)&select=slug,name,type,status,current_task&order=name.asc`),
+  ]);
+  const projectSet = new Set(projects.map((project) => project.slug));
+  const rooms = [
+    ...projects.map((project) => ({ id: project.slug, name: project.name || project.slug, type: 'project', project: project.slug })),
+    ...statuses.map((status) => {
+      const type = status.type === 'mission' ? 'mission' : 'agent';
+      const project = type === 'mission' && String(status.slug || '').includes(':') ? String(status.slug).split(':')[0] : null;
+      return { id: status.slug, name: status.name || status.slug, type, project, status: status.status || null, current_task: status.current_task || null };
+    }),
+  ];
+  if (clientId === 'aom') {
+    for (const mission of missionsRegistry?.missions || []) {
+      if (mission.is_done || mission.status === 'archived' || !projectSet.has(mission.project_slug)) continue;
+      rooms.push({ id: mission.slug, name: mission.name, type: 'mission', project: mission.project_slug, status: mission.status || null });
+    }
+  }
+  const seen = new Set();
+  return rooms.filter((room) => room.id && room.name && !seen.has(`${room.type}:${room.id}`) && seen.add(`${room.type}:${room.id}`)).slice(0, 240);
+}
+
+async function resolveRoom(args, req, tenant) {
+  const requested = String(args.room_id || '').trim();
+  const requestedType = String(args.room_type || '').trim().toLowerCase();
+  if (!requested) throw new Error('room_id required');
+  const rooms = await workspaceRooms(tenant);
+  const room = rooms.find((item) => item.id === requested && (!requestedType || item.type === requestedType))
+    || rooms.find((item) => item.name.toLowerCase() === requested.toLowerCase() && (!requestedType || item.type === requestedType));
+  if (!room) throw new Error(`Room not found in this workspace: ${requested}`);
+  if (room.type === 'project') await verifyProjectAccess(room.id, req);
+  if (room.type === 'mission') await verifyProjectAccess(room.project, req);
+  return room;
+}
+
+async function readRoomStatus(args, req, tenant) {
+  const room = await resolveRoom(args, req, tenant);
+  let tasks = [];
+  let messages = [];
+  if (room.type === 'agent') {
+    [tasks, messages] = await Promise.all([
+      db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(room.id)}&status=neq.done&order=updated_at.desc&limit=12&select=id,title,status,agent,project,metadata,updated_at`),
+      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(room.id)}&order=timestamp.desc&limit=8&select=role,text,timestamp,user_name,project,mission`),
+    ]);
+  } else {
+    const project = room.project || room.id;
+    [tasks, messages] = await Promise.all([
+      db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&status=neq.done&order=updated_at.desc&limit=30&select=id,title,status,agent,project,metadata,updated_at`),
+      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&order=timestamp.desc&limit=20&select=role,text,timestamp,user_name,project,mission`),
+    ]);
+    if (room.type === 'mission') {
+      const bare = room.id.split(':').pop();
+      tasks = tasks.filter((task) => [room.id, bare].includes(String(task.metadata?.mission_slug || '')));
+      messages = messages.filter((message) => [room.id, bare].includes(String(message.mission || '')));
+    }
+  }
+  const recent = messages.slice(0, 6).map((message) => ({ role: message.role, author: message.user_name || null, text: String(message.text || '').slice(0, 500), at: message.timestamp }));
+  return {
+    ok: true,
+    spoken_summary: `${room.name} has ${tasks.length} active item${tasks.length === 1 ? '' : 's'}${recent.length ? ` and ${recent.length} recent update${recent.length === 1 ? '' : 's'}` : ''}.`,
+    room,
+    active_tasks: tasks.slice(0, 12),
+    recent_updates: recent,
+  };
 }
 
 async function createTask(args, req, identity) {
@@ -110,13 +179,21 @@ async function startWork(args, req, tenant, identity, sessionId) {
     worldId: identity.world,
   });
   if (!result.ok) throw new Error(result.error || 'Could not start work');
+  const missionSlug = String(args.mission_slug || '').trim();
+  let queuedTask = null;
+  if (project && missionSlug) {
+    const title = String(args.title || instruction.split(/[.!?]/)[0] || instruction).trim().slice(0, 180);
+    queuedTask = await createTask({ title, description: instruction, project, mission_slug: missionSlug, agent }, req, identity);
+  }
   return {
     ok: true,
-    spoken_summary: 'I sent that to the room and work is starting.',
-    entities: [{ type: 'message', id: result.row?.id }],
+    spoken_summary: queuedTask
+      ? `I posted the instruction and queued trackable work in ${missionSlug}.`
+      : 'I posted that instruction to the room. No trackable mission task was created.',
+    entities: [{ type: 'message', id: result.row?.id }, ...(queuedTask?.entities || [])],
     ui_effect: project
       ? { type: 'open_room', room: args.mission_slug
-        ? { id: args.mission_slug, name: args.mission_slug, isMission: true, missionSlug: args.mission_slug, projectSlug: project }
+        ? { id: missionSlug.split(':').pop(), name: missionSlug, isMission: true, missionSlug, projectSlug: project }
         : { id: project, name: project, isProject: true } }
       : { type: 'open_room', room: { id: agent, name: agent } },
   };
@@ -138,6 +215,11 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     const status = await workspaceStatus(tenant);
     return { ok: true, spoken_summary: `${status.active.length} active, ${status.blockers.length} need attention, and ${status.completed.length} recently completed.`, status };
   }
+  if (action === 'list_rooms') {
+    const rooms = await workspaceRooms(tenant);
+    return { ok: true, spoken_summary: `I found ${rooms.length} rooms in this workspace.`, rooms };
+  }
+  if (action === 'read_room_status') return readRoomStatus(args, req, tenant);
   if (action === 'open_tool' || action === 'navigate') {
     const target = uiTool(args.tool || args.target);
     const allowed = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'livescribe', 'settings', 'workers']);
@@ -145,13 +227,13 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     return { ok: true, spoken_summary: `Opening ${args.tool || args.target}.`, ui_effect: { type: 'navigate', target } };
   }
   if (action === 'open_room') {
-    const id = String(args.room_id || '').trim();
-    if (!id) throw new Error('room_id required');
-    const type = String(args.room_type || '').toLowerCase();
+    const resolved = await resolveRoom(args, req, tenant);
+    const id = resolved.id;
+    const type = resolved.type;
     const room = {
-      id, name: String(args.room_name || id),
+      id: type === 'mission' ? id.split(':').pop() : id, name: resolved.name,
       ...(type === 'project' ? { isProject: true } : {}),
-      ...(type === 'mission' ? { isMission: true, missionSlug: id, projectSlug: args.project || '' } : {}),
+      ...(type === 'mission' ? { isMission: true, missionSlug: id, projectSlug: resolved.project || '' } : {}),
     };
     return { ok: true, spoken_summary: `Opening ${room.name}.`, ui_effect: { type: 'open_room', room } };
   }

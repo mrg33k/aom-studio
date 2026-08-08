@@ -133,7 +133,7 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange, sessionMode = 'room', airpodsSessionId = null, handoffOnStop = true, onSessionEnd = null, initialPrompt = null }, ref) {
+const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, onToolActivity, autoStart = false, initialVoice = 'kore', onVoiceChange, sessionMode = 'room', airpodsSessionId = null, handoffOnStop = true, onSessionEnd = null, initialPrompt = null, sessionContext = null }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -178,6 +178,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   // the final transcript for /api/dashboard/voice-summary without racing React state.
   const transcriptRef = useRef([])
   const previewWsRef = useRef(null)
+  const endRequestedRef = useRef(false)
+  const endTimerRef = useRef(null)
 
   // Keep transcriptRef in sync with transcript state. On every transcript change
   // the effect commits the latest array to the ref. stopSession also merges any
@@ -455,6 +457,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     }
 
     if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
+    if (endTimerRef.current) { clearTimeout(endTimerRef.current); endTimerRef.current = null }
+    endRequestedRef.current = false
     sessionReadyRef.current = false
     if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null }
     if (sessionTimerRef.current) { clearInterval(sessionTimerRef.current); sessionTimerRef.current = null }
@@ -513,6 +517,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
           temperature: settings.temperature,
           mode: sessionMode,
           session_id: airpodsSessionId,
+          ui_context: sessionContext,
         }),
       })
       if (!sessionRes.ok) throw new Error(`Session API ${sessionRes.status}`)
@@ -695,6 +700,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                   onTranscript?.(text, 'user')
                   console.log('[VoiceChat] User said:', text)
                   setLastUserTranscript(text)
+                  updateStatus('thinking')
                   // Persistence handled by parent onTranscript callback
                 }
               }
@@ -732,6 +738,18 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
               }
               if (playQueueRef.current.length === 0 && !isPlayingRef.current) {
                 updateStatus('listening')
+              }
+              if (endRequestedRef.current) {
+                endRequestedRef.current = false
+                const closeWhenPlaybackFinishes = () => {
+                  if (isPlayingRef.current || playQueueRef.current.length > 0) {
+                    endTimerRef.current = setTimeout(closeWhenPlaybackFinishes, 180)
+                    return
+                  }
+                  endTimerRef.current = null
+                  stopSession()
+                }
+                endTimerRef.current = setTimeout(closeWhenPlaybackFinishes, 220)
               }
             }
 
@@ -851,6 +869,14 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 } finally {
                   updateStatus(prevStatus === 'creating' ? 'listening' : prevStatus)
                 }
+              } else if (sessionMode === 'airpods' && call.name === 'end_voice_session') {
+                result = { ok: true, spoken_summary: 'Voice session ending.', closing: true }
+                endRequestedRef.current = true
+                if (endTimerRef.current) clearTimeout(endTimerRef.current)
+                endTimerRef.current = setTimeout(() => {
+                  endTimerRef.current = null
+                  if (endRequestedRef.current) { endRequestedRef.current = false; stopSession() }
+                }, 6000)
               } else if (sessionMode === 'airpods') {
                 try {
                   const resp = await authFetch('/api/dashboard/airpods-action', {
@@ -875,6 +901,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 result = { error: `Unknown function: ${call.name}` }
               }
 
+              onToolActivity?.({ name: call.name, arguments: args, result })
               responses.push({ id: call.id, name: call.name, response: result })
             }
 
@@ -950,7 +977,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
       setErrorMsg(msg)
       updateStatus('error')
     }
-  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, sessionMode, airpodsSessionId, initialPrompt])
+  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, onToolActivity, addSystemMessage, sessionMode, airpodsSessionId, initialPrompt, sessionContext])
 
   const toggleSession = useCallback(() => {
     if (status === 'idle' || status === 'error') startSession()

@@ -1936,7 +1936,6 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
           </button>
           <div className="mhtitle"><div className="mttl">{e.subject || 'Conversation'}</div><div className="msub">{e.sender || 'Sender'} · {e.threadCount || 1} message{Number(e.threadCount || 1) === 1 ? '' : 's'}</div></div>
           <div className="mhactions">
-            <AirPodsHeaderButton className="ib" />
             <button type="button" className="ib" aria-label="Search" onClick={onSearch}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button>
           </div>
         </div>
@@ -3593,9 +3592,16 @@ export default function CornerCV6() {
         activeColumnId: activeColumnId || null,
         room: active?.type === 'chat' ? active.room : null,
         tool: active?.type && active.type !== 'chat' ? active.type : view,
+        rooms: dispatchDestinations.slice(0, 160).map((destination) => ({
+          id: destination.slug,
+          name: destination.label,
+          type: destination.kind,
+          project: destination.projectSlug || null,
+          mission: destination.missionSlug || null,
+        })),
       },
     }));
-  }, [view, activeColumnId, workspaceColumns]);
+  }, [view, activeColumnId, workspaceColumns, dispatchDestinations]);
 
   useEffect(() => {
     const applyEffect = (event) => {
@@ -3705,6 +3711,7 @@ export default function CornerCV6() {
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
       {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings', { section: 'account' })} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      {!isDesktop && <AirPodsHeaderButton className="corner-airpods-phone-entry" />}
       <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} worldId={worldId} />
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(job) => {

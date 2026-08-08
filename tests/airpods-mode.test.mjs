@@ -83,11 +83,12 @@ test('voice transport waits for setup before streaming and starts with a greetin
   assert.match(source, /turns: \[\{ role: 'user', parts: \[\{ text: initialPrompt \}\] \}\]/);
 });
 
-test('AirPods control is mounted in shared desktop, mobile home, and mobile chat headers', () => {
+test('AirPods control is persistent in desktop and the phone-wide CV6 shell', () => {
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   assert.match(read('../src/dashboard/cv6next/SharedNav.jsx'), /<AirPodsHeaderButton className="ib" \/>/);
-  assert.match(read('../src/dashboard/cv6next/CornerCV6.jsx'), /<AirPodsHeaderButton className="ib" \/>/);
-  assert.match(read('../src/dashboard/cv6next/ChatLifecycle.jsx'), /<AirPodsHeaderButton \/>/);
+  assert.match(read('../src/dashboard/cv6next/CornerCV6.jsx'), /!isDesktop && <AirPodsHeaderButton className="corner-airpods-phone-entry" \/>/);
+  assert.match(read('../src/dashboard/cv6next/airpods/airpods.css'), /@media \(max-width:899px\)[\s\S]*\.corner-airpods-phone-entry/);
+  assert.doesNotMatch(read('../src/dashboard/cv6next/ChatLifecycle.jsx'), /AirPodsHeaderButton/);
   assert.doesNotMatch(read('../src/dashboard/cv6next/airpods/AirPodsProvider.jsx'), /corner-airpods-float/);
 });
 
@@ -96,4 +97,35 @@ test('ephemeral Gemini credentials use the constrained Live method', () => {
   assert.match(source, /GenerativeService\.BidiGenerateContentConstrained/);
   assert.match(source, /\?access_token=\$\{encodeURIComponent\(ephemeralToken\)\}/);
   assert.doesNotMatch(source, /BidiGenerateContent\?key=\$\{GEMINI_API_KEY\}/);
+});
+
+test('voice cockpit visualizes speaking and records real tool outcomes', () => {
+  const provider = readFileSync(new URL('../src/dashboard/cv6next/airpods/AirPodsProvider.jsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/dashboard/cv6next/airpods/airpods.css', import.meta.url), 'utf8');
+  assert.match(provider, /function VoiceSignal/);
+  assert.match(provider, /onToolActivity=\{recordToolActivity\}/);
+  assert.match(provider, /Shared screen/);
+  assert.match(css, /corner-voice-signal\.is-speaking/);
+  assert.match(css, /corner-airpods-activity/);
+});
+
+test('voice receives visible room context and can end naturally', () => {
+  const transport = readFileSync(new URL('../src/dashboard/components/VoiceChat.jsx', import.meta.url), 'utf8');
+  const session = readFileSync(new URL('../api/dashboard/voice-session.js', import.meta.url), 'utf8');
+  assert.match(transport, /ui_context: sessionContext/);
+  assert.match(transport, /call\.name === 'end_voice_session'/);
+  assert.match(session, /name: 'list_rooms'/);
+  assert.match(session, /name: 'read_room_status'/);
+  assert.match(session, /name: 'end_voice_session'/);
+  assert.match(session, /Never claim the screen changed until a tool result says ok/);
+});
+
+test('room reads and navigation resolve against the authenticated workspace catalog', () => {
+  const action = readFileSync(new URL('../api/dashboard/airpods-action.js', import.meta.url), 'utf8');
+  assert.equal(authorityForAction('list_rooms'), 'auto');
+  assert.equal(authorityForAction('read_room_status'), 'auto');
+  assert.match(action, /async function workspaceRooms/);
+  assert.match(action, /async function resolveRoom/);
+  assert.match(action, /async function readRoomStatus/);
+  assert.match(action, /No trackable mission task was created/);
 });

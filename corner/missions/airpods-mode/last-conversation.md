@@ -85,3 +85,25 @@ same token. R4 opened to release that server-side method correction.
 Commit `635cdeb9` changed the authenticated voice-session response to the constrained
 Gemini Live method and passed API syntax plus 9/9 focused tests. Its clean `aom-studio`
 production deployment reached READY. Physical iPhone/AirPods retesting is now unblocked.
+
+## 2026-08-08 — R5 physical follow-up
+
+The user confirmed the repaired conversation worked well on iPad, but the voice entry
+was absent on iPhone. They requested a slimmer advanced interface, visible speaking
+feedback, better cross-room understanding, clear work execution, natural conversation
+ending, and real—not imagined—control of the Corner UI so voice and screen stay aligned.
+
+## 2026-08-08 — R5 implementation and responsive verification
+
+The iPhone defect was traced to surface ownership: mobile Home is rendered by the CV6
+template screen, while the prior control was only mounted in selected React headers.
+The entry now lives once in the phone-wide CV6 shell, while desktop keeps its shared-nav
+entry. The voice menu is slimmer and shows speaking/thinking movement, active screen,
+live transcript, and the last verified tool result.
+
+The session now receives a sanitized visible-room catalog and active screen. New
+tenant-authoritative tools list and read rooms, open the real UI, queue trackable work,
+and end naturally after a short goodbye. The prompt explicitly forbids unverified UI or
+completion claims. Twelve focused tests, syntax checks, the production build, and
+authenticated visual checks at iPhone and iPad dimensions pass. Production deployment
+is the remaining R5 step.

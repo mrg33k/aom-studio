@@ -1,7 +1,7 @@
 # Corner AirPods Mode — Context
 
 **Mission path:** `corner:airpods-mode`
-**Status:** DONE
+**Status:** IN PROGRESS
 **Updated:** 2026-08-08
 
 The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
@@ -44,3 +44,7 @@ close reason. Live probes verified ephemeral tokens require
 
 R4 is live from commit `635cdeb9`. The authenticated voice-session endpoint now pairs
 its ephemeral token with the constrained Gemini Live socket method.
+
+R5 reopened after successful iPad conversation testing exposed an iPhone-only entry
+failure and the gap between conversational voice and a genuinely shared-control Corner
+operator. The work targets both responsive visibility and grounded room/UI agency.

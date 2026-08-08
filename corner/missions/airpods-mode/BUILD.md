@@ -91,6 +91,44 @@ that are absent from the remote ledger.
 
 **Status:** complete
 
+### R5 — Phone entry, shared-control voice cockpit, and room intelligence (2026-08-08)
+
+**Evidence:** Physical follow-up testing found the control available on iPad but absent
+on iPhone. Conversation worked, but the speaking state had no useful visualization,
+controls felt oversized, room references were weakly grounded, work execution was
+unclear, UI-navigation claims were not trustworthy, and the ending was awkward.
+
+**Scope:**
+
+- Make the voice entry persistent and visible at phone widths across Home and Chat.
+- Ship a slimmer, more advanced voice cockpit with speaking/listening visualization.
+- Ground the agent in the actual room inventory and active room, give it truthful UI
+  navigation and scoped work actions, narrate cross-room state clearly, and recognize
+  natural requests to end the conversation.
+
+**Implementation:**
+
+- Moved the phone entry from individual React headers into the CV6 shell, which also
+  covers the template-rendered iPhone Home surface that caused the missing control.
+- Rebuilt the compact menu as a 296 px voice cockpit with animated speaking/thinking
+  signal, shared-screen context, live transcript, and explicit action receipts.
+- Supplied the authenticated visible-room catalog to the voice session and added
+  tenant-authoritative room listing, room reads, UI navigation, task-backed work, and
+  a natural `end_voice_session` handoff.
+- Tightened the system contract so the agent cannot claim a room read, screen change,
+  or completed action until the corresponding tool reports success.
+
+**Verification:**
+
+- Focused AirPods suite — 12/12 passed.
+- Production Vite build — passed.
+- API syntax and `git diff --check` — passed.
+- Authenticated local CV6 visual QA passed at 390×844 and 768×1024. Each viewport
+  exposed exactly one top-menu entry, had zero horizontal overflow, and rendered the
+  296×176 menu fully inside the viewport without covering the composer.
+
+**Status:** verified — production release in progress
+
 ### R4 — Constrained Gemini credential repair (2026-08-08)
 
 **Evidence:** The first physical session stored Google's WebSocket close message:
