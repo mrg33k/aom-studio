@@ -115,4 +115,12 @@ the caller or advanced into a usable conversation.
   colors, and did not overlap the composer (`menu.bottom=235`, `composer.top=758`).
 - `git diff --check` — passed.
 
-**Status:** verified — production deployment in progress
+**Production result:**
+
+- Release commit `43877d24` fast-forwarded `main`.
+- Verified project `aom-studio` deployment
+  `aom-studio-dwnyk4c9u-aheads-projects-d2a4c70f.vercel.app` reached READY.
+- Canonical `https://aheadofmarket.com/dashboard` returned HTTP 200 after redirect and
+  its served main asset contains the new greeting, retry, sample-rate, and top-menu UI.
+
+**Status:** complete

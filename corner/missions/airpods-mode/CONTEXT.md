@@ -1,7 +1,7 @@
 # Corner AirPods Mode — Context
 
 **Mission path:** `corner:airpods-mode`
-**Status:** IN PROGRESS
+**Status:** DONE
 **Updated:** 2026-08-08
 
 The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
@@ -33,3 +33,7 @@ R3 reopened after physical mobile-web testing. Production logs show the phone's
 `/api/dashboard/voice-session` request returned 200, localizing the silent failure to
 the browser-to-Gemini handshake. The repair moves controls into the top header and
 prevents microphone audio from being sent before `setupComplete`.
+
+R3 is live from commit `43877d24`. AirPods mode now enters from the top navigation on
+desktop, mobile Home, and mobile Chat. The compact menu no longer covers the composer;
+Gemini audio starts only after setup, and Corner receives an explicit greeting turn.

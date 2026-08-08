@@ -58,3 +58,17 @@ Production logs showed the authenticated voice-session request returned HTTP 200
 inspection then identified the client-side race: audio frames were sent as soon as the
 socket opened, before Gemini acknowledged setup, and the session sent no initial turn
 that would cause Corner to greet the caller.
+
+## 2026-08-08 — R3 production release
+
+R3 replaced the floating bottom panel with a single headphones button in the desktop
+bar and mobile Home/Chat headers. Its compact opaque menu passed a 390×844 visual check
+without overlapping the composer. Advanced options now open in a separate readable
+sheet.
+
+The transport now waits for Gemini `setupComplete` before streaming PCM, declares the
+16 kHz sample rate, sends an initial greeting turn, times out after 12 seconds with
+actionable copy, and permits retry from the error state. Focused tests passed 8/8 and
+the clean production build passed. Commit `43877d24` deployed READY to the verified
+`aom-studio` project; the canonical dashboard's served asset contains the R3 markers.
+The next step is another physical iPhone/AirPods conversation smoke test.
