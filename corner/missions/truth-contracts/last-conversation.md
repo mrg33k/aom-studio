@@ -387,3 +387,20 @@ Shipped locally: desktop Home's Rooms directory is a fixed 340px first column an
 Verification: `CV6_AUDIT_BASE=http://127.0.0.1:5174 npx playwright test tests/cv6-multi-window.spec.mjs tests/cv6-practical-audit.spec.mjs --reporter=line --workers=1` passed 4/4. `npm run test:tenant-context`, `npm run build`, `node --check tests/cv6-multi-window.spec.mjs`, and `git diff --check` passed. The production build still reports pre-existing duplicate object-key notices in `src/pages/OutreachTracker.jsx` and the existing chunk-size warning.
 
 Production deployment: committed as `c54f8394` (`feat(corner:truth-contracts): R6b deploy simple room columns`) and pushed to `main`. Vercel deployment `aom-studio-jiuqp6liz-aheads-projects-d2a4c70f.vercel.app` reached Ready and now serves `aheadofmarket.com` / `www.aheadofmarket.com`. The aliased production bundle contains the R6b `New project` action and labeled `Close <room>` column control. No schema/data mutation, secret rotation, external message, or stored login/world/member/data mutation occurred. Pre-existing unrelated working-tree files were left untouched; the already-dirty generated missions registry remains modified after the required build.
+
+## 2026-08-08 - Room and chat reliability steward scope
+
+The user identified non-responsive rooms and erratic chat behavior as the highest-value
+autonomous-repair target. R7 opened to review the prior 90 days of incident evidence,
+collapse repeated symptoms into root-cause families, and define background checks plus
+safe automatic fixes. No production mutation or repair is authorized during the audit.
+
+The audit found five recurring families: send/write receipt failure, room identity
+drift, silent dispatch/response lifecycle, stale realtime/render state, and room-surface
+runtime crashes. The core recommendation is a durable per-message turn receipt moving
+through accepted, claimed, heartbeat, replied, visible, and settled. Initial automatic
+authority is limited to idempotent retry, exact-room refresh, runner wake-once,
+exact-task requeue, exact stale-status reset, and pre-registered feature kill switches.
+The existing tenant-wide unstuck endpoint is explicitly excluded because it marks all
+active tasks done. Detailed findings are recorded in the dated R7 research brief; no
+production mutation, deployment, or behavior change was made.

@@ -9,3 +9,9 @@ Recent recurring failures cluster around tenant alias drift, file identity drift
 ## Required tenant matrix
 
 AOM, Arsenal, Karen, QA, and empty/new tenant. Q remains a separate historical audit subject until the user confirms its status.
+
+## 2026-08-08 — Room and chat reliability
+
+- [90-day room/chat reliability audit](research/2026-08-08-room-chat-reliability-90d.md)
+  collapses recurring incidents into five root-cause families and defines a safe,
+  per-turn background repair boundary.

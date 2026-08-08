@@ -511,3 +511,32 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   - The aliased production bundle was checked for the R6b `New project` control and labeled `Close <room>` column action.
 
 **Status:** shipped, verified, and deployed to production.
+
+### R7 - Ninety-day room and chat reliability audit
+
+- 2026-08-08 audit started:
+  - User goal: identify and rank the recurring reasons rooms do not respond, appear
+    broken, or make chat behave inconsistently, then define which repairs a background
+    Corner steward may safely perform without asking.
+  - Evidence window: repository history, mission incident records, regression tests,
+    production-safe diagnostics, and available operational logs from the preceding 90
+    days. Findings must distinguish frequency from severity and avoid treating repeated
+    fix commits for one incident as separate failures.
+  - Output: a concise failure taxonomy, detection criteria, allowed automatic repairs,
+    approval boundaries, and the smallest useful implementation sequence.
+
+**Result:**
+
+- Audited 2026-05-10 through 2026-08-08 repository history, mission incident notes,
+  current message/room lifecycle code, regression coverage, recovery endpoints, and
+  available production-safe runtime logs.
+- Collapsed 417 broad chat-adjacent history matches into five recurring root-cause
+  families; the matches are evidence candidates, not incident counts.
+- Defined the turn-receipt state machine, initial safe automatic repairs, approval
+  boundaries, and six-step implementation sequence in
+  `research/2026-08-08-room-chat-reliability-90d.md`.
+- Identified `/api/dashboard/unstuck` as unsuitable for automation because it marks all
+  active tenant tasks done and resets all working/stuck agents rather than repairing one
+  correlated turn.
+
+**Status:** audit complete; implementation not started.
