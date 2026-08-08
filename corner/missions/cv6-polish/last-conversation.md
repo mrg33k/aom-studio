@@ -203,3 +203,29 @@ worktree committed R17 together with a concurrent live-progress correction as
 `https://lab.aheadofmarket.com`; fetched production assets contain the 96px logo,
 roomier Email rail, status badge, and shared message prose paths. Production remains
 sign-in gated, so Patrik's signed-in iPhone is the final hardware visual check.
+
+## 2026-08-08 - R18 composer model visibility and command consolidation
+
+Patrik asked to see and change the model directly from the chat composer, move
+Work/Plan to the top of Commands, place attachment inside the message field, fix the
+dark Commands panel in light mode, and keep voice beside Send. The composer now
+resolves the effective saved model with the bridge's exact precedence (room, `_all`,
+automatic), displays it on the Commands trigger, and switches the room preference
+through the existing authenticated model endpoint. A failed preference read says
+`Model unavailable` rather than guessing. Auto is described honestly as the
+Claude-first route with limit fallback; transient Kimi/DeepSeek rescue turns are not
+presented as permanent selectable room models.
+
+Work/Plan is the first segmented control inside Commands, attachment is a 44px mobile
+target inside the left side of the input, and the lower row now keeps only the compact
+Commands/model button, checklists, voice, and Send. The popover uses semantic composer
+tokens and was inspected as a true white/dark-text surface in light mode as well as in
+dark mode at 390px and desktop widths. Focused node checks passed 4/4, the mocked
+authenticated model-switch flow passed 1/1, and the Vite production build passed.
+
+Commit ancestry confirmed that the composer (`c471fcf2`) and resolver (`905fcd15`)
+both landed before the documented `a3f3a281` production release, even though they do
+not appear in that later commit's own file stat. Core R18 is live. The QA pass then
+hardened failed-load honesty, removed the misleading `Auto · Claude` compact label,
+and widened the menu to prevent model-row wrapping; that small follow-up still needs
+its own production release.

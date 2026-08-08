@@ -8,8 +8,9 @@
 // var(--accent) actions, 12px radii, var(--font-sans).
 //
 // The command menu is HONEST: every entry does its thing under CV6 or it is not
-// in the menu. Wired today: Image generation (Gemini/Ideogram/OpenAI), Record
-// conversation (dictation -> sends the transcript), Files in this room (opens
+// in the menu. Wired today: Work/Plan, the effective room model, Image generation
+// (Gemini/Ideogram/OpenAI), Record conversation (dictation -> sends the transcript),
+// Files in this room (opens
 // the CV6 files surface via onOpenFiles — the right-drawer Files view on desktop,
 // the files sheet on mobile), Integrations (the OAuth modal). The CV4 rows whose
 // panels have no CV6 surface yet (Recipes, About, Settings, Embed, Collaborators)
@@ -52,9 +53,9 @@ const I = {
 };
 
 // Composer action buttons split into two families (Patrik 2026-08-06): voice and
-// Send stay the 42px round primaries; every other control (commands, files,
-// Work/Plan, checklists) is a smaller rounded RECTANGLE, so the two things you
-// actually reach for keep the visual weight.
+// Send stay the 42px round primaries; Commands/model and checklists are compact
+// rounded rectangles. Attachment now lives inside the field; Work/Plan lives in
+// Commands, so the two things you actually reach for keep the visual weight.
 const UTILITY_BTN = {
   width: 38, height: 34, borderRadius: 10, flex: 'none',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -66,7 +67,9 @@ function modelOption(id) {
 }
 
 function shortModelLabel(id) {
-  if (id === 'default') return 'Auto · Claude';
+  // Do not claim Claude is the active provider when this route can legitimately
+  // be answering through a limit fallback. The menu spells out the whole route.
+  if (id === 'default') return 'Auto';
   return modelOption(id).label.replace(/^Claude\s+/, '');
 }
 
@@ -118,7 +121,7 @@ function CommandsMenu({
         style={{ ...UTILITY_BTN, width: 'auto', minWidth: 38, padding: '0 10px', gap: 7, cursor: 'pointer', background: open || selectedImageTool ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${open ? 'var(--accent)' : 'var(--hair)'}`, color: open || selectedImageTool || isRecording ? 'var(--accent)' : 'var(--muted)', transition: 'background .15s, color .15s, border-color .15s' }}>
         {isRecording ? I.stop : I.sparkles}
         <span data-testid="cv6-current-model" style={{ color: open ? 'var(--accent)' : 'var(--fg)', font: '700 11.5px var(--font-sans)', whiteSpace: 'nowrap' }}>
-          {model.loading ? 'Model…' : model.shortLabel}
+          {model.loading ? 'Model…' : model.unavailable ? 'Model unavailable' : model.shortLabel}
         </span>
       </button>
       {open ? (
@@ -129,7 +132,7 @@ function CommandsMenu({
             visually competing with the panel). */}
         <div data-testid="cv6-commands-menu-scrim" onClick={() => setOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 44, background: 'rgba(0,0,0,.38)' }} />
-        <div data-testid="cv6-commands-menu-popover" style={{ position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, minWidth: 272, maxWidth: 'calc(100vw - 32px)', background: 'var(--composer-solid, var(--surface))', color: 'var(--fg)', border: '1px solid var(--hair)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.38)', padding: 6, zIndex: 45, fontFamily: 'var(--font-sans)' }}>
+        <div data-testid="cv6-commands-menu-popover" style={{ position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, minWidth: 300, maxWidth: 'calc(100vw - 32px)', background: 'var(--composer-solid, var(--surface))', color: 'var(--fg)', border: '1px solid var(--hair)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.38)', padding: 6, zIndex: 45, fontFamily: 'var(--font-sans)' }}>
           {view === 'root' ? (
             <>
               <div className="eyebrow" style={{ padding: '7px 10px 6px' }}>Commands</div>
@@ -145,8 +148,8 @@ function CommandsMenu({
                   );
                 })}
               </div>
-              <MenuRow icon={I.brain} label={`Model: ${model.label}`}
-                detail={`${model.sourceLabel} · fallback on limits`} hasSubmenu
+              <MenuRow icon={I.brain} label={model.unavailable ? 'Model unavailable' : `Model: ${model.label}`}
+                detail={model.unavailable ? 'Could not load this room’s saved model' : `${model.sourceLabel} · fallback on limits`} hasSubmenu
                 onClick={() => setView('model')} testid="cv6-commands-model" />
               <MenuRow icon={I.image} label="Image generation" detail="Gemini · Ideogram · OpenAI" hasSubmenu
                 onClick={() => setView('image-gen')} testid="cv6-commands-image-gen" />
@@ -192,7 +195,7 @@ function CommandsMenu({
                     testid={`cv6-commands-model-${option.id}`} />
                 );
               })}
-              {model.error ? <div role="status" style={{ padding: '7px 10px', color: 'var(--error, #e5484d)', fontSize: 11.5 }}>Could not save that model. Try again.</div> : null}
+              {model.saveError ? <div role="status" style={{ padding: '7px 10px', color: 'var(--error, #e5484d)', fontSize: 11.5 }}>Could not save that model. Try again.</div> : null}
             </>
           )}
         </div>
@@ -223,7 +226,8 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
   const [modelPrefs, setModelPrefs] = useState({});
   const [modelLoading, setModelLoading] = useState(true);
   const [modelSaving, setModelSaving] = useState(false);
-  const [modelError, setModelError] = useState(false);
+  const [modelLoadFailed, setModelLoadFailed] = useState(false);
+  const [modelSaveFailed, setModelSaveFailed] = useState(false);
 
   const loadModelPrefs = useCallback(() => {
     if (!worldId || !preferenceKey) {
@@ -232,8 +236,12 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
       return Promise.resolve({});
     }
     setModelLoading(true);
+    setModelLoadFailed(false);
     return authFetch(`/api/dashboard/agent-model?client=${encodeURIComponent(worldId)}`)
-      .then((response) => response.ok ? response.json() : { models: {} })
+      .then((response) => {
+        if (!response.ok) throw new Error('Preference load failed');
+        return response.json();
+      })
       .then(({ models }) => {
         const next = models && typeof models === 'object' ? models : {};
         setModelPrefs(next);
@@ -241,7 +249,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
       })
       .catch(() => {
         setModelPrefs({});
-        setModelError(true);
+        setModelLoadFailed(true);
         return {};
       })
       .finally(() => setModelLoading(false));
@@ -257,7 +265,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
     if (!worldId || !preferenceKey || modelSaving) return false;
     const previous = modelPrefs;
     setModelSaving(true);
-    setModelError(false);
+    setModelSaveFailed(false);
     setModelPrefs((current) => ({ ...current, [preferenceKey]: nextModel }));
     try {
       const response = await authFetch('/api/dashboard/agent-model', {
@@ -270,7 +278,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
       return true;
     } catch {
       setModelPrefs(previous);
-      setModelError(true);
+      setModelSaveFailed(true);
       return false;
     } finally {
       setModelSaving(false);
@@ -330,7 +338,8 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
     roomSelection: String(modelPrefs?.[preferenceKey] || 'default'),
     loading: modelLoading,
     saving: modelSaving,
-    error: modelError,
+    unavailable: modelLoadFailed,
+    saveError: modelSaveFailed,
     select: selectRoomModel,
   };
 

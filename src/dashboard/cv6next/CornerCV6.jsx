@@ -2829,6 +2829,7 @@ function DemoHomeQuickThread() {
 
 function DemoMobileChatLifecycle() {
   const [cleared, setCleared] = useState(false);
+  const theme = globalMotionTheme();
   const nowMs = Date.now();
   const at = (minutesAgo) => new Date(nowMs - minutesAgo * 60_000).toISOString();
   // Real same-origin public assets (same set DemoFilePreviews uses) so the file
@@ -2971,7 +2972,7 @@ function DemoMobileChatLifecycle() {
     { id: 'mobile-live-step-2', parent_message_id: 'mobile-live-user', step_index: 1, text: 'Keeping mobile gallery compatibility', timestamp: at(0) },
   ];
   return (
-    <div data-cv6 data-theme="dark" style={{ width: '100vw', height: '100dvh', background: 'var(--ground, #05080b)' }}>
+    <div data-cv6 data-theme={theme} data-app-theme={theme} style={{ width: '100vw', height: '100dvh', background: 'var(--ground, #05080b)' }}>
       <ChatLifecycle
         room={room}
         fullRoom={room}

@@ -643,4 +643,16 @@ pass as part of the combined CV6 release.
 Release completed in commit `a3f3a281`, included in ready production deployment
 `dpl_4ogGJrqbxXBMAHgcd7kcrqUdpaUx` at `https://lab.aheadofmarket.com`.
 
-**Status:** shipped and deployment verified.
+Post-release QA (2026-08-08) traced the complete ancestry: `Cv6InputBar` landed in
+`c471fcf2`, the preference resolver landed in `905fcd15`, and both are ancestors of
+the deployed `a3f3a281` release. The interaction above is therefore present in that
+production bundle. The same QA pass added three accuracy/polish hardenings for the
+next release: a failed preference read says `Model unavailable` instead of guessing
+Auto, the automatic route's compact label no longer claims Claude while a fallback
+may be answering, and the menu is 300px wide so its model row does not wrap. Focused
+node contracts pass 4/4, the authenticated model-switch Playwright flow passes 1/1,
+the Vite production build passes, and the real 390px/desktop fixture was inspected
+in dark and light. The light popover computes to `rgb(255,255,255)` with dark text;
+the embedded attachment target is 44x44 on mobile.
+
+**Status:** core shipped and deployment verified; QA hardening release pending.
