@@ -13,6 +13,7 @@ import agentProfiles from '../../../data/agent-profiles.js';
 
 // Every agent we run -> its role title. Keep this complete so no persona name is ever shown.
 const TITLE_OVERRIDES = {
+  director: 'Creative',
   gary: 'Operations',
   rex: 'Assistant',
   elon: 'Systems',
@@ -36,6 +37,11 @@ export const AGENT_TITLES = {
 // Full dashboard roster, in a practical working order. Live agent rows not in this list are
 // appended by curateTitledAgents(), so tenant-created agents are not hidden either.
 export const DASHBOARD_AGENTS = [
+  // Creative Director goes FIRST on anything that will be seen (ratified
+  // 2026-08-06), so it leads the roster. order 0 keeps the diff to one line.
+  // It was scaffolded on disk with a full role definition but never registered,
+  // so it could not render at all until 2026-08-07.
+  { slug: 'director', order: 0 },
   { slug: 'bobby', order: 1 },
   { slug: 'cleo', order: 2 },
   { slug: 'steffen', order: 3 },

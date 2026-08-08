@@ -41,7 +41,11 @@ export default async function handler(req, res) {
     let agents = []
     if (world.slug) {
       const agentsResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/agent_status?client_id=eq.${encodeURIComponent(world.slug)}&select=agent_slug,agent_name,status,current_task,color&order=agent_name.asc`,
+        // Columns are slug/name — agent_slug/agent_name have never existed, so this
+        // query returned HTTP 400 ("column agent_status.agent_slug does not exist")
+        // on every call and `agents` was silently always []. Also scoped to real
+        // agent rows: agent_status holds project and mission rows in the same table.
+        `${SUPABASE_URL}/rest/v1/agent_status?client_id=eq.${encodeURIComponent(world.slug)}&type=eq.agent&hidden=eq.false&select=slug,name,role,status,current_task,color&order=name.asc`,
         { headers: worldDbHeaders() },
       )
       if (agentsResponse.ok) agents = await agentsResponse.json()
