@@ -420,3 +420,11 @@ perform only compare-and-set claimed repairs. Cross-room replies and unknown/fai
 work stop safely, while the room shows a compact recovery receipt and failed composers
 keep their drafts. Twenty-one focused tests and the production build pass. Production
 migration and deployment verification are the remaining steps.
+
+Production is complete. Migration `20260808223000_room_turn_receipts` was applied and
+recorded on the linked production database; RLS and service-only access were verified.
+The R7 audit plus R8 steward shipped through the real `aom-studio` project, and the
+canonical dashboard serves the room-health client, recovery receipt, and preserved-send
+copy. Both new endpoints return `401` without their required credentials, and Vercel
+registered the five-minute cron. No broad unstuck action, task completion, message-row
+move, unknown-work retry, or unrelated shared-workspace change was released.

@@ -574,3 +574,16 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   checks, `git diff --check`, and the production Vite build.
 
 **Status:** implemented and locally verified; production schema/deploy verification pending.
+
+**Production result:**
+
+- Applied and recorded migration `20260808223000_room_turn_receipts` against the linked
+  production database. Verified 23 columns, RLS enabled, no `anon` or `authenticated`
+  table access, and full service-role access.
+- Pushed the audited R7 + R8 implementation to `main`; the `aom-studio` production
+  deployment reached Ready and the canonical `https://aheadofmarket.com/dashboard`
+  served the room-health client, recovery receipt copy, and failed-draft preservation.
+- Verified the live room-health and cron endpoints both return `401` without their
+  required user JWT / cron bearer secret. Vercel registered the five-minute steward.
+
+**Status:** shipped, verified, and deployed to production.
