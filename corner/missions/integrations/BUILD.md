@@ -103,4 +103,11 @@ Verification so far:
 - Responsive in-app QA confirms the runner dialog is centered and fully reachable at 390×844 and desktop width after the portal fix.
 - The bridge handoff regression test and Python compile check pass.
 
-**Status:** implementation and production database shipped; dashboard and bridge release verification in progress.
+Release verification:
+
+- Dashboard commit `7d15a83c` was pushed to `main`; production deployment `dpl_5noRFqS8fvzQDsBwwuqbpNXHjez9` reached Ready on the verified `aom-studio` project.
+- The production staleness guard resolves `7d15a83c` as current. The canonical dashboard serves the new bundle and the canonical runner download is valid JavaScript containing the local ChatGPT device-login flow.
+- Migration `20260808213000` is present in remote history. Valid-shaped nonexistent pairing and device credentials reach the live database-backed APIs and fail safely with `400`/`401`.
+- Bridge commit `6b56db4ad` was pushed to `master`; `com.aom-ea.bridge-daemon` restarted from PID 27432 to 1763, passed startup/backfill, and resumed inbox polling with exit code 0.
+
+**Status:** shipped and verified on canonical production; an authenticated paired-computer turn is the next user-level acceptance check.
