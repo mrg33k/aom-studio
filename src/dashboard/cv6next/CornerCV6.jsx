@@ -31,6 +31,7 @@ import Settings from './Settings.jsx';
 import LiveScribe from './LiveScribe.jsx';
 import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
+import { AirPodsHeaderButton } from './airpods/AirPodsProvider.jsx';
 import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
 import { useHome, useProjectMissions, shapeHome, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { savedRoomExists, missionTreesFromResponse } from './data/lastRoomValidation.js';
@@ -1934,7 +1935,10 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
           <div className="mhtitle"><div className="mttl">{e.subject || 'Conversation'}</div><div className="msub">{e.sender || 'Sender'} · {e.threadCount || 1} message{Number(e.threadCount || 1) === 1 ? '' : 's'}</div></div>
-          <div className="mhactions"><button type="button" className="ib" aria-label="Search" onClick={onSearch}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button></div>
+          <div className="mhactions">
+            <AirPodsHeaderButton className="ib" />
+            <button type="button" className="ib" aria-label="Search" onClick={onSearch}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button>
+          </div>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px' }}>
           {(summary.length || threadData.thread.summaryNote) ? (

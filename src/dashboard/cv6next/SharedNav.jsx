@@ -7,6 +7,7 @@
 // tool list, it's wrong -- point it back here.
 import React, { useEffect } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { AirPodsHeaderButton } from './airpods/AirPodsProvider.jsx';
 
 // --- the ONE ordered tool list both forms render -------------------------------
 // `route` is the view-machine target onPick receives. `wired` is whether that
@@ -180,6 +181,7 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn,
         ))}
       </div>
       <div className="topbar-actions">
+        <AirPodsHeaderButton className="ib" />
         <ThemeCycle theme={theme} onTheme={onTheme} compact />
         {/* Background work sits beside Email — same window mechanic, same entry point
             (corner:one-corner M19). On Home there is no rooms rail, so this icon is

@@ -1,7 +1,7 @@
 # Corner AirPods Mode — Context
 
 **Mission path:** `corner:airpods-mode`
-**Status:** DONE
+**Status:** IN PROGRESS
 **Updated:** 2026-08-08
 
 The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
@@ -28,3 +28,8 @@ release, the Supabase schema is present, and unauthenticated probes confirm the 
 routes fail closed. Mobile-web activation is available after sign-in through the visual
 AirPods-mode control. Wake phrase and sustained lock-screen operation remain native-iOS
 capabilities requiring signed-device/TestFlight validation.
+
+R3 reopened after physical mobile-web testing. Production logs show the phone's
+`/api/dashboard/voice-session` request returned 200, localizing the silent failure to
+the browser-to-Gemini handshake. The repair moves controls into the top header and
+prevents microphone audio from being sent before `setupComplete`.

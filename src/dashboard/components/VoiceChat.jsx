@@ -133,7 +133,7 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange, sessionMode = 'room', airpodsSessionId = null, handoffOnStop = true, onSessionEnd = null }, ref) {
+const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange, sessionMode = 'room', airpodsSessionId = null, handoffOnStop = true, onSessionEnd = null, initialPrompt = null }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -167,6 +167,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   const pingIntervalRef = useRef(null)
   const sessionTimerRef = useRef(null)
   const statusRef = useRef('idle')
+  const sessionReadyRef = useRef(false)
   const connectTimeoutRef = useRef(null)
   const analyserRef = useRef(null)
   const rafRef = useRef(null)
@@ -454,6 +455,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     }
 
     if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
+    sessionReadyRef.current = false
     if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null }
     if (sessionTimerRef.current) { clearInterval(sessionTimerRef.current); sessionTimerRef.current = null }
     if (sourceNodeRef.current) { try { sourceNodeRef.current.disconnect() } catch (_) {} sourceNodeRef.current = null }
@@ -480,13 +482,14 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   }, [updateStatus, onTranscript, agentSlug, clientId, sessionSecs, projectSlug, missionSlug, handoffOnStop, onSessionEnd, airpodsSessionId])
 
   const startSession = useCallback(async () => {
-    if (status !== 'idle') return
+    if (status !== 'idle' && status !== 'error') return
     setErrorMsg('')
     setTranscript([])
     transcriptRef.current = []
     setLastUserTranscript('')
     inputAccRef.current = ''
     outputAccRef.current = ''
+    sessionReadyRef.current = false
     sessionIdRef.current = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     summaryPostedRef.current = false
     updateStatus('connecting')
@@ -575,12 +578,12 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         const workletNode = new AudioWorkletNode(audioCtx, 'pcm-capture')
         workletNodeRef.current = workletNode
         workletNode.port.onmessage = (e) => {
-          if (e.data?.type === 'pcm' && wsRef.current?.readyState === WebSocket.OPEN && statusRef.current !== 'speaking' && !isMutedRef.current) {
+          if (e.data?.type === 'pcm' && sessionReadyRef.current && wsRef.current?.readyState === WebSocket.OPEN && statusRef.current !== 'speaking' && !isMutedRef.current) {
             wsRef.current.send(JSON.stringify({
               realtimeInput: {
                 audio: {
                   data: toBase64(e.data.chunk),
-                  mimeType: 'audio/pcm',
+                  mimeType: `audio/pcm;rate=${TARGET_SAMPLE_RATE}`,
                 },
               },
             }))
@@ -595,7 +598,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         const scriptNode = audioCtx.createScriptProcessor(bufferSize, 1, 1)
         workletNodeRef.current = scriptNode
         scriptNode.onaudioprocess = (e) => {
-          if (wsRef.current?.readyState !== WebSocket.OPEN || statusRef.current === 'speaking' || isMutedRef.current) return
+          if (!sessionReadyRef.current || wsRef.current?.readyState !== WebSocket.OPEN || statusRef.current === 'speaking' || isMutedRef.current) return
           const float32 = e.inputBuffer.getChannelData(0)
           const int16 = new Int16Array(float32.length)
           for (let i = 0; i < float32.length; i++) {
@@ -606,7 +609,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
             realtimeInput: {
               audio: {
                 data: toBase64(int16.buffer),
-                mimeType: 'audio/pcm',
+                mimeType: `audio/pcm;rate=${TARGET_SAMPLE_RATE}`,
               },
             },
           }))
@@ -622,14 +625,14 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
       wsRef.current = ws
 
       // 10s timeout -- if setupComplete never arrives, kill it
-      connectTimeoutRef.current = setTimeout(() => {
+      connectTimeoutRef.current = setTimeout(async () => {
         if (statusRef.current === 'connecting') {
           addSystemMessage('Connection timed out. Gemini did not respond.')
-          setErrorMsg('Connection timed out')
-          stopSession()
+          await stopSession()
+          setErrorMsg('Couldn’t connect. Tap the AirPods button to retry.')
           updateStatus('error')
         }
-      }, 10000)
+      }, 12000)
 
       ws.onopen = () => {
         // Send setup message (model config, system instruction, voice)
@@ -647,10 +650,19 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
           const msg = JSON.parse(raw)
 
           // Setup complete
-          if (msg.setupComplete) {
+          if (msg.setupComplete !== undefined) {
             if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
+            sessionReadyRef.current = true
             addSystemMessage('Connected. Listening.')
             updateStatus('listening')
+            if (initialPrompt) {
+              ws.send(JSON.stringify({
+                clientContent: {
+                  turns: [{ role: 'user', parts: [{ text: initialPrompt }] }],
+                  turnComplete: true,
+                },
+              }))
+            }
             return
           }
 
@@ -892,11 +904,11 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         } catch (_) {}
       }
 
-      ws.onerror = () => {
+      ws.onerror = async () => {
         addSystemMessage('Voice connection failed. Check network and try again.')
-        setErrorMsg('Voice connection failed')
+        await stopSession()
+        setErrorMsg('Voice connection failed. Tap the AirPods button to retry.')
         updateStatus('error')
-        stopSession()
       }
 
       ws.onclose = (event) => {
@@ -934,11 +946,11 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         ? 'No microphone found. Plug in a mic and try again.'
         : `Failed to start voice: ${err?.message || err}`
       addSystemMessage(msg)
+      await stopSession()
       setErrorMsg(msg)
       updateStatus('error')
-      stopSession()
     }
-  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, sessionMode, airpodsSessionId])
+  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, sessionMode, airpodsSessionId, initialPrompt])
 
   const toggleSession = useCallback(() => {
     if (status === 'idle' || status === 'error') startSession()

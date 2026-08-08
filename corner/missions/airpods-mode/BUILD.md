@@ -90,3 +90,29 @@ that are absent from the remote ledger.
   (1 low, 15 moderate, 11 high, 2 critical); no automatic breaking audit fix was run.
 
 **Status:** complete
+
+### R3 — Mobile legibility and voice handshake recovery (2026-08-08)
+
+**Evidence:** Physical iPhone/AirPods testing showed the floating panel overlapping the
+CV6 composer with low-contrast inherited tokens and oversized settings controls. The
+microphone activated, but the session stayed on “Connecting…” and Corner never greeted
+the caller or advanced into a usable conversation.
+
+**Scope:**
+
+- Replace the mobile panel with an opaque, compact, CV6-safe surface that never covers
+  the message composer; move advanced settings into a readable sheet.
+- Put one persistent headphones control in the desktop bar and the mobile Home/Chat
+  headers.
+- Gate microphone frames on Gemini's setup acknowledgement, send a short greeting turn,
+  include the PCM sample rate, time out stalled connections, and support retry.
+
+**Verification:**
+
+- Focused AirPods tests — 8/8 passed, including handshake ordering and header presence.
+- Production Vite build — passed from the isolated R3 release worktree.
+- 390×844 visual check — menu measured 320×169 at the top edge, used opaque cool-ink
+  colors, and did not overlap the composer (`menu.bottom=235`, `composer.top=758`).
+- `git diff --check` — passed.
+
+**Status:** verified — production deployment in progress

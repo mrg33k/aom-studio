@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   actionAuthority,
@@ -72,4 +73,20 @@ test('structured handoff retains decisions, constraints, actions, and questions'
   assert.equal(handoff.constraints.length, 1);
   assert.equal(handoff.requested_actions.length, 2);
   assert.deepEqual(handoff.unresolved_questions, ['Can you create the task?']);
+});
+
+test('voice transport waits for setup before streaming and starts with a greeting turn', () => {
+  const source = readFileSync(new URL('../src/dashboard/components/VoiceChat.jsx', import.meta.url), 'utf8');
+  assert.match(source, /sessionReadyRef\.current && wsRef\.current\?\.readyState/);
+  assert.match(source, /if \(!sessionReadyRef\.current \|\| wsRef\.current\?\.readyState/);
+  assert.match(source, /audio\/pcm;rate=\$\{TARGET_SAMPLE_RATE\}/);
+  assert.match(source, /turns: \[\{ role: 'user', parts: \[\{ text: initialPrompt \}\] \}\]/);
+});
+
+test('AirPods control is mounted in shared desktop, mobile home, and mobile chat headers', () => {
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+  assert.match(read('../src/dashboard/cv6next/SharedNav.jsx'), /<AirPodsHeaderButton className="ib" \/>/);
+  assert.match(read('../src/dashboard/cv6next/CornerCV6.jsx'), /<AirPodsHeaderButton className="ib" \/>/);
+  assert.match(read('../src/dashboard/cv6next/ChatLifecycle.jsx'), /<AirPodsHeaderButton \/>/);
+  assert.doesNotMatch(read('../src/dashboard/cv6next/airpods/AirPodsProvider.jsx'), /corner-airpods-float/);
 });

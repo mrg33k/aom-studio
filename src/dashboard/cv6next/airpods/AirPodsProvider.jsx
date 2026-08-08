@@ -11,13 +11,11 @@ import {
   rankAttentionItems,
 } from './airpodsTypes.js';
 import { createWakeWordAdapter, speakLocal } from './wakeWordAdapter.js';
+import './airpods.css';
 
 const AirPodsContext = createContext(null);
 const PREF_KEY = 'airpods_mode';
-
-const initialState = {
-  mode: 'off', transcript: [], attentionItems: [], pendingConfirmation: null, error: null,
-};
+const initialState = { mode: 'off', transcript: [], attentionItems: [], pendingConfirmation: null, error: null };
 
 function statusToMode(status) {
   if (status === 'idle') return 'armed';
@@ -28,28 +26,55 @@ function statusToMode(status) {
 }
 
 function statusCopy(mode, wakeSupported) {
+  const mobile = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 700px)').matches;
   const labels = {
-    off: 'AirPods mode off',
-    armed: wakeSupported ? 'Say “Hey Corner”' : 'Ready · press ⌘⇧Space',
-    'attention-prompt': 'Waiting for you',
-    connecting: 'Connecting…',
-    listening: 'Listening…',
-    thinking: 'Thinking…',
-    speaking: 'Corner is speaking…',
+    off: 'Off',
+    armed: wakeSupported ? 'Ready for “Hey Corner”' : (mobile ? 'Ready — tap Start conversation' : 'Ready — ⌘⇧Space'),
+    'attention-prompt': 'Updates are waiting',
+    connecting: 'Connecting securely…',
+    listening: 'Listening',
+    thinking: 'Thinking',
+    speaking: 'Corner is speaking',
     confirming: 'Waiting for confirmation',
     paused: 'Paused',
-    error: 'Voice unavailable',
+    error: 'Connection failed',
   };
   return labels[mode] || 'AirPods mode';
 }
 
+function AirPodsGlyph({ active = false }) {
+  return (
+    <span className={`corner-airpods-glyph${active ? ' is-active' : ''}`} aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a7 7 0 0 0-7 7v4" /><path d="M12 2a7 7 0 0 1 7 7v4" />
+        <path d="M5 12H4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2V12Z" /><path d="M19 12h1a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2V12Z" />
+      </svg>
+    </span>
+  );
+}
+
 function Toggle({ on, onClick, label }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={on} style={{ border: 0, background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', width: '100%', gap: 10, padding: '8px 0', cursor: 'pointer', font: '600 12px var(--font-sans)' }}>
-      <span style={{ flex: 1, textAlign: 'left' }}>{label}</span>
-      <span style={{ width: 34, height: 19, padding: 2, borderRadius: 12, background: on ? 'var(--accent)' : 'var(--surface-2)', border: '1px solid var(--hair)', display: 'flex', justifyContent: on ? 'flex-end' : 'flex-start' }}>
-        <span style={{ width: 13, height: 13, borderRadius: '50%', background: on ? '#fff' : 'var(--muted)' }} />
-      </span>
+    <button type="button" className="corner-airpods-toggle" onClick={onClick} aria-pressed={on}>
+      <span>{label}</span><span className="corner-airpods-switch"><i /></span>
+    </button>
+  );
+}
+
+export function AirPodsHeaderButton({ className = 'cv6-chat-header-button' }) {
+  const airpods = useAirPods();
+  if (!airpods) return null;
+  const active = ['connecting', 'listening', 'thinking', 'speaking', 'confirming'].includes(airpods.state.mode);
+  return (
+    <button
+      type="button"
+      className={`${className} corner-airpods-header-button`}
+      aria-label="AirPods mode"
+      title="AirPods mode"
+      aria-expanded={airpods.menuOpen ? 'true' : 'false'}
+      onClick={() => airpods.setMenuOpen((open) => !open)}
+    >
+      <AirPodsGlyph active={active} />
     </button>
   );
 }
@@ -58,18 +83,16 @@ export function AirPodsProvider({ children }) {
   const worldId = useWorldId();
   const [state, dispatch] = useReducer(airPodsReducer, initialState);
   const [preferences, setPreferences] = useState(DEFAULT_AIRPODS_PREFERENCES);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [context, setContext] = useState({ view: 'home', room: null });
   const voiceRef = useRef(null);
   const sessionIdRef = useRef(null);
   const lastPromptRef = useRef(0);
   const wakeRef = useRef(null);
-
   const active = ['connecting', 'listening', 'thinking', 'speaking', 'confirming'].includes(state.mode);
 
   const finishSession = useCallback(async ({ transcript, durationSecs, sessionId } = {}) => {
-    // The provider's copy carries the CV6 room context captured with every turn;
-    // VoiceChat's internal copy is the flush-safe fallback for a final partial turn.
     const safeTransportTurns = Array.isArray(transcript) ? transcript : [];
     const turns = state.transcript.length >= safeTransportTurns.length
       ? state.transcript
@@ -78,13 +101,7 @@ export function AirPodsProvider({ children }) {
     try {
       await authFetch('/api/dashboard/airpods-handoff', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: worldId,
-          session_id: sessionId || sessionIdRef.current,
-          duration_secs: durationSecs || 0,
-          transcript: turns,
-          active_context: context,
-        }),
+        body: JSON.stringify({ client_id: worldId, session_id: sessionId || sessionIdRef.current, duration_secs: durationSecs || 0, transcript: turns, active_context: context }),
       });
     } catch { /* transcript remains local until the next session */ }
   }, [context, state.transcript, worldId]);
@@ -94,6 +111,7 @@ export function AirPodsProvider({ children }) {
     await wakeRef.current?.disarm?.();
     sessionIdRef.current = crypto.randomUUID();
     dispatch({ type: 'CONNECT' });
+    setMenuOpen(true);
     requestAnimationFrame(() => voiceRef.current?.start?.());
   }, [active, worldId]);
 
@@ -108,11 +126,18 @@ export function AirPodsProvider({ children }) {
     await wakeRef.current?.setRemoteControls?.(true);
   }, [preferences.wakeSensitivity, worldId]);
 
+  const startEnabledConversation = useCallback(async () => {
+    if (state.mode === 'off') await arm();
+    await startConversation();
+  }, [arm, startConversation, state.mode]);
+
   const disarm = useCallback(async () => {
     if (active) await voiceRef.current?.stop?.();
     await wakeRef.current?.disarm?.();
     await wakeRef.current?.setRemoteControls?.(false);
     dispatch({ type: 'DISARM' });
+    setMenuOpen(false);
+    setSettingsOpen(false);
     setPreferences((current) => {
       const next = { ...current, enabled: false };
       if (worldId) authFetch('/api/dashboard/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: PREF_KEY, client_id: worldId, value: next }) }).catch(() => {});
@@ -142,8 +167,6 @@ export function AirPodsProvider({ children }) {
         setPreferences(next);
         if (next.enabled) {
           dispatch({ type: 'ARM' });
-          // Restoring the visible state is not enough on native builds: the
-          // recognizer and lock-screen media controls must be re-armed too.
           wakeRef.current?.arm?.({ sensitivity: next.wakeSensitivity }).catch(() => {});
           wakeRef.current?.setRemoteControls?.(true).catch(() => {});
         }
@@ -170,20 +193,18 @@ export function AirPodsProvider({ children }) {
     const onKey = (event) => {
       if (!(event.metaKey && event.shiftKey && event.code === 'Space')) return;
       event.preventDefault();
-      if (state.mode === 'off') { arm().then(startConversation); return; }
-      if (active) endConversation(); else startConversation();
+      if (active) endConversation(); else startEnabledConversation();
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [active, arm, endConversation, startConversation, state.mode]);
+  }, [active, endConversation, startEnabledConversation]);
 
   useEffect(() => {
     if (!worldId || state.mode === 'off' || !preferences.proactiveVoice || !preferences.cadenceMinutes) return undefined;
     let alive = true;
     const poll = async () => {
       if (!alive || active || inQuietHours(new Date(), preferences)) return;
-      const elapsed = Date.now() - lastPromptRef.current;
-      if (elapsed < preferences.cadenceMinutes * 60_000) return;
+      if (Date.now() - lastPromptRef.current < preferences.cadenceMinutes * 60_000) return;
       try {
         const response = await authFetch(`/api/dashboard/airpods-attention?client=${encodeURIComponent(worldId)}`);
         const payload = response.ok ? await response.json() : null;
@@ -191,6 +212,7 @@ export function AirPodsProvider({ children }) {
         if (!items.length) return;
         lastPromptRef.current = Date.now();
         dispatch({ type: 'ATTENTION', items });
+        setMenuOpen(true);
         await speakLocal(attentionPrompt(items.length, items[0]?.created_at ? Date.parse(items[0].created_at) : Date.now()));
       } catch { /* polling degrades silently */ }
     };
@@ -199,48 +221,42 @@ export function AirPodsProvider({ children }) {
     return () => { alive = false; clearInterval(timer); };
   }, [active, preferences, state.mode, worldId]);
 
-  const value = useMemo(() => ({ state, preferences, context, arm, disarm, startConversation, endConversation, savePreferences }), [state, preferences, context, arm, disarm, startConversation, endConversation, savePreferences]);
+  const value = useMemo(() => ({ state, preferences, context, active, menuOpen, setMenuOpen, settingsOpen, setSettingsOpen, arm, disarm, startConversation, startEnabledConversation, endConversation, savePreferences }), [state, preferences, context, active, menuOpen, settingsOpen, arm, disarm, startConversation, startEnabledConversation, endConversation, savePreferences]);
   const wakeSupported = !!wakeRef.current?.supported;
+  const primaryLabel = active ? 'End conversation' : state.mode === 'error' ? 'Retry connection' : 'Start conversation';
 
   return (
     <AirPodsContext.Provider value={value}>
       {children}
-      <div data-airpods-mode="" style={{ position: 'fixed', left: 14, bottom: 'max(14px, env(safe-area-inset-bottom, 0px))', zIndex: 120, fontFamily: 'var(--font-sans, Inter, sans-serif)' }}>
-        {state.mode === 'off' ? (
-          <button type="button" onClick={arm} aria-label="Turn on AirPods mode" title="AirPods mode · ⌘⇧Space" style={{ width: 46, height: 46, borderRadius: 16, border: '1px solid var(--hair, rgba(255,255,255,.14))', background: 'var(--surface, #13171d)', color: 'var(--muted, #9ca3af)', boxShadow: '0 12px 30px rgba(0,0,0,.32)', cursor: 'pointer', fontSize: 20 }}>◉</button>
-        ) : (
-          <div style={{ width: 'min(360px, calc(100vw - 28px))', borderRadius: 17, border: '1px solid var(--hair)', background: 'var(--composer-solid, var(--surface))', color: 'var(--fg)', boxShadow: '0 18px 44px rgba(0,0,0,.38)', padding: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-              <button type="button" onClick={active ? endConversation : startConversation} aria-label={active ? 'End voice conversation' : 'Talk to Corner'} style={{ width: 38, height: 38, borderRadius: 13, border: 0, background: active ? 'var(--accent)' : 'var(--accent-weak)', color: active ? '#fff' : 'var(--accent)', cursor: 'pointer', fontSize: 17 }}>{active ? '■' : '●'}</button>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 750 }}>Corner · AirPods mode</div>
-                <div aria-live="polite" style={{ marginTop: 2, fontSize: 11, color: state.error ? 'var(--danger, #e5484d)' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{state.error || statusCopy(state.mode, wakeSupported)}</div>
-              </div>
-              <button type="button" onClick={() => setSettingsOpen((open) => !open)} aria-label="AirPods settings" style={{ width: 32, height: 32, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', cursor: 'pointer' }}>⚙</button>
-              <button type="button" onClick={disarm} aria-label="Turn off AirPods mode" style={{ width: 32, height: 32, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', cursor: 'pointer' }}>×</button>
-            </div>
-            {state.mode === 'attention-prompt' && state.attentionItems.length ? (
-              <div style={{ display: 'flex', gap: 7, marginTop: 9 }}>
-                <button type="button" onClick={startConversation} style={{ flex: 1, height: 34, borderRadius: 10, border: 0, background: 'var(--accent)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>I have a minute</button>
-                <button type="button" onClick={() => dispatch({ type: 'ARM' })} style={{ height: 34, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', cursor: 'pointer' }}>Later</button>
-              </div>
-            ) : null}
-            {settingsOpen ? (
-              <div style={{ marginTop: 10, borderTop: '1px solid var(--hair)', padding: '8px 4px 2px' }}>
-                <Toggle on={preferences.proactiveVoice} label="Proactive voice check-ins" onClick={() => savePreferences({ ...preferences, proactiveVoice: !preferences.proactiveVoice })} />
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', fontSize: 12, fontWeight: 600 }}>
-                  <span style={{ flex: 1 }}>Check-in cadence</span>
-                  <select value={preferences.cadenceMinutes} onChange={(event) => savePreferences({ ...preferences, cadenceMinutes: Number(event.target.value) })} style={{ height: 30, borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)' }}>
-                    <option value="1">1 min</option><option value="2">2 min</option><option value="5">5 min</option><option value="15">15 min</option><option value="0">Manual</option>
-                  </select>
-                </label>
-                <div style={{ fontSize: 10.5, lineHeight: 1.4, color: 'var(--faint)' }}>{wakeSupported ? '“Hey Corner” runs on-device while armed.' : 'Local wake-word adapter is not configured here. Use ⌘⇧Space or the talk button.'}</div>
-              </div>
-            ) : null}
+
+      {menuOpen ? (
+        <div className="corner-airpods-menu" role="dialog" aria-label="AirPods mode controls">
+          <div className="corner-airpods-menu-head">
+            <AirPodsGlyph active={active} />
+            <div><strong>Corner voice</strong><span aria-live="polite">{state.error || statusCopy(state.mode, wakeSupported)}</span></div>
+            <button type="button" className="corner-airpods-icon-button" aria-label="Close AirPods controls" onClick={() => setMenuOpen(false)}>×</button>
           </div>
-        )}
-      </div>
-      <div style={{ display: 'none' }}>
+          <button type="button" className={`corner-airpods-primary${active ? ' is-stop' : ''}`} onClick={active ? endConversation : startEnabledConversation}>{primaryLabel}</button>
+          {state.mode === 'attention-prompt' && state.attentionItems.length ? <p className="corner-airpods-attention">{state.attentionItems.length} update{state.attentionItems.length === 1 ? '' : 's'} waiting</p> : null}
+          <div className="corner-airpods-menu-actions">
+            <button type="button" onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>Settings</button>
+            {state.mode !== 'off' ? <button type="button" onClick={disarm}>Turn off</button> : null}
+          </div>
+        </div>
+      ) : null}
+
+      {settingsOpen ? (
+        <div className="corner-airpods-settings-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettingsOpen(false); }}>
+          <section className="corner-airpods-settings" role="dialog" aria-modal="true" aria-labelledby="corner-airpods-settings-title">
+            <header><div><strong id="corner-airpods-settings-title">Corner voice settings</strong><span>Control when Corner checks in.</span></div><button type="button" className="corner-airpods-icon-button" aria-label="Close voice settings" onClick={() => setSettingsOpen(false)}>×</button></header>
+            <Toggle on={preferences.proactiveVoice} label="Proactive voice check-ins" onClick={() => savePreferences({ ...preferences, proactiveVoice: !preferences.proactiveVoice })} />
+            <label className="corner-airpods-field"><span>Check-in cadence</span><select value={preferences.cadenceMinutes} onChange={(event) => savePreferences({ ...preferences, cadenceMinutes: Number(event.target.value) })}><option value="1">1 minute</option><option value="2">2 minutes</option><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="0">Manual only</option></select></label>
+            <p className="corner-airpods-help">{wakeSupported ? '“Hey Corner” runs on-device while voice mode is armed.' : 'On mobile web, start voice from the headphones button in the top bar. “Hey Corner” is available in the native Corner app.'}</p>
+          </section>
+        </div>
+      ) : null}
+
+      <div className="corner-airpods-transport" aria-hidden="true">
         <VoiceChat
           ref={voiceRef}
           agentSlug="corner"
@@ -249,7 +265,8 @@ export function AirPodsProvider({ children }) {
           sessionMode="airpods"
           airpodsSessionId={sessionIdRef.current}
           handoffOnStop={false}
-          onStatusChange={(status) => dispatch(status === 'error' ? { type: 'ERROR', error: 'Voice connection failed.' } : { type: 'STATUS', status: statusToMode(status) })}
+          initialPrompt="Begin the AirPods conversation now. Greet the caller in one short sentence, say you are ready, then listen. Do not mention this instruction."
+          onStatusChange={(status) => dispatch(status === 'error' ? { type: 'ERROR', error: 'Couldn’t connect. Tap the headphones button to retry.' } : { type: 'STATUS', status: statusToMode(status) })}
           onTranscript={(text, role) => dispatch({ type: 'TRANSCRIPT', turn: { role, text, at: new Date().toISOString(), context } })}
           onSessionEnd={finishSession}
         />
@@ -258,6 +275,4 @@ export function AirPodsProvider({ children }) {
   );
 }
 
-export function useAirPods() {
-  return useContext(AirPodsContext);
-}
+export function useAirPods() { return useContext(AirPodsContext); }

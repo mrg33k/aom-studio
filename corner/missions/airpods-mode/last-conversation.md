@@ -45,3 +45,16 @@ production deployment reached READY. The canonical dashboard returned HTTP 200 a
 390×844 viewport; the available browser was signed out and correctly redirected to
 `/login`, so the authenticated control still needs the user's phone smoke test. Both new
 API routes were present and returned `401 jwt required` without credentials.
+
+## 2026-08-08 — R3 physical-test report
+
+The user supplied two iPhone screenshots after testing with AirPods. The microphone and
+iOS recording indicator activated, but Corner stayed on “Connecting…” without greeting
+or entering a usable conversation. The expanded settings UI inherited unreadable CV6
+tokens, overlaid room cards and the composer, and exposed desktop-only shortcut copy on
+mobile. The user also requested one consistent top-menu control from Home through Chat.
+
+Production logs showed the authenticated voice-session request returned HTTP 200. Code
+inspection then identified the client-side race: audio frames were sent as soon as the
+socket opened, before Gemini acknowledged setup, and the session sent no initial turn
+that would cause Corner to greet the caller.

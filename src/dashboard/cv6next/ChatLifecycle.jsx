@@ -35,6 +35,7 @@ import { useRunningTasks } from './data/useRunningTasks.js';
 import RoomAvatar from './RoomAvatar.jsx';
 import { isActiveRoomStatus } from './data/roomIdentity.js';
 import { gestureStartsOnInteractiveControl } from './useChatSwipe.js';
+import { AirPodsHeaderButton } from './airpods/AirPodsProvider.jsx';
 
 function dayKey(ts) {
   const d = ts ? new Date(ts) : null;
@@ -1389,6 +1390,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
         <div className="mhactions">
+          <AirPodsHeaderButton />
           <button type="button" className="cv6-chat-header-button" aria-label="Files" title="Files" data-testid="chat-files-button" onClick={() => { setMoreOpen(false); setWorkOpen(false); setFilesSheetOpen(true); }}>
             <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
           </button>
