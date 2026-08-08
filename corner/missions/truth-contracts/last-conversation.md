@@ -404,3 +404,19 @@ exact-task requeue, exact stale-status reset, and pre-registered feature kill sw
 The existing tenant-wide unstuck endpoint is explicitly excluded because it marks all
 active tasks done. Detailed findings are recorded in the dated R7 research brief; no
 production mutation, deployment, or behavior change was made.
+
+## 2026-08-08 - R8 self-healing implementation authorized
+
+The user approved implementing the room/chat steward. Work is scoped to correlated,
+reversible recovery for one turn at a time: durable stage receipts, background health
+checks, idempotent exact-turn repair, verification, and a visible audit outcome. Broad
+task completion, bulk agent resets, destructive row repair, and unverified code changes
+remain outside automatic authority.
+
+Implementation now exists in the isolated `audit/corner-room-reliability-90d`
+worktree. Each accepted dashboard turn gets a durable receipt; the authenticated room
+health endpoint and five-minute steward classify it, correlate exact evidence, and may
+perform only compare-and-set claimed repairs. Cross-room replies and unknown/failed
+work stop safely, while the room shows a compact recovery receipt and failed composers
+keep their drafts. Twenty-one focused tests and the production build pass. Production
+migration and deployment verification are the remaining steps.

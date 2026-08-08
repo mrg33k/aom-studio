@@ -31,6 +31,7 @@ import { useHtmlDocs } from './data/htmlDocView.js';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import RoomWorkList from './RoomWorkList.jsx';
+import RoomRecoveryNotice from './RoomRecoveryNotice.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
 import RoomAvatar from './RoomAvatar.jsx';
 import { isActiveRoomStatus } from './data/roomIdentity.js';
@@ -1172,7 +1173,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, turnHealth, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -1495,6 +1496,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               the old accumulating WorkingTurn steps; bridge steps now animate through
               this fixed-height card and the same projection names the Activity dropdown. */}
           <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
+          <RoomRecoveryNotice health={turnHealth} />
           {/* In-flight background work left the thread (corner:one-corner M19): it lives
               in the Background work window, reached from the drawer menu. */}
           {/* Only renders when the FRONT DOOR chose this room automatically. No projects /

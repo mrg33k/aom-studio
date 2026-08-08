@@ -353,9 +353,19 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
   const room = useMemo(() => cardToRoom(card), [card?.id]);
   const { messages, send } = useRoomThread(worldId, room);
   const [draft, setDraft] = useState('');
+  const [sendError, setSendError] = useState('');
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
   useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages?.length]);
-  const submit = () => { const t = draft.trim(); if (!t || !room) return; send(t); setDraft(''); };
+  const submit = async () => {
+    const t = draft.trim();
+    if (!t || !room || sending) return;
+    setSending(true); setSendError('');
+    const ok = await send(t);
+    setSending(false);
+    if (ok !== false) setDraft('');
+    else setSendError('Could not send. Your reply is still here.');
+  };
   const caughtUp = !room || !card?.id;
   return (
     <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 40, background: 'rgba(4,6,9,.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -376,10 +386,11 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
           <div style={{ padding: '14px 16px', borderTop: '1px solid var(--divider)', color: 'var(--muted)', fontSize: 12.5, textAlign: 'center' }}>Read-only here. Connect a workspace to reply.</div>
         ) : null}
         {!caughtUp && (supabase || demoFixtureActive()) ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)', position: 'relative' }}>
+            {sendError ? <div role="status" style={{ position: 'absolute', left: 16, bottom: 57, color: '#e6a14b', fontSize: 11.5 }}>{sendError}</div> : null}
             {total > 1 ? <div className="ib" onClick={onPrev} style={{ cursor: 'pointer', width: 38, height: 38 }} title="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg></div> : null}
             <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={`Reply to ${card.from || 'this room'}…`} style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', color: 'var(--fg)', fontSize: 14, outline: 'none' }} />
-            <button onClick={submit} title="Send" style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg></button>
+            <button onClick={submit} disabled={sending} title="Send" style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: sending ? 'wait' : 'pointer', opacity: sending ? .65 : 1 }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg></button>
             {total > 1 ? <div className="ib" onClick={onNext} style={{ cursor: 'pointer', width: 38, height: 38 }} title="Next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg></div> : null}
           </div>
         ) : null}
@@ -2029,6 +2040,7 @@ function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose, exp
       fullRoom={isDemo ? null : activeRoom} worldId={worldId} projectId={parentProject?.databaseId || activeRoom?.databaseId || ''}
       roomOptions={checklistRoomOptions}
       messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
+      turnHealth={isDemo ? null : rt.turnHealth}
       awaiting={isDemo ? false : rt.awaiting} awaitingSince={isDemo ? null : rt.awaitingSince}
       columnMode={columnMode} onClose={onClose} expanded={expanded} onToggleWidth={onToggleWidth}
       onBack={() => onNav('back')} onSearch={() => onSearch?.()} onRoomRenamed={isDemo ? null : (name, { reset = false } = {}) => { setLocalTitle(name); setLocalCustomTitle(activeRoom.isProject || activeRoom.isMission ? activeRoom.hasCustomTitle : !reset); }} onClearRoom={isDemo ? null : rt.clearRoom} onSend={(text, options) => send?.(text, options)}

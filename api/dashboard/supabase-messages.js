@@ -10,6 +10,7 @@
 import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt, callerIdentity } from '../_lib/verifyTenant.js'
 import { enqueueRunnerJob, resolveRunnerRoute } from '../_lib/runnerJobs.js'
+import { createTurnReceipt } from '../_lib/roomSteward.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 
@@ -420,7 +421,8 @@ export default async function handler(req, res) {
           clientId: resolvedClientId,
           message: result.row,
         })
-        return res.status(200).json({ ok: true, message: result.row, runner: { queued: true, jobId: job?.id || null } })
+        const receipt = await createTurnReceipt({ message: result.row, userId: authorUserId, route: 'local', jobId: job?.id || null }).catch(() => null)
+        return res.status(200).json({ ok: true, message: result.row, runner: { queued: true, jobId: job?.id || null }, turn_receipt: receipt ? { id: receipt.id, state: receipt.state } : null })
       } catch (error) {
         // The route marker already told the central bridge to stand down. Close
         // the turn visibly instead of leaving the composer spinning forever.
@@ -439,10 +441,12 @@ export default async function handler(req, res) {
           worldId: rowWorldId,
           replyTo: result.row?.id,
         }).catch(() => null)
-        return res.status(200).json({ ok: true, message: result.row, runner: { queued: false, error: 'queue_failed' } })
+        const receipt = await createTurnReceipt({ message: result.row, userId: authorUserId, route: 'local' }).catch(() => null)
+        return res.status(200).json({ ok: true, message: result.row, runner: { queued: false, error: 'queue_failed' }, turn_receipt: receipt ? { id: receipt.id, state: receipt.state } : null })
       }
     }
-    return res.status(200).json({ ok: true, message: result.row })
+    const receipt = await createTurnReceipt({ message: result.row, userId: authorUserId, route: 'central' }).catch(() => null)
+    return res.status(200).json({ ok: true, message: result.row, turn_receipt: receipt ? { id: receipt.id, state: receipt.state } : null })
   }
 
   // ---- DELETE: clear all messages for a client_id (world switch fresh-start) ------

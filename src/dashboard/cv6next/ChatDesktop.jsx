@@ -19,6 +19,7 @@ import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
 import RoomWorkList from './RoomWorkList.jsx';
+import RoomRecoveryNotice from './RoomRecoveryNotice.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import NewComposer from './NewComposer.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
@@ -641,7 +642,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav, windowMode]);
 
-  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps } = useRoomThread(worldId, selected);
+  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, turnHealth } = useRoomThread(worldId, selected);
   // The room agent's own steps — the half of "background work" the old card could not see.
   const roomGoal = useGoalThread(worldId, selected);
   // Per-room running tasks — used by the work-indicator icon to know if anything is active.
@@ -1114,6 +1115,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         live counter on each. The Background work window still exists for the
                         world-wide view. */}
                     <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
+                    <RoomRecoveryNotice health={turnHealth} />
                     {/* Only renders when the FRONT DOOR chose this room automatically — names
                         the destination the user never got to see, and moves the message in one
                         tap if it guessed wrong (corner:front-door R8). */}

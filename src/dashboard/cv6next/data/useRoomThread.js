@@ -194,6 +194,7 @@ export function useRoomThread(worldId, room) {
   const [lastSentId, setLastSentId] = useState('');
   const lastSentTsRef = useRef(0);
   const [liveSteps, setLiveSteps] = useState([]);
+  const [turnHealth, setTurnHealth] = useState(null);
   // True once the bridge has emitted at least one real step for the message we're awaiting.
   // When it has, the bridge is streaming live progress and OWNS the "stopped" signal via its
   // settled sentinel — so we must NOT settle the bar off an interim reply timestamp (the agent
@@ -237,7 +238,7 @@ export function useRoomThread(worldId, room) {
     }
   }, [worldId, room?.id]);
   // Switching rooms drops any in-flight "working" state too.
-  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); setStepsByParent({}); lastSentTsRef.current = 0; baselineRef.current = false; }, [room?.id]);
+  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); setTurnHealth(null); setStepsByParent({}); lastSentTsRef.current = 0; baselineRef.current = false; }, [room?.id]);
 
   // Post a real user message into this room (composer + choice/question taps).
   // Agent rooms POST to the agent slug; project rooms to the project slug. After
@@ -269,6 +270,7 @@ export function useRoomThread(worldId, room) {
         : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } };
     // Show "working" the instant you send, so the thread never looks dead.
     setAwaiting(true);
+    setTurnHealth({ state: 'accepted', cause: null, repaired: false });
     setLiveSteps([]);
     sawLiveStepsRef.current = false;
     lastSentTsRef.current = now.getTime();
@@ -279,17 +281,57 @@ export function useRoomThread(worldId, room) {
       if (!r || !r.ok) {
         setPending((p) => p.filter((m) => m.optId !== optId));
         setAwaiting(false);
+        setTurnHealth({ state: 'needs_attention', cause: 'write_failed', repaired: false });
         return false;
       }
       // The created row id is the parent the bridge keys its step heartbeats to.
-      try { const j = await r.clone().json(); const id = j?.message?.id; if (id) setLastSentId(String(id)); } catch { /* non-JSON */ }
+      try {
+        const j = await r.clone().json();
+        const id = j?.message?.id;
+        if (id) setLastSentId(String(id));
+        if (j?.turn_receipt) setTurnHealth({ state: j.turn_receipt.state || 'accepted', cause: null, repaired: false });
+      } catch { /* non-JSON */ }
       // Immediately bump this direct agent thread's recency so Recently Active
       // reflects the send before the next poll cycle picks it up.
       if (!room.isProject && !room.isMission && bumpAgentThread) bumpAgentThread(room.id, body);
       setReloadKey((k) => k + 1);
       return true;
-    } catch { setPending((p) => p.filter((m) => m.optId !== optId)); setAwaiting(false); return false; }
+    } catch { setPending((p) => p.filter((m) => m.optId !== optId)); setAwaiting(false); setTurnHealth({ state: 'needs_attention', cause: 'write_failed', repaired: false }); return false; }
   }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug, bumpAgentThread]);
+
+  // Follow the exact persisted message through the steward. Inspection is read-only;
+  // after 45 seconds without activity we ask once for the server's narrowly allowlisted
+  // repair. Server-side retry counts prevent loops across tabs and background cron runs.
+  useEffect(() => {
+    if (!awaiting || !worldId || !lastSentId) return undefined;
+    let alive = true;
+    let repairAsked = false;
+    const inspect = async () => {
+      const shouldRepair = Date.now() - lastSentTsRef.current >= 45000 && !repairAsked;
+      if (shouldRepair) repairAsked = true;
+      try {
+        const response = shouldRepair
+          ? await authFetch('/api/dashboard/room-health', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ client_id: worldId, message_id: lastSentId }),
+            })
+          : await authFetch(`/api/dashboard/room-health?${new URLSearchParams({ client_id: worldId, message_id: lastSentId }).toString()}`);
+        if (!alive || !response?.ok) return;
+        const health = await response.json();
+        if (!health?.found) return;
+        setTurnHealth(health);
+        if (health.state === 'settled') {
+          setAwaiting(false);
+          setReloadKey((key) => key + 1);
+        } else if (health.state === 'needs_attention' && !health.repaired) {
+          setAwaiting(false);
+        }
+      } catch { /* existing message and step polls remain the fallback */ }
+    };
+    inspect();
+    const timer = setInterval(inspect, 10000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [awaiting, worldId, lastSentId]);
 
   const clearRoom = useCallback(async () => {
     if (!worldId || !room?.id) return false;
@@ -623,7 +665,7 @@ export function useRoomThread(worldId, room) {
     () => injectWorkSteps(pending.length ? [...messages, ...pending] : messages, stepsByParent, awaiting, lastSentId),
     [messages, pending, stepsByParent, awaiting, lastSentId],
   );
-  return { messages: withWork, archivedMessages, blocks, status, send, clearRoom, awaiting, awaitingSince: awaiting ? lastSentTsRef.current : null, liveSteps };
+  return { messages: withWork, archivedMessages, blocks, status, send, clearRoom, awaiting, awaitingSince: awaiting ? lastSentTsRef.current : null, liveSteps, turnHealth };
 }
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──

@@ -13,6 +13,9 @@ test('a direct specialist request stays one direct message and creates no projec
     if (value.includes('/auth/v1/user')) {
       return { ok: true, json: async () => ({ id: 'user-1', user_metadata: { world: 'aom' } }) }
     }
+    if (value.includes('/rest/v1/user_preferences')) {
+      return { ok: true, json: async () => ([]) }
+    }
     if (value.includes('/rest/v1/messages') && options.method === 'POST') {
       const body = JSON.parse(options.body)
       writes.push({ url: value, body })
@@ -41,6 +44,6 @@ test('a direct specialist request stays one direct message and creates no projec
   assert.equal(writes[0].body.agent, 'bobby')
   assert.equal(writes[0].body.room_id, 'aom:agent:bobby')
   assert.equal(writes[0].body.project, undefined)
-  assert.equal(writes[0].body.metadata, undefined)
+  assert.deepEqual(writes[0].body.metadata, {})
   assert.equal(res.payload.promoted_to, undefined)
 })

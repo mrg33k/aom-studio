@@ -11,6 +11,12 @@
       "embed-*": false
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/room-steward",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/embed",

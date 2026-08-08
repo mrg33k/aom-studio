@@ -540,3 +540,37 @@ Do not postpone obvious user-facing breaks behind architecture work when they ca
   correlated turn.
 
 **Status:** audit complete; implementation not started.
+
+### R8 - Per-turn room steward and scoped self-repair
+
+- 2026-08-08 implementation started:
+  - Give every dashboard chat turn a durable correlation and health receipt across
+    persisted, claimed/live, replied, visible, and settled stages.
+  - Add a tenant-authenticated health reader and a narrowly allowlisted repair broker
+    that may refresh evidence, wake dispatch once, requeue only the exact correlated
+    task, and clear only an exact stale status after proving no live process exists.
+  - Run a background steward on recent unhealthy turns with strict retry caps and
+    durable audit receipts. Never call the existing tenant-wide `unstuck` operation.
+  - Preserve drafts on failure and expose recovery state in the affected chat without
+    creating fake completion or rerunning work whose reply already exists.
+
+**Status:** in progress.
+
+**Local result:**
+
+- Added one service-only `room_turn_receipts` row per persisted user message and a
+  tenant-authenticated health endpoint that correlates the exact message, room,
+  reply, live steps, local-runner job, and process evidence.
+- Added a five-minute background steward plus in-room inspection. Repairs are
+  compare-and-set claimed so browser and cron cannot duplicate them. The allowlist
+  is limited to one exact-turn wake, an expired exact local-job requeue, and an exact
+  stale-status clear after a fresh no-live-process check.
+- Wrong-room replies, completed work without a visible reply, failed runners, and
+  missing messages stop in `needs_attention`; the steward never moves rows, declares
+  unknown work complete, retries failed work, or calls the tenant-wide `unstuck` API.
+- CV6 desktop/mobile rooms now show a compact `Self-repairing` / `Needs a look`
+  receipt only when useful. Failed chat and Catch Up sends preserve the user's text.
+- Verification passed: 21 focused message/runner/steward tests, JavaScript syntax
+  checks, `git diff --check`, and the production Vite build.
+
+**Status:** implemented and locally verified; production schema/deploy verification pending.
