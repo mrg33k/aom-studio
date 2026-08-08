@@ -195,6 +195,14 @@ function FileGlyph({ kind, size = 20 }) {
   if (kind === 'link') return <svg {...p}><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg>;
   return <svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg>;
 }
+// A grid tile's <img> degrades to the plain FileGlyph instead of the browser's raw
+// broken-image glyph when the URL is stale/unresolved (a placeholder attachment
+// that never got a real URL) — no card should ever show a bare "?" (Patrik 2026-08-07).
+function GridTileImg({ src, alt, kind }) {
+  const [failed, setFailed] = useState(false);
+  if (failed || !src) return <FileGlyph kind={kind} size={18} />;
+  return <img src={src} alt={alt} onError={() => setFailed(true)} />;
+}
 // File Collection (design drop 7, agent-chat/collection.html): a batch of files an agent
 // sends folds to ONE card — a preview grid for images, a compact list for docs — with a
 // count and "Review all". Tapping any opens the look-only viewer below. Real files only.
@@ -271,7 +279,7 @@ function FileGallery({ files, sender, onOpen, onReview }) {
                 const showMore = gridOverflow > 0 && i === gridShown.length - 1;
                 return (
                   <div key={i} className={`fc-tile${kind !== 'image' ? ' is-doc' : ''}`} onClick={() => onOpen(files, i)} role="button">
-                    {isImg ? <img src={f.attachmentUrl} alt={f.fileName} /> : <FileGlyph kind={kind} size={18} />}
+                    {isImg ? <GridTileImg src={f.attachmentUrl} alt={f.fileName} kind={kind} /> : <FileGlyph kind={kind} size={18} />}
                     {showMore && <div className="more">+{gridOverflow}</div>}
                   </div>
                 );
@@ -414,7 +422,16 @@ function renderItems(items, onOpenFile, goal, onReview, onSend) {
   const out = []; let run = [];
   const flush = (key) => { if (run.length) { out.push(<FileGallery key={`g${key}`} files={run} sender={run[0]} onOpen={onOpenFile} onReview={onReview} />); run = []; } };
   items.forEach((m, i) => {
-    if (m.isFile) { run.push(m); }
+    if (m.isFile) {
+      // Only fold CONSECUTIVE files from the SAME sender into one "sent N files"
+      // card. Without this check, an agent's file immediately followed by the
+      // user's own upload merged into one card attributed to the agent — the
+      // user's screenshot silently relabeled as something the agent sent
+      // (Patrik 2026-08-07: "it's representing a file the agent is sending me,
+      // a screenshot I uploaded... those should be their own card types").
+      if (run.length && (run[0].isUser !== m.isUser || run[0].agentName !== m.agentName)) flush(i);
+      run.push(m);
+    }
     else if (m.blocks && m.blocks.length) { flush(i); out.push(<GoalTurn key={i} m={m} goal={goal} />); }
     else { flush(i); out.push(<Message key={i} m={m} onSend={onSend} />); }
   });

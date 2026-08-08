@@ -343,6 +343,9 @@ function MobileMessageThread({
   };
   list.forEach((message, i) => {
     if (message?.isFile && renderAttachments === 'mobileGallery') {
+      // Same-sender guard as ChatLifecycle's renderItems: never fold the user's
+      // own upload into the agent's "sent N files" card, or vice versa.
+      if (fileRun.length && (fileRun[0].isUser !== message.isUser || fileRun[0].agentName !== message.agentName)) flushFiles(i);
       fileRun.push(message);
       return;
     }
