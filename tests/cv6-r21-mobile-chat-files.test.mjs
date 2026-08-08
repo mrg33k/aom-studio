@@ -31,7 +31,7 @@ test('files open from a deliberate upward overscroll and close from the drawer h
 });
 
 test('mobile Files is a two-column overview with real selection and no rendered swipe underlay', () => {
-  assert.match(chat, /className="cv6-fs-grid"/);
+  assert.match(chat, /className=\{`cv6-fs-grid is-\$\{viewMode\}`\}/);
   assert.match(css, /\.cv6-fs-grid\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/s);
   assert.match(chat, /aria-pressed=\{selectMode\}/);
   assert.match(chat, /const saveSelected = useCallback/);

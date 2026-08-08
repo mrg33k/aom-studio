@@ -15,7 +15,7 @@ import { useDictation } from './data/useDictation.js';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import ColumnExpandButton from './ColumnExpandButton.jsx';
-import { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
+import { FilesShelf, readFilesPrefs, useRoomCrossings, writeFilesPrefs } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { supabase } from '../lib/supabase.js';
 // The chat file modal renders REAL previews through the same machinery the
@@ -577,18 +577,17 @@ function mfsDisplayName(name) {
   if (!words) return raw;
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
-// Thumbnail source for a 40px tile. The file host will hand back a downscaled WebP for
-// `?w=`, which is the difference between a 2.5MB screenshot and ~5KB per tile — a Files
-// panel used to pull tens of megabytes to paint a grid of 40px squares, and the tiles
-// sat empty for ~10s (Patrik 2026-08-07: "images do open very slow"). Only rag-hosted
+// Thumbnail source for a compact list tile or a wider grid preview. The file host will
+// hand back a downscaled WebP for `?w=`, which is the difference between a 2.5MB
+// screenshot and a few KB per preview — a Files panel used to pull tens of megabytes
+// and the tiles sat empty for ~10s (Patrik 2026-08-07: "images do open very slow"). Only rag-hosted
 // files get the param; anything else is left exactly as-is. If the host does not
 // understand it the param is ignored and the original comes back, so this cannot break
 // a tile — it can only fail to speed one up.
-function mfsThumbSrc(url) {
+function mfsThumbSrc(url, width = 120) {
   if (!url || typeof url !== 'string') return url;
   if (!url.includes('rag.aheadofmarket.com')) return url;
-  // 40 CSS px at up to 3x DPR = 120 device px.
-  return url + (url.includes('?') ? '&' : '?') + 'w=120';
+  return url + (url.includes('?') ? '&' : '?') + `w=${width}`;
 }
 // "who — Xm — 12 KB" formatted meta line.
 function mfsRelAgo(ts) {
@@ -716,9 +715,16 @@ function SwipeFileRow({ id, onSave, openId, setOpenId, children }) {
 // ── MobileFilesContent — filter chips + two-column overview ───────────────
 function MobileFilesContent({ fromAgent, youSent, status, onReview, selectMode = false }) {
   const [activeFilter, setActiveFilter] = useState('all');
+  const [viewMode, setViewModeState] = useState(() => readFilesPrefs().layout);
   const [menuFile, setMenuFile] = useState(null);
   const [toast, setToast] = useState(null);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
+
+  const setViewMode = useCallback((layout) => {
+    const next = layout === 'list' ? 'list' : 'grid';
+    setViewModeState(next);
+    writeFilesPrefs({ layout: next });
+  }, []);
 
   // One receipt path for every way a file can be saved (swipe panel or ⋮ menu), so the
   // user always gets told what happened instead of guessing whether the tap registered.
@@ -797,9 +803,11 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview, selectMode =
     return { recent: r, earlier: e, recentLabel: r.length && allToday ? 'TODAY' : 'RECENT' };
   }, [filtered]);
 
-  // Open a file: photos/videos into the review viewer; other files in a new tab.
+  // A card is always a preview action. The shared viewer already handles images,
+  // video, PDFs, HTML, markdown, and office documents, so opening a raw browser tab
+  // here would make grid and list mode behave differently for no product reason.
   const openFile = useCallback((f) => {
-    if (f.kind === 'photo' || f.kind === 'video') { onReview?.(f); return; }
+    if (onReview) { onReview(f); return; }
     if (f.url) window.open(f.url, '_blank', 'noopener');
   }, [onReview]);
 
@@ -851,32 +859,46 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview, selectMode =
 
   const renderCard = (f) => {
     const isImg = f.kind === 'photo' && !!f.url;
+    const isGrid = viewMode === 'grid';
     const label = mfsTypeLabel(f.kind, f.name);
     const rowId = fileId(f);
     const isNew = mfsIsNew(f);
     const selected = selectedIds.has(rowId);
     return (
-      <div key={rowId} className={`cv6-fs-card${selected ? ' is-selected' : ''}`}>
+      <div key={rowId} className={`cv6-fs-card is-${viewMode}${selected ? ' is-selected' : ''}`}>
         <button
           type="button"
-          className="cv6-fs-card-main"
+          className={`cv6-fs-card-main is-${viewMode}`}
           onClick={() => (selectMode ? toggleSelected(f) : openFile(f))}
-          aria-label={selectMode ? `${selected ? 'Deselect' : 'Select'} ${f.name}` : `Open ${f.name}`}
+          aria-label={selectMode ? `${selected ? 'Deselect' : 'Select'} ${f.name}` : `Preview ${f.name}`}
           aria-pressed={selectMode ? selected : undefined}
           title={f.name}
         >
-          <span
-            className={`cv6-fs-type${isImg ? ' cv6-fs-type--img' : ''}`}
-            style={isImg ? undefined : { background: mfsChipBg(f.kind, f.name), color: mfsChipFg(f.kind, f.name) }}
-          >
-            {isImg ? (
+          {isGrid ? (
+            <span className={`cv6-fs-card-preview${isImg ? ' is-image' : ' is-document'}`}>
+              {isImg ? (
+                <>
+                  <svg className="cv6-fs-img-ph" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15l5-5 4 4 3-3 6 6" />
+                  </svg>
+                  <img src={mfsThumbSrc(f.url, 440)} alt="" loading="lazy" decoding="async" className="cv6-fs-preview-img"
+                    onLoad={(event) => event.currentTarget.closest('.cv6-fs-card-preview')?.classList.add('is-ready')} />
+                </>
+              ) : (
+                <span className="cv6-fs-card-document" style={{ background: mfsChipBg(f.kind, f.name), color: mfsChipFg(f.kind, f.name) }}>{label || '?'}</span>
+              )}
+            </span>
+          ) : (
+            <span className={`cv6-fs-type${isImg ? ' cv6-fs-type--img' : ''}`}
+              style={isImg ? undefined : { background: mfsChipBg(f.kind, f.name), color: mfsChipFg(f.kind, f.name) }}>
+              {isImg ? (
               <>
                 {/* Placeholder visible until image loads */}
                 <svg className="cv6-fs-img-ph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15l5-5 4 4 3-3 6 6" />
                 </svg>
                 <img
-                  src={mfsThumbSrc(f.url)}
+                  src={mfsThumbSrc(f.url, 120)}
                   alt=""
                   loading="lazy"
                   decoding="async"
@@ -888,16 +910,18 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview, selectMode =
                   }}
                 />
               </>
-            ) : (
-              <span className="cv6-fs-type-lbl">{label || '?'}</span>
-            )}
-          </span>
+              ) : <span className="cv6-fs-type-lbl">{label || '?'}</span>}
+            </span>
+          )}
           <div className="cv6-fs-card-body">
             <div className="cv6-fs-card-name">{mfsDisplayName(f.name)}</div>
-            <div className="cv6-fs-card-meta">{mfsMeta(f)}</div>
+            <div className="cv6-fs-card-meta">
+              {!isGrid && isNew ? <span className="cv6-fs-list-new">New</span> : null}
+              <span>{mfsMeta(f)}</span>
+            </div>
           </div>
         </button>
-        {isNew ? <span className="cv6-fs-card-new" aria-label="New file">New</span> : null}
+        {isGrid && isNew ? <span className="cv6-fs-card-new" aria-label="New file">New</span> : null}
         {selectMode ? (
           <span className="cv6-fs-card-check" aria-hidden="true">
             {selected ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg> : null}
@@ -923,13 +947,20 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview, selectMode =
     return (
       <div key={label} className={`cv6-fs-section${recent ? ' cv6-fs-section--recent' : ''}`}>
         <div className="cv6-fs-section-hdr">{label}</div>
-        <div className="cv6-fs-grid">{files.map(renderCard)}</div>
+        <div className={`cv6-fs-grid is-${viewMode}`}>{files.map(renderCard)}</div>
       </div>
     );
   };
 
   return (
     <>
+      <div className="cv6-fs-view-row">
+        <span>{viewMode === 'grid' ? 'Preview grid' : 'Compact list'}</span>
+        <div className="cv6-fs-view-toggle" role="group" aria-label="File layout">
+          <button type="button" aria-label="Grid view" aria-pressed={viewMode === 'grid'} className={viewMode === 'grid' ? 'is-active' : ''} onClick={() => setViewMode('grid')}>Grid</button>
+          <button type="button" aria-label="List view" aria-pressed={viewMode === 'list'} className={viewMode === 'list' ? 'is-active' : ''} onClick={() => setViewMode('list')}>List</button>
+        </div>
+      </div>
       {/* Filter chips row */}
       <div className="cv6-fs-filters" role="tablist" aria-label="File type filter">
         {FILTERS.map(({ id, label, count }) => (
@@ -952,7 +983,7 @@ function MobileFilesContent({ fromAgent, youSent, status, onReview, selectMode =
           <button type="button" className="is-primary" disabled={!selectedIds.size} onClick={saveSelected}>Save</button>
         </div>
       ) : null}
-      {/* Scrollable two-column file overview — grouped by date */}
+      {/* Scrollable preview grid or compact list — grouped by date */}
       <div className="cv6-fs-list" role="tabpanel">
         {renderSection(recentLabel, recent, true)}
         {renderSection('EARLIER', earlier, false)}
@@ -1411,11 +1442,12 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           position:absolute; bottom:0) plus the phone home indicator, so the last
           message can scroll fully into view instead of being cut off behind it. */}
       <div ref={scrollRef} onScroll={onScroll} onTouchStart={onFilesLiftStart} onTouchEnd={onFilesLiftEnd} onTouchCancel={() => { filesLiftRef.current = null; }} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(84px + env(safe-area-inset-bottom, 0px))' }}>
-        {/* Cap the thread to a readable column so on iPad it stays phone-width and centered,
-            instead of stretching messages + cards edge to edge. */}
+        {/* One named reading lane keeps the transcript centered across expanded desktop
+            columns and the tablet canvas. CSS owns its responsive width so iPad can use
+            more of the display without becoming a stretched phone layout. */}
         <SendCtx.Provider value={onSend || (() => {})}>
         <ReviewCtx.Provider value={(file) => { if (file) reviewHandoff([file]); }}>
-        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+        <div className="cv6-chat-reading-lane">
           {/* Fix 2: system alert messages (raw JSON, log filenames, tracebacks from the
               Systems agent) are pulled out of the thread and shown here as a collapsed
               status strip. Tap to expand. Never renders inline as a chat turn. */}

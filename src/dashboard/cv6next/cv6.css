@@ -3677,8 +3677,8 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 }
 
 /* ── Mobile Files Sheet — ADD design (task dae1720a, 2026-08-06) ────────────
-   Full-width bottom sheet: filter chips, date-grouped list, real thumbnails,
-   swipe-to-save, "New" chip for session arrivals. List is the only view.
+   Full-width bottom sheet: filter chips, date-grouped preview grid/compact list,
+   real resized thumbnails, and a "New" chip for session arrivals.
    Three themes via var() tokens. Tap targets ≥44pt throughout.
    Design gate: Corner — dark ground, accent blue, Inter, no gold.
    ─────────────────────────────────────────────────────────────────────────── */
@@ -4360,7 +4360,36 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] button.cv6-fs-icon-btn { width:34px; height:34px; border-radius:8px !important; }
 [data-cv6] button.cv6-fs-icon-btn.is-active { color:var(--accent); border-color:var(--accent); background:var(--accent-weak); }
 
-/* Compact filter rail and the now-functional selection controls. */
+/* Compact layout selector, filter rail, and functional selection controls. */
+[data-cv6] .cv6-fs-view-row {
+  min-height:32px;
+  padding:0 14px 8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+[data-cv6] .cv6-fs-view-row > span { flex:1; color:var(--faint); font:650 10px var(--font-mono); letter-spacing:.055em; text-transform:uppercase; }
+[data-cv6] .cv6-fs-view-toggle {
+  padding:2px;
+  border:1px solid var(--hair);
+  border-radius:8px;
+  background:var(--composer-card-solid, var(--surface-2));
+  display:flex;
+  align-items:center;
+  gap:2px;
+}
+[data-cv6] .cv6-fs-view-toggle > button {
+  height:26px;
+  min-width:43px;
+  padding:0 8px;
+  border:0;
+  border-radius:6px !important;
+  background:transparent;
+  color:var(--muted);
+  font:650 10.5px var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .cv6-fs-view-toggle > button.is-active { background:var(--accent); color:#fff; cursor:default; }
 [data-cv6] .cv6-fs-filters { gap:6px; padding:0 14px 10px; }
 [data-cv6] button.cv6-fs-fchip { height:30px; min-width:42px; padding:0 10px; border-radius:8px !important; font-size:12px; }
 [data-cv6] .cv6-fs-selection-bar {
@@ -4395,10 +4424,10 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-section-hdr { padding:13px 0 7px; font-size:10px; }
 [data-cv6] .cv6-fs-section:first-child .cv6-fs-section-hdr { padding-top:2px; }
 [data-cv6] .cv6-fs-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+[data-cv6] .cv6-fs-grid.is-list { grid-template-columns:minmax(0,1fr); gap:7px; }
 [data-cv6] .cv6-fs-card {
   position:relative;
   min-width:0;
-  min-height:126px;
   overflow:hidden;
   border:1px solid var(--hair);
   border-radius:11px;
@@ -4409,8 +4438,6 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-fs-card.is-selected { border-color:var(--accent); background:color-mix(in srgb, var(--accent-weak) 58%, var(--composer-card-solid, var(--surface))); }
 [data-cv6] button.cv6-fs-card-main {
   width:100%;
-  min-height:126px;
-  padding:12px 38px 11px 11px;
   border:0;
   border-radius:10px !important;
   background:transparent;
@@ -4422,8 +4449,48 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   cursor:pointer;
   font-family:var(--font-sans);
 }
+[data-cv6] button.cv6-fs-card-main.is-grid { min-height:172px; padding:0; }
+[data-cv6] button.cv6-fs-card-main.is-list { min-height:68px; padding:10px 38px 10px 10px; flex-direction:row; align-items:center; }
 [data-cv6] .cv6-fs-card .cv6-fs-type { width:42px; height:42px; border-radius:8px; }
-[data-cv6] .cv6-fs-card-body { width:100%; min-width:0; margin-top:10px; }
+[data-cv6] .cv6-fs-card-preview {
+  position:relative;
+  width:100%;
+  height:96px;
+  overflow:hidden;
+  border-bottom:1px solid var(--divider);
+  background:var(--surface-2);
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+[data-cv6] .cv6-fs-preview-img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:color-mix(in srgb, var(--ground) 82%, transparent);
+  opacity:0;
+  transition:opacity var(--dur-move) ease;
+}
+[data-cv6] .cv6-fs-card-preview.is-ready .cv6-fs-preview-img { opacity:1; }
+[data-cv6] .cv6-fs-card-preview.is-ready .cv6-fs-img-ph { opacity:0; }
+[data-cv6] .cv6-fs-card-document {
+  min-width:54px;
+  height:54px;
+  padding:0 9px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  font:750 13px var(--font-sans);
+  letter-spacing:.025em;
+}
+[data-cv6] .cv6-fs-card-body { width:100%; min-width:0; }
+[data-cv6] .cv6-fs-card.is-grid .cv6-fs-card-body { padding:10px 11px 11px; box-sizing:border-box; }
+[data-cv6] .cv6-fs-card.is-list .cv6-fs-card-body { margin-left:10px; }
 [data-cv6] .cv6-fs-card-name {
   min-height:34px;
   overflow:hidden;
@@ -4434,8 +4501,11 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   -webkit-line-clamp:2;
   -webkit-box-orient:vertical;
 }
-[data-cv6] .cv6-fs-card-meta { margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font:500 10px var(--font-sans); }
-[data-cv6] .cv6-fs-card-new { position:absolute; top:12px; left:60px; height:20px; padding:0 6px; border:1px solid var(--accent); border-radius:5px; color:var(--accent); display:flex; align-items:center; font:700 9px var(--font-sans); text-transform:uppercase; letter-spacing:.04em; pointer-events:none; }
+[data-cv6] .cv6-fs-card.is-list .cv6-fs-card-name { min-height:0; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+[data-cv6] .cv6-fs-card-meta { margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font:500 10px var(--font-sans); display:flex; align-items:center; gap:5px; }
+[data-cv6] .cv6-fs-card-meta > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6] .cv6-fs-list-new { flex:none; height:16px; padding:0 4px; border:1px solid var(--accent); border-radius:4px; color:var(--accent); display:inline-flex; align-items:center; font:750 8px var(--font-sans); text-transform:uppercase; letter-spacing:.04em; }
+[data-cv6] .cv6-fs-card-new { position:absolute; z-index:2; top:7px; left:7px; height:20px; padding:0 6px; border:1px solid var(--accent); border-radius:5px; background:var(--composer-solid, #131317); color:var(--accent); display:flex; align-items:center; font:700 9px var(--font-sans); text-transform:uppercase; letter-spacing:.04em; pointer-events:none; }
 [data-cv6] button.cv6-fs-card-menu {
   position:absolute;
   top:6px;
@@ -4451,18 +4521,27 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  z-index:2;
 }
+[data-cv6] .cv6-fs-card.is-grid button.cv6-fs-card-menu { background:color-mix(in srgb, var(--composer-solid, #131317) 88%, transparent); color:var(--fg); }
 [data-cv6] button.cv6-fs-card-menu:active { background:var(--chip); }
 [data-cv6] .cv6-fs-card-check { position:absolute; top:9px; right:8px; width:22px; height:22px; border:1.5px solid var(--hair); border-radius:6px; background:var(--composer-solid, #131317); color:#fff; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 [data-cv6] .cv6-fs-card.is-selected .cv6-fs-card-check { border-color:var(--accent); background:var(--accent); }
 
-/* The one-sided per-message avatar gutter in the supplied iPhone capture pushed
-   every structured card right. Room identity already lives in the sticky header,
-   so mobile turns use the full centered transcript width. */
-@media (max-width:640px) {
-  [data-cv6] .cv6-mobile-turn-avatar { display:none !important; }
-  [data-cv6][data-screen="chat-room"] > .scrbody { padding-left:12px !important; padding-right:12px !important; padding-bottom:122px !important; }
+/* R24: one centered conversation lane on phone, iPad, and desktop. The room identity
+   already lives in the sticky header, so the repeated one-sided agent avatar gutter
+   only shifts the visual center of bubbles and structured cards. Remove it everywhere
+   this lifecycle thread renders and let the named lane own responsive width. */
+[data-cv6][data-screen="chat-room"] .cv6-mobile-turn-avatar { display:none !important; }
+[data-cv6][data-screen="chat-room"] .cv6-chat-reading-lane {
+  width:100%;
+  max-width:760px;
+  margin-inline:auto;
+}
 
+@media (max-width:899px) {
+  /* Compact chat chrome preserves more of the iPad's vertical canvas while the
+     invisible ::before hit areas retain comfortable touch targets. */
   [data-cv6] .cv6-floating-composer { padding:8px !important; border-radius:13px !important; }
   [data-cv6] .cv6-composer-input-shell { min-height:40px !important; border-radius:8px !important; }
   [data-cv6] button.cv6-composer-util { height:30px !important; min-height:30px; min-block-size:30px; border-radius:7px !important; }
@@ -4470,6 +4549,44 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   [data-cv6] button.cv6-composer-attach { width:32px !important; height:32px !important; min-width:32px; min-height:32px; min-block-size:32px; border-radius:7px !important; }
   [data-cv6] [data-role="composer-actions"] { gap:6px !important; margin-top:7px !important; }
   [data-cv6] :is(button.cv6-composer-util, button.cv6-composer-primary, button.cv6-composer-attach)::before { inset:-6px -4px; }
+}
+
+@media (max-width:640px) {
+  [data-cv6][data-screen="chat-room"] > .scrbody { padding-left:12px !important; padding-right:12px !important; padding-bottom:122px !important; }
+}
+
+/* iPad portrait/split-view gets a deliberate desktop-derived canvas: a 720px
+   centered reading surface, aligned header and composer, and a contained Files
+   drawer. It remains the touch/swipe composition instead of forcing the 3-column
+   desktop rail into a viewport that cannot hold it. */
+@media (min-width:641px) and (max-width:899px) {
+  [data-cv6][data-screen="chat-room"] > .mhdr {
+    padding-left:max(24px, calc((100% - 720px) / 2)) !important;
+    padding-right:max(24px, calc((100% - 720px) / 2)) !important;
+  }
+  [data-cv6][data-screen="chat-room"] > .scrbody {
+    padding-left:max(24px, calc((100% - 720px) / 2)) !important;
+    padding-right:max(24px, calc((100% - 720px) / 2)) !important;
+    padding-bottom:130px !important;
+  }
+  [data-cv6][data-screen="chat-room"] > .mcomposer {
+    left:24px !important;
+    right:24px !important;
+    width:auto;
+    max-width:720px;
+    margin-inline:auto;
+    bottom:16px !important;
+  }
+  [data-cv6][data-screen="chat-room"] .cv6-fs-sheet {
+    left:24px;
+    right:24px;
+    width:auto;
+    max-width:720px;
+    height:min(820px, 88vh);
+    margin-inline:auto;
+    border:1px solid var(--hair);
+    border-bottom:0;
+  }
 }
 
 @media (min-width:641px) {

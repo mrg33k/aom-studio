@@ -665,6 +665,44 @@ error markers.
 
 **Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.
 
+### R23 - Files preview grid with retained list mode
+
+Started 2026-08-08 from Patrik's follow-up on the R21 two-column Files overview.
+Keep the two-column grid as the preferred overview, add correctly resized image
+previews inside grid cards, make every file card enter the existing in-app preview,
+and retain an explicit list-mode option. The layout choice should persist across the
+room Files surfaces and remain keyboard/touch accessible on mobile and desktop.
+
+**Status:** in progress.
+
+Implementation complete: Files now defaults to the persisted two-column grid on
+mobile and desktop, requests 440px image renditions, contains each preview without
+cropping, opens every supported type through the in-app viewer, and retains an
+explicit persisted List option. Selection remains functional and list-mode New badges
+no longer collide with filenames. Focused source checks and the mobile Playwright flow
+pass; the production build passes. Awaiting the combined R23/R24 release.
+
+### R24 - Centered desktop conversation and iPad-native canvas
+
+Started 2026-08-08 while R23 was in verification. Patrik clarified that the
+conversation is centered on phone but remains offset on iPad and desktop, and that
+iPad portrait still receives a visibly compressed phone composition because the
+current breakpoint treats every viewport below 900px as mobile. Center the readable
+conversation surface at tablet and desktop widths, and introduce an iPad-specific
+wider/taller composition that feels desktop-derived without forcing a three-column
+desktop rail into 768px. Preserve phone behavior, keyboard/touch gestures, and the
+new Files layout controls.
+
+**Status:** in progress.
+
+Implementation complete: the chat lifecycle now exposes one named reading lane,
+removes the one-sided repeated avatar gutter at every viewport, and centers a 760px
+desktop transcript. The 641-899px tablet composition uses an aligned 720px header,
+transcript, compact composer, and contained Files drawer, preserving touch/swipe
+behavior without squeezing in the three-column desktop rail. Browser measurements
+confirmed exact centers at 768x1024 and 1440x900; focused source checks, both new
+Playwright flows, and the production build pass. Awaiting the combined R23/R24 release.
+
 ### R22 - Avatar edit placement and signed-in profile identity
 
 Started 2026-08-08 from Patrik's avatar follow-up. Move the edit pencil to the
