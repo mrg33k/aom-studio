@@ -133,7 +133,7 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange }, ref) {
+const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange, sessionMode = 'room', airpodsSessionId = null, handoffOnStop = true, onSessionEnd = null }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -221,7 +221,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
       const sessionRes = await authFetch('/api/dashboard/voice-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: agentSlug, client_id: clientId, voice: settings.voice }),
+        body: JSON.stringify({ agent: agentSlug, client_id: clientId, voice: settings.voice, mode: sessionMode, session_id: airpodsSessionId }),
       })
       if (!sessionRes.ok) throw new Error('Session API failed')
       const sessionConfig = await sessionRes.json()
@@ -396,7 +396,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         const transcriptBody = finalTranscript.map(t => ({ role: t.role, text: t.text }))
 
         // Terminal rooms: fire-and-forget the richer Haiku summary in parallel.
-        if (TERMINAL_AGENTS.has(agentSlug)) {
+        if (handoffOnStop && TERMINAL_AGENTS.has(agentSlug)) {
           authFetch('/api/dashboard/voice-summary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -416,7 +416,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         // requires a real session and derives the speaker from the JWT rather
         // than believing a name in the body. Without the Authorization header
         // the call 401s and the agent never hears the call.
-        try {
+        if (handoffOnStop) try {
           const resp = await authFetch('/api/dashboard/voice-handoff', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -440,6 +440,15 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
           }
         } catch (err) {
           console.warn('[VoiceChat] voice-handoff POST failed:', err)
+        }
+        try {
+          await onSessionEnd?.({
+            sessionId: airpodsSessionId || sessionIdRef.current,
+            durationSecs: sessionSecs,
+            transcript: transcriptBody,
+          })
+        } catch (err) {
+          console.warn('[VoiceChat] onSessionEnd failed:', err)
         }
       }
     }
@@ -468,7 +477,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     volumeLevelRef.current = 0
     setVolumeLevel(0)
     updateStatus('idle')
-  }, [updateStatus, onTranscript, agentSlug, clientId, sessionSecs])
+  }, [updateStatus, onTranscript, agentSlug, clientId, sessionSecs, projectSlug, missionSlug, handoffOnStop, onSessionEnd, airpodsSessionId])
 
   const startSession = useCallback(async () => {
     if (status !== 'idle') return
@@ -499,6 +508,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
           client_id: clientId,
           voice: settings.voice,
           temperature: settings.temperature,
+          mode: sessionMode,
+          session_id: airpodsSessionId,
         }),
       })
       if (!sessionRes.ok) throw new Error(`Session API ${sessionRes.status}`)
@@ -828,6 +839,26 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 } finally {
                   updateStatus(prevStatus === 'creating' ? 'listening' : prevStatus)
                 }
+              } else if (sessionMode === 'airpods') {
+                try {
+                  const resp = await authFetch('/api/dashboard/airpods-action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      client_id: clientId,
+                      session_id: airpodsSessionId || sessionIdRef.current,
+                      action: call.name,
+                      arguments: args,
+                    }),
+                  })
+                  const data = await resp.json().catch(() => ({}))
+                  result = resp.ok ? data : { ok: false, error: data.error || `Action failed (${resp.status})` }
+                  if (result.ui_effect) {
+                    window.dispatchEvent(new CustomEvent('cv6:airpods-ui-effect', { detail: result.ui_effect }))
+                  }
+                } catch (err) {
+                  result = { ok: false, error: err.message }
+                }
               } else {
                 result = { error: `Unknown function: ${call.name}` }
               }
@@ -907,7 +938,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
       updateStatus('error')
       stopSession()
     }
-  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage])
+  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, sessionMode, airpodsSessionId])
 
   const toggleSession = useCallback(() => {
     if (status === 'idle' || status === 'error') startSession()

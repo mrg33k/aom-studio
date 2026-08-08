@@ -1,0 +1,24 @@
+# Corner AirPods Mode — Context
+
+**Mission path:** `corner:airpods-mode`
+**Status:** IN PROGRESS
+**Updated:** 2026-08-08
+
+The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
+`VoiceChat` transport inside its room composer, but that lifecycle is destroyed when the
+composer changes and its visible controls still use CV3 styling. Existing voice APIs
+provide Gemini Live context, create-project/create-mission tools, transcripts, and a
+post-call handoff. This mission turns those pieces into a global, safe operating layer.
+
+The working tree contains unrelated user changes in CV6 chat files. Preserve them and
+keep this mission’s integrations narrow.
+
+R1 now provides the global CV6 runtime, ephemeral Gemini credentials, tenant-scoped
+action and handoff APIs, durable attention data, and a compilable Capacitor iOS shell.
+No raw audio is stored. The remaining work is operational release work: apply the
+database migration, configure production secrets/origin, and validate wake/background
+behavior on a signed physical device before TestFlight/App Store distribution.
+
+R2 was authorized to release the mobile-web portion to the canonical production
+dashboard. Production deployment must use a clean release tree and the verified
+`aom-studio` Vercel project; Lab is not release proof.

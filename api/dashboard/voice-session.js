@@ -1,12 +1,12 @@
 // POST /api/dashboard/voice-session
 // Returns everything the browser needs to connect directly to Gemini Live.
-// No proxy, no edge function. Browser -> Google WebSocket.
+// The browser receives a one-use, short-lived ephemeral token; the long-lived
+// GEMINI_API_KEY stays server-side and is used only to mint that token.
 //
 // ── 2026-07-27 r3, corner:voice-chat ─────────────────────────────────────────
-// THIS RESPONSE CARRIES A LIVE CREDENTIAL. `wsUrl` is
-// wss://generativelanguage.googleapis.com/...?key=<GEMINI_API_KEY> — the raw
-// Google API key, in the JSON body, because the browser opens the socket
-// directly. Until this pass the endpoint sent Access-Control-Allow-Origin:*
+// THIS RESPONSE CARRIES A LIVE CREDENTIAL. `wsUrl` contains a one-use Gemini
+// ephemeral token because the browser opens the socket directly. Until the
+// security pass this endpoint sent Access-Control-Allow-Origin:*
 // and deliberately failed OPEN on auth, so an unauthenticated POST to
 // https://lab.aheadofmarket.com/api/dashboard/voice-session returned 200 and
 // the key. Verified live twice (round-2 reviewer + orchestrator).
@@ -35,6 +35,23 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
+
+async function createEphemeralToken() {
+  const expireTime = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const newSessionExpireTime = new Date(Date.now() + 60 * 1000).toISOString();
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/auth_tokens', {
+    method: 'POST',
+    headers: {
+      'x-goog-api-key': GEMINI_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ uses: 1, expireTime, newSessionExpireTime }),
+  });
+  if (!response.ok) throw new Error(`Gemini token provisioning failed (${response.status})`);
+  const token = await response.json();
+  if (!token?.name) throw new Error('Gemini token provisioning returned no token');
+  return token.name;
+}
 
 // --- WHO IS ON THE CALL is a VARIABLE, not a constant ------------------------
 // Before 2026-07-27 this prompt was a const that opened "You talk to Patrik
@@ -87,7 +104,7 @@ SYSTEM MAP (what exists, where things live):
 - iMessage: send-imessage.sh uses AppleScript + Messages.app. Patrik gets notified on task completion.
 - Voice: this session. Browser > Gemini 3.1 Flash Live WebSocket > audio playback.
 - Scripts: 50+ in AOM-EA/scripts (task lifecycle, relay, decomposition, verification, notifications)
-- Dashboard: CV4 (CornerV4.jsx) is the active design surface at aheadofmarket.com/dashboard. Two panels: conversations on left, mission/project context on right. CV3 is live prod (emergency fixes only). BoardView, GameDashboard, GameHUD are dead code -- never touch them.`
+- Dashboard: CV6 (src/dashboard/cv6next/CornerCV6.jsx) is the active Corner product surface. CV3 stays reserved for emergency fixes. BoardView, GameDashboard, and GameHUD are dead code.`
     : `ABOUT THIS WORKSPACE:
 Corner is the dashboard this workspace works in, and you are one of its AI agents. Speak only about THIS workspace's own projects, missions and work. Never discuss another workspace, another client, or the studio's internal tooling and team.
 
@@ -378,8 +395,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
 
-  const { agent, client_id, voice, temperature, model } = req.body || {};
+  const { agent, client_id, voice, temperature, model, mode, session_id } = req.body || {};
   const agentSlug = (agent && String(agent).trim()) || 'rex';
+  const airpodsMode = mode === 'airpods';
 
   // No default tenant. This used to fall back to a literal 'aom', which is the
   // single-player assumption in the tenant slot: a Ben-world or Karen-world
@@ -561,6 +579,20 @@ This call is signed in, but the workspace it belongs to could not be resolved, s
     systemInstruction += `\n\nLIVE CONTEXT (use this to answer questions about what's happening):\n\n${contextParts.join('\n\n')}`;
   }
 
+  if (airpodsMode) {
+    systemInstruction += `\n\nAIRPODS MODE — GLOBAL CORNER CONCIERGE:
+You are the persistent voice operating layer for Corner CV6, not merely the agent in one room.
+Keep replies brief and conversational. The visual interface carries detail.
+In this mode, ignore the base voice-router rule that defers tasks until after the call: create requested internal work during the live conversation with the available tools.
+Use the available tools while the conversation is live to read state, navigate CV6, create and update internal work, and route requests to the correct room.
+If a request spans topics, handle one topic at a time and name the room you are using. Ask a short routing question when the destination is ambiguous.
+Reads, navigation, and explicit reversible internal requests may run immediately. External sends, publishing, deletion, purchases, credential changes, and any irreversible action require a separate spoken confirmation. Never invent a confirmation.
+When an action returns requires_confirmation, restate exactly what will happen and ask for an affirmative answer. Then call the same tool again with the returned confirmation_token.
+Narrate only meaningful transitions, blockers, approvals, and outcomes. Never read a dashboard dump aloud.
+The full conversation will be segmented and handed to affected rooms when this session ends. Do not create duplicate handoff tasks just to preserve the conversation.
+Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
+  }
+
   // Voice selection (default: Kore for a clear, professional voice)
   const voiceName = VOICES[(voice || '').toLowerCase()] || 'Kore';
 
@@ -645,13 +677,101 @@ This call is signed in, but the workspace it belongs to could not be resolved, s
               required: ['name', 'project'],
             },
           },
+          ...(airpodsMode ? [
+            {
+              name: 'read_workspace_status',
+              description: 'Read a fresh concise workspace status: active tasks, blockers, recent completions, and agents currently working.',
+              parameters: { type: 'OBJECT', properties: {} },
+            },
+            {
+              name: 'open_room',
+              description: 'Open or focus a CV6 agent, project, or mission room in the visual interface.',
+              parameters: {
+                type: 'OBJECT',
+                properties: {
+                  room_id: { type: 'STRING', description: 'Agent slug, project slug, or mission slug.' },
+                  room_name: { type: 'STRING', description: 'Human-readable room name.' },
+                  room_type: { type: 'STRING', description: 'agent, project, or mission.' },
+                  project: { type: 'STRING', description: 'Parent project slug for mission rooms.' },
+                },
+                required: ['room_id'],
+              },
+            },
+            {
+              name: 'open_tool',
+              description: 'Open a CV6 tool. Supported tools: home, rooms, email, files, command, tracker, scribe, settings, background work.',
+              parameters: {
+                type: 'OBJECT',
+                properties: { tool: { type: 'STRING', description: 'CV6 tool name.' } },
+                required: ['tool'],
+              },
+            },
+            {
+              name: 'create_task',
+              description: 'Create queued internal work under a project mission. The spoken request itself is sufficient confirmation for this reversible internal action.',
+              parameters: {
+                type: 'OBJECT',
+                properties: {
+                  title: { type: 'STRING' }, description: { type: 'STRING' },
+                  project: { type: 'STRING' }, mission_slug: { type: 'STRING' },
+                  agent: { type: 'STRING' },
+                },
+                required: ['title', 'project', 'mission_slug'],
+              },
+            },
+            {
+              name: 'start_work',
+              description: 'Send a scoped instruction to a Corner room so its agent begins work.',
+              parameters: {
+                type: 'OBJECT',
+                properties: {
+                  instruction: { type: 'STRING' }, agent: { type: 'STRING' },
+                  project: { type: 'STRING' }, mission_slug: { type: 'STRING' },
+                },
+                required: ['instruction'],
+              },
+            },
+            {
+              name: 'manage_attention',
+              description: 'Acknowledge or snooze one or more proactive Corner follow-up items.',
+              parameters: {
+                type: 'OBJECT',
+                properties: {
+                  item_ids: { type: 'ARRAY', items: { type: 'STRING' } },
+                  operation: { type: 'STRING', description: 'acknowledge or snooze' },
+                  minutes: { type: 'NUMBER', description: 'Snooze duration, default 15.' },
+                },
+                required: ['item_ids', 'operation'],
+              },
+            },
+            {
+              name: 'confirm_consequential_action',
+              description: 'Execute a previously staged consequential action only after the caller explicitly confirmed it.',
+              parameters: {
+                type: 'OBJECT',
+                properties: {
+                  confirmation_token: { type: 'STRING' },
+                  confirmed: { type: 'BOOLEAN' },
+                },
+                required: ['confirmation_token', 'confirmed'],
+              },
+            },
+          ] : []),
         ],
       }],
     },
   };
 
+  let ephemeralToken;
+  try {
+    ephemeralToken = await createEphemeralToken();
+  } catch (error) {
+    console.error('[voice-session] ephemeral token provisioning failed:', error?.message || error);
+    return res.status(502).json({ error: 'Voice provider session could not be created' });
+  }
+
   return res.status(200).json({
-    wsUrl,
+    wsUrl: wsUrl.replace(`key=${GEMINI_API_KEY}`, `access_token=${encodeURIComponent(ephemeralToken)}`),
     setupMessage,
     voiceName,
     temperature: temp,

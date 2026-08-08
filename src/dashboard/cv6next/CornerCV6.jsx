@@ -3576,6 +3576,32 @@ export default function CornerCV6() {
     // dead 'rooms' target that fell through to nothing).
     else if (target === 'chat' || target === 'rooms') goTo('chatlist', null);
   }, [back, goTo, onOpenEmailColumn, onOpenWorkersColumn]);
+
+  // corner:airpods-mode R1 — the global voice layer lives above this component,
+  // while this view machine owns real CV6 navigation. Publish only the current
+  // visual context and accept a narrow, typed UI effect; canonical data changes
+  // still happen through authenticated APIs and the shared data provider.
+  useEffect(() => {
+    const active = workspaceColumns.find((column) => column.id === activeColumnId) || null;
+    window.dispatchEvent(new CustomEvent('cv6:airpods-context', {
+      detail: {
+        view,
+        activeColumnId: activeColumnId || null,
+        room: active?.type === 'chat' ? active.room : null,
+        tool: active?.type && active.type !== 'chat' ? active.type : view,
+      },
+    }));
+  }, [view, activeColumnId, workspaceColumns]);
+
+  useEffect(() => {
+    const applyEffect = (event) => {
+      const effect = event.detail || {};
+      if (effect.type === 'navigate' && effect.target) onNav(effect.target);
+      if (effect.type === 'open_room' && effect.room) onOpenRoom(effect.room, worldId);
+    };
+    window.addEventListener('cv6:airpods-ui-effect', applyEffect);
+    return () => window.removeEventListener('cv6:airpods-ui-effect', applyEffect);
+  }, [onNav, onOpenRoom, worldId]);
   // Open a project's home (missions + general chat) on the Home surface.
   const onOpenProject = useCallback((proj) => {
     const id = proj?.id || proj;

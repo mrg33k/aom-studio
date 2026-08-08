@@ -1,0 +1,75 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  actionAuthority,
+  attentionPrompt,
+  inQuietHours,
+  normalizeAirPodsPreferences,
+  rankAttentionItems,
+} from '../src/dashboard/cv6next/airpods/airpodsTypes.js';
+import {
+  authorityForAction,
+  idempotencyKey,
+  signConfirmation,
+  structuredHandoff,
+  verifyConfirmation,
+} from '../api/_lib/airpods.js';
+
+test('authority policy defaults unknown and consequential actions to confirmation', () => {
+  assert.equal(actionAuthority('open_room'), 'auto');
+  assert.equal(authorityForAction('create_task'), 'internal-explicit');
+  assert.equal(authorityForAction('send_email'), 'confirm');
+  assert.equal(authorityForAction('invented_action'), 'confirm');
+});
+
+test('idempotency keys are deterministic and respect valid caller keys', () => {
+  const input = { sessionId: 'session-1', action: 'open_room', args: { room_key: 'alpha' } };
+  assert.equal(idempotencyKey(input), idempotencyKey(input));
+  assert.equal(idempotencyKey({ ...input, supplied: 'caller:key-123' }), 'caller:key-123');
+  assert.notEqual(idempotencyKey(input), idempotencyKey({ ...input, args: { room_key: 'beta' } }));
+});
+
+test('confirmation tokens verify, reject tampering, and reject expiry', () => {
+  const secret = 'test-only-secret';
+  const valid = signConfirmation({ action: 'publish', exp: Date.now() + 10_000 }, secret);
+  assert.equal(verifyConfirmation(valid, secret)?.action, 'publish');
+  assert.equal(verifyConfirmation(`${valid}x`, secret), null);
+  const expired = signConfirmation({ action: 'publish', exp: Date.now() - 1 }, secret);
+  assert.equal(verifyConfirmation(expired, secret), null);
+});
+
+test('attention batching deduplicates, respects snooze, and orders by urgency', () => {
+  const now = new Date('2026-08-08T12:00:00Z');
+  const preferences = normalizeAirPodsPreferences({ priorities: ['approval', 'blocker', 'completion'] });
+  const ranked = rankAttentionItems([
+    { id: 'done', source_type: 'task', source_id: '1', priority: 'completion', created_at: '2026-08-08T10:00:00Z' },
+    { id: 'duplicate', source_type: 'task', source_id: '1', priority: 'completion', created_at: '2026-08-08T10:01:00Z' },
+    { id: 'blocked', source_type: 'task', source_id: '2', priority: 'blocker', created_at: '2026-08-08T11:00:00Z' },
+    { id: 'approval', source_type: 'task', source_id: '3', priority: 'approval', created_at: '2026-08-08T11:30:00Z' },
+    { id: 'snoozed', source_type: 'task', source_id: '4', priority: 'approval', snoozed_until: '2026-08-08T13:00:00Z' },
+  ], preferences, now);
+  assert.deepEqual(ranked.map((item) => item.id), ['approval', 'blocked', 'done']);
+  assert.match(attentionPrompt(ranked.length, 0), /3/);
+});
+
+test('quiet hours work across midnight', () => {
+  const preferences = { quietHoursStart: '21:00', quietHoursEnd: '08:00' };
+  const at = (hour) => ({ getHours: () => hour, getMinutes: () => 0 });
+  assert.equal(inQuietHours(at(22), preferences), true);
+  assert.equal(inQuietHours(at(7), preferences), true);
+  assert.equal(inQuietHours(at(12), preferences), false);
+});
+
+test('structured handoff retains decisions, constraints, actions, and questions', () => {
+  const handoff = structuredHandoff([
+    { role: 'user', text: 'Let\'s build the walkaround mode. Never save raw audio.' },
+    { role: 'model', text: 'Understood.' },
+    { role: 'user', text: 'Can you create the task?' },
+  ]);
+  assert.match(handoff.summary, /walkaround mode/);
+  assert.equal(handoff.decisions.length, 1);
+  assert.equal(handoff.constraints.length, 1);
+  assert.equal(handoff.requested_actions.length, 2);
+  assert.deepEqual(handoff.unresolved_questions, ['Can you create the task?']);
+});
