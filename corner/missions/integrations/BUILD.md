@@ -57,4 +57,10 @@ Implemented 2026-08-08 (release verification still in progress):
 - The bridge commit `0fba324d0` is on `master`; the live launchd daemon restarted cleanly and is polling with the new module.
 - Activation blocker: the current OpenAI Platform key reaches the Responses API but returns `credit_balance_exhausted`. The usage event finalizes as failed with a request ID, and users get an honest billing notice with no Claude fallback. Successful answers require adding Platform credits.
 
-**Status:** in progress.
+Release verification:
+
+- Dashboard commit `310bf1f8` was pushed to `main` and production deployment `dpl_DNQVDyip2beokkwmA4RDT7J5uPyU` reached Ready on the `aom-studio` project.
+- The production staleness guard resolves `310bf1f8` as current for `aheadofmarket.com/dashboard`; the deployed lazy bundle contains the `OpenAI GPT-5.6` picker option.
+- Canonical production correctly redirects unauthenticated browser sessions to `/login`. Authenticated interaction was covered by the focused browser spec, while responsive visual QA used the deterministic local demo at phone, iPad, and desktop widths.
+
+**Status:** code, database, bridge, and dashboard shipped; successful OpenAI answers blocked only by Platform credits.
