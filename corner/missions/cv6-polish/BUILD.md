@@ -673,14 +673,16 @@ previews inside grid cards, make every file card enter the existing in-app previ
 and retain an explicit list-mode option. The layout choice should persist across the
 room Files surfaces and remain keyboard/touch accessible on mobile and desktop.
 
-**Status:** in progress.
+**Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.
 
 Implementation complete: Files now defaults to the persisted two-column grid on
 mobile and desktop, requests 440px image renditions, contains each preview without
 cropping, opens every supported type through the in-app viewer, and retains an
 explicit persisted List option. Selection remains functional and list-mode New badges
 no longer collide with filenames. Focused source checks and the mobile Playwright flow
-pass; the production build passes. Awaiting the combined R23/R24 release.
+pass; the production build passes. Released with R24 in commit `564556bb` through
+Ready deployment `dpl_AEAtH2XLKZNFpThkdj7tfVbVanAd`. The live JS contains the
+Grid/List, preview, 440px rendition, and shared preference markers.
 
 ### R24 - Centered desktop conversation and iPad-native canvas
 
@@ -693,7 +695,7 @@ wider/taller composition that feels desktop-derived without forcing a three-colu
 desktop rail into 768px. Preserve phone behavior, keyboard/touch gestures, and the
 new Files layout controls.
 
-**Status:** in progress.
+**Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.
 
 Implementation complete: the chat lifecycle now exposes one named reading lane,
 removes the one-sided repeated avatar gutter at every viewport, and centers a 760px
@@ -701,7 +703,10 @@ desktop transcript. The 641-899px tablet composition uses an aligned 720px heade
 transcript, compact composer, and contained Files drawer, preserving touch/swipe
 behavior without squeezing in the three-column desktop rail. Browser measurements
 confirmed exact centers at 768x1024 and 1440x900; focused source checks, both new
-Playwright flows, and the production build pass. Awaiting the combined R23/R24 release.
+Playwright flows, and the production build pass. Released with R23 in commit
+`564556bb` through Ready deployment `dpl_AEAtH2XLKZNFpThkdj7tfVbVanAd`. Vercel
+reports both Ahead of Market aliases, `/dashboard` resolves the new assets, and the
+live CSS contains the 720px tablet and 760px desktop reading-lane contracts.
 
 ### R22 - Avatar edit placement and signed-in profile identity
 
