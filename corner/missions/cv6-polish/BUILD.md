@@ -640,14 +640,14 @@ state; attachment lives inside the message field; and the automatic label explai
 Claude-first fallback behavior. Focused composer/model contracts and the production build
 pass as part of the combined CV6 release.
 
-Release completed in commit `a3f3a281`, included in ready production deployment
+The initial release landed in commit `a3f3a281` and was verified on staging deployment
 `dpl_4ogGJrqbxXBMAHgcd7kcrqUdpaUx` at `https://lab.aheadofmarket.com`.
 
 Post-release QA (2026-08-08) traced the complete ancestry: `Cv6InputBar` landed in
 `c471fcf2`, the preference resolver landed in `905fcd15`, and both are ancestors of
 the deployed `a3f3a281` release. The interaction above is therefore present in that
-production bundle. The same QA pass added three accuracy/polish hardenings for the
-next release: a failed preference read says `Model unavailable` instead of guessing
+staging bundle. The same QA pass added three accuracy/polish hardenings: a failed
+preference read says `Model unavailable` instead of guessing
 Auto, the automatic route's compact label no longer claims Claude while a fallback
 may be answering, and the menu is 300px wide so its model row does not wrap. Focused
 node contracts pass 4/4, the authenticated model-switch Playwright flow passes 1/1,
@@ -655,4 +655,12 @@ the Vite production build passes, and the real 390px/desktop fixture was inspect
 in dark and light. The light popover computes to `rgb(255,255,255)` with dark text;
 the embedded attachment target is 44x44 on mobile.
 
-**Status:** core shipped and deployment verified; QA hardening release pending.
+The hardening landed in commit `f537745c`. A clean archive of that exact commit was
+deployed to the real `aom-studio` production project as
+`dpl_AvYd4ENEYPPm2Ym8Zq8CLFbiv6NX`, Ready and aliased to
+`https://aheadofmarket.com`. A direct fetch of `/dashboard` resolved the new
+`main-dwoA8uYW.js` entry and `CornerCV6-C_Bp0_gT.js` bundle; the live bundle contains
+the model label, preference-change wiring, attachment control, and honest load/save
+error markers.
+
+**Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.

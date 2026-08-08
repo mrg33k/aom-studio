@@ -224,8 +224,16 @@ dark mode at 390px and desktop widths. Focused node checks passed 4/4, the mocke
 authenticated model-switch flow passed 1/1, and the Vite production build passed.
 
 Commit ancestry confirmed that the composer (`c471fcf2`) and resolver (`905fcd15`)
-both landed before the documented `a3f3a281` production release, even though they do
-not appear in that later commit's own file stat. Core R18 is live. The QA pass then
-hardened failed-load honesty, removed the misleading `Auto · Claude` compact label,
-and widened the menu to prevent model-row wrapping; that small follow-up still needs
-its own production release.
+both landed before the documented `a3f3a281` staging release, even though they do not
+appear in that later commit's own file stat. The QA pass then hardened failed-load
+honesty, removed the misleading `Auto · Claude` compact label, and widened the menu
+to prevent model-row wrapping; those changes landed in `f537745c`.
+
+Patrik clarified that the real production surface is
+`https://aheadofmarket.com/dashboard`, not the lab alias. A clean archive of
+`f537745c` was deployed to the `aom-studio` project as
+`dpl_AvYd4ENEYPPm2Ym8Zq8CLFbiv6NX`. Vercel reports it Ready with both root-domain
+aliases, and a direct fetch of the production dashboard resolved its new entry and
+CV6 assets. The served CV6 bundle contains the current-model label, attachment-in-field
+control, model preference event wiring, and honest unavailable/load/save states. R18
+is now shipped and verified on the true production URL.
