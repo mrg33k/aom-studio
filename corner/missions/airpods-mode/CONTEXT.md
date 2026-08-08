@@ -1,7 +1,7 @@
 # Corner AirPods Mode — Context
 
 **Mission path:** `corner:airpods-mode`
-**Status:** IN PROGRESS
+**Status:** DONE
 **Updated:** 2026-08-08
 
 The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
@@ -41,3 +41,6 @@ Gemini audio starts only after setup, and Corner receives an explicit greeting t
 R4 reopened after the stored physical-session transcript revealed Google's exact 1008
 close reason. Live probes verified ephemeral tokens require
 `BidiGenerateContentConstrained`; the standard method accepts API-key callers only.
+
+R4 is live from commit `635cdeb9`. The authenticated voice-session endpoint now pairs
+its ephemeral token with the constrained Gemini Live socket method.

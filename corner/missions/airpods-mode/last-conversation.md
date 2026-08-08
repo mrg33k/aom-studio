@@ -79,3 +79,9 @@ The stored failed session contained Google's close reason: the socket treated th
 ephemeral token as an unregistered caller. Live method/credential probes reproduced the
 failure and verified `BidiGenerateContentConstrained` reaches `setupComplete` with the
 same token. R4 opened to release that server-side method correction.
+
+## 2026-08-08 — R4 production release
+
+Commit `635cdeb9` changed the authenticated voice-session response to the constrained
+Gemini Live method and passed API syntax plus 9/9 focused tests. Its clean `aom-studio`
+production deployment reached READY. Physical iPhone/AirPods retesting is now unblocked.

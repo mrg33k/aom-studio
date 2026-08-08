@@ -104,7 +104,10 @@ browser receives an ephemeral token, preserving the server-side long-lived key.
 and reached `setupComplete` on the constrained method. API syntax, diff checks, and the
 focused AirPods suite pass (9/9).
 
-**Status:** verified — production deployment in progress
+**Production result:** Commit `635cdeb9` fast-forwarded `main`; verified `aom-studio`
+deployment `aom-studio-ezlf1skel-aheads-projects-d2a4c70f.vercel.app` reached READY.
+
+**Status:** complete
 
 ### R3 — Mobile legibility and voice handshake recovery (2026-08-08)
 
