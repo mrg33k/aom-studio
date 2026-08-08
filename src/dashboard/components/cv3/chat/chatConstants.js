@@ -46,17 +46,15 @@ export const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-// Per-chat model selection (corner:gemini-workers R3). The per-room picker on
-// the normal dashboard offers CLAUDE models only — model is now a function of
-// the SURFACE (Patrik 2026-06-15, "lock per surface"): the normal dashboard is
-// Claude, /cvg is Gemini. The Gemini rows were removed so a room can no longer
-// be flipped to Gemini on the live dashboard; /cvg picks Gemini via its own
-// per-surface control (localStorage 'cvgModel'), not this list.
+// Per-chat model selection. The normal dashboard offers the automatic Claude
+// tool lane, explicit Claude models, and an AOM-managed hosted OpenAI lane.
+// /cvg still owns its Gemini picker separately (localStorage 'cvgModel').
 export const MODEL_OPTIONS = [
   { id: 'default',          label: 'Auto (Claude + fallback)', desc: 'Sonnet first; switches on limits' },
   { id: 'opus',             label: 'Claude Opus',          desc: 'Deepest reasoning' },
   { id: 'sonnet',           label: 'Claude Sonnet',        desc: 'Fast + capable' },
   { id: 'haiku',            label: 'Claude Haiku',         desc: 'Fastest, light' },
+  { id: 'openai-gpt-5.6',   label: 'OpenAI GPT-5.6',       desc: 'Hosted reasoning · AOM managed' },
 ]
 
 // Per-surface model (corner:gemini-workers step 6). Model is decided by which

@@ -73,6 +73,11 @@ function shortModelLabel(id) {
   return modelOption(id).label.replace(/^Claude\s+/, '');
 }
 
+function modelRouteDetail(id, sourceLabel) {
+  if (id === 'openai-gpt-5.6') return `${sourceLabel} · hosted OpenAI`;
+  return `${sourceLabel} · fallback on limits`;
+}
+
 function MenuRow({ icon, label, detail, hasSubmenu, onClick, tint, testid }) {
   return (
     <button type="button" className="cv6-command-row" data-testid={testid} onClick={onClick}
@@ -149,7 +154,7 @@ function CommandsMenu({
                 })}
               </div>
               <MenuRow icon={I.brain} label={model.unavailable ? 'Model unavailable' : `Model: ${model.label}`}
-                detail={model.unavailable ? 'Could not load this room’s saved model' : `${model.sourceLabel} · fallback on limits`} hasSubmenu
+                detail={model.unavailable ? 'Could not load this room’s saved model' : model.routeDetail} hasSubmenu
                 onClick={() => setView('model')} testid="cv6-commands-model" />
               <MenuRow icon={I.image} label="Image generation" detail="Gemini · Ideogram · OpenAI" hasSubmenu
                 onClick={() => setView('image-gen')} testid="cv6-commands-image-gen" />
@@ -330,10 +335,14 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
   const effectiveModelOption = modelOption(effectiveModel.id);
   const workspaceModel = String(modelPrefs?._all || '').trim();
   const inheritedModel = workspaceModel && workspaceModel !== 'default' ? workspaceModel : 'default';
+  const modelSourceLabel = effectiveModel.source === 'room'
+    ? 'Set for this room'
+    : effectiveModel.source === 'workspace' ? 'Workspace setting' : 'Automatic route';
   const model = {
     label: effectiveModelOption.label,
     shortLabel: shortModelLabel(effectiveModel.id),
-    sourceLabel: effectiveModel.source === 'room' ? 'Set for this room' : effectiveModel.source === 'workspace' ? 'Workspace setting' : 'Automatic route',
+    sourceLabel: modelSourceLabel,
+    routeDetail: modelRouteDetail(effectiveModel.id, modelSourceLabel),
     inheritedLabel: modelOption(inheritedModel).label,
     roomSelection: String(modelPrefs?.[preferenceKey] || 'default'),
     loading: modelLoading,

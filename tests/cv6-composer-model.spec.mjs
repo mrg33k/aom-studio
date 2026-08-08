@@ -39,7 +39,7 @@ test('composer resolves, displays, and changes the room model from Commands', as
       attachHeight: attach?.getBoundingClientRect().height,
     }
   })
-  expect(containment).toEqual({ inside: true, attachWidth: 44, attachHeight: 44 })
+  expect(containment).toEqual({ inside: true, attachWidth: 32, attachHeight: 32 })
   await expect(page.locator('[data-role="composer-actions"] .cv6-mode-toggle')).toHaveCount(0)
 
   await page.getByTestId('cv6-commands-menu-button').click()
@@ -52,15 +52,15 @@ test('composer resolves, displays, and changes the room model from Commands', as
   expect(popoverColors).toEqual({ background: 'rgb(255, 255, 255)', color: 'rgb(24, 24, 27)' })
 
   await page.getByTestId('cv6-commands-model').click()
-  await page.getByTestId('cv6-commands-model-sonnet').click()
+  await page.getByTestId('cv6-commands-model-openai-gpt-5.6').click()
   await expect.poll(() => modelPatches.length).toBe(1)
-  expect(modelPatches[0]).toMatchObject({ slug: 'renderer-room', model: 'sonnet', client_id: 'local-render' })
-  await expect(page.getByTestId('cv6-current-model')).toHaveText('Sonnet')
+  expect(modelPatches[0]).toMatchObject({ slug: 'renderer-room', model: 'openai-gpt-5.6', client_id: 'local-render' })
+  await expect(page.getByTestId('cv6-current-model')).toHaveText('OpenAI GPT-5.6')
 
   await page.getByTestId('cv6-commands-menu-button').click()
   await page.getByRole('button', { name: 'plan', exact: true }).click()
   await page.getByTestId('cv6-commands-menu-scrim').click()
-  await page.getByTestId('cv6-chat-input').fill('Plan this with Sonnet')
+  await page.getByTestId('cv6-chat-input').fill('Plan this with OpenAI')
   await page.getByRole('button', { name: 'Send message' }).click()
   await expect.poll(() => messagePosts.length).toBe(1)
   expect(messagePosts[0].metadata?.interaction_mode).toBe('plan')

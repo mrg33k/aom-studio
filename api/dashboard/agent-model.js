@@ -16,6 +16,13 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const PREF_KEY = 'agent_models';
+const ALLOWED_MODELS = new Set([
+  'default',
+  'opus',
+  'sonnet',
+  'haiku',
+  'openai-gpt-5.6',
+]);
 
 async function getModels(clientId, headers) {
   const r = await fetch(
@@ -31,7 +38,7 @@ async function getModels(clientId, headers) {
 
 async function saveModels(clientId, models, headers) {
   const value = JSON.stringify(models);
-  await fetch(
+  const response = await fetch(
     `${SUPABASE_URL}/rest/v1/user_preferences?on_conflict=key,client_id`,
     {
       method: 'POST',
@@ -39,6 +46,7 @@ async function saveModels(clientId, models, headers) {
       body: JSON.stringify({ key: PREF_KEY, client_id: clientId, value, updated_at: new Date().toISOString() }),
     }
   );
+  if (!response.ok) throw new Error('Could not save model preference');
 }
 
 export default async function handler(req, res) {
@@ -76,6 +84,14 @@ export default async function handler(req, res) {
   if (req.method === 'PATCH') {
     const { slug, model, client_id } = req.body || {};
     if (!slug || !model) return res.status(400).json({ error: 'slug and model required' });
+    const normalizedSlug = String(slug).trim();
+    if (!normalizedSlug || normalizedSlug.length > 200
+        || ['__proto__', 'prototype', 'constructor'].includes(normalizedSlug)) {
+      return res.status(400).json({ error: 'Invalid room' });
+    }
+    if (!ALLOWED_MODELS.has(String(model).trim().toLowerCase())) {
+      return res.status(400).json({ error: 'Unsupported model' });
+    }
     let tenant;
     try {
       ({ tenant } = await verifyTenant(client_id || 'aom', req));
@@ -85,7 +101,7 @@ export default async function handler(req, res) {
     }
     try {
       const models = await getModels(tenant, headers);
-      models[slug] = model;
+      models[normalizedSlug] = String(model).trim().toLowerCase();
       await saveModels(tenant, models, headers);
       return res.status(200).json({ ok: true });
     } catch (err) {

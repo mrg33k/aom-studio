@@ -5,6 +5,7 @@ import {
   resolveEffectiveRoomModel,
   roomModelPreferenceKey,
 } from '../src/dashboard/cv6next/data/modelPreferences.js'
+import { MODEL_OPTIONS } from '../src/dashboard/components/cv3/chat/chatConstants.js'
 
 const input = readFileSync(new URL('../src/dashboard/cv6next/Cv6InputBar.jsx', import.meta.url), 'utf8')
 
@@ -18,6 +19,19 @@ test('effective model follows room, workspace, then automatic precedence', () =>
   assert.deepEqual(resolveEffectiveRoomModel({ _all: 'opus', bobby: 'haiku' }, 'bobby'), { id: 'haiku', source: 'room' })
   assert.deepEqual(resolveEffectiveRoomModel({ _all: 'opus', bobby: 'default' }, 'bobby'), { id: 'opus', source: 'workspace' })
   assert.deepEqual(resolveEffectiveRoomModel({ _all: 'default' }, 'bobby'), { id: 'default', source: 'automatic' })
+})
+
+test('OpenAI is a deliberate room model, not an automatic fallback', () => {
+  const option = MODEL_OPTIONS.find(({ id }) => id === 'openai-gpt-5.6')
+  assert.deepEqual(option, {
+    id: 'openai-gpt-5.6',
+    label: 'OpenAI GPT-5.6',
+    desc: 'Hosted reasoning · AOM managed',
+  })
+  assert.deepEqual(
+    resolveEffectiveRoomModel({ bobby: 'openai-gpt-5.6' }, 'bobby'),
+    { id: 'openai-gpt-5.6', source: 'room' },
+  )
 })
 
 test('composer keeps only voice/send below the field and moves state into Commands', () => {
