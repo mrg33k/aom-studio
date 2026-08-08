@@ -602,8 +602,28 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
   // Temperature (0.0 - 2.0, default 0.8 for natural conversation)
   const temp = Math.min(2.0, Math.max(0.0, parseFloat(temperature) || 0.8));
 
-  // WebSocket URL for direct browser connection
-  const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
+  // WebSocket URL for direct browser connection.
+  //
+  // ── 2026-08-08, corner:airpods-mode ──────────────────────────────────────
+  // The METHOD NAME depends on the credential, and getting it wrong kills every
+  // voice session at connect. Verified live against the Live API this date:
+  //   BidiGenerateContent             + ?key=<api key>      -> setupComplete
+  //   BidiGenerateContent             + ?access_token=<tok> -> CLOSED 1008
+  //       "Method doesn't allow unregistered callers (callers without
+  //        established identity). Please use API Key or other form of API
+  //        consumer identity."
+  //   BidiGenerateContentConstrained  + ?access_token=<tok> -> setupComplete
+  // We hand the browser an EPHEMERAL TOKEN, so we must use the Constrained
+  // method. Sending a token to the plain method is what took down Patrik's
+  // first AirPods session (997f4ee8, 2026-08-08 16:24 — 82s, zero words
+  // captured): the socket opened and Google closed it before setup.
+  //
+  // Also verified the same day: systemInstruction IS honored on Constrained
+  // (codeword probe came back verbatim), so the speaker-identity and workspace
+  // context prompt below still applies. And do NOT pin the model into the token
+  // via bidiGenerateContentSetup — a constrained token returns CLOSED 1011
+  // "Internal error encountered." The setup message stays client-side.
+  const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained`;
 
   // Setup message the client sends as first WebSocket message
   // v1beta endpoint uses "setup" as top-level key
@@ -771,7 +791,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
   }
 
   return res.status(200).json({
-    wsUrl: wsUrl.replace(`key=${GEMINI_API_KEY}`, `access_token=${encodeURIComponent(ephemeralToken)}`),
+    wsUrl: `${wsUrl}?access_token=${encodeURIComponent(ephemeralToken)}`,
     setupMessage,
     voiceName,
     temperature: temp,
