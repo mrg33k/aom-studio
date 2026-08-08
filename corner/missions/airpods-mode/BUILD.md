@@ -127,7 +127,16 @@ unclear, UI-navigation claims were not trustworthy, and the ending was awkward.
   exposed exactly one top-menu entry, had zero horizontal overflow, and rendered the
   296×176 menu fully inside the viewport without covering the composer.
 
-**Status:** verified — production release in progress
+**Production result:**
+
+- Commit `842747e4` fast-forwarded `main` and deployed to the verified `aom-studio`
+  production project as `aom-studio-abzvqvu3f-aheads-projects-d2a4c70f.vercel.app`.
+- The deployment reached READY; canonical `https://aheadofmarket.com/dashboard`
+  returned HTTP 200 and served the new shared-screen and natural-session-end markers.
+- Both protected voice APIs were verified present and returned 401 without a signed-in
+  Corner session.
+
+**Status:** complete
 
 ### R4 — Constrained Gemini credential repair (2026-08-08)
 

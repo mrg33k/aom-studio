@@ -107,3 +107,11 @@ and end naturally after a short goodbye. The prompt explicitly forbids unverifie
 completion claims. Twelve focused tests, syntax checks, the production build, and
 authenticated visual checks at iPhone and iPad dimensions pass. Production deployment
 is the remaining R5 step.
+
+## 2026-08-08 — R5 production release
+
+Commit `842747e4` fast-forwarded `main` and the verified `aom-studio` production
+deployment reached READY. The canonical dashboard returned HTTP 200 and its served
+client asset contains the new shared-screen and natural-session-end behavior. Both
+voice APIs remain protected and returned 401 to unauthenticated probes. R5 is complete;
+the user can now repeat the physical iPhone/AirPods conversation test.

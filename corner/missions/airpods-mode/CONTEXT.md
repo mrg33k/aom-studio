@@ -1,7 +1,7 @@
 # Corner AirPods Mode — Context
 
 **Mission path:** `corner:airpods-mode`
-**Status:** IN PROGRESS
+**Status:** DONE
 **Updated:** 2026-08-08
 
 The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
@@ -48,3 +48,10 @@ its ephemeral token with the constrained Gemini Live socket method.
 R5 reopened after successful iPad conversation testing exposed an iPhone-only entry
 failure and the gap between conversational voice and a genuinely shared-control Corner
 operator. The work targets both responsive visibility and grounded room/UI agency.
+
+R5 is live from commit `842747e4`. The phone-wide CV6 shell now owns one consistent
+headset entry across Home and Chat; the compact cockpit visualizes voice state and shows
+screen context plus verified action receipts. Voice can resolve and read authoritative
+rooms, navigate the visible UI through real effects, queue mission-backed work, report
+cross-room state, and end naturally. Physical iPhone/AirPods retesting remains the final
+device-level validation.
