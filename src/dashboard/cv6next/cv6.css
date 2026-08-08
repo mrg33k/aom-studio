@@ -2766,17 +2766,9 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 [data-cv6] .restcol .restrow .sdot.newdot.is-new,
 [data-cv6][data-screen="home-mobile"] .mresumecard .sdot.newdot.is-new { margin-right:2px; }
 
-/* Which column the arrow keys are standing in (Patrik 2026-08-06). Without a mark
-   you cannot tell where ←/→ will take you next, and the first press feels random.
-   DESKTOP ONLY (Patrik 2026-08-07: "an outline over the chat boxes when I swipe into
-   them"). onOpenRoom sets knavZone on every open including mobile, where there are no
-   arrow keys to stand anywhere — so this painted a 1.5px accent ring around the whole
-   chat every time he swiped in. The mobile block below zeroes .cv6-workspace-column's
-   box-shadow, but this rule carries an extra attribute selector and won the cascade.
-   Gating it at the breakpoint fixes the cause instead of racing specificity. */
-@media (min-width:900px) {
-  [data-cv6] .cv6-workspace-column[data-knav-zone="on"] { box-shadow:inset 0 0 0 1.5px var(--accent); }
-}
+/* The shell still tracks data-knav-zone so ←/→ knows which column owns the
+   keyboard, but selected rooms do not paint a persistent accent outline. The
+   shared :focus-visible rules below remain the visible keyboard affordance. */
 
 [data-cv6] button { border-radius:999px !important; }
 /* ...except the composer's secondary controls (Patrik 2026-08-06). Voice and Send

@@ -618,3 +618,26 @@ Resolution and verification (2026-07-21):
   the final hardware signoff.
 
 **Status:** shipped and automated/deployment verified; signed-in iPhone signoff pending.
+
+### R18 - Composer model visibility and command consolidation
+
+Started 2026-08-07 from Patrik's live session-limit follow-up. The room composer
+must always name the effective configured model, let Patrik change that model from
+Commands, and resolve room-specific versus `_all` workspace preferences exactly as
+the bridge does. Work/Plan moves to the top of Commands, attachment moves inside the
+message field, and only Commands/checklists plus the voice/send pair remain below the
+field. The Commands surface must use CV6 semantic theme tokens so light mode is a
+real light surface instead of the current hard-coded dark glass panel.
+
+Design gate: typography stays `var(--font-sans)` with the existing compact mono
+eyebrows; brand is Corner CV6. This design is unmistakably Corner because the dense,
+quiet composer exposes consequential room state in one token-driven command surface,
+while the voice/send pair retains the only primary circular emphasis.
+
+Implemented and verified locally on 2026-08-07: effective model resolution now follows
+room, workspace, then automatic precedence; the Commands surface owns model and Work/Plan
+state; attachment lives inside the message field; and the automatic label explains the
+Claude-first fallback behavior. Focused composer/model contracts and the production build
+pass as part of the combined CV6 release.
+
+**Status:** implemented and verified; ready to deploy.

@@ -294,7 +294,7 @@ test.describe('CV6 shared message renderer', () => {
     await expect(foldedThread.getByText('Older day reply folded under the day card.')).toBeVisible()
   })
 
-  test('Mobile ChatLifecycle keeps folded days, clamp, gallery, and live goal turn in the shared renderer', async ({ page }) => {
+  test('Mobile ChatLifecycle keeps folded days, clamp, gallery, and one-card live progress', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(`${BASE}/dashboard?cv6=1&demo=mobile-chat-lifecycle`, { waitUntil: 'domcontentloaded' })
 
@@ -318,6 +318,9 @@ test.describe('CV6 shared message renderer', () => {
     // (pdf + md) feeding the chat file modal, so 'Review all' appears twice.
     await expect(latestThread.getByText('sent 2 files')).toBeVisible()
     await expect(latestThread.getByRole('button', { name: 'Review all' }).first()).toBeVisible()
-    await expect(latestThread.getByText('Checking mobile renderer output')).toBeVisible()
+    await expect(latestThread.locator('[data-cv6-live-work]')).toHaveCount(0)
+    const liveCard = page.locator('.cv6-step-card[data-cv6-live-work]')
+    await expect(liveCard).toBeVisible()
+    await expect(liveCard.locator('.cv6-sc-current')).toHaveText('Keeping mobile gallery compatibility')
   })
 })

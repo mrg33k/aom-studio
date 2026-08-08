@@ -53,7 +53,7 @@ export const VOICE_OPTIONS = [
 // be flipped to Gemini on the live dashboard; /cvg picks Gemini via its own
 // per-surface control (localStorage 'cvgModel'), not this list.
 export const MODEL_OPTIONS = [
-  { id: 'default',          label: 'Auto (Claude Sonnet)', desc: 'System default' },
+  { id: 'default',          label: 'Auto (Claude + fallback)', desc: 'Sonnet first; switches on limits' },
   { id: 'opus',             label: 'Claude Opus',          desc: 'Deepest reasoning' },
   { id: 'sonnet',           label: 'Claude Sonnet',        desc: 'Fast + capable' },
   { id: 'haiku',            label: 'Claude Haiku',         desc: 'Fastest, light' },
