@@ -68,6 +68,32 @@ test('OpenAI preference is saved only after tenant authentication', async () => 
   assert.deepEqual(JSON.parse(writes[0].value), { bobby: 'openai-gpt-5.6' })
 })
 
+test('local Codex preference is allowlisted for paired-runner rooms', async () => {
+  const writes = []
+  globalThis.fetch = async (url, options = {}) => {
+    const value = String(url)
+    if (value.endsWith('/auth/v1/user')) {
+      return { ok: true, json: async () => ({ id: 'user-1', user_metadata: { world: 'aom' } }) }
+    }
+    if (value.includes('/rest/v1/user_preferences') && options.method !== 'POST') {
+      return { ok: true, json: async () => ([]) }
+    }
+    if (value.includes('/rest/v1/user_preferences') && options.method === 'POST') {
+      writes.push(JSON.parse(options.body))
+      return { ok: true, json: async () => ({}) }
+    }
+    throw new Error(`unexpected request: ${options.method || 'GET'} ${value}`)
+  }
+  const req = {
+    method: 'PATCH', query: {}, headers: { authorization: 'Bearer stub-jwt' },
+    body: { slug: 'bobby', model: 'codex-local', client_id: 'aom' },
+  }
+  const res = responseRecorder()
+  await handler(req, res)
+  assert.equal(res.statusCode, 200)
+  assert.deepEqual(JSON.parse(writes[0].value), { bobby: 'codex-local' })
+})
+
 test('a failed preference write is reported instead of pretending success', async () => {
   globalThis.fetch = async (url, options = {}) => {
     const value = String(url)

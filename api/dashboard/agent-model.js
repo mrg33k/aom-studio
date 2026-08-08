@@ -22,6 +22,7 @@ const ALLOWED_MODELS = new Set([
   'sonnet',
   'haiku',
   'openai-gpt-5.6',
+  'codex-local',
 ]);
 
 async function getModels(clientId, headers) {

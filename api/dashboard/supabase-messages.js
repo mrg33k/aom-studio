@@ -9,6 +9,7 @@
 
 import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt, callerIdentity } from '../_lib/verifyTenant.js'
+import { enqueueRunnerJob, resolveRunnerRoute } from '../_lib/runnerJobs.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 
@@ -313,6 +314,55 @@ export default async function handler(req, res) {
       ? (identity?.world || null)
       : resolvedClientId
 
+    // corner:integrations R3 — a local Codex room belongs to the human who
+    // sent this turn, not to a shared server credential. Resolve the room's
+    // saved preference before writing so we can refuse an unpaired selection
+    // without persisting an orphaned user message. A per-message model override
+    // still outranks the room preference, matching the central bridge.
+    const explicitModel = String(metadata?.model || '').trim().toLowerCase()
+    let runnerRoute = { local: false, device: null }
+    if (isHumanTurn && authorUserId && (!explicitModel || explicitModel === 'codex-local')) {
+      runnerRoute = await resolveRunnerRoute({
+        clientId: resolvedClientId,
+        userId: authorUserId,
+        agent,
+        project,
+      }).catch(() => ({ local: null, device: null, error: 'route_lookup_failed' }))
+    }
+    if (runnerRoute.local === null) {
+      return res.status(503).json({
+        error: 'Could not verify this room’s model safely. Nothing was sent; try again.',
+        code: 'runner_route_unavailable',
+      })
+    }
+    if (runnerRoute.local && !runnerRoute.device) {
+      if (runnerRoute.error) {
+        return res.status(503).json({
+          error: 'Could not verify your Corner Runner safely. Nothing was sent; try again.',
+          code: 'runner_device_unavailable',
+        })
+      }
+      return res.status(409).json({
+        error: 'Connect Corner Runner on your computer before using Codex on this computer.',
+        code: 'runner_not_paired',
+      })
+    }
+    // The bridge trusts only this server-stamped route marker. A browser cannot
+    // redirect somebody else's message to a device because the user/device
+    // lookup above is derived from the verified JWT.
+    const sanitizedMetadata = metadata && typeof metadata === 'object' ? { ...metadata } : {}
+    delete sanitizedMetadata.runner_route
+    delete sanitizedMetadata.runner_device_id
+    delete sanitizedMetadata.runner_device_name
+    const trustedMetadata = runnerRoute.local
+      ? {
+          ...sanitizedMetadata,
+          runner_route: 'local',
+          runner_device_id: runnerRoute.device.id,
+          runner_device_name: runnerRoute.device.name,
+        }
+      : sanitizedMetadata
+
     // ---- Project SCOPE authorization (r4 root fix, 2026-07-27) -------------
     // The tenant gate above answers "may this caller act inside this ROOM". It
     // says nothing about the `project` string in the body, which had no foreign
@@ -349,7 +399,7 @@ export default async function handler(req, res) {
       clientId: resolvedClientId,  // verified above -- multi-tenant isolation
       project,
       authorizeProjectScope,
-      metadata,
+      metadata: trustedMetadata,
       userId: authorUserId,
       userName: authorUserName,
       senderRole: authorSenderRole,
@@ -361,6 +411,36 @@ export default async function handler(req, res) {
     })
     if (!result.ok) {
       return res.status(result.status || 500).json({ error: result.error || 'write failed' })
+    }
+    if (runnerRoute.local) {
+      try {
+        const job = await enqueueRunnerJob({
+          device: runnerRoute.device,
+          userId: authorUserId,
+          clientId: resolvedClientId,
+          message: result.row,
+        })
+        return res.status(200).json({ ok: true, message: result.row, runner: { queued: true, jobId: job?.id || null } })
+      } catch (error) {
+        // The route marker already told the central bridge to stand down. Close
+        // the turn visibly instead of leaving the composer spinning forever.
+        await writeMessageRow({
+          supabaseUrl: SUPABASE_URL,
+          headers: dbHeaders,
+          text: `Corner Runner couldn’t queue that turn on ${runnerRoute.device.name}. Try reconnecting the runner, then send it again.`,
+          role: 'assistant',
+          source: 'corner-runner',
+          agent,
+          clientId: resolvedClientId,
+          project: result.row?.project || project,
+          mission: result.row?.metadata?.mission_slug,
+          authorizeProjectScope,
+          metadata: { runner_failed: true, runner_device_id: runnerRoute.device.id },
+          worldId: rowWorldId,
+          replyTo: result.row?.id,
+        }).catch(() => null)
+        return res.status(200).json({ ok: true, message: result.row, runner: { queued: false, error: 'queue_failed' } })
+      }
     }
     return res.status(200).json({ ok: true, message: result.row })
   }

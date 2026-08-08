@@ -25,6 +25,7 @@ import { MODEL_OPTIONS } from '../components/cv3/chat/chatConstants.js';
 import { authFetch } from '../lib/authFetch.js';
 import { CornerLoaderMark } from '../cv6kit/FullscreenLoading.jsx';
 import RoomChecklistPanel from './RoomChecklistPanel.jsx';
+import CornerRunnerDialog, { useCornerRunnerStatus } from './CornerRunnerDialog.jsx';
 import { resolveEffectiveRoomModel, roomModelPreferenceKey } from './data/modelPreferences.js';
 import {
   useChatCore,
@@ -49,6 +50,7 @@ const I = {
   x: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>,
   checklist: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.2 1.2L6.5 5M3 12l1.2 1.2L6.5 11M3 18l1.2 1.2L6.5 17"/></svg>,
   brain: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 4.5A3.5 3.5 0 0 0 6 8v1a3 3 0 0 0-1 5.83V16a3 3 0 0 0 3 3h1.5M14.5 4.5A3.5 3.5 0 0 1 18 8v1a3 3 0 0 1 1 5.83V16a3 3 0 0 1-3 3h-1.5M12 3v18M8 9h4M12 15h4" /></svg>,
+  computer: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
   check: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg>,
 };
 
@@ -75,6 +77,7 @@ function shortModelLabel(id) {
 
 function modelRouteDetail(id, sourceLabel) {
   if (id === 'openai-gpt-5.6') return `${sourceLabel} · hosted OpenAI`;
+  if (id === 'codex-local') return `${sourceLabel} · your computer`;
   return `${sourceLabel} · fallback on limits`;
 }
 
@@ -105,6 +108,8 @@ function CommandsMenu({
   interactionMode,
   setInteractionMode,
   model,
+  runner,
+  onOpenRunner,
 }) {
   const wrapRef = useRef(null);
   const [view, setView] = useState('root');
@@ -156,6 +161,10 @@ function CommandsMenu({
               <MenuRow icon={I.brain} label={model.unavailable ? 'Model unavailable' : `Model: ${model.label}`}
                 detail={model.unavailable ? 'Could not load this room’s saved model' : model.routeDetail} hasSubmenu
                 onClick={() => setView('model')} testid="cv6-commands-model" />
+              <MenuRow icon={I.computer} label="Corner Runner"
+                detail={runner.loading ? 'Checking this computer…' : runner.paired ? `${runner.online ? runner.device?.status === 'working' ? 'Working' : 'Online' : 'Offline'} · ${runner.device?.name}` : 'Connect your computer and ChatGPT subscription'}
+                tint={runner.online ? 'var(--accent)' : null}
+                onClick={() => { onOpenRunner(); setOpen(false); }} testid="cv6-commands-runner" />
               <MenuRow icon={I.image} label="Image generation" detail="Gemini · Ideogram · OpenAI" hasSubmenu
                 onClick={() => setView('image-gen')} testid="cv6-commands-image-gen" />
               <MenuRow icon={isRecording ? I.stop : I.record} label={isRecording ? 'Stop recording' : 'Record conversation'}
@@ -189,7 +198,13 @@ function CommandsMenu({
               {MODEL_OPTIONS.map((option) => {
                 const selected = model.roomSelection === option.id;
                 const label = option.id === 'default' ? 'Auto (workspace)' : option.label;
-                const detail = option.id === 'default' ? `Currently resolves to ${model.inheritedLabel}` : option.desc;
+                const detail = option.id === 'default'
+                  ? `Currently resolves to ${model.inheritedLabel}`
+                  : option.id === 'codex-local'
+                    ? runner.paired
+                      ? `${runner.online ? 'Online' : 'Offline — turns will wait'} · ${runner.device?.name}`
+                      : 'Connect Corner Runner first'
+                    : option.desc;
                 return (
                   <MenuRow key={option.id} icon={selected ? I.check : I.brain} label={label} detail={detail}
                     tint={selected ? 'var(--accent)' : null}
@@ -225,6 +240,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
 
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [runnerOpen, setRunnerOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [caret, setCaret] = useState(null);
   const preferenceKey = roomModelPreferenceKey(room);
@@ -233,6 +249,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
   const [modelSaving, setModelSaving] = useState(false);
   const [modelLoadFailed, setModelLoadFailed] = useState(false);
   const [modelSaveFailed, setModelSaveFailed] = useState(false);
+  const runner = useCornerRunnerStatus(worldId);
 
   const loadModelPrefs = useCallback(() => {
     if (!worldId || !preferenceKey) {
@@ -266,8 +283,13 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
     return () => window.removeEventListener('aom-model-pref-changed', loadModelPrefs);
   }, [loadModelPrefs]);
 
-  const selectRoomModel = useCallback(async (nextModel) => {
+  const selectRoomModel = useCallback(async (nextModel, { pairedNow = false } = {}) => {
     if (!worldId || !preferenceKey || modelSaving) return false;
+    if (nextModel === 'codex-local' && !runner.paired && !pairedNow) {
+      setCommandsOpen(false);
+      setRunnerOpen(true);
+      return false;
+    }
     const previous = modelPrefs;
     setModelSaving(true);
     setModelSaveFailed(false);
@@ -288,7 +310,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
     } finally {
       setModelSaving(false);
     }
-  }, [modelPrefs, modelSaving, preferenceKey, worldId]);
+  }, [modelPrefs, modelSaving, preferenceKey, worldId, runner.paired]);
   // /clear asks before it acts. Room settings' "Clear chat" arms the same way, and
   // this is reachable by typing two characters and pressing Enter — far easier to
   // hit by accident. Nothing is deleted either way: room-reset archives the visible
@@ -439,7 +461,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
           </div>
         </div>}
         <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: checklistOpen ? 12 : 10 }}>
-          <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} interactionMode={interactionMode} setInteractionMode={setInteractionMode} model={model} />
+          <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} interactionMode={interactionMode} setInteractionMode={setInteractionMode} model={model} runner={runner} onOpenRunner={() => setRunnerOpen(true)} />
           <button type="button" className="cv6-composer-util" data-testid="room-checklist-toggle" title={checklistOpen ? 'Back to message' : 'Room checklists'} aria-label={checklistOpen ? 'Close room checklists' : 'Open room checklists'} aria-pressed={checklistOpen}
             onClick={() => { setCommandsOpen(false); setChecklistOpen((open) => !open); }}
             style={{ ...UTILITY_BTN, background: checklistOpen ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${checklistOpen ? 'var(--accent)' : 'var(--hair)'}`, color: checklistOpen ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer' }}>
@@ -457,6 +479,11 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
         </div>
       </div>
       <IntegrationsModal open={integrationsOpen} onClose={() => setIntegrationsOpen(false)} />
+      <CornerRunnerDialog open={runnerOpen} worldId={worldId} runner={runner} onClose={() => setRunnerOpen(false)}
+        onPaired={async () => {
+          const saved = await selectRoomModel('codex-local', { pairedNow: true });
+          if (saved) setRunnerOpen(false);
+        }} />
     </div>
   );
 }

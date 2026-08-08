@@ -55,6 +55,7 @@ export const MODEL_OPTIONS = [
   { id: 'sonnet',           label: 'Claude Sonnet',        desc: 'Fast + capable' },
   { id: 'haiku',            label: 'Claude Haiku',         desc: 'Fastest, light' },
   { id: 'openai-gpt-5.6',   label: 'OpenAI GPT-5.6',       desc: 'Hosted reasoning · AOM managed' },
+  { id: 'codex-local',       label: 'Codex on this computer', desc: 'Your ChatGPT subscription · local runner' },
 ]
 
 // Per-surface model (corner:gemini-workers step 6). Model is decided by which

@@ -64,3 +64,43 @@ Release verification:
 - Canonical production correctly redirects unauthenticated browser sessions to `/login`. Authenticated interaction was covered by the focused browser spec, while responsive visual QA used the deterministic local demo at phone, iPad, and desktop widths.
 
 **Status:** code, database, bridge, and dashboard shipped; successful OpenAI answers blocked only by Platform credits.
+
+### R3 — Corner Runner: use each person’s local Codex subscription and computer
+
+Build the first production-safe local-runner path for Corner. A paired runner stays on the user’s own Mac or PC, keeps ChatGPT/Codex credentials local, polls Corner through authenticated outbound HTTPS, and executes only inside a folder the user explicitly selected. Rooms may choose `Codex on this computer`; those turns queue for that user’s runner instead of the hosted Claude/OpenAI bridge.
+
+Planned scope:
+
+- Add one-time pairing, device revocation, presence, and device-bound bearer credentials.
+- Add a tenant/user-owned job queue with atomic claims, leases, completion, and failure states.
+- Add an installable Node runner that invokes the locally authenticated Codex CLI in an explicitly selected working directory and streams honest status back to Corner.
+- Add dashboard connection/status controls and a local Codex model option that cannot be selected before a runner is paired.
+- Make the existing central bridge explicitly stand down on local-Codex rooms so a message cannot receive two answers.
+- Verify API authorization, queue isolation, local dry runs, responsive dashboard behavior, production build, and the canonical production deployment.
+
+Security decisions:
+
+- Never send or store ChatGPT/Codex credentials in Corner or Supabase.
+- Never expose Codex app-server or a listener on the user’s LAN/public internet; the runner initiates every connection.
+- Store only SHA-256 hashes of pairing/device secrets server-side; pairing secrets are single-use and expire.
+- Default execution to the runner’s single configured root and Codex `workspace-write` sandbox with non-escalating approvals.
+
+Implemented 2026-08-08 (release verification in progress):
+
+- Added service-role-only pairing, device, and job tables with hashed secrets, expiring one-time codes, device revocation, presence, atomic claims, and expiring leases.
+- Added authenticated browser APIs for pairing/status and device-token APIs for heartbeat, job claims, context retrieval, completion, and visible failure replies.
+- Added the downloadable dependency-free Node runner. It requires each computer’s own `codex login --device-auth`, stores the device credential locally with mode `0600`, accepts only HTTPS or localhost HTTP, opens no inbound port, and confines Codex to one explicit root using `workspace-write` or opt-in read-only mode.
+- Added the `Codex on this computer` room model, connection/status controls, device disconnect, and pairing instructions in CV6. Unpaired selections open setup instead of silently saving or falling back.
+- Portal-mounted the connection dialog so transformed composer containers cannot push it below mobile viewports.
+- Stamped local routes only after server-side JWT/device verification; the production bridge handoff guard is ready to ignore those stamped messages after dashboard release.
+- Applied migration `20260808213000` alone after a dry run. The first transactional attempt correctly rolled back on the live `messages.id` text type; the corrected migration was then applied and recorded.
+
+Verification so far:
+
+- 18 focused Node tests pass for model allowlisting, preference precedence, fail-closed routing, secret formats, prompt boundaries, HTTPS enforcement, and server-owned route markers.
+- Two focused Playwright flows pass, including the rule that an unpaired local-Codex selection opens setup without saving the room model.
+- The Vite production build and syntax checks pass; the downloadable runner prints its help cleanly.
+- Responsive in-app QA confirms the runner dialog is centered and fully reachable at 390×844 and desktop width after the portal fix.
+- The bridge handoff regression test and Python compile check pass.
+
+**Status:** implementation and production database shipped; dashboard and bridge release verification in progress.

@@ -34,6 +34,18 @@ test('OpenAI is a deliberate room model, not an automatic fallback', () => {
   )
 })
 
+test('local Codex is an explicit per-room option backed by Corner Runner', () => {
+  assert.deepEqual(MODEL_OPTIONS.find(({ id }) => id === 'codex-local'), {
+    id: 'codex-local',
+    label: 'Codex on this computer',
+    desc: 'Your ChatGPT subscription · local runner',
+  })
+  assert.deepEqual(
+    resolveEffectiveRoomModel({ bobby: 'codex-local' }, 'bobby'),
+    { id: 'codex-local', source: 'room' },
+  )
+})
+
 test('composer keeps only voice/send below the field and moves state into Commands', () => {
   assert.match(input, /data-testid="cv6-current-model"/)
   assert.match(input, /data-testid="cv6-commands-mode-toggle"/)
