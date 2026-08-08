@@ -665,6 +665,31 @@ error markers.
 
 **Status:** shipped and verified at `https://aheadofmarket.com/dashboard`.
 
+### R22 - Avatar edit placement and signed-in profile identity
+
+Started 2026-08-08 from Patrik's avatar follow-up. Move the edit pencil to the
+bottom-right edge of editable avatar circles and make the signed-in user's own
+picture, two initials, and color editable from Settings on both mobile and desktop.
+Room identities keep their existing tenant-scoped preference behavior; personal
+identity changes must be authenticated and may only update the caller's own account.
+
+Implementation is complete. The room and signed-in user controls now share one
+keyboard/touch-safe editor; editable circles place a solid pencil badge on their
+bottom-right edge, while the truthful active-room presence dot occupies the opposite
+edge. Personal writes use the caller's signed Supabase session, reject cross-account
+targets, preserve unrelated account metadata, and refresh the current session after
+save. Settings Account and the desktop profile control both reflect the persisted
+picture, initials, and color.
+
+Verification: focused Node contracts and mocked API authorization passed 11/11,
+mobile/desktop Playwright profile flows passed 2/2, the production Vite build passed,
+`git diff --check` passed, and the real editor was visually inspected at 390x844 and
+1440x900 with no browser console errors. The repo-wide tenant command still reports
+the two pre-existing hardcoded `aom` defaults in `api/client-parts.js` and
+`api/prospect-report.js`; R22 adds no tenant-slug or identity violation.
+
+**Status:** implemented and verified; production release in progress.
+
 ### R19 - Checklists, motion, and editable room identities
 
 Started 2026-08-08 from Patrik's dashboard interaction pass. This round will make

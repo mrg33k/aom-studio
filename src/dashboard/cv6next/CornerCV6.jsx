@@ -2558,6 +2558,26 @@ function demoM12MobileRequested() {
   catch { return false; }
 }
 
+function demoProfileAvatarRequested() {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'profile-avatar'; }
+  catch { return false; }
+}
+
+function DemoProfileAvatar({ theme }) {
+  const [profile, setProfile] = useState({ initials: 'PS', color: '#7C3AED', image: '', name: 'Patrik Simpson', email: 'patrik@example.com' });
+  const save = useCallback(async (draft) => {
+    const next = { ...profile, initials: draft.initials, color: draft.color, image: draft.image };
+    setProfile(next);
+    return { ok: true, synced: true, identity: draft };
+  }, [profile]);
+  return (
+    <div data-cv6 data-app-theme={theme} style={{ width: '100%', height: '100dvh', background: 'var(--ground)' }}>
+      <Settings theme={theme} onTheme={() => {}} initialSection="account" profileOverride={profile} onProfileSaveOverride={save}
+        onNav={() => {}} onOpenNav={() => {}} onSearch={() => {}} />
+    </div>
+  );
+}
+
 // Deterministic, no-auth capture of the two M12 surfaces. This is a visual QA
 // fixture only: it mounts the real templates, binder, Email shell, and CSS while
 // keeping browser screenshots independent of a live workspace or inbox.
@@ -3314,6 +3334,7 @@ export default function CornerCV6() {
   // zone is a column. ← off the leftmost column lands you back in the rail at the
   // top of "Pick up where you left off", so you can keep walking with ↓.
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState('appearance');
   const [knavZone, setKnavZone] = useState('rail');
   useEffect(() => {
     const open = () => setAlertsOpen(true);
@@ -3546,6 +3567,7 @@ export default function CornerCV6() {
       // Carry a "Review this file" target into Files; a plain toolbar nav('organize')
       // passes no arg and clears any prior target.
       if (target === 'organize') setFilesTarget(arg && typeof arg === 'object' ? arg : null);
+      if (target === 'settings') setSettingsSection(arg?.section === 'account' ? 'account' : 'appearance');
       goTo(target, null);
       return;
     }
@@ -3576,6 +3598,7 @@ export default function CornerCV6() {
   const demoGlobalMotion = useMemo(() => demoGlobalMotionRequested(), []);
   const demoEmailAutoReply = useMemo(() => demoEmailAutoReplyRequested(), []);
   const demoM12Mobile = useMemo(() => demoM12MobileRequested(), []);
+  const demoProfileAvatar = useMemo(() => demoProfileAvatarRequested(), []);
   if (demoCatchUpModal) return <DemoCatchUpModal worldId={worldId} />;
   if (demoHomeQuickThread) return <DemoHomeQuickThread />;
   if (demoMobileChatLifecycle) return <DemoMobileChatLifecycle />;
@@ -3590,6 +3613,7 @@ export default function CornerCV6() {
       </div>
     );
   }
+  if (demoProfileAvatar) return <DemoProfileAvatar theme={theme} />;
   if (demoBlocks) {
     // Auto-height (no 100dvh cap, no overflow:hidden) so the whole thread is one tall page
     // the browser scrolls — a full-page capture then reaches every element end to end.
@@ -3612,7 +3636,7 @@ export default function CornerCV6() {
     viewKey = 'chatdesktop:list';
   }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} target={filesTarget} onAssignFile={(fileId, extra) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '', ...(extra || {}) })} />; viewKey = 'organize'; }
-  else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} theme={theme} onTheme={changeTheme} />; viewKey = 'settings'; }
+  else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} theme={theme} onTheme={changeTheme} initialSection={settingsSection} />; viewKey = 'settings'; }
   else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} />; viewKey = 'livescribe'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
@@ -3650,7 +3674,7 @@ export default function CornerCV6() {
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
-      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings')} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings', { section: 'account' })} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} worldId={worldId} />
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(job) => {

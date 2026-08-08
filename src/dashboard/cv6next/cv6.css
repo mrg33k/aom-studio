@@ -3954,7 +3954,8 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-room-presence {
   position:absolute;
   z-index:2;
-  right:-2px;
+  left:-2px;
+  right:auto;
   bottom:-1px;
   width:11px;
   height:11px;
@@ -3965,20 +3966,24 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 }
 [data-cv6] .cv6-room-avatar-edit {
   position:absolute;
-  z-index:2;
-  left:4px;
-  bottom:4px;
-  width:11px;
-  height:11px;
-  border:0;
-  border-radius:3px;
-  background:rgba(4,6,9,.58);
+  z-index:3;
+  left:auto;
+  right:-3px;
+  bottom:-3px;
+  width:17px;
+  height:17px;
+  border:2px solid var(--ground);
+  border-radius:50%;
+  background:var(--composer-solid);
   color:#fff;
   display:flex;
   align-items:center;
   justify-content:center;
   font-style:normal;
+  pointer-events:none;
+  box-shadow:0 4px 10px -5px rgba(0,0,0,.9);
 }
+[data-cv6] .cv6-user-profile-avatar { font-size:17px; }
 [data-cv6] .cv6-room-identity-layer {
   position:fixed;
   inset:0;

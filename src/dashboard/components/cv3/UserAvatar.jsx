@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { C } from '../../lib/cv3Colors.js'
 import { supabase } from '../../lib/supabase.js'
+import { authFetch } from '../../lib/authFetch.js'
 
 // Generate a unique geometric avatar from a seed string (name/slug).
 // Returns base64 JPEG. Deterministic: same seed = same avatar.
@@ -134,7 +135,7 @@ export default function UserAvatar({ user, onUserUpdate, extraMenuItems }) {
     setUploading(true)
     try {
       const base64 = await compressAvatar(file)
-      const res = await fetch('/api/dashboard/avatar', {
+      const res = await authFetch('/api/dashboard/avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id, image_base64: base64, mime_type: 'image/jpeg' }),
@@ -315,7 +316,7 @@ export default function UserAvatar({ user, onUserUpdate, extraMenuItems }) {
                       const name = user?.user_metadata?.full_name || user?.email || 'User'
                       const base64 = generateAvatar(name + Date.now())
                       try {
-                        const res = await fetch('/api/dashboard/avatar', {
+                        const res = await authFetch('/api/dashboard/avatar', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ user_id: user.id, image_base64: base64, mime_type: 'image/jpeg' }),
@@ -389,7 +390,7 @@ export default function UserAvatar({ user, onUserUpdate, extraMenuItems }) {
                     const name = user?.user_metadata?.full_name || user?.email || 'User'
                     const base64 = generateAvatar(name + Date.now())
                     try {
-                      const res = await fetch('/api/dashboard/avatar', {
+                        const res = await authFetch('/api/dashboard/avatar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: user.id, image_base64: base64, mime_type: 'image/jpeg' }),

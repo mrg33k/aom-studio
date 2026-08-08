@@ -6,6 +6,7 @@
 // Drop-in rule: every page mounts this one nav. If a screen hand-rolls its own
 // tool list, it's wrong -- point it back here.
 import React, { useEffect } from 'react';
+import { supabase } from '../lib/supabase.js';
 
 // --- the ONE ordered tool list both forms render -------------------------------
 // `route` is the view-machine target onPick receives. `wired` is whether that
@@ -81,6 +82,46 @@ function Badge({ badge }) {
     );
   }
   return <span className={`astat is-${badge.status || 'live'}`}><span className="sd" />{badge.count}</span>;
+}
+
+function CurrentUserProfileButton({ fallbackInitials = 'P', onOpenProfile }) {
+  const [identity, setIdentity] = React.useState({ initials: fallbackInitials, color: '#2563EB', image: '' });
+
+  useEffect(() => {
+    const applyUser = (user) => {
+      if (!user) return;
+      const metadata = user.user_metadata || {};
+      const name = metadata.full_name || metadata.display_name || metadata.name || user.email?.split('@')[0] || fallbackInitials;
+      const parts = String(name).trim().split(/\s+/).filter(Boolean);
+      const derived = `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || fallbackInitials;
+      setIdentity({
+        initials: metadata.avatar_initials || derived,
+        color: /^#[0-9a-f]{6}$/i.test(String(metadata.avatar_color || '')) ? metadata.avatar_color : '#2563EB',
+        image: metadata.avatar_url || '',
+      });
+    };
+    const onIdentity = (event) => setIdentity({
+      initials: event.detail?.initials || fallbackInitials,
+      color: event.detail?.color || '#2563EB',
+      image: event.detail?.avatar_url || '',
+    });
+    supabase?.auth.getSession().then(({ data }) => applyUser(data?.session?.user)).catch(() => {});
+    const { data: authSub } = supabase?.auth.onAuthStateChange?.((_event, session) => applyUser(session?.user)) || {};
+    window.addEventListener('cv6:profile-identity-changed', onIdentity);
+    return () => {
+      authSub?.subscription?.unsubscribe?.();
+      window.removeEventListener('cv6:profile-identity-changed', onIdentity);
+    };
+  }, [fallbackInitials]);
+
+  return (
+    <button type="button" className="av cv6-current-profile-button" onClick={() => onOpenProfile?.()}
+      aria-label="Edit your profile" title="Edit your profile" data-cv6-gesture-lock=""
+      style={{ position: 'relative', overflow: 'visible', backgroundColor: identity.color, backgroundImage: identity.image ? `url(${identity.image})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      {!identity.image ? identity.initials : null}
+      <i className="cv6-room-avatar-edit" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></i>
+    </button>
+  );
 }
 
 const LOGO = '/cv6/assets/corner-logo-white.svg';
@@ -159,7 +200,7 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn,
             ) : null}
           </button>
         ) : null}
-        <button type="button" className="av" onClick={() => onOpenProfile?.()} aria-label="Profile">{userInitials}</button>
+        <CurrentUserProfileButton fallbackInitials={userInitials} onOpenProfile={onOpenProfile} />
       </div>
     </div>
   );

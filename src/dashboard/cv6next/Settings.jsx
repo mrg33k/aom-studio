@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMediaQuery } from '../cv6kit/useMediaQuery.js';
 import { useSettings } from './data/useSettings.js';
 import { useWorldId } from '../lib/tenantContext.jsx';
+import UserProfileAvatar from './UserProfileAvatar.jsx';
 
 const SECTIONS = [
   { id: 'workspace', label: 'Workspace', sub: 'Rooms available to your agents' },
@@ -85,13 +86,13 @@ function AppearancePanel({ theme, onTheme }) {
   );
 }
 
-function AccountPanel({ profile }) {
+function AccountPanel({ profile, onProfileSave }) {
   return (
     <div>
       <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>Account</div>
       <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 13, padding: 16, border: '1px solid var(--hair)', borderRadius: 14, background: 'var(--surface)' }}>
-        <span className="av" aria-hidden="true" style={{ width: 44, height: 44 }}>{profile.initials}</span>
-        <div style={{ minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--fg)' }}>{profile.name || 'Signed-in user'}</div><div style={{ marginTop: 3, fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.email}</div></div>
+        <UserProfileAvatar profile={profile} onSave={onProfileSave} />
+        <div style={{ minWidth: 0, flex: 1 }}><div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--fg)' }}>{profile.name || 'Signed-in user'}</div><div style={{ marginTop: 3, fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.email}</div><div style={{ marginTop: 6, color: 'var(--faint)', fontSize: 11.5 }}>Tap the picture to change its photo, initials, or color.</div></div>
       </div>
       <a href="/onboarding/voice" style={{ display: 'inline-flex', alignItems: 'center', marginTop: 14, height: 36, padding: '0 13px', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--accent)', textDecoration: 'none', fontSize: 12.5, fontWeight: 600 }}>Open account onboarding</a>
     </div>
@@ -116,19 +117,22 @@ function PlannedPanel() {
   );
 }
 
-export default function Settings({ onNav, onOpenNav, onSearch, theme = 'dark', onTheme }) {
+export default function Settings({ onNav, onOpenNav, onSearch, theme = 'dark', onTheme, initialSection = 'appearance', profileOverride = null, onProfileSaveOverride = null }) {
   const isMobile = useMediaQuery('(max-width: 899px)');
   const worldId = useWorldId();
-  const { state, data } = useSettings(worldId, theme);
+  const { state, data, saveProfileIdentity } = useSettings(worldId, theme);
   // Land on the one section with a real, editable control (theme). Workspace is
   // read-only and Planned is inert, so opening there is a dead end (design-gate
   // intention: land the user on the thing they can actually DO).
-  const [section, setSection] = useState('appearance');
+  const [section, setSection] = useState(initialSection);
+  useEffect(() => setSection(initialSection), [initialSection]);
   const rooms = data?.rooms || [];
-  const profile = data?.profile || { initials: '·', name: '', email: '' };
+  const profile = profileOverride || data?.profile || { initials: '·', name: '', email: '' };
+  const profileSave = onProfileSaveOverride || saveProfileIdentity;
+  const displayState = profileOverride ? 'ready' : state;
 
   const panel = section === 'appearance' ? <AppearancePanel theme={theme} onTheme={onTheme} />
-    : section === 'account' ? <AccountPanel profile={profile} />
+    : section === 'account' ? <AccountPanel profile={profile} onProfileSave={profileSave} />
       : section === 'planned' ? <PlannedPanel />
         : <WorkspacePanel rooms={rooms} />;
 
@@ -144,9 +148,9 @@ export default function Settings({ onNav, onOpenNav, onSearch, theme = 'dark', o
         </nav>
         <main style={{ flex: 1, minWidth: 0, minHeight: 0, overflowY: 'auto', padding: isMobile ? '22px 16px max(28px,env(safe-area-inset-bottom))' : '26px 30px' }}>
           <div style={{ maxWidth: 760 }}>
-            {state === 'loading' && section !== 'appearance' && section !== 'planned' ? <div style={{ color: 'var(--muted)', fontSize: 13 }}>Loading settings…</div> : (
+            {displayState === 'loading' && section !== 'appearance' && section !== 'planned' ? <div style={{ color: 'var(--muted)', fontSize: 13 }}>Loading settings…</div> : (
               <>
-                {state === 'error' ? <div role="status" style={{ marginBottom: 14, padding: '9px 11px', borderRadius: 10, border: '1px solid rgba(251,191,36,.3)', background: 'var(--warn-weak)', color: 'var(--warn)', fontSize: 12 }}>Workspace details did not load. Appearance and capability status are still available.</div> : null}
+                {displayState === 'error' ? <div role="status" style={{ marginBottom: 14, padding: '9px 11px', borderRadius: 10, border: '1px solid rgba(251,191,36,.3)', background: 'var(--warn-weak)', color: 'var(--warn)', fontSize: 12 }}>Workspace details did not load. Appearance and capability status are still available.</div> : null}
                 {panel}
               </>
             )}

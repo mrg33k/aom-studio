@@ -3,7 +3,7 @@
 // Real data: user profile, projects (rooms), theme stored in localStorage.
 // Held-c (no backing): connections, secrets, agent permissions, notifications.
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
 import { setClientIdFromUser } from '../../lib/clientConfig';
@@ -40,6 +40,56 @@ export function useSettings(worldId = null, externalTheme = null) {
     }).catch(() => { if (alive) setState('error'); });
     return () => { alive = false; };
   }, []);
+
+  const saveProfileIdentity = useCallback(async (draft) => {
+    if (!currentUser?.id) return { ok: false, error: 'Sign in to update your profile.' };
+    const currentImage = currentUser.user_metadata?.avatar_url || '';
+    const body = {
+      initials: draft?.initials,
+      color: draft?.color,
+    };
+    const nextImage = String(draft?.image || '');
+    const prepared = nextImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
+    if (prepared) {
+      body.mime_type = prepared[1].toLowerCase();
+      body.image_base64 = prepared[2];
+    } else if (!nextImage && currentImage) {
+      body.remove_image = true;
+    }
+
+    try {
+      const response = await authFetch('/api/dashboard/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) return { ok: false, error: payload?.error || 'Your profile could not be updated.' };
+      const nextMetadata = {
+        ...(currentUser.user_metadata || {}),
+        avatar_url: payload.avatar_url || null,
+        avatar_initials: payload.initials,
+        avatar_color: payload.color,
+      };
+      setCurrentUser((current) => current ? { ...current, user_metadata: nextMetadata } : current);
+      // Refresh the signed session so the new metadata survives leaving Settings
+      // and is visible to every surface that reads the authenticated user.
+      if (supabase) {
+        const { data: refreshed } = await supabase.auth.refreshSession().catch(() => ({ data: null }));
+        if (refreshed?.user) setCurrentUser(refreshed.user);
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('cv6:profile-identity-changed', { detail: payload }));
+      }
+      return {
+        ok: true,
+        synced: true,
+        identity: { initials: payload.initials, color: payload.color, image: payload.avatar_url || '' },
+      };
+    } catch {
+      return { ok: false, error: 'Your profile could not be updated.' };
+    }
+  }, [currentUser]);
 
   // Watch auth state
   useEffect(() => {
@@ -97,11 +147,19 @@ export function useSettings(worldId = null, externalTheme = null) {
     const activeSection = sections[0]; // Environment is default
 
     // Profile (REAL from session)
+    const displayName = currentUser?.user_metadata?.full_name
+      || currentUser?.user_metadata?.display_name
+      || currentUser?.user_metadata?.name
+      || currentUser?.email?.split('@')[0]
+      || 'User';
+    const savedColor = currentUser?.user_metadata?.avatar_color;
     const profile = currentUser ? {
-      initials: initials(currentUser.email || currentUser.user_metadata?.name || 'U'),
-      name: currentUser.user_metadata?.name || currentUser.email || 'User',
+      initials: currentUser.user_metadata?.avatar_initials || initials(displayName),
+      color: /^#[0-9a-f]{6}$/i.test(String(savedColor || '')) ? savedColor : '#2563EB',
+      image: currentUser.user_metadata?.avatar_url || '',
+      name: displayName,
       email: currentUser.email || '',
-    } : { initials: '·', name: '', email: '' };
+    } : { initials: '·', color: '#2563EB', image: '', name: '', email: '' };
 
     // Connections (HELD-C: no OAuth wiring yet)
     const connections = [
@@ -154,5 +212,5 @@ export function useSettings(worldId = null, externalTheme = null) {
     };
   }, [currentUser, projects, activeTheme]);
 
-  return { state, data };
+  return { state, data, saveProfileIdentity };
 }

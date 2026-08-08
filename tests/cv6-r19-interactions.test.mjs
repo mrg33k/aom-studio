@@ -11,6 +11,7 @@ import {
 import { gestureStartsOnInteractiveControl } from '../src/dashboard/cv6next/useChatSwipe.js';
 
 const avatar = readFileSync(new URL('../src/dashboard/cv6next/RoomAvatar.jsx', import.meta.url), 'utf8');
+const editor = readFileSync(new URL('../src/dashboard/cv6next/AvatarIdentityDialog.jsx', import.meta.url), 'utf8');
 const checklist = readFileSync(new URL('../src/dashboard/cv6next/RoomChecklistPanel.jsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/dashboard/cv6next/cv6.css', import.meta.url), 'utf8');
 
@@ -32,10 +33,10 @@ test('presence appears only for genuinely active room states', () => {
 });
 
 test('avatar editing persists color, initials, and a prepared picture', () => {
-  assert.match(avatar, /accept="image\/\*"/);
-  assert.match(avatar, /canvas\.toDataURL\('image\/jpeg', 0\.82\)/);
-  assert.match(avatar, /save\(draft\)/);
-  assert.match(avatar, /Saved on this device\. Workspace sync is unavailable\./);
+  assert.match(editor, /accept="image\/\*"/);
+  assert.match(editor, /canvas\.toDataURL\('image\/jpeg', 0\.82\)/);
+  assert.match(editor, /onSave\?\.\(draft\)/);
+  assert.match(editor, /Saved on this device\. Workspace sync is unavailable\./);
 });
 
 test('chat swipe yields to checklist, avatar, keyboard, and touch controls', () => {
