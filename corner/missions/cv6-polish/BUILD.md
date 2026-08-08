@@ -640,4 +640,7 @@ state; attachment lives inside the message field; and the automatic label explai
 Claude-first fallback behavior. Focused composer/model contracts and the production build
 pass as part of the combined CV6 release.
 
-**Status:** implemented and verified; ready to deploy.
+Release completed in commit `a3f3a281`, included in ready production deployment
+`dpl_4ogGJrqbxXBMAHgcd7kcrqUdpaUx` at `https://lab.aheadofmarket.com`.
+
+**Status:** shipped and deployment verified.
