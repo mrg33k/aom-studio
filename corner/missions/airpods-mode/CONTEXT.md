@@ -1,7 +1,7 @@
 # Corner AirPods Mode — Context
 
 **Mission path:** `corner:airpods-mode`
-**Status:** IN PROGRESS
+**Status:** DONE
 **Updated:** 2026-08-08
 
 The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
@@ -22,3 +22,9 @@ behavior on a signed physical device before TestFlight/App Store distribution.
 R2 was authorized to release the mobile-web portion to the canonical production
 dashboard. Production deployment must use a clean release tree and the verified
 `aom-studio` Vercel project; Lab is not release proof.
+
+R2 is live in production from commit `ab2f6aea`. The canonical dashboard serves the
+release, the Supabase schema is present, and unauthenticated probes confirm the new API
+routes fail closed. Mobile-web activation is available after sign-in through the visual
+AirPods-mode control. Wake phrase and sustained lock-screen operation remain native-iOS
+capabilities requiring signed-device/TestFlight validation.

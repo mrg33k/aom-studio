@@ -75,4 +75,18 @@ that are absent from the remote ledger.
 - API syntax and `git diff --check` — passed.
 - Production Vite build — passed from the isolated release worktree.
 
-**Status:** in progress
+**Production result:**
+
+- Release commit `ab2f6aea` was pushed as a fast-forward to `main`.
+- Vercel Git deployment `aom-studio-15z75l2kp-aheads-projects-d2a4c70f.vercel.app`
+  reached READY for project `aom-studio`.
+- Canonical `https://aheadofmarket.com/dashboard` returned HTTP 200 at a 390×844
+  mobile viewport. The available test browser was not signed in, so it correctly
+  redirected to `/login`; authenticated visual interaction remains a user smoke test.
+- All four `airpods_*` tables were verified in production.
+- Both new production API routes were verified present and correctly returned 401
+  `jwt required` without a session.
+- `npm ci` reported 29 dependency-audit findings in the existing dependency tree
+  (1 low, 15 moderate, 11 high, 2 critical); no automatic breaking audit fix was run.
+
+**Status:** complete

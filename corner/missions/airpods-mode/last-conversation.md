@@ -26,3 +26,22 @@ tenant context/identity, and Xcode simulator compile all passed. The repo aggreg
 guard still reports two unrelated pre-existing `aom` slugs. Release handoff is to apply
 the migration, configure production secret/origin values, and validate permissions plus
 long-running lock-screen behavior on a signed physical device before TestFlight.
+
+## 2026-08-08 — R2 production release
+
+The user authorized production deployment and mobile-web testing. Because the shared
+checkout contained unrelated edits, R1 was isolated into a clean mission-named release
+worktree based on the latest `origin/main`. The linked Vercel project was verified as
+`aom-studio` before release.
+
+The Supabase migration ledger contained several unrelated pending local versions, so a
+bulk push was not used. Only `20260808000000_airpods_mode.sql` was applied through the
+production management API and that exact version was recorded as applied. The four
+tables were verified afterward.
+
+Commit `ab2f6aea` passed focused AirPods tests, tenant context/identity contracts, API
+syntax, diff checks, and a clean production build, then fast-forwarded `main`. Its Vercel
+production deployment reached READY. The canonical dashboard returned HTTP 200 at a
+390×844 viewport; the available browser was signed out and correctly redirected to
+`/login`, so the authenticated control still needs the user's phone smoke test. Both new
+API routes were present and returned `401 jwt required` without credentials.
