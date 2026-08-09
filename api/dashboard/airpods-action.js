@@ -98,12 +98,21 @@ async function recoverLatestPriorityTaskId(sessionId, tenant) {
 
 async function readTaskStatus(args, tenant, sessionId) {
   const suppliedTaskId = String(args.task_id || '').trim();
-  const taskId = /^[0-9a-f-]{36}$/i.test(suppliedTaskId)
+  let taskId = /^[0-9a-f-]{36}$/i.test(suppliedTaskId)
     ? suppliedTaskId
     : await recoverLatestPriorityTaskId(sessionId, tenant);
   if (!taskId) throw new Error('A valid task_id is required');
-  const rows = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}&limit=1&select=id,title,text,description,status,agent,project,project_path,error,attempt_count,max_attempts,metadata,created_at,completed_at`);
-  const task = Array.isArray(rows) ? rows[0] : null;
+  const taskPath = (id) => `tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(id)}&limit=1&select=id,title,text,description,status,agent,project,project_path,error,attempt_count,max_attempts,metadata,created_at,completed_at`;
+  let rows = await db(taskPath(taskId));
+  let task = Array.isArray(rows) ? rows[0] : null;
+  if (!task) {
+    const recoveredTaskId = await recoverLatestPriorityTaskId(sessionId, tenant);
+    if (recoveredTaskId && recoveredTaskId !== taskId) {
+      taskId = recoveredTaskId;
+      rows = await db(taskPath(taskId));
+      task = Array.isArray(rows) ? rows[0] : null;
+    }
+  }
   if (!task) throw new Error('Task not found in this workspace');
   const reason = String(task.error || '').trim();
   const repairableScope = task.status === 'failed' && /metadata\.repo|repository|project_path|working path/i.test(reason);

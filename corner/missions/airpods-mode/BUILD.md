@@ -63,6 +63,11 @@ broker now recovers the latest ranked priority from the same tenant/session's au
 workspace receipt when the model supplies an invalid identifier. This is read-only and
 prevents the agent from asking the caller to reconstruct context it already fetched.
 
+**UUID correction:** The first recovery pass covered malformed identifiers. A live
+repeat showed Gemini can instead produce a syntactically valid UUID with one wrong
+character. Task inspection now retries the session's audited priority when the supplied
+UUID is valid-shaped but absent from the tenant, preserving the same read-only boundary.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
