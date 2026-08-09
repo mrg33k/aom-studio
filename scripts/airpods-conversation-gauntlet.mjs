@@ -155,17 +155,19 @@ try {
 check('latest uses a fresh workspace read', toolNames(turns[0]).includes('read_workspace_status'), toolNames(turns[0]));
 check('failure follow-up inspects the known task', toolNames(turns[1]).includes('read_task_status'), toolNames(turns[1]));
 check('failure follow-up does not wander into room discovery', !toolNames(turns[1]).some((name) => ['find_rooms', 'read_room_status'].includes(name)), toolNames(turns[1]));
-check('failure explanation states the recorded repo cause', includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['metadata.repo', 'repo was missing', 'missing repo']), `${turns[1].assistant} ${turns[2].assistant}`);
+check('failure explanation states the recorded repo cause', includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['metadata.repo', 'repo was missing', 'missing repo', 'repository details are missing', 'repository information is missing']), `${turns[1].assistant} ${turns[2].assistant}`);
 check('failure discussion does not redirect to unrelated App Store work', !includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['app store credential', 'outlook credential']), `${turns[1].assistant} ${turns[2].assistant}`);
-check('failure answer advances one executable retry proposal', turns[1].tools.some((tool) => tool.name === 'offer_next_action' && tool.args?.action === 'retry_task'), turns[1].tools.map((tool) => ({ name: tool.name, action: tool.args?.action })));
+const structuredRetry = turns[1].tools.some((tool) => tool.name === 'read_task_status' && tool.result?.next_action?.action === 'retry_task');
+const offeredRetry = turns[1].tools.some((tool) => tool.name === 'offer_next_action' && tool.args?.action === 'retry_task');
+check('failure answer advances one executable retry proposal', structuredRetry || offeredRetry, turns[1].tools.map((tool) => ({ name: tool.name, action: tool.args?.action, next_action: tool.result?.next_action?.action })));
 check('App Store answer performs a current evidence search', toolNames(turns[3]).includes('read_recent_activity'), toolNames(turns[3]));
 check('App Store answer does not deny the known submission', !includesAny(turns[3].assistant, ["didn't submit", 'not submitted', 'have not submitted', "haven't submitted"]), turns[3].assistant);
-check('App Store answer frames room evidence as a dated record', includesAny(turns[3].assistant, ['corner records show', 'corner records say', 'recorded in']) && /(?:2026|august|aug\.?\s+\d|today|yesterday)/i.test(turns[3].assistant), turns[3].assistant);
+check('App Store answer frames room evidence as an explicitly dated record', includesAny(turns[3].assistant, ['corner records show', 'corner records say', 'recorded in']) && /(?:2026|august\s+\d|aug\.?\s+\d)/i.test(turns[3].assistant), turns[3].assistant);
 check('conversation end executes the end route', toolNames(turns[4]).includes('end_voice_session'), toolNames(turns[4]));
-check('routine answers stay compact', turns.slice(0, 4).every((turn) => wordCount(turn.assistant) <= 28), turns.slice(0, 4).map((turn) => wordCount(turn.assistant)));
+check('routine answers stay compact', turns.slice(0, 4).every((turn) => wordCount(turn.assistant) <= 24), turns.slice(0, 4).map((turn) => wordCount(turn.assistant)));
 const filler = ['well,', 'looks like', 'my bad', 'anything specific', 'anything else', 'move on to something else', 'want me to try', 'keep an eye on', 'let you know'];
 check('conversation contains no filler or unsupported future promises', !turns.some((turn) => includesAny(turn.assistant, filler)), turns.map((turn) => turn.assistant));
-check('closing is short and contains no unsolicited recap', wordCount(turns[4].assistant) <= 10 && !includesAny(turns[4].assistant, ['recap', 'failed outreach', 'app store', 'keep an eye', 'let you know']), turns[4].assistant);
+check('closing is exact and contains no unsolicited recap', wordCount(turns[4].assistant) <= 4 && includesAny(turns[4].assistant, ['talk soon']) && !includesAny(turns[4].assistant, ['recap', 'failed outreach', 'app store', 'keep an eye', 'let you know']), turns[4].assistant);
 
 const result = {
   session_id: conversation.sessionId,

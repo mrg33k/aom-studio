@@ -55,9 +55,22 @@ async function workspaceStatus(clientId) {
   const allBlockers = tasks.filter((task) => ['blocked', 'failed', 'needs_input', 'needs_verification'].includes(task.status));
   const recentCutoff = Date.now() - 7 * 24 * 60 * 60_000;
   const blockers = allBlockers.filter((task) => new Date(task.created_at || 0).getTime() >= recentCutoff).slice(0, 6);
+  const priorities = [...active, ...blockers]
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+    .slice(0, 3)
+    .map((task) => ({
+      task_id: task.id,
+      title: task.title,
+      status: task.status,
+      agent: task.agent || null,
+      recorded_error: task.error || null,
+      created_at: task.created_at,
+      next_read: { action: 'read_task_status', arguments: { task_id: task.id } },
+    }));
   return {
     active,
     blockers,
+    priorities,
     older_attention_count: Math.max(0, allBlockers.length - blockers.length),
     completed: completed.filter((task) => task.completed_at),
     agents: agents.filter((agent) => agent.status && agent.status !== 'idle'),
@@ -72,11 +85,20 @@ async function readTaskStatus(args, tenant) {
   const task = Array.isArray(rows) ? rows[0] : null;
   if (!task) throw new Error('Task not found in this workspace');
   const reason = String(task.error || '').trim();
+  const repairableScope = task.status === 'failed' && /metadata\.repo|repository|project_path|working path/i.test(reason);
   return {
     ok: true,
     spoken_summary: reason
-      ? `${task.title || 'The task'} is ${task.status}. It ${task.status === 'failed' ? 'failed' : 'reports'} because ${reason}.`
+      ? `Recorded failure: ${reason}.`
       : `${task.title || 'The task'} is ${task.status}; no failure reason is recorded.`,
+    recorded_error: reason || null,
+    next_action: repairableScope ? {
+      action: 'retry_task',
+      title: `Repair and retry ${task.title || 'task'}`,
+      summary: 'Set the authorized repository path and requeue this existing task.',
+      arguments: { task_id: task.id },
+      requires_user_approval: true,
+    } : null,
     task,
     entities: [{ type: 'task', id: task.id, title: task.title || null, status: task.status, agent: task.agent || null }],
   };
@@ -428,7 +450,16 @@ async function retryTask(args, req, tenant) {
 async function execute(action, args, req, tenant, identity, sessionId) {
   if (action === 'read_workspace_status') {
     const status = await workspaceStatus(tenant);
-    return { ok: true, spoken_summary: `${status.active.length} active, ${status.blockers.length} need attention, and ${status.completed.length} recently completed.`, status };
+    const prioritySummary = status.priorities.length
+      ? status.priorities.map((task) => `${task.title} is ${task.status}`).join('; ')
+      : 'No active priorities are recorded';
+    return {
+      ok: true,
+      spoken_summary: `${prioritySummary}.`,
+      checked_at: status.checked_at,
+      response_contract: 'Lead with at most three priority items. Do not read totals or older backlog unless the caller asks.',
+      status,
+    };
   }
   if (action === 'read_recent_activity') return readRecentActivity(tenant, args);
   if (action === 'read_task_status') return readTaskStatus(args, tenant);

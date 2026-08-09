@@ -14,6 +14,13 @@ conversations, execute its tool calls through the authenticated production broke
 score claims against returned evidence, patch the system/tool contract, and rerun the
 same gauntlet before release.
 
+**R11 hardening pass:** The first strict production run failed compactness, exact-error,
+dated-evidence, executable-next-step, and clean-ending checks. Workspace reads now
+return three ranked priorities instead of dashboard totals. Exact task reads expose the
+recorded error and a structured, approval-gated retry. AirPods output is capped at 22
+words with low temperature, explicit calendar dates, no invented access history, and
+a deterministic “Talk soon.” ending. Local syntax, diff, and 20 focused tests pass.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
