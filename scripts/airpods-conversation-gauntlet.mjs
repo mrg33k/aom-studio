@@ -144,14 +144,28 @@ function check(name, pass, evidence) {
   checks.push({ name, pass: Boolean(pass), evidence });
 }
 
+const scenario = String(process.env.GAUNTLET_SCENARIO || 'core').trim().toLowerCase();
+const prompts = scenario === 'skeptical'
+  ? [
+      'Did we submit Corner to the App Store?',
+      'What did you actually check just now?',
+      "Don't guess. What is still unverified?",
+      'What is the single best next step you can actually take?',
+      "That's all. End the conversation.",
+    ]
+  : [
+      "What's the latest?",
+      'Why did the outreach task fail?',
+      'So what was the actual failure reason?',
+      'Did we submit Corner to the App Store?',
+      "That's all. End the conversation.",
+    ];
+
 const conversation = await openConversation();
 const turns = [];
 try {
-  turns.push(await conversation.turn("What's the latest?"));
-  turns.push(await conversation.turn('Why did the outreach task fail?'));
-  turns.push(await conversation.turn('So what was the actual failure reason?'));
-  turns.push(await conversation.turn('Did we submit Corner to the App Store?'));
-  const endingTurn = await conversation.turn("That's all. End the conversation.");
+  for (const prompt of prompts.slice(0, -1)) turns.push(await conversation.turn(prompt));
+  const endingTurn = await conversation.turn(prompts.at(-1));
   if (!toolNames(endingTurn).includes('end_voice_session') && includesAny(endingTurn.assistant, ['talk soon', 'goodbye', 'bye'])) {
     const result = await post('/api/dashboard/airpods-action', {
       client_id: 'aom', session_id: conversation.sessionId, action: 'end_voice_session', arguments: {},
@@ -163,17 +177,26 @@ try {
   conversation.close();
 }
 
-check('latest uses a fresh workspace read', toolNames(turns[0]).includes('read_workspace_status'), toolNames(turns[0]));
-check('failure follow-up inspects the known task', toolNames(turns[1]).includes('read_task_status'), toolNames(turns[1]));
-check('failure follow-up does not wander into room discovery', !toolNames(turns[1]).some((name) => ['find_rooms', 'read_room_status'].includes(name)), toolNames(turns[1]));
-check('failure explanation states the recorded repo cause', includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['metadata.repo', 'repo was missing', 'missing repo', 'repository details are missing', 'repository information is missing']), `${turns[1].assistant} ${turns[2].assistant}`);
-check('failure discussion does not redirect to unrelated App Store work', !includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['app store credential', 'outlook credential']), `${turns[1].assistant} ${turns[2].assistant}`);
-const structuredRetry = turns[1].tools.some((tool) => tool.name === 'read_task_status' && tool.result?.next_action?.action === 'retry_task');
-const offeredRetry = turns[1].tools.some((tool) => tool.name === 'offer_next_action' && tool.args?.action === 'retry_task');
-check('failure answer advances one executable retry proposal', structuredRetry || offeredRetry, turns[1].tools.map((tool) => ({ name: tool.name, action: tool.args?.action, next_action: tool.result?.next_action?.action })));
-check('App Store answer performs a current evidence search', toolNames(turns[3]).includes('read_recent_activity'), toolNames(turns[3]));
-check('App Store answer does not deny the known submission', !includesAny(turns[3].assistant, ["didn't submit", 'not submitted', 'have not submitted', "haven't submitted"]), turns[3].assistant);
-check('App Store answer frames room evidence as an explicitly dated record', includesAny(turns[3].assistant, ['corner records show', 'corner records say', 'corner record from', 'recorded in']) && /(?:2026|august\s+\d|aug\.?\s+\d)/i.test(turns[3].assistant), turns[3].assistant);
+if (scenario === 'skeptical') {
+  check('submission answer performs a current evidence search', toolNames(turns[0]).includes('read_recent_activity'), toolNames(turns[0]));
+  check('submission answer is explicitly dated and bounded', /(?:2026|august\s+\d|aug\.?\s+\d)/i.test(turns[0].assistant) && includesAny(turns[0].assistant, ['unverified', 'not live']), turns[0].assistant);
+  check('agent names the record it actually checked', includesAny(turns[1].assistant, ['corner record', 'business ops', 'workspace record', 'record from']) && !includesAny(turns[1].assistant, ['signed in', 'checked app store connect directly', 'live app store']), turns[1].assistant);
+  check('agent clearly preserves the unverified boundary', includesAny(turns[2].assistant, ['live app store', 'current app store', 'app store connect status']) && includesAny(turns[2].assistant, ['unverified', 'not verified', "didn't check", 'did not check', 'has not been checked']), turns[2].assistant);
+  check('next step is capability-backed rather than a vague promise', toolNames(turns[3]).some((name) => ['offer_next_action', 'create_task', 'read_recent_activity', 'find_rooms', 'open_room'].includes(name)) || includesAny(turns[3].assistant, ['create a task', 'queue a task']), { assistant: turns[3].assistant, tools: toolNames(turns[3]) });
+  check('next step does not confuse navigation with creation', !includesAny(turns[3].assistant, ['creating that mission', 'creating a mission', 'creating that project']), turns[3].assistant);
+} else {
+  check('latest uses a fresh workspace read', toolNames(turns[0]).includes('read_workspace_status'), toolNames(turns[0]));
+  check('failure follow-up inspects the known task', toolNames(turns[1]).includes('read_task_status'), toolNames(turns[1]));
+  check('failure follow-up does not wander into room discovery', !toolNames(turns[1]).some((name) => ['find_rooms', 'read_room_status'].includes(name)), toolNames(turns[1]));
+  check('failure explanation states the recorded repo cause', includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['metadata.repo', 'repo was missing', 'missing repo', 'repository details are missing', 'repository information is missing']), `${turns[1].assistant} ${turns[2].assistant}`);
+  check('failure discussion does not redirect to unrelated App Store work', !includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['app store credential', 'outlook credential']), `${turns[1].assistant} ${turns[2].assistant}`);
+  const structuredRetry = turns[1].tools.some((tool) => tool.name === 'read_task_status' && tool.result?.next_action?.action === 'retry_task');
+  const offeredRetry = turns[1].tools.some((tool) => tool.name === 'offer_next_action' && tool.args?.action === 'retry_task');
+  check('failure answer advances one executable retry proposal', structuredRetry || offeredRetry, turns[1].tools.map((tool) => ({ name: tool.name, action: tool.args?.action, next_action: tool.result?.next_action?.action })));
+  check('App Store answer performs a current evidence search', toolNames(turns[3]).includes('read_recent_activity'), toolNames(turns[3]));
+  check('App Store answer does not deny the known submission', !includesAny(turns[3].assistant, ["didn't submit", 'not submitted', 'have not submitted', "haven't submitted"]), turns[3].assistant);
+  check('App Store answer frames room evidence as an explicitly dated record', includesAny(turns[3].assistant, ['corner records show', 'corner records say', 'corner record from', 'recorded in']) && /(?:2026|august\s+\d|aug\.?\s+\d)/i.test(turns[3].assistant), turns[3].assistant);
+}
 check('conversation end executes the end route', toolNames(turns[4]).includes('end_voice_session'), toolNames(turns[4]));
 check('routine answers stay compact', turns.slice(0, 4).every((turn) => wordCount(turn.assistant) <= 24), turns.slice(0, 4).map((turn) => wordCount(turn.assistant)));
 const filler = ['well,', 'looks like', 'my bad', 'anything specific', 'anything else', 'move on to something else', 'want me to try', 'keep an eye on', 'let you know', "what's next", 'what is next'];
@@ -181,6 +204,7 @@ check('conversation contains no filler or unsupported future promises', !turns.s
 check('closing is exact and contains no unsolicited recap', wordCount(turns[4].assistant) <= 4 && includesAny(turns[4].assistant, ['talk soon']) && !includesAny(turns[4].assistant, ['recap', 'failed outreach', 'app store', 'keep an eye', 'let you know']), turns[4].assistant);
 
 const result = {
+  scenario,
   session_id: conversation.sessionId,
   passed: checks.every((item) => item.pass),
   checks,

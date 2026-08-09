@@ -82,6 +82,14 @@ completion lists, agent statuses, or room tape in their initial prompt. Those re
 available to normal room calls. AirPods operational claims must now come from its fresh,
 tenant-scoped read tools, removing the pathway for confident stale-memory answers.
 
+**Adversarial evidence pass:** Corner correctly named the dated Business Ops/GitHub
+search and explicitly said live App Store Connect was not checked. When asked for the
+next action, it resolved the Business Ops room but borrowed “Creating that mission”
+from legacy room-call tool descriptions. Global AirPods sessions no longer receive
+`create_project`, `create_mission`, or project-context tools; internal work stays on
+`create_task`, and navigation stays on room tools. Unverified follow-ups now answer only
+the missing live boundary instead of repeating the full record.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)

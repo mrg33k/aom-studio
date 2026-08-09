@@ -600,6 +600,7 @@ Use the available tools while the conversation is live to read state, navigate C
 Be action-first. Before saying you are blocked, inspect available workspace state and choose the nearest safe action you can actually take.
 For questions about whether something happened, shipped, was submitted, or changed recently, call read_recent_activity before answering. Cite the returned room or GitHub source and its date. A search with no match is not proof that something did not happen. Never say you checked GitHub unless the tool reports GitHub as available.
 Corner room and GitHub results are dated records, not necessarily live external-system state. Say “Corner records show…” with the date. Do not convert a stored App Store note into a claim about the current App Store Connect status unless a tool directly checked App Store Connect.
+If the caller asks what remains unverified after a dated evidence answer, say only which live external status remains unverified. Do not repeat the record, date, or explanation.
 Never end a turn with only a limitation, refusal, missing-access statement, or request for manual setup. Pair every genuine limitation with one concrete action you can take next.
 If the user explicitly requested reversible internal work, do it now with the available tool instead of asking for confirmation again.
 If you found useful work but the user has not explicitly asked you to execute it, call offer_next_action with one specific next action, a plain-language outcome, and 2–4 short steps. Then ask whether they want you to continue.
@@ -617,6 +618,7 @@ Reads, navigation, and explicit reversible internal requests may run immediately
 When an action returns requires_confirmation, restate exactly what will happen and ask for an affirmative answer. Then call the same tool again with the returned confirmation_token.
 Narrate only meaningful transitions, blockers, approvals, and outcomes. Never read a dashboard dump aloud.
 Never claim you created, cancelled, cleared, reassigned, opened, closed, or ended anything unless that exact tool returned ok=true. If the caller corrects an assignee, use reassign_task on the existing task id returned by create_task or a room read; do not create a duplicate replacement task.
+Never say “creating a project” or “creating a mission” in AirPods mode. Use create_task for requested internal work and room tools for navigation.
 The full conversation will be segmented and handed to affected rooms when this session ends. Do not create duplicate handoff tasks just to preserve the conversation.
 When the caller says they are done, goodbye, stop listening, end the call, or equivalent: give one brief closing sentence, then call end_voice_session.
 At conversation end, do not recap unless asked. Never promise future monitoring or notification without a successful tool receipt.
@@ -690,7 +692,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
       outputAudioTranscription: {},
       tools: [{
         functionDeclarations: [
-          ...(agentSlug.startsWith('project:') ? [{
+          ...(!airpodsMode && agentSlug.startsWith('project:') ? [{
             name: 'update_context',
             description: 'Update the project context file with new information learned during conversation. Use when a decision is made, a constraint is discovered, or direction changes. This writes directly to the project CONTEXT.md -- the source of truth that all future conversations read.',
             parameters: {
@@ -703,7 +705,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
               required: ['section', 'content'],
             },
           }] : []),
-          {
+          ...(!airpodsMode ? [{
             name: 'create_project',
             description: `Create a new project in the workspace. Use when ${speakerName || 'the person on this call'} describes a new client, initiative, or body of work that deserves its own project room. The project gets scaffolded immediately and a room is created. Say "Creating [name] right now" then call this.${contextLoaded ? '' : ' NO WORKSPACE IS RESOLVED FOR THIS CALL — there is no workspace to create it in. Do not call this; ask which workspace they mean and have them open it on the Corner dashboard first.'}`,
             parameters: {
@@ -728,7 +730,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
               },
               required: ['name', 'project'],
             },
-          },
+          }] : []),
           ...(airpodsMode ? [
             {
               name: 'offer_next_action',

@@ -203,6 +203,8 @@ test('voice checks tenant-scoped recent evidence before denying workspace events
   assert.match(session, /Never say you checked GitHub unless/i);
   assert.match(session, /if \(!airpodsMode && recentMessages\.length > 0\)/);
   assert.match(session, /if \(!airpodsMode && activeTasks\.length > 0\)/);
+  assert.match(session, /\.\.\.\(!airpodsMode \? \[\{/);
+  assert.match(session, /which live external status remains unverified/);
 });
 
 test('real-call routes close rooms, reassign tasks, and audit natural session endings', () => {
