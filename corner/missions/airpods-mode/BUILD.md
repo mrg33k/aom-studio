@@ -24,7 +24,12 @@ authenticated local-handler probe against the exact failed Jacob task returned i
 real production error and a correct spoken explanation. The single test audit row was
 removed after verification.
 
-**Status:** in progress — production deployment and phone conversation retest pending
+**Production result:** Commit `cbbf18e2` fast-forwarded `main` and the verified
+`aom-studio` production deployment reached READY. A canonical authenticated session
+exposed `read_task_status`; the canonical action returned the real missing-repo failure
+for the Jacob task. The test-only action audit was removed.
+
+**Status:** in progress — phone conversation retest pending
 
 ### R9 — Native authenticated data origin (2026-08-09)
 

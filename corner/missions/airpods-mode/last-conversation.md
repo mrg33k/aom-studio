@@ -207,3 +207,10 @@ API syntax, 20 focused tests, and the production build pass. An authenticated ha
 probe against the real Jacob task returned the recorded missing-repo error in its spoken
 summary; its test-only audit row was then removed. Production deployment and a phone
 conversation retest remain.
+
+Commit `cbbf18e2` fast-forwarded `main`, and the verified `aom-studio` production
+deployment reached READY. A fresh authenticated call to the canonical voice endpoint
+included `read_task_status`; the canonical action endpoint returned the Jacob task's
+real missing-repo error and correct spoken summary. The test-only audit row was removed.
+The installed phone needs only a new voice session—not another native build—to receive
+R10. A physical conversation retest remains.
