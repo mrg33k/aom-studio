@@ -153,3 +153,10 @@ claims of creation, reassignment, opening, closing, or ending without an `ok=tru
 receipt. Nineteen focused tests, syntax checks, the web build, and authenticated broker
 probes pass. Native build 7 is required for the new close-room UI effect and audited
 end-session client path; the connected iPhone was offline when the release pass began.
+
+Commit `64604e28` then fast-forwarded `main`, and its verified `aom-studio` production
+deployment reached READY. The canonical dashboard returned HTTP 200 and served the
+new close-room client marker; protected voice endpoints still returned 401 without a
+session. Signed Corner 1.0 (7) archived successfully. Installation and the physical
+voice smoke test remain pending because CoreDevice reports Patrik's registered iPhone
+unavailable and macOS does not currently detect an iPhone on USB.

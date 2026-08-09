@@ -19,7 +19,14 @@ live authenticated broker probes pass. The live probes proved close-room and
 end-session return receipts and write successful action-audit rows. Build 7 carries
 the matching native UI-effect and session-ending client behavior.
 
-**Status:** in progress — production deployment and physical build 7 installation pending
+**Production result:** Commit `64604e28` fast-forwarded `main`; the verified
+`aom-studio` production deployment reached READY. The canonical dashboard returned
+HTTP 200 and served the build containing the close-room effect; both voice endpoints
+continued to reject unauthenticated requests. Signed Corner 1.0 (7) archived
+successfully for Patrik's registered iPhone.
+
+**Status:** in progress — physical build 7 installation and voice smoke test pending;
+macOS currently reports the registered iPhone unavailable and does not see it on USB
 
 ### R7 — Native dark glass and current-source voice (2026-08-09)
 
