@@ -160,3 +160,19 @@ new close-room client marker; protected voice endpoints still returned 401 witho
 session. Signed Corner 1.0 (7) archived successfully. Installation and the physical
 voice smoke test remain pending because CoreDevice reports Patrik's registered iPhone
 unavailable and macOS does not currently detect an iPhone on USB.
+
+## 2026-08-09 — R9 physical build 8 data repair
+
+After the iPhone reconnected, Corner 1.0 (7) installed and launched successfully, but
+Patrik reported that rooms and images/content were missing. The production-configured
+native bootstrap was found to target `https://aheadofmarket.com`, which redirects to
+the canonical `www` host. WebKit removes the bearer token when that redirect changes
+origins, explaining why direct Supabase login worked while authenticated tenant APIs
+failed.
+
+The bridge now targets `https://www.aheadofmarket.com` directly and a regression test
+protects that contract. Twenty focused tests and the production-configured native build
+pass. Signed Corner 1.0 (8) was installed and launched on Patrik's registered iPhone.
+Production request logs immediately showed HTTP 200 responses for room messages,
+missions tree, trackers, preferences, agent settings, room goals, and workspace status
+on the final host. The physical voice action receipt test remains.

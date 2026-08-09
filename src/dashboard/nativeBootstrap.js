@@ -8,7 +8,10 @@ export function installNativeBootstrap() {
   if (!native || window.__cornerNativeBootstrapped) return native;
   window.__cornerNativeBootstrapped = true;
 
-  const appOrigin = import.meta.env.VITE_CORNER_API_ORIGIN || 'https://aheadofmarket.com';
+  // Use the final canonical host. The apex domain redirects to `www`; WebKit
+  // strips Authorization when that redirect changes origins, so native login
+  // can succeed while every authenticated dashboard API silently returns 401.
+  const appOrigin = import.meta.env.VITE_CORNER_API_ORIGIN || 'https://www.aheadofmarket.com';
   window.CornerNative = { ...(window.CornerNative || {}), appOrigin };
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input, init) => {

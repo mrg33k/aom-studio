@@ -223,6 +223,13 @@ test('native login is pinned to a dark glass surface', () => {
   assert.match(source, /env\(safe-area-inset-top\)/);
 });
 
+test('native API bridge targets the final canonical host without an auth-stripping redirect', () => {
+  const source = readFileSync(new URL('../src/dashboard/nativeBootstrap.js', import.meta.url), 'utf8');
+  assert.match(source, /https:\/\/www\.aheadofmarket\.com/);
+  assert.doesNotMatch(source, /\|\| 'https:\/\/aheadofmarket\.com'/);
+  assert.match(source, /input\.startsWith\('\/api\/'\)/);
+});
+
 test('AirPods control is mounted once in the shared desktop and phone shells', () => {
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   assert.match(read('../src/dashboard/cv6next/SharedNav.jsx'), /<AirPodsHeaderButton className="ib" \/>/);

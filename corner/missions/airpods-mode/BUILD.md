@@ -2,6 +2,27 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R9 — Native authenticated data origin (2026-08-09)
+
+**Physical finding:** Corner 1.0 (7) installed and launched, but rooms and API-backed
+content did not load. The bundled native bootstrap targeted the apex AOM domain, which
+returns a 308 to the `www` canonical domain. WebKit drops the bearer token when an
+authenticated fetch redirects across origins, leaving login intact but tenant APIs
+unauthorized.
+
+**Scope:** Point the native API bridge directly at the canonical `www` origin, add a
+regression contract, rebuild, install, and repeat the physical data/voice smoke test.
+
+**Physical result:** Corner 1.0 (8) archived, installed, and launched on Patrik's
+registered iPhone. After launch, production logs showed authenticated HTTP 200 results
+for room messages, missions tree, trackers, preferences, agent settings, room goals,
+and workspace status on the final `www` host. This directly closes the build-7 data
+authorization failure.
+
+**Verification:** 20 focused tests and the production-configured web/native build pass.
+
+**Status:** in progress — physical voice action receipt test pending
+
 ### R8 — Capability routes from real-call audit (2026-08-09)
 
 **Evidence:** Six production voice sessions were joined to their durable action records.
