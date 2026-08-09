@@ -176,7 +176,7 @@ check('App Store answer does not deny the known submission', !includesAny(turns[
 check('App Store answer frames room evidence as an explicitly dated record', includesAny(turns[3].assistant, ['corner records show', 'corner records say', 'corner record from', 'recorded in']) && /(?:2026|august\s+\d|aug\.?\s+\d)/i.test(turns[3].assistant), turns[3].assistant);
 check('conversation end executes the end route', toolNames(turns[4]).includes('end_voice_session'), toolNames(turns[4]));
 check('routine answers stay compact', turns.slice(0, 4).every((turn) => wordCount(turn.assistant) <= 24), turns.slice(0, 4).map((turn) => wordCount(turn.assistant)));
-const filler = ['well,', 'looks like', 'my bad', 'anything specific', 'anything else', 'move on to something else', 'want me to try', 'keep an eye on', 'let you know'];
+const filler = ['well,', 'looks like', 'my bad', 'anything specific', 'anything else', 'move on to something else', 'want me to try', 'keep an eye on', 'let you know', "what's next", 'what is next'];
 check('conversation contains no filler or unsupported future promises', !turns.some((turn) => includesAny(turn.assistant, filler)), turns.map((turn) => turn.assistant));
 check('closing is exact and contains no unsolicited recap', wordCount(turns[4].assistant) <= 4 && includesAny(turns[4].assistant, ['talk soon']) && !includesAny(turns[4].assistant, ['recap', 'failed outreach', 'app store', 'keep an eye', 'let you know']), turns[4].assistant);
 

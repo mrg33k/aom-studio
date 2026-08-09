@@ -68,6 +68,13 @@ repeat showed Gemini can instead produce a syntactically valid UUID with one wro
 character. Task inspection now retries the session's audited priority when the supplied
 UUID is valid-shaped but absent from the tenant, preserving the same read-only boundary.
 
+**Repeatability passes 2–3:** Facts, routing, retry capability, dated evidence, and
+audited endings stayed correct. Gemini intermittently appended “What's next?” or a
+generic choice after already-complete briefings, creating 25–28 word turns. Those
+phrases now fail the filler score. AirPods operational generation is deterministic at
+temperature 0, and the companion-next-step rule explicitly exempts completed status
+and evidence reads so they stop instead of manufacturing a check-in.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)

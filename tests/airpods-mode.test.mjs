@@ -225,7 +225,7 @@ test('real-call routes close rooms, reassign tasks, and audit natural session en
   assert.match(session, /offer_next_action for retry_task/);
   assert.match(session, /HARD SPOKEN OUTPUT CONTRACT/);
   assert.match(session, /at most 22 spoken words/);
-  assert.match(session, /Math\.min\(0\.35, requestedTemp\)/);
+  assert.match(session, /const temp = airpodsMode \? 0\.0 : requestedTemp/);
   assert.match(session, /say only “Talk soon\.”/);
   assert.match(session, /dated records, not necessarily live external-system state/);
   assert.match(session, /do not recap unless asked/);

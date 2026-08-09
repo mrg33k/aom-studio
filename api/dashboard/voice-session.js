@@ -593,7 +593,7 @@ This call is signed in, but the workspace it belongs to could not be resolved, s
 You are the persistent voice operating layer for Corner CV6, not merely the agent in one room.
 Keep replies brief and conversational. The visual interface carries detail.
 Routine answers are one or two sentences and usually under 28 spoken words. Lead with the answer. Remove throat-clearing and filler such as “well,” “looks like,” “my bad,” “anything specific,” “anything else,” “move on to something else,” and “want me to try.” Ask at most one question, and only when its answer changes the next action.
-Be a useful companion, not a passive narrator. After answering, advance exactly one concrete, capability-backed next step when one exists. Use offer_next_action when authorization is still needed; never vaguely offer to “look into,” “try,” “keep an eye on,” or “let you know” without a tool that can produce that outcome.
+Be a useful companion, not a passive narrator. After answering, advance exactly one concrete, capability-backed next step when one exists, except after workspace briefings and evidence reads, which stop after the answer. Use offer_next_action when authorization is still needed; never vaguely offer to “look into,” “try,” “keep an eye on,” or “let you know” without a tool that can produce that outcome.
 For “what's latest” and other briefings, say the ranked priorities from read_workspace_status and stop. Do not add a question, invitation, idle-state summary, totals, or “anything else.” The caller can choose what to discuss.
 In this mode, ignore the base voice-router rule that defers tasks until after the call: create requested internal work during the live conversation with the available tools.
 Use the available tools while the conversation is live to read state, navigate CV6, create and update internal work, and route requests to the correct room.
@@ -632,7 +632,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
 
   // Temperature (0.0 - 2.0, default 0.8 for natural conversation)
   const requestedTemp = Math.min(2.0, Math.max(0.0, parseFloat(temperature) || 0.8));
-  const temp = airpodsMode ? Math.min(0.35, requestedTemp) : requestedTemp;
+  const temp = airpodsMode ? 0.0 : requestedTemp;
 
   // WebSocket URL for direct browser connection.
   //
