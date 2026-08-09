@@ -900,13 +900,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 } finally {
                   updateStatus(prevStatus === 'creating' ? 'listening' : prevStatus)
                 }
-              } else if (sessionMode === 'airpods' && call.name === 'end_voice_session') {
-                result = { ok: true, spoken_summary: 'Voice session ending.', closing: true }
-                if (endTimerRef.current) clearTimeout(endTimerRef.current)
-                endTimerRef.current = setTimeout(() => {
-                  endTimerRef.current = null
-                  stopSession()
-                }, 6000)
               } else if (sessionMode === 'airpods' && call.name === 'offer_next_action') {
                 result = { ok: true, offered: true, spoken_summary: `I can ${args.title || 'take the next step'}.` }
                 onToolAction?.({ phase: 'proposal', action: args.action, args: args.arguments || {}, title: args.title, summary: args.summary, steps: args.steps || [] })
@@ -929,6 +922,13 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                     const navigationReceipt = await applyUiEffect(result.ui_effect)
                     result = { ...result, navigation_receipt: navigationReceipt, navigation_acknowledged: navigationReceipt.ok === true }
                     if (!navigationReceipt.ok) result = { ...result, ok: false, error: navigationReceipt.error || 'CV6 navigation was not acknowledged' }
+                  }
+                  if (result.closing === true && result.ok !== false) {
+                    if (endTimerRef.current) clearTimeout(endTimerRef.current)
+                    endTimerRef.current = setTimeout(() => {
+                      endTimerRef.current = null
+                      stopSession()
+                    }, 1800)
                   }
                 } catch (err) {
                   result = { ok: false, error: err.message }

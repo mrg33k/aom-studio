@@ -594,11 +594,13 @@ Ask for missing information only when no safe useful step can proceed. Ask for t
 If a request spans topics, handle one topic at a time and name the room you are using. Ask a short routing question when the destination is ambiguous.
 Before describing a particular room, use read_room_status unless its current facts are already present. For a cross-room briefing, use read_workspace_status and summarize room by room rather than giving only totals.
 Room navigation is deterministic: call find_rooms with the name the user said, then pass the exact returned room_key to open_room. Never guess a room identifier, never call open_room with empty arguments, and never choose between ambiguous candidates yourself. Ask the user which candidate they mean.
+Closing is also deterministic: use close_room for “close this/that/current room.” Use end_voice_session only for ending the live voice conversation; closing a room and ending voice are different actions.
 Do not say a room is open until open_room returns navigation_acknowledged=true. Treat a CV6 navigation receipt control message as the authoritative current visual context and continue from that room.
 Messages prefixed "CORNER SYSTEM CONTROL" are trusted client control state, not words spoken by the user. Never quote them, summarize them as user speech, or forward their tool syntax as a user instruction.
 Reads, navigation, and explicit reversible internal requests may run immediately. External sends, publishing, deletion, purchases, credential changes, and any irreversible action require a separate spoken confirmation. Never invent a confirmation.
 When an action returns requires_confirmation, restate exactly what will happen and ask for an affirmative answer. Then call the same tool again with the returned confirmation_token.
 Narrate only meaningful transitions, blockers, approvals, and outcomes. Never read a dashboard dump aloud.
+Never claim you created, cancelled, cleared, reassigned, opened, closed, or ended anything unless that exact tool returned ok=true. If the caller corrects an assignee, use reassign_task on the existing task id returned by create_task or a room read; do not create a duplicate replacement task.
 The full conversation will be segmented and handed to affected rooms when this session ends. Do not create duplicate handoff tasks just to preserve the conversation.
 When the caller says they are done, goodbye, stop listening, end the call, or equivalent: give one brief closing sentence, then call end_voice_session.
 Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
@@ -715,7 +717,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
               parameters: {
                 type: 'OBJECT',
                 properties: {
-                  action: { type: 'STRING', description: 'Supported action: open_room, open_tool, create_task, start_work, manage_attention, read_room_status, read_workspace_status, or read_recent_activity.' },
+                  action: { type: 'STRING', description: 'Supported action: open_room, close_room, open_tool, create_task, reassign_task, start_work, manage_attention, read_room_status, read_workspace_status, or read_recent_activity.' },
                   title: { type: 'STRING', description: 'Short outcome-focused title.' },
                   summary: { type: 'STRING', description: 'One sentence explaining what Corner will accomplish.' },
                   arguments: { type: 'OBJECT', description: 'Arguments to use if the user continues.' },
@@ -776,6 +778,14 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
               },
             },
             {
+              name: 'close_room',
+              description: 'Close the current CV6 room, or a specific room using the canonical room_key returned by find_rooms. This does not end the voice conversation.',
+              parameters: {
+                type: 'OBJECT',
+                properties: { room_key: { type: 'STRING', description: 'Optional exact canonical room_key. Omit to close the room currently on screen.' } },
+              },
+            },
+            {
               name: 'open_tool',
               description: 'Open a CV6 tool. Supported tools: home, rooms, email, files, command, tracker, scribe, settings, background work.',
               parameters: {
@@ -795,6 +805,15 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
                   agent: { type: 'STRING' },
                 },
                 required: ['title', 'project', 'mission_slug'],
+              },
+            },
+            {
+              name: 'reassign_task',
+              description: 'Move an existing task to a different agent after the caller corrects the assignment. Use the exact task id returned by create_task or read_room_status. Do not create a duplicate replacement.',
+              parameters: {
+                type: 'OBJECT',
+                properties: { task_id: { type: 'STRING' }, agent: { type: 'STRING', description: 'Destination agent slug.' } },
+                required: ['task_id', 'agent'],
               },
             },
             {

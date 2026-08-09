@@ -23,6 +23,9 @@ test('authority policy defaults unknown and consequential actions to confirmatio
   assert.equal(actionAuthority('open_room'), 'auto');
   assert.equal(actionAuthority('find_rooms'), 'auto');
   assert.equal(authorityForAction('read_recent_activity'), 'auto');
+  assert.equal(authorityForAction('close_room'), 'auto');
+  assert.equal(authorityForAction('end_voice_session'), 'auto');
+  assert.equal(authorityForAction('reassign_task'), 'internal-explicit');
   assert.equal(authorityForAction('create_task'), 'internal-explicit');
   assert.equal(authorityForAction('send_email'), 'confirm');
   assert.equal(authorityForAction('invented_action'), 'confirm');
@@ -40,6 +43,8 @@ test('room resolution accepts canonical keys and refuses ambiguous spoken names'
   assert.equal(ambiguous.reason, 'ambiguous_room');
   assert.equal(ambiguous.candidates.length, 2);
   assert.equal(resolveRoomCandidate(rooms, {}).reason, 'room_query_required');
+  const airpods = [{ room_key: 'mission:corner:airpods-mode', room_name: 'AirPods Mode', room_type: 'mission', slug: 'corner:airpods-mode', aliases: ['airpods-mode'] }];
+  assert.equal(resolveRoomCandidate(airpods, { query: 'the AirPods mission' }).resolved?.room_key, 'mission:corner:airpods-mode');
 });
 
 test('idempotency keys are deterministic and respect valid caller keys', () => {
@@ -189,6 +194,26 @@ test('voice checks tenant-scoped recent evidence before denying workspace events
   assert.match(action, /clientId !== 'aom'/);
   assert.match(session, /call read_recent_activity before answering/i);
   assert.match(session, /Never say you checked GitHub unless/i);
+});
+
+test('real-call routes close rooms, reassign tasks, and audit natural session endings', () => {
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const action = read('../api/dashboard/airpods-action.js');
+  const session = read('../api/dashboard/voice-session.js');
+  const transport = read('../src/dashboard/components/VoiceChat.jsx');
+  const shell = read('../src/dashboard/cv6next/CornerCV6.jsx');
+  assert.match(action, /if \(action === 'close_room'\)/);
+  assert.match(action, /if \(action === 'reassign_task'\)/);
+  assert.match(action, /if \(action === 'end_voice_session'\)/);
+  assert.match(action, /fresh:\$\{action\}:\$\{crypto\.randomUUID\(\)\}/);
+  assert.match(action, /select=role,text,timestamp,user_name,project,metadata/);
+  assert.doesNotMatch(action, /select=role,text,timestamp,user_name,project,mission/);
+  assert.match(session, /use close_room for “close this\/that\/current room/);
+  assert.match(session, /use reassign_task on the existing task id/);
+  assert.doesNotMatch(transport, /call\.name === 'end_voice_session'/);
+  assert.match(transport, /result\.closing === true/);
+  assert.match(shell, /effect\.type === 'close_room'/);
+  assert.match(shell, /closeWorkspaceColumn\(columnId\)/);
 });
 
 test('native login is pinned to a dark glass surface', () => {

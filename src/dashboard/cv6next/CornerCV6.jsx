@@ -3623,6 +3623,12 @@ export default function CornerCV6() {
       let ok = false;
       if (effect.type === 'navigate' && effect.target) ok = onNav(effect.target);
       if (effect.type === 'open_room' && effect.room) ok = onOpenRoom(effect.room, worldId);
+      if (effect.type === 'close_room') {
+        const columnId = effect.room ? `chat:${roomColumnKey(effect.room)}` : activeColumnId;
+        const closeable = workspaceColumns.some((column) => column.id === columnId && column.type === 'chat');
+        if (closeable) closeWorkspaceColumn(columnId);
+        ok = closeable;
+      }
       window.dispatchEvent(new CustomEvent('cv6:airpods-ui-effect-result', {
         detail: {
           request_id: effect.request_id || null,
@@ -3635,7 +3641,7 @@ export default function CornerCV6() {
     };
     window.addEventListener('cv6:airpods-ui-effect', applyEffect);
     return () => window.removeEventListener('cv6:airpods-ui-effect', applyEffect);
-  }, [onNav, onOpenRoom, worldId]);
+  }, [onNav, onOpenRoom, closeWorkspaceColumn, activeColumnId, workspaceColumns, worldId]);
   // Open a project's home (missions + general chat) on the Home surface.
   const onOpenProject = useCallback((proj) => {
     const id = proj?.id || proj;

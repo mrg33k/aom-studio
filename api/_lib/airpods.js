@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 
 export const AIRPODS_ACTION_AUTHORITY = Object.freeze({
-  read_workspace_status: 'auto', read_recent_activity: 'auto', list_rooms: 'auto', find_rooms: 'auto', read_room_status: 'auto', open_room: 'auto', open_tool: 'auto', navigate: 'auto',
-  create_task: 'internal-explicit', start_work: 'internal-explicit',
+  read_workspace_status: 'auto', read_recent_activity: 'auto', list_rooms: 'auto', find_rooms: 'auto', read_room_status: 'auto', open_room: 'auto', close_room: 'auto', open_tool: 'auto', navigate: 'auto', end_voice_session: 'auto',
+  create_task: 'internal-explicit', reassign_task: 'internal-explicit', start_work: 'internal-explicit',
   manage_attention: 'internal-explicit',
   send_email: 'confirm', publish: 'confirm', delete: 'confirm', purchase: 'confirm',
   change_credentials: 'confirm',
@@ -73,7 +73,10 @@ export function resolveRoomCandidate(candidates, input) {
       : { resolved: null, candidates: [], reason: 'unknown_room_key' };
   }
 
-  const query = normalizeRoomTerm(input?.room_query || input?.query || input?.room_id || input?.room_name);
+  const rawQuery = normalizeRoomTerm(input?.room_query || input?.query || input?.room_id || input?.room_name);
+  const genericRoomWords = new Set(['the', 'a', 'an', 'this', 'that', 'current', 'room', 'mission', 'project', 'agent', 'chat', 'conversation', 'under', 'main']);
+  const conversationalQuery = rawQuery.split(' ').filter((token) => !genericRoomWords.has(token)).join(' ');
+  const query = conversationalQuery || rawQuery;
   if (!query) return { resolved: null, candidates: [], reason: 'room_query_required' };
   const scored = rooms.map((room) => {
     const values = [room.room_name, room.slug, room.room_key, ...(room.aliases || [])]

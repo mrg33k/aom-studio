@@ -136,3 +136,20 @@ deployment reached READY. Canonical authenticated checks returned 200 and showed
 tool in the live Gemini declaration. An accidentally auto-created `airpods-mode-r6`
 Vercel project was deleted and never used as release proof. Physical dark-login and AOM
 voice-question confirmation remain before this round can be called complete.
+
+## 2026-08-09 — R8 real-call capability audit
+
+Patrik asked to make the voice agent materially more capable after a physical call
+showed it could not reliably find the AirPods mission, close the current room, or end
+the conversation with a durable record. Joining six production voice transcripts to
+their action records found a broken room-message query (`messages.mission` does not
+exist), conversational room-name mismatches, a local-only end tool, unaudited fresh
+reads, and a mistaken task assignment that was “corrected” by creating a duplicate.
+
+R8 adds receipt-backed close-room, end-session, and existing-task reassignment routes.
+Mission reads now use message metadata, generic spoken room words are normalized, and
+every fresh evidence read gets a unique durable audit entry. The prompt now prohibits
+claims of creation, reassignment, opening, closing, or ending without an `ok=true`
+receipt. Nineteen focused tests, syntax checks, the web build, and authenticated broker
+probes pass. Native build 7 is required for the new close-room UI effect and audited
+end-session client path; the connected iPhone was offline when the release pass began.

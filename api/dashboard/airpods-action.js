@@ -241,18 +241,18 @@ async function readRoomStatus(args, tenant) {
   if (match.room_type === 'agent') {
     [tasks, messages] = await Promise.all([
       db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(match.slug)}&status=neq.done&order=created_at.desc&limit=12&select=id,title,status,agent,project,metadata,created_at`),
-      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(match.slug)}&order=timestamp.desc&limit=8&select=role,text,timestamp,user_name,project,mission`),
+      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(match.slug)}&order=timestamp.desc&limit=8&select=role,text,timestamp,user_name,project,metadata`),
     ]);
   } else {
     const project = match.project || match.slug;
     [tasks, messages] = await Promise.all([
       db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&status=neq.done&order=created_at.desc&limit=30&select=id,title,status,agent,project,metadata,created_at`),
-      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&order=timestamp.desc&limit=20&select=role,text,timestamp,user_name,project,mission`),
+      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&order=timestamp.desc&limit=20&select=role,text,timestamp,user_name,project,metadata`),
     ]);
     if (match.room_type === 'mission') {
       const bare = match.slug.split(':').pop();
       tasks = tasks.filter((task) => [match.slug, bare].includes(String(task.metadata?.mission_slug || '')));
-      messages = messages.filter((message) => [match.slug, bare].includes(String(message.mission || '')));
+      messages = messages.filter((message) => [match.slug, bare].includes(String(message.metadata?.mission_slug || '')));
     }
   }
   const recent = messages.slice(0, 6).map((message) => ({ role: message.role, author: message.user_name || null, text: String(message.text || '').slice(0, 500), at: message.timestamp }));
@@ -344,6 +344,29 @@ async function manageAttention(args, tenant) {
   return { ok: true, spoken_summary: operation === 'snooze' ? 'I’ll bring those back later.' : 'Got it. Those are cleared.' };
 }
 
+async function reassignTask(args, tenant) {
+  const taskId = String(args.task_id || '').trim();
+  const agent = String(args.agent || '').trim().toLowerCase();
+  if (!/^[0-9a-f-]{36}$/i.test(taskId) || !agent) throw new Error('task_id and agent are required');
+  const [tasks, agents] = await Promise.all([
+    db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}&limit=1&select=id,title,text,agent,status,project,metadata`),
+    db(`agent_status?client_id=eq.${encodeURIComponent(tenant)}&slug=eq.${encodeURIComponent(agent)}&type=eq.agent&limit=1&select=slug,name`),
+  ]);
+  const task = Array.isArray(tasks) ? tasks[0] : null;
+  if (!task) throw new Error('Task not found in this workspace');
+  if (!Array.isArray(agents) || !agents[0]) throw new Error('Agent not found in this workspace');
+  const rows = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}`, {
+    method: 'PATCH', body: JSON.stringify({ agent }),
+  });
+  const updated = Array.isArray(rows) ? rows[0] : rows;
+  return {
+    ok: true,
+    spoken_summary: `Reassigned ${task.title || task.text || 'the task'} to ${agents[0].name || agent}.`,
+    entities: [{ type: 'task', id: taskId, title: task.title || task.text || null, agent }],
+    task: updated || { ...task, agent },
+  };
+}
+
 async function execute(action, args, req, tenant, identity, sessionId) {
   if (action === 'read_workspace_status') {
     const status = await workspaceStatus(tenant);
@@ -359,6 +382,19 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     const allowed = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'livescribe', 'settings', 'workers']);
     if (!allowed.has(target)) throw new Error('That CV6 tool is not available');
     return { ok: true, spoken_summary: `Opening ${args.tool || args.target}.`, ui_effect: { type: 'navigate', target, request_id: crypto.randomUUID() } };
+  }
+  if (action === 'close_room') {
+    let room = null;
+    if (args.room_key || args.query || args.room_query) {
+      const resolution = await resolveRoom(args, tenant);
+      if (!resolution.room) return resolution;
+      room = resolution.room.room;
+    }
+    return {
+      ok: true,
+      spoken_summary: room ? `Closing ${room.name || 'that room'}.` : 'Closing the current room.',
+      ui_effect: { type: 'close_room', room, request_id: crypto.randomUUID() },
+    };
   }
   if (action === 'find_rooms') {
     const resolution = await resolveRoom(args, tenant);
@@ -381,8 +417,10 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     };
   }
   if (action === 'create_task') return createTask(args, req, identity);
+  if (action === 'reassign_task') return reassignTask(args, tenant);
   if (action === 'start_work') return startWork(args, req, tenant, identity, sessionId);
   if (action === 'manage_attention') return manageAttention(args, tenant);
+  if (action === 'end_voice_session') return { ok: true, closing: true, spoken_summary: 'Ending the voice session now.' };
   throw new Error('Action is allowlisted but has no executor');
 }
 
@@ -414,13 +452,12 @@ export default async function handler(req, res) {
   if (!AIRPODS_ALLOWED_ACTIONS.has(action)) return res.status(400).json({ error: `Action not allowed: ${action}` });
   const sessionId = String(body.session_id || '').trim() || null;
   const authority = authorityForAction(action);
-  // These reads are live evidence, so replaying an older same-session result
-  // would defeat their purpose. They are side-effect free.
-  if (action === 'read_workspace_status' || action === 'read_recent_activity') {
-    try { return res.status(200).json(await execute(action, args, req, identity.tenant, identity, sessionId)); }
-    catch (error) { return res.status(500).json({ error: error?.message || 'Read failed' }); }
-  }
-  const callerKey = idempotencyKey({ supplied: body.idempotency_key, sessionId, action, args });
+  // Fresh reads get a unique audit entry rather than a replayed answer. That
+  // preserves current state and keeps the conversation/action join complete.
+  const freshReads = new Set(['read_workspace_status', 'read_recent_activity', 'list_rooms', 'find_rooms', 'read_room_status']);
+  const callerKey = freshReads.has(action)
+    ? `fresh:${action}:${crypto.randomUUID()}`
+    : idempotencyKey({ supplied: body.idempotency_key, sessionId, action, args });
   // Namespace even caller-supplied keys. The database uniqueness constraint is
   // global, while replay visibility must never cross a world or user boundary.
   const key = crypto.createHash('sha256')

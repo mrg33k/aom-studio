@@ -2,6 +2,25 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R8 — Capability routes from real-call audit (2026-08-09)
+
+**Evidence:** Six production voice sessions were joined to their durable action records.
+The audit found a failed room read (`messages.mission` does not exist), conversational
+room names that could not resolve `corner:airpods-mode`, an improvised “close room” claim,
+an unlogged local-only end-session tool, unaudited fresh reads, and a mistaken task
+assignment that was “corrected” by creating a duplicate instead of reassigning the task.
+
+**Scope:** Add receipt-backed close-room, end-session, and task-reassignment routes;
+repair mission room reads and conversational matching; audit every fresh read without
+replaying stale results; and harden the live prompt against unsupported completion claims.
+
+**Verification:** 19 focused tests, API syntax checks, the production web build, and
+live authenticated broker probes pass. The live probes proved close-room and
+end-session return receipts and write successful action-audit rows. Build 7 carries
+the matching native UI-effect and session-ending client behavior.
+
+**Status:** in progress — production deployment and physical build 7 installation pending
+
 ### R7 — Native dark glass and current-source voice (2026-08-09)
 
 **Evidence:** Physical build 5 proved the native shell was live, but login inherited a
