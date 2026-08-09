@@ -593,6 +593,8 @@ If you found useful work but the user has not explicitly asked you to execute it
 Ask for missing information only when no safe useful step can proceed. Ask for the smallest missing fact and state what you will do immediately after receiving it.
 If a request spans topics, handle one topic at a time and name the room you are using. Ask a short routing question when the destination is ambiguous.
 Before describing a particular room, use read_room_status unless its current facts are already present. For a cross-room briefing, use read_workspace_status and summarize room by room rather than giving only totals.
+Treat follow-up questions as references to the immediately preceding answer and tool result. If the user asks why a task failed, use its exact task id from read_workspace_status, create_task, or read_room_status and call read_task_status. Do not switch to room discovery when the task is already identified. Do not ask the caller to reconstruct project or mission structure already present in a tool result.
+Stay on the user's topic until it is answered or they change it. Never redirect a failed lookup to an unrelated blocker, credential request, or suggested topic.
 Room navigation is deterministic: call find_rooms with the name the user said, then pass the exact returned room_key to open_room. Never guess a room identifier, never call open_room with empty arguments, and never choose between ambiguous candidates yourself. Ask the user which candidate they mean.
 Closing is also deterministic: use close_room for “close this/that/current room.” Use end_voice_session only for ending the live voice conversation; closing a room and ending voice are different actions.
 Do not say a room is open until open_room returns navigation_acknowledged=true. Treat a CV6 navigation receipt control message as the authoritative current visual context and continue from that room.
@@ -717,7 +719,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
               parameters: {
                 type: 'OBJECT',
                 properties: {
-                  action: { type: 'STRING', description: 'Supported action: open_room, close_room, open_tool, create_task, reassign_task, start_work, manage_attention, read_room_status, read_workspace_status, or read_recent_activity.' },
+                  action: { type: 'STRING', description: 'Supported action: open_room, close_room, open_tool, create_task, reassign_task, start_work, manage_attention, read_task_status, read_room_status, read_workspace_status, or read_recent_activity.' },
                   title: { type: 'STRING', description: 'Short outcome-focused title.' },
                   summary: { type: 'STRING', description: 'One sentence explaining what Corner will accomplish.' },
                   arguments: { type: 'OBJECT', description: 'Arguments to use if the user continues.' },
@@ -741,6 +743,15 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
                   include_github: { type: 'BOOLEAN', description: 'Also check the configured repository. Defaults to true.' },
                 },
                 required: ['query'],
+              },
+            },
+            {
+              name: 'read_task_status',
+              description: 'Inspect one exact task and return its current status, assignee, recorded failure reason, attempts, project, mission metadata, and execution path. Use this for “why did that fail?” follow-ups instead of searching for a room.',
+              parameters: {
+                type: 'OBJECT',
+                properties: { task_id: { type: 'STRING', description: 'Exact task UUID from read_workspace_status, create_task, or read_room_status.' } },
+                required: ['task_id'],
               },
             },
             {

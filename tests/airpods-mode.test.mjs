@@ -23,6 +23,7 @@ test('authority policy defaults unknown and consequential actions to confirmatio
   assert.equal(actionAuthority('open_room'), 'auto');
   assert.equal(actionAuthority('find_rooms'), 'auto');
   assert.equal(authorityForAction('read_recent_activity'), 'auto');
+  assert.equal(authorityForAction('read_task_status'), 'auto');
   assert.equal(authorityForAction('close_room'), 'auto');
   assert.equal(authorityForAction('end_voice_session'), 'auto');
   assert.equal(authorityForAction('reassign_task'), 'internal-explicit');
@@ -45,6 +46,8 @@ test('room resolution accepts canonical keys and refuses ambiguous spoken names'
   assert.equal(resolveRoomCandidate(rooms, {}).reason, 'room_query_required');
   const airpods = [{ room_key: 'mission:corner:airpods-mode', room_name: 'AirPods Mode', room_type: 'mission', slug: 'corner:airpods-mode', aliases: ['airpods-mode'] }];
   assert.equal(resolveRoomCandidate(airpods, { query: 'the AirPods mission' }).resolved?.room_key, 'mission:corner:airpods-mode');
+  const outreach = [{ room_key: 'mission:aom:outreach', room_name: 'Outreach', room_type: 'mission', slug: 'aom:outreach', aliases: ['outreach'] }];
+  assert.equal(resolveRoomCandidate(outreach, { room_key: 'aom:outreach' }).resolved?.room_key, 'mission:aom:outreach');
 });
 
 test('idempotency keys are deterministic and respect valid caller keys', () => {
@@ -204,12 +207,17 @@ test('real-call routes close rooms, reassign tasks, and audit natural session en
   const shell = read('../src/dashboard/cv6next/CornerCV6.jsx');
   assert.match(action, /if \(action === 'close_room'\)/);
   assert.match(action, /if \(action === 'reassign_task'\)/);
+  assert.match(action, /if \(action === 'read_task_status'\)/);
   assert.match(action, /if \(action === 'end_voice_session'\)/);
   assert.match(action, /fresh:\$\{action\}:\$\{crypto\.randomUUID\(\)\}/);
   assert.match(action, /select=role,text,timestamp,user_name,project,metadata/);
   assert.doesNotMatch(action, /select=role,text,timestamp,user_name,project,mission/);
   assert.match(session, /use close_room for “close this\/that\/current room/);
   assert.match(session, /use reassign_task on the existing task id/);
+  assert.match(session, /call read_task_status/);
+  assert.match(session, /Never redirect a failed lookup to an unrelated blocker/);
+  assert.match(action, /repo: projectRow\.slug/);
+  assert.match(action, /project_path: projectRow\.repo_path/);
   assert.doesNotMatch(transport, /call\.name === 'end_voice_session'/);
   assert.match(transport, /result\.closing === true/);
   assert.match(shell, /effect\.type === 'close_room'/);

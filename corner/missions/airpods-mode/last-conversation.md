@@ -185,3 +185,25 @@ fetch/XMLHttpRequest patch is now enabled, bypassing WebKit CORS without weakeni
 authentication or individually opening dozens of endpoints. Corner 1.0 (9) archived,
 installed, and launched successfully. Physical room-content and voice receipt
 confirmation remain before R9 can be closed.
+
+## 2026-08-09 — R10 newest-call diagnosis
+
+Patrik reported that talking to the voice agent was still poor. The newest durable
+session (`c7d962ce`) confirmed it: Corner introduced failed outreach tasks, then could
+not answer why they failed, guessed `aom:outreach` and `corner:outreach` as raw room
+keys, asked Patrik to reconstruct context already returned by its own status read, and
+redirected the unresolved question toward unrelated App Store credentials.
+
+Both duplicated “Finalize contact list research” tasks carried project `corner` and
+mission `outreach` but were rejected immediately with `metadata.repo missing; front
+desk must set it`. The first was assigned to Cleo; the attempted correction created a
+second Jacob task instead of reassigning the first. R10 adds direct, tenant-scoped task
+inspection; includes failure details in workspace status; resolves an exact registered
+mission slug such as `aom:outreach`; and makes voice follow task IDs from prior results
+without changing subjects. New voice-created tasks now pass the strict project-execution
+gate and receive the authorized project's repo and working path.
+
+API syntax, 20 focused tests, and the production build pass. An authenticated handler
+probe against the real Jacob task returned the recorded missing-repo error in its spoken
+summary; its test-only audit row was then removed. Production deployment and a phone
+conversation retest remain.

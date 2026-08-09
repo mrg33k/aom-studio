@@ -2,6 +2,30 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
+
+**Real-call evidence:** In session `c7d962ce`, Corner introduced two failed outreach
+tasks, then could not answer why they failed. It ignored the task IDs already returned
+by `read_workspace_status`, guessed noncanonical room keys, asked Patrik to reconstruct
+the room structure, and changed the subject to App Store credentials.
+
+**Root cause:** Both voice-created tasks were rejected with `metadata.repo missing;
+front desk must set it`. The first was incorrectly assigned to Cleo; the attempted
+correction created a duplicate Jacob task. Voice had no direct task-inspection route,
+and room resolution accepted canonical keys but not the mission slug shorthand the
+model supplied.
+
+**Scope:** Make voice-created work executable with authorized repo/path metadata; add
+receipt-backed task inspection; accept exact registered slugs as room shorthand; and
+require follow-ups to use prior tool entities without changing subjects.
+
+**Verification:** API syntax, 20 focused tests, and the production web build pass. An
+authenticated local-handler probe against the exact failed Jacob task returned its
+real production error and a correct spoken explanation. The single test audit row was
+removed after verification.
+
+**Status:** in progress — production deployment and phone conversation retest pending
+
 ### R9 — Native authenticated data origin (2026-08-09)
 
 **Physical finding:** Corner 1.0 (7) installed and launched, but rooms and API-backed

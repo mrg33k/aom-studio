@@ -6,6 +6,7 @@
 import crypto from 'crypto';
 import { verifyTenant, verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
 import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js';
+import { authorizeTaskProject, taskScopeDenialMessage } from '../_lib/taskScope.js';
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
 import {
   AIRPODS_ALLOWED_ACTIONS,
@@ -44,7 +45,7 @@ function uiTool(tool) {
 }
 
 async function workspaceStatus(clientId) {
-  const taskFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=created_at.desc&limit=20&select=id,title,status,agent,project,metadata,created_at`;
+  const taskFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=created_at.desc&limit=20&select=id,title,description,status,agent,project,error,attempt_count,max_attempts,metadata,created_at`;
   const agentFilter = `client_id=eq.${encodeURIComponent(clientId)}&select=slug,status,current_task,updated_at`;
   const doneFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=eq.done&order=completed_at.desc&limit=5&select=id,title,agent,completed_at`;
   const [tasks, agents, completed] = await Promise.all([
@@ -53,6 +54,23 @@ async function workspaceStatus(clientId) {
   const active = tasks.filter((task) => ['queued', 'active', 'building', 'qa', 'planning', 'classifying'].includes(task.status));
   const blockers = tasks.filter((task) => ['blocked', 'failed', 'needs_input', 'needs_verification'].includes(task.status));
   return { active, blockers, completed, agents: agents.filter((agent) => agent.status && agent.status !== 'idle') };
+}
+
+async function readTaskStatus(args, tenant) {
+  const taskId = String(args.task_id || '').trim();
+  if (!/^[0-9a-f-]{36}$/i.test(taskId)) throw new Error('A valid task_id is required');
+  const rows = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}&limit=1&select=id,title,text,description,status,agent,project,project_path,error,attempt_count,max_attempts,metadata,created_at,completed_at`);
+  const task = Array.isArray(rows) ? rows[0] : null;
+  if (!task) throw new Error('Task not found in this workspace');
+  const reason = String(task.error || '').trim();
+  return {
+    ok: true,
+    spoken_summary: reason
+      ? `${task.title || 'The task'} is ${task.status}. It ${task.status === 'failed' ? 'failed' : 'reports'} because ${reason}.`
+      : `${task.title || 'The task'} is ${task.status}; no failure reason is recorded.`,
+    task,
+    entities: [{ type: 'task', id: task.id, title: task.title || null, status: task.status, agent: task.agent || null }],
+  };
 }
 
 function activityTerms(value) {
@@ -269,19 +287,25 @@ async function createTask(args, req, identity) {
   const missionSlug = String(args.mission_slug || '').trim();
   const title = String(args.title || '').trim().slice(0, 240);
   if (!project || !missionSlug || !title) throw new Error('title, project, and mission_slug are required');
-  const scope = await verifyProjectAccess(project, req);
+  const verdict = await authorizeTaskProject({ req, clientId: identity.tenant, projectSlug: project });
+  if (!verdict.ok) throw new Error(taskScopeDenialMessage({ clientId: identity.tenant, projectSlug: project, reason: verdict.reason }));
+  const projectRows = await db(`projects?client_id=eq.${encodeURIComponent(identity.tenant)}&slug=eq.${encodeURIComponent(project)}&limit=1&select=slug,repo_path`);
+  const projectRow = Array.isArray(projectRows) ? projectRows[0] : null;
+  if (!projectRow) throw new Error('Authorized project record not found');
   const row = {
     title,
     text: String(args.description || title).trim(),
     description: String(args.description || title).trim(),
     status: 'queued',
     source: 'airpods-mode',
-    client_id: scope.tenant,
+    client_id: identity.tenant,
     created_by: identity.userId,
     project,
+    project_path: projectRow.repo_path || '',
     ...(args.agent ? { agent: String(args.agent).trim() } : {}),
     metadata: {
       mission_slug: missionSlug,
+      repo: projectRow.slug,
       created_via: 'airpods-mode',
       requested_by_name: identity.userName || null,
       requested_by_email: identity.email || null,
@@ -373,6 +397,7 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     return { ok: true, spoken_summary: `${status.active.length} active, ${status.blockers.length} need attention, and ${status.completed.length} recently completed.`, status };
   }
   if (action === 'read_recent_activity') return readRecentActivity(tenant, args);
+  if (action === 'read_task_status') return readTaskStatus(args, tenant);
   if (action === 'list_rooms') {
     const rooms = (await roomDirectory(tenant)).slice(0, 240).map((room) => ({ room_key: room.room_key, room_name: room.room_name, room_type: room.room_type, project: room.project }));
     return { ok: true, spoken_summary: `I found ${rooms.length} rooms in this workspace.`, rooms };
@@ -454,7 +479,7 @@ export default async function handler(req, res) {
   const authority = authorityForAction(action);
   // Fresh reads get a unique audit entry rather than a replayed answer. That
   // preserves current state and keeps the conversation/action join complete.
-  const freshReads = new Set(['read_workspace_status', 'read_recent_activity', 'list_rooms', 'find_rooms', 'read_room_status']);
+  const freshReads = new Set(['read_workspace_status', 'read_recent_activity', 'read_task_status', 'list_rooms', 'find_rooms', 'read_room_status']);
   const callerKey = freshReads.has(action)
     ? `fresh:${action}:${crypto.randomUUID()}`
     : idempotencyKey({ supplied: body.idempotency_key, sessionId, action, args });
