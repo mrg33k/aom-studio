@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 export const AIRPODS_ACTION_AUTHORITY = Object.freeze({
   read_workspace_status: 'auto', read_recent_activity: 'auto', read_task_status: 'auto', list_rooms: 'auto', find_rooms: 'auto', read_room_status: 'auto', open_room: 'auto', close_room: 'auto', open_tool: 'auto', navigate: 'auto', end_voice_session: 'auto',
-  create_task: 'internal-explicit', reassign_task: 'internal-explicit', start_work: 'internal-explicit',
+  create_task: 'internal-explicit', reassign_task: 'internal-explicit', retry_task: 'internal-explicit', start_work: 'internal-explicit',
   manage_attention: 'internal-explicit',
   send_email: 'confirm', publish: 'confirm', delete: 'confirm', purchase: 'confirm',
   change_credentials: 'confirm',

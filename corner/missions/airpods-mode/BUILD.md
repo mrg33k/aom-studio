@@ -2,6 +2,20 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R11 — Evidence-grounded conversation gauntlet (2026-08-09)
+
+**User standard:** Corner Voice must stop sounding informed when it has not actually
+checked current state. Conversation quality is part of capability: it must preserve
+references across turns, distinguish knowledge from evidence, stay on topic, and use
+receipts before making operational claims.
+
+**Test plan:** Drive the live production Gemini session through multi-turn scripted
+conversations, execute its tool calls through the authenticated production broker,
+score claims against returned evidence, patch the system/tool contract, and rerun the
+same gauntlet before release.
+
+**Status:** in progress
+
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
 
 **Real-call evidence:** In session `c7d962ce`, Corner introduced two failed outreach

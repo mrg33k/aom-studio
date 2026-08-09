@@ -214,3 +214,19 @@ included `read_task_status`; the canonical action endpoint returned the Jacob ta
 real missing-repo error and correct spoken summary. The test-only audit row was removed.
 The installed phone needs only a new voice session—not another native build—to receive
 R10. A physical conversation retest remains.
+
+## 2026-08-09 — R11 conversation gauntlet baseline
+
+Patrik raised the standard from factual routing to genuinely useful companionship:
+less filler, more forward motion, and no performance of knowledge without evidence.
+A new authenticated production gauntlet now drives the same Gemini Live session and
+action broker used by the phone through five linked turns.
+
+The first run passed the earlier factual tests but failed the stronger conversational
+standard. Corner used filler questions, vaguely offered work it could not execute,
+presented a historical Business Ops note like live App Store status, and ended with an
+unsupported promise to monitor the review. R11 now caps routine answers, bans common
+filler and vague future promises, distinguishes dated Corner records from live external
+state, forbids unsolicited closing recaps, and requires one capability-backed next step.
+A receipt-backed retry_task route repairs authorized repo/path scope and requeues the
+same failed task after explicit approval.

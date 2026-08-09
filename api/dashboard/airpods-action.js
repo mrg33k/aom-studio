@@ -52,8 +52,17 @@ async function workspaceStatus(clientId) {
     db(`tasks?${taskFilter}`), db(`agent_status?${agentFilter}`), db(`tasks?${doneFilter}`),
   ]);
   const active = tasks.filter((task) => ['queued', 'active', 'building', 'qa', 'planning', 'classifying'].includes(task.status));
-  const blockers = tasks.filter((task) => ['blocked', 'failed', 'needs_input', 'needs_verification'].includes(task.status));
-  return { active, blockers, completed, agents: agents.filter((agent) => agent.status && agent.status !== 'idle') };
+  const allBlockers = tasks.filter((task) => ['blocked', 'failed', 'needs_input', 'needs_verification'].includes(task.status));
+  const recentCutoff = Date.now() - 7 * 24 * 60 * 60_000;
+  const blockers = allBlockers.filter((task) => new Date(task.created_at || 0).getTime() >= recentCutoff).slice(0, 6);
+  return {
+    active,
+    blockers,
+    older_attention_count: Math.max(0, allBlockers.length - blockers.length),
+    completed: completed.filter((task) => task.completed_at),
+    agents: agents.filter((agent) => agent.status && agent.status !== 'idle'),
+    checked_at: new Date().toISOString(),
+  };
 }
 
 async function readTaskStatus(args, tenant) {
@@ -391,6 +400,31 @@ async function reassignTask(args, tenant) {
   };
 }
 
+async function retryTask(args, req, tenant) {
+  const taskId = String(args.task_id || '').trim();
+  if (!/^[0-9a-f-]{36}$/i.test(taskId)) throw new Error('A valid task_id is required');
+  const rows = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}&limit=1&select=id,title,text,status,agent,project,project_path,error,metadata`);
+  const task = Array.isArray(rows) ? rows[0] : null;
+  if (!task) throw new Error('Task not found in this workspace');
+  if (!task.project) throw new Error('Task has no project, so Corner cannot choose an execution repository safely');
+  const verdict = await authorizeTaskProject({ req, clientId: tenant, projectSlug: task.project });
+  if (!verdict.ok) throw new Error(taskScopeDenialMessage({ clientId: tenant, projectSlug: task.project, reason: verdict.reason }));
+  const projectRows = await db(`projects?client_id=eq.${encodeURIComponent(tenant)}&slug=eq.${encodeURIComponent(task.project)}&limit=1&select=slug,repo_path`);
+  const project = Array.isArray(projectRows) ? projectRows[0] : null;
+  if (!project) throw new Error('Authorized project record not found');
+  const metadata = { ...(task.metadata || {}), repo: project.slug, retried_via: 'airpods-mode' };
+  const updated = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'queued', error: null, completed_at: null, project_path: project.repo_path || '', metadata }),
+  });
+  return {
+    ok: true,
+    spoken_summary: `Repaired the execution scope and requeued ${task.title || 'the task'} for ${task.agent || 'its assigned agent'}.`,
+    task: Array.isArray(updated) ? updated[0] : updated,
+    entities: [{ type: 'task', id: taskId, title: task.title || null, status: 'queued', agent: task.agent || null }],
+  };
+}
+
 async function execute(action, args, req, tenant, identity, sessionId) {
   if (action === 'read_workspace_status') {
     const status = await workspaceStatus(tenant);
@@ -443,6 +477,7 @@ async function execute(action, args, req, tenant, identity, sessionId) {
   }
   if (action === 'create_task') return createTask(args, req, identity);
   if (action === 'reassign_task') return reassignTask(args, tenant);
+  if (action === 'retry_task') return retryTask(args, req, tenant);
   if (action === 'start_work') return startWork(args, req, tenant, identity, sessionId);
   if (action === 'manage_attention') return manageAttention(args, tenant);
   if (action === 'end_voice_session') return { ok: true, closing: true, spoken_summary: 'Ending the voice session now.' };
