@@ -21,6 +21,14 @@ recorded error and a structured, approval-gated retry. AirPods output is capped 
 words with low temperature, explicit calendar dates, no invented access history, and
 a deterministic “Talk soon.” ending. Local syntax, diff, and 20 focused tests pass.
 
+**Conflict removal:** A subsequent real five-turn call proved the model was still
+following the older base voice-router ending policy, which explicitly required recaps,
+monitoring promises, and offers to stay on. AirPods mode now receives its own base
+ending and technical-work policy instead of contradictory instructions. Fresh evidence
+reads also return a primary calendar-dated record and a concise spoken contract; status
+speech is limited to two priorities. The production gauntlet now treats the audited end
+receipt as terminal even when Gemini omits its normal turn-complete marker.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)

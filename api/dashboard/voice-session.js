@@ -70,7 +70,7 @@ async function createEphemeralToken() {
 // `aomWorld` gates the AOM-internal blocks (the team roster and the system map:
 // repo names, script paths, the deploy pipeline). Those are the studio's own
 // internals and have no business inside another world's voice session.
-function buildBaseInstruction(speakerName, { aomWorld = false } = {}) {
+function buildBaseInstruction(speakerName, { aomWorld = false, airpodsMode = false } = {}) {
   const who = speakerName || 'the person on this call';
   const whoPossessive = speakerName ? `${speakerName}'s` : "the caller's";
 
@@ -111,6 +111,23 @@ Corner is the dashboard this workspace works in, and you are one of its AI agent
 WHO ELSE IS IN THIS WORKSPACE:
 More than one human may use this workspace and take calls exactly like this one. ${attributionRule}`;
 
+  const endingInstruction = airpodsMode
+    ? `ENDING A CONVERSATION:
+When the caller is done, say exactly “Talk soon.” and immediately call end_voice_session. Do not recap, promise follow-up, ask a question, or mention the previous topic.`
+    : `ENDING A CONVERSATION:
+When the conversation winds down naturally (${who} says "sounds good", "that's it", "talk soon", etc.):
+1. Briefly recap what was decided or what's happening next. One or two sentences max.
+2. If tasks were created, confirm them: "I've got those three tasks queued for Bobby. They should start building shortly."
+3. If something needs follow-up, say so: "I'll keep an eye on those and circle back when they're done."
+4. Close naturally. Don't drag it out. Match their energy -- if they're wrapping up quick, you wrap up quick.
+5. Never abruptly stop or go silent. Always close the loop.
+- If ${who} is still talking and you haven't created tasks yet but should, create them before wrapping up.
+- If tasks are currently building, offer to stay on: "Want me to hang on while those build? I can let you know when they finish."`;
+
+  const technicalInstruction = airpodsMode
+    ? `Use the live tools to inspect evidence and take authorized action. Answer first; do not restate the request or narrate your process.`
+    : `You are a voice thinking partner, not a code explorer. Listen to what they want, restate it back briefly so they know you got it, and keep the conversation moving. DO NOT try to read or search the codebase during a call. DO NOT try to plan the approach. Tasks are NOT created during the call -- after you hang up, a summary of the conversation is turned into task rows automatically. Your job on the live call is to hear their intent clearly and help them sharpen it.`;
+
   return `${identityBlock}
 
 This is a real voice conversation. Keep it natural and human.
@@ -127,15 +144,7 @@ HOW TO TALK:
 - Reference real things: what you've been working on, what happened recently.
 - If you don't know something, say so. Don't make stuff up.
 
-ENDING A CONVERSATION:
-When the conversation winds down naturally (${who} says "sounds good", "that's it", "talk soon", etc.):
-1. Briefly recap what was decided or what's happening next. One or two sentences max.
-2. If tasks were created, confirm them: "I've got those three tasks queued for Bobby. They should start building shortly."
-3. If something needs follow-up, say so: "I'll keep an eye on those and circle back when they're done."
-4. Close naturally. Don't drag it out. Match their energy -- if they're wrapping up quick, you wrap up quick.
-5. Never abruptly stop or go silent. Always close the loop.
-- If ${who} is still talking and you haven't created tasks yet but should, create them before wrapping up.
-- If tasks are currently building, offer to stay on: "Want me to hang on while those build? I can let you know when they finish."
+${endingInstruction}
 
 UPDATING PROJECT CONTEXT:
 When you learn something important during a conversation -- a decision, a new constraint, a change in direction -- use update_context to record it. This updates the project's source of truth so the next conversation starts with that knowledge. Do this naturally during the conversation, not just at the end.
@@ -143,7 +152,7 @@ When you learn something important during a conversation -- a decision, a new co
 ${workspaceBlock}
 
 WHEN ${speakerName ? speakerName.toUpperCase() : 'THE CALLER'} ASKS FOR SOMETHING TECHNICAL:
-You are a voice thinking partner, not a code explorer. Listen to what they want, restate it back briefly so they know you got it, and keep the conversation moving. DO NOT try to read or search the codebase during a call. DO NOT try to plan the approach. Tasks are NOT created during the call -- after you hang up, a summary of the conversation is turned into task rows automatically. Your job on the live call is to hear their intent clearly and help them sharpen it.`;
+${technicalInstruction}`;
 }
 
 // Available Gemini Live voices (all 30)
@@ -498,7 +507,7 @@ export default async function handler(req, res) {
     : [await getAgentIdentity(agentSlug), [], [], [], '', [], []];
 
   // Build system instruction with agent identity + live context
-  const baseInstruction = buildBaseInstruction(speakerName, { aomWorld: isAomWorldRoom(clientId) });
+  const baseInstruction = buildBaseInstruction(speakerName, { aomWorld: isAomWorldRoom(clientId), airpodsMode });
   let systemInstruction = baseInstruction;
   if (agentRow) {
     systemInstruction = `You are ${agentRow.display_name}. ${agentRow.description || ''}

@@ -200,12 +200,20 @@ async function readRecentActivity(clientId, args) {
   const items = [...roomItems, ...github.items]
     .sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')))
     .slice(0, 16);
+  const primary = items[0] || null;
+  const primaryDate = primary?.timestamp
+    ? new Date(primary.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
+    : null;
   return {
     ok: true, query, checked_at: new Date().toISOString(),
     sources: { corner_rooms: 'available', github: github.availability }, items,
-    spoken_summary: items.length
-      ? `I found ${items.length} recent workspace source${items.length === 1 ? '' : 's'} that may answer that.`
+    primary_record: primary ? { ...primary, calendar_date: primaryDate } : null,
+    spoken_summary: primary
+      ? `Corner record from ${primaryDate || 'an unknown date'}: ${primary.excerpt.slice(0, 160)}`
       : 'I did not find a matching recent record. That is not proof the event did not happen.',
+    response_contract: primary
+      ? 'Answer from primary_record in at most 22 words. Include calendar_date. Do not claim it is live external state. Do not ask a follow-up question.'
+      : 'State that no matching record was found and that this does not prove the event did not happen. Do not ask a follow-up question.',
   };
 }
 
@@ -450,14 +458,15 @@ async function retryTask(args, req, tenant) {
 async function execute(action, args, req, tenant, identity, sessionId) {
   if (action === 'read_workspace_status') {
     const status = await workspaceStatus(tenant);
-    const prioritySummary = status.priorities.length
-      ? status.priorities.map((task) => `${task.title} is ${task.status}`).join('; ')
+    const spokenPriorities = status.priorities.slice(0, 2);
+    const prioritySummary = spokenPriorities.length
+      ? spokenPriorities.map((task) => `${task.title} is ${task.status}`).join('; ')
       : 'No active priorities are recorded';
     return {
       ok: true,
       spoken_summary: `${prioritySummary}.`,
       checked_at: status.checked_at,
-      response_contract: 'Lead with at most three priority items. Do not read totals or older backlog unless the caller asks.',
+      response_contract: 'Say only spoken_summary. Do not read totals, older backlog, or ask a follow-up question.',
       status,
     };
   }

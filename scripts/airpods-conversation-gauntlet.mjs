@@ -85,6 +85,10 @@ async function openConversation() {
           responses.push({ id: call.id, name: call.name, response: result });
         }
         socket.send(JSON.stringify({ toolResponse: { functionResponses: responses } }));
+        if (calls.some((call) => call.name === 'end_voice_session')) {
+          await sleep(350);
+          await finishTurn();
+        }
         return;
       }
       const content = message.serverContent;
