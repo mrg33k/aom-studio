@@ -90,6 +90,12 @@ from legacy room-call tool descriptions. Global AirPods sessions no longer recei
 `create_task`, and navigation stays on room tools. Unverified follow-ups now answer only
 the missing live boundary instead of repeating the full record.
 
+**Adversarial refinement:** The isolated-tool rerun remained honest but used 36 words
+to explain provenance and proposed an unrelated workspace refresh. Evidence reads now
+return `provenance_summary` and `unverified_summary` as concise broker facts. When no
+direct external tool exists, the single next action must be an approval-gated
+`create_task` for that exact external verification—not generic status or navigation.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)

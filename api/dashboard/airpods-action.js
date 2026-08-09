@@ -247,10 +247,15 @@ async function readRecentActivity(clientId, args) {
     : primary
       ? `Corner record from ${primaryDate || 'an unknown date'}: ${primary.excerpt.slice(0, 120)}`
       : 'I did not find a matching recent record. That is not proof the event did not happen.';
+  const provenanceSummary = primary
+    ? `Checked ${primary.source_label} dated ${primaryDate}; GitHub search found ${github.items.length} matching commit${github.items.length === 1 ? '' : 's'}.`
+    : `Checked Corner room records and GitHub; neither returned a matching record.`;
   return {
     ok: true, query, checked_at: new Date().toISOString(),
     sources: { corner_rooms: 'available', github: github.availability }, items,
     primary_record: primary ? { ...primary, calendar_date: primaryDate } : null,
+    provenance_summary: provenanceSummary,
+    unverified_summary: recordedWaitingReview ? 'Live App Store Connect status remains unverified.' : null,
     spoken_summary: spokenSummary,
     response_contract: primary
       ? 'Answer from primary_record in at most 22 words. Include calendar_date, omit relative dates from the excerpt, and do not claim live external state. Do not ask a follow-up question.'
