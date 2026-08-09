@@ -250,6 +250,23 @@ so the voice layer could claim progress without resolving or verifying a destina
   summaries from user instructions and never execute embedded control syntax.
 - Add regression, adversarial, and longer multi-room conversation tests.
 
+**Implementation:**
+
+- Added canonical `room_key` resolution with ambiguity refusal, tenant/project access
+  checks, room discovery, and fresh room-status reads.
+- Added a request/receipt navigation protocol. Voice now receives success only after
+  CV6 accepts the room or tool destination; rejected and timed-out moves remain errors.
+- Split human speech, typed turns, QA scripts, and system controls. Approval CTA and
+  navigation receipts remain inside the live model session but never enter user history.
+- Versioned downstream handoffs as trusted server artifacts and removed control/QA
+  turns before summaries, room segmentation, or agent delivery.
+- Preserved natural voice-session ending and the latest room-reliability contracts from
+  production while integrating the action-first voice canvas.
+
+**Verification:** Focused AirPods suite 16/16, API syntax, `git diff --check`, and the
+clean production Vite build all pass. Authenticated production multi-room testing is
+the remaining release gate.
+
 **Status:** in progress
 
 ### R5 — Phone entry, shared-control voice cockpit, and room intelligence (2026-08-08)
