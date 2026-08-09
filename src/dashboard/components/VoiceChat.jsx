@@ -133,6 +133,8 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
+const EXPLICIT_END_INTENT = /\b(?:end (?:the )?(?:conversation|call|session)|hang up|stop listening|goodbye|bye|that'?s all|i'?m done)\b/i
+
 const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, onToolAction, autoStart = false, initialVoice = 'kore', onVoiceChange, sessionMode = 'room', airpodsSessionId = null, handoffOnStop = true, onSessionEnd = null, initialPrompt = null }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
@@ -179,6 +181,9 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   const transcriptRef = useRef([])
   const previewWsRef = useRef(null)
   const endTimerRef = useRef(null)
+  const endFallbackTimerRef = useRef(null)
+  const endIntentRef = useRef(false)
+  const endReceiptRef = useRef(false)
 
   // Keep transcriptRef in sync with transcript state. On every transcript change
   // the effect commits the latest array to the ref. stopSession also merges any
@@ -403,6 +408,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
 
   const stopSession = useCallback(async () => {
     if (endTimerRef.current) { clearTimeout(endTimerRef.current); endTimerRef.current = null }
+    if (endFallbackTimerRef.current) { clearTimeout(endFallbackTimerRef.current); endFallbackTimerRef.current = null }
     // Flush any pending transcripts BEFORE tearing down (prevents message loss)
     const pendingInput = inputAccRef.current?.trim()
     if (pendingInput) {
@@ -518,6 +524,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     if (playbackCtxRef.current) { try { playbackCtxRef.current.close() } catch (_) {} playbackCtxRef.current = null }
     if (workletBlobUrlRef.current) { URL.revokeObjectURL(workletBlobUrlRef.current); workletBlobUrlRef.current = null }
     sessionIdRef.current = null
+    endIntentRef.current = false
+    endReceiptRef.current = false
     setIsMuted(false)
     isMutedRef.current = false
     playQueueRef.current = []
@@ -530,6 +538,50 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     updateStatus('idle')
   }, [updateStatus, onTranscript, agentSlug, clientId, sessionSecs, projectSlug, missionSlug, handoffOnStop, onSessionEnd, airpodsSessionId])
 
+  const ensureAirpodsEndReceipt = useCallback(async () => {
+    if (sessionMode !== 'airpods' || endReceiptRef.current) return
+    endReceiptRef.current = true
+    const args = {}
+    onToolAction?.({ phase: 'working', action: 'end_voice_session', args })
+    try {
+      const resp = await authFetch('/api/dashboard/airpods-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: clientId,
+          session_id: airpodsSessionId || sessionIdRef.current,
+          action: 'end_voice_session',
+          arguments: args,
+        }),
+      })
+      const data = await resp.json().catch(() => ({}))
+      const result = resp.ok ? data : { ok: false, error: data.error || `Action failed (${resp.status})` }
+      onToolAction?.({ phase: result.ok === false ? 'error' : 'done', action: 'end_voice_session', args, result })
+      if (result.closing === true && result.ok !== false) {
+        if (endTimerRef.current) clearTimeout(endTimerRef.current)
+        endTimerRef.current = setTimeout(() => {
+          endTimerRef.current = null
+          stopSession()
+        }, 1800)
+      } else {
+        endReceiptRef.current = false
+      }
+    } catch (err) {
+      endReceiptRef.current = false
+      onToolAction?.({ phase: 'error', action: 'end_voice_session', args, result: { ok: false, error: err.message } })
+    }
+  }, [sessionMode, clientId, airpodsSessionId, onToolAction, stopSession])
+
+  const scheduleEndReceiptFallback = useCallback((modelText = '') => {
+    if (sessionMode !== 'airpods' || !endIntentRef.current || endReceiptRef.current) return
+    if (!/talk soon|goodbye|bye/i.test(String(modelText))) return
+    if (endFallbackTimerRef.current) clearTimeout(endFallbackTimerRef.current)
+    endFallbackTimerRef.current = setTimeout(() => {
+      endFallbackTimerRef.current = null
+      ensureAirpodsEndReceipt()
+    }, 600)
+  }, [sessionMode, ensureAirpodsEndReceipt])
+
   const startSession = useCallback(async () => {
     if (status !== 'idle' && status !== 'error') return
     setErrorMsg('')
@@ -539,6 +591,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     inputAccRef.current = ''
     outputAccRef.current = ''
     sessionReadyRef.current = false
+    endIntentRef.current = false
+    endReceiptRef.current = false
     sessionIdRef.current = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     summaryPostedRef.current = false
     updateStatus('connecting')
@@ -740,6 +794,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 const text = inputAccRef.current.trim()
                 inputAccRef.current = ''
                 if (text) {
+                  if (sessionMode === 'airpods' && EXPLICIT_END_INTENT.test(text)) endIntentRef.current = true
                   setTranscript(prev => [...prev, { role: 'user', text, origin: 'speech', id: Date.now() + Math.random() }])
                   onTranscript?.(text, 'user', { origin: 'speech' })
                   console.log('[VoiceChat] User said:', text)
@@ -758,6 +813,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 if (text) {
                   setTranscript(prev => [...prev, { role: 'model-text', text, id: Date.now() + Math.random() }])
                   onTranscript?.(text, 'model')
+                  scheduleEndReceiptFallback(text)
                   // Persistence handled by parent onTranscript callback
                 }
               }
@@ -769,6 +825,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
               const pendingInput = inputAccRef.current.trim()
               if (pendingInput) {
                 inputAccRef.current = ''
+                if (sessionMode === 'airpods' && EXPLICIT_END_INTENT.test(pendingInput)) endIntentRef.current = true
                 setTranscript(prev => [...prev, { role: 'user', text: pendingInput, origin: 'speech', id: Date.now() + Math.random() }])
                 onTranscript?.(pendingInput, 'user', { origin: 'speech' })
               }
@@ -778,6 +835,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 outputAccRef.current = ''
                 setTranscript(prev => [...prev, { role: 'model-text', text: pending, id: Date.now() + Math.random() }])
                 onTranscript?.(pending, 'model')
+                scheduleEndReceiptFallback(pending)
               }
               if (playQueueRef.current.length === 0 && !isPlayingRef.current) {
                 updateStatus('listening')
@@ -904,6 +962,10 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 result = { ok: true, offered: true, spoken_summary: `I can ${args.title || 'take the next step'}.` }
                 onToolAction?.({ phase: 'proposal', action: args.action, args: args.arguments || {}, title: args.title, summary: args.summary, steps: args.steps || [] })
               } else if (sessionMode === 'airpods') {
+                if (call.name === 'end_voice_session') {
+                  if (endFallbackTimerRef.current) { clearTimeout(endFallbackTimerRef.current); endFallbackTimerRef.current = null }
+                  endReceiptRef.current = true
+                }
                 onToolAction?.({ phase: 'working', action: call.name, args })
                 try {
                   const resp = await authFetch('/api/dashboard/airpods-action', {
@@ -929,9 +991,12 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                       endTimerRef.current = null
                       stopSession()
                     }, 1800)
+                  } else if (call.name === 'end_voice_session') {
+                    endReceiptRef.current = false
                   }
                 } catch (err) {
                   result = { ok: false, error: err.message }
+                  if (call.name === 'end_voice_session') endReceiptRef.current = false
                 }
                 onToolAction?.({ phase: result.ok === false ? 'error' : result.needs_clarification ? 'clarification' : result.requires_confirmation ? 'confirmation' : 'done', action: call.name, args, result })
               } else {
@@ -979,6 +1044,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         const pendingInput = inputAccRef.current?.trim()
         if (pendingInput) {
           inputAccRef.current = ''
+          if (sessionMode === 'airpods' && EXPLICIT_END_INTENT.test(pendingInput)) endIntentRef.current = true
           setTranscript(prev => [...prev, { role: 'user', text: pendingInput, origin: 'speech', id: Date.now() + Math.random() }])
           onTranscript?.(pendingInput, 'user', { origin: 'speech' })
         }
@@ -987,6 +1053,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
           outputAccRef.current = ''
           setTranscript(prev => [...prev, { role: 'model-text', text: pendingOutput, id: Date.now() + Math.random() }])
           onTranscript?.(pendingOutput, 'model')
+          scheduleEndReceiptFallback(pendingOutput)
         }
 
         if (statusRef.current !== 'idle') {
@@ -1013,7 +1080,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
       setErrorMsg(msg)
       updateStatus('error')
     }
-  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, sessionMode, airpodsSessionId, initialPrompt, onToolAction, applyUiEffect])
+  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, sessionMode, airpodsSessionId, initialPrompt, onToolAction, applyUiEffect, scheduleEndReceiptFallback])
 
   const toggleSession = useCallback(() => {
     if (status === 'idle' || status === 'error') startSession()

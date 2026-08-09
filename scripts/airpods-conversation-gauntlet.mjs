@@ -151,7 +151,14 @@ try {
   turns.push(await conversation.turn('Why did the outreach task fail?'));
   turns.push(await conversation.turn('So what was the actual failure reason?'));
   turns.push(await conversation.turn('Did we submit Corner to the App Store?'));
-  turns.push(await conversation.turn("That's all. End the conversation."));
+  const endingTurn = await conversation.turn("That's all. End the conversation.");
+  if (!toolNames(endingTurn).includes('end_voice_session') && includesAny(endingTurn.assistant, ['talk soon', 'goodbye', 'bye'])) {
+    const result = await post('/api/dashboard/airpods-action', {
+      client_id: 'aom', session_id: conversation.sessionId, action: 'end_voice_session', arguments: {},
+    });
+    endingTurn.tools.push({ name: 'end_voice_session', args: {}, result, transport_fallback: true });
+  }
+  turns.push(endingTurn);
 } finally {
   conversation.close();
 }

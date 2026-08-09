@@ -44,6 +44,11 @@ function uiTool(tool) {
   return map[String(tool || '').trim().toLowerCase()] || String(tool || 'home').trim().toLowerCase();
 }
 
+function compactSpokenTitle(value) {
+  const words = String(value || 'Untitled task').trim().split(/\s+/).filter(Boolean);
+  return words.slice(0, 5).join(' ');
+}
+
 async function workspaceStatus(clientId) {
   const taskFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=created_at.desc&limit=20&select=id,title,description,status,agent,project,error,attempt_count,max_attempts,metadata,created_at`;
   const agentFilter = `client_id=eq.${encodeURIComponent(clientId)}&select=slug,status,current_task,updated_at`;
@@ -477,7 +482,7 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     const status = await workspaceStatus(tenant);
     const spokenPriorities = status.priorities.slice(0, 2);
     const prioritySummary = spokenPriorities.length
-      ? spokenPriorities.map((task) => `${task.title} is ${task.status}`).join('; ')
+      ? spokenPriorities.map((task) => `${compactSpokenTitle(task.title)} is ${task.status}`).join('; ')
       : 'No active priorities are recorded';
     return {
       ok: true,

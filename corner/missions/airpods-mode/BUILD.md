@@ -49,6 +49,14 @@ next action twice. The workspace briefing also exposed duplicated failed tasks w
 identical title. Priority titles are now deduplicated and repairable task reads return
 an exact cause-plus-action sentence: “Recorded failure: … Repair and retry it?”
 
+**Transport guarantee:** Another repeated call spoke the exact goodbye but omitted the
+model tool call, proving prompt-only closure cannot be made deterministic. The AirPods
+client now detects explicit human end intent and, after a 600 ms window for Gemini's
+own tool call, obtains the audited `end_voice_session` receipt itself. Duplicate calls
+are suppressed. Spoken priority titles are capped at five words so a useful next-step
+question cannot turn a status briefing into a monologue. The production build and all
+20 focused tests pass.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
