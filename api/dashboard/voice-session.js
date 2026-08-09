@@ -536,14 +536,14 @@ This call is signed in, but the workspace it belongs to could not be resolved, s
   }
 
   // Inject tape (agent's long-term memory)
-  if (tape) {
+  if (tape && !airpodsMode) {
     systemInstruction += `\n\nYOUR TAPE (your recent work log, key decisions, what's in flight -- this is your memory):\n${tape}`;
   }
 
   // Inject live context
   const contextParts = [];
 
-  if (recentMessages.length > 0) {
+  if (!airpodsMode && recentMessages.length > 0) {
     // Attribute every human line to whoever actually said it. Rows written
     // before user_name was threaded through carry no author — those render as
     // unattributed, never as Patrik and never as the person on this call.
@@ -566,17 +566,17 @@ This call is signed in, but the workspace it belongs to could not be resolved, s
     );
   }
 
-  if (activeTasks.length > 0) {
+  if (!airpodsMode && activeTasks.length > 0) {
     const taskList = activeTasks.map(t => `- [${t.status}] ${t.title}${t.agent ? ` (${t.agent})` : ''}`).join('\n');
     contextParts.push(`ACTIVE TASKS:\n${taskList}`);
   }
 
-  if (recentDone.length > 0) {
+  if (!airpodsMode && recentDone.length > 0) {
     const doneList = recentDone.map(t => `- ${t.title} (QA: ${t.qa_score || '?'}/10${t.agent_identity ? ', ' + t.agent_identity : ''}${t.completed_at ? ', ' + t.completed_at.slice(0, 16) : ''})`).join('\n');
     contextParts.push(`RECENTLY COMPLETED:\n${doneList}`);
   }
 
-  if (agentStatuses.length > 0) {
+  if (!airpodsMode && agentStatuses.length > 0) {
     const statusList = agentStatuses.map(s => `- ${s.name || s.slug}: ${s.status}${s.current_task ? ` -- ${s.current_task}` : ''}`).join('\n');
     contextParts.push(`AGENT STATUS (who's doing what right now):\n${statusList}`);
   }

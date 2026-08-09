@@ -75,6 +75,13 @@ phrases now fail the filler score. AirPods operational generation is determinist
 temperature 0, and the companion-next-step rule explicitly exempts completed status
 and evidence reads so they stop instead of manufacturing a check-in.
 
+**Stale-memory removal:** The first deterministic run answered the outreach follow-up
+from an older Bobby task in injected room context instead of calling the fresh task
+receipt. Global AirPods sessions no longer receive volatile room messages, task lists,
+completion lists, agent statuses, or room tape in their initial prompt. Those remain
+available to normal room calls. AirPods operational claims must now come from its fresh,
+tenant-scoped read tools, removing the pathway for confident stale-memory answers.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
