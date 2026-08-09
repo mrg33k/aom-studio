@@ -55,8 +55,15 @@ async function workspaceStatus(clientId) {
   const allBlockers = tasks.filter((task) => ['blocked', 'failed', 'needs_input', 'needs_verification'].includes(task.status));
   const recentCutoff = Date.now() - 7 * 24 * 60 * 60_000;
   const blockers = allBlockers.filter((task) => new Date(task.created_at || 0).getTime() >= recentCutoff).slice(0, 6);
+  const seenPriorityTitles = new Set();
   const priorities = [...active, ...blockers]
     .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+    .filter((task) => {
+      const key = String(task.title || task.id).trim().toLowerCase();
+      if (seenPriorityTitles.has(key)) return false;
+      seenPriorityTitles.add(key);
+      return true;
+    })
     .slice(0, 3)
     .map((task) => ({
       task_id: task.id,
@@ -92,6 +99,9 @@ async function readTaskStatus(args, tenant) {
       ? `Recorded failure: ${reason}.`
       : `${task.title || 'The task'} is ${task.status}; no failure reason is recorded.`,
     recorded_error: reason || null,
+    response_contract: repairableScope
+      ? `Say exactly: “Recorded failure: ${reason}. Repair and retry it?” Do not add words.`
+      : 'Say only spoken_summary. Do not add a question.',
     next_action: repairableScope ? {
       action: 'retry_task',
       title: `Repair and retry ${task.title || 'task'}`,

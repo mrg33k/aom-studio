@@ -232,6 +232,8 @@ test('real-call routes close rooms, reassign tasks, and audit natural session en
   assert.match(action, /project_path: projectRow\.repo_path/);
   assert.match(action, /recorded_error: reason \|\| null/);
   assert.match(action, /next_action: repairableScope/);
+  assert.match(action, /seenPriorityTitles/);
+  assert.match(action, /Repair and retry it\?/);
   assert.match(action, /response_contract: 'Say only spoken_summary/);
   assert.match(action, /primary_record: primary/);
   assert.match(action, /Include calendar_date/);

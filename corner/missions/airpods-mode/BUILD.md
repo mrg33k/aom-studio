@@ -43,6 +43,12 @@ assistant echoes are now excluded from operational evidence ranking. A verified
 App Store completion receipt is distilled into a 23-word statement that names its date,
 recorded status, and the boundary between Corner history and live external state.
 
+**Repeatability pass 1:** All factual, routing, evidence, and ending checks passed; one
+repair answer exceeded the speech limit by two words because it explained the same
+next action twice. The workspace briefing also exposed duplicated failed tasks with an
+identical title. Priority titles are now deduplicated and repairable task reads return
+an exact cause-plus-action sentence: “Recorded failure: … Repair and retry it?”
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
