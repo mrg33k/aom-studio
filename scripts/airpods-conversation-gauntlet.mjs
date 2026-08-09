@@ -166,7 +166,7 @@ const offeredRetry = turns[1].tools.some((tool) => tool.name === 'offer_next_act
 check('failure answer advances one executable retry proposal', structuredRetry || offeredRetry, turns[1].tools.map((tool) => ({ name: tool.name, action: tool.args?.action, next_action: tool.result?.next_action?.action })));
 check('App Store answer performs a current evidence search', toolNames(turns[3]).includes('read_recent_activity'), toolNames(turns[3]));
 check('App Store answer does not deny the known submission', !includesAny(turns[3].assistant, ["didn't submit", 'not submitted', 'have not submitted', "haven't submitted"]), turns[3].assistant);
-check('App Store answer frames room evidence as an explicitly dated record', includesAny(turns[3].assistant, ['corner records show', 'corner records say', 'recorded in']) && /(?:2026|august\s+\d|aug\.?\s+\d)/i.test(turns[3].assistant), turns[3].assistant);
+check('App Store answer frames room evidence as an explicitly dated record', includesAny(turns[3].assistant, ['corner records show', 'corner records say', 'corner record from', 'recorded in']) && /(?:2026|august\s+\d|aug\.?\s+\d)/i.test(turns[3].assistant), turns[3].assistant);
 check('conversation end executes the end route', toolNames(turns[4]).includes('end_voice_session'), toolNames(turns[4]));
 check('routine answers stay compact', turns.slice(0, 4).every((turn) => wordCount(turn.assistant) <= 24), turns.slice(0, 4).map((turn) => wordCount(turn.assistant)));
 const filler = ['well,', 'looks like', 'my bad', 'anything specific', 'anything else', 'move on to something else', 'want me to try', 'keep an eye on', 'let you know'];

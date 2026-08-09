@@ -212,7 +212,7 @@ async function readRecentActivity(clientId, args) {
       ? `Corner record from ${primaryDate || 'an unknown date'}: ${primary.excerpt.slice(0, 160)}`
       : 'I did not find a matching recent record. That is not proof the event did not happen.',
     response_contract: primary
-      ? 'Answer from primary_record in at most 22 words. Include calendar_date. Do not claim it is live external state. Do not ask a follow-up question.'
+      ? 'Answer from primary_record in at most 22 words. Include calendar_date, omit relative dates from the excerpt, and do not claim live external state. Do not ask a follow-up question.'
       : 'State that no matching record was found and that this does not prove the event did not happen. Do not ask a follow-up question.',
   };
 }
@@ -467,7 +467,11 @@ async function execute(action, args, req, tenant, identity, sessionId) {
       spoken_summary: `${prioritySummary}.`,
       checked_at: status.checked_at,
       response_contract: 'Say only spoken_summary. Do not read totals, older backlog, or ask a follow-up question.',
-      status,
+      status: {
+        priorities: status.priorities,
+        older_attention_count: status.older_attention_count,
+        checked_at: status.checked_at,
+      },
     };
   }
   if (action === 'read_recent_activity') return readRecentActivity(tenant, args);

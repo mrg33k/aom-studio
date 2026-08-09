@@ -29,6 +29,13 @@ reads also return a primary calendar-dated record and a concise spoken contract;
 speech is limited to two priorities. The production gauntlet now treats the audited end
 receipt as terminal even when Gemini omits its normal turn-complete marker.
 
+**Second live result:** Exact repeated failure evidence fell to 10 words and the
+spoken ending became exactly “Talk soon.” The remaining failures were a 37-word
+briefing with a generic question and a missing end tool receipt. The broker now hides
+verbose task arrays from the live model, briefings explicitly terminate after their
+ranked summary, evidence contracts exclude relative dates, and ending instructions
+define a spoken goodbye without the audited tool call as failure.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
