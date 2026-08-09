@@ -131,6 +131,8 @@ async function recentWorkspaceActivity(clientId, query) {
   const rows = await db(`messages?client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=300&select=id,agent,project,role,text,timestamp,source,metadata,user_name`);
   const terms = activityTerms(query);
   return (Array.isArray(rows) ? rows : [])
+    .filter((message) => message?.source !== 'voice-handoff')
+    .filter((message) => !(message?.role === 'assistant' && ['room-bridge', 'share-file'].includes(message?.source)))
     .map((message) => ({ message, score: activityScore(message, terms) }))
     .filter(({ score }) => activityMatches(score, terms))
     .sort((a, b) => b.score - a.score || String(b.message.timestamp || '').localeCompare(String(a.message.timestamp || '')))
@@ -204,13 +206,18 @@ async function readRecentActivity(clientId, args) {
   const primaryDate = primary?.timestamp
     ? new Date(primary.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
     : null;
+  const appStoreQuery = /app\s*store|testflight|submit/i.test(query);
+  const recordedWaitingReview = appStoreQuery && /waiting for review/i.test(primary?.excerpt || '');
+  const spokenSummary = recordedWaitingReview
+    ? `As of ${primaryDate || 'an unknown date'}, Corner records show Corner was submitted and recorded as Waiting for Review; live App Store status is unverified.`
+    : primary
+      ? `Corner record from ${primaryDate || 'an unknown date'}: ${primary.excerpt.slice(0, 120)}`
+      : 'I did not find a matching recent record. That is not proof the event did not happen.';
   return {
     ok: true, query, checked_at: new Date().toISOString(),
     sources: { corner_rooms: 'available', github: github.availability }, items,
     primary_record: primary ? { ...primary, calendar_date: primaryDate } : null,
-    spoken_summary: primary
-      ? `Corner record from ${primaryDate || 'an unknown date'}: ${primary.excerpt.slice(0, 160)}`
-      : 'I did not find a matching recent record. That is not proof the event did not happen.',
+    spoken_summary: spokenSummary,
     response_contract: primary
       ? 'Answer from primary_record in at most 22 words. Include calendar_date, omit relative dates from the excerpt, and do not claim live external state. Do not ask a follow-up question.'
       : 'State that no matching record was found and that this does not prove the event did not happen. Do not ask a follow-up question.',

@@ -36,6 +36,13 @@ verbose task arrays from the live model, briefings explicitly terminate after th
 ranked summary, evidence contracts exclude relative dates, and ending instructions
 define a spoken goodbye without the audited tool call as failure.
 
+**Evidence trust correction:** The next run passed compact status, exact failure,
+retry, dated-record, and audited-ending behavior, but the App Store answer repeated a
+39-word recent `room-bridge` assistant message. Voice handoffs and conversational
+assistant echoes are now excluded from operational evidence ranking. A verified
+App Store completion receipt is distilled into a 23-word statement that names its date,
+recorded status, and the boundary between Corner history and live external state.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
