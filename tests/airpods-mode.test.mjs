@@ -213,6 +213,8 @@ test('real-call routes close rooms, reassign tasks, and audit natural session en
   assert.match(action, /if \(action === 'reassign_task'\)/);
   assert.match(action, /if \(action === 'retry_task'\)/);
   assert.match(action, /if \(action === 'read_task_status'\)/);
+  assert.match(action, /recoverLatestPriorityTaskId/);
+  assert.match(action, /latest_workspace_priority/);
   assert.match(action, /if \(action === 'end_voice_session'\)/);
   assert.match(action, /fresh:\$\{action\}:\$\{crypto\.randomUUID\(\)\}/);
   assert.match(action, /select=role,text,timestamp,user_name,project,metadata/);

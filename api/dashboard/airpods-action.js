@@ -90,9 +90,18 @@ async function workspaceStatus(clientId) {
   };
 }
 
-async function readTaskStatus(args, tenant) {
-  const taskId = String(args.task_id || '').trim();
-  if (!/^[0-9a-f-]{36}$/i.test(taskId)) throw new Error('A valid task_id is required');
+async function recoverLatestPriorityTaskId(sessionId, tenant) {
+  if (!sessionId) return null;
+  const rows = await db(`airpods_actions?session_id=eq.${encodeURIComponent(sessionId)}&world_id=eq.${encodeURIComponent(tenant)}&action=eq.read_workspace_status&status=eq.succeeded&order=created_at.desc&limit=1&select=result`);
+  return rows?.[0]?.result?.status?.priorities?.[0]?.task_id || null;
+}
+
+async function readTaskStatus(args, tenant, sessionId) {
+  const suppliedTaskId = String(args.task_id || '').trim();
+  const taskId = /^[0-9a-f-]{36}$/i.test(suppliedTaskId)
+    ? suppliedTaskId
+    : await recoverLatestPriorityTaskId(sessionId, tenant);
+  if (!taskId) throw new Error('A valid task_id is required');
   const rows = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}&limit=1&select=id,title,text,description,status,agent,project,project_path,error,attempt_count,max_attempts,metadata,created_at,completed_at`);
   const task = Array.isArray(rows) ? rows[0] : null;
   if (!task) throw new Error('Task not found in this workspace');
@@ -104,6 +113,7 @@ async function readTaskStatus(args, tenant) {
       ? `Recorded failure: ${reason}.`
       : `${task.title || 'The task'} is ${task.status}; no failure reason is recorded.`,
     recorded_error: reason || null,
+    resolved_from: taskId === suppliedTaskId ? 'task_id' : 'latest_workspace_priority',
     response_contract: repairableScope
       ? `Say exactly: “Recorded failure: ${reason}. Repair and retry it?” Do not add words.`
       : 'Say only spoken_summary. Do not add a question.',
@@ -497,7 +507,7 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     };
   }
   if (action === 'read_recent_activity') return readRecentActivity(tenant, args);
-  if (action === 'read_task_status') return readTaskStatus(args, tenant);
+  if (action === 'read_task_status') return readTaskStatus(args, tenant, sessionId);
   if (action === 'list_rooms') {
     const rooms = (await roomDirectory(tenant)).slice(0, 240).map((room) => ({ room_key: room.room_key, room_name: room.room_name, room_type: room.room_type, project: room.project }));
     return { ok: true, spoken_summary: `I found ${rooms.length} rooms in this workspace.`, rooms };

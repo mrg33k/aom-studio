@@ -764,7 +764,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
             },
             {
               name: 'read_task_status',
-              description: 'Inspect one exact task and return its exact recorded failure plus a structured next_action when repairable. Use this for “why did that fail?” follow-ups instead of searching for a room. State recorded_error exactly. If next_action exists, present that exact action through offer_next_action.',
+              description: 'Inspect one task and return its exact recorded failure plus a structured next_action when repairable. Use the exact task UUID from the prior workspace read. If you format it incorrectly, the broker safely recovers the latest ranked priority from this session instead of asking the caller to reconstruct context. State recorded_error exactly.',
               parameters: {
                 type: 'OBJECT',
                 properties: { task_id: { type: 'STRING', description: 'Exact task UUID from read_workspace_status, create_task, or read_room_status.' } },

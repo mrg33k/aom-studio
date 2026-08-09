@@ -57,6 +57,12 @@ are suppressed. Spoken priority titles are capped at five words so a useful next
 question cannot turn a status briefing into a monologue. The production build and all
 20 focused tests pass.
 
+**Reference recovery:** A subsequent production run showed Gemini receiving the exact
+task UUID, then hallucinating `bobby-AOM-Sales-Bible.pdf` as the read identifier. The
+broker now recovers the latest ranked priority from the same tenant/session's audited
+workspace receipt when the model supplies an invalid identifier. This is read-only and
+prevents the agent from asking the caller to reconstruct context it already fetched.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
