@@ -19,9 +19,18 @@ for room messages, missions tree, trackers, preferences, agent settings, room go
 and workspace status on the final `www` host. This directly closes the build-7 data
 authorization failure.
 
+**R9 follow-up:** The server-side 200s did not prove WebKit could expose responses to
+the app. Physical inspection still showed an empty shell. A native-origin preflight
+reproduced the remaining boundary: protected dashboard endpoints can return 401 to
+`OPTIONS`. Enable CapacitorHttp's native fetch/XHR patch so the installed app is not
+subject to browser CORS preflights.
+
 **Verification:** 20 focused tests and the production-configured web/native build pass.
 
-**Status:** in progress — physical voice action receipt test pending
+**Native release:** Corner 1.0 (9), with CapacitorHttp enabled, archived, installed,
+and launched on Patrik's registered iPhone.
+
+**Status:** in progress — physical room-content and voice receipt confirmation pending
 
 ### R8 — Capability routes from real-call audit (2026-08-09)
 

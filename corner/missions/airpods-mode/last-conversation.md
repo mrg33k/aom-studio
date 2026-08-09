@@ -176,3 +176,12 @@ pass. Signed Corner 1.0 (8) was installed and launched on Patrik's registered iP
 Production request logs immediately showed HTTP 200 responses for room messages,
 missions tree, trackers, preferences, agent settings, room goals, and workspace status
 on the final host. The physical voice action receipt test remains.
+
+Patrik then confirmed the app still rendered only a shell: images remained missing and
+opening rooms showed no content. A native-origin probe exposed why server 200s were
+misleading: authenticated browser requests require a CORS preflight, while protected
+dashboard endpoints can return 401 to `OPTIONS`. CapacitorHttp's bundled native
+fetch/XMLHttpRequest patch is now enabled, bypassing WebKit CORS without weakening API
+authentication or individually opening dozens of endpoints. Corner 1.0 (9) archived,
+installed, and launched successfully. Physical room-content and voice receipt
+confirmation remain before R9 can be closed.
