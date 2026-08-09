@@ -130,5 +130,9 @@ and forbids treating no match as proof an event did not happen. A production-dat
 found the TestFlight/App Store evidence in `corner:business-ops`. The repository is public
 at `mrg33k/aom-studio`; lookup retries anonymously when the legacy optional token is stale.
 
-Focused tests and the isolated production build pass. Production deployment and an
-authenticated AirPods question remain before this round can be called complete.
+Focused tests and the isolated production build pass. Release commit `f4bbb8c8` was
+pushed to `main`; both the direct verified `aom-studio` deployment and the Git-triggered
+deployment reached READY. Canonical authenticated checks returned 200 and showed the new
+tool in the live Gemini declaration. An accidentally auto-created `airpods-mode-r6`
+Vercel project was deleted and never used as release proof. Physical dark-login and AOM
+voice-question confirmation remain before this round can be called complete.

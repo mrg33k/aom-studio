@@ -18,7 +18,15 @@ and voice is instructed that no match is not proof an event did not happen.
 **Native release:** Production-configured, Ad Hoc-signed Corner 1.0 (6) archived,
 installed, and launched on Patrik's connected iPhone.
 
-**Status:** in progress — production API deployment and authenticated voice proof pending
+**Production result:** Release commit `f4bbb8c8` fast-forwarded `main`. The verified
+`aom-studio` deployment reached READY. Canonical `https://www.aheadofmarket.com`
+returned HTTP 200 for the dashboard; authenticated calls returned 200 from the new
+activity action and exposed `read_recent_activity` in the live AirPods tool catalog.
+A production-data probe found the App Store/TestFlight evidence in
+`corner:business-ops`. The accidental isolated Vercel project created during linking was
+removed; it was never used as production proof.
+
+**Status:** in progress — physical dark-login and AOM voice-question confirmation pending
 
 ### R1 — Global voice operating layer (2026-08-08)
 
