@@ -3501,7 +3501,7 @@ export default function CornerCV6() {
   // Reopening an existing room focuses its live column; opening another room
   // appends a new independent chat with its own hook/composer state.
   const onOpenRoom = useCallback((room, wid) => {
-    if (!room?.id && !room?.name) return;
+    if (!room?.id && !room?.name) return false;
     setRestoredRoomPending(false);
     setRoomNotice('');
     const id = `chat:${roomColumnKey(room)}`;
@@ -3513,6 +3513,7 @@ export default function CornerCV6() {
     // into the chat you just opened (and ← walks straight back out).
     setKnavZone(id);
     try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
+    return true;
   }, [worldId]);
 
   // ---- Mobile swipe inside a chat (Patrik 2026-08-06, direction confirmed twice) ----
@@ -3563,9 +3564,9 @@ export default function CornerCV6() {
   }, []);
 
   const onNav = useCallback((target, arg) => {
-    if (target === 'back') { back(); return; }
-    if (target === 'support') { onOpenEmailColumn(); return; }
-    if (target === 'workers') { onOpenWorkersColumn(); return; }
+    if (target === 'back') { back(); return true; }
+    if (target === 'support') { onOpenEmailColumn(); return true; }
+    if (target === 'workers') { onOpenWorkersColumn(); return true; }
     // Legacy 'review' navs (any straggler call site) land in Files with the
     // needs-review filter on — the Review tool is a mode of Files now.
     if (target === 'review') {
@@ -3576,7 +3577,7 @@ export default function CornerCV6() {
     // the in-room overlay; you never leave the screen you are on.
     if (target === 'organize' && arg && typeof arg === 'object' && arg.needsReview && ((arg.files && arg.files.length) || arg.name)) {
       setRoomReview(arg);
-      return;
+      return true;
     }
     if (['home', 'command', 'tracker', 'organize', 'settings', 'livescribe'].includes(target)) {
       // Carry a "Review this file" target into Files; a plain toolbar nav('organize')
@@ -3584,12 +3585,13 @@ export default function CornerCV6() {
       if (target === 'organize') setFilesTarget(arg && typeof arg === 'object' ? arg : null);
       if (target === 'settings') setSettingsSection(arg?.section === 'account' ? 'account' : 'appearance');
       goTo(target, null);
-      return;
+      return true;
     }
     // Chat from the menu opens the conversations list; a row there opens the Goal Thread.
     // "See all" rooms (Home All Rooms header) routes to the same full rooms list (was a
     // dead 'rooms' target that fell through to nothing).
-    else if (target === 'chat' || target === 'rooms') goTo('chatlist', null);
+    else if (target === 'chat' || target === 'rooms') { goTo('chatlist', null); return true; }
+    return false;
   }, [back, goTo, onOpenEmailColumn, onOpenWorkersColumn]);
 
   // corner:airpods-mode R1 — the global voice layer lives above this component,
@@ -3618,8 +3620,18 @@ export default function CornerCV6() {
   useEffect(() => {
     const applyEffect = (event) => {
       const effect = event.detail || {};
-      if (effect.type === 'navigate' && effect.target) onNav(effect.target);
-      if (effect.type === 'open_room' && effect.room) onOpenRoom(effect.room, worldId);
+      let ok = false;
+      if (effect.type === 'navigate' && effect.target) ok = onNav(effect.target);
+      if (effect.type === 'open_room' && effect.room) ok = onOpenRoom(effect.room, worldId);
+      window.dispatchEvent(new CustomEvent('cv6:airpods-ui-effect-result', {
+        detail: {
+          request_id: effect.request_id || null,
+          ok: ok === true,
+          type: effect.type || null,
+          destination: effect.type === 'open_room' ? effect.room?.room_key || effect.room?.name || null : effect.target || null,
+          ...(ok === true ? {} : { error: 'CV6 rejected the requested destination' }),
+        },
+      }));
     };
     window.addEventListener('cv6:airpods-ui-effect', applyEffect);
     return () => window.removeEventListener('cv6:airpods-ui-effect', applyEffect);

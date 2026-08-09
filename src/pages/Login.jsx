@@ -157,7 +157,9 @@ function LoadingScreen({ palette }) {
 export default function Login() {
   const navigate = useNavigate()
   const { isLight } = useThemeMode()
-  const palette = isLight ? LIGHT : DARK
+  const nativeShell = typeof window !== 'undefined'
+    && window.Capacitor?.isNativePlatform?.() === true
+  const palette = nativeShell ? DARK : (isLight ? LIGHT : DARK)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -250,7 +252,10 @@ export default function Login() {
       minHeight: '100vh',
       background: palette.bgBase,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '1rem', fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      padding: nativeShell
+        ? 'max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom))'
+        : '1rem',
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       position: 'relative', overflow: 'hidden',
     }}>
       <style>{`
@@ -269,6 +274,14 @@ export default function Login() {
       <div style={{
         position: 'relative', zIndex: 1,
         width: '100%', maxWidth: 320,
+        ...(nativeShell ? {
+          maxWidth: 350, padding: '32px 24px 28px', borderRadius: 28,
+          background: 'linear-gradient(145deg, rgba(20,26,36,0.78), rgba(7,11,18,0.58))',
+          border: '1px solid rgba(255,255,255,0.11)',
+          boxShadow: '0 26px 80px rgba(0,0,0,0.48), inset 0 1px 0 rgba(255,255,255,0.06)',
+          backdropFilter: 'blur(28px) saturate(135%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(135%)',
+        } : {}),
         opacity: mounted ? 1 : 0,
         transform: mounted ? 'translateY(0)' : 'translateY(12px)',
         transition: 'opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1)',

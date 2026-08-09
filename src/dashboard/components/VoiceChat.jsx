@@ -133,7 +133,7 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, onToolActivity, autoStart = false, initialVoice = 'kore', onVoiceChange, sessionMode = 'room', airpodsSessionId = null, handoffOnStop = true, onSessionEnd = null, initialPrompt = null, sessionContext = null }, ref) {
+const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, onToolAction, autoStart = false, initialVoice = 'kore', onVoiceChange, sessionMode = 'room', airpodsSessionId = null, handoffOnStop = true, onSessionEnd = null, initialPrompt = null }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -178,7 +178,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   // the final transcript for /api/dashboard/voice-summary without racing React state.
   const transcriptRef = useRef([])
   const previewWsRef = useRef(null)
-  const endRequestedRef = useRef(false)
   const endTimerRef = useRef(null)
 
   // Keep transcriptRef in sync with transcript state. On every transcript change
@@ -311,6 +310,53 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     onStatusChange?.(s)
   }, [onStatusChange])
 
+  const sendTextTurn = useCallback((text, options = {}) => {
+    const safe = String(text || '').trim()
+    if (!safe || !sessionReadyRef.current || wsRef.current?.readyState !== WebSocket.OPEN) return false
+    const origin = String(options.origin || 'typed')
+    wsRef.current.send(JSON.stringify({
+      clientContent: {
+        turns: [{ role: 'user', parts: [{ text: safe }] }],
+        turnComplete: true,
+      },
+    }))
+    setTranscript(prev => [...prev, { role: 'user', text: safe, origin, id: Date.now() + Math.random() }])
+    onTranscript?.(safe, 'user', { origin })
+    updateStatus('thinking')
+    return true
+  }, [onTranscript, updateStatus])
+
+  const sendControlTurn = useCallback((text) => {
+    const safe = String(text || '').trim()
+    if (!safe || !sessionReadyRef.current || wsRef.current?.readyState !== WebSocket.OPEN) return false
+    wsRef.current.send(JSON.stringify({
+      clientContent: {
+        turns: [{ role: 'user', parts: [{ text: `[CORNER SYSTEM CONTROL — not spoken by the user]\n${safe}` }] }],
+        turnComplete: true,
+      },
+    }))
+    updateStatus('thinking')
+    return true
+  }, [updateStatus])
+
+  const applyUiEffect = useCallback((effect) => new Promise((resolve) => {
+    if (!effect?.request_id) { resolve({ ok: false, error: 'navigation request id missing' }); return }
+    let settled = false
+    const finish = (receipt) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      window.removeEventListener('cv6:airpods-ui-effect-result', onResult)
+      resolve(receipt)
+    }
+    const onResult = (event) => {
+      if (event?.detail?.request_id === effect.request_id) finish(event.detail)
+    }
+    const timer = setTimeout(() => finish({ ok: false, request_id: effect.request_id, error: 'CV6 did not acknowledge navigation' }), 1800)
+    window.addEventListener('cv6:airpods-ui-effect-result', onResult)
+    window.dispatchEvent(new CustomEvent('cv6:airpods-ui-effect', { detail: effect }))
+  }), [])
+
   // Load voice settings from agent-specific key when agentSlug or initialVoice changes
   useEffect(() => {
     try {
@@ -356,12 +402,13 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   }, [playNextChunk])
 
   const stopSession = useCallback(async () => {
+    if (endTimerRef.current) { clearTimeout(endTimerRef.current); endTimerRef.current = null }
     // Flush any pending transcripts BEFORE tearing down (prevents message loss)
     const pendingInput = inputAccRef.current?.trim()
     if (pendingInput) {
       inputAccRef.current = ''
-      setTranscript(prev => [...prev, { role: 'user', text: pendingInput, id: Date.now() + Math.random() }])
-      onTranscript?.(pendingInput, 'user')
+      setTranscript(prev => [...prev, { role: 'user', text: pendingInput, origin: 'speech', id: Date.now() + Math.random() }])
+      onTranscript?.(pendingInput, 'user', { origin: 'speech' })
       console.log('[VoiceChat] Final user transcript:', pendingInput)
       setLastUserTranscript(pendingInput)
     }
@@ -390,13 +437,13 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     if (sessionIdRef.current && !summaryPostedRef.current) {
       const base = Array.isArray(transcriptRef.current) ? transcriptRef.current : []
       const finalTranscript = [...base]
-      if (pendingInput) finalTranscript.push({ role: 'user', text: pendingInput })
+      if (pendingInput) finalTranscript.push({ role: 'user', text: pendingInput, origin: 'speech' })
       if (pendingOutput) finalTranscript.push({ role: 'model-text', text: pendingOutput })
       const hasContent = finalTranscript.some(t => t && typeof t.text === 'string' && t.text.trim())
       if (hasContent) {
         summaryPostedRef.current = true
         updateStatus('wrapping-up')
-        const transcriptBody = finalTranscript.map(t => ({ role: t.role, text: t.text }))
+      const transcriptBody = finalTranscript.map(t => ({ role: t.role, text: t.text, ...(t.origin ? { origin: t.origin } : {}) }))
 
         // Terminal rooms: fire-and-forget the richer Haiku summary in parallel.
         if (handoffOnStop && TERMINAL_AGENTS.has(agentSlug)) {
@@ -457,8 +504,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     }
 
     if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
-    if (endTimerRef.current) { clearTimeout(endTimerRef.current); endTimerRef.current = null }
-    endRequestedRef.current = false
     sessionReadyRef.current = false
     if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null }
     if (sessionTimerRef.current) { clearInterval(sessionTimerRef.current); sessionTimerRef.current = null }
@@ -517,7 +562,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
           temperature: settings.temperature,
           mode: sessionMode,
           session_id: airpodsSessionId,
-          ui_context: sessionContext,
         }),
       })
       if (!sessionRes.ok) throw new Error(`Session API ${sessionRes.status}`)
@@ -696,11 +740,10 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 const text = inputAccRef.current.trim()
                 inputAccRef.current = ''
                 if (text) {
-                  setTranscript(prev => [...prev, { role: 'user', text, id: Date.now() + Math.random() }])
-                  onTranscript?.(text, 'user')
+                  setTranscript(prev => [...prev, { role: 'user', text, origin: 'speech', id: Date.now() + Math.random() }])
+                  onTranscript?.(text, 'user', { origin: 'speech' })
                   console.log('[VoiceChat] User said:', text)
                   setLastUserTranscript(text)
-                  updateStatus('thinking')
                   // Persistence handled by parent onTranscript callback
                 }
               }
@@ -726,8 +769,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
               const pendingInput = inputAccRef.current.trim()
               if (pendingInput) {
                 inputAccRef.current = ''
-                setTranscript(prev => [...prev, { role: 'user', text: pendingInput, id: Date.now() + Math.random() }])
-                onTranscript?.(pendingInput, 'user')
+                setTranscript(prev => [...prev, { role: 'user', text: pendingInput, origin: 'speech', id: Date.now() + Math.random() }])
+                onTranscript?.(pendingInput, 'user', { origin: 'speech' })
               }
               // Flush pending model output transcript
               const pending = outputAccRef.current.trim()
@@ -738,18 +781,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
               }
               if (playQueueRef.current.length === 0 && !isPlayingRef.current) {
                 updateStatus('listening')
-              }
-              if (endRequestedRef.current) {
-                endRequestedRef.current = false
-                const closeWhenPlaybackFinishes = () => {
-                  if (isPlayingRef.current || playQueueRef.current.length > 0) {
-                    endTimerRef.current = setTimeout(closeWhenPlaybackFinishes, 180)
-                    return
-                  }
-                  endTimerRef.current = null
-                  stopSession()
-                }
-                endTimerRef.current = setTimeout(closeWhenPlaybackFinishes, 220)
               }
             }
 
@@ -871,13 +902,16 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 }
               } else if (sessionMode === 'airpods' && call.name === 'end_voice_session') {
                 result = { ok: true, spoken_summary: 'Voice session ending.', closing: true }
-                endRequestedRef.current = true
                 if (endTimerRef.current) clearTimeout(endTimerRef.current)
                 endTimerRef.current = setTimeout(() => {
                   endTimerRef.current = null
-                  if (endRequestedRef.current) { endRequestedRef.current = false; stopSession() }
+                  stopSession()
                 }, 6000)
+              } else if (sessionMode === 'airpods' && call.name === 'offer_next_action') {
+                result = { ok: true, offered: true, spoken_summary: `I can ${args.title || 'take the next step'}.` }
+                onToolAction?.({ phase: 'proposal', action: args.action, args: args.arguments || {}, title: args.title, summary: args.summary, steps: args.steps || [] })
               } else if (sessionMode === 'airpods') {
+                onToolAction?.({ phase: 'working', action: call.name, args })
                 try {
                   const resp = await authFetch('/api/dashboard/airpods-action', {
                     method: 'POST',
@@ -892,16 +926,18 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                   const data = await resp.json().catch(() => ({}))
                   result = resp.ok ? data : { ok: false, error: data.error || `Action failed (${resp.status})` }
                   if (result.ui_effect) {
-                    window.dispatchEvent(new CustomEvent('cv6:airpods-ui-effect', { detail: result.ui_effect }))
+                    const navigationReceipt = await applyUiEffect(result.ui_effect)
+                    result = { ...result, navigation_receipt: navigationReceipt, navigation_acknowledged: navigationReceipt.ok === true }
+                    if (!navigationReceipt.ok) result = { ...result, ok: false, error: navigationReceipt.error || 'CV6 navigation was not acknowledged' }
                   }
                 } catch (err) {
                   result = { ok: false, error: err.message }
                 }
+                onToolAction?.({ phase: result.ok === false ? 'error' : result.needs_clarification ? 'clarification' : result.requires_confirmation ? 'confirmation' : 'done', action: call.name, args, result })
               } else {
                 result = { error: `Unknown function: ${call.name}` }
               }
 
-              onToolActivity?.({ name: call.name, arguments: args, result })
               responses.push({ id: call.id, name: call.name, response: result })
             }
 
@@ -943,8 +979,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         const pendingInput = inputAccRef.current?.trim()
         if (pendingInput) {
           inputAccRef.current = ''
-          setTranscript(prev => [...prev, { role: 'user', text: pendingInput, id: Date.now() + Math.random() }])
-          onTranscript?.(pendingInput, 'user')
+          setTranscript(prev => [...prev, { role: 'user', text: pendingInput, origin: 'speech', id: Date.now() + Math.random() }])
+          onTranscript?.(pendingInput, 'user', { origin: 'speech' })
         }
         const pendingOutput = outputAccRef.current?.trim()
         if (pendingOutput) {
@@ -977,7 +1013,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
       setErrorMsg(msg)
       updateStatus('error')
     }
-  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, onToolActivity, addSystemMessage, sessionMode, airpodsSessionId, initialPrompt, sessionContext])
+  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, sessionMode, airpodsSessionId, initialPrompt, onToolAction, applyUiEffect])
 
   const toggleSession = useCallback(() => {
     if (status === 'idle' || status === 'error') startSession()
@@ -991,9 +1027,11 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   useImperativeHandle(ref, () => ({
     start: startSession,
     stop: stopSession,
+    sendText: sendTextTurn,
+    sendControl: sendControlTurn,
     toggleMute,
     get isMuted() { return isMutedRef.current },
-  }), [startSession, stopSession, toggleMute])
+  }), [startSession, stopSession, sendTextTurn, sendControlTurn, toggleMute])
 
   const formatSecs = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
 

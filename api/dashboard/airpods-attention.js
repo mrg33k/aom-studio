@@ -69,14 +69,14 @@ export default async function handler(req, res) {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const [queued, tasks] = await Promise.all([
     read(`airpods_attention_items?world_id=eq.${encodeURIComponent(tenant)}&status=in.(queued,prompted)&or=(snoozed_until.is.null,snoozed_until.lte.${encodeURIComponent(now)})&order=created_at.asc&limit=100`),
-    read(`tasks?client_id=eq.${encodeURIComponent(tenant)}&status=in.(blocked,failed,needs_input,needs_verification,done)&updated_at=gte.${encodeURIComponent(since)}&order=updated_at.desc&limit=50&select=id,title,status,project,agent,metadata,updated_at,completed_at`),
+    read(`tasks?client_id=eq.${encodeURIComponent(tenant)}&status=in.(blocked,failed,needs_input,needs_verification,done)&created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=50&select=id,title,status,project,agent,metadata,created_at,completed_at`),
   ]);
 
   const byKey = new Map();
   for (const item of queued) byKey.set(`${item.source_type}:${item.source_id}:${item.version || 1}`, item);
   const taskItems = [];
   for (const task of tasks) {
-    const version = Math.floor(Date.parse(task.updated_at || task.completed_at || now) / 1000);
+    const version = Math.floor(Date.parse(task.completed_at || task.created_at || now) / 1000);
     const key = `task:${task.id}:${version}`;
     if (byKey.has(key)) continue;
     const item = {
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
       detail: task.status,
       room_key: taskRoom(task),
       payload: { status: task.status, project: task.project, agent: task.agent, mission_slug: task.metadata?.mission_slug || null },
-      status: 'queued', created_at: task.updated_at || task.completed_at || now,
+      status: 'queued', created_at: task.completed_at || task.created_at || now,
     };
     taskItems.push(item);
     byKey.set(key, item);

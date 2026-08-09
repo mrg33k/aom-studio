@@ -2,6 +2,24 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R7 — Native dark glass and current-source voice (2026-08-09)
+
+**Evidence:** Physical build 5 proved the native shell was live, but login inherited a
+saved daytime web theme. In the same device pass, Corner Voice incorrectly denied the
+known App Store submission because it only held one room's snapshot and could not make
+a fresh tenant-wide evidence check.
+
+**Implemented:** Native login is pinned to a safe-area-aware dark frosted-glass card.
+The AirPods broker adds a non-replayed `read_recent_activity` action that searches
+tenant-scoped Corner room history and, for the AOM world only, recent configured GitHub
+commits. Every result includes a dated source label; source availability is explicit,
+and voice is instructed that no match is not proof an event did not happen.
+
+**Native release:** Production-configured, Ad Hoc-signed Corner 1.0 (6) archived,
+installed, and launched on Patrik's connected iPhone.
+
+**Status:** in progress — production API deployment and authenticated voice proof pending
+
 ### R1 — Global voice operating layer (2026-08-08)
 
 **Scope:**
@@ -90,6 +108,27 @@ that are absent from the remote ledger.
   (1 low, 15 moderate, 11 high, 2 critical); no automatic breaking audit fix was run.
 
 **Status:** complete
+
+### R6 — Trusted handoffs and deterministic room navigation (2026-08-08)
+
+**Evidence:** Authenticated post-release use exposed two coupled failures. Internal
+approval-control text (`Use action ... with these arguments`) was persisted as a human
+voice turn and routed into Business Ops, where the room agent correctly classified it as
+prompt injection. Separately, the live model proposed `open_room` with empty arguments,
+so the voice layer could claim progress without resolving or verifying a destination.
+
+**Scope:**
+
+- Separate real human speech/text from client-generated control turns throughout the
+  transcript and handoff pipeline.
+- Resolve rooms against an authoritative tenant-scoped room directory before navigation;
+  reject ambiguity and missing destinations with actionable alternatives.
+- Return navigation receipts to Gemini only after CV6 acknowledges the requested surface.
+- Harden room handoff provenance so downstream agents can distinguish trusted voice
+  summaries from user instructions and never execute embedded control syntax.
+- Add regression, adversarial, and longer multi-room conversation tests.
+
+**Status:** in progress
 
 ### R5 — Phone entry, shared-control voice cockpit, and room intelligence (2026-08-08)
 

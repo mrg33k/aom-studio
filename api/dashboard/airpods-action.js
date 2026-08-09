@@ -4,14 +4,15 @@
 // idempotency, speaker attribution, project scope, and the durable audit record.
 
 import crypto from 'crypto';
-import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
 import { verifyTenant, verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
 import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js';
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
 import {
   AIRPODS_ALLOWED_ACTIONS,
   authorityForAction,
   cleanArguments,
   idempotencyKey,
+  resolveRoomCandidate,
   signConfirmation,
   verifyConfirmation,
 } from '../_lib/airpods.js';
@@ -43,8 +44,8 @@ function uiTool(tool) {
 }
 
 async function workspaceStatus(clientId) {
-  const taskFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=updated_at.desc&limit=20&select=id,title,status,agent,project,metadata,updated_at`;
-  const agentFilter = `client_id=eq.${encodeURIComponent(clientId)}&select=agent_slug,status,current_task,updated_at`;
+  const taskFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=created_at.desc&limit=20&select=id,title,status,agent,project,metadata,created_at`;
+  const agentFilter = `client_id=eq.${encodeURIComponent(clientId)}&select=slug,status,current_task,updated_at`;
   const doneFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=eq.done&order=completed_at.desc&limit=5&select=id,title,agent,completed_at`;
   const [tasks, agents, completed] = await Promise.all([
     db(`tasks?${taskFilter}`), db(`agent_status?${agentFilter}`), db(`tasks?${doneFilter}`),
@@ -54,71 +55,212 @@ async function workspaceStatus(clientId) {
   return { active, blockers, completed, agents: agents.filter((agent) => agent.status && agent.status !== 'idle') };
 }
 
-async function workspaceRooms(clientId) {
-  const [projects, statuses] = await Promise.all([
-    db(`projects?client_id=eq.${encodeURIComponent(clientId)}&is_active=eq.true&select=slug,name&order=name.asc`),
-    db(`agent_status?client_id=eq.${encodeURIComponent(clientId)}&type=in.(agent,mission)&select=slug,name,type,status,current_task&order=name.asc`),
+function activityTerms(value) {
+  return String(value || '').toLowerCase().match(/[a-z0-9]+/g)?.filter((term) => term.length > 1).slice(0, 12) || [];
+}
+
+function roomLabel(message) {
+  const mission = String(message?.metadata?.mission_slug || '').trim();
+  if (mission) return { room_key: `mission:${mission}`, room_name: mission };
+  if (message?.project) return { room_key: `project:${message.project}`, room_name: String(message.project) };
+  return { room_key: `agent:${message?.agent || 'corner'}`, room_name: String(message?.agent || 'Corner') };
+}
+
+function activityScore(message, terms) {
+  if (!terms.length) return 1;
+  const haystack = [message?.text, message?.agent, message?.project, message?.source, message?.metadata?.mission_slug]
+    .filter(Boolean).join(' ').toLowerCase();
+  return terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
+}
+
+function activityMatches(score, terms) {
+  if (!terms.length) return true;
+  return score >= Math.max(1, Math.ceil(terms.length / 2));
+}
+
+async function recentWorkspaceActivity(clientId, query) {
+  const rows = await db(`messages?client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=300&select=id,agent,project,role,text,timestamp,source,metadata,user_name`);
+  const terms = activityTerms(query);
+  return (Array.isArray(rows) ? rows : [])
+    .map((message) => ({ message, score: activityScore(message, terms) }))
+    .filter(({ score }) => activityMatches(score, terms))
+    .sort((a, b) => b.score - a.score || String(b.message.timestamp || '').localeCompare(String(a.message.timestamp || '')))
+    .slice(0, 12)
+    .map(({ message }) => {
+      const room = roomLabel(message);
+      return {
+        source_type: 'corner_room', source_label: `${room.room_name} room`,
+        room_key: room.room_key, room_name: room.room_name, timestamp: message.timestamp || null,
+        author: message.role === 'user' ? (message.user_name || 'Workspace member') : (message.agent || 'Corner agent'),
+        excerpt: String(message.text || '').replace(/\s+/g, ' ').trim().slice(0, 360),
+      };
+    });
+}
+
+async function recentGithubActivity(clientId, query) {
+  // Repository access is AOM-internal: never expose it to another tenant or a
+  // shared room. Report availability explicitly so voice cannot bluff a check.
+  if (clientId !== 'aom') return { availability: 'not_available_for_this_workspace', items: [] };
+  const token = process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+  const owner = process.env.VERCEL_GIT_REPO_OWNER || 'mrg33k';
+  const repo = process.env.VERCEL_GIT_REPO_SLUG || 'aom-studio';
+  if (!owner || !repo) return { availability: 'not_configured', items: [] };
+  try {
+    const githubUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?per_page=30`;
+    const requestHeaders = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+    let response = await fetch(githubUrl, {
+      headers: requestHeaders,
+      signal: AbortSignal.timeout(5000),
+    });
+    // The repository is public, while the legacy VITE_GITHUB_TOKEN may expire.
+    // Retry anonymously instead of letting a stale optional token disable a
+    // source that requires no credential.
+    if ((response.status === 401 || response.status === 403) && token) {
+      response = await fetch(githubUrl, {
+        headers: { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+        signal: AbortSignal.timeout(5000),
+      });
+    }
+    if (!response.ok) return { availability: `unavailable_${response.status}`, items: [] };
+    const terms = activityTerms(query);
+    const commits = await response.json();
+    const items = (Array.isArray(commits) ? commits : [])
+      .map((commit) => ({ commit, score: activityScore({ text: commit?.commit?.message }, terms) }))
+      .filter(({ score }) => activityMatches(score, terms))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .map(({ commit }) => ({
+        source_type: 'github_commit', source_label: `GitHub ${owner}/${repo}`,
+        timestamp: commit?.commit?.author?.date || null,
+        author: commit?.commit?.author?.name || commit?.author?.login || 'Unknown',
+        excerpt: String(commit?.commit?.message || '').replace(/\s+/g, ' ').trim().slice(0, 360),
+        reference: commit?.html_url || null, sha: String(commit?.sha || '').slice(0, 7),
+      }));
+    return { availability: 'available', items };
+  } catch {
+    return { availability: 'unavailable', items: [] };
+  }
+}
+
+async function readRecentActivity(clientId, args) {
+  const query = String(args.query || '').trim().slice(0, 240);
+  const [roomItems, github] = await Promise.all([
+    recentWorkspaceActivity(clientId, query),
+    args.include_github === false ? Promise.resolve({ availability: 'not_requested', items: [] }) : recentGithubActivity(clientId, query),
   ]);
-  const projectSet = new Set(projects.map((project) => project.slug));
-  const rooms = [
-    ...projects.map((project) => ({ id: project.slug, name: project.name || project.slug, type: 'project', project: project.slug })),
-    ...statuses.map((status) => {
-      const type = status.type === 'mission' ? 'mission' : 'agent';
-      const project = type === 'mission' && String(status.slug || '').includes(':') ? String(status.slug).split(':')[0] : null;
-      return { id: status.slug, name: status.name || status.slug, type, project, status: status.status || null, current_task: status.current_task || null };
-    }),
-  ];
-  if (clientId === 'aom') {
-    for (const mission of missionsRegistry?.missions || []) {
-      if (mission.is_done || mission.status === 'archived' || !projectSet.has(mission.project_slug)) continue;
-      rooms.push({ id: mission.slug, name: mission.name, type: 'mission', project: mission.project_slug, status: mission.status || null });
+  const items = [...roomItems, ...github.items]
+    .sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')))
+    .slice(0, 16);
+  return {
+    ok: true, query, checked_at: new Date().toISOString(),
+    sources: { corner_rooms: 'available', github: github.availability }, items,
+    spoken_summary: items.length
+      ? `I found ${items.length} recent workspace source${items.length === 1 ? '' : 's'} that may answer that.`
+      : 'I did not find a matching recent record. That is not proof the event did not happen.',
+  };
+}
+
+function roomCandidate({ key, name, type, slug, project, room, aliases = [] }) {
+  return { room_key: key, room_name: name, room_type: type, slug, project: project || null, room, aliases };
+}
+
+async function roomDirectory(clientId) {
+  const [projects, statuses] = await Promise.all([
+    db(`projects?client_id=eq.${encodeURIComponent(clientId)}&is_active=eq.true&select=slug,name`),
+    db(`agent_status?client_id=eq.${encodeURIComponent(clientId)}&type=in.(agent,mission)&select=slug,name,type,status,current_task`),
+  ]);
+  const rooms = new Map();
+  const add = (candidate) => { if (candidate?.room_key) rooms.set(candidate.room_key, candidate); };
+
+  for (const project of projects || []) {
+    if (!project?.slug) continue;
+    const name = project.name || project.slug;
+    add(roomCandidate({
+      key: `project:${project.slug}`, name, type: 'project', slug: project.slug,
+      room: { id: project.slug, name, isProject: true }, aliases: [project.slug],
+    }));
+  }
+  for (const row of statuses || []) {
+    if (!row?.slug) continue;
+    const name = row.name || row.slug;
+    if (row.type === 'mission' && row.slug.includes(':')) {
+      const [project, ...rest] = row.slug.split(':');
+      const bare = rest.join(':');
+      add(roomCandidate({
+        key: `mission:${row.slug}`, name, type: 'mission', slug: row.slug, project,
+        room: { id: bare, name, isMission: true, missionSlug: row.slug, projectSlug: project },
+        aliases: [bare, row.slug, `${project} ${name}`],
+      }));
+    } else if (row.type === 'agent') {
+      add(roomCandidate({
+        key: `agent:${row.slug}`, name, type: 'agent', slug: row.slug,
+        room: { id: row.slug, name }, aliases: [row.slug],
+      }));
     }
   }
-  const seen = new Set();
-  return rooms.filter((room) => room.id && room.name && !seen.has(`${room.type}:${room.id}`) && seen.add(`${room.type}:${room.id}`)).slice(0, 240);
+  if (clientId === 'aom') {
+    for (const mission of missionsRegistry?.missions || []) {
+      if (!mission?.slug || mission.is_done || mission.status === 'archived') continue;
+      const project = mission.project_slug || String(mission.slug).split(':')[0];
+      const fullSlug = String(mission.slug).includes(':') ? String(mission.slug) : `${project}:${mission.slug}`;
+      const bare = fullSlug.slice(fullSlug.indexOf(':') + 1);
+      const name = mission.name || mission.raw_slug || bare;
+      if (rooms.has(`mission:${fullSlug}`)) continue;
+      add(roomCandidate({
+        key: `mission:${fullSlug}`, name, type: 'mission', slug: fullSlug, project,
+        room: { id: bare, name, isMission: true, missionSlug: fullSlug, projectSlug: project, path: mission.path || null },
+        aliases: [bare, fullSlug, `${project} ${name}`],
+      }));
+    }
+  }
+  return [...rooms.values()];
 }
 
-async function resolveRoom(args, req, tenant) {
-  const requested = String(args.room_id || '').trim();
-  const requestedType = String(args.room_type || '').trim().toLowerCase();
-  if (!requested) throw new Error('room_id required');
-  const rooms = await workspaceRooms(tenant);
-  const room = rooms.find((item) => item.id === requested && (!requestedType || item.type === requestedType))
-    || rooms.find((item) => item.name.toLowerCase() === requested.toLowerCase() && (!requestedType || item.type === requestedType));
-  if (!room) throw new Error(`Room not found in this workspace: ${requested}`);
-  if (room.type === 'project') await verifyProjectAccess(room.id, req);
-  if (room.type === 'mission') await verifyProjectAccess(room.project, req);
-  return room;
+async function resolveRoom(args, tenant) {
+  const resolution = resolveRoomCandidate(await roomDirectory(tenant), args);
+  if (resolution.resolved) return { ok: true, room: resolution.resolved };
+  const count = resolution.candidates.length;
+  return {
+    ok: true,
+    resolved: false,
+    needs_clarification: true,
+    reason: resolution.reason,
+    candidates: resolution.candidates,
+    spoken_summary: count
+      ? `I found ${count} possible rooms. Which one do you mean?`
+      : 'I could not find that room. Try its project, mission, or agent name.',
+  };
 }
 
-async function readRoomStatus(args, req, tenant) {
-  const room = await resolveRoom(args, req, tenant);
+async function readRoomStatus(args, tenant) {
+  const resolution = await resolveRoom(args, tenant);
+  if (!resolution.room) return resolution;
+  const match = resolution.room;
   let tasks = [];
   let messages = [];
-  if (room.type === 'agent') {
+  if (match.room_type === 'agent') {
     [tasks, messages] = await Promise.all([
-      db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(room.id)}&status=neq.done&order=updated_at.desc&limit=12&select=id,title,status,agent,project,metadata,updated_at`),
-      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(room.id)}&order=timestamp.desc&limit=8&select=role,text,timestamp,user_name,project,mission`),
+      db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(match.slug)}&status=neq.done&order=created_at.desc&limit=12&select=id,title,status,agent,project,metadata,created_at`),
+      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(match.slug)}&order=timestamp.desc&limit=8&select=role,text,timestamp,user_name,project,mission`),
     ]);
   } else {
-    const project = room.project || room.id;
+    const project = match.project || match.slug;
     [tasks, messages] = await Promise.all([
-      db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&status=neq.done&order=updated_at.desc&limit=30&select=id,title,status,agent,project,metadata,updated_at`),
+      db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&status=neq.done&order=created_at.desc&limit=30&select=id,title,status,agent,project,metadata,created_at`),
       db(`messages?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&order=timestamp.desc&limit=20&select=role,text,timestamp,user_name,project,mission`),
     ]);
-    if (room.type === 'mission') {
-      const bare = room.id.split(':').pop();
-      tasks = tasks.filter((task) => [room.id, bare].includes(String(task.metadata?.mission_slug || '')));
-      messages = messages.filter((message) => [room.id, bare].includes(String(message.mission || '')));
+    if (match.room_type === 'mission') {
+      const bare = match.slug.split(':').pop();
+      tasks = tasks.filter((task) => [match.slug, bare].includes(String(task.metadata?.mission_slug || '')));
+      messages = messages.filter((message) => [match.slug, bare].includes(String(message.mission || '')));
     }
   }
   const recent = messages.slice(0, 6).map((message) => ({ role: message.role, author: message.user_name || null, text: String(message.text || '').slice(0, 500), at: message.timestamp }));
   return {
-    ok: true,
-    spoken_summary: `${room.name} has ${tasks.length} active item${tasks.length === 1 ? '' : 's'}${recent.length ? ` and ${recent.length} recent update${recent.length === 1 ? '' : 's'}` : ''}.`,
-    room,
-    active_tasks: tasks.slice(0, 12),
-    recent_updates: recent,
+    ok: true, resolved: true, room_key: match.room_key,
+    spoken_summary: `${match.room_name} has ${tasks.length} active item${tasks.length === 1 ? '' : 's'}${recent.length ? ` and ${recent.length} recent update${recent.length === 1 ? '' : 's'}` : ''}.`,
+    room: { room_key: match.room_key, room_name: match.room_name, room_type: match.room_type, project: match.project },
+    active_tasks: tasks.slice(0, 12), recent_updates: recent,
   };
 }
 
@@ -179,21 +321,13 @@ async function startWork(args, req, tenant, identity, sessionId) {
     worldId: identity.world,
   });
   if (!result.ok) throw new Error(result.error || 'Could not start work');
-  const missionSlug = String(args.mission_slug || '').trim();
-  let queuedTask = null;
-  if (project && missionSlug) {
-    const title = String(args.title || instruction.split(/[.!?]/)[0] || instruction).trim().slice(0, 180);
-    queuedTask = await createTask({ title, description: instruction, project, mission_slug: missionSlug, agent }, req, identity);
-  }
   return {
     ok: true,
-    spoken_summary: queuedTask
-      ? `I posted the instruction and queued trackable work in ${missionSlug}.`
-      : 'I posted that instruction to the room. No trackable mission task was created.',
-    entities: [{ type: 'message', id: result.row?.id }, ...(queuedTask?.entities || [])],
+    spoken_summary: 'I sent that to the room and work is starting.',
+    entities: [{ type: 'message', id: result.row?.id }],
     ui_effect: project
       ? { type: 'open_room', room: args.mission_slug
-        ? { id: missionSlug.split(':').pop(), name: missionSlug, isMission: true, missionSlug, projectSlug: project }
+        ? { id: args.mission_slug, name: args.mission_slug, isMission: true, missionSlug: args.mission_slug, projectSlug: project }
         : { id: project, name: project, isProject: true } }
       : { type: 'open_room', room: { id: agent, name: agent } },
   };
@@ -215,27 +349,36 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     const status = await workspaceStatus(tenant);
     return { ok: true, spoken_summary: `${status.active.length} active, ${status.blockers.length} need attention, and ${status.completed.length} recently completed.`, status };
   }
+  if (action === 'read_recent_activity') return readRecentActivity(tenant, args);
   if (action === 'list_rooms') {
-    const rooms = await workspaceRooms(tenant);
+    const rooms = (await roomDirectory(tenant)).slice(0, 240).map((room) => ({ room_key: room.room_key, room_name: room.room_name, room_type: room.room_type, project: room.project }));
     return { ok: true, spoken_summary: `I found ${rooms.length} rooms in this workspace.`, rooms };
   }
-  if (action === 'read_room_status') return readRoomStatus(args, req, tenant);
   if (action === 'open_tool' || action === 'navigate') {
     const target = uiTool(args.tool || args.target);
     const allowed = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'livescribe', 'settings', 'workers']);
     if (!allowed.has(target)) throw new Error('That CV6 tool is not available');
-    return { ok: true, spoken_summary: `Opening ${args.tool || args.target}.`, ui_effect: { type: 'navigate', target } };
+    return { ok: true, spoken_summary: `Opening ${args.tool || args.target}.`, ui_effect: { type: 'navigate', target, request_id: crypto.randomUUID() } };
   }
+  if (action === 'find_rooms') {
+    const resolution = await resolveRoom(args, tenant);
+    if (resolution.room) {
+      return { ok: true, resolved: true, candidates: [{ room_key: resolution.room.room_key, room_name: resolution.room.room_name, room_type: resolution.room.room_type, project: resolution.room.project }], spoken_summary: `I found ${resolution.room.room_name}.` };
+    }
+    return resolution;
+  }
+  if (action === 'read_room_status') return readRoomStatus(args, tenant);
   if (action === 'open_room') {
-    const resolved = await resolveRoom(args, req, tenant);
-    const id = resolved.id;
-    const type = resolved.type;
-    const room = {
-      id: type === 'mission' ? id.split(':').pop() : id, name: resolved.name,
-      ...(type === 'project' ? { isProject: true } : {}),
-      ...(type === 'mission' ? { isMission: true, missionSlug: id, projectSlug: resolved.project || '' } : {}),
+    const resolution = await resolveRoom(args, tenant);
+    if (!resolution.room) return resolution;
+    const match = resolution.room;
+    if (match.room_type === 'project') await verifyProjectAccess(match.slug, req);
+    if (match.room_type === 'mission') await verifyProjectAccess(match.project, req);
+    return {
+      ok: true, resolved: true, room_key: match.room_key,
+      spoken_summary: `Opening ${match.room_name}.`,
+      ui_effect: { type: 'open_room', room: match.room, request_id: crypto.randomUUID() },
     };
-    return { ok: true, spoken_summary: `Opening ${room.name}.`, ui_effect: { type: 'open_room', room } };
   }
   if (action === 'create_task') return createTask(args, req, identity);
   if (action === 'start_work') return startWork(args, req, tenant, identity, sessionId);
@@ -271,6 +414,12 @@ export default async function handler(req, res) {
   if (!AIRPODS_ALLOWED_ACTIONS.has(action)) return res.status(400).json({ error: `Action not allowed: ${action}` });
   const sessionId = String(body.session_id || '').trim() || null;
   const authority = authorityForAction(action);
+  // These reads are live evidence, so replaying an older same-session result
+  // would defeat their purpose. They are side-effect free.
+  if (action === 'read_workspace_status' || action === 'read_recent_activity') {
+    try { return res.status(200).json(await execute(action, args, req, identity.tenant, identity, sessionId)); }
+    catch (error) { return res.status(500).json({ error: error?.message || 'Read failed' }); }
+  }
   const callerKey = idempotencyKey({ supplied: body.idempotency_key, sessionId, action, args });
   // Namespace even caller-supplied keys. The database uniqueness constraint is
   // global, while replay visibility must never cross a world or user boundary.

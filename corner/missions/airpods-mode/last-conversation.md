@@ -115,3 +115,20 @@ deployment reached READY. The canonical dashboard returned HTTP 200 and its serv
 client asset contains the new shared-screen and natural-session-end behavior. Both
 voice APIs remain protected and returned 401 to unauthenticated probes. R5 is complete;
 the user can now repeat the physical iPhone/AirPods conversation test.
+# 2026-08-09 — Native build 6 and live evidence repair
+
+Patrik reported that the native login should be dark or glass and connected his iPhone.
+Corner 1.0 (5), containing the voice minimize/reopen control, was installed and launched.
+The native login was then pinned to a safe-area-aware dark frosted-glass card and signed
+Corner 1.0 (6) was archived, installed, and launched on the same device.
+
+The live AirPods agent had incorrectly denied the known App Store submission. Diagnosis
+showed it only received one room's recent snapshot and task totals. A new non-replayed,
+tenant-scoped `read_recent_activity` tool now searches current Corner room evidence and
+AOM GitHub commits, returns dated source labels, reports source availability honestly,
+and forbids treating no match as proof an event did not happen. A production-data probe
+found the TestFlight/App Store evidence in `corner:business-ops`. The repository is public
+at `mrg33k/aom-studio`; lookup retries anonymously when the legacy optional token is stale.
+
+Focused tests and the isolated production build pass. Production deployment and an
+authenticated AirPods question remain before this round can be called complete.

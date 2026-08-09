@@ -32,6 +32,9 @@ export const ACTION_AUTHORITY = Object.freeze({
   read_room_status: 'auto',
   search_corner: 'auto',
   navigate: 'auto',
+  find_rooms: 'auto',
+  list_rooms: 'auto',
+  read_room_status: 'auto',
   open_room: 'auto',
   open_tool: 'auto',
   create_project: 'internal-explicit',
@@ -119,7 +122,7 @@ export function airPodsReducer(state, event) {
   switch (event.type) {
     case 'ARM': return { ...state, mode: 'armed', error: null };
     case 'DISARM': return { ...state, mode: 'off', transcript: [], pendingConfirmation: null, error: null };
-    case 'CONNECT': return { ...state, mode: 'connecting', error: null };
+    case 'CONNECT': return { ...state, mode: 'connecting', transcript: [], pendingConfirmation: null, error: null };
     case 'STATUS': return { ...state, mode: AIRPODS_STATES.includes(event.status) ? event.status : state.mode };
     case 'TRANSCRIPT': return { ...state, transcript: [...state.transcript, event.turn] };
     case 'ATTENTION': return { ...state, mode: 'attention-prompt', attentionItems: event.items || [] };
