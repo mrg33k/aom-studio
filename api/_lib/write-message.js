@@ -39,6 +39,7 @@
 
 import crypto from 'crypto'
 import { detectProjectTag, crossPostToProjectThread } from './crosspost.js'
+import { notifyDevicesForMessageRow } from './apns.js'
 import { lookupProjectBySlug, verifyProjectAccess, TenantAuthError } from './verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
@@ -477,7 +478,37 @@ export async function writeMessageRow({
   const inserted = await sbRes.json().catch(() => null)
   const insertedRow = (Array.isArray(inserted) ? inserted[0] : inserted) || payload
 
-  // --- 4. Crosspost (collaborator-gated inside crosspost.js; idempotent) ---
+  // --- 4. APNs fan-out (corner:native-ios Stage 0) — FIRE AND FORGET ---------
+  //
+  // THE ONE RULE HERE: this must never be able to fail, slow, or reject the
+  // message write. A phone that is unreachable, a device_tokens lookup that
+  // 500s, an APNs key that was never created — every one of those has to end as
+  // a log line and nothing else. So: no await, and notifyDevicesForMessageRow
+  // resolves (never rejects) on all of its own error paths, with a .catch here
+  // as the second belt in case a future edit breaks that promise.
+  //
+  // Assistant rows only. A user's own message must not buzz their own phone, and
+  // the exclusion set inside (embeds, ops-alerts, THOUGHT logs) is the same one
+  // the green dot and Web Push already use.
+  //
+  // WHY IT IS STARTED HERE rather than after the crosspost await: a serverless
+  // function can be frozen once its response is sent, so an unawaited promise is
+  // racing the freeze. Kicking it off BEFORE the crosspost round trip hands it
+  // that round trip as free wall-clock — in practice the push has landed before
+  // the handler returns, without a single millisecond of the chat write being
+  // spent waiting on Apple. If APNs delivery ever needs a hard guarantee, the
+  // answer is the Supabase database webhook (the lane api/push/notify.js already
+  // rides), not an await on this line.
+  if (role === 'assistant') {
+    try {
+      notifyDevicesForMessageRow({ supabaseUrl, headers, row: insertedRow })
+        .catch((e) => console.warn('[write-message] apns fan-out failed (ignored):', e?.message || e))
+    } catch (e) {
+      console.warn('[write-message] apns fan-out could not start (ignored):', e?.message || e)
+    }
+  }
+
+  // --- 5. Crosspost (collaborator-gated inside crosspost.js; idempotent) ---
   if (resolvedProject) {
     await crossPostToProjectThread({
       supabaseUrl,
