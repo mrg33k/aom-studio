@@ -4619,7 +4619,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 
 /* A message that did not send keeps its bubble, dimmed and outlined, with the reason
    and one tap to send it again. It never disappears on its own. */
-.pb-me.is-failed,.cv6-mob-bubble--user.is-failed{opacity:.62;border:1px dashed color-mix(in srgb,#e6a14b 55%,transparent)}
+[data-cv6] .pb-me.is-failed,[data-cv6] .cv6-mob-bubble--user.is-failed{opacity:.62;border:1px dashed color-mix(in srgb,#e6a14b 55%,transparent)}
 .cv6-msg-failed{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:5px;color:#e6a14b;font-size:11px;line-height:1.35}
 .cv6-msg-failed-text{opacity:.92}
 .cv6-msg-failed-retry{padding:3px 10px;border:1px solid color-mix(in srgb,#e6a14b 45%,transparent);border-radius:999px;background:rgba(230,161,75,.12);color:#e6a14b;font:inherit;font-size:11px;font-weight:650;cursor:pointer}
