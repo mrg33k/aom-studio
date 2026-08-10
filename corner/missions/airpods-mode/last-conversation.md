@@ -321,3 +321,24 @@ Commit `0b8251f6` fast-forwarded `main`, and production deployment
 `aom-studio-3tn09j98n` reached READY. The canonical dashboard returns HTTP 200; its
 served JS and CSS retain the on-demand panel and contain no persistent voice dock. R15
 is complete on both production web and installed native build 14.
+
+## 2026-08-09 — R16 native chat safe-area ownership
+
+Patrik showed the Business Ops chat composer clipped after its first row with a large
+black strip beneath it. The authenticated web surface itself rendered correctly at the
+same 390×844 phone viewport: the complete two-row composer ended 20px above the bottom,
+with no document gap or overflow. The discrepancy isolated the failure to the native
+wrapper rather than the CV6 room layout.
+
+Capacitor had configured WKWebView with automatic content inset adjustment while CV6
+already owns the safe area through `viewport-fit=cover`, CSS safe-area variables, and
+its fixed viewport shell. R16 changes the native contract to `ios.contentInset = never`
+and adds a regression assertion against restoring the duplicate automatic inset. The
+browser geometry check directly shaped the fix by proving that both composer rows fit
+when there is only one safe-area owner.
+
+The focused AirPods suite passes 20/20, both composer/viewport regression suites pass,
+the production-configured Vite build and Capacitor sync pass, and the signed archive
+validates with bundle version 15 and `contentInset = never`. CoreDevice installed and
+launched Corner 1.0 (15) on Patrik’s paired iPhone. Physical confirmation of the repaired
+Business Ops composer remains the final user-visible check.

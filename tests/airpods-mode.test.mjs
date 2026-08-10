@@ -271,6 +271,8 @@ test('native API bridge targets the final canonical host without an auth-strippi
   assert.doesNotMatch(source, /\|\| 'https:\/\/aheadofmarket\.com'/);
   assert.match(source, /input\.startsWith\('\/api\/'\)/);
   assert.match(config, /CapacitorHttp:\s*\{\s*enabled:\s*true/);
+  assert.match(config, /contentInset:\s*'never'/);
+  assert.doesNotMatch(config, /contentInset:\s*'automatic'/);
 });
 
 test('AirPods control is mounted once in the desktop bar and active phone header', () => {

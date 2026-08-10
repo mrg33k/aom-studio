@@ -2,6 +2,38 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R16 — Native chat safe-area ownership (2026-08-09)
+
+**Physical evidence:** Build 14 shows the Business Ops rich composer clipped above a
+black strip approximately one home-indicator inset tall. The same authenticated rich
+composer at 390×844 measures 100px tall, renders both rows, lands exactly 20px above
+the room/viewport bottom, and has no document gap in the web surface.
+
+**Root cause:** The native Capacitor shell sets `ios.contentInset = automatic`, which
+asks WKWebView’s scroll view to add UIKit safe-area insets. CV6 already owns those
+insets through `viewport-fit=cover`, `env(safe-area-inset-*)`, and its fixed viewport
+shell, so the native wrapper reserves the bottom a second time and clips the composer.
+
+**Scope:** Give safe-area ownership solely to CV6 by disabling WKWebView automatic
+content inset adjustment, enforce that contract in the native regression suite, package
+the correction as Corner 1.0 (15), and install it on Patrik’s paired iPhone.
+
+**Implementation:** Capacitor now sets `ios.contentInset = never`, leaving CV6 as the
+single owner of the phone safe areas. The native regression contract rejects a return
+to automatic inset adjustment.
+
+**Verification:** The real authenticated Business Ops rich composer at 390×844 renders
+its 41px input and 34px action row inside a 100px card, ends 20px above the viewport,
+and produces zero document gap or horizontal overflow. The focused AirPods suite passes
+20/20, both mobile composer/viewport regression suites pass, the production-configured
+Vite build and Capacitor sync pass, and `git diff --check` is clean.
+
+**Native release:** The signed Corner 1.0 (15) archive contains `contentInset = never`,
+passes strict code-signature validation, installed successfully on Patrik’s paired
+iPhone, reports bundle version 15, and launched successfully.
+
+**Status:** in progress — corrected build 15 installed; physical Business Ops composer confirmation pending
+
 ### R15 — Header-only idle voice entry (2026-08-09)
 
 **Physical evidence:** Build 13 restores the correct app icon and room data, but when

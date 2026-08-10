@@ -6,7 +6,10 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   bundledWebRuntime: false,
   ios: {
-    contentInset: 'automatic',
+    // CV6 is full-bleed (`viewport-fit=cover`) and owns safe-area spacing in CSS.
+    // UIKit adjustment here double-reserves the home-indicator inset and clips
+    // the native two-row chat composer above a black bottom strip.
+    contentInset: 'never',
     preferredContentMode: 'mobile',
     backgroundColor: '#0A0A0B',
   },
