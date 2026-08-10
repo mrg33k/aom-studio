@@ -50,6 +50,25 @@ Nothing server-side changed for Stage 1 beyond what Stage 0 already shipped.
 | Realtime | supabase-swift RealtimeV2, `postgres_changes` INSERT filtered on `room_id` |
 | Push registration | `POST /api/push/register-device` (Stage 0) |
 | Account deletion | `POST /api/account/delete`, two-step (Stage 0) |
+| Room files | same room query + `attachments=1&limit=400` (Stage 2) |
+| Review | `GET /api/dashboard/review-queue`, `POST /api/dashboard/review-decision` (Stage 2) |
+| Files — picker | `GET /api/dashboard/projects` (no file payload at all) |
+| Files — a folder | `GET /api/dashboard/files?type=organize&client=<world>&project=<slug>` |
+| Files — Personal | `GET /api/dashboard/files?type=uploads` (uploads only, no mirror) |
+| Tracker | `GET/POST /api/dashboard/cv6-bugs`, `GET /api/dashboard/admin-tickets`, `GET/POST /api/dashboard/trackers` |
+| Assign | `POST /api/dashboard/supabase-messages` into the agent's room — the row IS the assignment |
+
+**Files asks per project; the web asks for everything.** `type=organize` has always
+accepted `project=` and scopes both its mirror read and its upload read by it. The web
+omits it and pulls the whole world every 30 seconds — 18,545 rows for `aom`, counted live
+on 2026-08-10. On a phone that is the difference between a folder that opens and a folder
+that times out on cellular.
+
+**Tracker sends `world`; the web does not.** `authFetch('/api/dashboard/cv6-bugs')` passes
+no world and the endpoint defaults to `'aom'`, so every tenant's Tracker on the web reads
+AOM's board. The store is per-world server-side (`cm_state.client_id`), so sending the
+signed-in world is the only honest reading — and a non-AOM tenant will see their own
+(possibly empty) board here next to the web's borrowed one.
 
 **Sending is never a direct PostgREST insert.** Identity stamping, tenant verification,
 `room_id` derivation and mission-slug canonicalization all live server-side in the one
@@ -58,6 +77,38 @@ write path; bypassing it would recreate the privilege escalation closed on 2026-
 The Supabase key in `Config.swift` is the **anon/publishable** key already shipped in
 the web bundle (role claim verified `anon`). The service role key must never appear in
 this target.
+
+## Every surface is SwiftUI (Stage 3)
+
+There is no `WKWebView`, no `UIWebView` and no embedded web content anywhere in the app
+target — the last of the Capacitor wrap is gone. Run the gate:
+
+```bash
+ios-native/scripts/no-webviews.sh
+```
+
+The only two UIKit bridges left are `QLPreviewController` (the system's document viewer)
+and the share sheet. External destinations — a client's ticket pointing at their own
+site, a store URL that would not download — leave for Safari on purpose: the open web is
+not a Corner surface and should never wear Corner's chrome.
+
+## Deep links
+
+Every surface is addressable, because a push or a widget that can only ever open a room
+can only ever be about a room:
+
+```
+corner://room/<percent-encoded room_id>   one conversation   (what apns.js sends today)
+corner://review                           the verdict queue
+corner://organize   (or corner://files)   the files browser
+corner://tracker                          the issue boards
+corner://rooms                            the rail (the server's own no-room fallback)
+```
+
+They all push onto ONE navigation path, so a deep link and a tap on the rail land in the
+same screen in the same state. A `corner://` URL naming a route this build has no screen
+for raises an alert rather than doing nothing — a tap that appears to do nothing is what
+trains people to stop tapping.
 
 ## The three things Stage 1 is actually about
 
