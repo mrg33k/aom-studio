@@ -1,8 +1,8 @@
 # Corner AirPods Mode — Context
 
 **Mission path:** `corner:airpods-mode`
-**Status:** DONE
-**Updated:** 2026-08-08
+**Status:** IN PROGRESS
+**Updated:** 2026-08-09
 
 The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
 `VoiceChat` transport inside its room composer, but that lifecycle is destroyed when the
@@ -12,6 +12,10 @@ post-call handoff. This mission turns those pieces into a global, safe operating
 
 The working tree contains unrelated user changes in CV6 chat files. Preserve them and
 keep this mission’s integrations narrow.
+
+R14 reopened physical packaging after build 12 installed without app artwork. The
+native AppIcon catalog points to a missing 1024×1024 PNG; the approved Corner favicon
+asset is the source for the repaired build 13.
 
 R1 now provides the global CV6 runtime, ephemeral Gemini credentials, tenant-scoped
 action and handoff APIs, durable attention data, and a compilable Capacitor iOS shell.

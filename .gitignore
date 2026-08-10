@@ -15,6 +15,7 @@ test-screenshots/
 !public/images/**/*.png
 # favicon system (aom:favicon-system) — brand marks must ship
 !public/brand/**/*.png
+!ios/App/App/Assets.xcassets/AppIcon.appiconset/*.png
 !public/mission-water/**/*.png
 !public/ssg/**/*.png
 

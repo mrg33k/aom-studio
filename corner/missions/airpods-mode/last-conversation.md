@@ -286,3 +286,18 @@ Corner 1.0 (12) was signed, installed, and launched on the paired iPhone; the at
 native console showed no startup error. `npm run ios:sync` now has a fail-closed
 environment gate so an unauthenticated shell cannot be packaged again. Physical room
 data remains to be confirmed on the phone.
+
+## 2026-08-09 — R14 native app icon restored
+
+Patrik reported that the installed client also had no app image. Inspection found that
+the Xcode AppIcon catalog referenced `AppIcon-512@2x.png`, but the source file was
+absent and the repo-wide PNG ignore rule prevented it from being noticed. R14 restores
+the approved Corner brand mark as an opaque 1024×1024 catalog asset and adds a narrow
+gitignore exception so future checkouts retain it.
+
+Corner 1.0 (13) archived successfully with explicit AppIcon metadata and compiled
+phone/iPad renditions, then installed and launched on Patrik’s paired iPhone. A direct
+CoreDevice icon request returned a 528×528 image from the installed bundle with
+`Is Placeholder = false`, visually confirming the real dark Corner mark. The focused
+AirPods suite passes 20/20 and the signed archive validates. R13's physical room-data
+confirmation is still separate and pending.

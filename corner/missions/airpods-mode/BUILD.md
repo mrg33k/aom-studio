@@ -2,6 +2,30 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R14 — Restore the native app icon (2026-08-09)
+
+**Physical evidence:** Corner 1.0 (12) is installed on Patrik’s iPhone, but iOS shows
+no Corner artwork for the app. The AppIcon catalog references
+`AppIcon-512@2x.png`, while that source file is absent from the catalog.
+
+**Scope:** Restore the approved opaque Corner artwork at Apple’s required 1024×1024
+size, verify the signed archive contains the compiled icon, version it as Corner 1.0
+(13), install it on the registered iPhone, and verify iOS can render the installed
+application icon.
+
+**Repair result:** Restored the approved dark Corner mark as a tracked 1024×1024,
+opaque AppIcon source. Xcode compiled it into the signed iPhone and iPad icon payloads;
+the archive records `CFBundleIconName = AppIcon`, bundle version 13, a valid signature,
+and the expected non-alpha 120×120 phone rendition.
+
+**Physical verification:** CoreDevice installed and launched Corner 1.0 (13) on
+Patrik’s iPhone. iOS generated a 528×528 installed-app icon for
+`com.aheadofmarket.corner` with `Is Placeholder = false`; the returned pixels show the
+correct dark Corner artwork. The focused AirPods suite passes 20/20 and
+`git diff --check` is clean.
+
+**Status:** complete — real Corner icon compiled, installed, and rendered by iOS
+
 ### R13 — Native production environment repair (2026-08-09)
 
 **Physical evidence:** Corner 1.0 (11) installed and launched, but the phone rendered
