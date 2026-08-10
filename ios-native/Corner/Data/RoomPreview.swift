@@ -98,9 +98,13 @@ enum RoomPreview {
             options: [.regularExpression, .caseInsensitive]
         ) else { return nil }
         let matched = String(t[range])
-        // Pull the captured filename back out (last whitespace-separated token) and drop
-        // any leading path so a mirror path never leaks as prose.
-        guard let token = matched.split(whereSeparator: { $0 == " " || $0 == ":" || $0 == "-" }).last else { return nil }
+        // Pull the captured filename back out and drop any leading path so a mirror path
+        // never leaks as prose. Split ONLY on whitespace and the label colon — never on
+        // "-", because a hyphen is a legal filename character (the house convention is
+        // hyphenated names like call-mode.html). Splitting on "-" truncated the name to
+        // the segment after the last hyphen; the web (previewText.js) keeps the whole
+        // token, and the two surfaces must agree.
+        guard let token = matched.split(whereSeparator: { $0 == " " || $0 == ":" }).last else { return nil }
         let name = token.split(whereSeparator: { $0 == "/" || $0 == "\\" }).last.map(String.init) ?? String(token)
         return name.isEmpty ? nil : name
     }
