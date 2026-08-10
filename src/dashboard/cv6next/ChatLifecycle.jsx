@@ -32,6 +32,7 @@ import RoomSettingsDialog from './RoomSettingsDialog.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import RoomWorkList from './RoomWorkList.jsx';
 import RoomRecoveryNotice from './RoomRecoveryNotice.jsx';
+import RoomConnectionNotice, { RoomThreadError } from './RoomConnectionNotice.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
 import RoomAvatar from './RoomAvatar.jsx';
 import { isActiveRoomStatus } from './data/roomIdentity.js';
@@ -1173,7 +1174,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, turnHealth, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, turnHealth, connection, onRetryTurn, onNudgeTurn, onReloadThread, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -1360,7 +1361,11 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     return () => cancelAnimationFrame(frame);
   }, [awaiting, liveProgressKey, followTail]);
 
-  const empty = status === 'empty' || !messages?.length;
+  // A thread whose first load failed is NOT an empty room. Before this, `empty` swallowed
+  // it and a network-dead room greeted you with "start the conversation" — the friendliest
+  // possible lie (corner:bridge frontend-visibility D6).
+  const loadFailed = status === 'error' && !messages?.length;
+  const empty = !loadFailed && (status === 'empty' || !messages?.length);
   const [collection, setCollection] = useState(null); // { files, index } for the look-only viewer
   const openFile = useCallback((files, index) => setCollection({ files, index: index || 0 }), []);
   // Hand the actual files to the Review tool so it shows THESE files (live), not the
@@ -1453,6 +1458,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               Systems agent) are pulled out of the thread and shown here as a collapsed
               status strip. Tap to expand. Never renders inline as a chat turn. */}
           <SystemAlertStrip alerts={systemAlerts} />
+          {loadFailed ? <RoomThreadError onRetry={onReloadThread} /> : null}
           {empty ? (
               <div className="empty" style={{ marginTop: 40 }}>
                 <div className="e-t">No messages with {room.name} yet</div>
@@ -1496,7 +1502,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               the old accumulating WorkingTurn steps; bridge steps now animate through
               this fixed-height card and the same projection names the Activity dropdown. */}
           <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
-          <RoomRecoveryNotice health={turnHealth} />
+          <RoomRecoveryNotice health={turnHealth} onRetry={onRetryTurn} onNudge={onNudgeTurn} />
+          <RoomConnectionNotice connection={connection} onRetry={onReloadThread} />
           {/* In-flight background work left the thread (corner:one-corner M19): it lives
               in the Background work window, reached from the drawer menu. */}
           {/* Only renders when the FRONT DOOR chose this room automatically. No projects /

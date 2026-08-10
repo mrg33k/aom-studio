@@ -20,6 +20,7 @@ import { Cv6MessageThread } from './MessageThread.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
 import RoomWorkList from './RoomWorkList.jsx';
 import RoomRecoveryNotice from './RoomRecoveryNotice.jsx';
+import RoomConnectionNotice, { RoomThreadError } from './RoomConnectionNotice.jsx';
 import RoutedHereBar from './RoutedHereBar.jsx';
 import NewComposer from './NewComposer.jsx';
 import RoomSettingsDialog from './RoomSettingsDialog.jsx';
@@ -642,7 +643,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav, windowMode]);
 
-  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, turnHealth } = useRoomThread(worldId, selected);
+  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, turnHealth, status: threadStatus, connection, retryTurn, nudgeTurn, reload: reloadThread } = useRoomThread(worldId, selected);
   // The room agent's own steps — the half of "background work" the old card could not see.
   const roomGoal = useGoalThread(worldId, selected);
   // Per-room running tasks — used by the work-indicator icon to know if anything is active.
@@ -1108,14 +1109,21 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     {/* The thread is the conversation (Patrik 2026-06-29): messages stream in as
                         they land and finished structured turns stay inline. Current work uses the
                         fixed-height progress card below, so steps change in place at the tail. */}
-                    <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />
+                    {/* A thread that never loaded is not an empty room. The honest error
+                        state has existed in the CV6 templates since the rebuild and no live
+                        surface rendered it — so a network-dead room read as brand new
+                        ("start the conversation"). It renders now, with a retry. */}
+                    {threadStatus === 'error' && !messages?.length
+                      ? <RoomThreadError onRetry={reloadThread} />
+                      : <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />}
                     {/* Background work came BACK to the thread (Patrik 2026-08-06). Sending it
                         to a separate window meant a busy room looked idle, and only ever showed
                         dispatched sub-agent jobs. This lists both kinds, per room, short, with a
                         live counter on each. The Background work window still exists for the
                         world-wide view. */}
                     <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
-                    <RoomRecoveryNotice health={turnHealth} />
+                    <RoomRecoveryNotice health={turnHealth} onRetry={retryTurn} onNudge={nudgeTurn} />
+                    <RoomConnectionNotice connection={connection} onRetry={reloadThread} />
                     {/* Only renders when the FRONT DOOR chose this room automatically — names
                         the destination the user never got to see, and moves the message in one
                         tap if it guessed wrong (corner:front-door R8). */}
