@@ -24,6 +24,30 @@ export function groupMessagesBySender(list) {
   return groups;
 }
 
+// ── The message that did not send (corner:bridge frontend-visibility D3) ──────
+// A failed send used to delete its own bubble: your words appeared, then vanished,
+// with no reason and nothing to tap — on desktop, nothing said anything at all. The
+// bubble now stays exactly where you put it, marked, with the cause and one tap to
+// send it again. `onRetry` rides on the message itself (it is a client-only outbox
+// entry, never a server row), so every thread renderer gets it for free.
+const FAIL_REASONS = {
+  offline: 'Not sent — you were offline',
+  signed_out: 'Not sent — your session expired, refresh to sign back in',
+  timeout: 'Not sent — the connection timed out',
+  server: 'Not sent — Corner could not accept it',
+};
+export function MessageFailedNote({ message }) {
+  if (!message?.failed) return null;
+  return (
+    <div className="cv6-msg-failed" role="alert">
+      <span className="cv6-msg-failed-text">{FAIL_REASONS[message.failReason] || FAIL_REASONS.server}</span>
+      {message.onRetry ? (
+        <button type="button" className="cv6-msg-failed-retry" onClick={() => message.onRetry()}>Try again</button>
+      ) : null}
+    </div>
+  );
+}
+
 function hasMessageExtras(m, { allowBlocks, allowAttachments, allowLinkCards, allowChips }) {
   return (
     (allowBlocks && Array.isArray(m?.blocks) && m.blocks.length) ||
@@ -97,10 +121,11 @@ export function Cv6MessageTurn({
   return (
     <span data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant={variant} style={{ display: 'contents' }}>
       {hasText ? (
-        <div className={bubbleClass}>
+        <div className={`${bubbleClass}${message.failed ? ' is-failed' : ''}`}>
           <ChatMessageRenderer content={message.text} />
         </div>
       ) : null}
+      <MessageFailedNote message={message} />
       {extras ? (
         <Cv6MessageExtras
           message={message}
@@ -225,13 +250,14 @@ function MobileMessageTurn({ message, onAction }) {
         <div style={{ maxWidth: '82%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
           <div
             ref={ref}
-            className={`cv6-mob-bubble cv6-mob-bubble--user${clamped && !open ? ' is-clamped' : ''}`}
+            className={`cv6-mob-bubble cv6-mob-bubble--user${clamped && !open ? ' is-clamped' : ''}${message.failed ? ' is-failed' : ''}`}
             style={open ? { maxHeight: 'none' } : undefined}
           >
             <div style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {message.text}
             </div>
           </div>
+          <MessageFailedNote message={message} />
           {clamped ? (
             <button className="longmsg-more cv6-mob-more-user" onClick={() => setOpen((v) => !v)}>
               {open ? 'Show less' : 'Show more'}
