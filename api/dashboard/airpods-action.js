@@ -243,15 +243,23 @@ async function readRecentActivity(clientId, args) {
     .sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')))
     .slice(0, 16);
   const primary = items[0] || null;
+  // Rendered in UTC, so every dated evidence answer given after ~5pm Phoenix
+  // named tomorrow's date — the assistant cited "August 10, 2026" for a record
+  // written the evening of the 9th. The caller's clock is the one being quoted
+  // back to them, so it is the one that has to be used.
   const primaryDate = primary?.timestamp
-    ? new Date(primary.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
+    ? new Date(primary.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Phoenix' })
     : null;
   const appStoreQuery = /app\s*store|testflight|submit/i.test(query);
   const recordedWaitingReview = appStoreQuery && /waiting for review/i.test(primary?.excerpt || '');
   const spokenSummary = recordedWaitingReview
     ? `As of ${primaryDate || 'an unknown date'}, Corner records show Corner was submitted and recorded as Waiting for Review; live App Store status is unverified.`
     : primary
-      ? `Corner record from ${primaryDate || 'an unknown date'}: ${primary.excerpt.slice(0, 120)}`
+      // Was `Corner record from <date>: <raw excerpt>`, which put a raw commit
+      // subject line into the caller's ear ("fix(corner:airpods-mode): restore
+      // native app icon"). The excerpt still travels in primary_record for the
+      // model to read and interpret; the spoken layer describes it instead.
+      ? `The most recent matching record in ${primary.source_label} is dated ${primaryDate || 'an unknown date'}. Describe what it says in your own words: ${primary.excerpt.slice(0, 200)}`
       : 'I did not find a matching recent record. That is not proof the event did not happen.';
   const provenanceSummary = primary
     ? `Checked ${primary.source_label} dated ${primaryDate}; GitHub search found ${github.items.length} matching commit${github.items.length === 1 ? '' : 's'}.`
@@ -262,8 +270,18 @@ async function readRecentActivity(clientId, args) {
     primary_record: primary ? { ...primary, calendar_date: primaryDate } : null,
     provenance_summary: provenanceSummary,
     spoken_summary: spokenSummary,
+    // The second hidden word cap. The prompt's "22 spoken words" was the loud
+    // one; this contract enforced the same ceiling from inside the tool result,
+    // on the single most substantive question type there is — "did this
+    // actually happen?" Removing only the prompt half would have left the
+    // evidence answers just as clipped.
+    //
+    // Everything the honesty pass earned is KEPT and made explicit, because
+    // these are the sentences that stop a stored note from being reported as
+    // live external truth: say "Corner records", say the calendar date, say
+    // what remains unverified.
     response_contract: primary
-      ? 'Answer from primary_record in at most 22 words. Include calendar_date, omit relative dates from the excerpt, and do not claim live external state. Do not ask a follow-up question.'
+      ? 'Answer from primary_record in your own natural spoken words, at whatever length the question deserves. You MUST say the phrase "Corner records" (or name the source label), MUST say the explicit calendar_date, and MUST say that the live external status is unverified whenever the question is about an external system such as the App Store. Never read the raw excerpt aloud, never use a relative date, and never claim live external state. Do not ask a follow-up question.'
       : 'State that no matching record was found and that this does not prove the event did not happen. Do not ask a follow-up question.',
   };
 }
