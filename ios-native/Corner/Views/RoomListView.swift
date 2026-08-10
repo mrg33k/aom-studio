@@ -299,7 +299,7 @@ private struct TypeChip: View {
     }
 }
 
-/// The monogram avatar (contract §1 part 2): one hero letter or two quiet letters,
+/// The monogram avatar (contract §1 part 2): two letters on every row including the hero,
 /// uppercased. Never a face. Hero fills with the tint; quiet is an outlined disc.
 private struct Monogram: View {
     let title: String
@@ -308,9 +308,13 @@ private struct Monogram: View {
 
     private var size: CGFloat { hero ? 52 : 38 }
 
+    // Two-letter monogram for EVERY row including the hero (room-row-contract §1 part 2,
+    // Patrik 2026-08-10 — resolved the 1-vs-2 fork in favour of 2 everywhere). Same
+    // derivation as the web `roomMonogram()` (CornerCV6.jsx) so both surfaces produce the
+    // identical initials for the same room name: first letters of the first two words,
+    // else the first two letters of the single word.
     private var glyph: String {
         let words = title.split(separator: " ")
-        if hero { return String(title.prefix(1)).uppercased() }
         if words.count >= 2 { return String(words[0].prefix(1) + words[1].prefix(1)).uppercased() }
         return String(title.prefix(2)).uppercased()
     }
