@@ -38,6 +38,33 @@
 //     record with a user id bolted on.
 // The user is told exactly this, in these words, before they confirm.
 //
+// AND OWNERSHIP POINTERS ARE RELEASED. Three columns reference auth.users(id) with
+// NO ACTION, so a row pointing at the departing user physically blocks the GoTrue
+// delete with a 23503 (verified live 2026-08-10 against pg_constraint):
+//   worlds.client_id, mission_folders.created_by, mission_folder_assignments.updated_by
+// worlds.client_id is the one that mattered: api/accept-invite.js provisions one world
+// per invited user, so EVERY ordinary account owns a worlds row and every ordinary
+// deletion died on the last step — all the data steps succeeded, the auth delete
+// FK-failed, and the account survived. That is the exact promise 5.1.1(v) makes, broken
+// on the standard account shape.
+// These rows are NOT deleted with the user, they are DISOWNED, for the same reason
+// messages are anonymized rather than dropped:
+//   - a world is a tenant whose `slug` is a loose TEXT key across ~20 tables
+//     (messages.world_id, campaigns.world, device_tokens.world_id, tenant_users…), none
+//     of them foreign keys — deleting the row silently orphans all of it, and a later
+//     world reusing the slug would inherit a dead tenant's messages. A world can also
+//     hold other members, who would lose their workspace because a colleague left.
+//   - mission folders are shared structure; the author leaving should not collapse
+//     everyone's tree.
+// Nulling the pointer removes the personal link, which is what deletion is for, and
+// leaves the shared record standing. An orphaned world is findable and recoverable:
+// `select * from worlds where client_id is null`.
+// supabase/migrations/20260810010000_auth_user_delete_unblock.sql retargets the same
+// three constraints to ON DELETE SET NULL so the invariant does not depend on this file
+// remembering. The explicit nulling below stays regardless: it works whether or not that
+// migration has reached a given environment, and it puts each release in `steps` where
+// support can see it.
+//
 // ORDER MATTERS: data first, auth user LAST. If a step fails halfway the account still
 // exists and the user can sign in and retry. Deleting the auth user first would strand
 // orphaned rows behind a login nobody can use.
@@ -78,6 +105,18 @@ const DELETE_BY_USER_ID = [
 const ANONYMIZE_BY_USER_ID = [
   { table: 'messages', patch: { user_id: null, user_name: null } },
   { table: 'openai_usage_events', patch: { user_id: null } },
+];
+
+// Ownership / authorship pointers at auth.users(id) that are NOT keyed on `user_id`.
+// Every one of these FK-blocks the auth delete while it still points at the account
+// (see the header block). Disowned, never deleted — the row belongs to the workspace,
+// not to the person. Keep this list in step with the FK audit in
+// scripts/apply-auth-delete-unblock-migration.py, which enumerates every foreign key on
+// auth.users and names any new one that would re-break deletion.
+const RELEASE_OWNERSHIP = [
+  { table: 'worlds', column: 'client_id' },
+  { table: 'mission_folders', column: 'created_by' },
+  { table: 'mission_folder_assignments', column: 'updated_by' },
 ];
 
 function protectedUserIds() {
@@ -138,9 +177,13 @@ function readBody(req) {
   return typeof raw === 'object' ? raw : {};
 }
 
-// One tolerant REST call. A table that does not exist in this deployment reports
-// 'skipped' instead of failing the whole deletion — the alternative is an account that
-// can never be deleted because of a table it never used.
+// One tolerant REST call. A table — or a column — that does not exist in this
+// deployment reports 'skipped' instead of failing the whole deletion; the alternative is
+// an account that can never be deleted because of a table it never used. Tolerating a
+// missing COLUMN is safe for exactly the same reason it is necessary: if the column is
+// absent there is no foreign key on it either, so there is nothing to release. Note this
+// only ever widens what we skip — a column that IS present and refuses the write still
+// fails loudly and aborts before the auth delete.
 async function restWrite(method, table, filter, body) {
   const url = `${SUPABASE_URL}/rest/v1/${table}?${filter}`;
   try {
@@ -151,8 +194,10 @@ async function restWrite(method, table, filter, body) {
     });
     if (r.ok) return { table, status: 'ok' };
     const text = await r.text().catch(() => '');
-    if (r.status === 404 || /does not exist|Could not find the table/i.test(text)) {
-      return { table, status: 'skipped', detail: 'table not present' };
+    // PGRST204 = "Could not find the 'x' column of 'y' in the schema cache";
+    // PGRST205 / 404 = unknown table; 42703/42P01 = the raw postgres equivalents.
+    if (r.status === 404 || /does not exist|Could not find the .* (table|column)|PGRST20[45]|42703|42P01/i.test(text)) {
+      return { table, status: 'skipped', detail: 'table or column not present' };
     }
     return { table, status: 'failed', code: r.status, detail: text.slice(0, 200) };
   } catch (err) {
@@ -191,6 +236,7 @@ export default async function handler(req, res) {
     ],
     keeps: [
       'messages you sent stay in their conversations, with your name and account removed from them',
+      'any workspace you owned stays for the people still in it, with your ownership removed',
     ],
   };
 
@@ -220,6 +266,12 @@ export default async function handler(req, res) {
   for (const { table, patch } of ANONYMIZE_BY_USER_ID) {
     steps.push(await restWrite('PATCH', table, userFilter, patch));
   }
+  // Must run BEFORE the auth delete: each of these is a live FK reference to the account.
+  for (const { table, column } of RELEASE_OWNERSHIP) {
+    const filter = `${column}=eq.${encodeURIComponent(identity.userId)}`;
+    const step = await restWrite('PATCH', table, filter, { [column]: null });
+    steps.push({ ...step, released: `${table}.${column}` });
+  }
 
   const failed = steps.filter((s) => s.status === 'failed');
   if (failed.length) {
@@ -240,6 +292,19 @@ export default async function handler(req, res) {
   if (!authRes.ok) {
     const detail = await authRes.text().catch(() => '');
     console.error('[account/delete] auth user delete failed for %s: %s %s', identity.userId, authRes.status, detail.slice(0, 300));
+    // A row somewhere still points at this account. GoTrue reports the underlying
+    // 23503 as a flat "Database error deleting user" without naming the constraint,
+    // so the message alone cannot tell you WHICH table — that is why this branch says
+    // where to look instead of leaving the next person to guess. This is the failure
+    // that shipped once already (worlds.client_id, 2026-08-10).
+    if (/foreign key|23503|Database error deleting user/i.test(detail)) {
+      console.error(
+        '[account/delete] looks FK-blocked. Some table still references auth.users(%s) ' +
+        'with NO ACTION and is not in RELEASE_OWNERSHIP. Enumerate them with: ' +
+        'python3 scripts/apply-auth-delete-unblock-migration.py --verify',
+        identity.userId
+      );
+    }
     return res.status(500).json({
       error: 'Your data was removed but the sign-in could not be closed. Contact support so we can finish it.',
       steps,
