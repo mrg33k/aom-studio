@@ -18,7 +18,6 @@ struct RoomListView: View {
 
     @State private var query = ""
     @State private var showAccount = false
-    @State private var showReview = false
     @State private var expanded: Set<String> = []
 
     var body: some View {
@@ -27,6 +26,7 @@ struct RoomListView: View {
                 noWorldNotice
             } else if query.isEmpty {
                 waitingSection
+                toolsSection
                 agentSection
                 projectSections
                 if let error = store.railError { railErrorRow(error) }
@@ -55,9 +55,6 @@ struct RoomListView: View {
                 .environmentObject(api)
                 .environmentObject(PushService.shared)
         }
-        .navigationDestination(isPresented: $showReview) {
-            ReviewQueueView()
-        }
         .task {
             if !store.hasLoadedOnce { await store.load() }
             review.startPolling()
@@ -74,7 +71,7 @@ struct RoomListView: View {
     private var waitingSection: some View {
         if review.waitingCount > 0 {
             Section {
-                Button { showReview = true } label: {
+                Button { router.open(.review) } label: {
                     HStack(spacing: Theme.s3) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -108,6 +105,58 @@ struct RoomListView: View {
                 .listRowBackground(Theme.raised.opacity(0.6))
             }
         }
+    }
+
+    /// Files and Tracker. They are surfaces, not rooms, so they sit in their own section
+    /// rather than pretending to be conversations — and they route through the SAME
+    /// navigation path a `corner://organize` link uses, so a tap here and a deep link
+    /// land in one place in one state.
+    private var toolsSection: some View {
+        Section("Tools") {
+            toolRow(
+                title: "Files",
+                subtitle: "Everything your crew produced",
+                symbol: "folder",
+                route: .organize
+            )
+            toolRow(
+                title: "Tracker",
+                subtitle: "Issues and client tickets",
+                symbol: "checklist",
+                route: .tracker
+            )
+        }
+    }
+
+    private func toolRow(title: String, subtitle: String, symbol: String, route: Route) -> some View {
+        Button { router.open(route) } label: {
+            HStack(spacing: Theme.s3) {
+                Image(systemName: symbol)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(width: 34, height: 34)
+                    .background(Theme.raised, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .strokeBorder(Theme.hairline, lineWidth: 1)
+                    )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.inkFaint)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(Theme.raised.opacity(0.6))
     }
 
     private var agentSection: some View {

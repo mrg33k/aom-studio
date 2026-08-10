@@ -36,8 +36,10 @@ final class PushService: NSObject, ObservableObject {
     /// leaving the user to wonder why a granted permission produces no banners.
     @Published private(set) var registrationError: String?
 
-    /// Set from a notification tap; RootView routes on it and clears it.
-    @Published var pendingDeepLink: DeepLink?
+    /// Set from a notification tap; RootView routes on it and clears it. A target rather
+    /// than a room since Stage 3: the app has four addressable surfaces and a push that
+    /// can only ever open a room can only ever be about a room.
+    @Published var pendingTarget: DeepLinkTarget?
     /// Set when a notification tap should open a specific delivered file, not just its
     /// room. Cleared by whoever presents it.
     @Published var pendingFile: DeliveredFile?
@@ -219,9 +221,11 @@ extension PushService: UNUserNotificationCenterDelegate {
             return
         }
 
-        guard let link = DeepLink(userInfo: info) else { return }
+        // Stage 3: a push may name any of the four routes, not only a room. The flat
+        // room fields still win when they are there — they carry more than the URL can.
+        guard let target = DeepLinkTarget(userInfo: info) else { return }
         await MainActor.run {
-            PushService.shared.pendingDeepLink = link
+            PushService.shared.pendingTarget = target
             // Both the default tap and the explicit "Open file" action land in the room;
             // the file action additionally opens the file itself.
             if response.actionIdentifier == PushService.openActionID {

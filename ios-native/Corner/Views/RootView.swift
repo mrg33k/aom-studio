@@ -1,7 +1,18 @@
 // RootView.swift — Corner native iOS
-// corner:native-ios Stage 1
+// corner:native-ios Stages 1 + 3
 //
 // Auth gate plus the navigation stack every deep link lands in.
+//
+// ONE STACK, FOUR DESTINATIONS. Rooms, Review, Files and Tracker are all pushed onto the
+// same path, so `corner://organize` and a tap on the rail's Files row arrive at exactly
+// the same screen in exactly the same state. A second navigation mechanism for "tools"
+// would be a second set of bugs.
+//
+// EVERY SURFACE IS SwiftUI. No WKWebView, no SFSafariViewController, no embedded web
+// content anywhere in this target — the last of the wrap is gone. External links (a
+// client's ticket pointing at their live site, a store URL that failed to download) leave
+// for Safari on purpose: the open web is not a Corner surface and should never wear
+// Corner's chrome.
 
 import SwiftUI
 
@@ -17,8 +28,13 @@ struct RootView: View {
             if api.session != nil {
                 NavigationStack(path: $router.path) {
                     RoomListView()
-                        .navigationDestination(for: Room.self) { room in
-                            ChatView(room: room)
+                        .navigationDestination(for: Route.self) { route in
+                            switch route {
+                            case .room(let room): ChatView(room: room)
+                            case .review:         ReviewQueueView()
+                            case .organize:       OrganizeView()
+                            case .tracker:        TrackerView()
+                            }
                         }
                 }
             } else {
@@ -38,10 +54,10 @@ struct RootView: View {
                 }
             }
         }
-        .onChange(of: push.pendingDeepLink) { _, link in
-            guard let link else { return }
-            router.open(link)
-            push.pendingDeepLink = nil
+        .onChange(of: push.pendingTarget) { _, target in
+            guard let target else { return }
+            router.handle(target)
+            push.pendingTarget = nil
         }
         // "Open file" from a delivery notification opens the file, over the room it
         // arrived in. Routing to the room alone would leave the user hunting a thread
@@ -57,14 +73,15 @@ struct RootView: View {
             )
         }
         .onOpenURL { url in
-            guard let link = DeepLink(url: url) else { return }
-            router.open(link)
+            // Refuses rather than guesses: a `corner://` URL naming a route this build
+            // has no screen for raises the alert below instead of doing nothing.
+            router.handle(url: url)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { push.clearBadge() }
         }
         .alert(
-            "That room could not be opened",
+            "That link could not be opened",
             isPresented: Binding(
                 get: { router.unresolvedLink != nil },
                 set: { if !$0 { router.unresolvedLink = nil } }
@@ -74,7 +91,7 @@ struct RootView: View {
         } message: {
             // A tap that appears to do nothing is the worst possible answer to a
             // notification. Say what happened, even when it is unflattering.
-            Text("The notification points at a room this version of Corner does not know how to open. It is still there on the web.")
+            Text("It points somewhere this version of Corner does not know how to open. It is still there on the web.")
         }
     }
 }

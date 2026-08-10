@@ -30,6 +30,10 @@ struct FilePreviewView: View {
     /// Present when this file can carry a review verdict — an agent hand-off. Absent for
     /// your own uploads, which the server never puts in the waiting set.
     var reviewContext: ReviewContext?
+    /// Set by surfaces that can hand this file to an agent (Files). The sheet closes
+    /// first and the caller presents the picker, because two sheets stacked on a phone is
+    /// a dead end with no visible way back.
+    var onAssign: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var download = FileDownloadModel()
@@ -61,6 +65,17 @@ struct FilePreviewView: View {
                         }
                         .disabled(download.localURL == nil)
                         .accessibilityLabel("Share \(attachment.name)")
+                    }
+                    if let onAssign {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                dismiss()
+                                onAssign()
+                            } label: {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                            }
+                            .accessibilityLabel("Assign \(attachment.name) to an agent")
+                        }
                     }
                 }
                 .safeAreaInset(edge: .bottom) { reviewBar }
@@ -132,8 +147,17 @@ struct FilePreviewView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .ready(let url):
-            QuickLookView(url: url)
-                .ignoresSafeArea(edges: .bottom)
+            // PLAIN TEXT READS AS TEXT, not through QuickLook. Corner's files are
+            // overwhelmingly .md / .json / .jsonl — the disk mirror is 18,545 rows and
+            // most of them are prose or data — and QuickLook has no preview generator
+            // for extensions it does not know, so a research note would open on "No
+            // preview available". The web renders these files' text; so does this.
+            if TextFileReader.canRead(name: attachment.name) {
+                TextFileReader(url: url, name: attachment.name)
+            } else {
+                QuickLookView(url: url)
+                    .ignoresSafeArea(edges: .bottom)
+            }
         }
     }
 
@@ -229,6 +253,99 @@ final class FileDownloadModel: ObservableObject {
     func cancel() {
         task?.cancel()
         task = nil
+    }
+}
+
+// MARK: - Plain text
+
+/// A reader for the file types Corner actually produces. Monospaced, selectable, and
+/// horizontally scrollable so a log line or a JSON blob is not reflowed into soup.
+///
+/// SIZE HAS A CEILING. Some mirrored files are megabytes of JSONL (the biggest live row
+/// is a 3.4MB decision log); handing that to one Text view janks the main thread for
+/// seconds. The head is shown and the truncation is STATED — a reader that silently
+/// shows the first part of a file is a reader that lies about what is in it.
+struct TextFileReader: View {
+    let url: URL
+    let name: String
+
+    @State private var text: String?
+    @State private var truncated = false
+    @State private var failure: String?
+
+    /// The extensions whose bytes are text. Everything else goes to QuickLook, which is
+    /// better at real documents than anything hand-built here.
+    private static let readable: Set<String> = [
+        "md", "markdown", "txt", "text", "log",
+        "json", "jsonl", "ndjson", "yml", "yaml", "toml", "ini", "env",
+        "csv", "tsv",
+        "js", "jsx", "ts", "tsx", "swift", "py", "rb", "go", "rs", "sh", "zsh", "css", "scss", "sql",
+    ]
+
+    private static let maximumBytes = 400_000
+
+    static func canRead(name: String) -> Bool {
+        let head = name.split(whereSeparator: { $0 == "?" || $0 == "#" }).first.map(String.init) ?? name
+        guard let dot = head.lastIndex(of: "."), dot != head.index(before: head.endIndex) else { return false }
+        return readable.contains(String(head[head.index(after: dot)...]).lowercased())
+    }
+
+    var body: some View {
+        Group {
+            if let failure {
+                VStack(spacing: Theme.s2) {
+                    Image(systemName: "doc.questionmark").font(.title).foregroundStyle(Theme.warning)
+                    Text(failure)
+                        .font(.footnote)
+                        .foregroundStyle(Theme.inkSoft)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(Theme.s5)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let text {
+                ScrollView([.vertical, .horizontal]) {
+                    VStack(alignment: .leading, spacing: Theme.s3) {
+                        if truncated {
+                            Text("Showing the first \(TextFileReader.maximumBytes / 1000)KB of a longer file. Share it to open the whole thing elsewhere.")
+                                .font(.caption2)
+                                .foregroundStyle(Theme.warning)
+                                .padding(.bottom, Theme.s1)
+                        }
+                        Text(text)
+                            .font(.system(.footnote, design: .monospaced))
+                            .foregroundStyle(Theme.ink)
+                            .textSelection(.enabled)
+                    }
+                    .padding(Theme.s4)
+                }
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task(id: url) { await load() }
+    }
+
+    private func load() async {
+        let target = url
+        let limit = TextFileReader.maximumBytes
+        let result: (String, Bool)? = await Task.detached(priority: .userInitiated) {
+            guard let data = try? Data(contentsOf: target, options: .mappedIfSafe) else { return nil }
+            let clipped = data.count > limit
+            let slice = clipped ? data.prefix(limit) : data.prefix(data.count)
+            // A file the mirror calls text can still hold bytes that are not UTF-8.
+            // Latin-1 decodes any byte sequence, so the fallback always produces
+            // something readable rather than an empty screen.
+            let decoded = String(data: slice, encoding: .utf8) ?? String(data: slice, encoding: .isoLatin1)
+            guard let decoded else { return nil }
+            return (decoded, clipped)
+        }.value
+
+        guard let result else {
+            failure = "\(name) is on the phone but its text could not be read. Share it to open it in another app."
+            return
+        }
+        text = result.0
+        truncated = result.1
     }
 }
 
