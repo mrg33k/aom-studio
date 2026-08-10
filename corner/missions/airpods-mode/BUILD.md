@@ -2,6 +2,35 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R13 — Native production environment repair (2026-08-09)
+
+**Physical evidence:** Corner 1.0 (11) installed and launched, but the phone rendered
+only loading/error states. Comparing served production assets with the packaged native
+assets showed the production bundle contains the live Supabase origin while build 11
+contains none. The local Capacitor sync had built without Vercel's production
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, so native could not restore the user
+session or authenticate room-data requests.
+
+**Scope:** Rebuild the Capacitor client from the verified `aom-studio` production
+environment, prove the live Supabase origin is embedded without exposing credentials,
+version it as Corner 1.0 (12), sign, reinstall, and verify the installed version.
+
+**Prevention:** `npm run ios:sync` now refuses to package when the Supabase URL or
+public client key is absent or malformed, preventing another apparently valid but
+unauthenticated native shell from being signed.
+
+**Repair result:** Vercel's verified production environment produced the same
+`main-kZLsYaig.js` asset as production web. The native asset now contains both the live
+Supabase origin and canonical `https://www.aheadofmarket.com` API host. Corner 1.0 (12)
+archived successfully with the registered ad hoc profile, installed on Patrik’s paired
+iPhone, and returned a successful foreground launch receipt with no startup error in
+the attached native console. The phone reports bundle version 12.
+
+**Verification:** The missing-environment build gate rejects packaging, its valid-env
+path passes, the focused AirPods suite passes 20/20, and `git diff --check` is clean.
+
+**Status:** in progress — corrected build 12 installed; physical room-data confirmation pending
+
 ### R12 — Headset in the shared phone header (2026-08-09)
 
 **User standard:** The headset control belongs in the same phone header row as the

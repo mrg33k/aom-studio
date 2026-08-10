@@ -270,3 +270,19 @@ unavailable, so physical installation remains the only pending handoff.
 Patrik then reconnected the paired iPhone. CoreDevice installed the signed archive,
 reported `Corner 1.0 (11)` under `com.aheadofmarket.corner`, and returned a successful
 foreground launch receipt. R12's physical handoff is complete.
+
+## 2026-08-09 — R13 native production environment repair
+
+Patrik immediately reported that build 11 showed only loading/error states. The app did
+not crash; comparison of the packaged and production assets exposed the real failure:
+the local Capacitor build had no live Supabase origin because it was compiled without
+Vercel's production `VITE_SUPABASE_URL` and public client key. It therefore could not
+restore authentication or make authenticated room-data requests.
+
+The verified `aom-studio` production environment was loaded into a temporary build-only
+process and removed afterward. The corrected native main asset now exactly matches the
+production asset name and contains the live Supabase and canonical AOM API origins.
+Corner 1.0 (12) was signed, installed, and launched on the paired iPhone; the attached
+native console showed no startup error. `npm run ios:sync` now has a fail-closed
+environment gate so an unauthenticated shell cannot be packaged again. Physical room
+data remains to be confirmed on the phone.
