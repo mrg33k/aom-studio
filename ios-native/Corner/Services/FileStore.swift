@@ -135,13 +135,19 @@ enum FileStore {
     /// A filename from a server is untrusted input. Path separators would write outside
     /// the intended folder; a leading dot hides the file from the very APIs meant to
     /// read it back. The extension is preserved because it is load-bearing for preview.
+    ///
+    /// `..` is flattened too, even though stripping the separators already makes it
+    /// inert. Leaving the token in a "safe" filename means any later change to how this
+    /// path is assembled — one appendingPathComponent in the wrong order — turns a
+    /// cosmetic string into traversal, and the cost of not leaving it there is nothing.
     static func safeFilename(_ raw: String) -> String {
         var name = raw
             .replacingOccurrences(of: "/", with: "-")
             .replacingOccurrences(of: "\\", with: "-")
             .replacingOccurrences(of: ":", with: "-")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        while name.hasPrefix(".") { name.removeFirst() }
+        while name.contains("..") { name = name.replacingOccurrences(of: "..", with: "_") }
+        while name.hasPrefix(".") || name.hasPrefix("-") || name.hasPrefix("_") { name.removeFirst() }
         if name.isEmpty { name = "file" }
         // 200 leaves room for the cache folder in a 255-byte filesystem limit.
         if name.count > 200 {
