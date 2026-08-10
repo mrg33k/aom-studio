@@ -28,7 +28,12 @@ build passes.
 but no idle dock markup or CSS. Corner 1.0 (14) installed and launched successfully on
 Patrik’s paired iPhone, which reports bundle version 14.
 
-**Status:** in progress — build 14 installed; production web release verification pending
+**Production result:** Commit `0b8251f6` fast-forwarded `main`; verified `aom-studio`
+production deployment `aom-studio-3tn09j98n` reached READY. The canonical dashboard
+returns HTTP 200, its served JS/CSS contain the on-demand voice panel, and neither asset
+contains the removed persistent dock.
+
+**Status:** complete — header-only idle entry is live and build 14 is installed
 
 ### R14 — Restore the native app icon (2026-08-09)
 

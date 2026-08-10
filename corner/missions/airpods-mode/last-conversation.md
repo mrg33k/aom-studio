@@ -316,3 +316,8 @@ back to the room list. The browser check directly shaped the fix by proving both
 closed layout and the retained open-panel path. The focused suite passes 20/20 and the
 production-configured native build passes. Signed Corner 1.0 (14) was installed and
 launched on Patrik’s paired iPhone; production web release verification remains.
+
+Commit `0b8251f6` fast-forwarded `main`, and production deployment
+`aom-studio-3tn09j98n` reached READY. The canonical dashboard returns HTTP 200; its
+served JS and CSS retain the on-demand panel and contain no persistent voice dock. R15
+is complete on both production web and installed native build 14.
