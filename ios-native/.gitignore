@@ -1,0 +1,11 @@
+# Per-user Xcode state. Everything else under Corner.xcodeproj IS committed, so a
+# fresh clone builds with nothing but Xcode — no xcodegen required to open it.
+xcuserdata/
+*.xcuserdatad
+DerivedData/
+build/
+.DS_Store
+
+# Render-gallery output (CornerTests/RenderGalleryTests). Images are for looking at,
+# not for diffing — there are no golden files here to keep in sync.
+RenderGallery/
