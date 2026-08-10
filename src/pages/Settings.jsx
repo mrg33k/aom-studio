@@ -6,6 +6,8 @@ import {
   ArrowLeft, Shield, Zap, Building2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { supabase } from '../dashboard/lib/supabase.js'
+import { authFetch } from '../dashboard/lib/authFetch.js'
 
 // ---- THEME ----------------------------------------------------------------
 const T = {
@@ -669,6 +671,12 @@ function AccountSection() {
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [showDelete, setShowDelete] = useState(false)
   const [pwSaved, setPwSaved] = useState(false)
+  // Account deletion is a two-step server handshake (see api/account/delete.js):
+  // 'begin' returns a short-lived, user-bound confirmation token plus a plain-language
+  // summary of what goes and what stays; nothing is deleted until that token comes back
+  // alongside the literally typed word DELETE. status: idle | preparing | ready |
+  // deleting | done | error.
+  const [del, setDel] = useState({ status: 'idle', error: '', confirmation: null, summary: null })
 
   const handleChangePw = () => {
     if (!pwForm.next || pwForm.next !== pwForm.confirm) return
@@ -680,6 +688,63 @@ function AccountSection() {
   const handleSignOut = () => {
     localStorage.removeItem('corner_session')
     window.location.href = '/dashboard'
+  }
+
+  // Step 1. Ask the server what deleting this account actually does, and get the
+  // confirmation token back. Runs the moment the danger panel opens, so the user is
+  // reading the real consequences — not a hardcoded sentence — while they type.
+  const beginDelete = async () => {
+    setShowDelete(true)
+    setDeleteConfirm('')
+    setDel({ status: 'preparing', error: '', confirmation: null, summary: null })
+    try {
+      const res = await authFetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: 'begin' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setDel({
+          status: 'error',
+          error: data.error || (res.status === 401
+            ? 'Sign in again before deleting your account.'
+            : 'We could not start the deletion. Please try again.'),
+          confirmation: null,
+          summary: null,
+        })
+        return
+      }
+      setDel({ status: 'ready', error: '', confirmation: data.confirmation || null, summary: data.summary || null })
+    } catch {
+      setDel({ status: 'error', error: 'We could not reach the server. Check your connection and try again.', confirmation: null, summary: null })
+    }
+  }
+
+  // Step 2. The irreversible one.
+  const confirmDelete = async () => {
+    if (deleteConfirm !== 'DELETE' || !del.confirmation) return
+    setDel((s) => ({ ...s, status: 'deleting', error: '' }))
+    try {
+      const res = await authFetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: del.confirmation, confirmText: 'DELETE' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.ok) {
+        setDel((s) => ({ ...s, status: 'ready', error: data.error || 'The deletion did not complete. Nothing was removed.' }))
+        return
+      }
+      setDel((s) => ({ ...s, status: 'done', error: '' }))
+      // The session is dead server-side; clear it locally too so the app does not sit
+      // holding a token for an account that no longer exists.
+      try { if (supabase) await supabase.auth.signOut() } catch { /* already gone */ }
+      localStorage.removeItem('corner_session')
+      window.location.href = '/'
+    } catch {
+      setDel((s) => ({ ...s, status: 'ready', error: 'We could not reach the server. Nothing was removed.' }))
+    }
   }
 
   return (
@@ -765,14 +830,59 @@ function AccountSection() {
               Delete Account
             </div>
             <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: T.muted, marginBottom: 14 }}>
-              This permanently deletes your account, all agents, and all data. This cannot be undone.
+              This closes your account for good. It cannot be undone.
             </div>
             {!showDelete ? (
-              <Btn variant="danger" onClick={() => setShowDelete(true)}>
+              <Btn variant="danger" onClick={beginDelete}>
                 <Trash2 size={13} /> Delete Account
               </Btn>
             ) : (
               <div>
+                {del.status === 'preparing' && (
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: T.muted, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Checking what this will remove…
+                  </div>
+                )}
+
+                {/* The consequences come from the server, so the words on screen and the
+                    rows the endpoint actually touches can never drift apart. */}
+                {del.summary && (
+                  <div style={{
+                    background: 'rgba(239,68,68,0.06)',
+                    border: `1px solid rgba(239,68,68,0.25)`,
+                    borderRadius: 8,
+                    padding: '12px 14px',
+                    marginBottom: 14,
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 12.5,
+                    color: T.text,
+                    lineHeight: 1.7,
+                  }}>
+                    {del.summary.email && (
+                      <div style={{ color: T.muted, marginBottom: 6 }}>
+                        Account: <span style={{ color: T.text }}>{del.summary.email}</span>
+                      </div>
+                    )}
+                    <div style={{ fontWeight: 700, color: T.error, marginBottom: 2 }}>Deleted for good</div>
+                    <ul style={{ margin: '0 0 10px', paddingLeft: 18, color: T.muted }}>
+                      {(del.summary.deletes || []).map((line, i) => <li key={i}>{line}</li>)}
+                    </ul>
+                    <div style={{ fontWeight: 700, marginBottom: 2 }}>Kept, with your name removed</div>
+                    <ul style={{ margin: 0, paddingLeft: 18, color: T.muted }}>
+                      {(del.summary.keeps || []).map((line, i) => <li key={i}>{line}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {del.error && (
+                  <div style={{
+                    fontFamily: "'Inter', sans-serif", fontSize: 12.5, color: T.error,
+                    display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10,
+                  }}>
+                    <XCircle size={13} /> {del.error}
+                  </div>
+                )}
+
                 <Label>Type DELETE to confirm</Label>
                 <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
                   <Input
@@ -782,12 +892,22 @@ function AccountSection() {
                   />
                   <Btn
                     variant="danger"
-                    disabled={deleteConfirm !== 'DELETE'}
-                    onClick={() => alert('Account deletion would be processed here.')}
+                    disabled={deleteConfirm !== 'DELETE' || !del.confirmation || del.status === 'deleting' || del.status === 'done'}
+                    onClick={confirmDelete}
                   >
-                    Confirm Delete
+                    {del.status === 'deleting'
+                      ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Deleting…</>
+                      : 'Confirm Delete'}
                   </Btn>
-                  <Btn variant="ghost" onClick={() => { setShowDelete(false); setDeleteConfirm('') }}>
+                  <Btn
+                    variant="ghost"
+                    disabled={del.status === 'deleting'}
+                    onClick={() => {
+                      setShowDelete(false)
+                      setDeleteConfirm('')
+                      setDel({ status: 'idle', error: '', confirmation: null, summary: null })
+                    }}
+                  >
                     Cancel
                   </Btn>
                 </div>
