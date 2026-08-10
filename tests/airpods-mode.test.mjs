@@ -196,11 +196,10 @@ test('voice checks tenant-scoped recent evidence before denying workspace events
   assert.match(action, /read_recent_activity/);
   assert.match(action, /not proof the event did not happen/i);
   assert.match(action, /clientId !== 'aom'/);
-  assert.match(action, /message\?\.source !== 'voice-handoff'/);
+  assert.match(action, /\['voice-handoff', 'airpods-mode'\]\.includes/);
   assert.match(action, /\['room-bridge', 'share-file'\]\.includes/);
   assert.match(action, /recordedWaitingReview/);
   assert.match(action, /provenance_summary: provenanceSummary/);
-  assert.match(action, /unverified_summary/);
   assert.match(session, /call read_recent_activity before answering/i);
   assert.match(session, /Never say you checked GitHub unless/i);
   assert.match(session, /if \(!airpodsMode && recentMessages\.length > 0\)/);

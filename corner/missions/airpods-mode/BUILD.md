@@ -96,6 +96,13 @@ return `provenance_summary` and `unverified_summary` as concise broker facts. Wh
 direct external tool exists, the single next action must be an approval-gated
 `create_task` for that exact external verification—not generic status or navigation.
 
+**Self-evidence and authorization correction:** One adversarial run prematurely
+created a QA verification task; that task was deleted immediately. Its existence then
+polluted the next evidence search, proving action chatter must never be factual proof.
+`airpods-mode` task messages are now excluded from evidence. Asking for the “best next
+step” is explicitly non-authorizing: voice must offer a concise verification task and
+wait for approval before calling `create_task`.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)

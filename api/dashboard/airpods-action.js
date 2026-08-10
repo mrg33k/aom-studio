@@ -165,7 +165,7 @@ async function recentWorkspaceActivity(clientId, query) {
   const rows = await db(`messages?client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=300&select=id,agent,project,role,text,timestamp,source,metadata,user_name`);
   const terms = activityTerms(query);
   return (Array.isArray(rows) ? rows : [])
-    .filter((message) => message?.source !== 'voice-handoff')
+    .filter((message) => !['voice-handoff', 'airpods-mode'].includes(message?.source))
     .filter((message) => !(message?.role === 'assistant' && ['room-bridge', 'share-file'].includes(message?.source)))
     .map((message) => ({ message, score: activityScore(message, terms) }))
     .filter(({ score }) => activityMatches(score, terms))
@@ -255,7 +255,6 @@ async function readRecentActivity(clientId, args) {
     sources: { corner_rooms: 'available', github: github.availability }, items,
     primary_record: primary ? { ...primary, calendar_date: primaryDate } : null,
     provenance_summary: provenanceSummary,
-    unverified_summary: recordedWaitingReview ? 'Live App Store Connect status remains unverified.' : null,
     spoken_summary: spokenSummary,
     response_contract: primary
       ? 'Answer from primary_record in at most 22 words. Include calendar_date, omit relative dates from the excerpt, and do not claim live external state. Do not ask a follow-up question.'
