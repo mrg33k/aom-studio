@@ -271,6 +271,108 @@ final class CornerAPI: ObservableObject {
         return (try? JSONDecoder().decode(MissionsTreeEnvelope.self, from: data))?.projects ?? []
     }
 
+    // MARK: - This room's files (the crossings)
+
+    /// The SAME room-scoped thread query, narrowed to rows that carry a file
+    /// (`attachments=1`). One query, so the Files panel can never disagree with the
+    /// conversation — it IS the conversation, filtered.
+    ///
+    /// `limit` 400 matches the web. When the server hands back a full window the caller
+    /// says so out loud rather than implying these are all the files that ever crossed.
+    func fetchRoomFiles(room: Room, limit: Int = 400) async throws -> (rows: [MessageRow], windowFull: Bool) {
+        var items = room.historyQueryItems
+        items.append(URLQueryItem(name: "attachments", value: "1"))
+        items.append(URLQueryItem(name: "limit", value: String(limit)))
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/supabase-messages",
+            queryItems: items
+        )
+        let data = try await run(request)
+        guard let envelope = try? JSONDecoder().decode(MessagesEnvelope.self, from: data) else {
+            throw APIError.decoding
+        }
+        return (envelope.messages, envelope.messages.count >= limit)
+    }
+
+    // MARK: - Review
+
+    /// GET /api/dashboard/review-queue. Default view is the WAITING set: agent
+    /// hand-offs with no closing decision yet. The server owns that definition
+    /// (uploads never wait, decided items are suppressed by id and by content digest)
+    /// and this client deliberately does not re-derive any of it.
+    func fetchReviewQueue(limit: Int = 40, offset: Int = 0) async throws -> ReviewQueueEnvelope {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/review-queue",
+            queryItems: [
+                URLQueryItem(name: "world", value: world),
+                URLQueryItem(name: "limit", value: String(limit)),
+                URLQueryItem(name: "offset", value: String(offset)),
+            ]
+        )
+        let data = try await run(request)
+        guard let envelope = try? JSONDecoder().decode(ReviewQueueEnvelope.self, from: data) else {
+            throw APIError.decoding
+        }
+        return envelope
+    }
+
+    /// POST /api/dashboard/review-decision — the real endpoint, with the real body.
+    ///
+    /// `request-changes` writes the agent a queued `tasks` row server-side and 500s if
+    /// that insert fails, precisely so a UI cannot report "sent" over a note that went
+    /// nowhere. So a non-2xx here means NOTHING was recorded, and the caller has to say
+    /// that instead of optimistically dropping the item.
+    ///
+    /// The identity trio (deliverable + source_path + sha256) is what makes a verdict
+    /// stick to the FILE rather than to one message id.
+    @discardableResult
+    func postReviewDecision(
+        deliverable: String,
+        action: ReviewAction,
+        notes: String? = nil,
+        title: String? = nil,
+        project: String? = nil,
+        mission: String? = nil,
+        sourcePath: String? = nil,
+        sha256: String? = nil
+    ) async throws -> ReviewDecisionResult {
+        let world = try requireWorld()
+        var body: [String: Any] = [
+            "deliverable": deliverable,
+            "action": action.rawValue,
+            "world": world,
+        ]
+        // Omit rather than send empty strings: the server cleans and stores whatever it
+        // is given, and an empty source_path would write a decision row whose content
+        // key is half-formed — which review-queue.js then cannot match on.
+        if let notes, !notes.isEmpty { body["notes"] = notes }
+        if let title, !title.isEmpty { body["title"] = title }
+        if let project, !project.isEmpty { body["project"] = project }
+        if let mission, !mission.isEmpty { body["mission"] = mission }
+        if let sourcePath, !sourcePath.isEmpty { body["source_path"] = sourcePath }
+        if let sha256, sha256.count == 64 { body["sha256"] = sha256.lowercased() }
+
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/review-decision",
+            method: "POST",
+            jsonBody: body
+        )
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(ReviewDecisionResult.self, from: data))
+            ?? ReviewDecisionResult(ok: true, taskID: nil, decisionID: nil)
+    }
+
+    // MARK: - File bytes
+
+    /// The bearer token, for the file downloader. Downloads stream to disk through their
+    /// own URLSession delegate, so they cannot go through `run()` — but they must still
+    /// carry the same identity, and the token must still be the refreshed one.
+    func currentAccessToken() async throws -> String {
+        do { return try await client.auth.session.accessToken }
+        catch { throw APIError.notSignedIn }
+    }
+
     // MARK: - Push device registration
 
     /// POST /api/push/register-device. The server takes user_id AND world from the
