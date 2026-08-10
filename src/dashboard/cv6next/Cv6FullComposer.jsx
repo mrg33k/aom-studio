@@ -93,6 +93,15 @@ function mapRoom(room, agents) {
   };
 }
 
+// Why the message did not go out, in the user's words. The thread keeps the bubble
+// with its own retry; this line names the cause once, next to the box they typed in.
+const SEND_ERROR_COPY = {
+  offline: "You're offline — the message is still in the conversation, tap it to try again.",
+  signed_out: 'Your session expired. Refresh the page to sign back in, then tap the message to send it.',
+  timeout: 'That took too long to send. The message is still in the conversation, tap it to try again.',
+  server: 'Corner could not accept that message. It is still in the conversation, tap it to try again.',
+};
+
 function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], roomOptions = [], onOpenFiles, onClearRoom }) {
   // CornerCV6 is NOT mounted under the CV4 Corner context providers (it uses
   // useHome/useDataPipe standalone), so we can't read useCornerAuth/Data here —
@@ -121,6 +130,10 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const addPasteChip = useCallback((text) => setPasteChips((p) => [...p, { id: `paste-${p.length}-${text.length}`, text, lineCount: text.split('\n').length }]), []);
   const removePasteChip = useCallback((id) => setPasteChips((p) => p.filter((c) => c.id !== id)), []);
   const [chatInputFocused, setChatInputFocused] = useState(false);
+  // One line above the box naming WHY the last send did not go out. Offline, an expired
+  // session and a 500 all used to look identical: the message simply disappeared
+  // (corner:bridge frontend-visibility D3/D10).
+  const [sendError, setSendError] = useState('');
   const [replyTo, setReplyTo] = useState(null);
   const [interactionMode, setInteractionMode] = useState(() => {
     try { return localStorage.getItem(`cv6.chatMode.${currentChatKey}`) === 'plan' ? 'plan' : 'work'; } catch { return 'work'; }
@@ -217,27 +230,56 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
         setPasteChips([]);
         const tool = selectedImageTool;
         setSelectedImageTool(null);
+        setSendError('');
         try {
           const resp = await authFetch('/api/dashboard/image-gen', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tool, prompt: text, agent: selectedAgent?.slug || 'corner', project: selectedProject?.slug, client_id: worldId }),
           });
-          const url = resp?.url || (resp?.b64 ? `data:image/png;base64,${resp.b64}` : null);
+          // authFetch hands back a fetch Response, NOT the parsed body. Reading `.url`
+          // off it read the REQUEST url — always truthy, even on a 500 — so every
+          // image generation, including every failure, posted a "Generated image" card
+          // whose attachment pointed at the API endpoint itself (corner:bridge
+          // frontend-visibility D10). Parse the body, then judge it.
+          let payload = null;
+          try { payload = await resp.json(); } catch { payload = null; }
+          const url = (resp && resp.ok && payload)
+            ? (payload.url || (payload.b64 ? `data:image/png;base64,${payload.b64}` : ''))
+            : '';
           if (url) {
             const att = { url, mime: 'image/png', name: `${tool}-image.png` };
             await postToRoom(`Generated image (${tool}): ${text}\n${url}`, 'user', { attachment: att, image_tool: tool });
             acceptIfRouted();
+          } else {
+            // A failed generation says so and gives the prompt back, instead of posting
+            // a card that opens nothing.
+            setSendError(payload?.error ? `Image failed: ${payload.error}` : 'The image could not be generated. Your prompt is back in the box.');
+            setInput((current) => (current ? current : base));
+            if (chipsSuffix) setPasteChips((current) => (current.length ? current : pasteChips));
+            setSelectedImageTool(tool);
           }
-        } catch (_) { /* surfaced by the thread poll / toast */ }
+        } catch (_) {
+          setSendError('The image could not be generated. Your prompt is back in the box.');
+          setInput((current) => (current ? current : base));
+          if (chipsSuffix) setPasteChips((current) => (current.length ? current : pasteChips));
+          setSelectedImageTool(tool);
+        }
         return;
       }
       setInput('');
       setPasteChips([]);
+      setSendError('');
       // Keep the caret in the box: sending is a conversation beat, not an exit.
       try { inputRef.current?.focus?.(); } catch { /* portal not mounted yet */ }
-      const ok = typeof quickSend === 'function' ? await quickSend(text, { interactionMode }) : false;
+      // `onKeptInThread` fires when the room thread has kept the failed message as a
+      // bubble you can retry. In that case restoring the text here too would show your
+      // words in two places at once, so the thread's copy wins.
+      let keptInThread = false;
+      const ok = typeof quickSend === 'function'
+        ? await quickSend(text, { interactionMode, onKeptInThread: (reason) => { keptInThread = true; setSendError(SEND_ERROR_COPY[reason] || SEND_ERROR_COPY.server); } })
+        : false;
       if (ok !== false) acceptIfRouted();
-      if (ok === false) {
+      if (ok === false && !keptInThread) {
         // Honest failure: put the words back so nothing typed is ever lost — but
         // never clobber something newly typed during the in-flight window
         // (Steffen R3 queue item 1: restore only into an empty box).
@@ -343,6 +385,12 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
               <ChatComposerProvider value={composerValue}>
                 <ChatSettingsProvider value={settingsValue}>
                   <ChatContextMenuProvider value={ctxMenuValue}>
+                    {sendError && !isVoiceActive ? (
+                      <div className="cv6-send-error" role="alert">
+                        <span>{sendError}</span>
+                        <button type="button" aria-label="Dismiss" onClick={() => setSendError('')}>×</button>
+                      </div>
+                    ) : null}
                     {isVoiceActive ? <VoiceModeBar /> : <Cv6InputBar onOpenFiles={onOpenFiles} room={room} worldId={worldId} roomOptions={roomOptions} onPlayChecklistItem={playChecklistItem} onPlayChecklistList={playChecklistList} onClearRoom={onClearRoom} />}
                     {isVoiceActive && (
                       <div style={{ display: 'none' }}>
