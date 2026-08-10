@@ -363,6 +363,207 @@ final class CornerAPI: ObservableObject {
             ?? ReviewDecisionResult(ok: true, taskID: nil, decisionID: nil)
     }
 
+    // MARK: - Organize (the Files surface)
+
+    /// GET /api/dashboard/files?type=organize — ONE project's files, uploads and review
+    /// ghosts, plus the world's waiting total.
+    ///
+    /// `project` is always sent. The endpoint has always accepted it and scopes both its
+    /// mirror read and its upload read by it; the web omits it and pulls the whole world
+    /// (18,545 rows for `aom`, counted live 2026-08-10) every 30 seconds. That is a
+    /// desktop-only affordance and it is why this call names its folder.
+    func fetchOrganize(project: String) async throws -> OrganizeEnvelope {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/files",
+            queryItems: [
+                URLQueryItem(name: "type", value: "organize"),
+                URLQueryItem(name: "client", value: world),
+                URLQueryItem(name: "project", value: project),
+            ]
+        )
+        let data = try await run(request)
+        guard let envelope = try? JSONDecoder().decode(OrganizeEnvelope.self, from: data) else {
+            throw APIError.decoding
+        }
+        return envelope
+    }
+
+    /// GET /api/dashboard/files?type=uploads — the user's own chat uploads, and nothing
+    /// else. This is what the Personal bucket is made of, and asking `type=organize` for
+    /// it would drag the entire disk mirror along for files that are not in it.
+    func fetchUploads(limit: Int = 500) async throws -> [UploadRow] {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/files",
+            queryItems: [
+                URLQueryItem(name: "type", value: "uploads"),
+                URLQueryItem(name: "client", value: world),
+                URLQueryItem(name: "limit", value: String(limit)),
+            ]
+        )
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(OrganizeEnvelope.UploadsOnly.self, from: data))?.files ?? []
+    }
+
+    /// GET /api/dashboard/files?type=mirror&id=… — one mirror row WITH its text.
+    ///
+    /// Only for files whose bytes are text: the row carries a `content` column the disk
+    /// watcher fills for readable files. Media never comes through here — it streams from
+    /// the tunnel via FileStore, because pulling a video through a JSON column would be
+    /// absurd and the column is empty for it anyway.
+    func fetchFileText(id: String) async throws -> String? {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/files",
+            queryItems: [
+                URLQueryItem(name: "type", value: "mirror"),
+                URLQueryItem(name: "client", value: world),
+                URLQueryItem(name: "id", value: id),
+                URLQueryItem(name: "content", value: "1"),
+            ]
+        )
+        let data = try await run(request)
+        struct Envelope: Decodable { let file: MirrorRow? }
+        return (try? JSONDecoder().decode(Envelope.self, from: data))?.file?.content
+    }
+
+    // MARK: - Tracker
+
+    /// GET /api/dashboard/cv6-bugs.
+    ///
+    /// `world` IS sent. The web omits it and the endpoint defaults to 'aom', so every
+    /// tenant's Tracker on the web reads AOM's board — the store is per-world server-side
+    /// (`cm_state.client_id`), so the world is the only honest reading.
+    func fetchBugs() async throws -> [BugRow] {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/cv6-bugs",
+            queryItems: [URLQueryItem(name: "world", value: world)]
+        )
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(BugsEnvelope.self, from: data))?.bugs ?? []
+    }
+
+    /// GET /api/dashboard/admin-tickets — a client's live ticket board, read only.
+    /// Answers 503 with an explanatory body when the bridge key is unset on the
+    /// deployment, which the UI repeats rather than showing an empty board.
+    func fetchTickets() async throws -> [TicketRow] {
+        let request = try await authorizedRequest(path: "/api/dashboard/admin-tickets")
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(TicketsEnvelope.self, from: data))?.tickets ?? []
+    }
+
+    func fetchCustomTrackers() async throws -> [CustomTracker] {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/trackers",
+            queryItems: [URLQueryItem(name: "world", value: world)]
+        )
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(CustomTrackersEnvelope.self, from: data))?.trackers ?? []
+    }
+
+    /// POST /api/dashboard/cv6-bugs { action: 'update' }. `status` must be one of the
+    /// endpoint's three literals or it answers 400; IssueStatus.wireValue spells them.
+    func updateBug(id: String, status: String?, owner: String?) async throws {
+        let world = try requireWorld()
+        var body: [String: Any] = ["action": "update", "world": world, "id": id]
+        if let status, !status.isEmpty { body["status"] = status }
+        if let owner { body["owner"] = owner }
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/cv6-bugs",
+            method: "POST",
+            jsonBody: body
+        )
+        try await run(request)
+    }
+
+    /// POST /api/dashboard/cv6-bugs { action: 'add' }. The reporter is taken from the
+    /// JWT server-side (three people share the AOM world), so nothing here claims one.
+    func addBug(title: String, expected: String, severity: String, status: String, owner: String) async throws {
+        let world = try requireWorld()
+        var body: [String: Any] = [
+            "action": "add",
+            "world": world,
+            "page": "mobile",
+            "title": title,
+            "expected": expected,
+            "severity": severity,
+            "status": status,
+        ]
+        if !owner.isEmpty { body["owner"] = owner }
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/cv6-bugs",
+            method: "POST",
+            jsonBody: body
+        )
+        try await run(request)
+    }
+
+    /// POST /api/dashboard/trackers { action: 'add-row' } — an APPEND, which is the only
+    /// custom-tracker write that cannot mis-target: every other action addresses a row by
+    /// positional index into shared mutable state.
+    func addTrackerRow(trackerID: String, row: [String: String]) async throws {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/trackers",
+            method: "POST",
+            jsonBody: ["action": "add-row", "world": world, "id": trackerID, "row": row]
+        )
+        try await run(request)
+    }
+
+    // MARK: - Assign an artifact to an agent
+
+    /// The dispatch write, byte-for-byte the web's (cv6kit/AssignButton.jsx): a message
+    /// into the agent's own room through the ONE write path, carrying a human first line,
+    /// the notes, and the machine ref so the agent can find the exact artifact.
+    ///
+    /// There is no "assignments" table. The row IS the assignment — the bridge picks it
+    /// up, the agent works it, and the message is the platform's eternal record of it.
+    @discardableResult
+    func assign(
+        artifactType: String,
+        artifactID: String,
+        label: String,
+        details: String,
+        project: String?,
+        toAgentSlug slug: String
+    ) async throws -> MessageRow? {
+        let world = try requireWorld()
+        let kinds = [
+            "email": "email", "file": "file", "doc": "document",
+            "bug": "bug", "deliverable": "deliverable", "transcript": "transcript",
+        ]
+        let kind = kinds[artifactType] ?? "item"
+        var lines = ["Assigned to you from the dashboard: \(kind) \"\(label)\"."]
+        if !details.isEmpty { lines.append("\nNotes:\n\(details)") }
+        if !artifactID.isEmpty { lines.append("\n(ref: \(artifactType):\(artifactID))") }
+
+        // `project` is omitted rather than sent as null when there is none. The web sends
+        // an explicit null; both read the same at the far end, and an omitted key cannot
+        // be mistaken for a project literally named "null" by anything downstream.
+        var assign: [String: Any] = ["type": artifactType, "id": artifactID]
+        if let project, !project.isEmpty { assign["project"] = project }
+
+        let body: [String: Any] = [
+            "agent": slug,
+            "text": lines.joined(separator: "\n"),
+            "role": "user",
+            "source": Config.messageSource,
+            "client_id": world,
+            "metadata": ["assign": assign],
+        ]
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/supabase-messages",
+            method: "POST",
+            jsonBody: body
+        )
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(SendEnvelope.self, from: data))?.message
+    }
+
     // MARK: - File bytes
 
     /// The bearer token, for the file downloader. Downloads stream to disk through their
