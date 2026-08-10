@@ -18,7 +18,19 @@ headset control in the 72 px header with exact action order Headset, New room, S
 Menu. Every control measured 42×42, horizontal overflow was zero, and the opened
 Corner Voice panel stayed fully inside the viewport.
 
-**Status:** complete
+**Native packaging:** Corner 1.0 (11) carries the same header-row placement into the
+Capacitor client so the installed phone app does not lag behind production web. The
+client was synced and archived successfully at
+`/tmp/corner-build11-adhoc.JhVBCP/Corner.xcarchive`, signed by AOM-INHOUSE with the
+registered Patrik iPhone ad hoc profile. The archive reports bundle version 11 and
+arm64. CoreDevice still reports Patrik’s iPhone unavailable, so installation is
+pending the next physical connection.
+
+**Production result:** Commit `665177ea` reached READY as verified `aom-studio`
+production deployment `aom-studio-6077koe74`. The canonical dashboard returns 200 and
+its served Corner bundle contains the new header-slot markers.
+
+**Status:** complete — production live and build 11 archived; physical install pending phone availability
 
 ### R11 — Evidence-grounded conversation gauntlet (2026-08-09)
 

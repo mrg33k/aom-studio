@@ -259,3 +259,10 @@ The focused AirPods suite passes 20/20 and the production build passes. A real 3
 browser render showed the exact order Headset, New room, Search, Menu in one 72 px header,
 one headset instance, 42×42 controls, zero horizontal overflow, and an opened voice panel
 fully within the phone viewport.
+
+Commit `665177ea` was pushed to `main`; the verified `aom-studio` production deployment
+`aom-studio-6077koe74` reached READY, and the canonical served Corner bundle contains the
+new header-slot markers. The same client was synced into Corner 1.0 (11) and archived
+successfully with the AOM-INHOUSE distribution identity plus Patrik iPhone ad hoc profile
+at `/tmp/corner-build11-adhoc.JhVBCP/Corner.xcarchive`. CoreDevice still reports the phone
+unavailable, so physical installation remains the only pending handoff.
