@@ -1,0 +1,140 @@
+# Corner — native iOS app (corner:native-ios Stage 1)
+#
+# XcodeGen spec. `Corner.xcodeproj` IS committed alongside this file so a fresh
+# clone builds with nothing but Xcode; regenerate with `xcodegen generate` from
+# this directory after adding, removing, or renaming a source file.
+#
+# Bundle id matches the existing Capacitor shell (com.aheadofmarket.corner) on
+# purpose: the ASC record and the uploaded build 1 belong to that id, so this
+# native binary becomes build 2+ of the SAME app rather than a second listing.
+# Team PDYFTMXNJ2 is lifted from ios/App/App.xcodeproj/project.pbxproj.
+
+name: Corner
+
+options:
+  bundleIdPrefix: com.aheadofmarket
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: false
+
+settings:
+  base:
+    # Swift 5 language mode. The Swift 6 compiler ships in Xcode 26 but its strict
+    # concurrency checking is a migration project of its own; opting into it here
+    # would be a change to how this code is checked, not to what it does.
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: PDYFTMXNJ2
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    # Build 1 of com.aheadofmarket.corner is the Capacitor shell already uploaded
+    # to App Store Connect. The native binary is the next build of the same app.
+    CURRENT_PROJECT_VERSION: "2"
+    ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.0.0
+
+targets:
+  Corner:
+    type: application
+    platform: iOS
+    sources:
+      - path: Corner
+    dependencies:
+      - package: Supabase
+        product: Supabase
+    info:
+      path: Support/Info.plist
+      properties:
+        CFBundleDisplayName: Corner
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # HTTPS only — no ATS exceptions anywhere in this app.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+        # Export compliance: HTTPS-only use of platform crypto is exempt.
+        ITSAppUsesNonExemptEncryption: false
+        # The audit (F3) found the Capacitor shell declaring `audio` and
+        # `remote-notification` while implementing neither. This app declares
+        # NOTHING it does not use: no UIBackgroundModes key at all. Alert pushes
+        # need no background mode; when a silent content-available lane is
+        # actually written, `remote-notification` gets added with it.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.aheadofmarket.corner.deeplink
+            CFBundleTypeRole: Editor
+            CFBundleURLSchemes:
+              - corner
+    entitlements:
+      path: Support/Corner.entitlements
+      properties:
+        # Expanded from the per-configuration APS_ENVIRONMENT setting below, so a
+        # Debug build registers against APNs sandbox and a Release build against
+        # production. Hard-coding one value is how sandbox tokens end up being
+        # handed to the production APNs host, which fails as BadDeviceToken.
+        aps-environment: $(APS_ENVIRONMENT)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aheadofmarket.corner
+        PRODUCT_NAME: Corner
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+        GENERATE_INFOPLIST_FILE: "NO"
+      configs:
+        Debug:
+          APS_ENVIRONMENT: development
+        Release:
+          APS_ENVIRONMENT: production
+
+  CornerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: CornerTests
+    dependencies:
+      - target: Corner
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aheadofmarket.corner.tests
+        GENERATE_INFOPLIST_FILE: "YES"
+
+schemes:
+  Corner:
+    build:
+      targets:
+        Corner: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - CornerTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
