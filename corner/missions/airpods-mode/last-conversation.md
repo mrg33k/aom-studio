@@ -345,3 +345,28 @@ Business Ops composer remains the final user-visible check.
 
 Commit `2a917f00` fast-forwarded `main`; production deployment
 `aom-studio-6aoxsqj0w` reached READY and the canonical dashboard returned HTTP 200.
+
+---
+
+## [2026-08-09] R17 — why it could not hold a conversation
+
+Patrik reported the assistant could not hold a conversation or dive into
+anything. Diagnosed by running real multi-turn sessions against live workspace
+data, not by reading the prompt.
+
+Decisions made:
+- Role and voice are now MODE-DEPENDENT. The room widget keeps the "voice router,
+  not planner" framing; AirPods gets an assistant framing. AirPods had been
+  inheriting "you are NOT a planner, NOT a critic, do not push back" while also
+  being told it was a global operating layer with nineteen tools.
+- Tool `response_contract` constrains FACTS, never WORDS. "Say only
+  spoken_summary" is banned — it made the broker the author of the assistant's
+  sentences and no prompt could override it.
+- Brevity is enforced on acknowledgements and the close, never on answers. The
+  gauntlet now has a FLOOR on explanatory turns instead of a ceiling on all of them.
+- Patrik overruled the proposal to trim the tool list. Keeping all nineteen; since
+  no deeper model exists, the cost is paid in prompt discipline instead.
+
+Left open deliberately (R18): provenance can cite GitHub for an answer sourced
+from a Corner room record; `offer_next_action` is being spoken rather than called;
+and the phone still cannot recover from a dropped signal.

@@ -614,3 +614,93 @@ the caller or advanced into a usable conversation.
   its served main asset contains the new greeting, retry, sample-rate, and top-menu UI.
 
 **Status:** complete
+
+### R17 — The assistant could not hold a conversation, and the suite was enforcing it (2026-08-09)
+
+**Evidence:** Patrik, on the live product: "when I have conversations with the
+corner assistant it just cant hold a conversation like we do or dive into things
+too much." Diagnosed by running real multi-turn sessions rather than by reading
+the prompt.
+
+**Root causes — four, and only one of them was the prompt:**
+
+1. `voice-session.js` ended the AirPods block with "HARD SPOKEN OUTPUT CONTRACT:
+   routine responses are at most 22 spoken words", over a base prompt still
+   telling the concierge it is "NOT a planner, NOT a critic, the Claude team
+   handles the thinking, DO NOT push back". AirPods inherited the room widget's
+   router framing. Role and voice are now mode-dependent.
+2. `airpods-action.js` was dictating the words, not just the facts.
+   `read_workspace_status` built `spoken_summary` as `<5-word title> is <status>`
+   joined by semicolons and returned `response_contract: 'Say only
+   spoken_summary'`. No prompt could beat an explicit say-only-this contract.
+   Same in `read_task_status` (raw error columns) and `read_recent_activity`,
+   which carried a SECOND "at most 22 words" cap on the most substantive
+   question type in the product.
+3. Asked "is that the same thing you mentioned at the start of this call", it
+   called `read_recent_activity` and answered "I did not find a matching record."
+   It searched the database to recall its own conversation.
+4. `airpods-conversation-gauntlet.mjs` asserted `wordCount <= 24` on every
+   substantive turn, so each round of tuning made it shallower and no later
+   round could undo it without going red. It also opened sessions as `rex` while
+   the product mounts `corner` — it was tuning a different agent.
+
+**Also found while measuring:**
+- `generationConfig` never carried `temperature`. Computed, returned, dropped.
+  The dashboard slider controlled nothing; the AirPods 0.0 override was a no-op.
+- `TODAY` and `read_recent_activity`'s date both rendered UTC on a UTC server,
+  so after ~5pm Phoenix every dated claim named tomorrow. Measured: it told the
+  caller a task it had just created landed "today, August 10th" at 18:07 on the 9th.
+- No `contextWindowCompression`: a session TERMINATED at its context ceiling
+  rather than rolling. The 8-minute call in R4 was a ceiling, not a success.
+- `silenceDurationMs: 2000` — two seconds of enforced dead air per turn.
+- `repairableScope` did not match "repo lock held by zombie", so the assistant
+  could explain a stuck task and then had no retry to offer.
+
+**NO DEEPER MODEL EXISTS.** Probed the production key against every Pro and
+thinking Live variant; all return 1008 "not found ... for bidiGenerateContent".
+Only `gemini-3.1-flash-live-preview` and
+`gemini-2.5-flash-native-audio-preview-09-2025` accept a session. Depth has to
+come from the prompt and the broker. Recorded so nobody re-runs the probe.
+
+**Measured, live, same questions before and after:**
+
+| turn | before | after |
+|---|---|---|
+| "why is that the top one" | 18w record echo | 35w explanation |
+| "walk me through what has to happen" | 23w + a pitch | 55w walkthrough |
+| "what would you do, and why not the other" | 37w | 55w with the comparison |
+| "is that the same thing" | searched, found nothing | answered from memory |
+| first word out of its mouth | 2s VAD + 7.1s median | 0.7–2.2s |
+| the opening briefing | `Finalize contact list research is failed; Mobile reskin R2b — CHAT: is failed.` | `Two things need you: Jacob's Finalize contact list research failed, started yesterday, and Bobby's Mobile reskin R2b failed, started three days ago.` |
+
+**Verification:** shipped to production and confirmed on the live endpoint the
+phone actually calls (`nativeBootstrap.js` defaults to www.aheadofmarket.com):
+temperature 0.85 present, contextWindowCompression present, sessionResumption
+present, silenceDurationMs 700, no 22-word cap, assistant framing present,
+`TODAY: Sunday, August 9, 2026`. Gauntlet `core` **17/17 green on production**.
+
+**Status:** complete, with three known reds carried forward.
+
+### R18 — Open: three reds on the skeptical scenario (2026-08-09)
+
+`skeptical` finishes 11/14 on production. Not loosening the checks to clear them.
+
+1. *Provenance is inconsistent, and this one is real.* Asked what it checked, it
+   said "Checked GitHub mrg33k/aom-studio ... 2 matching commits" one turn after
+   quoting a **Corner room** record from corner:business-ops. It reported the
+   wrong source for the evidence it had just given. `provenance_summary` is built
+   from `primary.source_label` while the spoken answer blends `items[]`, so the
+   two can disagree. Fix: make the spoken answer cite the same record provenance
+   describes, or drop provenance to whatever the answer actually used.
+2. *The proposal card is not being raised.* It says "I can queue a task to verify
+   the actual submission status. Want me to?" in words but does not call
+   `offer_next_action`, so there is no card and no approval path. Spoken intent
+   without the structured action is the failure mode R4 built that tool to stop.
+3. *Grading keyword.* "explicitly dated and bounded" requires the literal word
+   "unverified"; the answer bounded itself with "but I haven't checked" instead.
+   Substantively correct, keyword miss. Lowest priority of the three.
+
+**Still open from earlier rounds, unchanged by R17:** `VoiceChat.jsx` has no
+`goAway` or `onclose` recovery, so a dropped signal still ends a call outright.
+`sessionResumption` handles are now being issued — the server half exists and the
+client half does not.

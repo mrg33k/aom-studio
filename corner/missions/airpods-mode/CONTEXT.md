@@ -2,6 +2,33 @@
 
 **Mission path:** `corner:airpods-mode`
 **Status:** IN PROGRESS
+**Updated:** 2026-08-09 (R17)
+
+R17 answered Patrik's "it can't hold a conversation" and it was not a model
+problem. Four mechanisms were capping it, and three of them lived OUTSIDE the
+voice prompt: the tool broker returned `response_contract: 'Say only
+spoken_summary'` next to machine-built strings, `read_recent_activity` carried
+its own second "at most 22 words" cap, and the conversation gauntlet asserted
+`wordCount <= 24` on every substantive turn — so every past round of tuning made
+the assistant shallower and no later round could undo it without going red.
+
+**The standing lesson for this mission: a brevity rule in the prompt is only one
+of three places brevity is enforced.** Check the tool `response_contract` and the
+gauntlet checks before concluding the prompt is the problem, and never write a
+`Say only spoken_summary` contract again — constrain the FACTS, never the WORDS.
+
+**There is no deeper Live model.** Probed the production key against every Pro
+and thinking variant: all 1008. Only `gemini-3.1-flash-live-preview` and
+`gemini-2.5-flash-native-audio-preview-09-2025` open a session. Every future
+"make it smarter" round has to come from the prompt and the broker.
+
+Live on production and verified on the endpoint the phone calls. Gauntlet `core`
+17/17; `skeptical` 11/14 with three named reds carried to R18 — the real one is
+that provenance can name GitHub for an answer that came from a Corner room record.
+
+New tool: `scripts/airpods-voice-bench.mjs` runs real multi-turn conversations
+against a live session with real tools and can point at a LOCAL checkout, so a
+prompt change is measured before it ships instead of on Patrik's phone.
 **Updated:** 2026-08-09
 
 The active product surface is `src/dashboard/cv6next/`. CV6 already embeds the legacy
