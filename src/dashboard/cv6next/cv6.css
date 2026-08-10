@@ -1663,7 +1663,16 @@
 [data-cv6][data-screen="home-desktop"] .misslist .missrow .rn { font-size:13px; color:var(--muted); }
 /* Rail recent rows: the context label yields before the room name does — names were
    truncating ("Ambition M...") while the label kept full width (loop R18). */
-[data-cv6][data-screen="home-desktop"] .recentrow .rtype-rail { max-width:90px; flex:0 1 auto; overflow:hidden; text-overflow:clip; margin-left:8px; }
+/* The 300px rail is the one place a filled pill costs more than it gives: the chip is
+   ~20px wider than the plain "Agent room" text it replaced, and every pixel comes out
+   of the room NAME, which is the row's actual content (five of thirteen names started
+   truncating — the exact regression loop R18 fixed once already). So the rail states the
+   same word in the same tone at text weight: no fill, no padding, no letter-spacing tax.
+   The filled chip stays on the wide surfaces (mobile cards, the desktop digest). */
+[data-cv6][data-screen="home-desktop"] .recentrow .rtype-rail {
+  max-width:72px; flex:0 1 auto; overflow:hidden; text-overflow:clip;
+  margin-left:8px; padding:0; background:none; font-size:9.5px; letter-spacing:.04em;
+}
 [data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on { background:var(--accent-weak); }
 [data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on .rn { color:var(--fg); font-weight:600; }
 [data-cv6][data-screen="home-desktop"] .missmore { padding:7px 12px; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer; }
@@ -2065,7 +2074,9 @@
    gets cut — a half-rendered "MISSIO" would be worse than a shortened room name. */
 [data-cv6][data-screen="home-mobile"] .mresume-nameline .rtype {
   margin-left:8px;
-  align-self:baseline;
+  /* Optically centred against the name, not baseline-aligned: the chip's own 3px
+     padding drops a baseline-aligned box ~2px low against a 14px name. */
+  align-self:center;
 }
 /* Hero card: the chip becomes the eyebrow ABOVE the display title — the same
    eyebrow-over-headline move .mhome-intro uses. Inline would collide with a title
@@ -2077,6 +2088,11 @@
 [data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-nameline .rtype {
   order:-1;
   margin:0 0 6px;
+  /* The hero card's own fill IS --accent-weak, which is exactly the AGENT chip's
+     background — so on an agent hero (the common case) the chip all but disappeared.
+     The tone stays in the TEXT; the box takes the neutral card surface so it reads in
+     every theme. Same reason the hero progress track below is a neutral, not accent. */
+  background:var(--surface);
 }
 
 /* ── Status row: hero only ── */
