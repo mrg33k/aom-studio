@@ -18,7 +18,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { authFetch } from '../lib/authFetch'
 import { getClientId } from '../lib/clientConfig'
-import { isRoomActivityNoise } from '../cv6next/data/presentationClean.js'
+import { isRoomActivityNoise, isMachinePreview } from '../cv6next/data/presentationClean.js'
 
 // Catch Up = ONLY the things where Patrik is the bottleneck to respond (his words,
 // 2026-06-26). The raw "unread agent message" feed is far too broad: it's full of
@@ -509,6 +509,11 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
             const t = String(m.text || '').replace(/\s+/g, ' ').trim()
             if (!t || t.startsWith('{') || t.startsWith('[')) return ''
             if (ARTIFACT_RE.test(t)) return ''
+            // Room-row contract §3: transport never previews as conversation. A bridge
+            // delivery ack ("Received — … reached the dispatcher"), dispatch plumbing or
+            // a probe is an assistant row on the normal chat path — only its SHAPE gives
+            // it away. Blanks the line; the room itself still ranks by this message.
+            if (isMachinePreview(t, m)) return ''
             return t.slice(0, 160)
           }
           for (const m of (data.messages || [])) {

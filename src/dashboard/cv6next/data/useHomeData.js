@@ -16,7 +16,7 @@ import { useDataContext } from '../providers/DataContext.jsx';
 import { curateTitledAgents, titleForAgent } from './agentTitles.js';
 import { normalizePreview } from './previewText.js';
 import { missionRecencyKey } from './roomKeys.js';
-import { isRoomActivityNoise } from './presentationClean.js';
+import { isRoomActivityNoise, isMachinePreview } from './presentationClean.js';
 import { fetchRoomActivity } from './roomActivity.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
@@ -167,6 +167,12 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // recency comes from the inbox feed (it carries missionSlug + timestamp); project-level
   // recency comes from projectRooms.last_message_at (read or unread). Merge by room key, keep
   // the freshest per room, sort desc, top 30. Real data only — no fabricated rows.
+  // Room-row contract §3: a preview line is conversation, never transport. The
+  // upstream pipe already blanks machine text on the recency scan; this is the second
+  // gate, at the shaping layer, so any caller of shapeHome() gets the same guarantee.
+  // Returns '' for machine text — the row survives, the line collapses (.rprev:empty).
+  const rowPreview = (text, message) => (isMachinePreview(text, message) ? '' : normalizePreview(text));
+
   const recentMap = {};
   // A fresher timestamp-only bump (projectRooms/missionRooms carry no text) must not erase
   // a preview a message-carrying bump already provided (Steffen R4 send-back: the digest
@@ -194,7 +200,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   for (const it of inboxItems || []) {
     if (isRoomActivityNoise(it)) continue;
     const ts = it.timestamp ? new Date(it.timestamp).getTime() : 0;
-    const preview = normalizePreview(it.text);
+    const preview = rowPreview(it.text, it);
     if (it.missionSlug) {
       const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
       const nm = missionLabel(it.missionSlug) || it.missionSlug;
@@ -208,7 +214,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   for (const p of projectRooms || []) {
     if (!p.last_message_at || !p.slug) continue;
     if (isRoomActivityNoise({ text: p.last_message_text })) continue;
-    bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at, preview: normalizePreview(p.last_message_text) });
+    bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at, preview: rowPreview(p.last_message_text, p) });
   }
   // Activity-based mission recency: any mission with recent messages surfaces in
   // Recently Active even if it hasn't sent an inbox ping. Same bump path as projects;
@@ -218,7 +224,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (isRoomActivityNoise({ text: mr.last_message_text })) continue;
     const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
     const nm = missionLabel(mr.slug) || mr.slug;
-    bump('m:' + missionRecencyKey(mr.slug), { key: 'm:' + missionRecencyKey(mr.slug), id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: normalizePreview(mr.last_message_text) });
+    bump('m:' + missionRecencyKey(mr.slug), { key: 'm:' + missionRecencyKey(mr.slug), id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: rowPreview(mr.last_message_text, mr) });
   }
   // Activity-based recency for direct 1:1 agent threads — parallel to projects/
   // missions above so an agent you actually talked to surfaces in Recently Active
@@ -229,7 +235,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   for (const ar of agentThreadRooms || []) {
     if (!ar.last_message_at || !ar.agent) continue;
     if (isRoomActivityNoise({ text: ar.last_message_text })) continue;
-    bump('a:' + ar.agent, { key: 'a:' + ar.agent, id: ar.agent, kind: 'agent', agent: ar.agent, name: agentNameBySlug[ar.agent] || titleForAgent(ar.agent), sub: 'Direct chat', ts: ar.last_message_at, preview: normalizePreview(ar.last_message_text) });
+    bump('a:' + ar.agent, { key: 'a:' + ar.agent, id: ar.agent, kind: 'agent', agent: ar.agent, name: agentNameBySlug[ar.agent] || titleForAgent(ar.agent), sub: 'Direct chat', ts: ar.last_message_at, preview: rowPreview(ar.last_message_text, ar) });
   }
   // Wide-window recency (Patrik 2026-08-06, "show the last 30 chats"). Everything
   // above derives recency from the dashboard's 100-message poll, and 100 rows is
