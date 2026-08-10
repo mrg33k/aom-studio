@@ -42,6 +42,44 @@ struct Room: Identifiable, Hashable {
         }
     }
 
+    // MARK: - Room-row contract §4 — type derived from the room_id kind
+
+    enum TypeTag: Hashable { case project, mission, agent }
+
+    /// The contract's three room types, straight off the room_id kind — never inferred
+    /// by a reader from an icon (contract §1 part 4).
+    var typeTag: TypeTag {
+        switch kind {
+        case .agent:   return .agent
+        case .project: return .project
+        case .mission: return .mission
+        }
+    }
+
+    /// The required uppercase type chip label.
+    var typeLabel: String {
+        switch typeTag {
+        case .project: return "PROJECT"
+        case .mission: return "MISSION"
+        case .agent:   return "AGENT"
+        }
+    }
+
+    /// The key this room is bumped under in `/api/dashboard/room-activity`:
+    /// a project by its slug, a mission by "<project>:<bare mission slug>" (the same
+    /// shape room-activity emits). Agent 1:1 threads are absent from that feed, so nil.
+    var activityKey: (bucket: TypeTag, key: String)? {
+        switch kind {
+        case .project(let slug):
+            return (.project, slug)
+        case .mission(let slug, let project):
+            let bare = slug.split(separator: ":").last.map(String.init) ?? slug
+            return (.mission, "\(project):\(bare)")
+        case .agent:
+            return nil
+        }
+    }
+
     /// The agent slug a live-step lookup keys on. Project and mission rooms are
     /// answered by `corner`, matching what the send body says.
     var stepAgentSlug: String {

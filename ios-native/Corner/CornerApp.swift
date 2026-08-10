@@ -48,7 +48,7 @@ struct CornerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            rootContent
                 .environmentObject(api)
                 .environmentObject(push)
                 .environmentObject(router)
@@ -57,5 +57,21 @@ struct CornerApp: App {
                 // mode it has not been designed for.
                 .preferredColorScheme(.dark)
         }
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
+        #if DEBUG
+        // A no-network, no-auth render of the home timeline with synthetic sample rooms,
+        // used only by the design-proof capture (`simctl launch … -homePreview`). It
+        // touches no production data and ships in Debug builds alone.
+        if ProcessInfo.processInfo.arguments.contains("-homePreview") {
+            HomePreviewHarness()
+        } else {
+            RootView()
+        }
+        #else
+        RootView()
+        #endif
     }
 }
