@@ -176,11 +176,18 @@ function roomTaskScope(message) {
   return { project: null, mission_slug: null };
 }
 
-function activityScore(message, terms) {
+function activityScore(message, terms, phrase = '') {
   if (!terms.length) return 1;
   const haystack = [message?.text, message?.agent, message?.project, message?.source, message?.metadata?.mission_slug]
     .filter(Boolean).join(' ').toLowerCase();
-  return terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
+  const termScore = terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
+  // A record that contains the caller's actual PHRASE is about their subject;
+  // a record that merely scatters the same words usually is not. Without this,
+  // "App Store submission" tied a provisioning receipt against a commit that
+  // happened to use all three words in a sentence about something else, and
+  // the tie fell to whichever was newer.
+  const phraseBonus = phrase && phrase.length > 3 && haystack.includes(phrase) ? 3 : 0;
+  return termScore + phraseBonus;
 }
 
 function activityMatches(score, terms) {
@@ -191,10 +198,11 @@ function activityMatches(score, terms) {
 async function recentWorkspaceActivity(clientId, query) {
   const rows = await db(`messages?client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=300&select=id,agent,project,role,text,timestamp,source,metadata,user_name`);
   const terms = activityTerms(query);
+  const phrase = String(query || '').trim().toLowerCase();
   return (Array.isArray(rows) ? rows : [])
     .filter((message) => !['voice-handoff', 'airpods-mode', 'task-ack'].includes(message?.source))
     .filter((message) => !(message?.role === 'assistant' && ['room-bridge', 'share-file'].includes(message?.source)))
-    .map((message) => ({ message, score: activityScore(message, terms) }))
+    .map((message) => ({ message, score: activityScore(message, terms, phrase) }))
     .filter(({ score }) => activityMatches(score, terms))
     .sort((a, b) => b.score - a.score || String(b.message.timestamp || '').localeCompare(String(a.message.timestamp || '')))
     .slice(0, 12)
@@ -236,9 +244,18 @@ async function recentGithubActivity(clientId, query) {
     }
     if (!response.ok) return { availability: `unavailable_${response.status}`, items: [] };
     const terms = activityTerms(query);
+    const phrase = String(query || '').trim().toLowerCase();
     const commits = await response.json();
     const items = (Array.isArray(commits) ? commits : [])
-      .map((commit) => ({ commit, score: activityScore({ text: commit?.commit?.message }, terms) }))
+      // The commit-side half of the existing self-evidence rule. Room messages
+      // written BY the voice runtime are already excluded as circular; commits
+      // about the voice runtime are the same thing wearing a different hat, and
+      // they are worse, because a commit message describing this fix mentions
+      // "App Store" a dozen times and will outrank the provisioning receipt
+      // that actually answers the question. Our own machinery is never evidence
+      // about the outside world.
+      .filter((commit) => !/corner:airpods-mode|corner:voice-chat/i.test(String(commit?.commit?.message || '')))
+      .map((commit) => ({ commit, score: activityScore({ text: commit?.commit?.message }, terms, phrase) }))
       .filter(({ score }) => activityMatches(score, terms))
       .sort((a, b) => b.score - a.score)
       .slice(0, 8)
