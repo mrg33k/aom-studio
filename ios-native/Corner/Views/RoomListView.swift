@@ -119,9 +119,24 @@ struct RoomListView: View {
                 // The app refuses to guess a workspace. Guessing is how one tenant ends
                 // up reading another's rooms (fixed on the web 2026-05-24) and on a
                 // phone it would be completely silent.
-                Text("Corner will not guess which workspace you belong to, so there is nothing to show yet. Ask whoever invited you to finish setting up your account.")
+                //
+                // The copy leads with the LIKELY cause rather than the rare one. Four
+                // of the twenty live accounts carry no workspace and three of those
+                // belong to the same person, so "you signed in with the wrong one of
+                // your logins" is the common case by a wide margin. The web hides this
+                // behind a super-admin world override that this app does not have and
+                // should not grow one of before world switching exists.
+                Text("If you have more than one Corner login, sign out and use the one you sign in with on the web.")
                     .font(.footnote)
                     .foregroundStyle(Theme.inkSoft)
+                Text("If this is your only login, ask whoever invited you to finish setting up your account.")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkFaint)
+                Button("Sign out") {
+                    Task { await api.signOut() }
+                }
+                .font(.footnote.weight(.semibold))
+                .padding(.top, Theme.s1)
             }
             .padding(.vertical, Theme.s2)
         }
