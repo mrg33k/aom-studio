@@ -1,13 +1,24 @@
 // AppRouter.swift — Corner native iOS
-// corner:native-ios Stage 1
+// corner:native-ios Stages 1 + 3
 //
 // Where the app is, and how a notification tap or a `corner://` URL changes it.
 //
-// The deep link the server sends is `corner://room/<percent-encoded room_id>`
-// (api/_lib/apns.js), and the payload ALSO carries room_id, agent, project and
-// mission_slug as separate fields. Both are read: the URL is the contract, the flat
-// fields are the belt-and-braces, and the flat fields are what let a mission room
-// resolve its project without inferring one from the slug.
+// THE FOUR ROUTES (Stage 3). Every surface this app has is addressable, because a push
+// or a widget that can only ever open a room can only ever be about a room:
+//
+//   corner://room/<percent-encoded room_id>   one conversation
+//   corner://review                           the verdict queue
+//   corner://organize                         the files browser
+//   corner://tracker                          the issue boards
+//
+// The room form is what api/_lib/apns.js sends today, and the payload ALSO carries
+// room_id, agent, project and mission_slug as separate fields. Both are read: the URL is
+// the contract, the flat fields are the belt-and-braces, and the flat fields are what let
+// a mission room resolve its project without inferring one from the slug.
+//
+// A ROUTE THIS BUILD DOES NOT KNOW MUST SAY SO. `corner://settings` is refused rather
+// than silently swallowed — a notification or a widget tap that appears to do nothing is
+// the worst possible answer, and the one that trains people to stop tapping.
 
 import Foundation
 
@@ -73,27 +84,97 @@ struct DeepLink: Equatable {
     }
 }
 
+// MARK: - Routes
+
+/// Every destination the navigation stack can hold. Hashable because it IS the
+/// NavigationStack path — SwiftUI needs value identity to diff it.
+enum Route: Hashable {
+    case room(Room)
+    case review
+    case organize
+    case tracker
+
+    var roomID: String? {
+        if case .room(let room) = self { return room.roomID }
+        return nil
+    }
+
+    /// The URL this route is reachable at, so a push or a widget can be pointed at it.
+    /// Kept next to the parser so a new route cannot be added in only one direction.
+    var url: URL? {
+        switch self {
+        case .room(let room):
+            let encoded = room.roomID.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? room.roomID
+            return URL(string: "\(Config.urlScheme)://room/\(encoded)")
+        case .review:   return URL(string: "\(Config.urlScheme)://review")
+        case .organize: return URL(string: "\(Config.urlScheme)://organize")
+        case .tracker:  return URL(string: "\(Config.urlScheme)://tracker")
+        }
+    }
+}
+
+/// What a `corner://` URL resolved to. `.rooms` is the server's own fallback when a row
+/// carried no room_id (api/_lib/apns.js sends `corner://rooms`) and it means "the rail",
+/// which is a real answer and better than doing nothing.
+enum DeepLinkTarget: Equatable {
+    case room(DeepLink)
+    case route(Route)
+    case rail
+
+    init?(url: URL) {
+        guard url.scheme?.lowercased() == Config.urlScheme else { return nil }
+        switch url.host?.lowercased() {
+        case "room":
+            guard let link = DeepLink(url: url) else { return nil }
+            self = .room(link)
+        case "review":   self = .route(.review)
+        case "organize", "files": self = .route(.organize)
+        case "tracker":  self = .route(.tracker)
+        case "rooms":    self = .rail
+        default: return nil
+        }
+    }
+
+    /// From an APNs payload: the flat fields win (they carry more), and the `deep_link`
+    /// string is the fallback — which is also how a future non-room push would arrive,
+    /// since the flat fields only ever describe a message row.
+    init?(userInfo: [AnyHashable: Any]) {
+        if let link = DeepLink(userInfo: userInfo) {
+            self = .room(link)
+            return
+        }
+        guard let raw = userInfo["deep_link"] as? String,
+              let url = URL(string: raw),
+              let target = DeepLinkTarget(url: url)
+        else { return nil }
+        self = target
+    }
+}
+
 @MainActor
 final class AppRouter: ObservableObject {
 
     static let shared = AppRouter()
 
-    /// The navigation stack of rooms. One element deep in practice, but a path rather
-    /// than a binding so a notification tap can replace the destination outright
-    /// instead of pushing a second copy of a room already on screen.
-    @Published var path: [Room] = []
+    /// The navigation stack. One element deep in practice, but a path rather than a
+    /// binding so a notification tap can replace the destination outright instead of
+    /// pushing a second copy of a screen already on screen.
+    @Published var path: [Route] = []
 
-    /// Set when a deep link names a room this app cannot construct — a world the user
-    /// is not in, or a room kind that did not exist when this build shipped. Surfaced
-    /// as a message rather than swallowed: a tap that does nothing is the worst answer.
+    /// Set when a deep link names a destination this app cannot construct — a world the
+    /// user is not in, or a route that did not exist when this build shipped. Surfaced as
+    /// a message rather than swallowed.
     @Published var unresolvedLink: String?
 
-    /// Not private: the routing rules (replace-don't-stack, refuse-don't-guess) are
-    /// worth testing, and a singleton nothing can instantiate is a singleton whose
-    /// rules are only ever exercised in production.
+    /// Not private: the routing rules (replace-don't-stack, refuse-don't-guess) are worth
+    /// testing, and a singleton nothing can instantiate is a singleton whose rules are
+    /// only ever exercised in production.
     init() {}
 
-    var openRoom: Room? { path.last }
+    var openRoom: Room? {
+        if case .room(let room) = path.last { return room }
+        return nil
+    }
 
     func isShowing(_ link: DeepLink?) -> Bool {
         guard let link, let open = openRoom else { return false }
@@ -109,11 +190,39 @@ final class AppRouter: ObservableObject {
     }
 
     func open(_ room: Room) {
+        open(.room(room))
+    }
+
+    func open(_ route: Route) {
         unresolvedLink = nil
-        if path.last?.roomID == room.roomID { return }
+        if path.last == route { return }
         // Replace rather than stack: tapping three banners for three rooms should leave
-        // one room open, not a three-deep back stack the user has to unwind.
-        path = [room]
+        // one screen open, not a three-deep back stack the user has to unwind.
+        path = [route]
+    }
+
+    /// The one entry point for anything arriving from outside the app — a URL, a
+    /// notification tap, a widget. Everything funnels here so "what does a tap do" has
+    /// exactly one answer.
+    func handle(_ target: DeepLinkTarget) {
+        switch target {
+        case .room(let link): open(link)
+        case .route(let route): open(route)
+        case .rail: closeAll()
+        }
+    }
+
+    /// Refuses rather than guesses. Returns false when the URL is not ours or names a
+    /// route this build has no screen for, so the caller can say so out loud.
+    @discardableResult
+    func handle(url: URL) -> Bool {
+        guard url.scheme?.lowercased() == Config.urlScheme else { return false }
+        guard let target = DeepLinkTarget(url: url) else {
+            unresolvedLink = url.absoluteString
+            return false
+        }
+        handle(target)
+        return true
     }
 
     func closeAll() {
