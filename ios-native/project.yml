@@ -85,14 +85,13 @@ targets:
             CFBundleTypeRole: Editor
             CFBundleURLSchemes:
               - corner
-    entitlements:
-      path: Support/Corner.entitlements
-      properties:
-        # Expanded from the per-configuration APS_ENVIRONMENT setting below, so a
-        # Debug build registers against APNs sandbox and a Release build against
-        # production. Hard-coding one value is how sandbox tokens end up being
-        # handed to the production APNs host, which fails as BadDeviceToken.
-        aps-environment: $(APS_ENVIRONMENT)
+    # Entitlements are per-config FILES (hand-managed in Support/), not a single
+    # generated one: Debug installs to a physical device today, and no APNs key
+    # exists yet in the portal — a push entitlement in Debug demands a
+    # push-capable provisioning profile that cannot currently be minted. Release
+    # keeps aps-environment: production for the store archive. When the APNs key
+    # lands, Debug moves to a Development profile with push and gets
+    # aps-environment: development back.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.aheadofmarket.corner
@@ -103,11 +102,20 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_EMIT_LOC_STRINGS: "YES"
         GENERATE_INFOPLIST_FILE: "NO"
+        # Manual signing at the APP TARGET only — the CLI has no Apple ID
+        # session (xcodebuild "No Accounts"), and global manual settings break
+        # SPM package targets, which must stay Automatic. Both profiles are
+        # installed on this Mac and pair with the Apple Distribution identity.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: Apple Distribution
       configs:
         Debug:
-          APS_ENVIRONMENT: development
+          CODE_SIGN_ENTITLEMENTS: Support/Corner-Debug.entitlements
+          PROVISIONING_PROFILE_SPECIFIER: Corner Ad Hoc Patrik iPhone
         Release:
+          CODE_SIGN_ENTITLEMENTS: Support/Corner.entitlements
           APS_ENVIRONMENT: production
+          PROVISIONING_PROFILE_SPECIFIER: Corner App Store Distribution
 
   CornerTests:
     type: bundle.unit-test
