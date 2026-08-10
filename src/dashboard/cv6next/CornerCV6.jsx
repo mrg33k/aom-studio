@@ -1536,6 +1536,12 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // `dot` drives the green "they just messaged you" mark on the recent rows. It is the
   // unread flag the inbox feed already carried and nothing rendered (Patrik 2026-08-06).
   const recentTypeLabel = (r) => (r.kind === 'project' ? 'Project' : r.kind === 'mission' ? 'Mission' : 'Agent room');
+  // Room-row contract §1.4: every row states its own kind. Three rooms that behave
+  // completely differently (a project, one mission inside it, a 1:1 agent thread) were
+  // three identical grey rows on mobile — the reader had to already know. `type` drives
+  // the chip's tone class (is-project / is-mission / is-agent), `typeLabel` its word.
+  const recentTypeKey = (r) => (r.kind === 'project' ? 'project' : r.kind === 'mission' ? 'mission' : 'agent');
+  const RECENT_TYPE_WORD = { project: 'Project', mission: 'Mission', agent: 'Agent' };
   // Hero card status: if any world tasks are running, the most-recently-active room
   // is likely where the work is happening — show "working". Otherwise show "active"
   // (it is, by definition, the most recently active room). §5: status label is honest
@@ -1544,6 +1550,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const recentWithNav = recentList.map((r, idx) => ({
     ...r,
     sub: recentTypeLabel(r),
+    type: recentTypeKey(r),
+    typeLabel: RECENT_TYPE_WORD[recentTypeKey(r)],
     // Avatar circle initial — first letter of room name, uppercased.
     initial: (r.name || '?').charAt(0).toUpperCase(),
     // Hero status label shown only on first card (CSS :first-child controls display).
@@ -2561,7 +2569,17 @@ function initialViewFromUrl() {
   try {
     const v = new URLSearchParams(window.location.search).get('view');
     if (!v) return 'home';
-    if (v === 'chat' || v === 'chatlist') return 'chatlist';
+    if (v === 'chat' || v === 'chatlist' || v === 'room') return 'chatlist';
+    // Deep-link name map (room-row contract §4, 2026-08-10): the native app's four
+    // corner:// routes and the web's ?view= values are ONE set of destinations with two
+    // spellings, so a link written on either side opens the same place. Purely additive
+    // — every historical ?view= value below still resolves exactly as it did.
+    //   corner://rooms    -> ?view=rooms    (the rail = Home)
+    //   corner://organize -> ?view=files    (native accepts corner://files too)
+    //   corner://tracker  -> ?view=issues
+    if (v === 'rooms') return 'home';
+    if (v === 'files') return 'organize';
+    if (v === 'issues') return 'tracker';
     // corner:corner-ui-cv6 BUG1-fix — 'scribe' and 'live-scribe' are the natural deep-link
     // spellings agents/users write; map them to the internal 'livescribe' view key.
     if (v === 'scribe' || v === 'live-scribe') return 'livescribe';

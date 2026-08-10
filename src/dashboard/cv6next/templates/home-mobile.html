@@ -53,7 +53,11 @@
             <!-- Name line. Hero: display-size font via CSS. Quiet: 14px. rsub removed from layout
                  (it was added in d9705fb0 but the approved Amplify render does not show sub-type
                  labels — removed to match the visual contract). -->
-            <div class="mresume-nameline"><span class="rn" data-bind="rec.name">Bridge</span></div>
+            <!-- Type chip (room-row contract §1.4, 2026-08-10): PROJECT / MISSION / AGENT.
+                 Mobile had NO type signal at all, so a project, a mission inside it and a
+                 1:1 agent thread were three identical rows. Same `.tag-pill` chip the rest
+                 of CV6 uses; the tone comes from is-project / is-mission / is-agent. -->
+            <div class="mresume-nameline"><span class="rn" data-bind="rec.name">Bridge</span><span class="tag-pill rtype" data-mod="is-:rec.type" data-bind="rec.typeLabel">Mission</span></div>
             <!-- Status row: hero only (CSS shows :first-child, hides :not(:first-child)).
                  Lime dot + status word from data. §5: statusLabel='working' only when
                  world has real running tasks; 'active' otherwise — never fabricated. -->
