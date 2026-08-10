@@ -2088,6 +2088,10 @@
 [data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-nameline .rtype {
   order:-1;
   margin:0 0 6px;
+  /* The nameline is a COLUMN on the hero, so the quiet rows' align-self:center
+     centres the chip horizontally — it floated to the middle of the card instead of
+     sitting flush with the title it labels. */
+  align-self:flex-start;
   /* The hero card's own fill IS --accent-weak, which is exactly the AGENT chip's
      background — so on an agent hero (the common case) the chip all but disappeared.
      The tone stays in the TEXT; the box takes the neutral card surface so it reads in
