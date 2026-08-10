@@ -32,7 +32,17 @@ struct SignInView: View {
 
     var body: some View {
         ZStack {
-            Theme.ground.ignoresSafeArea()
+            // The living ASCII flow field replaces the flat ground. A soft
+            // center scrim underneath the form keeps the fields legible over it
+            // (comprehension before decoration — the animation is the stage, the
+            // login is the actor).
+            ASCIIBackground()
+
+            RadialGradient(
+                colors: [Theme.ground.opacity(0.82), Theme.ground.opacity(0.0)],
+                center: .center, startRadius: 8, endRadius: 320
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: Theme.s5) {
                 Spacer()
