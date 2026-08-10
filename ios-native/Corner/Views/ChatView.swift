@@ -15,6 +15,10 @@ struct ChatView: View {
 
     @State private var showingFiles = false
 
+    /// Computed ONCE per thread render and handed down to every bubble, rather than each
+    /// bubble subscribing to the review store itself.
+    private var waitingIDs: Set<String> { review.waitingIDs }
+
     init(room: Room) {
         _model = StateObject(wrappedValue: ChatViewModel(room: room))
     }
@@ -77,7 +81,8 @@ struct ChatView: View {
                                 MessageBubbleView(
                                     row: row,
                                     onOption: { model.draftOption($0) },
-                                    room: model.room
+                                    room: model.room,
+                                    waitingIDs: waitingIDs
                                 )
                                 .id(row.id)
                             case .outbox(let pending):

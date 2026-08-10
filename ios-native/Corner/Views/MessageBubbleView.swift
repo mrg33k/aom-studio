@@ -16,9 +16,14 @@ struct MessageBubbleView: View {
     /// The room this bubble is in, so a file tapped here can carry a review verdict
     /// filed against the right project and mission. Absent in previews and tests.
     var room: Room?
+    /// Deliverable ids still waiting on a verdict, passed DOWN as a value rather than
+    /// observed here. A bubble that subscribes to the review store means every row in a
+    /// long thread re-renders on each 60s queue refresh; the thread is the hottest view
+    /// in the app and it has no reason to redraw because a file in another room was
+    /// approved. ChatView observes once and hands the answer down.
+    var waitingIDs: Set<String> = []
 
     @State private var previewing: Attachment?
-    @StateObject private var review = ReviewStore.shared
 
     private var content: MessageContent { MessageContent.build(from: row) }
 
@@ -57,7 +62,7 @@ struct MessageBubbleView: View {
                 ForEach(content.attachments) { attachment in
                     AttachmentCardView(
                         attachment: attachment,
-                        isWaiting: !row.isUser && review.waitingIDs.contains(attachment.url)
+                        isWaiting: !row.isUser && waitingIDs.contains(attachment.url)
                     ) {
                         previewing = attachment
                     }
@@ -85,7 +90,7 @@ struct MessageBubbleView: View {
                 reviewContext: row.isUser ? nil : FilePreviewView.ReviewContext(
                     project: room?.reviewProject ?? "",
                     mission: room?.reviewMission ?? "",
-                    isWaiting: review.waitingIDs.contains(attachment.url)
+                    isWaiting: waitingIDs.contains(attachment.url)
                 )
             )
         }
