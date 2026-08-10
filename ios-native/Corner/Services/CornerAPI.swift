@@ -271,6 +271,42 @@ final class CornerAPI: ObservableObject {
         return (try? JSONDecoder().decode(MissionsTreeEnvelope.self, from: data))?.projects ?? []
     }
 
+    // MARK: - Recency (the home timeline)
+
+    /// One entry per active room from `/api/dashboard/room-activity`: when it last saw
+    /// traffic, and a human digest of its recent lines. `last_message_at` is an ISO
+    /// timestamp string; `last_message_text` is a " · "-joined digest (RoomPreview.clean
+    /// takes the first human segment).
+    struct RoomActivity: Decodable {
+        struct Entry: Decodable {
+            let last_message_at: String?
+            let last_message_text: String?
+        }
+        /// keyed by project slug
+        let projects: [String: Entry]?
+        /// keyed by "<project>:<bare mission slug>"
+        let missions: [String: Entry]?
+    }
+
+    /// GET /api/dashboard/room-activity?client=<world>.
+    ///
+    /// The SAME wide-window (~11 day) recency feed the web home reads (contract §2). It
+    /// covers project and mission rooms; direct 1:1 agent threads are NOT in it (the web
+    /// derives those from its message-poll inbox feed, which this client does not run).
+    /// `?client=` is sent so the response takes the endpoint's 180s edge cache.
+    func fetchRoomActivity() async throws -> RoomActivity {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/room-activity",
+            queryItems: [URLQueryItem(name: "client", value: world)]
+        )
+        let data = try await run(request)
+        guard let env = try? JSONDecoder().decode(RoomActivity.self, from: data) else {
+            throw APIError.decoding
+        }
+        return env
+    }
+
     // MARK: - This room's files (the crossings)
 
     /// The SAME room-scoped thread query, narrowed to rows that carry a file

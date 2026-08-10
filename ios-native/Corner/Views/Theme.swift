@@ -21,10 +21,34 @@ enum Theme {
 
     // Accent + signals
     static let accent = Color(red: 0.867, green: 0.686, blue: 0.376)
+    static let accentWeak = Color(red: 0.867, green: 0.686, blue: 0.376).opacity(0.16)
     static let userBubble = Color(red: 0.180, green: 0.204, blue: 0.243)
     static let agentBubble = Color(red: 0.106, green: 0.114, blue: 0.129)
     static let warning = Color(red: 0.945, green: 0.706, blue: 0.353)
     static let danger = Color(red: 0.906, green: 0.400, blue: 0.365)
+    /// The "active" status dot / hero dot — a live green, matching the web's lime signal.
+    static let live = Color(red: 0.353, green: 0.859, blue: 0.451)
+
+    // Room-row contract §1 — type-chip + category tones. Tokens, never literals in a view.
+    //   PROJECT → --violet-400 (#8b7cf6) on rgba(139,124,246,.18)
+    //   MISSION → --teal-400  (#2dd4bf) on rgba(45,212,191,.16)
+    //   AGENT   → --accent               on --accent-weak
+    static let violet = Color(red: 0.545, green: 0.486, blue: 0.965)
+    static let teal   = Color(red: 0.176, green: 0.831, blue: 0.749)
+    static let pink   = Color(red: 0.957, green: 0.447, blue: 0.714)
+    static let lime   = Color(red: 0.639, green: 0.902, blue: 0.208)
+    static let amber  = Color(red: 0.961, green: 0.620, blue: 0.043)
+    static let violetWeak = Color(red: 0.545, green: 0.486, blue: 0.965).opacity(0.18)
+    static let tealWeak   = Color(red: 0.176, green: 0.831, blue: 0.749).opacity(0.16)
+
+    /// The six category tints, in the web's `tintFor` order, and the same stable-hash
+    /// pick — so a room's left-edge colour matches between the phone and the web.
+    static let tintPalette: [Color] = [violet, accent, pink, teal, lime, amber]
+    static func tint(for seed: String) -> Color {
+        var h: UInt32 = 0
+        for scalar in seed.unicodeScalars { h = h &* 31 &+ scalar.value }
+        return tintPalette[Int(h % UInt32(tintPalette.count))]
+    }
 
     // Rhythm — one 4pt scale, nothing off it.
     static let s1: CGFloat = 4

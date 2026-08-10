@@ -26,8 +26,21 @@ final class RoomStore: ObservableObject {
         var id: String { room.roomID }
     }
 
+    /// One room on the home timeline (room-row contract §2). `ts` is the room's newest
+    /// message time in ms since epoch (0 = no known recent activity); `preview` is the
+    /// hygiene-cleaned last human line (empty collapses — never a placeholder).
+    struct RecentRoom: Identifiable, Hashable {
+        let room: Room
+        let ts: Double
+        let preview: String
+        var id: String { room.roomID }
+        var hasActivity: Bool { ts > 0 }
+    }
+
     @Published private(set) var agents: [Room] = []
     @Published private(set) var projects: [ProjectGroup] = []
+    /// The home timeline: rooms with real activity, strict-descending by newest ts.
+    @Published private(set) var recent: [RecentRoom] = []
     @Published private(set) var isLoading = false
     /// Non-nil when the project/mission half of the rail could not be fetched.
     @Published private(set) var railError: String?
@@ -56,7 +69,8 @@ final class RoomStore: ObservableObject {
 
         async let treeResult = fetchTree()
         async let listResult = fetchProjectList()
-        let (tree, list) = await (treeResult, listResult)
+        async let activityResult = fetchActivity()
+        let (tree, list, activity) = await (treeResult, listResult, activityResult)
 
         // Both halves failed: say so. One half failing still produces a usable rail.
         if tree == nil && list == nil {
@@ -113,6 +127,66 @@ final class RoomStore: ObservableObject {
 
         groups.sort { $0.room.title.localizedCaseInsensitiveCompare($1.room.title) == .orderedAscending }
         projects = groups
+        recent = buildRecent(groups: groups, activity: activity)
+    }
+
+    /// The home timeline (contract §2): strict recency, descending, no other key.
+    ///
+    /// Recency + preview come from `/api/dashboard/room-activity` — the same wide window
+    /// the web home reads. Only rooms that actually appear in that feed are on the
+    /// timeline; a dormant room is absent, which is the correct ranking rather than a lie
+    /// about it. Direct 1:1 agent threads are NOT in room-activity (see the mission
+    /// blocker), so they do not enter the home list here — they stay reachable via search.
+    private func buildRecent(groups: [ProjectGroup], activity: CornerAPI.RoomActivity?) -> [RecentRoom] {
+        guard let activity else { return [] }
+        var rows: [RecentRoom] = []
+        var order = 0
+
+        func consider(_ room: Room) {
+            guard let ref = room.activityKey else { return }
+            let entry: CornerAPI.RoomActivity.Entry?
+            switch ref.bucket {
+            case .project: entry = activity.projects?[ref.key]
+            case .mission: entry = activity.missions?[ref.key]
+            case .agent:   entry = nil
+            }
+            guard let entry, let ts = RoomStore.epochMillis(entry.last_message_at), ts > 0 else { return }
+            rows.append(RecentRoom(room: room, ts: ts, preview: RoomPreview.clean(entry.last_message_text ?? "")))
+            order += 1
+        }
+
+        for group in groups {
+            consider(group.room)
+            for mission in group.missions { consider(mission) }
+        }
+
+        // Strict recency, descending. Ties (same ms) fall back to discovery order so the
+        // sort is deterministic — that is a tie-break, not a competing sort key.
+        return rows.enumerated()
+            .sorted { l, r in l.element.ts != r.element.ts ? l.element.ts > r.element.ts : l.offset < r.offset }
+            .map(\.element)
+            .prefix(30)
+            .map { $0 }
+    }
+
+    /// ISO-8601 (with or without fractional seconds) → ms since epoch, or nil.
+    private static let isoFrac: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]; return f
+    }()
+    private static let isoPlain: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime]; return f
+    }()
+    static func epochMillis(_ raw: String?) -> Double? {
+        guard let raw, !raw.isEmpty else { return nil }
+        if let d = isoFrac.date(from: raw) ?? isoPlain.date(from: raw) {
+            return d.timeIntervalSince1970 * 1000
+        }
+        // Postgres sometimes hands back a space instead of the "T", and no zone. Coerce.
+        let coerced = raw.replacingOccurrences(of: " ", with: "T")
+        if let d = isoFrac.date(from: coerced) ?? isoPlain.date(from: coerced) {
+            return d.timeIntervalSince1970 * 1000
+        }
+        return nil
     }
 
     private func fetchTree() async -> [CornerAPI.ProjectNode]? {
@@ -121,6 +195,10 @@ final class RoomStore: ObservableObject {
 
     private func fetchProjectList() async -> [CornerAPI.ProjectRow]? {
         do { return try await api.fetchProjects() } catch { return nil }
+    }
+
+    private func fetchActivity() async -> CornerAPI.RoomActivity? {
+        do { return try await api.fetchRoomActivity() } catch { return nil }
     }
 
     /// Every room the rail knows, flattened — what the search field filters.
