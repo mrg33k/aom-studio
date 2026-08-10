@@ -103,6 +103,12 @@ polluted the next evidence search, proving action chatter must never be factual 
 step” is explicitly non-authorizing: voice must offer a concise verification task and
 wait for approval before calling `create_task`.
 
+**Acknowledgement exclusion:** Deleting the QA task left its `task-ack` message behind;
+that acknowledgement then outranked the durable App Store completion receipt. The
+single QA acknowledgement was removed, and `task-ack` is now excluded from factual
+evidence. `offer_next_action` is marked mandatory for unapproved work, with explicit
+instructions never to narrate a fake approval card or its steps.
+
 **Status:** in progress
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)

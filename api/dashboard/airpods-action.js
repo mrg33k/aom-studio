@@ -165,7 +165,7 @@ async function recentWorkspaceActivity(clientId, query) {
   const rows = await db(`messages?client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=300&select=id,agent,project,role,text,timestamp,source,metadata,user_name`);
   const terms = activityTerms(query);
   return (Array.isArray(rows) ? rows : [])
-    .filter((message) => !['voice-handoff', 'airpods-mode'].includes(message?.source))
+    .filter((message) => !['voice-handoff', 'airpods-mode', 'task-ack'].includes(message?.source))
     .filter((message) => !(message?.role === 'assistant' && ['room-bridge', 'share-file'].includes(message?.source)))
     .map((message) => ({ message, score: activityScore(message, terms) }))
     .filter(({ score }) => activityMatches(score, terms))

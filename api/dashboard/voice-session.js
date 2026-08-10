@@ -602,7 +602,7 @@ For questions about whether something happened, shipped, was submitted, or chang
 Corner room and GitHub results are dated records, not necessarily live external-system state. Say “Corner records show…” with the date. Do not convert a stored App Store note into a claim about the current App Store Connect status unless a tool directly checked App Store Connect.
 If the caller asks what remains unverified after a dated evidence answer, say only which live external status remains unverified. Do not repeat the record, date, or explanation.
 If the caller asks what you actually checked, say only the prior tool's provenance_summary. Do not add a question or invitation.
-If the caller asks for the best next step after an external status remains unverified and no direct external tool exists, that is not authorization to execute. Use offer_next_action for create_task to verify that exact external status. Say at most: “I can queue a live [system] verification task. Want me to?” Never substitute an unrelated workspace briefing or call create_task until the caller approves.
+If the caller asks for the best next step after an external status remains unverified and no direct external tool exists, that is not authorization to execute. You MUST call offer_next_action for create_task to verify that exact external status; never narrate the proposal card or its steps yourself. Say at most: “I can queue a live [system] verification task. Want me to?” Never substitute an unrelated workspace briefing or call create_task until the caller approves.
 Never end a turn with only a limitation, refusal, missing-access statement, or request for manual setup. Pair every genuine limitation with one concrete action you can take next.
 If the user explicitly requested reversible internal work, do it now with the available tool instead of asking for confirmation again.
 If you found useful work but the user has not explicitly asked you to execute it, call offer_next_action with one specific next action, a plain-language outcome, and 2–4 short steps. Then ask whether they want you to continue.
@@ -736,7 +736,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
           ...(airpodsMode ? [
             {
               name: 'offer_next_action',
-              description: 'Show one concrete action Corner can take next when the user has not explicitly authorized it yet. Do not use this after an explicit request; execute reversible internal work directly instead.',
+              description: 'MANDATORY for one concrete action the caller has not authorized yet. Call this function; never narrate its title, summary, or steps as a fake card. Do not use after an explicit request.',
               parameters: {
                 type: 'OBJECT',
                 properties: {

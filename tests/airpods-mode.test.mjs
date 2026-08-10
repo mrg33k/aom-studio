@@ -196,7 +196,7 @@ test('voice checks tenant-scoped recent evidence before denying workspace events
   assert.match(action, /read_recent_activity/);
   assert.match(action, /not proof the event did not happen/i);
   assert.match(action, /clientId !== 'aom'/);
-  assert.match(action, /\['voice-handoff', 'airpods-mode'\]\.includes/);
+  assert.match(action, /\['voice-handoff', 'airpods-mode', 'task-ack'\]\.includes/);
   assert.match(action, /\['room-bridge', 'share-file'\]\.includes/);
   assert.match(action, /recordedWaitingReview/);
   assert.match(action, /provenance_summary: provenanceSummary/);
