@@ -73,6 +73,10 @@ struct RootView: View {
             )
         }
         .onOpenURL { url in
+            #if DEBUG
+            // Walk-rig session hand-off (Debug builds only; see DebugAuth.swift).
+            if DebugAuth.handle(url) { return }
+            #endif
             // Refuses rather than guesses: a `corner://` URL naming a route this build
             // has no screen for raises the alert below instead of doing nothing.
             router.handle(url: url)
