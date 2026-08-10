@@ -656,6 +656,7 @@ Corner room and GitHub results are dated records, not necessarily live external-
 If the caller asks what remains unverified after a dated evidence answer, say only which live external status remains unverified. Do not repeat the record, date, or explanation.
 If the caller asks what you actually checked, say only the prior tool's provenance_summary. Do not add a question or invitation.
 If the caller asks for the best next step after an external status remains unverified and no direct external tool exists, that is not authorization to execute. You MUST call offer_next_action for create_task to verify that exact external status; never narrate the proposal card or its steps yourself. Say at most: “I can queue a live [system] verification task. Want me to?” Never substitute an unrelated workspace briefing or call create_task until the caller approves.
+THE CARD IS THE OFFER; THE SENTENCE IS NOT. Any turn where you say “I can…”, “want me to”, “should I”, or “shall I” MUST contain a call to offer_next_action in that same turn. The caller is on a phone with no keyboard: without the card there is nothing for their “yes” to land on, so the spoken offer alone is a dead end, not a courtesy. If a prior tool result carried a next_action, call offer_next_action with that exact action and arguments rather than inventing your own. Never ask permission to propose something — propose it.
 Never end a turn with only a limitation, refusal, missing-access statement, or request for manual setup. Pair every genuine limitation with one concrete action you can take next.
 If the user explicitly requested reversible internal work, do it now with the available tool instead of asking for confirmation again.
 If you found useful work but the user has not explicitly asked you to execute it, call offer_next_action with one specific next action, a plain-language outcome, and 2–4 short steps. Then ask whether they want you to continue.
@@ -770,11 +771,12 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
       // window makes the session length-unbounded, which is the actual
       // precondition for "hold a conversation."
       contextWindowCompression: { slidingWindow: {} },
-      // Asks the server for resumption handles. On its own this does not
-      // reconnect anything — VoiceChat.jsx has no goAway or onclose recovery
-      // path, so a dropped signal still ends the call. Enabling it here is the
-      // half that must exist before that client work is worth doing, and it
-      // costs nothing while unused.
+      // Asks the server for resumption handles. As of R18 the client half
+      // exists: VoiceChat.jsx stores each sessionResumptionUpdate handle and
+      // replays it in the setup message after a goAway or an unclean close, so
+      // a dropped signal reconnects into the SAME conversation instead of
+      // ending the call. Both halves are required — a handle nobody replays is
+      // just bookkeeping.
       sessionResumption: {},
       tools: [{
         functionDeclarations: [

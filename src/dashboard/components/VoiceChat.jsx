@@ -184,6 +184,30 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   const endFallbackTimerRef = useRef(null)
   const endIntentRef = useRef(false)
   const endReceiptRef = useRef(false)
+  // ── 2026-08-10, corner:airpods-mode R18 — surviving a dropped signal ────────
+  // A call on a phone walks out of Wi-Fi range, the socket closes, and until now
+  // that ended the conversation outright. The server has been issuing session
+  // resumption handles since R17; these refs are the client half that actually
+  // replays one. sessionConfigRef keeps the config so a reconnect never has to
+  // re-acquire the microphone — the audio graph stays up, only the socket is
+  // rebuilt, which is also why this works without a fresh user gesture on iOS.
+  const sessionConfigRef = useRef(null)
+  const resumeHandleRef = useRef(null)
+  const bindSocketRef = useRef(null)
+  const reconnectAttemptsRef = useRef(0)
+  const reconnectTimerRef = useRef(null)
+  const resumingRef = useRef(false)
+  const manualStopRef = useRef(false)
+  // Backstop for the spoken offer that never became a card: the last structured
+  // next_action a tool handed us, and whether this turn actually raised it.
+  const lastNextActionRef = useRef(null)
+  const offeredThisTurnRef = useRef(false)
+  const turnTextRef = useRef('')
+  const scheduleReconnectRef = useRef(null)
+  // Only a call that actually got going is worth buying back. A socket that
+  // never reached setupComplete is a failed connect, and retrying that behind
+  // the caller's back just hides the real error.
+  const everReadyRef = useRef(false)
 
   // Keep transcriptRef in sync with transcript state. On every transcript change
   // the effect commits the latest array to the ref. stopSession also merges any
@@ -407,6 +431,16 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   }, [playNextChunk])
 
   const stopSession = useCallback(async () => {
+    // Deliberate teardown. Every reconnect path checks this flag first, so
+    // hanging up can never be mistaken for a dropped signal and silently
+    // redial the caller.
+    manualStopRef.current = true
+    if (reconnectTimerRef.current) { clearTimeout(reconnectTimerRef.current); reconnectTimerRef.current = null }
+    reconnectAttemptsRef.current = 0
+    resumingRef.current = false
+    resumeHandleRef.current = null
+    sessionConfigRef.current = null
+    lastNextActionRef.current = null
     if (endTimerRef.current) { clearTimeout(endTimerRef.current); endTimerRef.current = null }
     if (endFallbackTimerRef.current) { clearTimeout(endFallbackTimerRef.current); endFallbackTimerRef.current = null }
     // Flush any pending transcripts BEFORE tearing down (prevents message loss)
@@ -593,6 +627,15 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     sessionReadyRef.current = false
     endIntentRef.current = false
     endReceiptRef.current = false
+    manualStopRef.current = false
+    everReadyRef.current = false
+    resumingRef.current = false
+    resumeHandleRef.current = null
+    reconnectAttemptsRef.current = 0
+    lastNextActionRef.current = null
+    offeredThisTurnRef.current = false
+    turnTextRef.current = ''
+    if (reconnectTimerRef.current) { clearTimeout(reconnectTimerRef.current); reconnectTimerRef.current = null }
     sessionIdRef.current = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     summaryPostedRef.current = false
     updateStatus('connecting')
@@ -723,6 +766,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
 
       // 5. Connect directly to Gemini Live WebSocket
       addSystemMessage('Connecting to voice...')
+      sessionConfigRef.current = sessionConfig
       const ws = new WebSocket(sessionConfig.wsUrl)
       ws.binaryType = 'arraybuffer'
       wsRef.current = ws
@@ -737,12 +781,24 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         }
       }, 12000)
 
+      // Every handler below is bound through this function so a reconnect can
+      // rebuild the socket without rebuilding the microphone, the audio graph,
+      // or this component's state. `ws` is a parameter, so the reconnected
+      // socket gets its own closure.
+      const bindSocket = (ws) => {
       ws.onopen = () => {
-        // Send setup message (model config, system instruction, voice)
-        ws.send(JSON.stringify(sessionConfig.setupMessage))
+        // Send setup message (model config, system instruction, voice). On a
+        // reconnect the stored resumption handle rides along, which is what
+        // makes Gemini continue the SAME conversation instead of meeting the
+        // caller as a stranger halfway through their sentence.
+        const handle = resumingRef.current ? resumeHandleRef.current : null
+        const setupMessage = handle
+          ? { ...sessionConfig.setupMessage, setup: { ...sessionConfig.setupMessage.setup, sessionResumption: { handle } } }
+          : sessionConfig.setupMessage
+        ws.send(JSON.stringify(setupMessage))
 
-        // Session timer
-        sessionTimerRef.current = setInterval(() => setSessionSecs(s => s + 1), 1000)
+        // Session timer (one only — a reconnect must not double-count seconds)
+        if (!sessionTimerRef.current) sessionTimerRef.current = setInterval(() => setSessionSecs(s => s + 1), 1000)
       }
 
       ws.onmessage = async (event) => {
@@ -756,6 +812,18 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
           if (msg.setupComplete !== undefined) {
             if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
             sessionReadyRef.current = true
+            everReadyRef.current = true
+            if (resumingRef.current) {
+              // Resumed mid-call: no greeting, no re-sent opening prompt. The
+              // caller was mid-conversation; the correct behaviour is to be
+              // listening again, quietly.
+              resumingRef.current = false
+              reconnectAttemptsRef.current = 0
+              setErrorMsg('')
+              addSystemMessage('Reconnected.')
+              updateStatus('listening')
+              return
+            }
             addSystemMessage('Connected. Listening.')
             updateStatus('listening')
             if (initialPrompt) {
@@ -766,6 +834,24 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 },
               }))
             }
+            return
+          }
+
+          // The server hands out a fresh resumption handle as the conversation
+          // advances. Keep the newest one; it is the only thing that can buy
+          // the call back after a drop.
+          if (msg.sessionResumptionUpdate) {
+            const update = msg.sessionResumptionUpdate
+            if (update.resumable && update.newHandle) resumeHandleRef.current = update.newHandle
+            return
+          }
+
+          // goAway means this connection is about to be closed by the server.
+          // Reconnect BEFORE it dies rather than waiting for the drop, so the
+          // caller hears nothing at all.
+          if (msg.goAway) {
+            console.log('[VoiceChat] goAway received, reconnecting into the same conversation')
+            scheduleReconnectRef.current?.('server recycle')
             return
           }
 
@@ -806,6 +892,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
 
             // Output transcription (what the model said) -- accumulate chunks, save full turn on finished
             if (sc.outputTranscription?.text) {
+              turnTextRef.current += sc.outputTranscription.text
               outputAccRef.current += sc.outputTranscription.text
               if (sc.outputTranscription.finished) {
                 const text = outputAccRef.current.trim()
@@ -837,6 +924,31 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                 onTranscript?.(pending, 'model')
                 scheduleEndReceiptFallback(pending)
               }
+              // ── R18: the spoken offer that never became a card ──────────────
+              // Measured on production 2026-08-10: "I can queue a task to verify
+              // the App Store status. Want me to?" — said out loud, no
+              // offer_next_action call, so nothing appeared on screen and the
+              // caller's "yes" had nothing to accept. The prompt asks for the
+              // call; a prompt is not a guarantee. If the model speaks an offer
+              // in a turn where it raised no card, and a tool already handed us
+              // a structured next_action, raise that card here.
+              const spokenTurn = turnTextRef.current.trim()
+              turnTextRef.current = ''
+              const spokenAnOffer = /\b(want me to|shall i|should i|i can (?:queue|create|start|set up|run|open))\b/i.test(spokenTurn)
+              if (sessionMode === 'airpods' && spokenAnOffer && !offeredThisTurnRef.current && lastNextActionRef.current) {
+                const pendingAction = lastNextActionRef.current
+                console.log('[VoiceChat] Spoken offer with no card; raising the tool-supplied next_action', pendingAction)
+                onToolAction?.({
+                  phase: 'proposal',
+                  action: pendingAction.action,
+                  args: pendingAction.arguments || {},
+                  title: pendingAction.title,
+                  summary: pendingAction.summary,
+                  steps: pendingAction.steps || [],
+                  raisedBy: 'client_backstop',
+                })
+              }
+              offeredThisTurnRef.current = false
               if (playQueueRef.current.length === 0 && !isPlayingRef.current) {
                 updateStatus('listening')
               }
@@ -959,6 +1071,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                   updateStatus(prevStatus === 'creating' ? 'listening' : prevStatus)
                 }
               } else if (sessionMode === 'airpods' && call.name === 'offer_next_action') {
+                offeredThisTurnRef.current = true
                 result = { ok: true, offered: true, spoken_summary: `I can ${args.title || 'take the next step'}.` }
                 onToolAction?.({ phase: 'proposal', action: args.action, args: args.arguments || {}, title: args.title, summary: args.summary, steps: args.steps || [] })
               } else if (sessionMode === 'airpods') {
@@ -980,6 +1093,10 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
                   })
                   const data = await resp.json().catch(() => ({}))
                   result = resp.ok ? data : { ok: false, error: data.error || `Action failed (${resp.status})` }
+                  // Remember the most recent structured proposal a tool handed
+                  // back, so the turn-complete backstop has something real to
+                  // raise if the model speaks the offer and forgets the card.
+                  if (result?.next_action?.action) lastNextActionRef.current = result.next_action
                   if (result.ui_effect) {
                     const navigationReceipt = await applyUiEffect(result.ui_effect)
                     result = { ...result, navigation_receipt: navigationReceipt, navigation_acknowledged: navigationReceipt.ok === true }
@@ -1033,6 +1150,10 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
       }
 
       ws.onerror = async () => {
+        // Browsers fire error THEN close on an abnormal drop. Without this the
+        // old teardown ran first and the reconnect in onclose never got a
+        // chance — the call was already dismantled.
+        if (scheduleReconnectRef.current?.('socket error')) return
         addSystemMessage('Voice connection failed. Check network and try again.')
         await stopSession()
         setErrorMsg('Voice connection failed. Tap the AirPods button to retry.')
@@ -1059,6 +1180,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
         if (statusRef.current !== 'idle') {
           if (event.code !== 1000) {
             const reason = event.reason || `closed (code ${event.code})`
+            // A dropped signal is not the end of the conversation any more.
+            if (scheduleReconnectRef.current?.(reason)) return
             addSystemMessage(`Disconnected: ${reason}`)
             setErrorMsg(reason)
             updateStatus('error')
@@ -1068,6 +1191,51 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
           }
         }
       }
+      }
+
+      bindSocketRef.current = bindSocket
+      bindSocket(ws)
+
+      // Rebuild the socket, keep the call. Returns true when a reconnect was
+      // actually scheduled, so the caller knows whether to fall through to the
+      // old "the call is over" error path. Three attempts with backoff: past
+      // that it is not a blip, and pretending otherwise strands the caller
+      // listening to silence.
+      const scheduleReconnect = (reason) => {
+        if (manualStopRef.current) return false
+        if (!everReadyRef.current) return false
+        if (endIntentRef.current || endReceiptRef.current) return false
+        if (!sessionConfigRef.current || !mediaStreamRef.current) return false
+        if (reconnectTimerRef.current) return true
+        if (reconnectAttemptsRef.current >= 3) return false
+        const attempt = ++reconnectAttemptsRef.current
+        const delay = [400, 1500, 4000][attempt - 1] || 4000
+        sessionReadyRef.current = false
+        resumingRef.current = true
+        updateStatus('connecting')
+        addSystemMessage(attempt === 1
+          ? 'Signal dropped. Reconnecting…'
+          : `Still reconnecting (attempt ${attempt} of 3)…`)
+        console.warn('[VoiceChat] reconnecting after', reason, 'attempt', attempt)
+        reconnectTimerRef.current = setTimeout(() => {
+          reconnectTimerRef.current = null
+          if (manualStopRef.current) return
+          try {
+            const previous = wsRef.current
+            if (previous && previous.readyState === WebSocket.OPEN) { try { previous.close() } catch (_) {} }
+            const next = new WebSocket(sessionConfigRef.current.wsUrl)
+            next.binaryType = 'arraybuffer'
+            wsRef.current = next
+            bindSocketRef.current?.(next)
+          } catch (err) {
+            addSystemMessage(`Reconnect failed: ${err?.message || err}`)
+            setErrorMsg('Lost the connection. Tap the AirPods button to start again.')
+            updateStatus('error')
+          }
+        }, delay)
+        return true
+      }
+      scheduleReconnectRef.current = scheduleReconnect
 
     } catch (err) {
       const msg = err?.name === 'NotAllowedError'

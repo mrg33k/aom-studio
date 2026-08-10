@@ -160,6 +160,22 @@ function roomLabel(message) {
   return { room_key: `agent:${message?.agent || 'corner'}`, room_name: String(message?.agent || 'Corner') };
 }
 
+// A proposal card is only useful if the task it would create is well-formed.
+// create_task REQUIRES project + mission_slug, so the scope has to be carried
+// out of the record the evidence came from instead of being invented later.
+// Mission slugs are stored in `project:mission` form, so split before use.
+function roomTaskScope(message) {
+  const mission = String(message?.metadata?.mission_slug || '').trim();
+  const project = String(message?.project || '').trim();
+  if (mission.includes(':')) {
+    const [scopeProject, ...rest] = mission.split(':');
+    return { project: scopeProject, mission_slug: rest.join(':') };
+  }
+  if (project && mission) return { project, mission_slug: mission };
+  if (project) return { project, mission_slug: null };
+  return { project: null, mission_slug: null };
+}
+
 function activityScore(message, terms) {
   if (!terms.length) return 1;
   const haystack = [message?.text, message?.agent, message?.project, message?.source, message?.metadata?.mission_slug]
@@ -182,13 +198,14 @@ async function recentWorkspaceActivity(clientId, query) {
     .filter(({ score }) => activityMatches(score, terms))
     .sort((a, b) => b.score - a.score || String(b.message.timestamp || '').localeCompare(String(a.message.timestamp || '')))
     .slice(0, 12)
-    .map(({ message }) => {
+    .map(({ message, score }) => {
       const room = roomLabel(message);
       return {
         source_type: 'corner_room', source_label: `${room.room_name} room`,
         room_key: room.room_key, room_name: room.room_name, timestamp: message.timestamp || null,
         author: message.role === 'user' ? (message.user_name || 'Workspace member') : (message.agent || 'Corner agent'),
         excerpt: String(message.text || '').replace(/\s+/g, ' ').trim().slice(0, 360),
+        match_score: score, task_scope: roomTaskScope(message),
       };
     });
 }
@@ -225,12 +242,13 @@ async function recentGithubActivity(clientId, query) {
       .filter(({ score }) => activityMatches(score, terms))
       .sort((a, b) => b.score - a.score)
       .slice(0, 8)
-      .map(({ commit }) => ({
+      .map(({ commit, score }) => ({
         source_type: 'github_commit', source_label: `GitHub ${owner}/${repo}`,
         timestamp: commit?.commit?.author?.date || null,
         author: commit?.commit?.author?.name || commit?.author?.login || 'Unknown',
         excerpt: String(commit?.commit?.message || '').replace(/\s+/g, ' ').trim().slice(0, 360),
         reference: commit?.html_url || null, sha: String(commit?.sha || '').slice(0, 7),
+        match_score: score,
       }));
     return { availability: 'available', items };
   } catch {
@@ -244,8 +262,20 @@ async function readRecentActivity(clientId, args) {
     recentWorkspaceActivity(clientId, query),
     args.include_github === false ? Promise.resolve({ availability: 'not_requested', items: [] }) : recentGithubActivity(clientId, query),
   ]);
+  // ── 2026-08-10, corner:airpods-mode R18 ──────────────────────────────────
+  // This merge used to sort on TIMESTAMP ALONE, which threw away the relevance
+  // score both sources had just computed. Reproduced on production this date:
+  // the query "App Store submission" returned, as its primary record, a commit
+  // titled "the second word cap was hiding inside the evidence tool" — newest,
+  // and about nothing the caller asked. The spoken contract then pointed at that
+  // commit while the model sensibly answered from the business-ops room record
+  // further down items[]. That IS the "it named the wrong source for evidence it
+  // just gave you" defect: not a wording bug, a ranking bug. Relevance first,
+  // recency as the tie-break, so the record the answer uses and the record
+  // provenance names are the same record.
   const items = [...roomItems, ...github.items]
-    .sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')))
+    .sort((a, b) => (b.match_score || 0) - (a.match_score || 0)
+      || String(b.timestamp || '').localeCompare(String(a.timestamp || '')))
     .slice(0, 16);
   const primary = items[0] || null;
   // Rendered in UTC, so every dated evidence answer given after ~5pm Phoenix
@@ -266,14 +296,49 @@ async function readRecentActivity(clientId, args) {
       // model to read and interpret; the spoken layer describes it instead.
       ? `The most recent matching record in ${primary.source_label} is dated ${primaryDate || 'an unknown date'}. Describe what it says in your own words: ${primary.excerpt.slice(0, 200)}`
       : 'I did not find a matching recent record. That is not proof the event did not happen.';
+  // Provenance now describes USE, not merely search. The old sentence led with
+  // "Checked GitHub …" even when the answer came from a room record, so the
+  // caller heard a source that had contributed nothing to the claim. What was
+  // quoted comes first and is named as the thing the answer rests on; anything
+  // else is explicitly demoted to "also searched, not quoted".
+  const alsoSearched = [
+    primary?.source_type === 'corner_room'
+      ? `GitHub ${github.availability === 'available' ? `(${github.items.length} matching commit${github.items.length === 1 ? '' : 's'}, not quoted)` : `(${github.availability.replace(/_/g, ' ')})`}`
+      : `Corner room records (${roomItems.length} matching, not quoted)`,
+  ].join('; ');
   const provenanceSummary = primary
-    ? `Checked ${primary.source_label} dated ${primaryDate}; GitHub search found ${github.items.length} matching commit${github.items.length === 1 ? '' : 's'}.`
+    ? `The answer above comes from one record: ${primary.source_label}, dated ${primaryDate}. Also searched: ${alsoSearched}.`
     : `Checked Corner room records and GitHub; neither returned a matching record.`;
+  // The external system this question is really about, when there is one. A
+  // stored Corner note can never settle it, so the only honest next step is a
+  // task that goes and looks — and that step has to arrive as an approval card,
+  // not as a sentence.
+  const externalSystem = /app\s*store|testflight/i.test(query) ? 'App Store Connect'
+    : /vercel|deploy(ment)?\b/i.test(query) ? 'the Vercel deployment'
+    : /gmail|email|inbox/i.test(query) ? 'the mailbox'
+    : null;
+  const proposalScope = items.find((item) => item.task_scope?.project && item.task_scope?.mission_slug)?.task_scope || null;
+  const externalVerification = externalSystem && proposalScope ? {
+    action: 'create_task',
+    title: `Verify live ${externalSystem} status`,
+    summary: `Queue a task that checks ${externalSystem} directly and reports the current status back.`,
+    arguments: {
+      title: `Verify live ${externalSystem} status for: ${query}`,
+      description: `Check ${externalSystem} directly and report the current status. Corner records only show what was written down on ${primaryDate || 'an earlier date'}, which is not proof of the live state.`,
+      project: proposalScope.project,
+      mission_slug: proposalScope.mission_slug,
+    },
+    requires_user_approval: true,
+  } : null;
   return {
     ok: true, query, checked_at: new Date().toISOString(),
     sources: { corner_rooms: 'available', github: github.availability }, items,
     primary_record: primary ? { ...primary, calendar_date: primaryDate } : null,
     provenance_summary: provenanceSummary,
+    // The single record the spoken answer is contracted to rest on. Provenance
+    // and the answer are built from THIS, so they cannot disagree.
+    evidence_used: primary ? { source_label: primary.source_label, calendar_date: primaryDate, room_key: primary.room_key || null, reference: primary.reference || null } : null,
+    next_action: externalVerification,
     spoken_summary: spokenSummary,
     // The second hidden word cap. The prompt's "22 spoken words" was the loud
     // one; this contract enforced the same ceiling from inside the tool result,
@@ -285,9 +350,18 @@ async function readRecentActivity(clientId, args) {
     // these are the sentences that stop a stored note from being reported as
     // live external truth: say "Corner records", say the calendar date, say
     // what remains unverified.
+    // Two contract clauses were added on 2026-08-10 (R18), both because the
+    // measured production transcript broke them:
+    //   • "Is there anything specific you want me to look into about it?" —
+    //     a trailing invitation on an evidence read. The old wording said "do
+    //     not ask a follow-up question" and lost; a period is a checkable
+    //     instruction, a "don't" is not.
+    //   • "I can queue a task … Want me to?" spoken with no tool call, so no
+    //     approval card ever reached the screen and the caller's yes had
+    //     nothing to land on. The card is the offer; the sentence is not.
     response_contract: primary
-      ? 'Answer from primary_record in your own natural spoken words, at whatever length the question deserves. You MUST say the phrase "Corner records" (or name the source label), MUST say the explicit calendar_date, and MUST say that the live external status is unverified whenever the question is about an external system such as the App Store. Never read the raw excerpt aloud, never use a relative date, and never claim live external state. Do not ask a follow-up question.'
-      : 'State that no matching record was found and that this does not prove the event did not happen. Do not ask a follow-up question.',
+      ? `Answer from primary_record in your own natural spoken words, at whatever length the question deserves. You MUST say the phrase "Corner records" (or name the source label), MUST say the explicit calendar_date, and MUST say that the live external status is unverified whenever the question is about an external system such as the App Store. Cite ONLY the source named in evidence_used — never name a source you did not quote. Never read the raw excerpt aloud, never use a relative date, and never claim live external state. End on a period. Do not ask a follow-up question, do not offer to "look into" anything, and do not append an invitation such as "anything specific" or "anything else".${externalVerification ? ' If the caller asks what you can do next, you MUST call offer_next_action with the exact action and arguments from next_action IN THE SAME TURN. Speaking the offer without that call puts no approval card on their screen, so nothing can happen: it is a failed turn, not a polite one.' : ''}`
+      : 'State that no matching record was found and that this does not prove the event did not happen. End on a period. Do not ask a follow-up question and do not append an invitation.',
   };
 }
 

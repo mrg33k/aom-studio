@@ -230,8 +230,18 @@ test('real-call routes close rooms, reassign tasks, and audit natural session en
   assert.match(session, /call read_task_status/);
   assert.match(session, /offer_next_action for retry_task/);
   assert.match(session, /HARD SPOKEN OUTPUT CONTRACT/);
-  assert.match(session, /at most 22 spoken words/);
-  assert.match(session, /const temp = airpodsMode \? 0\.0 : requestedTemp/);
+  // ── 2026-08-10, corner:airpods-mode R18 ────────────────────────────────────
+  // These four assertions were still pinned to the pre-R17 source: the 22-word
+  // cap, the deterministic 0.0 decode, the say-only-this tool contract, and the
+  // read-the-date instruction. R17 deleted all four ON PURPOSE — they were the
+  // reason the assistant could not hold a conversation — so this test has been
+  // failing ever since, and failing in the worst direction: demanding the bug
+  // back. Same class of defect as the gauntlet's 24-word ceiling. Re-pointed at
+  // the current contract, and inverted where the old rule must never return.
+  assert.doesNotMatch(session, /at most 22 spoken words/);
+  assert.match(session, /There is no upper word limit in this contract/);
+  assert.match(session, /const temp = airpodsMode \? 0\.85 : requestedTemp/);
+  assert.match(session, /generationConfig[\s\S]{0,200}temperature: temp/);
   assert.match(session, /say only “Talk soon\.”/);
   assert.match(session, /dated records, not necessarily live external-system state/);
   assert.match(session, /do not recap unless asked/);
@@ -242,10 +252,9 @@ test('real-call routes close rooms, reassign tasks, and audit natural session en
   assert.match(action, /next_action: repairableScope/);
   assert.match(action, /seenPriorityTitles/);
   assert.match(action, /compactSpokenTitle/);
-  assert.match(action, /Repair and retry it\?/);
-  assert.match(action, /response_contract: 'Say only spoken_summary/);
+  assert.doesNotMatch(action, /response_contract: 'Say only spoken_summary/);
   assert.match(action, /primary_record: primary/);
-  assert.match(action, /Include calendar_date/);
+  assert.match(action, /MUST say the explicit calendar_date/);
   assert.match(session, /endingInstruction = airpodsMode[\s\S]{0,40}\? `ENDING A CONVERSATION/);
   assert.match(session, /say exactly “Talk soon\.”/);
   assert.match(transport, /EXPLICIT_END_INTENT/);
@@ -288,4 +297,65 @@ test('AirPods control is mounted once in the desktop bar and active phone header
   assert.doesNotMatch(provider, /corner-airpods-float/);
   assert.doesNotMatch(provider, /corner-voice-dock/);
   assert.doesNotMatch(styles, /corner-voice-dock/);
+});
+
+// ── 2026-08-10, corner:airpods-mode R18 ──────────────────────────────────────
+// The three reds carried out of R17, each pinned to the mechanism that fixes it
+// rather than to a phrase in the prompt. Prompts lost every previous round; the
+// ranking, the tool contract and the client are what actually decide behaviour.
+test('evidence is ranked by relevance, and provenance names the record the answer used', () => {
+  const action = readFileSync(new URL('../api/dashboard/airpods-action.js', import.meta.url), 'utf8');
+  // Recency-only ranking is what made an App Store question resolve to an
+  // unrelated commit while the spoken answer used a room record — the "named
+  // the wrong source" defect. Relevance first, recency as tie-break.
+  assert.match(action, /\(b\.match_score \|\| 0\) - \(a\.match_score \|\| 0\)/);
+  assert.match(action, /match_score: score/);
+  // Provenance describes what was USED, and demotes everything else.
+  assert.match(action, /The answer above comes from one record/);
+  assert.match(action, /Also searched:/);
+  assert.match(action, /evidence_used: primary/);
+  assert.match(action, /Cite ONLY the source named in evidence_used/);
+});
+
+test('an external-status question returns a well-formed proposal and demands the card', () => {
+  const action = readFileSync(new URL('../api/dashboard/airpods-action.js', import.meta.url), 'utf8');
+  const session = readFileSync(new URL('../api/dashboard/voice-session.js', import.meta.url), 'utf8');
+  // create_task needs project + mission_slug, so the scope travels with the
+  // record instead of being invented when the caller says yes.
+  assert.match(action, /function roomTaskScope/);
+  assert.match(action, /task_scope: roomTaskScope\(message\)/);
+  assert.match(action, /next_action: externalVerification/);
+  assert.match(action, /action: 'create_task'/);
+  assert.match(action, /MUST call offer_next_action with the exact action and arguments from next_action IN THE SAME TURN/);
+  assert.match(session, /THE CARD IS THE OFFER; THE SENTENCE IS NOT/);
+  // No trailing invitation on an evidence read.
+  assert.match(action, /End on a period/);
+  assert.match(action, /anything specific/);
+});
+
+test('a dropped signal reconnects into the same conversation instead of ending the call', () => {
+  const transport = readFileSync(new URL('../src/dashboard/components/VoiceChat.jsx', import.meta.url), 'utf8');
+  const session = readFileSync(new URL('../api/dashboard/voice-session.js', import.meta.url), 'utf8');
+  // Server half: handles are requested. Client half: they are stored and replayed.
+  assert.match(session, /sessionResumption: \{\}/);
+  assert.match(transport, /msg\.sessionResumptionUpdate/);
+  assert.match(transport, /resumeHandleRef\.current = update\.newHandle/);
+  assert.match(transport, /sessionResumption: \{ handle \}/);
+  assert.match(transport, /if \(msg\.goAway\)/);
+  // Reconnect must survive the error-then-close ordering, and must never fire
+  // after a deliberate hang-up or on a connect that never worked.
+  assert.match(transport, /ws\.onerror = async \(\) => \{\s*[\s\S]{0,400}scheduleReconnectRef\.current\?\.\('socket error'\)/);
+  assert.match(transport, /if \(manualStopRef\.current\) return false/);
+  assert.match(transport, /if \(!everReadyRef\.current\) return false/);
+  assert.match(transport, /reconnectAttemptsRef\.current >= 3/);
+  // The audio graph is not rebuilt, so no new microphone gesture is needed.
+  assert.match(transport, /bindSocketRef\.current\?\.\(next\)/);
+});
+
+test('a spoken offer always reaches the screen as a card', () => {
+  const transport = readFileSync(new URL('../src/dashboard/components/VoiceChat.jsx', import.meta.url), 'utf8');
+  assert.match(transport, /if \(result\?\.next_action\?\.action\) lastNextActionRef\.current = result\.next_action/);
+  assert.match(transport, /offeredThisTurnRef\.current = true/);
+  assert.match(transport, /want me to\|shall i\|should i/);
+  assert.match(transport, /raisedBy: 'client_backstop'/);
 });
