@@ -1123,7 +1123,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         world-wide view. */}
                     <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
                     <RoomRecoveryNotice health={turnHealth} onRetry={retryTurn} onNudge={nudgeTurn} />
-                    <RoomConnectionNotice connection={connection} onRetry={reloadThread} />
+                    {/* The full-thread error above already says the connection dropped;
+                        don't stack a second strip under it saying the same thing. */}
+                    <RoomConnectionNotice connection={(threadStatus === 'error' && !messages?.length) ? null : connection} onRetry={reloadThread} />
                     {/* Only renders when the FRONT DOOR chose this room automatically — names
                         the destination the user never got to see, and moves the message in one
                         tap if it guessed wrong (corner:front-door R8). */}

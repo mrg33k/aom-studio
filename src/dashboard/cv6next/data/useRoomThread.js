@@ -814,7 +814,10 @@ export function useRoomThread(worldId, room) {
       refreshed.then(() => {
         if (!alive) return;
         load();
-        if (supabase && channel && channel.state !== 'joined') subscribeRoom();
+        // Only rebuild a socket that is actually down. Tearing a healthy channel
+        // down on every tab focus would churn the connection for no reason.
+        const socketState = channel && channel.state;
+        if (supabase && (!channel || socketState === 'closed' || socketState === 'errored' || socketState === 'leaving')) subscribeRoom();
       });
     };
     const onOnline = () => { setConnection((c) => ({ ...c, online: true })); onWake(); };

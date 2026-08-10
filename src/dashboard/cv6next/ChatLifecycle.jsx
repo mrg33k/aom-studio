@@ -1503,7 +1503,9 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               this fixed-height card and the same projection names the Activity dropdown. */}
           <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
           <RoomRecoveryNotice health={turnHealth} onRetry={onRetryTurn} onNudge={onNudgeTurn} />
-          <RoomConnectionNotice connection={connection} onRetry={onReloadThread} />
+          {/* The full-thread error above already says the connection dropped;
+              don't stack a second strip under it saying the same thing. */}
+          <RoomConnectionNotice connection={loadFailed ? null : connection} onRetry={onReloadThread} />
           {/* In-flight background work left the thread (corner:one-corner M19): it lives
               in the Background work window, reached from the drawer menu. */}
           {/* Only renders when the FRONT DOOR chose this room automatically. No projects /
