@@ -301,3 +301,18 @@ CoreDevice icon request returned a 528×528 image from the installed bundle with
 `Is Placeholder = false`, visually confirming the real dark Corner mark. The focused
 AirPods suite passes 20/20 and the signed archive validates. R13's physical room-data
 confirmation is still separate and pending.
+
+## 2026-08-09 — R15 remove the persistent voice strip
+
+Patrik showed that armed voice left a wide “Corner Voice” strip fixed immediately under
+the phone header, covering the top room and shrinking the useful canvas. The strip was
+a separate idle dock; it was not required for the full voice controls. R15 removes the
+dock and all associated responsive CSS. The headset icon in the shared header remains
+the single persistent entry and still toggles the complete Corner Voice panel.
+
+An authenticated 390×844 browser pass verified one headset control, no idle dock, no
+closed panel, no horizontal overflow, successful panel opening, and a clean dismissal
+back to the room list. The browser check directly shaped the fix by proving both the
+closed layout and the retained open-panel path. The focused suite passes 20/20 and the
+production-configured native build passes. Signed Corner 1.0 (14) was installed and
+launched on Patrik’s paired iPhone; production web release verification remains.

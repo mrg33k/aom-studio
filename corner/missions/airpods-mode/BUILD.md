@@ -2,6 +2,34 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R15 — Header-only idle voice entry (2026-08-09)
+
+**Physical evidence:** Build 13 restores the correct app icon and room data, but when
+voice is armed and its controls are closed, a persistent “Corner Voice” strip remains
+fixed beneath the phone header. It covers the first room and materially reduces the
+usable mobile canvas.
+
+**Scope:** Remove the idle voice strip entirely. The headset button immediately left
+of New room remains the single persistent voice entry; the full voice controls appear
+only after the user explicitly opens them. Package the correction as Corner 1.0 (14)
+and install it on Patrik’s paired iPhone.
+
+**Implementation:** Removed the idle `corner-voice-dock` markup and all of its fixed
+mobile/desktop styling. A regression contract now forbids that dock from returning in
+either the provider or stylesheet while retaining the shared header portal.
+
+**Verification:** On the real authenticated dashboard at 390×844, the closed state
+rendered one headset entry, zero idle docks, zero voice panels, and zero horizontal
+overflow. The headset opened the full controls and dismissed back to the unobstructed
+room list. The focused AirPods suite passes 20/20 and the production-configured Vite
+build passes.
+
+**Native release:** The signed build 14 archive contains the full on-demand voice panel
+but no idle dock markup or CSS. Corner 1.0 (14) installed and launched successfully on
+Patrik’s paired iPhone, which reports bundle version 14.
+
+**Status:** in progress — build 14 installed; production web release verification pending
+
 ### R14 — Restore the native app icon (2026-08-09)
 
 **Physical evidence:** Corner 1.0 (12) is installed on Patrik’s iPhone, but iOS shows

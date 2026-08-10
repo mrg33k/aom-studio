@@ -281,5 +281,9 @@ test('AirPods control is mounted once in the desktop bar and active phone header
   assert.match(phoneShell, /headerActions\.prepend\(slot\)/);
   assert.match(phoneShell, /createPortal\(<AirPodsHeaderButton className="ib" \/>, host\)/);
   assert.doesNotMatch(phoneShell, /corner-airpods-phone-entry/);
-  assert.doesNotMatch(read('../src/dashboard/cv6next/airpods/AirPodsProvider.jsx'), /corner-airpods-float/);
+  const provider = read('../src/dashboard/cv6next/airpods/AirPodsProvider.jsx');
+  const styles = read('../src/dashboard/cv6next/airpods/airpods.css');
+  assert.doesNotMatch(provider, /corner-airpods-float/);
+  assert.doesNotMatch(provider, /corner-voice-dock/);
+  assert.doesNotMatch(styles, /corner-voice-dock/);
 });

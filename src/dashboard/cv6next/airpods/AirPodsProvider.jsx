@@ -323,15 +323,6 @@ export function AirPodsProvider({ children }) {
     <AirPodsContext.Provider value={value}>
       {children}
 
-      {!menuOpen && state.mode !== 'off' ? (
-        <button type="button" className="corner-voice-dock" onClick={() => setMenuOpen(true)} aria-label="Open Corner Voice">
-          <VoiceWaveform active={active} level={volumeLevel}/>
-          <span><strong>Corner Voice</strong><small>{statusCopy(displayMode, wakeSupported)} · {wakeSupported ? 'AirPods' : roomLabel}</small></span>
-          <b>{state.attentionItems.length ? `I found ${state.attentionItems.length} item${state.attentionItems.length === 1 ? '' : 's'} to move forward.` : 'Ready to plan, route, and start work.'}</b>
-          <em>Show me</em>
-        </button>
-      ) : null}
-
       {menuOpen ? (
         <div className={`corner-airpods-menu is-${displayMode}`} role="dialog" aria-label="Corner Voice controls">
           <div className="corner-voice-caret" aria-hidden="true" />
