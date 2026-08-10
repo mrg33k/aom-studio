@@ -199,6 +199,16 @@ export default async function handler(req, res) {
       return `&or=(${[...new Set(arms)].join(',')})`
     })()
     const beforeFilter = req.query.before ? `&timestamp=lt.${encodeURIComponent(req.query.before)}` : ''
+    // ?since=<iso> — the mirror of ?before: only rows strictly LATER than this
+    // timestamp. This is what makes the chat engine's reconcile a DELTA instead of a
+    // whole-window refetch (corner:bridge engine-lane, 2026-08-10): the room asks for
+    // "anything newer than the newest row I already hold" every 10s instead of
+    // re-reading its entire visible thread. Rows still come back newest-first under
+    // `limit`, so a burst larger than the window returns its NEWEST slice — the caller
+    // detects a full window and widens to a real full refetch rather than concluding
+    // anything from the middle of the thread. Optional and backward-compatible: every
+    // existing caller passes no `since` and gets the original behavior unchanged.
+    const sinceFilter = req.query.since ? `&timestamp=gt.${encodeURIComponent(req.query.since)}` : ''
     // ?attachments=1 — the room's file CROSSINGS (corner:one-corner drop 1): only
     // rows that carry a file, in any of the four shapes that exist in the wild
     // (structured metadata.attachments[], watcher metadata.attachment, the
@@ -214,7 +224,7 @@ export default async function handler(req, res) {
       ? '&and=(or(metadata->attachment.not.is.null,metadata->attachments.not.is.null,metadata->>attachment_url.not.is.null,text.ilike.attached%20file:*,text.ilike.attached%20*%20files:*))'
       : ''
     const searchLimit = searchQuery ? 500 : limit  // search returns more results
-    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${projectOnlyFilter}${missionFilter}${beforeFilter}${attachmentsFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
+    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${projectOnlyFilter}${missionFilter}${beforeFilter}${sinceFilter}${attachmentsFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()
