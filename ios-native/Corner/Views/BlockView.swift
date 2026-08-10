@@ -356,35 +356,43 @@ struct BlockView: View {
 
 /// A square tile in a gallery grid. Square on purpose: a grid of images at their natural
 /// aspect ratios is a ragged wall, and the tap target is a preview anyway.
+///
+/// The tile FILLS its grid cell rather than sitting at a fixed 92pt inside it. A fixed
+/// width inside an adaptive column gets centred in a wider cell, which put ~41pt of air
+/// between tiles whose stated spacing is 8 — five different gaps in one grid, and the
+/// caption underneath no longer lining up with the first column.
 struct GalleryTile: View {
     let attachment: Attachment
 
     var body: some View {
-        AsyncImage(url: FileStore.sources(for: attachment).first?.url) { phase in
-            switch phase {
-            case .success(let image):
-                image.resizable().scaledToFill()
-            case .failure:
-                ZStack {
-                    Theme.agentBubble
-                    Image(systemName: "photo.badge.exclamationmark")
-                        .font(.caption)
-                        .foregroundStyle(Theme.inkFaint)
-                }
-            default:
-                ZStack {
-                    Theme.agentBubble
-                    ProgressView().controlSize(.small)
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                AsyncImage(url: FileStore.sources(for: attachment).first?.url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    case .failure:
+                        ZStack {
+                            Theme.agentBubble
+                            Image(systemName: "photo.badge.exclamationmark")
+                                .font(.caption)
+                                .foregroundStyle(Theme.inkFaint)
+                        }
+                    default:
+                        ZStack {
+                            Theme.agentBubble
+                            ProgressView().controlSize(.small)
+                        }
+                    }
                 }
             }
-        }
-        .frame(width: 92, height: 92)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(Theme.hairline, lineWidth: 1)
-        )
-        .accessibilityLabel(attachment.name)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 1)
+            )
+            .accessibilityLabel(attachment.name)
     }
 }
 

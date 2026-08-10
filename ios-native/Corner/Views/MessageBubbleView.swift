@@ -141,6 +141,8 @@ struct MessageBubbleView: View {
 struct LinkCardView: View {
     let card: LinkCard
 
+    private var title: String { card.summary.isEmpty ? card.label : card.summary }
+
     var body: some View {
         Link(destination: card.url) {
             RaisedCard {
@@ -149,15 +151,21 @@ struct LinkCardView: View {
                         .font(.title3)
                         .foregroundStyle(Theme.accent)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(card.summary.isEmpty ? card.label : card.summary)
+                        Text(title)
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(Theme.ink)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
-                        Text(card.host)
-                            .font(.caption2)
-                            .foregroundStyle(Theme.inkFaint)
-                            .lineLimit(1)
+                        // The host line is context for the title, not a second copy of
+                        // it. A live-site artifact names itself by its domain, so the
+                        // card was printing "ambition-mechanical.com" twice, one line
+                        // under the other, which reads as a rendering bug.
+                        if title.caseInsensitiveCompare(card.host) != .orderedSame {
+                            Text(card.host)
+                                .font(.caption2)
+                                .foregroundStyle(Theme.inkFaint)
+                                .lineLimit(1)
+                        }
                     }
                     Spacer(minLength: 0)
                 }
@@ -236,12 +244,21 @@ struct AttachmentCardView: View {
 
     private var caption: some View {
         HStack(spacing: Theme.s2) {
-            if attachment.kind != .photo {
-                Image(systemName: attachment.kind.symbol)
-                    .font(.footnote)
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 18)
+            // The gutter is RESERVED even when there is no glyph. An image card needs
+            // no icon — the picture above it is the icon — but dropping the column
+            // moved its filename 18pt left of every other card's, and a stack of file
+            // cards with two different left edges reads as a layout bug rather than a
+            // decision.
+            Group {
+                if attachment.kind == .photo {
+                    Color.clear
+                } else {
+                    Image(systemName: attachment.kind.symbol)
+                        .font(.footnote)
+                        .foregroundStyle(Theme.accent)
+                }
             }
+            .frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(attachment.name)
                     .font(.caption.weight(.medium))

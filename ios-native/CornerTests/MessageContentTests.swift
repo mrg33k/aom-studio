@@ -234,21 +234,29 @@ final class MessageContentTests: XCTestCase {
 
     // MARK: - Attachments
 
-    func testImageAttachmentIsRecognisedByMimeTypeAndByExtension() throws {
+    /// The `attachment_url` COLUMN SHAPE. Rewritten in Stage 2 after checking the live
+    /// schema: `messages` has no attachment_url, attachment_name, file_mime_type or
+    /// file_size column, so this branch cannot fire against today's database and the
+    /// web's equivalent branch is dead code. It is still covered because the endpoint is
+    /// a `select=*` passthrough that would start carrying the column the day anyone adds
+    /// it — but nothing in the app may DEPEND on it, and everything real arrives through
+    /// metadata or the announcement text (see AttachmentTests).
+    func testLegacyColumnShapeStillParsesIfItEverReturns() throws {
         let byMime = MessageContent.build(from: try row("""
         {"id":"a","role":"assistant","attachment_url":"https://x.com/f","file_mime_type":"image/png"}
         """))
-        XCTAssertTrue(byMime.attachmentIsImage)
+        XCTAssertEqual(byMime.attachments.first?.kind, .photo)
 
         let byExtension = MessageContent.build(from: try row("""
         {"id":"a","role":"assistant","attachment_url":"https://x.com/shot.jpg"}
         """))
-        XCTAssertTrue(byExtension.attachmentIsImage)
+        XCTAssertEqual(byExtension.attachments.first?.kind, .photo)
 
         let document = MessageContent.build(from: try row("""
         {"id":"a","role":"assistant","attachment_url":"https://x.com/report.pdf"}
         """))
-        XCTAssertFalse(document.attachmentIsImage)
+        XCTAssertEqual(document.attachments.first?.kind, .pdf)
+        XCTAssertEqual(document.attachments.first?.name, "report.pdf")
     }
 
     /// A row with nothing renderable must be DETECTABLE, so the bubble can say
