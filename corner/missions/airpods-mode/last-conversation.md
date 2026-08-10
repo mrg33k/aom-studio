@@ -246,3 +246,16 @@ verification proposal. All QA audits and the one accidental QA task/acknowledgem
 deleted. Production deployment `aom-studio-2ptqc6ep0` is READY. Corner 1.0 (10) was
 successfully archived with the ad hoc Patrik-iPhone profile, but the phone was
 unavailable to CoreDevice, so the native client fallback is ready but not installed.
+
+## 2026-08-09 — R12 headset moved into the phone header
+
+Patrik asked for the headphones control to share the main Corner header and sit directly
+left of the New room `+`. The old phone mount was a detached shell child, so it consumed
+its own row above template-backed screens. R12 replaces that mount with one React portal
+that prepends itself to the active CV6 header action group and follows the active workspace
+column through template rebinds. Desktop remains unchanged.
+
+The focused AirPods suite passes 20/20 and the production build passes. A real 390×844
+browser render showed the exact order Headset, New room, Search, Menu in one 72 px header,
+one headset instance, 42×42 controls, zero horizontal overflow, and an opened voice panel
+fully within the phone viewport.

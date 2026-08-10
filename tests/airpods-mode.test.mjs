@@ -273,9 +273,13 @@ test('native API bridge targets the final canonical host without an auth-strippi
   assert.match(config, /CapacitorHttp:\s*\{\s*enabled:\s*true/);
 });
 
-test('AirPods control is mounted once in the shared desktop and phone shells', () => {
+test('AirPods control is mounted once in the desktop bar and active phone header', () => {
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   assert.match(read('../src/dashboard/cv6next/SharedNav.jsx'), /<AirPodsHeaderButton className="ib" \/>/);
-  assert.match(read('../src/dashboard/cv6next/CornerCV6.jsx'), /<AirPodsHeaderButton className="corner-airpods-phone-entry" \/>/);
+  const phoneShell = read('../src/dashboard/cv6next/CornerCV6.jsx');
+  assert.match(phoneShell, /<MobileAirPodsHeaderPortal canvasRef=\{workspaceCanvasRef\} activeColumnId=\{activeColumnId\} \/>/);
+  assert.match(phoneShell, /headerActions\.prepend\(slot\)/);
+  assert.match(phoneShell, /createPortal\(<AirPodsHeaderButton className="ib" \/>, host\)/);
+  assert.doesNotMatch(phoneShell, /corner-airpods-phone-entry/);
   assert.doesNotMatch(read('../src/dashboard/cv6next/airpods/AirPodsProvider.jsx'), /corner-airpods-float/);
 });

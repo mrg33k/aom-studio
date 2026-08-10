@@ -101,6 +101,54 @@ function useIsDesktop() {
   return desktop;
 }
 
+// The phone UI is template-backed, so its active header can be replaced whenever
+// live data rebinds a screen. Keep one React-owned voice control and move its portal
+// host into the active header action row. `prepend` is intentional: on Home the first
+// designed action is New room, which makes the stable order Headset, +, Search, Menu.
+function MobileAirPodsHeaderPortal({ canvasRef, activeColumnId }) {
+  const [host, setHost] = useState(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    let mountedHost = null;
+
+    const placeInActiveHeader = () => {
+      const columnId = activeColumnId || 'base';
+      const stage = Array.from(canvas.children).find((node) => node.getAttribute?.('data-workspace-column') === columnId);
+      const headerActions = stage?.querySelector('.mhdr .mhactions');
+      if (!headerActions) {
+        if (mountedHost?.isConnected) mountedHost.remove();
+        mountedHost = null;
+        setHost(null);
+        return;
+      }
+
+      let slot = Array.from(headerActions.children).find((node) => node.classList?.contains('cv6-airpods-header-slot'));
+      if (!slot) {
+        slot = document.createElement('span');
+        slot.className = 'cv6-airpods-header-slot';
+        slot.setAttribute('data-cv6-airpods-header-slot', '');
+        headerActions.prepend(slot);
+      }
+      if (slot !== mountedHost) {
+        mountedHost = slot;
+        setHost(slot);
+      }
+    };
+
+    placeInActiveHeader();
+    const observer = new MutationObserver(placeInActiveHeader);
+    observer.observe(canvas, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      if (mountedHost?.isConnected) mountedHost.remove();
+    };
+  }, [canvasRef, activeColumnId]);
+
+  return host ? createPortal(<AirPodsHeaderButton className="ib" />, host) : null;
+}
+
 // Take a raw handoff file, lift its [data-cv6] screen node, normalise the specimen
 // sizing so the screen fills the surface (the design's .cv6-screen class already
 // declares width/height:100%), and append the shared loading/error/empty blocks so
@@ -3741,7 +3789,7 @@ export default function CornerCV6() {
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
       {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings', { section: 'account' })} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
-      {!isDesktop && <AirPodsHeaderButton className="corner-airpods-phone-entry" />}
+      {!isDesktop && <MobileAirPodsHeaderPortal canvasRef={workspaceCanvasRef} activeColumnId={activeColumnId} />}
       <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} worldId={worldId} />
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(job) => {

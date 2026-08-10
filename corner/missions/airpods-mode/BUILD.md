@@ -2,6 +2,24 @@
 
 **Mission path:** `corner:airpods-mode`
 
+### R12 — Headset in the shared phone header (2026-08-09)
+
+**User standard:** The headset control belongs in the same phone header row as the
+Corner logo and other actions. On Home it must sit immediately left of the New room
+`+` control, not consume a detached row above the screen.
+
+**Scope:** Move the single live phone AirPods entry into the active CV6 header action
+group while keeping the desktop entry unchanged and preventing duplicate controls as
+template-backed screens rebind.
+
+**Verification:** The focused AirPods suite passes 20/20, the production Vite build
+passes, and `git diff --check` is clean. At 390×844 the real Home surface rendered one
+headset control in the 72 px header with exact action order Headset, New room, Search,
+Menu. Every control measured 42×42, horizontal overflow was zero, and the opened
+Corner Voice panel stayed fully inside the viewport.
+
+**Status:** complete
+
 ### R11 — Evidence-grounded conversation gauntlet (2026-08-09)
 
 **User standard:** Corner Voice must stop sounding informed when it has not actually

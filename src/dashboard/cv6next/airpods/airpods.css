@@ -1,4 +1,5 @@
 .corner-airpods-header-button { position:relative; }
+.cv6-airpods-header-slot { display:flex; flex:0 0 auto; align-items:center; }
 .corner-airpods-glyph { position:relative; display:inline-flex; align-items:center; justify-content:center; color:inherit; }
 .corner-airpods-glyph.is-active { color:#4b8cff; }
 .corner-airpods-glyph.is-active::after { content:''; position:absolute; top:4px; right:3px; width:5px; height:5px; border-radius:50%; background:#4b8cff; box-shadow:0 0 0 3px rgba(75,140,255,.16); }
