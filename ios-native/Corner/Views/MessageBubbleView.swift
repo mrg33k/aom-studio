@@ -13,6 +13,12 @@ import SwiftUI
 struct MessageBubbleView: View {
     let row: MessageRow
     var onOption: (String) -> Void = { _ in }
+    /// The room this bubble is in, so a file tapped here can carry a review verdict
+    /// filed against the right project and mission. Absent in previews and tests.
+    var room: Room?
+
+    @State private var previewing: Attachment?
+    @StateObject private var review = ReviewStore.shared
 
     private var content: MessageContent { MessageContent.build(from: row) }
 
@@ -45,9 +51,17 @@ struct MessageBubbleView: View {
                         .background(Theme.agentBubble, in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous))
                 }
 
-                if let url = content.attachmentURL {
-                    AttachmentView(url: url, isImage: content.attachmentIsImage)
-                        .frame(maxWidth: 280)
+                // Files in the thread. An image renders as the image — a photo the
+                // agent sent arriving as a grey "photo.png" row is the single most
+                // common way a delivered picture reads as a broken delivery.
+                ForEach(content.attachments) { attachment in
+                    AttachmentCardView(
+                        attachment: attachment,
+                        isWaiting: !row.isUser && review.waitingIDs.contains(attachment.url)
+                    ) {
+                        previewing = attachment
+                    }
+                    .frame(maxWidth: 280)
                 }
 
                 ForEach(content.links) { card in
@@ -56,7 +70,7 @@ struct MessageBubbleView: View {
                 }
 
                 ForEach(content.blocks) { block in
-                    BlockView(block: block, onOption: onOption)
+                    BlockView(block: block, onOption: onOption) { previewing = $0 }
                         .frame(maxWidth: 340)
                 }
 
@@ -64,6 +78,16 @@ struct MessageBubbleView: View {
             }
 
             if !row.isUser { Spacer(minLength: 44) }
+        }
+        .sheet(item: $previewing) { attachment in
+            FilePreviewView(
+                attachment: attachment,
+                reviewContext: row.isUser ? nil : FilePreviewView.ReviewContext(
+                    project: room?.reviewProject ?? "",
+                    mission: room?.reviewMission ?? "",
+                    isWaiting: review.waitingIDs.contains(attachment.url)
+                )
+            )
         }
     }
 
@@ -143,43 +167,106 @@ struct LinkCardView: View {
     }
 }
 
-// MARK: - Attachment
+// MARK: - Attachment card
 
-struct AttachmentView: View {
-    let url: URL
-    let isImage: Bool
+/// A file in the thread. Images render as images; everything else gets a card with its
+/// name, kind and size. Both open the same preview — a file card that only offered a
+/// link would hand the user Safari and a download, which is the web's answer, not the
+/// phone's.
+struct AttachmentCardView: View {
+    let attachment: Attachment
+    var isWaiting: Bool = false
+    let onOpen: () -> Void
 
     var body: some View {
-        if isImage {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable().scaledToFit()
-                case .failure:
-                    fileChip(label: "Image could not be loaded", system: "photo.badge.exclamationmark")
-                default:
-                    ZStack {
-                        Theme.raised
-                        ProgressView().controlSize(.small)
-                    }
-                    .frame(height: 160)
+        Button(action: onOpen) {
+            VStack(alignment: .leading, spacing: 0) {
+                if attachment.kind == .photo {
+                    thumbnail
                 }
+                caption
             }
-            .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-        } else {
-            Link(destination: url) {
-                fileChip(label: url.lastPathComponent, system: "doc")
-            }
-            .buttonStyle(.plain)
+            .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(isWaiting ? Theme.warning.opacity(0.45) : Theme.hairline, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(attachment.kind.label): \(attachment.name)")
     }
 
-    private func fileChip(label: String, system: String) -> some View {
-        RaisedCard {
-            Label(label, systemImage: system)
-                .font(.footnote)
-                .foregroundStyle(Theme.ink)
-                .lineLimit(1)
+    /// The thumbnail loads straight off the same host the bytes come from, so a picture
+    /// appears without waiting for a full download. Failure falls back to the file card
+    /// rather than an empty frame: "this is a PNG called X and it did not load" is
+    /// information; a grey rectangle is not.
+    private var thumbnail: some View {
+        AsyncImage(url: FileStore.sources(for: attachment).first?.url) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFit()
+            case .failure:
+                HStack(spacing: Theme.s2) {
+                    Image(systemName: "photo.badge.exclamationmark").foregroundStyle(Theme.warning)
+                    Text("Preview didn't load — tap to open")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                .frame(maxWidth: .infinity, minHeight: 64)
+                .padding(.vertical, Theme.s2)
+            default:
+                ZStack {
+                    Theme.agentBubble
+                    ProgressView().controlSize(.small)
+                }
+                .frame(height: 150)
+            }
         }
+        .clipShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: Theme.cardRadius,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: Theme.cardRadius,
+                style: .continuous
+            )
+        )
+    }
+
+    private var caption: some View {
+        HStack(spacing: Theme.s2) {
+            if attachment.kind != .photo {
+                Image(systemName: attachment.kind.symbol)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 18)
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(attachment.name)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Text(subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.inkFaint)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            if isWaiting {
+                Text("Review")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Theme.warning)
+            }
+        }
+        .padding(.horizontal, Theme.s3)
+        .padding(.vertical, Theme.s2 + 2)
+    }
+
+    private var subtitle: String {
+        [attachment.kind.label, attachment.sizeLabel]
+            .compactMap { $0 }
+            .joined(separator: " · ")
     }
 }

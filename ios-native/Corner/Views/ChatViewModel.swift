@@ -136,7 +136,10 @@ final class ChatViewModel: ObservableObject {
 
     init(
         room: Room,
-        transport: MessageTransport = CornerAPI.shared,
+        // Resolved INSIDE the initializer rather than as `= CornerAPI.shared`: a default
+        // argument is evaluated at the call site, which is not always the main actor,
+        // and the shared instance is main-actor isolated.
+        transport: MessageTransport? = nil,
         backstop: TimeInterval = Config.deadTurnBackstop,
         stepInterval: TimeInterval = Config.stepPollInterval,
         reconcileInterval: TimeInterval = Config.reconcileInterval,
@@ -145,7 +148,7 @@ final class ChatViewModel: ObservableObject {
         }
     ) {
         self.room = room
-        self.api = transport
+        self.api = transport ?? CornerAPI.shared
         self.backstop = backstop
         self.stepInterval = stepInterval
         self.reconcileInterval = reconcileInterval
