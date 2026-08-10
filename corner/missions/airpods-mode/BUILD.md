@@ -704,3 +704,100 @@ present, silenceDurationMs 700, no 22-word cap, assistant framing present,
 `goAway` or `onclose` recovery, so a dropped signal still ends a call outright.
 `sessionResumption` handles are now being issued — the server half exists and the
 client half does not.
+
+### R18 — The three reds, and a suite that had rotted into enforcing the bug (2026-08-10)
+
+**Trigger:** Patrik, on the R17 summary card: "Yes, do those." The three reds
+R17 refused to paper over.
+
+**Baseline, measured before touching anything:** production `skeptical` 11/14.
+Three fails, and only one was the one R17 predicted — the model is
+non-deterministic, so the red set moves between runs while the underlying
+mechanisms stay put.
+
+**1. It named the wrong source for the evidence it had just given.**
+`readRecentActivity` merged room records and commits with
+`sort((a,b) => timestamp)` — discarding the relevance score BOTH sources had
+just computed one function earlier. Reproduced on production before the fix:
+query "App Store submission" returned as its primary record a commit titled
+*"the second word cap was hiding inside the evidence tool"*. Newest, and about
+nothing the caller asked. The spoken contract pointed at that commit while the
+model sensibly answered from the business-ops room record further down
+`items[]`; provenance then read out the commit's source. Not a wording bug — a
+ranking bug wearing a wording bug's clothes.
+- Relevance first, recency as tie-break.
+- A phrase-match bonus (+3), because a record containing the caller's actual
+  phrase is about their subject and one scattering the same words usually is not.
+- Our own commits excluded (`corner:airpods-mode`, `corner:voice-chat`) — the
+  commit-side half of the self-evidence rule room messages already had. Needed
+  immediately: the R18 commit message itself says "App Store" a dozen times and
+  outranked the provisioning receipt within an hour of shipping the first half.
+- `provenance_summary` now states what was USED and demotes everything else to
+  "also searched, not quoted"; `evidence_used` pins answer and provenance to the
+  same record.
+
+**2. A spoken offer that never became a card.** Measured: *"I can queue a task
+to verify the App Store status. Want me to?"* — no tool call, so no card, so the
+caller's "yes" had nothing to land on. Three layers, because the prompt had
+already lost this argument once:
+- the evidence tool returns a well-formed `create_task` next_action, with
+  project + mission_slug carried out of the record via `roomTaskScope` so the
+  card would actually execute rather than fail on missing scope;
+- its `response_contract` makes the call mandatory in the same turn;
+- `VoiceChat.jsx` raises the card itself when a turn speaks an offer and no
+  `offer_next_action` fired.
+
+**3. A dropped signal ended the call.** `sessionResumption` handles had been
+issued since R17 with no client replaying them. The client half now stores each
+`sessionResumptionUpdate` handle and replays it in the setup message after
+`goAway` or an unclean close: same conversation, no greeting, no re-sent opening
+prompt. Only the socket is rebuilt — the microphone, audio graph and worklet stay
+up, which is also why no second user gesture is needed on iOS. Three attempts with
+backoff (0.4s / 1.5s / 4s); never after a deliberate hang-up (`manualStopRef`),
+never on a connect that never worked (`everReadyRef`), and bound in `onerror` too
+because browsers fire error before close and the old teardown won the race.
+
+**The suite had rotted into enforcing the bug.** `tests/airpods-mode.test.mjs`
+had been failing since R17 and failing in the worst direction: it asserted the
+22-word cap, `temp = 0.0`, `response_contract: 'Say only spoken_summary'` and
+"Include calendar_date" — every one of them deliberately deleted by R17 as the
+cause of the shallowness. Re-pointed at the current contract and INVERTED where
+the old rule must never come back (`doesNotMatch`). The gauntlet's
+unverified-boundary check graded WORD ORDER: it failed *"The current live status
+in App Store Connect is still unverified."* because the literal string "app store
+connect status" was absent. Grades substance now; both halves still required.
+Nothing was loosened.
+
+**Two speech defects surfaced by consecutive core runs and fixed in the same pass:**
+- the briefing read a raw title whole — *"Mobile reskin R2b — CHAT: steps flow
+  through the bar, one card that never grows"* — the last field still passing
+  through unphrased. Cut at the first structural separator, cap the tail.
+- *"It looks like we can repair and retry it"* — hedging a diagnosis it had just
+  read. The prompt already banned "looks like" and lost, so the ban moved into
+  the tool contracts, where two rounds have now proved contracts beat the prompt.
+
+**Verification (all on production, the endpoint the phone calls):**
+- `skeptical` **14/14**, twice. First time green since the scenario existed.
+- `core` **17/17**.
+- Focused suite **24/24**.
+- Live endpoint probe: provenance, `evidence_used`, spoken summary and the
+  proposal's project/mission all name the same business-ops record.
+- Served production bundle greps positive for `sessionResumptionUpdate` and
+  `client_backstop` — the client half is really deployed, not just committed.
+- Dashboard renders signed-in at 1440×813 with the headphones control mounted.
+
+**Not verified:** the reconnect path has not survived a real dropped call on a
+phone. It is code-verified, unit-pinned and live; it needs one walk out of Wi-Fi
+range to be called proven.
+
+**Housekeeping:** production disk was at 100% (118Mi free) and the build could
+not write `dist/`. Four stale release worktrees removed after confirming every
+HEAD was an ancestor of `origin/main` — the same stale-worktree population that
+caused the 2026-08-07 deploy clobber. 8.1Gi free after.
+
+**Production result:** commits `ec61108b`, `b5df6ef6`, `da65f322` on `main`;
+deployed from a worktree created fresh at `origin/main`, rebased onto a
+concurrent `corner:bridge` push before the final deploy so it could not revert
+another agent's work.
+
+**Status:** complete

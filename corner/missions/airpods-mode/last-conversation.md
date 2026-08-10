@@ -370,3 +370,33 @@ Decisions made:
 Left open deliberately (R18): provenance can cite GitHub for an answer sourced
 from a Corner room record; `offer_next_action` is being spoken rather than called;
 and the phone still cannot recover from a dropped signal.
+
+## 2026-08-10 — R18: the three reds, closed and measured
+
+Patrik answered the R17 card with "Yes, do those." All three reds are fixed and
+live, and all three were mechanisms rather than wording.
+
+The evidence tool was ranking room records and commits by recency alone, so an
+App Store question resolved to a commit about word caps — reproduced on
+production before any edit. Relevance first, a phrase bonus, and our own
+airpods/voice commits excluded as self-evidence; provenance now names the record
+the answer used. The spoken-offer-with-no-card defect got three layers (tool
+next_action, mandatory contract, client backstop) because the prompt had already
+lost that argument once. Dropped-call recovery finally has its client half:
+resumption handles are stored and replayed after goAway or an unclean close,
+rebuilding only the socket so the microphone never has to be re-acquired.
+
+Two things worth carrying forward. First, the focused suite had been red since
+R17 and was asserting the deleted 22-word cap and 0.0 decode — a test suite can
+rot into demanding the bug back, so a deleted rule has to be deleted in all four
+places: prompt, tool contract, gauntlet, focused test. Second, the gauntlet's
+unverified-boundary check was grading word order and failing a perfect answer;
+graded on substance now, with both halves still required.
+
+Production: skeptical 14/14 (twice, first time ever green), core 17/17, focused
+24/24. The reconnect path is live in the served bundle but still needs one real
+dropped call on the phone to be called proven.
+
+Also cleared: the machine was at 100% disk and could not write a build. Four
+stale release worktrees removed after checking each HEAD was already in
+origin/main — the same population behind the 2026-08-07 deploy clobber.

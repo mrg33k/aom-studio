@@ -2,7 +2,40 @@
 
 **Mission path:** `corner:airpods-mode`
 **Status:** IN PROGRESS
-**Updated:** 2026-08-09 (R17)
+**Updated:** 2026-08-10 (R18)
+
+R18 closed the three reds R17 carried forward, and every one of them turned out
+to be a MECHANISM rather than a wording problem — the same shape as R17:
+
+1. *It named the wrong source for evidence it had just given.* `read_recent_activity`
+   merged Corner room records and GitHub commits by TIMESTAMP ALONE, throwing away
+   the relevance score both sources had just computed. Reproduced live: "App Store
+   submission" resolved to a commit titled "the second word cap was hiding inside
+   the evidence tool" — newest, and about nothing the caller asked. Relevance first,
+   recency as tie-break, a phrase-match bonus, and our OWN commits (`corner:airpods-mode`,
+   `corner:voice-chat`) excluded as self-evidence. Provenance now names the record the
+   answer USED and demotes the rest to "also searched, not quoted".
+2. *A spoken offer with no approval card.* Three layers, because the prompt alone
+   had already lost this argument once: the evidence tool returns a well-formed
+   `create_task` next_action (project + mission_slug carried out of the record so
+   the card can actually execute), its `response_contract` makes the call mandatory,
+   and the CLIENT raises the card itself when the model speaks an offer and forgets.
+3. *A dropped signal ended the call.* Resumption handles had been issued since R17
+   with nobody replaying them. `VoiceChat.jsx` now stores each handle and replays it
+   after `goAway` or an unclean close — same conversation, no greeting, no second
+   microphone gesture, because only the socket is rebuilt and the audio graph stays up.
+
+**Standing lesson added by R18: the suite can rot into enforcing the bug.** The
+focused test file had been red since R17 and red in the worst direction — it asserted
+the 22-word cap, the 0.0 decode and the say-only-this contract, all deliberately
+deleted. The gauntlet's unverified-boundary check graded WORD ORDER, failing a
+perfect answer over word placement. Both re-pointed at the current contract, neither
+loosened. **When a rule is deleted, delete it in all four places: prompt, tool
+contract, gauntlet, focused test.**
+
+Measured on production: `skeptical` **14/14 (was 11/14, first time ever green)**,
+`core` **17/17**, focused suite 24/24. The reconnect path is code-verified and live in
+the served bundle but has not been through a real dropped call on the phone.
 
 R17 answered Patrik's "it can't hold a conversation" and it was not a model
 problem. Four mechanisms were capping it, and three of them lived OUTSIDE the
@@ -22,9 +55,8 @@ and thinking variant: all 1008. Only `gemini-3.1-flash-live-preview` and
 `gemini-2.5-flash-native-audio-preview-09-2025` open a session. Every future
 "make it smarter" round has to come from the prompt and the broker.
 
-Live on production and verified on the endpoint the phone calls. Gauntlet `core`
-17/17; `skeptical` 11/14 with three named reds carried to R18 — the real one is
-that provenance can name GitHub for an answer that came from a Corner room record.
+Live on production and verified on the endpoint the phone calls. R17 shipped with
+`core` 17/17 and `skeptical` 11/14; R18 cleared all three reds (see above).
 
 New tool: `scripts/airpods-voice-bench.mjs` runs real multi-turn conversations
 against a live session with real tools and can point at a LOCAL checkout, so a
