@@ -295,7 +295,7 @@
 				TargetAttributes = {
 					AAF2C2BAB82E503FC81DEAFF = {
 						DevelopmentTeam = PDYFTMXNJ2;
-						ProvisioningStyle = Automatic;
+						ProvisioningStyle = Manual;
 					};
 					E030416519AE77BE41E2336B = {
 						DevelopmentTeam = PDYFTMXNJ2;
@@ -480,7 +480,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Support/Corner.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Support/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -491,6 +492,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.aheadofmarket.corner;
 				PRODUCT_NAME = Corner;
+				PROVISIONING_PROFILE_SPECIFIER = "Corner App Store Distribution";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -534,11 +536,11 @@
 		C298FC62976F0A813FA40880 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Support/Corner.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_ENTITLEMENTS = "Support/Corner-Debug.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Support/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -549,6 +551,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.aheadofmarket.corner;
 				PRODUCT_NAME = Corner;
+				PROVISIONING_PROFILE_SPECIFIER = "Corner Ad Hoc Patrik iPhone";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
