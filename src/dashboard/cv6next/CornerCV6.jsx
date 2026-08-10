@@ -65,6 +65,19 @@ import trackerRaw from './templates/tracker.html?raw';
 import chatListRaw from './templates/chat-list.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
+// Two-letter monogram for a room-row avatar (room-row-contract §1 part 2, 2026-08-10):
+// first letters of the first two words of the display name, else the first two letters of
+// the single word, uppercased. Deliberately the SAME derivation as native iOS
+// `Monogram.glyph` (RoomListView.swift) so both surfaces show identical initials for the
+// same room name — including the hero, which is now two letters everywhere too.
+function roomMonogram(name) {
+  const s = String(name || '').trim();
+  if (!s) return '?';
+  const words = s.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return s.slice(0, 2).toUpperCase();
+}
+
 // Turn a project's stored summary markdown into a clean 1-2 sentence room blurb for the
 // catch-up card. Strips markdown (headers, bullets, links, emphasis), collapses whitespace,
 // then takes the first one or two sentences (capped) so the card reads as a real summary.
@@ -1552,8 +1565,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     sub: recentTypeLabel(r),
     type: recentTypeKey(r),
     typeLabel: RECENT_TYPE_WORD[recentTypeKey(r)],
-    // Avatar circle initial — first letter of room name, uppercased.
-    initial: (r.name || '?').charAt(0).toUpperCase(),
+    // Avatar circle monogram — TWO letters (room-row-contract §1 part 2, 2026-08-10):
+    // first letters of the first two words, else first two letters of the single word.
+    initial: roomMonogram(r.name),
     // Hero status label shown only on first card (CSS :first-child controls display).
     statusLabel: idx === 0 ? heroStatusLabel : '',
     knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off',
