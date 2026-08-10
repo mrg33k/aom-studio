@@ -266,3 +266,7 @@ new header-slot markers. The same client was synced into Corner 1.0 (11) and arc
 successfully with the AOM-INHOUSE distribution identity plus Patrik iPhone ad hoc profile
 at `/tmp/corner-build11-adhoc.JhVBCP/Corner.xcarchive`. CoreDevice still reports the phone
 unavailable, so physical installation remains the only pending handoff.
+
+Patrik then reconnected the paired iPhone. CoreDevice installed the signed archive,
+reported `Corner 1.0 (11)` under `com.aheadofmarket.corner`, and returned a successful
+foreground launch receipt. R12's physical handoff is complete.

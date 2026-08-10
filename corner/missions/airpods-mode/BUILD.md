@@ -23,14 +23,15 @@ Capacitor client so the installed phone app does not lag behind production web. 
 client was synced and archived successfully at
 `/tmp/corner-build11-adhoc.JhVBCP/Corner.xcarchive`, signed by AOM-INHOUSE with the
 registered Patrik iPhone ad hoc profile. The archive reports bundle version 11 and
-arm64. CoreDevice still reports Patrik’s iPhone unavailable, so installation is
-pending the next physical connection.
+arm64. After Patrik reconnected the paired device, CoreDevice installed the archive
+successfully. The phone reports `Corner 1.0 (11)` at bundle ID
+`com.aheadofmarket.corner`, and the foreground launch command returned success.
 
 **Production result:** Commit `665177ea` reached READY as verified `aom-studio`
 production deployment `aom-studio-6077koe74`. The canonical dashboard returns 200 and
 its served Corner bundle contains the new header-slot markers.
 
-**Status:** complete — production live and build 11 archived; physical install pending phone availability
+**Status:** complete — production live; build 11 installed and launched on Patrik’s iPhone
 
 ### R11 — Evidence-grounded conversation gauntlet (2026-08-09)
 
