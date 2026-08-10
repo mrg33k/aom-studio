@@ -68,6 +68,21 @@ final class OrganizeStore: ObservableObject {
         self.api = api ?? .shared
     }
 
+    /// A store already holding a folder, for previews and the render gallery. The gallery
+    /// exists to LOOK at states nobody normally looks at on purpose (an empty triage list,
+    /// a folder of ghosts), and those states cannot be reached through a network call in a
+    /// test. It seeds state only — every rule that shapes the list is still the real one.
+    init(previewProject: OrganizeProject, files: [OrganizeFile], waitingTotal: Int = 0, filter: OrganizeFilter = .recent) {
+        self.api = .shared
+        self.openProject = previewProject
+        self.files = files
+        self.waitingTotal = waitingTotal
+        self.filter = filter
+        self.folderState = .ready
+        self.pickerState = .ready
+        self.projects = [.personal, previewProject]
+    }
+
     var hasLoadedPicker: Bool {
         if case .ready = pickerState { return true }
         if case .error = pickerState { return true }
@@ -79,7 +94,7 @@ final class OrganizeStore: ObservableObject {
     /// Build scaffolding, not places a person keeps files. Port of the CRUFT regex in
     /// useOrganize.js — `(^|-)(smoke|proj-tool|loop-test|test-project|lr2test)` — written
     /// as a plain check so it cannot throw at a call site that has no way to recover.
-    static func isCruft(_ slug: String) -> Bool {
+    nonisolated static func isCruft(_ slug: String) -> Bool {
         let markers = ["smoke", "proj-tool", "loop-test", "test-project", "lr2test"]
         let lower = slug.lowercased()
         return markers.contains { marker in
@@ -141,24 +156,7 @@ final class OrganizeStore: ObservableObject {
                 truncated = false
             } else {
                 let envelope = try await api.fetchOrganize(project: project.id)
-                var out = envelope.files.map { $0.asFile() }
-                out.append(contentsOf: envelope.uploads.map { $0.asFile(projectFallback: project.id) })
-                // Dedupe an upload that also got committed to disk: same name in the same
-                // mission is the same file wearing two origins, and the web drops the
-                // upload copy for exactly this reason.
-                var seen = Set<String>()
-                var deduped: [OrganizeFile] = []
-                for file in out {
-                    let key = "\(file.name.lowercased())|\(file.missionKey ?? "")"
-                    if file.isUpload, seen.contains(key) { continue }
-                    seen.insert(key)
-                    deduped.append(file)
-                }
-                // Ghosts only for THIS project (see the header note).
-                deduped.append(contentsOf: envelope.ghosts
-                    .filter { ($0.project.isEmpty ? OrganizeProject.personalID : $0.project) == project.id }
-                    .map { $0.asFile() })
-                files = deduped
+                files = OrganizeStore.merge(envelope, into: project.id)
                 truncated = envelope.truncated
                 waitingTotal = envelope.waitingTotal
             }
@@ -170,26 +168,59 @@ final class OrganizeStore: ObservableObject {
         }
     }
 
-    // MARK: - Derived list
+    // MARK: - Derivation (pure, so it is testable without a network)
 
-    /// Files after mission narrowing, before the type chips. Chip counts are computed
-    /// from THIS array so a chip can never advertise files the list will not show.
-    var missionScoped: [OrganizeFile] {
+    nonisolated static let rootMissionKey = "__root"
+
+    /// One project's three sources merged into one list. Static and pure: the merge rules
+    /// (dedupe, ghost scoping) are the part most likely to be got wrong, and they should
+    /// be exercisable without standing up an API.
+    nonisolated static func merge(_ envelope: OrganizeEnvelope, into project: String) -> [OrganizeFile] {
+        var out = envelope.files.map { $0.asFile() }
+        out.append(contentsOf: envelope.uploads.map { $0.asFile(projectFallback: project) })
+        // Dedupe an upload that also got committed to disk: same name in the same mission
+        // is the same file wearing two origins, and the web drops the upload copy for
+        // exactly this reason.
+        var seen = Set<String>()
+        var deduped: [OrganizeFile] = []
+        for file in out {
+            let key = "\(file.name.lowercased())|\(file.missionKey ?? "")"
+            if file.isUpload, seen.contains(key) { continue }
+            seen.insert(key)
+            deduped.append(file)
+        }
+        // Ghosts only for THIS project. `type=organize` builds its review truth from the
+        // whole world even when the file query is scoped, so an unfiltered ghost list
+        // would show another project's waiting files as if they lived here.
+        deduped.append(contentsOf: envelope.ghosts
+            .filter { ($0.project.isEmpty ? OrganizeProject.personalID : $0.project) == project }
+            .map { $0.asFile() })
+        return deduped
+    }
+
+    /// Mission narrowing. Chip counts and the list are both computed from the result, so
+    /// a chip can never advertise files the list will not show.
+    nonisolated static func missionScoped(_ files: [OrganizeFile], missionKey: String?) -> [OrganizeFile] {
         guard let key = missionKey else { return files }
-        if key == OrganizeStore.rootMissionKey { return files.filter { $0.missionKey == nil } }
+        if key == rootMissionKey { return files.filter { $0.missionKey == nil } }
         return files.filter { $0.missionKey == key }
     }
 
-    static let rootMissionKey = "__root"
+    /// Whether a file belongs to a chip. A ghost is a review artefact, not a browse
+    /// artefact: it appears under the needs filter and nowhere else, so the browse
+    /// dimensions stay disk-truth.
+    nonisolated static func matches(_ file: OrganizeFile, _ filter: OrganizeFilter) -> Bool {
+        if file.isGhost { return filter == .needs }
+        return filter.matches(file)
+    }
 
-    /// The list the folder screen renders.
-    var visible: [OrganizeFile] {
-        let base = missionScoped.filter { file in
-            // A ghost is a review artefact, not a browse artefact. It appears under the
-            // needs filter and nowhere else, so the browse dimensions stay disk-truth.
-            if file.isGhost { return filter == .needs }
-            return filter.matches(file)
-        }
+    nonisolated static func visible(
+        _ files: [OrganizeFile],
+        filter: OrganizeFilter,
+        missionKey: String?,
+        query: String
+    ) -> [OrganizeFile] {
+        let base = missionScoped(files, missionKey: missionKey).filter { matches($0, filter) }
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
         let searched = q.isEmpty ? base : base.filter { $0.name.lowercased().contains(q) }
         if filter == .needs {
@@ -199,11 +230,17 @@ final class OrganizeStore: ObservableObject {
         return searched.sorted { $0.updatedAt > $1.updatedAt }
     }
 
+    var missionScoped: [OrganizeFile] {
+        OrganizeStore.missionScoped(files, missionKey: missionKey)
+    }
+
+    /// The list the folder screen renders.
+    var visible: [OrganizeFile] {
+        OrganizeStore.visible(files, filter: filter, missionKey: missionKey, query: query)
+    }
+
     func count(for filter: OrganizeFilter) -> Int {
-        missionScoped.filter { file in
-            if file.isGhost { return filter == .needs }
-            return filter.matches(file)
-        }.count
+        missionScoped.filter { OrganizeStore.matches($0, filter) }.count
     }
 
     /// Chips that would show a permanent zero are dropped. Recent is the reset so it

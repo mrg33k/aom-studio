@@ -254,24 +254,7 @@ struct OrganizeFolderView: View {
     }
 
     private func chip(label: String, count: Int, isOn: Bool, tint: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: Theme.s1 + 2) {
-                Text(label)
-                    .font(.caption.weight(.semibold))
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.caption2.weight(.bold).monospacedDigit())
-                        .foregroundStyle(isOn ? Theme.ground.opacity(0.7) : Theme.inkFaint)
-                }
-            }
-            .foregroundStyle(isOn ? Theme.ground : Theme.ink)
-            .padding(.horizontal, Theme.s3)
-            .padding(.vertical, 6)
-            .background(isOn ? tint : Theme.raised, in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: isOn ? 0 : 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
+        OrganizeChip(label: label, count: count, isOn: isOn, tint: tint, action: action)
     }
 
     // MARK: List
@@ -318,7 +301,7 @@ struct OrganizeFolderView: View {
                             .listRowBackground(Theme.raised.opacity(0.6))
                     }
                     ForEach(store.visible) { file in
-                        Button { opened = file } label: { row(file) }
+                        Button { opened = file } label: { OrganizeFileRow(file: file) }
                             .buttonStyle(.plain)
                             .listRowBackground(Theme.raised.opacity(0.6))
                             .swipeActions(edge: .trailing) {
@@ -340,17 +323,7 @@ struct OrganizeFolderView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: Theme.s2) {
-            Text(emptyTitle)
-                .font(.headline)
-                .foregroundStyle(Theme.ink)
-            Text(emptyBody)
-                .font(.footnote)
-                .foregroundStyle(Theme.inkSoft)
-                .multilineTextAlignment(.center)
-        }
-        .padding(Theme.s5)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        OrganizeEmptyState(title: emptyTitle, message: emptyBody)
     }
 
     private var emptyTitle: String {
@@ -374,10 +347,44 @@ struct OrganizeFolderView: View {
         if store.openProject?.isPersonal == true { return "Files you drop into 1:1 chats land here." }
         return "Files your crew produces in this room will land here."
     }
+}
 
-    // MARK: Row
+/// The words a folder shows when it has nothing in it. A content view, so the states
+/// that matter most — a cleared triage list that has to say what is waiting elsewhere —
+/// can be rendered and read before a user meets one.
+struct OrganizeEmptyState: View {
+    let title: String
+    /// Named `message`, not `body`: a stored property called `body` collides with the
+    /// View protocol's own and the compiler rejects the type outright.
+    let message: String
 
-    private func row(_ file: OrganizeFile) -> some View {
+    var body: some View {
+        VStack(spacing: Theme.s2) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(Theme.ink)
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+        }
+        .padding(Theme.s5)
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Row + chip
+//
+// Content views, not containers. ImageRenderer draws a List, a Form or a ScrollView's
+// content as an unsupported-content marker, so anything that must be LOOKED at before a
+// user sees it has to exist outside them — the same split ReviewDecisionForm needed in
+// Stage 2. The folder screen keeps its List (swipe-to-assign, pull-to-refresh, search);
+// the row it renders is this.
+
+struct OrganizeFileRow: View {
+    let file: OrganizeFile
+
+    var body: some View {
         HStack(spacing: Theme.s3) {
             Image(systemName: file.kind.symbol)
                 .font(.footnote)
@@ -392,7 +399,7 @@ struct OrganizeFolderView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
-                Text(subtitle(for: file))
+                Text(subtitle)
                     .font(.caption2)
                     .foregroundStyle(Theme.inkFaint)
                     .lineLimit(1)
@@ -414,13 +421,15 @@ struct OrganizeFolderView: View {
     /// Everything true about a row, in the order it is useful, and NOTHING that is not.
     /// A ghost says so: its bytes may be gone, and finding that out by tapping is worse
     /// than being told.
-    private func subtitle(for file: OrganizeFile) -> String {
+    private var subtitle: String {
         var parts: [String] = []
         if file.isGhost { parts.append("Shared for review") }
         else if file.isUpload { parts.append("You sent") }
         if !file.sizeLabel.isEmpty { parts.append(file.sizeLabel) }
         if let mission = file.missionKey { parts.append(Room.prettify(mission)) }
-        if let date = file.date { parts.append(OrganizeFolderView.relative.localizedString(for: date, relativeTo: Date())) }
+        if let date = file.date {
+            parts.append(OrganizeFileRow.relative.localizedString(for: date, relativeTo: Date()))
+        }
         return parts.joined(separator: " · ")
     }
 
@@ -429,6 +438,47 @@ struct OrganizeFolderView: View {
         f.unitsStyle = .short
         return f
     }()
+}
+
+struct OrganizeChip: View {
+    let label: String
+    let count: Int
+    let isOn: Bool
+    var tint: Color = Theme.accent
+    var action: () -> Void = {}
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: Theme.s1 + 2) {
+                // A chip is a pill, and a pill that wraps stops being one: "My uploads"
+                // broke onto two lines and grew a capsule half again as tall as its
+                // neighbours, so the whole row lost its baseline. A chip either fits on
+                // one line or scrolls past — it never reflows.
+                Text(label)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.caption2.weight(.bold).monospacedDigit())
+                        .foregroundStyle(isOn ? Theme.ground.opacity(0.7) : Theme.inkFaint)
+                }
+            }
+            .foregroundStyle(isOn ? Theme.ground : Theme.ink)
+            .padding(.horizontal, Theme.s3)
+            .padding(.vertical, 6)
+            .background(isOn ? tint : Theme.raised, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: isOn ? 0 : 1))
+        }
+        .buttonStyle(.plain)
+        // THE WHOLE CHIP IS INTRINSIC, not just its label. In a constrained row SwiftUI
+        // compresses the lowest-priority child first — which is the count — so "Needs
+        // review 2" quietly became "Needs review" while the chip still looked fine. A
+        // count that can vanish under layout pressure is worse than no count: the number
+        // IS the reason to tap.
+        .fixedSize(horizontal: true, vertical: false)
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
+    }
 }
 
 // MARK: - Shared notice

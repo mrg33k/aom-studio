@@ -60,6 +60,27 @@ final class TrackerStore: ObservableObject {
         self.api = api ?? .shared
     }
 
+    /// A store already holding boards, for previews and the render gallery. It takes the
+    /// WIRE rows rather than finished issues, so anything rendered from it has been
+    /// through the real decode, the real priority mapping and the real sort — a gallery
+    /// that renders hand-built view models proves only that the view compiles.
+    init(
+        previewBugs: [BugRow] = [],
+        tickets: [TicketRow] = [],
+        custom: [CustomTracker] = [],
+        active: String = TrackerBoard.cv6ID,
+        ticketsFailure: String? = nil
+    ) {
+        self.api = .shared
+        self.bugs = previewBugs
+        self.tickets = tickets
+        self.custom = custom
+        self.activeBoardID = active
+        self.ticketsFailure = ticketsFailure
+        self.state = .ready
+        rebuild()
+    }
+
     var activeBoard: TrackerBoard? {
         boards.first { $0.id == activeBoardID }
     }
@@ -108,6 +129,20 @@ final class TrackerStore: ObservableObject {
     }
 
     private func rebuild() {
+        boards = TrackerStore.boards(bugs: bugs, tickets: tickets, custom: custom)
+        if !boards.contains(where: { $0.id == activeBoardID }) {
+            activeBoardID = TrackerBoard.cv6ID
+        }
+        issues = issuesForActiveBoard()
+    }
+
+    private func issuesForActiveBoard() -> [TrackerIssue] {
+        TrackerStore.issues(for: activeBoardID, bugs: bugs, tickets: tickets, custom: custom)
+    }
+
+    // MARK: - Derivation (pure, so it is testable without a network)
+
+    nonisolated static func boards(bugs: [BugRow], tickets: [TicketRow], custom: [CustomTracker]) -> [TrackerBoard] {
         let openBugs = bugs.filter { IssueStatus.parse($0.status) != .done }
         let openTickets = tickets.filter { IssueStatus.parse($0.status) != .done }
         var out: [TrackerBoard] = [
@@ -117,23 +152,22 @@ final class TrackerStore: ObservableObject {
         // Project trackers first, then mission-scoped ones — the switcher's own grouping.
         out.append(contentsOf: custom.filter { !$0.isMissionScoped }.map(\.board))
         out.append(contentsOf: custom.filter { $0.isMissionScoped }.map(\.board))
-        boards = out
-        if !boards.contains(where: { $0.id == activeBoardID }) {
-            activeBoardID = TrackerBoard.cv6ID
-        }
-        issues = issuesForActiveBoard()
+        return out
     }
 
-    private func issuesForActiveBoard() -> [TrackerIssue] {
-        switch activeBoardID {
+    nonisolated static func issues(
+        for boardID: String,
+        bugs: [BugRow],
+        tickets: [TicketRow],
+        custom: [CustomTracker]
+    ) -> [TrackerIssue] {
+        switch boardID {
         case TrackerBoard.cv6ID:
             // Open work first, done last — an active board must not open on a wall of
             // closed bugs. Within open work, the blocker sorts above the polish, which is
             // the whole reason the priority mapping was rewritten.
             return bugs.map(\.asIssue).sorted {
-                if $0.status != $1.status {
-                    return statusRank($0.status) < statusRank($1.status)
-                }
+                if $0.status != $1.status { return statusRank($0.status) < statusRank($1.status) }
                 return $0.priority.rank < $1.priority.rank
             }
         case TrackerBoard.spaceID:
@@ -142,11 +176,11 @@ final class TrackerStore: ObservableObject {
                 return $0.updated > $1.updated
             }
         default:
-            return custom.first { $0.id == activeBoardID }?.issues ?? []
+            return custom.first { $0.id == boardID }?.issues ?? []
         }
     }
 
-    private func statusRank(_ status: IssueStatus) -> Int {
+    nonisolated static func statusRank(_ status: IssueStatus) -> Int {
         switch status {
         case .open: return 0
         case .progress: return 1
