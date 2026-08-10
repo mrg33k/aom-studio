@@ -47,6 +47,12 @@ final class RenderGalleryTests: XCTestCase {
         // with it. So the gate is now "did any ink land", which is the thing the
         // gallery is actually for.
         assertHasInk(image, name: name)
+        // AND AN INK CHECK IS NOT A CONTENT CHECK. Stage 3 rendered a Files list and a
+        // bug board straight into ImageRenderer's unsupported-content marker — a yellow
+        // field with a red circle-slash where the whole screen should be — and the ink
+        // check waved both through, because that glyph is nothing BUT ink. Any
+        // UIKit-backed container (List, Form, ScrollView content, TextEditor) draws it.
+        assertNotUnsupportedContent(image, name: name)
         let data = try XCTUnwrap(image.pngData())
         let url = outputDirectory.appendingPathComponent("\(name).png")
         try data.write(to: url)
@@ -78,6 +84,48 @@ final class RenderGalleryTests: XCTestCase {
             file: file, line: line
         )
     }
+
+    /// Fails when MOST of the frame is ImageRenderer's unsupported-content marker — a
+    /// flat #FFCC00 field behind a red circle-slash.
+    ///
+    /// THE THRESHOLD IS 45% AND THAT NUMBER IS MEASURED, NOT PICKED. A view that drew
+    /// nothing is 85–95% marker (the Stage 3 Files list and bug board, before their rows
+    /// were lifted out of the List). ONE UIKit-backed control inside an otherwise real
+    /// render is far less: the request-changes form is 23%, all of it the TextEditor that
+    /// Stage 2 already documented as a harness limit, and the rest of that image is the
+    /// real labels and buttons worth judging. A gate at a fifth failed that render and
+    /// would have taught the next person to delete the gate rather than read it.
+    private func assertNotUnsupportedContent(_ image: UIImage, name: String, file: StaticString = #filePath, line: UInt = #line) {
+        guard let cgImage = image.cgImage else { return }
+        let side = 40
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        guard let context = CGContext(
+            data: &pixels,
+            width: side, height: side,
+            bitsPerComponent: 8, bytesPerRow: side * 4,
+            space: CGColorSpaceDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: side, height: side))
+        var marker = 0
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            let r = Int(pixels[index]), g = Int(pixels[index + 1]), b = Int(pixels[index + 2])
+            if r > 230, g > 170, g < 225, b < 60 { marker += 1 }
+        }
+        let share = Double(marker) / Double(side * side)
+        XCTAssertLessThan(
+            share, 0.45,
+            """
+            \(name) is \(Int(share * 100))% ImageRenderer's unsupported-content marker — \
+            the view drew nothing. Something in it is UIKit-backed (List, Form, TextEditor, \
+            a ScrollView's content). Render the CONTENT view; the container belongs to \
+            whoever presents it.
+            """,
+            file: file, line: line
+        )
+    }
+
+    private func CGColorSpaceDeviceRGB() -> CGColorSpace { CGColorSpaceCreateDeviceRGB() }
 
     // MARK: - Fixtures
 
@@ -279,5 +327,137 @@ final class RenderGalleryTests: XCTestCase {
         // store's full self-contained sentence — which printed the same fact twice.
         try render("13-review-decision-failed", height: 420,
                    form(.choosing, failure: "You do not have access to that."))
+    }
+
+    // MARK: - Stage 3
+    //
+    // Files and Tracker, drawn from stores seeded with the WIRE shapes rather than with
+    // finished view models — so what lands in these PNGs has been through the real decode,
+    // the real merge, the real priority mapping and the real sort.
+
+    private func organizeFile(
+        _ name: String,
+        origin: OrganizeFile.Origin = .mirror,
+        mime: String = "",
+        size: Int = 4096,
+        needsReview: Bool = false,
+        mission: String? = nil,
+        updated: String = "2026-08-10T12:00:00Z"
+    ) -> OrganizeFile {
+        OrganizeFile(
+            id: name, name: name, project: "ambition-mechanical",
+            relPath: mission.map { "missions/\($0)" } ?? "",
+            origin: origin, sizeBytes: size, updatedAt: updated, editor: "Design", mime: mime,
+            storageRef: "", absoluteURL: origin == .mirror ? "" : "https://rag.aheadofmarket.com/files/aom/\(name)",
+            needsReview: needsReview, reviewID: name,
+            reviewTimestamp: needsReview ? updated : "", declaredKind: ""
+        )
+    }
+
+    /// A real folder: an agent hand-off waiting on a verdict, a file you sent, a big
+    /// video, and the chip row above them.
+    ///
+    /// The ROWS and CHIPS are rendered, not the List that holds them. ImageRenderer draws
+    /// any UIKit-backed container as its unsupported-content marker, so the folder screen
+    /// keeps its List (swipe-to-assign, pull-to-refresh, search) and the gallery draws the
+    /// content that List arranges. The same split ReviewDecisionForm needed in Stage 2.
+    @MainActor
+    func testRenderFilesFolder() throws {
+        let files = [
+            organizeFile("Q3 site copy.md", needsReview: true, mission: "website", updated: "2026-08-10T18:40:00Z"),
+            organizeFile("hero-final.png", mime: "image/png", size: 842_133, mission: "website", updated: "2026-08-10T16:10:00Z"),
+            organizeFile("brand-brief.pdf", origin: .upload, mime: "application/pdf", size: 1_204_882, updated: "2026-08-09T09:00:00Z"),
+            organizeFile("walkthrough.mp4", mime: "video/mp4", size: 48_211_990, updated: "2026-08-08T11:00:00Z"),
+            organizeFile("gone-from-disk.md", origin: .ghost, needsReview: true, updated: "2026-08-07T10:00:00Z"),
+        ]
+        try render("14-files-folder", VStack(alignment: .leading, spacing: 14) {
+            // Three chips, because four overflow 390pt and the gallery should show what
+            // fits on screen rather than what the horizontal scroller hides.
+            HStack(spacing: 8) {
+                OrganizeChip(label: "Needs review", count: 2, isOn: false, tint: Theme.warning)
+                OrganizeChip(label: "Recent", count: 5, isOn: true)
+                OrganizeChip(label: "My uploads", count: 1, isOn: false)
+            }
+            VStack(spacing: 10) {
+                ForEach(files) { OrganizeFileRow(file: $0) }
+            }
+        })
+    }
+
+    /// The state a cleared triage lands on. It has to say what is waiting ELSEWHERE, or a
+    /// person who just emptied one room thinks they have emptied all of them.
+    @MainActor
+    func testRenderFilesClearedTriage() throws {
+        try render("15-files-triage-cleared", VStack(alignment: .leading, spacing: 24) {
+            HStack(spacing: 8) {
+                OrganizeChip(label: "Needs review", count: 0, isOn: true, tint: Theme.warning)
+                OrganizeChip(label: "Recent", count: 1, isOn: false)
+                OrganizeChip(label: "My uploads", count: 0, isOn: false)
+            }
+            OrganizeEmptyState(
+                title: "Nothing here to review",
+                message: "4 files are waiting across your other rooms."
+            )
+        })
+    }
+
+    private func bugRows(_ json: String) throws -> [BugRow] {
+        try XCTUnwrap(JSONDecoder().decode(BugsEnvelope.self, from: Data(json.utf8)).bugs)
+    }
+
+    /// The bug board. The `blocker` sorts to the top and the `polish` does not — the whole
+    /// reason the priority mapping was rewritten is visible in this one image. The rows go
+    /// through the real decode and the real sort; only the List around them is dropped.
+    @MainActor
+    func testRenderTrackerBoard() throws {
+        let rows = try bugRows("""
+        {"bugs":[
+          {"id":"cv6-142","page":"Chat","title":"Sending a file with a caption drops the caption","status":"Open","severity":"blocker","priority":1,"owner":"Web","expected":"Both the note and the file card render"},
+          {"id":"cv6-143","page":"Files","title":"Amber mark shows on the wrong report.pdf","status":"Open","severity":"polish","priority":5,"owner":""},
+          {"id":"cv6-144","page":"Rooms","title":"Mission rail collapses on rotate","status":"In progress","severity":"high","priority":2,"owner":"Design"},
+          {"id":"cv6-101","page":"Homepage","title":"Unused docs icon next to the theme toggle","status":"Done","severity":"Low","priority":5,"owner":"EA"}
+        ]}
+        """)
+        let ordered = TrackerStore.issues(for: TrackerBoard.cv6ID, bugs: rows, tickets: [], custom: [])
+        try render("16-tracker-board", VStack(spacing: 12) {
+            ForEach(ordered) { TrackerIssueRow(issue: $0) }
+        })
+    }
+
+    /// A client's board. Their status vocabulary is preserved — "Needs fix" and
+    /// "In review" are their words, and rewriting them into ours would make the two
+    /// systems harder to talk about across, not easier.
+    @MainActor
+    func testRenderTrackerClientBoard() throws {
+        let tickets = try XCTUnwrap(JSONDecoder().decode(TicketsEnvelope.self, from: Data("""
+        {"tickets":[
+          {"id":"281ffab5","title":"Team Page","description":"OUR VISION copy needs replacing","status":"needs_fix","priority":"high","owner":"","area":"","link":"https://www.spacerising.org/srw-v2/about","updatedAt":"2026-06-26T01:37:42Z"},
+          {"id":"7c21aa03","title":"Home hero video autoplays on cellular","description":"","status":"in_review","priority":"medium","owner":"Web","area":"Home","link":"","updatedAt":"2026-06-24T09:10:00Z"}
+        ]}
+        """.utf8)).tickets)
+        let ordered = TrackerStore.issues(for: TrackerBoard.spaceID, bugs: [], tickets: tickets, custom: [])
+        try render("17-tracker-client-board", VStack(spacing: 12) {
+            ForEach(ordered) { TrackerIssueRow(issue: $0) }
+        })
+    }
+
+    /// The difference between "cleared" and "the endpoint refused" — which an empty list
+    /// on its own cannot express, and which is what a user sees when the ticket bridge is
+    /// unconfigured on a deployment.
+    @MainActor
+    func testRenderTrackerBoardThatCouldNotBeRead() throws {
+        let store = TrackerStore(
+            active: TrackerBoard.spaceID,
+            ticketsFailure: "The client ticket board is not reachable (the server said 503)."
+        )
+        try render("18-tracker-board-unreachable", height: 300, TrackerBoardBody(store: store))
+    }
+
+    /// What the assign step SAYS before it sends, and the failure card that in production
+    /// appears only after a write has already failed.
+    func testRenderAssignStates() throws {
+        let design = try XCTUnwrap(AgentRoster.all.first { $0.slug == "steffen" })
+        try render("19-assign-consequence", AssignConsequenceCard(agent: design, label: "Q3 site copy.md"))
+        try render("20-assign-failed", AssignFailureCard(reason: "Your session expired. Sign in again."))
     }
 }

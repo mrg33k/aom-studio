@@ -97,15 +97,45 @@ struct TrackerView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .ready:
-            VStack(spacing: 0) {
-                boardHeader
-                if store.issues.isEmpty { emptyState } else { list }
-            }
+            // Split from the navigation chrome for the same reason ReviewDecisionForm was
+            // (Stage 2): ImageRenderer cannot draw a NavigationStack, and a board state
+            // nobody can render is a board state nobody ever looks at before a user does.
+            TrackerBoardBody(store: store, onOpenSwitcher: { showingSwitcher = true }, onOpenIssue: { openIssue = $0 })
+        }
+    }
+
+    @ViewBuilder
+    private var noticeBar: some View {
+        if let notice = store.notice {
+            Text(notice.text)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(notice.isFailure ? Theme.danger : Theme.ink)
+                .padding(.horizontal, Theme.s4)
+                .padding(.vertical, Theme.s2)
+                .background(.ultraThinMaterial, in: Capsule())
+                .padding(.bottom, Theme.s4)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .onTapGesture { store.notice = nil }
+        }
+    }
+}
+
+// MARK: - The board
+
+struct TrackerBoardBody: View {
+    @ObservedObject var store: TrackerStore
+    var onOpenSwitcher: () -> Void = {}
+    var onOpenIssue: (TrackerIssue) -> Void = { _ in }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            boardHeader
+            if store.issues.isEmpty { emptyState } else { list }
         }
     }
 
     private var boardHeader: some View {
-        Button { showingSwitcher = true } label: {
+        Button { onOpenSwitcher() } label: {
             HStack(spacing: Theme.s2) {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: Theme.s2) {
@@ -141,6 +171,10 @@ struct TrackerView: View {
 
     private var headerSubtitle: String {
         guard let board = store.activeBoard else { return "" }
+        // A board that could not be READ has no count, and printing "0 open of 0" above
+        // "This board could not be read" states two contradictory things one line apart.
+        // Say the scope; the body says what happened.
+        if store.emptyReason != nil { return board.scope }
         let open = store.issues.filter { $0.status != .done }.count
         let scope = board.scope.isEmpty ? "" : "\(board.scope) · "
         return "\(scope)\(open) open of \(store.issues.count)"
@@ -149,7 +183,7 @@ struct TrackerView: View {
     private var list: some View {
         List {
             ForEach(store.issues) { issue in
-                Button { openIssue = issue } label: { row(issue) }
+                Button { onOpenIssue(issue) } label: { TrackerIssueRow(issue: issue) }
                     .buttonStyle(.plain)
                     .listRowBackground(Theme.raised.opacity(0.6))
             }
@@ -159,12 +193,61 @@ struct TrackerView: View {
         .refreshable { await store.load() }
     }
 
-    private func row(_ issue: TrackerIssue) -> some View {
-        HStack(spacing: Theme.s3) {
+    private var emptyState: some View {
+        VStack(spacing: Theme.s2) {
+            Text(store.emptyReason == nil ? "Nothing on this board" : "This board could not be read")
+                .font(.headline)
+                .foregroundStyle(Theme.ink)
+            Text(store.emptyReason ?? "New issues land here.")
+                .font(.footnote)
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+        }
+        .padding(Theme.s5)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    static func priorityColor(_ priority: IssuePriority) -> Color {
+        switch priority {
+        case .high:   return Theme.danger
+        case .medium: return Theme.warning
+        case .low:    return Theme.inkFaint
+        }
+    }
+
+    /// THREE STATES MUST READ AS THREE STATES. Theme.warning and Theme.accent are two
+    /// warm golds a few points apart — at 9pt caps, OPEN and IN PROGRESS rendered as the
+    /// same colour, which is the one thing a status chip cannot do. Amber is "waiting on
+    /// someone", bright ivory is "live right now", faint is closed. No new colour, three
+    /// distinguishable states.
+    static func statusColor(_ status: IssueStatus) -> Color {
+        switch status {
+        case .open:     return Theme.warning
+        case .progress: return Theme.ink
+        case .done:     return Theme.inkFaint
+        }
+    }
+}
+
+
+// MARK: - Row
+//
+// A content view, outside the List. ImageRenderer draws a List as an unsupported-content
+// marker, so a row nobody can render is a row nobody looks at before a user does.
+
+struct TrackerIssueRow: View {
+    let issue: TrackerIssue
+
+    var body: some View {
+        // Top-aligned: a two-line title used to push the priority dot to the vertical
+        // middle of the block, where it read as belonging to neither line. It marks the
+        // issue, so it sits with the issue's first line.
+        HStack(alignment: .top, spacing: Theme.s3) {
             Circle()
-                .fill(priorityColor(issue.priority))
+                .fill(TrackerBoardBody.priorityColor(issue.priority))
                 .frame(width: 8, height: 8)
                 .opacity(issue.status == .done ? 0.3 : 1)
+                .padding(.top, 6)
             VStack(alignment: .leading, spacing: 3) {
                 Text(issue.title)
                     .font(.subheadline.weight(.semibold))
@@ -173,7 +256,7 @@ struct TrackerView: View {
                 HStack(spacing: Theme.s2) {
                     Text(issue.statusLabel.uppercased())
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(statusColor(issue.status))
+                        .foregroundStyle(TrackerBoardBody.statusColor(issue.status))
                     if !issue.area.isEmpty {
                         Text(issue.area)
                             .font(.caption2)
@@ -194,51 +277,6 @@ struct TrackerView: View {
         }
         .padding(.vertical, 3)
         .contentShape(Rectangle())
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: Theme.s2) {
-            Text(store.emptyReason == nil ? "Nothing on this board" : "This board could not be read")
-                .font(.headline)
-                .foregroundStyle(Theme.ink)
-            Text(store.emptyReason ?? "New issues land here.")
-                .font(.footnote)
-                .foregroundStyle(Theme.inkSoft)
-                .multilineTextAlignment(.center)
-        }
-        .padding(Theme.s5)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    @ViewBuilder
-    private var noticeBar: some View {
-        if let notice = store.notice {
-            Text(notice.text)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(notice.isFailure ? Theme.danger : Theme.ink)
-                .padding(.horizontal, Theme.s4)
-                .padding(.vertical, Theme.s2)
-                .background(.ultraThinMaterial, in: Capsule())
-                .padding(.bottom, Theme.s4)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .onTapGesture { store.notice = nil }
-        }
-    }
-
-    func priorityColor(_ priority: IssuePriority) -> Color {
-        switch priority {
-        case .high:   return Theme.danger
-        case .medium: return Theme.warning
-        case .low:    return Theme.inkFaint
-        }
-    }
-
-    func statusColor(_ status: IssueStatus) -> Color {
-        switch status {
-        case .open:     return Theme.warning
-        case .progress: return Theme.accent
-        case .done:     return Theme.inkFaint
-        }
     }
 }
 

@@ -114,74 +114,15 @@ struct AssignSheet: View {
     // MARK: - Confirm
 
     private func confirm(_ agent: AgentRoster.Entry) -> some View {
-        Form {
-            Section {
-                VStack(alignment: .leading, spacing: Theme.s2) {
-                    Text(label)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                    // Says what the button DOES, not what it is called. The ask becomes a
-                    // message in a room a person can open and read.
-                    Text("This posts the ask into \(agent.title)'s room. They pick it up there.")
-                        .font(.caption)
-                        .foregroundStyle(Theme.inkSoft)
-                }
-                .padding(.vertical, Theme.s1)
-            } header: {
-                Text("\(agent.title) takes it")
-            }
-            .listRowBackground(Theme.raised.opacity(0.6))
-
-            Section {
-                TextEditor(text: $notes)
-                    .frame(minHeight: 110)
-                    .scrollContentBackground(.hidden)
-                    .font(.callout)
-                    .foregroundStyle(Theme.ink)
-            } header: {
-                Text("What they need to know")
-            } footer: {
-                Text("Optional. Whatever is here is what they read.")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.inkFaint)
-            }
-            .listRowBackground(Theme.raised.opacity(0.6))
-
-            if let failure {
-                Section {
-                    VStack(alignment: .leading, spacing: Theme.s1) {
-                        Text("Nothing was sent")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(Theme.danger)
-                        Text(failure)
-                            .font(.caption)
-                            .foregroundStyle(Theme.inkSoft)
-                    }
-                }
-                .listRowBackground(Theme.raised.opacity(0.6))
-            }
-
-            Section {
-                Button {
-                    Task { await send(to: agent) }
-                } label: {
-                    HStack {
-                        if sending { ProgressView().controlSize(.small) }
-                        Text(sending ? "Sending…" : "Send it to \(agent.title)")
-                            .font(.body.weight(.semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(sending)
-
-                Button("Pick someone else") { selected = nil }
-                    .font(.footnote)
-                    .disabled(sending)
-            }
-            .listRowBackground(Color.clear)
-        }
-        .scrollContentBackground(.hidden)
+        AssignConfirmForm(
+            agent: agent,
+            label: label,
+            notes: $notes,
+            sending: sending,
+            failure: failure,
+            send: { Task { await send(to: agent) } },
+            pickAgain: { selected = nil }
+        )
     }
 
     private var confirmation: some View {
@@ -220,6 +161,110 @@ struct AssignSheet: View {
             onAssigned?(agent.title)
         } catch {
             failure = (error as? LocalizedError)?.errorDescription ?? "The message could not be posted."
+        }
+    }
+}
+
+// MARK: - The confirm step
+
+/// Split from the sheet's NavigationStack so it can be RENDERED and judged. This is the
+/// consequential screen — the one that says where the ask lands and then sends it — and
+/// the failure card on it only ever appears in production when the write already failed.
+struct AssignConfirmForm: View {
+    let agent: AgentRoster.Entry
+    let label: String
+    @Binding var notes: String
+    var sending: Bool
+    var failure: String?
+    var send: () -> Void = {}
+    var pickAgain: () -> Void = {}
+
+    var body: some View {
+        Form {
+            Section {
+                AssignConsequenceCard(agent: agent, label: label)
+            } header: {
+                Text("\(agent.title) takes it")
+            }
+            .listRowBackground(Theme.raised.opacity(0.6))
+
+            Section {
+                TextEditor(text: $notes)
+                    .frame(minHeight: 110)
+                    .scrollContentBackground(.hidden)
+                    .font(.callout)
+                    .foregroundStyle(Theme.ink)
+            } header: {
+                Text("What they need to know")
+            } footer: {
+                Text("Optional. Whatever is here is what they read.")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.inkFaint)
+            }
+            .listRowBackground(Theme.raised.opacity(0.6))
+
+            if let failure {
+                Section {
+                    AssignFailureCard(reason: failure)
+                }
+                .listRowBackground(Theme.raised.opacity(0.6))
+            }
+
+            Section {
+                Button(action: send) {
+                    HStack {
+                        if sending { ProgressView().controlSize(.small) }
+                        Text(sending ? "Sending…" : "Send it to \(agent.title)")
+                            .font(.body.weight(.semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(sending)
+
+                Button("Pick someone else", action: pickAgain)
+                    .font(.footnote)
+                    .disabled(sending)
+            }
+            .listRowBackground(Color.clear)
+        }
+        .scrollContentBackground(.hidden)
+    }
+}
+
+/// What the confirm step promises, in the user's terms: the ask becomes a message in a
+/// room a person can open and read. Says what the button DOES, not what it is called.
+struct AssignConsequenceCard: View {
+    let agent: AgentRoster.Entry
+    let label: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.s2) {
+            Text(label)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+            Text("This posts the ask into \(agent.title)'s room. They pick it up there.")
+                .font(.caption)
+                .foregroundStyle(Theme.inkSoft)
+        }
+        .padding(.vertical, Theme.s1)
+    }
+}
+
+/// The card a user only ever sees after a write already failed. Leads with the fact —
+/// nothing was sent — because "an error occurred" leaves them guessing whether the agent
+/// got it.
+struct AssignFailureCard: View {
+    let reason: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.s1) {
+            Text("Nothing was sent")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.danger)
+            Text(reason)
+                .font(.caption)
+                .foregroundStyle(Theme.inkSoft)
         }
     }
 }
