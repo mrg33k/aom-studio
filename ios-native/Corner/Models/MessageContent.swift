@@ -80,6 +80,43 @@ struct MessageBlock: Identifiable, Equatable {
 
     var code: String? { raw["code"]?.stringValue }
 
+    /// A `gallery` block's images (blockSchema.js: `images: [{url, label}]`), as
+    /// attachments so they open through the same preview every other file uses.
+    /// Entries with no url are dropped — there is nothing to show and nothing to open.
+    var images: [Attachment] {
+        (raw["images"]?.arrayValue ?? []).compactMap { item in
+            let url = item["url"]?.stringValue ?? item.stringValue ?? ""
+            guard !url.isEmpty else { return nil }
+            let label = item["label"]?.stringValue ?? ""
+            return Attachment(
+                url: url,
+                name: label.isEmpty ? Attachment.displayName(from: url) : label,
+                mime: "",
+                size: 0,
+                gateStatus: ""
+            )
+        }
+    }
+
+    var caption: String? { raw["caption"]?.stringValue }
+
+    /// An `artifact` block is a screenshot or a live site (blockSchema.js: name, url,
+    /// kind). Only the screenshot case is an image; a live-site card is a link and
+    /// rendering it as a broken <img> is how "live site" became "grey box" on the web.
+    var artifactIsImage: Bool {
+        let kind = raw["kind"]?.stringValue?.lowercased() ?? ""
+        if kind == "live" { return false }
+        guard let url = url?.absoluteString else { return false }
+        return FileKind.of(name: "", mime: "", url: url) == .photo
+    }
+
+    /// The attachment an image-bearing block opens.
+    var asAttachment: Attachment? {
+        guard let url = url?.absoluteString, !url.isEmpty else { return nil }
+        let name = title ?? Attachment.displayName(from: url)
+        return Attachment(url: url, name: name, mime: "", size: 0, gateStatus: "")
+    }
+
     /// How many rows a `data` block holds, for the fallback card's one honest fact.
     var rowCount: Int? { raw["rows"]?.arrayValue?.count }
 
@@ -99,24 +136,29 @@ struct MessageContent: Equatable {
     let prose: String
     let links: [LinkCard]
     let blocks: [MessageBlock]
-    let attachmentURL: URL?
-    let attachmentIsImage: Bool
+    /// Every file this row carries, from the ONE shared parser (Attachment.parse). The
+    /// bubble renders these as cards and the room Files panel reads the same function,
+    /// so a file in the thread and a file in the panel are the same fact by construction.
+    let attachments: [Attachment]
 
     var isEmpty: Bool {
-        prose.isEmpty && links.isEmpty && blocks.isEmpty && attachmentURL == nil
+        prose.isEmpty && links.isEmpty && blocks.isEmpty && attachments.isEmpty
     }
 
     static func build(from row: MessageRow) -> MessageContent {
         let rawText = row.text ?? ""
         let meta = row.metadata
 
+        // --- files ---
+        let parsed = Attachment.parse(row: row)
+
         // --- link cards ---
         var cards: [LinkCard] = []
         var seen = Set<String>()
-        let attachmentURLs = Set(
-            (meta?["attachments"]?.arrayValue ?? [])
-                .compactMap { $0["url"]?.stringValue }
-        )
+        // Every attachment url, whichever shape it arrived in. Without this a delivery
+        // announcement's own URL line becomes a second, duplicate "Open" card sitting
+        // under the file card that already opens it.
+        let attachmentURLs = Set(parsed.attachments.map(\.url).filter { !$0.isEmpty })
 
         func push(_ candidate: String, summary: String) {
             let cleaned = MessageContent.cleanURL(candidate)
@@ -154,21 +196,18 @@ struct MessageContent: Equatable {
             }
         }
 
-        // --- attachment ---
-        var attachment: URL?
-        var isImage = false
-        if let a = row.attachmentURL, let u = URL(string: a) {
-            attachment = u
-            isImage = (row.fileMimeType ?? "").hasPrefix("image/")
-                || MessageContent.imageExtensions.contains(u.pathExtension.lowercased())
-        }
+        // --- prose ---
+        // A pure announcement ("Attached file: report.pdf" + its URL) says nothing the
+        // file card does not already say, so it is dropped. A hand-off that also carries
+        // the agent's actual point KEEPS that point — see the purity note in
+        // Attachment.swift for why this is computed rather than assumed per shape.
+        let prose = parsed.isPure ? "" : MessageContent.stripTrailingCardURL(rawText, cards: cards)
 
         return MessageContent(
-            prose: MessageContent.stripTrailingCardURL(rawText, cards: cards),
+            prose: prose,
             links: cards,
             blocks: blocks,
-            attachmentURL: attachment,
-            attachmentIsImage: isImage
+            attachments: parsed.attachments
         )
     }
 
