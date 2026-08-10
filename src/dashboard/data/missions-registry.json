@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T23:57:15.712Z",
+  "generated_at": "2026-08-10T14:12:07.052Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -695,7 +695,7 @@
       "depth": 1,
       "project_slug": "corner",
       "workstream": null,
-      "name": "Corner Ui Cv6",
+      "name": "Corner UI Cv6",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
@@ -1052,6 +1052,20 @@
       "path": "corner/missions/home/missions/quick-chat"
     },
     {
+      "slug": "corner:integrations",
+      "raw_slug": "integrations",
+      "folder_name": "integrations",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Integrations",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/integrations"
+    },
+    {
       "slug": "corner:live-scribe",
       "raw_slug": "live-scribe",
       "folder_name": "live-scribe",
@@ -1094,6 +1108,20 @@
       "path": "corner/missions/live-scribe/missions/scribe-detail-panel"
     },
     {
+      "slug": "corner:native-ios",
+      "raw_slug": "native-ios",
+      "folder_name": "native-ios",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Native iOS",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/native-ios"
+    },
+    {
       "slug": "corner:older-versions",
       "raw_slug": "older-versions",
       "folder_name": "older-versions",
@@ -1129,7 +1157,7 @@
       "depth": 2,
       "project_slug": "corner",
       "workstream": null,
-      "name": "Corner Ui Cv4",
+      "name": "Corner UI Cv4",
       "status": "in-progress",
       "is_done": false,
       "last_updated": "2026-06-15",
@@ -1143,7 +1171,7 @@
       "depth": 2,
       "project_slug": "corner",
       "workstream": null,
-      "name": "Corner Ui Cv5",
+      "name": "Corner UI Cv5",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
@@ -2739,7 +2767,7 @@
       "depth": 0,
       "project_slug": "ambition-mechanical",
       "workstream": null,
-      "name": "Seo Organic",
+      "name": "SEO Organic",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
@@ -3943,7 +3971,7 @@
       "depth": 0,
       "project_slug": "aom",
       "workstream": null,
-      "name": "Ai Education",
+      "name": "AI Education",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
@@ -3957,7 +3985,7 @@
       "depth": 0,
       "project_slug": "aom",
       "workstream": null,
-      "name": "Ai Office Hours",
+      "name": "AI Office Hours",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
@@ -3985,7 +4013,7 @@
       "depth": 0,
       "project_slug": "aom",
       "workstream": null,
-      "name": "Aom Lut",
+      "name": "AOM Lut",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
@@ -3999,7 +4027,7 @@
       "depth": 0,
       "project_slug": "aom",
       "workstream": null,
-      "name": "Aom Outreach",
+      "name": "AOM Outreach",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
@@ -4013,7 +4041,7 @@
       "depth": 0,
       "project_slug": "aom",
       "workstream": null,
-      "name": "Aom Strategy",
+      "name": "AOM Strategy",
       "status": "in-progress",
       "is_done": false,
       "last_updated": "2026-04-23T00:56:52.676639+00:00",
@@ -4027,7 +4055,7 @@
       "depth": 0,
       "project_slug": "aom",
       "workstream": null,
-      "name": "Aom Studio Cleanup",
+      "name": "AOM Studio Cleanup",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
@@ -4041,7 +4069,7 @@
       "depth": 0,
       "project_slug": "aom",
       "workstream": null,
-      "name": "Aom Website",
+      "name": "AOM Website",
       "status": "in-progress",
       "is_done": false,
       "last_updated": "2026-04-23T00:56:36.686189+00:00",
@@ -4158,6 +4186,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/missions/digital-products"
+    },
+    {
+      "slug": "aom:dropbox-video-feedback",
+      "raw_slug": "dropbox-video-feedback",
+      "folder_name": "dropbox-video-feedback",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Dropbox Video Feedback",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/dropbox-video-feedback"
     },
     {
       "slug": "aom:favicon-system",
@@ -4471,8 +4513,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 122,
-      "in_flight": 122,
+      "total": 124,
+      "in_flight": 124,
       "done": 0
     },
     {
@@ -4669,8 +4711,8 @@
     },
     {
       "slug": "aom",
-      "total": 40,
-      "in_flight": 40,
+      "total": 41,
+      "in_flight": 41,
       "done": 0
     }
   ]

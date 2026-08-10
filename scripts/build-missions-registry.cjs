@@ -75,8 +75,13 @@ function readContext(dir) {
   } catch { return {} }
 }
 
+// Words that must not be naively title-cased ("Native Ios" on the rooms rail).
+const ACRONYMS = { ios: 'iOS', ai: 'AI', ui: 'UI', ux: 'UX', api: 'API', aom: 'AOM', qa: 'QA', seo: 'SEO', mvp: 'MVP' }
+
 function deriveDisplayName(slug) {
-  return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  return slug.replace(/[-_]/g, ' ').split(' ')
+    .map(w => ACRONYMS[w.toLowerCase()] || w.replace(/\b\w/, c => c.toUpperCase()))
+    .join(' ')
 }
 
 function scanDir(parentDir, projectSlug, parentRawSlug = null, depth = 0) {
