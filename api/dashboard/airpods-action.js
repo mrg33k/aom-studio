@@ -135,7 +135,7 @@ async function readTaskStatus(args, tenant, sessionId) {
     recorded_error: reason || null,
     resolved_from: taskId === suppliedTaskId ? 'task_id' : 'latest_workspace_priority',
     response_contract: repairableScope
-      ? `Explain in your own words what went wrong and what it means, keeping the recorded cause accurate, then ask once whether to repair and retry it. Do not read the raw error string aloud as if it were a sentence.`
+      ? `Explain in your own words what went wrong and what it means, keeping the recorded cause accurate, then ask once whether to repair and retry it. Do not read the raw error string aloud as if it were a sentence. Never hedge the diagnosis: no "it looks like", "seems like", or "well" — you inspected the record, so state what it says.`
       : 'Explain the cause in your own natural words, keeping every recorded fact accurate. Do not read the raw error string verbatim, and do not add a question.',
     next_action: repairableScope ? {
       action: 'retry_task',
@@ -653,11 +653,25 @@ async function execute(action, args, req, tenant, identity, sessionId) {
       active: 'is running', building: 'is building', qa: 'is in QA',
       planning: 'is being planned', classifying: 'is being sorted',
     };
+    // ── 2026-08-10, R18 ──────────────────────────────────────────────────────
+    // A task TITLE can itself be a dumped sentence: "Mobile reskin R2b — CHAT:
+    // steps flow through the bar, one card that never grows". Read whole, that
+    // is the database voice again, arriving through the one field the R17 fix
+    // still passed through untouched. Cut at the first structural separator a
+    // human would never say out loud, and cap the tail.
+    const spokenTitle = (value) => {
+      const raw = String(value || '').trim();
+      if (!raw) return 'an untitled task';
+      const head = raw.split(/\s+[—–-]\s+|:\s+/)[0].trim();
+      const base = head.split(/\s+/).length >= 2 ? head : raw;
+      const words = base.split(/\s+/).slice(0, 9).join(' ');
+      return words.replace(/[\s—–:,;-]+$/, '');
+    };
     const describe = (task) => {
       const who = task.agent ? `${task.agent}'s ` : '';
       const what = STATUS_WORDS[task.status] || `is ${task.status}`;
       const when = humanAge(task.created_at);
-      return `${who}${task.title || 'an untitled task'} ${what}${when ? ` — started ${when}` : ''}`;
+      return `${who}${spokenTitle(task.title)} ${what}${when ? ` — started ${when}` : ''}`;
     };
     const prioritySummary = spokenPriorities.length
       ? `${spokenPriorities.length === 1 ? 'One thing needs you' : `${spokenPriorities.length} things need you`}: ${spokenPriorities.map(describe).join(', and ')}`
@@ -666,7 +680,7 @@ async function execute(action, args, req, tenant, identity, sessionId) {
       ok: true,
       spoken_summary: `${prioritySummary}.`,
       checked_at: status.checked_at,
-      response_contract: 'Say these priorities in your own natural spoken sentence. Keep every fact — the names, who owns them, and how long they have been sitting — but do not read the summary back word for word, do not read totals or older backlog, and do not ask a follow-up question.',
+      response_contract: 'Say these priorities in your own natural spoken sentence. Keep every fact — the names, who owns them, and how long they have been sitting — but do not read the summary back word for word, do not read totals or older backlog, and do not ask a follow-up question. Never hedge: no "it looks like", "seems like", "well", or "my bad". State it.',
       status: {
         priorities: status.priorities,
         older_attention_count: status.older_attention_count,
