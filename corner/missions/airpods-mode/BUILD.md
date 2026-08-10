@@ -109,7 +109,21 @@ single QA acknowledgement was removed, and `task-ack` is now excluded from factu
 evidence. `offer_next_action` is marked mandatory for unapproved work, with explicit
 instructions never to narrate a fake approval card or its steps.
 
-**Status:** in progress
+**Final production proof:** Three consecutive core production gauntlets passed every
+check with 13–23 word factual turns, exact task-failure receipts, one executable retry,
+dated App Store evidence, no filler, and audited two-word endings. The final skeptical
+gauntlet also passed: 23-word bounded answer, 13-word provenance, 7-word unverified
+boundary, 6-word approval-backed next action, and no task execution. All 74 QA-only
+action audits were removed. The accidental QA task and its acknowledgement were also
+removed. Deployment `aom-studio-2ptqc6ep0` reached READY on production.
+
+**Native build 10:** The deterministic client-side end-receipt fallback was synced into
+Capacitor, versioned as Corner 1.0 (10), and archived successfully with the registered
+ad hoc profile and Apple Distribution identity. Patrik's iPhone was unavailable to
+CoreDevice, so installation remains pending reconnection; server-side conversation
+behavior is already live and requires only a fresh voice session.
+
+**Status:** complete — production conversation contract proven; physical build 10 install pending phone availability
 
 ### R10 — Follow-up reasoning and task failure receipts (2026-08-09)
 

@@ -230,3 +230,19 @@ filler and vague future promises, distinguishes dated Corner records from live e
 state, forbids unsolicited closing recaps, and requires one capability-backed next step.
 A receipt-backed retry_task route repairs authorized repo/path scope and requeues the
 same failed task after explicit approval.
+
+## 2026-08-09 — R11 battle test complete
+
+Patrik required the voice agent to stop padding answers, stop bluffing knowledge, and
+act like a capable companion that advances real work. R11 built an authenticated
+Gemini Live production gauntlet, then iterated against every failure it exposed:
+contradictory recap rules, stale prompt memory, invalid task references, circular voice
+evidence, task acknowledgements outranking completion receipts, generic check-ins,
+premature task creation, and model-only conversation endings.
+
+The final core scenario passed three consecutive production runs. The final skeptical
+scenario passed with exact provenance and uncertainty boundaries and an approval-backed
+verification proposal. All QA audits and the one accidental QA task/acknowledgement were
+deleted. Production deployment `aom-studio-2ptqc6ep0` is READY. Corner 1.0 (10) was
+successfully archived with the ad hoc Patrik-iPhone profile, but the phone was
+unavailable to CoreDevice, so the native client fallback is ready but not installed.
