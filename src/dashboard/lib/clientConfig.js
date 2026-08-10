@@ -18,11 +18,25 @@ export const SUPER_ADMIN_USER_ID = '833f6828-1dae-409c-a24b-1438f46544d0'
 
 // sessionStorage key for admin world override.
 // Takes priority over auth so admins can context-switch without re-login.
+// SESSION-SCOPED ONLY (corner:tenant-isolation R1): the override lives in
+// sessionStorage, so it is confined to one tab and evaporates when the tab
+// closes. It is ALSO cleared on every fresh page load (see the purge at the
+// bottom of this module) so the dashboard always BOOTS into the user's own
+// world; a cross-world view only happens after an explicit switcher click.
 const WORLD_OVERRIDE_KEY = 'corner-world-override'
 
-// localStorage key for world override persistence across page refreshes.
-// sessionStorage would be cleared on new tab/window -- localStorage persists.
+// LEGACY localStorage key — REMOVED (corner:tenant-isolation R1). It persisted a
+// world override forever (no expiry, survived new tabs, refreshes and re-logins),
+// so a super-admin's transient "peek" into another world silently re-scoped the
+// ENTIRE dashboard — needs-you included — to that world on every later load. We
+// no longer read or write it, and we purge any stale value on module load.
 const WORLD_OVERRIDE_LS_KEY = 'corner-world-override-persist'
+
+// Notify listeners (e.g. the "Viewing <world>" banner) that the override changed.
+function notifyOverrideChange() {
+  if (typeof window === 'undefined') return
+  try { window.dispatchEvent(new CustomEvent('corner:world-override')) } catch { /* ignore */ }
+}
 
 // In-memory cache: populated by setClientIdFromUser() after auth loads.
 // Synchronous reads from getClientId() see this immediately.
@@ -50,23 +64,13 @@ export function setClientIdFromUser(user) {
 export function getClientId() {
   if (typeof window === 'undefined') return DEFAULT_CLIENT_ID
 
-  // 1. Admin world override (sessionStorage first, then localStorage for cross-refresh persist).
+  // 1. Admin world override (sessionStorage ONLY — one tab, cleared on load).
   //    Admins set this via the world switcher to context-switch into any client.
+  //    There is deliberately no localStorage fallback: a persisted override is
+  //    exactly the cross-tenant leak this file was hardened against (R1).
   try {
     const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY)
     if (override && override.trim()) return override.trim().toLowerCase()
-  } catch {
-    // ignore
-  }
-  // 1b. localStorage fallback: persists across page refreshes and new tabs.
-  //     Re-hydrate sessionStorage so subsequent reads are fast.
-  try {
-    const lsOverride = localStorage.getItem(WORLD_OVERRIDE_LS_KEY)
-    if (lsOverride && lsOverride.trim()) {
-      const val = lsOverride.trim().toLowerCase()
-      try { sessionStorage.setItem(WORLD_OVERRIDE_KEY, val) } catch { /* ignore */ }
-      return val
-    }
   } catch {
     // ignore
   }
@@ -92,17 +96,30 @@ export function getClientId() {
 /**
  * setWorldOverride(worldId) -- store or clear the admin world override.
  * Call with null/undefined to clear (return to own world).
- * Writes to both sessionStorage (current tab) and localStorage (persist across refresh).
+ * SESSION-SCOPED: writes sessionStorage only (never localStorage). Also purges
+ * any stale legacy localStorage key and notifies the override banner.
  */
 export function setWorldOverride(worldId) {
   if (!worldId) {
-    try { sessionStorage.removeItem(WORLD_OVERRIDE_KEY) } catch { /* ignore */ }
-    try { localStorage.removeItem(WORLD_OVERRIDE_LS_KEY) } catch { /* ignore */ }
-  } else {
-    const val = worldId.trim().toLowerCase()
-    try { sessionStorage.setItem(WORLD_OVERRIDE_KEY, val) } catch { /* ignore */ }
-    try { localStorage.setItem(WORLD_OVERRIDE_LS_KEY, val) } catch { /* ignore */ }
+    clearWorldOverride()
+    return
   }
+  const val = worldId.trim().toLowerCase()
+  try { sessionStorage.setItem(WORLD_OVERRIDE_KEY, val) } catch { /* ignore */ }
+  // Belt-and-suspenders: never leave a persistent copy behind.
+  try { localStorage.removeItem(WORLD_OVERRIDE_LS_KEY) } catch { /* ignore */ }
+  notifyOverrideChange()
+}
+
+/**
+ * clearWorldOverride() -- drop any active override (session + legacy localStorage)
+ * so the dashboard returns to the user's own world. Called by the switcher's
+ * "return to my world", on logout, and once on every fresh page load.
+ */
+export function clearWorldOverride() {
+  try { sessionStorage.removeItem(WORLD_OVERRIDE_KEY) } catch { /* ignore */ }
+  try { localStorage.removeItem(WORLD_OVERRIDE_LS_KEY) } catch { /* ignore */ }
+  notifyOverrideChange()
 }
 
 /**
@@ -120,13 +137,28 @@ export function getUserWorld() {
 export function isAdminOverride() {
   if (typeof window === 'undefined') return false
   try {
-    const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY) ||
-      localStorage.getItem(WORLD_OVERRIDE_LS_KEY)
+    const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY)
     if (!override || !override.trim()) return false
     const myWorld = getUserWorld()
     return override.trim().toLowerCase() !== myWorld
   } catch {
     return false
+  }
+}
+
+/**
+ * activeWorldOverride() -- the world currently being viewed via an override,
+ * or null. Used by the "Viewing <world>" banner.
+ */
+export function activeWorldOverride() {
+  if (typeof window === 'undefined') return null
+  try {
+    const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY)
+    const val = override && override.trim() ? override.trim().toLowerCase() : null
+    if (!val) return null
+    return val === getUserWorld() ? null : val
+  } catch {
+    return null
   }
 }
 
@@ -160,4 +192,17 @@ export const CLIENT_CONFIG = {
     if (!id) return ''
     return this.names[id] || id.charAt(0).toUpperCase() + id.slice(1)
   },
+}
+
+// ---------------------------------------------------------------------------
+// BOOT PURGE (corner:tenant-isolation R1). Runs once when this module loads,
+// i.e. on every fresh page load / new tab. It (1) deletes the legacy persistent
+// localStorage override that used to silently re-scope the whole dashboard, and
+// (2) clears any lingering session override so the app always BOOTS into the
+// user's own world. A cross-world view is then only ever the result of an
+// explicit switcher click in the current session — never a stale carry-over.
+// ---------------------------------------------------------------------------
+if (typeof window !== 'undefined') {
+  try { localStorage.removeItem(WORLD_OVERRIDE_LS_KEY) } catch { /* ignore */ }
+  try { sessionStorage.removeItem(WORLD_OVERRIDE_KEY) } catch { /* ignore */ }
 }

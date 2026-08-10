@@ -13,9 +13,18 @@
 //   SOURCING_SUPABASE_SERVICE_KEY  (service-role JWT — required, never in git)
 //
 // Query: ?status=needs_fix,working   (optional comma list filter)
+//
+// SECURITY (corner:tenant-isolation R1): this reads the Space Rising ticket
+// tracker. Space Rising is the 'space-rising' project (arsenal-held, with
+// project_access grants). Access is gated by verifyProjectAccess('space-rising')
+// so only the super-admin, the holder world, and granted worlds may read it —
+// it was previously unauthenticated and returned Space Rising tickets to anyone.
+
+import { verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
 
 const DEFAULT_URL = 'https://kzzvjtthknsozktmpvak.supabase.co';
 const VALID_STATUS = new Set(['needs_fix', 'working', 'in_review', 'done']);
+const TICKETS_PROJECT = 'space-rising';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,6 +34,14 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+  // Only callers entitled to the Space Rising project may read its tickets.
+  try {
+    await verifyProjectAccess(TICKETS_PROJECT, req);
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message, tickets: [] });
+    return res.status(500).json({ error: 'Auth verification failed', tickets: [] });
+  }
 
   const SUPABASE_URL = process.env.SOURCING_SUPABASE_URL || DEFAULT_URL;
   const SERVICE_KEY = process.env.SOURCING_SUPABASE_SERVICE_KEY;

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase.js'
-import { getClientId, setClientIdFromUser } from './clientConfig.js'
+import { getClientId, setClientIdFromUser, clearWorldOverride } from './clientConfig.js'
 
 export const RENDER_ONLY_TENANT_ID = 'local-render'
 
@@ -58,7 +58,11 @@ export function TenantProvider({ children }) {
   useEffect(() => {
     refresh()
     if (!supabase) return undefined
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      // A world override must never survive a logout into another account
+      // (corner:tenant-isolation R1). Fresh page loads are already handled by
+      // the boot purge in clientConfig.js.
+      if (event === 'SIGNED_OUT') clearWorldOverride()
       applyUser(session?.user || null)
     })
     return () => sub?.subscription?.unsubscribe?.()

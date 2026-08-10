@@ -74,10 +74,15 @@ export default async function handler(req, res) {
       // Recent completed tasks (legacy: status=completed only -- v2 done/failed fetched below)
       _timed('tasks_done', supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`)),
       _timed('projects', supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc${clientFilter}`)),
-      // Events table: for activity feed display ONLY. NOT used for status derivation or RNB.
-      // agent_status table is the sole source of truth for all agent status.
-      // client_id column added by migration 010 -- filter applies to all tenants including AOM.
-      _timed('events', supabaseGet('events', `order=timestamp.desc&limit=200&timestamp=gte.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}${clientFilter}`)),
+      // Events feed: DISABLED (corner:tenant-isolation R1). The `events` table has
+      // NO client_id column, so the old `&client_id=eq.<clientId>` filter 400'd on
+      // every load and this feed has been empty for everyone regardless — the
+      // prior "scoped by migration 010, no post-filter needed" comment was FALSE.
+      // Because events cannot be tenant-scoped at the DB, we do NOT read it here:
+      // dropping the filter would leak every world's events into this feed. Any
+      // per-project event surface (doc-updates / missions-created) gates in the
+      // API layer via verifyProjectAccess. Kept as [] so the response shape holds.
+      Promise.resolve([]),
       // Architecture v2: tasks with v2 statuses (source of truth for Right Now bar).
       // Right Now bar = status building | running | qa. running is set by task-runner.sh claim.
       // These rows have agent_identity + title columns (v2 schema added by migration 20260401000001).
@@ -156,8 +161,9 @@ export default async function handler(req, res) {
     // Separate from legacy tasks to avoid double-counting in existing pill logic.
     const tasksV2 = [...tasksV2Active, ...tasksV2Done].map(slimTask);
 
-    // Events are scoped by client_id at the DB level (migration 010 added the column + RLS).
-    // No post-filter needed -- all tenants including AOM see only their own events.
+    // Events feed intentionally empty — see the disabled query above. `events`
+    // has no client_id column and cannot be tenant-scoped at the DB, so it is
+    // not read here (fails closed rather than leaking cross-world).
     const recentEvents = rawEvents;
 
     // Split agents vs projects.

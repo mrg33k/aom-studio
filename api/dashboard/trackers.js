@@ -69,7 +69,17 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    const world = clean(req.query.world || 'aom', 60) || 'aom';
+    // corner:tenant-isolation R1: GET was unauthenticated and honored any
+    // ?world=, leaking every world's custom trackers. Require the world and
+    // verify the caller's JWT may access it — mirror the POST gate.
+    const world = clean(req.query.world, 60);
+    if (!world) return res.status(400).json({ error: 'world required' });
+    try {
+      await verifyTenant(world, req);
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      return res.status(500).json({ error: 'Auth verification failed' });
+    }
     return res.status(200).json({ world, trackers: await loadTrackers(world) });
   }
 

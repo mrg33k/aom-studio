@@ -1,6 +1,7 @@
 import { C } from '../../../lib/cv3Colors.js'
 import { useEffect, useState } from 'react'
 import { useCornerNav } from '../../../CornerContext.jsx'
+import { authFetch } from '../../../lib/authFetch.js'
 
 // R75-h1: compact "doc updated" card. Fetches /api/dashboard/doc-updates
 // scoped by project (+ optional mission) and renders the latest N as a
@@ -62,8 +63,8 @@ export default function DocUpdatesStripe({ project, mission = '', limit = 5, com
         const qs = new URLSearchParams({ project, limit: String(limit) })
         if (mission) qs.set('mission', mission)
         const [docsR, missR] = await Promise.all([
-          fetch(`/api/dashboard/doc-updates?${qs.toString()}`),
-          fetch(`/api/dashboard/missions-created?project=${project}&limit=5`),
+          authFetch(`/api/dashboard/doc-updates?${qs.toString()}`),
+          authFetch(`/api/dashboard/missions-created?project=${encodeURIComponent(project)}&limit=5`),
         ])
         if (!cancelled) {
           if (docsR.ok) {

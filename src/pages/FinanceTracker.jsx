@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '../dashboard/lib/supabase';
+import { authFetch } from '../dashboard/lib/authFetch';
 import seedData from '../data/finance-seed.json';
 
 const AUTH_KEY = 'aom-finance-auth';
@@ -227,7 +228,7 @@ export default function FinanceTracker() {
   // Fetch all transactions via API
   const fetchTransactions = useCallback(async () => {
     try {
-      const resp = await fetch(API_URL);
+      const resp = await authFetch(API_URL);
       if (!resp.ok) throw new Error('API error');
       const data = await resp.json();
 
@@ -241,21 +242,23 @@ export default function FinanceTracker() {
           owner: t.owner || 'Review',
           notes: t.notes || '',
         }));
-        await fetch(API_URL, {
+        await authFetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'upsert', transactions: rows }),
         });
         // Re-fetch after seeding
-        const resp2 = await fetch(API_URL);
+        const resp2 = await authFetch(API_URL);
         const data2 = await resp2.json();
         setTransactions(data2.transactions || seedData);
       } else {
         setTransactions(data.transactions);
       }
     } catch (err) {
+      // Denied (not the super-admin) or network error: never fall back to the
+      // bundled seed, which contains real transactions. Show an empty table.
       console.error('Finance API fetch error:', err);
-      setTransactions(seedData);
+      setTransactions([]);
     }
     setLoading(false);
   }, []);
@@ -304,7 +307,7 @@ export default function FinanceTracker() {
       t.id === txn.id ? { ...t, owner: newOwner } : t
     ));
     if (txn.id) {
-      fetch(API_URL, {
+      authFetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update-owner', id: txn.id, owner: newOwner }),
@@ -325,7 +328,7 @@ export default function FinanceTracker() {
     }
 
     try {
-      const resp = await fetch(API_URL, {
+      const resp = await authFetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'upsert', transactions: newTxns }),
@@ -471,7 +474,7 @@ export default function FinanceTracker() {
   const clearData = useCallback(async () => {
     if (!window.confirm('Clear all finance data? This cannot be undone.')) return;
     try {
-      await fetch(API_URL, {
+      await authFetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete-all' }),

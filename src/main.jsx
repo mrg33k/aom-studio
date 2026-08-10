@@ -8,6 +8,7 @@ import { injectThemeVars } from './dashboard/lib/cv3Colors.js'
 import { SystemToastProvider } from './dashboard/SystemToast.jsx' // R84: mount toasts on the real app entry (/cvg, /dashboard) so create-failure warnings actually render
 import { DataProvider, CommandProvider } from './dashboard/cv6next/providers/DataContext.jsx' // Root-level data + command context for dashboard performance fix
 import { TenantProvider } from './dashboard/lib/tenantContext.jsx'
+import WorldOverrideBanner from './dashboard/components/WorldOverrideBanner.jsx'
 import { AirPodsProvider } from './dashboard/cv6next/airpods/AirPodsProvider.jsx'
 import { FullscreenLoading } from './dashboard/cv6kit/FullscreenLoading.jsx'
 import { installNativeBootstrap } from './dashboard/nativeBootstrap.js'
@@ -105,8 +106,8 @@ function DashboardSurface() {
   // from the default path.
   // Performance fix: wrap CV6 with DataProvider + CommandProvider for collapsed data polling
   const content = cv4 ? <CornerV4 /> : <CornerCV6 />
-  if (cv4) return content
-  return <TenantProvider><DataProvider><CommandProvider><AirPodsProvider>{content}</AirPodsProvider></CommandProvider></DataProvider></TenantProvider>
+  if (cv4) return <><WorldOverrideBanner />{content}</>
+  return <TenantProvider><WorldOverrideBanner /><DataProvider><CommandProvider><AirPodsProvider>{content}</AirPodsProvider></CommandProvider></DataProvider></TenantProvider>
 }
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
 // components on one page as the design surface for the CV6 redesign.

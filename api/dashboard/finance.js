@@ -2,6 +2,13 @@
 // POST /api/dashboard/finance         — Actions: upsert, update-owner, setup
 //
 // Supabase REST proxy for finance. Same pattern as supabase-messages.js.
+//
+// SECURITY (corner:tenant-isolation R1): finance holds Patrik's PERSONAL bank
+// transactions and is NOT world-scoped. Every method requires the super-admin's
+// verified JWT (requireSuperAdmin). This endpoint was previously fully public —
+// an unauthenticated GET returned all rows. Do not relax this gate.
+
+import { requireSuperAdmin, TenantAuthError } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -50,13 +57,21 @@ function supabaseHeaders(extra = {}) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(500).json({ error: 'Supabase not configured' })
+  }
+
+  // Every method is super-admin-only — finance is Patrik-personal, never shared.
+  try {
+    await requireSuperAdmin(req)
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    return res.status(500).json({ error: 'Auth verification failed' })
   }
 
   // ---- GET: load all transactions, ordered by date desc ----------------------

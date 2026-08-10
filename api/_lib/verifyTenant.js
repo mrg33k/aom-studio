@@ -588,6 +588,32 @@ export async function verifyProjectAccess(projectSlug, req) {
   );
 }
 
+// Require the caller be the SUPER-ADMIN (Patrik). For endpoints whose data is
+// Patrik-personal and must never be world-scoped or shared (e.g. the finance
+// tracker). Distinct from verifyTenant(<world>, req) + isAdmin, which also
+// admits a world's own admins. Throws TenantAuthError (401 no/invalid session,
+// 403 anyone who is not the super-admin). Returns the verified identity.
+export async function requireSuperAdmin(req) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new TenantAuthError('supabase not configured', 500);
+  }
+  const jwt = extractJwt(req);
+  if (!jwt) throw new TenantAuthError('jwt required', 401);
+  const user = await getUserFromJwt(jwt);
+  if (!user || !user.id) throw new TenantAuthError('invalid jwt', 401);
+  if (user.id !== SUPER_ADMIN_USER_ID) {
+    throw new TenantAuthError('forbidden: super-admin only', 403);
+  }
+  return {
+    ok: true,
+    userId: user.id,
+    userName: displayNameForUser(user),
+    email: typeof user.email === 'string' ? user.email : null,
+    world: String(user.user_metadata?.world || '').toLowerCase() || null,
+    isAdmin: true,
+  };
+}
+
 // The caller's OWN world from the JWT (user_metadata.world), lowercased, or
 // null when the request carries no valid session. Used by endpoints that must
 // SCOPE a lookup to the caller before any tenant gate runs (e.g. resolving a

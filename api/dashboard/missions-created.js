@@ -7,6 +7,12 @@
 //   { missions: [{ id, agent, project, mission, description,
 //                  file_count, timestamp }] }
 
+// SECURITY (corner:tenant-isolation R1): the events table has no client_id, so
+// this feed was reading mission_created events across ALL worlds with no auth.
+// Now ?project is required and gated by verifyProjectAccess(project) — the caller
+// must prove access to that project, and only that project's rows are returned.
+import { verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -30,6 +36,13 @@ export default async function handler(req, res) {
   }
 
   const project = (req.query.project || '').toString().toLowerCase()
+  if (!project) return res.status(400).json({ error: 'project required' })
+  try {
+    await verifyProjectAccess(project, req)
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    return res.status(500).json({ error: 'Auth verification failed' })
+  }
   const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100)
 
   const qs = [
