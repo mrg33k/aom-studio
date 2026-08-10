@@ -116,16 +116,22 @@ async function readTaskStatus(args, tenant, sessionId) {
   if (!task) throw new Error('Task not found in this workspace');
   const reason = String(task.error || '').trim();
   const repairableScope = task.status === 'failed' && /metadata\.repo|repository|project_path|working path/i.test(reason);
+  // Same defect as read_workspace_status: the raw `error` column was read out
+  // verbatim behind a say-exactly contract, so the caller heard engine strings
+  // like "stuck queued for 1829 minutes without being claimed (runner dead or
+  // repo lock held by zombie)". The error text still travels as recorded_error
+  // for the audit rules that quote it exactly; the SPOKEN layer stops being a
+  // transcript of a database column.
   return {
     ok: true,
     spoken_summary: reason
-      ? `Recorded failure: ${reason}.`
-      : `${task.title || 'The task'} is ${task.status}; no failure reason is recorded.`,
+      ? `${task.title || 'That task'} ${task.status === 'failed' ? 'failed' : `is ${task.status}`}${task.agent ? `, and it is ${task.agent}'s` : ''}. What the system recorded: ${reason}.`
+      : `${task.title || 'The task'} is ${task.status}, and nothing was recorded about why.`,
     recorded_error: reason || null,
     resolved_from: taskId === suppliedTaskId ? 'task_id' : 'latest_workspace_priority',
     response_contract: repairableScope
-      ? `Say exactly: “Recorded failure: ${reason}. Repair and retry it?” Do not add words.`
-      : 'Say only spoken_summary. Do not add a question.',
+      ? `Explain in your own words what went wrong and what it means, keeping the recorded cause accurate, then ask once whether to repair and retry it. Do not read the raw error string aloud as if it were a sentence.`
+      : 'Explain the cause in your own natural words, keeping every recorded fact accurate. Do not read the raw error string verbatim, and do not add a question.',
     next_action: repairableScope ? {
       action: 'retry_task',
       title: `Repair and retry ${task.title || 'task'}`,
@@ -502,16 +508,51 @@ async function retryTask(args, req, tenant) {
 
 async function execute(action, args, req, tenant, identity, sessionId) {
   if (action === 'read_workspace_status') {
+    // ── 2026-08-09, corner:airpods-mode ──────────────────────────────────────
+    // THIS is where "it talks like a database" came from, not the prompt.
+    // spoken_summary was assembled as `<5-word title> is <status>` joined with a
+    // semicolon, and response_contract then ordered the model to say ONLY that
+    // string. So the very first answer of every call came out as
+    // "Finalize contact list research is failed; Mobile reskin R2b — CHAT: is
+    // failed." — grammatically broken, no room, no person, no time. Measured on
+    // the live bench 2026-08-09: identical dump opened all three conversations,
+    // and no amount of prompt instruction could override an explicit
+    // say-only-this contract coming back from the tool.
+    //
+    // The row data still goes back untouched under `status` — nothing is hidden
+    // from the model. What changes is that the summary is a sentence a person
+    // would say, and the contract now constrains the FACTS rather than the WORDS.
     const status = await workspaceStatus(tenant);
     const spokenPriorities = status.priorities.slice(0, 2);
+    const humanAge = (iso) => {
+      const ms = Date.now() - new Date(iso || 0).getTime();
+      if (!iso || Number.isNaN(ms)) return null;
+      const hours = ms / 3_600_000;
+      if (hours < 1) return 'in the last hour';
+      if (hours < 24) return `${Math.round(hours)} hours ago`;
+      const days = Math.round(hours / 24);
+      return days === 1 ? 'yesterday' : `${days} days ago`;
+    };
+    const STATUS_WORDS = {
+      failed: 'failed', blocked: 'is blocked', needs_input: 'is waiting on you',
+      needs_verification: 'needs checking', queued: 'is still queued',
+      active: 'is running', building: 'is building', qa: 'is in QA',
+      planning: 'is being planned', classifying: 'is being sorted',
+    };
+    const describe = (task) => {
+      const who = task.agent ? `${task.agent}'s ` : '';
+      const what = STATUS_WORDS[task.status] || `is ${task.status}`;
+      const when = humanAge(task.created_at);
+      return `${who}${task.title || 'an untitled task'} ${what}${when ? ` — started ${when}` : ''}`;
+    };
     const prioritySummary = spokenPriorities.length
-      ? spokenPriorities.map((task) => `${compactSpokenTitle(task.title)} is ${task.status}`).join('; ')
-      : 'No active priorities are recorded';
+      ? `${spokenPriorities.length === 1 ? 'One thing needs you' : `${spokenPriorities.length} things need you`}: ${spokenPriorities.map(describe).join(', and ')}`
+      : 'Nothing is waiting on you right now';
     return {
       ok: true,
       spoken_summary: `${prioritySummary}.`,
       checked_at: status.checked_at,
-      response_contract: 'Say only spoken_summary. Do not read totals, older backlog, or ask a follow-up question.',
+      response_contract: 'Say these priorities in your own natural spoken sentence. Keep every fact — the names, who owns them, and how long they have been sitting — but do not read the summary back word for word, do not read totals or older backlog, and do not ask a follow-up question.',
       status: {
         priorities: status.priorities,
         older_attention_count: status.older_attention_count,
@@ -631,6 +672,23 @@ export default async function handler(req, res) {
       body: JSON.stringify({ idempotency_key: key, session_id: sessionId, world_id: identity.tenant, user_id: identity.userId, speaker_name: identity.userName, action, authority, arguments: args, confirmation_state: 'not_required', status: 'started' }),
     });
     const result = await execute(action, args, req, identity.tenant, identity, sessionId);
+
+    // ── 2026-08-09 — the check-in filler had no owner ────────────────────────
+    // "Anything else?", "What's next?", "What are you thinking about now?" were
+    // banned in the voice prompt and still came back on every completed action
+    // (measured both before and after the prompt rewrite, so the prompt was
+    // never going to win this one). Confirmations are the turns where the model
+    // has nothing left to say and reaches for a check-in to fill the gap. The
+    // ban belongs on the tool result, next to the confirmation itself, where it
+    // is the last instruction the model reads before speaking.
+    const CONFIRMING = new Set([
+      'create_task', 'start_work', 'reassign_task', 'retry_task',
+      'open_room', 'close_room', 'open_tool', 'manage_attention',
+    ]);
+    if (result && result.ok !== false && CONFIRMING.has(action) && !result.response_contract) {
+      result.response_contract =
+        'Confirm what you just did in one short sentence and stop. Do not ask "anything else", "what next", "what are you thinking", or any other check-in. The caller will say what they want next.';
+    }
     await db(`airpods_actions?idempotency_key=eq.${encodeURIComponent(key)}`, { method: 'PATCH', body: JSON.stringify({ status: 'succeeded', result, completed_at: new Date().toISOString() }) });
     return res.status(200).json(result);
   } catch (error) {

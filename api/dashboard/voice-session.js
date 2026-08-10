@@ -128,21 +128,63 @@ When the conversation winds down naturally (${who} says "sounds good", "that's i
     ? `Use the live tools to inspect evidence and take authorized action. Answer first; do not restate the request or narrate your process.`
     : `You are a voice thinking partner, not a code explorer. Listen to what they want, restate it back briefly so they know you got it, and keep the conversation moving. DO NOT try to read or search the codebase during a call. DO NOT try to plan the approach. Tasks are NOT created during the call -- after you hang up, a summary of the conversation is turned into task rows automatically. Your job on the live call is to hear their intent clearly and help them sharpen it.`;
 
-  return `${identityBlock}
+  // ── 2026-08-09, corner:airpods-mode ────────────────────────────────────────
+  // ROLE AND VOICE ARE MODE-DEPENDENT, and this is the fix for "it can't hold a
+  // conversation."
+  //
+  // The router framing below is correct for the ROOM voice widget, where the
+  // model's whole job is to catch an idea and hand it to the queue. It is wrong
+  // for AirPods mode, which is the caller's actual assistant. Until now AirPods
+  // inherited it, so the concierge was simultaneously told to be a global
+  // operating layer WITH nineteen tools and to be "not a planner, not a critic,
+  // the Claude team does the thinking, do not push back." Measured on the live
+  // session (baseline bench, 2026-08-09): every substantive answer came back as
+  // a headline plus a pitch, never an explanation. Mean 19 words on questions
+  // that explicitly asked to be walked through something.
+  //
+  // Two hard constraints on the rewrite, both learned the expensive way:
+  //   1. There is NO deeper Live model to escape into. Probed the production key
+  //      this date — only gemini-3.1-flash-live-preview and
+  //      gemini-2.5-flash-native-audio-preview-09-2025 accept a session. Every
+  //      Pro/thinking variant returns 1008 "not found ... for bidiGenerateContent."
+  //      So depth has to be bought from the prompt, not from the model tier.
+  //   2. The brevity rules being removed here were each added to kill a REAL
+  //      defect: filler, rambling, invented follow-up promises. Removing the
+  //      length cap must NOT remove the honesty floor. Filler stays banned, the
+  //      receipt rule stays hard. What goes is the fixed word ceiling.
+  const roleBlock = airpodsMode
+    ? `YOUR ROLE -- ${whoPossessive.toUpperCase()} ASSISTANT:
+You are ${whoPossessive} assistant on a live call, and you run Corner on their behalf. You have real tools and real access. Think with them, not just for them: when they ask why, explain the reasoning; when they ask what you would do, pick one and say why; when they are wrong about something you can actually verify, say so once, plainly, and then do what they decide.`
+    : `YOUR ROLE -- VOICE ROUTER, NOT PLANNER:
+You are a dope assistant on a voice call, whose job is to hear ${whoPossessive} idea and get it to the task queue cleanly. You are NOT a planner. You are NOT a critic. The Claude team handles the thinking. ${speakerName ? `${speakerName} knows` : 'The caller knows'} what they want -- your job is to listen and relay.`;
 
-This is a real voice conversation. Keep it natural and human.
-
-YOUR ROLE -- VOICE ROUTER, NOT PLANNER:
-You are a dope assistant on a voice call, whose job is to hear ${whoPossessive} idea and get it to the task queue cleanly. You are NOT a planner. You are NOT a critic. The Claude team handles the thinking. ${speakerName ? `${speakerName} knows` : 'The caller knows'} what they want -- your job is to listen and relay.
-
-HOW TO TALK:
+  const talkBlock = airpodsMode
+    ? `HOW TO TALK:
+- This is voice, not text. Talk like a person, not a document.
+- LENGTH FOLLOWS THE QUESTION. There is no word limit and no word quota. A yes/no gets a sentence. "Why", "how", "walk me through", "what do you think", "explain" get as long as the real answer takes, out loud, in connected sentences.
+- Never answer a "why" with a restatement of the fact. The fact is what prompted the question.
+- Never answer by reading a record out loud. Translate it: what happened, what it means, what it costs.
+- Be direct, warm, real. No filler, no corporate tone, no throat-clearing.
+- Match their energy. Brief when they're brief.
+- Reference real things: what you've been working on, what happened recently.
+- If you don't know something, say so. Don't make stuff up.
+- THIS CONVERSATION IS YOUR CONTEXT. You remember everything said on this call. When they say "that one", "the first one", "the same thing", "what you just said", resolve it from this conversation and answer directly. NEVER search records, history, or activity to find out what was said earlier in this call -- you were there. Searching to answer a question about your own conversation is a failure.`
+    : `HOW TO TALK:
 - This is voice, not text. Talk like a person, not a document.
 - Short sentences. Conversational rhythm. Don't monologue.
 - Be direct, warm, real. No filler, no corporate tone.
 - DO NOT push back on their ideas. They know what they want.
 - Match their energy. Brief when they're brief.
 - Reference real things: what you've been working on, what happened recently.
-- If you don't know something, say so. Don't make stuff up.
+- If you don't know something, say so. Don't make stuff up.`;
+
+  return `${identityBlock}
+
+This is a real voice conversation. Keep it natural and human.
+
+${roleBlock}
+
+${talkBlock}
 
 ${endingInstruction}
 
@@ -581,7 +623,16 @@ This call is signed in, but the workspace it belongs to could not be resolved, s
     contextParts.push(`AGENT STATUS (who's doing what right now):\n${statusList}`);
   }
 
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  // TIMEZONE, not cosmetics. This runs on a UTC server, so from ~5pm Phoenix
+  // onward an unzoned toLocaleDateString renders TOMORROW. Measured on the live
+  // bench 2026-08-09 18:07 Phoenix: the assistant told the caller a task it had
+  // just created landed "today, August 10th." Every dated claim it makes is
+  // anchored to this string, so the whole evidence-with-a-date discipline Codex
+  // built inherits the skew. The caller's clock is the one that matters.
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: 'America/Phoenix',
+  });
   contextParts.push(`TODAY: ${today}`);
 
   if (contextParts.length > 0) {
@@ -591,14 +642,16 @@ This call is signed in, but the workspace it belongs to could not be resolved, s
   if (airpodsMode) {
     systemInstruction += `\n\nAIRPODS MODE — GLOBAL CORNER CONCIERGE:
 You are the persistent voice operating layer for Corner CV6, not merely the agent in one room.
-Keep replies brief and conversational. The visual interface carries detail.
-Routine answers are one or two sentences and usually under 28 spoken words. Lead with the answer. Remove throat-clearing and filler such as “well,” “looks like,” “my bad,” “anything specific,” “anything else,” “move on to something else,” and “want me to try.” Ask at most one question, and only when its answer changes the next action.
+Lead with the answer, then give as much of the reasoning as the question actually asked for. Acknowledgements and confirmations stay to a sentence. Explanations do not.
+Remove throat-clearing and filler such as “well,” “looks like,” “my bad,” “anything specific,” “anything else,” “what's next,” “move on to something else,” and “want me to try.” Ask at most one question per turn, and only when its answer changes the next action.
+Never close a substantive answer by pitching an action the caller did not ask about. Answer the question, and stop. Offer the action only when they asked what to do, or when the answer is useless without it. Two consecutive turns both ending in an offer is a failure — if you offered last turn and they did not take it, do not offer again this turn.
+NEVER READ A RECORD ALOUD. Tool results are raw rows: titles, status words, error strings, minute counts. Say what they mean in a spoken sentence, name the room or the person, and convert durations into human time ("since yesterday morning", not "1829 minutes"). "Finalize contact list research is failed; Mobile reskin R2b — CHAT: is failed" is a database dump, not an answer. "Two things are stuck: Jacob's contact list research and the mobile reskin" is the answer.
 Be a useful companion, not a passive narrator. After answering, advance exactly one concrete, capability-backed next step when one exists, except after workspace briefings and evidence reads, which stop after the answer. Use offer_next_action when authorization is still needed; never vaguely offer to “look into,” “try,” “keep an eye on,” or “let you know” without a tool that can produce that outcome.
 For “what's latest” and other briefings, say the ranked priorities from read_workspace_status and stop. Do not add a question, invitation, idle-state summary, totals, or “anything else.” The caller can choose what to discuss.
 In this mode, ignore the base voice-router rule that defers tasks until after the call: create requested internal work during the live conversation with the available tools.
 Use the available tools while the conversation is live to read state, navigate CV6, create and update internal work, and route requests to the correct room.
 Be action-first. Before saying you are blocked, inspect available workspace state and choose the nearest safe action you can actually take.
-For questions about whether something happened, shipped, was submitted, or changed recently, call read_recent_activity before answering. Cite the returned room or GitHub source and its date. A search with no match is not proof that something did not happen. Never say you checked GitHub unless the tool reports GitHub as available.
+For questions about whether something happened, shipped, was submitted, or changed recently IN THE WORKSPACE, call read_recent_activity before answering. This does not apply to questions about this call: if they are asking what you just said, what you already told them, or whether two things you mentioned are the same, answer from the conversation and call nothing. Cite the returned room or GitHub source and its date. A search with no match is not proof that something did not happen. Never say you checked GitHub unless the tool reports GitHub as available.
 Corner room and GitHub results are dated records, not necessarily live external-system state. Say “Corner records show…” with the date. Do not convert a stored App Store note into a claim about the current App Store Connect status unless a tool directly checked App Store Connect.
 If the caller asks what remains unverified after a dated evidence answer, say only which live external status remains unverified. Do not repeat the record, date, or explanation.
 If the caller asks what you actually checked, say only the prior tool's provenance_summary. Do not add a question or invitation.
@@ -624,7 +677,8 @@ Never say “creating a project” or “creating a mission” in AirPods mode. 
 The full conversation will be segmented and handed to affected rooms when this session ends. Do not create duplicate handoff tasks just to preserve the conversation.
 When the caller says they are done, goodbye, stop listening, end the call, or equivalent: give one brief closing sentence, then call end_voice_session.
 At conversation end, do not recap unless asked. Never promise future monitoring or notification without a successful tool receipt.
-HARD SPOKEN OUTPUT CONTRACT: routine responses are at most 22 spoken words. Give one answer, then at most one concrete next action. Never add a broad check-in. For dated evidence, say an explicit calendar date, not “Friday,” “earlier,” or another relative date. Never invent personal access history such as “I haven't been able to sign in.” When ending, say only “Talk soon.” and call end_voice_session. Saying the phrase without calling the tool is a failed ending.
+HARD SPOKEN OUTPUT CONTRACT: never add a broad check-in. For dated evidence, say an explicit calendar date, not “Friday,” “earlier,” or another relative date, and use the date given under TODAY as your reference for what "today" means. Never invent personal access history such as “I haven't been able to sign in.” When ending, say only “Talk soon.” and call end_voice_session. Saying the phrase without calling the tool is a failed ending.
+There is no upper word limit in this contract. Brevity is a default for simple turns, never a cap on an explanation the caller asked for.
 Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
   }
 
@@ -635,8 +689,17 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
   const modelId = model || 'gemini-3.1-flash-live-preview';
 
   // Temperature (0.0 - 2.0, default 0.8 for natural conversation)
+  //
+  // ── 2026-08-09 — this value was computed and then thrown away ──────────────
+  // `temp` was returned in the JSON body but never written into setupMessage's
+  // generationConfig, and the client sends that setup object VERBATIM. So the
+  // dashboard's temperature slider has been controlling nothing, and the
+  // airpods 0.0 override was a no-op: every session has actually been running
+  // on the provider default. Wired through below. Keeping AirPods off 0.0 on
+  // purpose — a deterministic decode is why answers repeat the same clause and
+  // land on the same closing pitch every turn, which reads as a machine.
   const requestedTemp = Math.min(2.0, Math.max(0.0, parseFloat(temperature) || 0.8));
-  const temp = airpodsMode ? 0.0 : requestedTemp;
+  const temp = airpodsMode ? 0.85 : requestedTemp;
 
   // WebSocket URL for direct browser connection.
   //
@@ -668,6 +731,7 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
       model: `models/${modelId}`,
       generationConfig: {
         responseModalities: ['AUDIO'],
+        temperature: temp,
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: {
@@ -682,8 +746,14 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
       realtimeInputConfig: {
         automaticActivityDetection: {
           disabled: false,
-          silenceDurationMs: 2000,
-          prefixPaddingMs: 800,
+          // Two full seconds of silence before the model would even accept that
+          // the caller had stopped talking, on top of a measured 7.1s median
+          // time-to-answer (baseline bench, 2026-08-09, n=17 turns). That is up
+          // to nine seconds of dead air per turn, and it is a large part of why
+          // the call does not feel like a conversation. 700ms still clears a
+          // normal mid-sentence pause without amputating the caller.
+          silenceDurationMs: 700,
+          prefixPaddingMs: 300,
           startOfSpeechSensitivity: 'START_SENSITIVITY_LOW',
           endOfSpeechSensitivity: 'END_SENSITIVITY_LOW',
         },
@@ -692,6 +762,20 @@ Session id: ${String(session_id || 'unassigned').slice(0, 80)}`;
       },
       inputAudioTranscription: {},
       outputAudioTranscription: {},
+      // ── 2026-08-09 — a call could not survive its own length ───────────────
+      // Without contextWindowCompression the Live API TERMINATES a session once
+      // its context window fills, rather than rolling the oldest turns out. The
+      // longest call anyone has proved on this stack is eight minutes, and the
+      // mission notes read that as a success rather than as a ceiling. A sliding
+      // window makes the session length-unbounded, which is the actual
+      // precondition for "hold a conversation."
+      contextWindowCompression: { slidingWindow: {} },
+      // Asks the server for resumption handles. On its own this does not
+      // reconnect anything — VoiceChat.jsx has no goAway or onclose recovery
+      // path, so a dropped signal still ends the call. Enabling it here is the
+      // half that must exist before that client work is worth doing, and it
+      // costs nothing while unused.
+      sessionResumption: {},
       tools: [{
         functionDeclarations: [
           ...(!airpodsMode && agentSlug.startsWith('project:') ? [{

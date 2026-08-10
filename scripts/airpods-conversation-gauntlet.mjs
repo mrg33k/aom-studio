@@ -20,7 +20,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function openConversation() {
   const sessionId = crypto.randomUUID();
   const config = await post('/api/dashboard/voice-session', {
-    client_id: 'aom', agent: 'rex', mode: 'airpods', session_id: sessionId,
+    client_id: 'aom', agent: 'corner', mode: 'airpods', session_id: sessionId,
   });
   const socket = new WebSocket(config.wsUrl);
   let activeTurn = null;
@@ -199,7 +199,32 @@ if (scenario === 'skeptical') {
   check('App Store answer frames room evidence as an explicitly dated record', includesAny(turns[3].assistant, ['corner records show', 'corner records say', 'corner record from', 'recorded in']) && /(?:2026|august\s+\d|aug\.?\s+\d)/i.test(turns[3].assistant), turns[3].assistant);
 }
 check('conversation end executes the end route', toolNames(turns[4]).includes('end_voice_session'), toolNames(turns[4]));
-check('routine answers stay compact', turns.slice(0, 4).every((turn) => wordCount(turn.assistant) <= 24), turns.slice(0, 4).map((turn) => wordCount(turn.assistant)));
+// ── 2026-08-09, corner:airpods-mode ──────────────────────────────────────────
+// This check used to be `wordCount <= 24` on every turn, and it was the reason
+// the tuning kept converging on an assistant that could not hold a conversation:
+// the suite failed any answer that actually explained something, so each round
+// of "make it less annoying" also made it shallower, and a later round could
+// never undo it without going red. Patrik's complaint on 2026-08-09 was this
+// check, expressed as a feeling.
+//
+// What replaces it: brevity is still enforced where it was earned — on
+// acknowledgements and on the close — and the ceiling is gone from answers.
+// A hard upper bound stays only as a rambling guard, far above any real answer.
+const ackTurns = turns.filter((turn) => !turn.tools.length && wordCount(turn.assistant) > 0 && /^(yes|no|ok|okay|got it|done)\b/i.test(turn.assistant));
+check('acknowledgements stay short', ackTurns.every((turn) => wordCount(turn.assistant) <= 30), ackTurns.map((turn) => wordCount(turn.assistant)));
+check('no turn rambles', turns.every((turn) => wordCount(turn.assistant) <= 120), turns.map((turn) => wordCount(turn.assistant)));
+// A "why"/"walk me through" turn that comes back at headline length is the exact
+// failure Patrik reported. Substantive questions must get a substantive answer.
+const explanatoryTurns = turns.filter((turn) => /\bwhy\b|walk me through|what would you do|explain/i.test(turn.user));
+check('explanatory questions get an actual explanation', explanatoryTurns.every((turn) => wordCount(turn.assistant) >= 25), explanatoryTurns.map((turn) => ({ q: turn.user, words: wordCount(turn.assistant) })));
+// The assistant must never read a raw database row out loud. These are the shapes
+// that leaked before the tool broker started phrasing its own summaries.
+const RAW_RECORD = [/\bis failed;/i, /\b\d{3,} minutes\b/i, /^recorded failure:/i, /\bmetadata\.repo\b/i, /^[a-z]+\(corner:[a-z-]+\):/i];
+check('no raw database record is read aloud', !turns.some((turn) => RAW_RECORD.some((re) => re.test(turn.assistant))), turns.map((turn) => turn.assistant));
+// It has to remember its own call. Answering a question about what was just said
+// by going and searching the workspace is a conversation failure, not a lookup.
+const selfReferential = turns.filter((turn) => /you (just )?(said|mentioned)|same thing|earlier in this call|at the start of this call/i.test(turn.user));
+check('questions about this call are answered from memory, not a search', selfReferential.every((turn) => !toolNames(turn).includes('read_recent_activity')), selfReferential.map((turn) => ({ q: turn.user, tools: toolNames(turn) })));
 const filler = ['well,', 'looks like', 'my bad', 'anything specific', 'anything else', 'move on to something else', 'want me to try', 'keep an eye on', 'let you know', "what's next", 'what is next', 'what else can i'];
 check('conversation contains no filler or unsupported future promises', !turns.some((turn) => includesAny(turn.assistant, filler)), turns.map((turn) => turn.assistant));
 check('closing is exact and contains no unsolicited recap', wordCount(turns[4].assistant) <= 4 && includesAny(turns[4].assistant, ['talk soon']) && !includesAny(turns[4].assistant, ['recap', 'failed outreach', 'app store', 'keep an eye', 'let you know']), turns[4].assistant);
