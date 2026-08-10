@@ -32,6 +32,10 @@ Vite build and Capacitor sync pass, and `git diff --check` is clean.
 passes strict code-signature validation, installed successfully on Patrik’s paired
 iPhone, reports bundle version 15, and launched successfully.
 
+**Production result:** Commit `2a917f00` fast-forwarded `main`; verified `aom-studio`
+production deployment `aom-studio-6aoxsqj0w` reached READY and the canonical dashboard
+returns HTTP 200.
+
 **Status:** in progress — corrected build 15 installed; physical Business Ops composer confirmation pending
 
 ### R15 — Header-only idle voice entry (2026-08-09)

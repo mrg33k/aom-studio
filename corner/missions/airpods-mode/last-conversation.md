@@ -342,3 +342,6 @@ the production-configured Vite build and Capacitor sync pass, and the signed arc
 validates with bundle version 15 and `contentInset = never`. CoreDevice installed and
 launched Corner 1.0 (15) on Patrik’s paired iPhone. Physical confirmation of the repaired
 Business Ops composer remains the final user-visible check.
+
+Commit `2a917f00` fast-forwarded `main`; production deployment
+`aom-studio-6aoxsqj0w` reached READY and the canonical dashboard returned HTTP 200.
