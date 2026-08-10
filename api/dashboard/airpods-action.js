@@ -115,7 +115,12 @@ async function readTaskStatus(args, tenant, sessionId) {
   }
   if (!task) throw new Error('Task not found in this workspace');
   const reason = String(task.error || '').trim();
-  const repairableScope = task.status === 'failed' && /metadata\.repo|repository|project_path|working path/i.test(reason);
+  // A zombie repo LOCK is repairable by exactly the same requeue as a missing
+  // repo path, but 'repo lock held by zombie' matched none of these words, so
+  // the assistant inspected the failure and then had nothing to offer. Live
+  // gauntlet 2026-08-09: 'failure answer advances one executable retry
+  // proposal' failed for this reason, not because the model declined to help.
+  const repairableScope = task.status === 'failed' && /metadata\.repo|repositor|repo lock|project_path|working path|never (?:got )?claimed|not been claimed|without being claimed|runner (?:dead|died)/i.test(reason);
   // Same defect as read_workspace_status: the raw `error` column was read out
   // verbatim behind a say-exactly contract, so the caller heard engine strings
   // like "stuck queued for 1829 minutes without being claimed (runner dead or

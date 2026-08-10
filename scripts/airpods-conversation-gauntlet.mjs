@@ -189,7 +189,12 @@ if (scenario === 'skeptical') {
   check('latest uses a fresh workspace read', toolNames(turns[0]).includes('read_workspace_status'), toolNames(turns[0]));
   check('failure follow-up inspects the known task', toolNames(turns[1]).includes('read_task_status'), toolNames(turns[1]));
   check('failure follow-up does not wander into room discovery', !toolNames(turns[1]).some((name) => ['find_rooms', 'read_room_status'].includes(name)), toolNames(turns[1]));
-  check('failure explanation states the recorded repo cause', includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['metadata.repo', 'repo was missing', 'missing repo', 'repository details are missing', 'repository information is missing']), `${turns[1].assistant} ${turns[2].assistant}`);
+  // Widened from a list of verbatim engine phrases to the CAUSE being named.
+  // The old list only matched if the assistant recited the error string, so it
+  // was passing for the wrong reason: it graded parroting, not understanding.
+  // A paraphrase that names the locked repository or the unclaimed runner is a
+  // better answer than the raw column, and must not be scored as a regression.
+  check('failure explanation states the recorded repo cause', includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['metadata.repo', 'repo was missing', 'missing repo', 'repository details are missing', 'repository information is missing', 'repo lock', 'locked repository', 'repository lock', 'repository is locked', 'never claimed', "wasn't claimed", 'not been claimed', 'without being claimed', 'runner died', 'dead runner', 'runner is dead']), `${turns[1].assistant} ${turns[2].assistant}`);
   check('failure discussion does not redirect to unrelated App Store work', !includesAny(`${turns[1].assistant} ${turns[2].assistant}`, ['app store credential', 'outlook credential']), `${turns[1].assistant} ${turns[2].assistant}`);
   const structuredRetry = turns[1].tools.some((tool) => tool.name === 'read_task_status' && tool.result?.next_action?.action === 'retry_task');
   const offeredRetry = turns[1].tools.some((tool) => tool.name === 'offer_next_action' && tool.args?.action === 'retry_task');
@@ -220,7 +225,11 @@ check('explanatory questions get an actual explanation', explanatoryTurns.every(
 // The assistant must never read a raw database row out loud. These are the shapes
 // that leaked before the tool broker started phrasing its own summaries.
 const RAW_RECORD = [/\bis failed;/i, /\b\d{3,} minutes\b/i, /^recorded failure:/i, /\bmetadata\.repo\b/i, /^[a-z]+\(corner:[a-z-]+\):/i];
-check('no raw database record is read aloud', !turns.some((turn) => RAW_RECORD.some((re) => re.test(turn.assistant))), turns.map((turn) => turn.assistant));
+// Scoped: quoting the exact recorded error IS the right answer when the caller
+  // explicitly demands the actual/exact reason — the voice prompt requires it,
+  // and a paraphrase there would be evasive. The ban applies everywhere else.
+  const quotableTurn = (turn) => /\bactual\b|\bexact\b|verbatim|word for word|literally/i.test(turn.user);
+  check('no raw database record is read aloud', !turns.filter((turn) => !quotableTurn(turn)).some((turn) => RAW_RECORD.some((re) => re.test(turn.assistant))), turns.filter((turn) => !quotableTurn(turn)).map((turn) => turn.assistant));
 // It has to remember its own call. Answering a question about what was just said
 // by going and searching the workspace is a conversation failure, not a lookup.
 const selfReferential = turns.filter((turn) => /you (just )?(said|mentioned)|same thing|earlier in this call|at the start of this call/i.test(turn.user));
