@@ -38,12 +38,55 @@ final class PushService: NSObject, ObservableObject {
 
     /// Set from a notification tap; RootView routes on it and clears it.
     @Published var pendingDeepLink: DeepLink?
+    /// Set when a notification tap should open a specific delivered file, not just its
+    /// room. Cleared by whoever presents it.
+    @Published var pendingFile: DeliveredFile?
 
     private var hasAskedThisLaunch = false
 
     private override init() {
         super.init()
-        UNUserNotificationCenter.current().delegate = self
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        // Registered at init, not at authorization time: iOS matches a payload's
+        // `category` against the categories registered RIGHT NOW, and a push that
+        // arrives before registration shows as a plain banner with the actions
+        // silently missing. Registering costs nothing when push is refused.
+        center.setNotificationCategories([PushService.deliveryCategory])
+    }
+
+    // MARK: - Actionable categories
+
+    /// The category the server stamps on a push about a file an agent just delivered.
+    /// `nonisolated` because the notification-center delegate callbacks are nonisolated
+    /// and comparing an action identifier must not require a hop to the main actor.
+    nonisolated static let deliveryCategoryID = "CORNER_DELIVERY"
+    nonisolated static let approveActionID = "CORNER_REVIEW_APPROVE"
+    nonisolated static let openActionID = "CORNER_OPEN_FILE"
+
+    nonisolated static var deliveryCategory: UNNotificationCategory {
+        // APPROVE REQUIRES UNLOCKING THE PHONE. `authenticationRequired` is not
+        // ceremony here: an approval cannot be undone (review-decision.js accepts its
+        // undo action for dismiss rows only), it is posted under the user's name, and a
+        // lock-screen button is exactly the surface a pocket or a curious kid reaches
+        // first. One deliberate unlock is the cheapest guard that matches the stakes.
+        let approve = UNNotificationAction(
+            identifier: approveActionID,
+            title: "Approve",
+            options: [.authenticationRequired]
+        )
+        // Foreground, because "open" means look at the thing — the app has to come up.
+        let open = UNNotificationAction(
+            identifier: openActionID,
+            title: "Open file",
+            options: [.foreground]
+        )
+        return UNNotificationCategory(
+            identifier: deliveryCategoryID,
+            actions: [open, approve],
+            intentIdentifiers: [],
+            options: []
+        )
     }
 
     // MARK: - Lifecycle
@@ -164,10 +207,104 @@ extension PushService: UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse
     ) async {
         let info = response.notification.request.content.userInfo
+        let file = DeliveredFile(userInfo: info)
+
+        // The approve action does its work WITHOUT opening the app — that is the whole
+        // point of an actionable notification. Which means nothing on screen can report
+        // the result, so this path reports it itself, either way. A silent tap is the
+        // failure mode this app exists to end, and it is worse here than anywhere else
+        // because the user has been told a decision was made.
+        if response.actionIdentifier == PushService.approveActionID, let file {
+            await PushService.shared.approveFromNotification(file)
+            return
+        }
+
         guard let link = DeepLink(userInfo: info) else { return }
         await MainActor.run {
             PushService.shared.pendingDeepLink = link
+            // Both the default tap and the explicit "Open file" action land in the room;
+            // the file action additionally opens the file itself.
+            if response.actionIdentifier == PushService.openActionID {
+                PushService.shared.pendingFile = file
+            }
             PushService.shared.clearBadge()
         }
+    }
+}
+
+// MARK: - Delivered file (the actionable payload)
+
+/// The file a `CORNER_DELIVERY` push is about. Built from the flat data keys the server
+/// puts beside the aps dictionary — never from the alert text, which is a truncated
+/// human preview and not an identifier.
+struct DeliveredFile: Equatable, Identifiable {
+    var id: String { url }
+
+    let url: String
+    let name: String
+    let project: String
+    let mission: String
+    let sourcePath: String
+    let sha256: String
+
+    init?(userInfo: [AnyHashable: Any]) {
+        let raw = (userInfo["file_url"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+        guard !raw.isEmpty else { return nil }
+        url = raw
+        let declared = (userInfo["file_name"] as? String) ?? ""
+        name = declared.isEmpty ? Attachment.displayName(from: raw) : declared
+        project = (userInfo["project"] as? String) ?? ""
+        mission = (userInfo["mission_slug"] as? String) ?? ""
+        sourcePath = (userInfo["file_source_path"] as? String) ?? ""
+        sha256 = (userInfo["file_sha256"] as? String) ?? ""
+    }
+
+    var attachment: Attachment {
+        Attachment(
+            url: url,
+            name: name,
+            mime: "",
+            size: 0,
+            gateStatus: "",
+            sha256: sha256,
+            sourcePath: sourcePath
+        )
+    }
+
+    /// The bare mission leaf — review-decision.js canonicalises "<project>:<mission>"
+    /// itself and double-prefixes a composite slug handed to it whole.
+    var missionLeaf: String {
+        mission.split(separator: ":").last.map(String.init) ?? mission
+    }
+}
+
+extension PushService {
+
+    /// Approve straight from the lock screen, and then SAY what happened.
+    ///
+    /// A local notification is the only surface available: the app was never brought
+    /// forward, so there is no view to update and no toast to show. Both outcomes are
+    /// posted — success names the file, failure says plainly that nothing was recorded
+    /// and the file is still waiting, because a user who tapped Approve and heard
+    /// nothing will assume it worked.
+    func approveFromNotification(_ file: DeliveredFile) async {
+        let ok = await ReviewStore.shared.decide(
+            attachment: file.attachment,
+            action: .approve,
+            project: file.project,
+            mission: file.missionLeaf
+        )
+        let content = UNMutableNotificationContent()
+        if ok {
+            content.title = "Approved"
+            content.body = "\(file.name) — the room has been told."
+        } else {
+            content.title = "Not approved"
+            content.body = "\(file.name) could not be approved just now. Nothing was recorded — it is still waiting for you."
+        }
+        content.sound = nil
+        try? await UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        )
     }
 }

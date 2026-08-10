@@ -133,7 +133,8 @@ function hostFor(environment, defaultEnv) {
  *
  * @param {Array<{token:string, environment?:string}|string>} devices
  * @param {{title?:string, body?:string, data?:object, collapseId?:string, badge?:number,
- *          sound?:string, threadId?:string, contentAvailable?:boolean}} notification
+ *          sound?:string, threadId?:string, contentAvailable?:boolean,
+ *          category?:string}} notification
  * @returns {Promise<{ok:boolean, skipped?:string, sent:number, dead:string[], errors:Array}>}
  */
 export async function sendApnsBatch(devices, notification = {}) {
@@ -165,6 +166,11 @@ export async function sendApnsBatch(devices, notification = {}) {
     sound: notification.sound || 'default',
     ...(notification.badge != null ? { badge: Number(notification.badge) } : {}),
     ...(notification.threadId ? { 'thread-id': String(notification.threadId) } : {}),
+    // Actionable notifications. The category is a NAME the client registered its
+    // buttons under (PushService.deliveryCategory); an unrecognised name degrades to a
+    // plain banner, which is why an older build receiving this payload loses the
+    // buttons and nothing else.
+    ...(notification.category ? { category: String(notification.category) } : {}),
     // content-available wakes the app so it can delta-fetch the thread it just got
     // told about — the notification is the *signal*, the row is the truth.
     ...(notification.contentAvailable ? { 'content-available': 1 } : {}),
@@ -286,7 +292,63 @@ export function titleForRow(record) {
 
 export function previewForRow(record) {
   const text = String(record.text || '').replace(/\s+/g, ' ').trim();
+  // A delivery row's text is usually the bridge's own announcement ("Attached file:
+  // Q3-deck.pdf"). "Attached file:" is our plumbing, not a sentence anyone says, so a
+  // lock screen gets the fact instead: someone sent you a thing, and its name.
+  const delivery = deliveryForRow(record);
+  if (delivery && isBareAnnouncement(text)) return `Sent you ${delivery.name}`;
   return text.length > BODY_PREVIEW_CHARS ? `${text.slice(0, BODY_PREVIEW_CHARS - 1)}…` : text;
+}
+
+function isBareAnnouncement(text) {
+  return /^attached (file|\d+\s+files?):/i.test(String(text || '').trim());
+}
+
+/**
+ * The ONE file this row delivered, when it delivered exactly one as a deliberate
+ * hand-off. Null otherwise — and "otherwise" deliberately includes the multi-file case.
+ *
+ * WHY SINGLE-FILE ONLY. The approve action decides ONE deliverable id. A push about a
+ * four-file drop carrying one file's id would approve the first and silently leave three
+ * waiting, while telling the user "Approved". There is no honest one-button verdict on a
+ * set, so a multi-file delivery gets a plain banner and the user opens the app — where
+ * four files are visibly four files.
+ *
+ * The eligibility rule matches review-queue.js's waiting set (deliberate agent hand-offs:
+ * metadata.handoff, source 'share-file', or a watcher auto-share) so the button can only
+ * appear on something the queue actually considers reviewable. An approve on anything
+ * else would record a verdict against a file that was never waiting for one.
+ */
+export function deliveryForRow(record) {
+  if (!record || record.role !== 'assistant') return null;
+  const md = record.metadata || {};
+  const source = String(record.source || '');
+  const eligible = md.handoff === true || source === 'share-file' || source === 'auto-share';
+  if (!eligible) return null;
+
+  // Exactly one attachment, in either metadata shape.
+  let att = null;
+  if (Array.isArray(md.attachments)) {
+    if (md.attachments.length !== 1) return null;
+    att = md.attachments[0];
+  } else if (md.attachment && typeof md.attachment === 'object') {
+    att = md.attachment;
+  }
+  if (!att) return null;
+
+  const url = String(att.url || '').trim();
+  if (!url) return null;
+  const name = String(att.name || '').trim() || decodeURIComponent(url.split('?')[0].split('/').pop() || 'the file');
+  return {
+    // The deliverable id the review endpoints key on is the attachment URL
+    // (api/_lib/fileRef.js: review.id = url). Anything else here approves nothing.
+    url,
+    name,
+    // Content identity, so a verdict taken from the lock screen suppresses a re-share of
+    // the same bytes exactly like one taken in the app.
+    sourcePath: String(md.source_path || att.source_path || '') || null,
+    sha256: /^[a-f0-9]{64}$/i.test(String(att.sha256 || '')) ? String(att.sha256).toLowerCase() : null,
+  };
 }
 
 /**
@@ -320,6 +382,8 @@ export async function notifyDevicesForMessageRow({ supabaseUrl, headers, row }) 
     const devices = await res.json().catch(() => []);
     if (!Array.isArray(devices) || !devices.length) return { ok: true, sent: 0, skipped: 'no devices' };
 
+    const delivery = deliveryForRow(row);
+
     const result = await sendApnsBatch(devices, {
       title: titleForRow(row),
       body: previewForRow(row),
@@ -327,6 +391,9 @@ export async function notifyDevicesForMessageRow({ supabaseUrl, headers, row }) 
       // while you were away is one notification, not six.
       collapseId: row.room_id || undefined,
       threadId: row.room_id || undefined,
+      // Actionable ONLY for a single-file hand-off (see deliveryForRow). Every other
+      // reply keeps the plain banner it has always had.
+      category: delivery ? 'CORNER_DELIVERY' : undefined,
       data: {
         room_id: row.room_id || null,
         message_id: row.id || null,
@@ -338,6 +405,14 @@ export async function notifyDevicesForMessageRow({ supabaseUrl, headers, row }) 
         // same payload works if a browser client ever consumes it.
         deep_link: row.room_id ? `corner://room/${encodeURIComponent(row.room_id)}` : 'corner://rooms',
         url: '/dashboard',
+        // The file the actions act on. Ids only — 4.5.4 says a push must not carry the
+        // content itself, and the app fetches the real bytes on tap anyway.
+        ...(delivery ? {
+          file_url: delivery.url,
+          file_name: delivery.name,
+          file_source_path: delivery.sourcePath,
+          file_sha256: delivery.sha256,
+        } : {}),
       },
     });
 
