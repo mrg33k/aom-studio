@@ -42,8 +42,20 @@ final class ReviewStore: ObservableObject {
 
     struct Notice: Identifiable, Equatable {
         let id = UUID()
+        /// The full sentence, for a surface that shows nothing else — the queue's
+        /// notice bar has no heading above it and has to stand alone.
         let text: String
+        /// Just the cause, for a surface that already frames it. The decision sheet's
+        /// card is titled "Nothing was recorded", and pasting the full sentence under
+        /// that heading printed the same fact twice in four lines.
+        let reason: String?
         let isFailure: Bool
+
+        init(text: String, reason: String? = nil, isFailure: Bool) {
+            self.text = text
+            self.reason = reason
+            self.isFailure = isFailure
+        }
     }
 
     private let api: CornerAPI
@@ -136,10 +148,11 @@ final class ReviewStore: ObservableObject {
             Task { await load() }
             return true
         } catch {
-            let reason = (error as? LocalizedError)?.errorDescription ?? "the server refused it"
+            let reason = (error as? LocalizedError)?.errorDescription ?? "The server refused it."
             // Named precisely: nothing was recorded. The item stays exactly where it was.
             notice = Notice(
-                text: "\(action.label) did not go through — \(reason). Nothing was recorded.",
+                text: "\(action.label) did not go through — \(reason.prefix(1).lowercased())\(reason.dropFirst()) Nothing was recorded.",
+                reason: reason,
                 isFailure: true
             )
             return false
