@@ -43,6 +43,19 @@ struct RootView: View {
             router.open(link)
             push.pendingDeepLink = nil
         }
+        // "Open file" from a delivery notification opens the file, over the room it
+        // arrived in. Routing to the room alone would leave the user hunting a thread
+        // for the thing the notification was about, which is the tap doing half its job.
+        .sheet(item: $push.pendingFile) { file in
+            FilePreviewView(
+                attachment: file.attachment,
+                reviewContext: FilePreviewView.ReviewContext(
+                    project: file.project,
+                    mission: file.missionLeaf,
+                    isWaiting: true
+                )
+            )
+        }
         .onOpenURL { url in
             guard let link = DeepLink(url: url) else { return }
             router.open(link)

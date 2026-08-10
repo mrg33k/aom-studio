@@ -10,7 +10,10 @@ import SwiftUI
 
 struct ChatView: View {
     @StateObject private var model: ChatViewModel
+    @StateObject private var review = ReviewStore.shared
     @Environment(\.scenePhase) private var scenePhase
+
+    @State private var showingFiles = false
 
     init(room: Room) {
         _model = StateObject(wrappedValue: ChatViewModel(room: room))
@@ -24,7 +27,25 @@ struct ChatView: View {
         .background(Theme.ground)
         .navigationTitle(model.room.title)
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { model.start() }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                // This chat's files live one tap from the chat, never in a separate
+                // destination — the crossings ARE this conversation, narrowed.
+                Button { showingFiles = true } label: {
+                    Image(systemName: "paperclip")
+                }
+                .accessibilityLabel("Files in this chat")
+            }
+        }
+        .sheet(isPresented: $showingFiles) {
+            RoomFilesView(room: model.room)
+        }
+        .onAppear {
+            model.start()
+            // The waiting set marks files inside the thread too, so it loads with the
+            // room rather than only when the review screen is opened.
+            Task { await review.load() }
+        }
         .onDisappear { model.stop() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { model.handleForeground() }
@@ -53,8 +74,12 @@ struct ChatView: View {
                         ForEach(model.thread) { item in
                             switch item {
                             case .message(let row):
-                                MessageBubbleView(row: row) { model.draftOption($0) }
-                                    .id(row.id)
+                                MessageBubbleView(
+                                    row: row,
+                                    onOption: { model.draftOption($0) },
+                                    room: model.room
+                                )
+                                .id(row.id)
                             case .outbox(let pending):
                                 OutboxBubbleView(
                                     item: pending,

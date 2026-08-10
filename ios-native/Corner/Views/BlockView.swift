@@ -24,6 +24,10 @@ import SwiftUI
 struct BlockView: View {
     let block: MessageBlock
     var onOption: (String) -> Void = { _ in }
+    /// Opening an image or a file from inside a block goes through the SAME preview a
+    /// thread attachment opens. A block with its own viewer would drift from it within
+    /// one round of changes.
+    var onOpenFile: (Attachment) -> Void = { _ in }
 
     var body: some View {
         switch block.kind {
@@ -33,6 +37,8 @@ struct BlockView: View {
         case "summary":                   summaryBlock
         case "code":                      codeBlock
         case "artifact":                  artifactBlock
+        case "gallery":                   galleryBlock
+        case "email":                     emailBlock
         case "thinking":                  thinkingBlock
         case "question", "choice", "replies", "confirm", "choiceecho":
                                           optionsBlock
@@ -136,12 +142,104 @@ struct BlockView: View {
         }
     }
 
+    /// A screenshot renders as the screenshot; a live-site card stays a link. The kind
+    /// field decides, and a `live` artifact is never treated as an image no matter what
+    /// its URL ends in.
     @ViewBuilder
     private var artifactBlock: some View {
-        if let url = block.url {
+        if block.artifactIsImage, let attachment = block.asAttachment {
+            AttachmentCardView(attachment: attachment) { onOpenFile(attachment) }
+        } else if let url = block.url {
             LinkCardView(card: LinkCard(url: url, summary: block.title ?? "Open"))
         } else {
             fallbackBlock
+        }
+    }
+
+    /// The gallery. One image renders full width; several tile in a grid, because a
+    /// column of full-width photos turns a six-image delivery into six screens of
+    /// scrolling and the point of a gallery is seeing them together.
+    @ViewBuilder
+    private var galleryBlock: some View {
+        let images = block.images
+        if images.isEmpty {
+            fallbackBlock
+        } else if images.count == 1, let only = images.first {
+            VStack(alignment: .leading, spacing: Theme.s1) {
+                AttachmentCardView(attachment: only) { onOpenFile(only) }
+                galleryCaption
+            }
+        } else {
+            VStack(alignment: .leading, spacing: Theme.s2) {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 92), spacing: Theme.s2)],
+                    spacing: Theme.s2
+                ) {
+                    ForEach(images) { image in
+                        Button { onOpenFile(image) } label: {
+                            GalleryTile(attachment: image)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                galleryCaption
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var galleryCaption: some View {
+        if let caption = block.caption, !caption.isEmpty {
+            Text(caption)
+                .font(.caption2)
+                .foregroundStyle(Theme.inkFaint)
+        }
+    }
+
+    /// An email surfaced in chat. Its attachments are real files and open like any
+    /// other; rendering the card without them was how "the email had a PDF" turned into
+    /// a sentence about a PDF nobody could reach.
+    private var emailBlock: some View {
+        RaisedCard {
+            VStack(alignment: .leading, spacing: Theme.s2) {
+                HStack(spacing: Theme.s2) {
+                    Image(systemName: "envelope").font(.caption).foregroundStyle(Theme.accent)
+                    Text(block.raw["from"]?.stringValue ?? "Email")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                if let subject = block.raw["subject"]?.stringValue, !subject.isEmpty {
+                    Text(subject).font(.footnote.weight(.medium)).foregroundStyle(Theme.ink)
+                }
+                if let quote = block.raw["quote"]?.stringValue, !quote.isEmpty {
+                    Text(quote)
+                        .font(.caption)
+                        .foregroundStyle(Theme.inkSoft)
+                        .lineLimit(6)
+                }
+                ForEach(emailAttachments) { file in
+                    Button { onOpenFile(file) } label: {
+                        HStack(spacing: Theme.s2) {
+                            Image(systemName: file.kind.symbol).font(.caption2).foregroundStyle(Theme.accent)
+                            Text(file.name).font(.caption).foregroundStyle(Theme.ink).lineLimit(1)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                optionChips
+            }
+        }
+    }
+
+    private var emailAttachments: [Attachment] {
+        (block.raw["attachments"]?.arrayValue ?? []).compactMap { item in
+            let url = item["url"]?.stringValue ?? ""
+            guard !url.isEmpty else { return nil }
+            let name = item["name"]?.stringValue ?? Attachment.displayName(from: url)
+            return Attachment(url: url, name: name, mime: "", size: 0, gateStatus: "")
         }
     }
 
@@ -251,6 +349,42 @@ struct BlockView: View {
         case "video":   return "play.rectangle"
         default:        return "square.on.square.dashed"
         }
+    }
+}
+
+// MARK: - Gallery tile
+
+/// A square tile in a gallery grid. Square on purpose: a grid of images at their natural
+/// aspect ratios is a ragged wall, and the tap target is a preview anyway.
+struct GalleryTile: View {
+    let attachment: Attachment
+
+    var body: some View {
+        AsyncImage(url: FileStore.sources(for: attachment).first?.url) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFill()
+            case .failure:
+                ZStack {
+                    Theme.agentBubble
+                    Image(systemName: "photo.badge.exclamationmark")
+                        .font(.caption)
+                        .foregroundStyle(Theme.inkFaint)
+                }
+            default:
+                ZStack {
+                    Theme.agentBubble
+                    ProgressView().controlSize(.small)
+                }
+            }
+        }
+        .frame(width: 92, height: 92)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
+        )
+        .accessibilityLabel(attachment.name)
     }
 }
 

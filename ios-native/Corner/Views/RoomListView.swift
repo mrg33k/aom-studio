@@ -14,8 +14,11 @@ struct RoomListView: View {
     @EnvironmentObject private var router: AppRouter
     @StateObject private var store = RoomStore()
 
+    @StateObject private var review = ReviewStore.shared
+
     @State private var query = ""
     @State private var showAccount = false
+    @State private var showReview = false
     @State private var expanded: Set<String> = []
 
     var body: some View {
@@ -23,6 +26,7 @@ struct RoomListView: View {
             if api.world == nil {
                 noWorldNotice
             } else if query.isEmpty {
+                waitingSection
                 agentSection
                 projectSections
                 if let error = store.railError { railErrorRow(error) }
@@ -51,13 +55,60 @@ struct RoomListView: View {
                 .environmentObject(api)
                 .environmentObject(PushService.shared)
         }
+        .navigationDestination(isPresented: $showReview) {
+            ReviewQueueView()
+        }
         .task {
             if !store.hasLoadedOnce { await store.load() }
+            review.startPolling()
         }
         .onChange(of: api.world) { _, _ in store.refresh() }
     }
 
     // MARK: - Sections
+
+    /// The queue gets a row only when something is actually in it. A permanent
+    /// "Waiting on you — 0" is a nav item pretending to be a signal, and after a week of
+    /// showing zero it stops being read at all — which is the one time it matters.
+    @ViewBuilder
+    private var waitingSection: some View {
+        if review.waitingCount > 0 {
+            Section {
+                Button { showReview = true } label: {
+                    HStack(spacing: Theme.s3) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(Theme.warning.opacity(0.16))
+                                .frame(width: 34, height: 34)
+                            Image(systemName: "tray.full")
+                                .font(.footnote)
+                                .foregroundStyle(Theme.warning)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Waiting on you")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
+                            Text(review.waitingCount == 1
+                                 ? "1 file needs a verdict"
+                                 : "\(review.waitingCount) files need a verdict")
+                                .font(.caption)
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                        Spacer(minLength: 0)
+                        Text("\(review.waitingCount)")
+                            .font(.caption.weight(.bold).monospacedDigit())
+                            .foregroundStyle(Theme.ground)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Theme.warning, in: Capsule())
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(Theme.raised.opacity(0.6))
+            }
+        }
+    }
 
     private var agentSection: some View {
         Section("Agents") {
