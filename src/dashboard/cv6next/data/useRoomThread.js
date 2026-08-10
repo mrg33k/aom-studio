@@ -195,6 +195,29 @@ export function useRoomThread(worldId, room) {
   const lastSentTsRef = useRef(0);
   const [liveSteps, setLiveSteps] = useState([]);
   const [turnHealth, setTurnHealth] = useState(null);
+  // ── Connection health (corner:bridge frontend-visibility, 2026-08-09) ────────
+  // The thread used to fail SILENTLY in three different ways: a 401/500 on the
+  // reconcile poll wiped the rendered conversation, a dropped realtime socket
+  // degraded the room to a 10s poll with zero signal, and a backgrounded phone
+  // came back to a frozen thread. `connection` is the one honest read of those:
+  //   online   — the browser's own network state
+  //   realtime — 'connecting' | 'live' | 'reconnecting' | 'off'
+  //   feed     — 'live' (the last thread fetch succeeded) | 'stale' (it failed;
+  //              what you see is the last good load, nothing was lost)
+  // Rendered by RoomConnectionNotice; never used to hide or clear real messages.
+  const [connection, setConnection] = useState(() => ({
+    online: typeof navigator === 'undefined' ? true : navigator.onLine !== false,
+    realtime: 'connecting',
+    feed: 'live',
+  }));
+  // The exact text of the turn we're tracking, so a dead turn can be retried verbatim.
+  const lastSentTextRef = useRef('');
+  const lastSentOptionsRef = useRef(null);
+  // True once the dead-bridge backstop has declared this turn silent; cleared when a
+  // real reply finally lands (or the next send starts a new turn).
+  const silentTurnRef = useRef(false);
+  // Mirror of `pending` for retry lookups (a functional setState must stay pure).
+  const pendingRef = useRef([]);
   // True once the bridge has emitted at least one real step for the message we're awaiting.
   // When it has, the bridge is streaming live progress and OWNS the "stopped" signal via its
   // settled sentinel — so we must NOT settle the bar off an interim reply timestamp (the agent
@@ -213,6 +236,8 @@ export function useRoomThread(worldId, room) {
   // consumer (and the Home portal) to re-render and the scroll to jump. We only commit a
   // new messages array when the signature actually changed, so a quiet room stays still.
   const sigRef = useRef('');
+
+  useEffect(() => { pendingRef.current = pending; }, [pending]);
 
   // Clear the outbox when you switch rooms (those messages belong to the old thread).
   useEffect(() => { setPending([]); setArchivedMessages([]); }, [room?.id]);
@@ -238,7 +263,7 @@ export function useRoomThread(worldId, room) {
     }
   }, [worldId, room?.id]);
   // Switching rooms drops any in-flight "working" state too.
-  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); setTurnHealth(null); setStepsByParent({}); lastSentTsRef.current = 0; baselineRef.current = false; }, [room?.id]);
+  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); setTurnHealth(null); setStepsByParent({}); lastSentTsRef.current = 0; baselineRef.current = false; silentTurnRef.current = false; lastSentTextRef.current = ''; }, [room?.id]);
 
   // Post a real user message into this room (composer + choice/question taps).
   // Agent rooms POST to the agent slug; project rooms to the project slug. After
@@ -274,21 +299,48 @@ export function useRoomThread(worldId, room) {
     setLiveSteps([]);
     sawLiveStepsRef.current = false;
     lastSentTsRef.current = now.getTime();
+    lastSentTextRef.current = body;
+    lastSentOptionsRef.current = { interactionMode };
+    silentTurnRef.current = false;
+    // A failed send KEEPS its bubble (corner:bridge frontend-visibility D3). Deleting it
+    // was the single most alarming failure on the surface: your words flashed into the
+    // thread and then vanished with no reason given and nothing to tap. Now the bubble
+    // stays, marked "Not sent", carrying the reason and a one-tap retry.
+    const markFailed = (reason) => {
+      setPending((p) => p.map((m) => (m.optId === optId
+        ? { ...m, failed: true, failReason: reason, retryText: body, retryOptions: options }
+        : m)));
+      setAwaiting(false);
+      setTurnHealth({ state: 'needs_attention', cause: 'write_failed', repaired: false });
+      // Tell the composer the words are safe in the thread, so it does NOT also
+      // restore them into the box (one copy of your message, not two).
+      try { options?.onKeptInThread?.(reason); } catch { /* caller-supplied */ }
+    };
+    const classify = (r) => {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
+      if (r && r.status === 401) return 'signed_out';
+      if (!r) return 'offline';
+      return 'server';
+    };
     try {
       const r = await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        // A black-holed connection (tunnel down, radio dead) used to hang at the browser
+        // default — minutes of a pending bubble before the silent delete. 20s, then fail
+        // honestly and visibly.
+        ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(20000) } : {}),
       });
-      if (!r || !r.ok) {
-        setPending((p) => p.filter((m) => m.optId !== optId));
-        setAwaiting(false);
-        setTurnHealth({ state: 'needs_attention', cause: 'write_failed', repaired: false });
-        return false;
-      }
-      // The created row id is the parent the bridge keys its step heartbeats to.
+      if (!r || !r.ok) { markFailed(classify(r)); return false; }
+      // The created row id is the parent the bridge keys its step heartbeats to — and
+      // the key the optimistic bubble reconciles on (never text: two sends of "ok" used
+      // to collapse into one bubble).
       try {
         const j = await r.clone().json();
         const id = j?.message?.id;
-        if (id) setLastSentId(String(id));
+        if (id) {
+          setLastSentId(String(id));
+          setPending((p) => p.map((m) => (m.optId === optId ? { ...m, serverId: String(id) } : m)));
+        }
         if (j?.turn_receipt) setTurnHealth({ state: j.turn_receipt.state || 'accepted', cause: null, repaired: false });
       } catch { /* non-JSON */ }
       // Immediately bump this direct agent thread's recency so Recently Active
@@ -296,8 +348,33 @@ export function useRoomThread(worldId, room) {
       if (!room.isProject && !room.isMission && bumpAgentThread) bumpAgentThread(room.id, body);
       setReloadKey((k) => k + 1);
       return true;
-    } catch { setPending((p) => p.filter((m) => m.optId !== optId)); setAwaiting(false); setTurnHealth({ state: 'needs_attention', cause: 'write_failed', repaired: false }); return false; }
+    } catch (err) {
+      markFailed((err && (err.name === 'TimeoutError' || err.name === 'AbortError')) ? 'timeout' : classify(null));
+      return false;
+    }
   }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug, bumpAgentThread]);
+
+  // Tap-to-retry on a failed bubble: drop the failed copy and send the same words again.
+  const retrySend = useCallback((optId) => {
+    const entry = pendingRef.current.find((m) => m.optId === optId);
+    if (!entry) return Promise.resolve(false);
+    setPending((p) => p.filter((m) => m.optId !== optId));
+    const opts = { ...(entry.retryOptions || {}) };
+    delete opts.onKeptInThread;   // the retry owns its own bubble
+    return send(entry.retryText || entry.text || '', opts);
+  }, [send]);
+
+  // A turn the agent abandoned: resend the same ask, or nudge for a status.
+  const retryTurn = useCallback(() => {
+    const text = lastSentTextRef.current;
+    if (!text) return Promise.resolve(false);
+    return send(text, lastSentOptionsRef.current || {});
+  }, [send]);
+  const nudgeTurn = useCallback(
+    () => send('Are you still on this? Give me a quick status on my last message.', lastSentOptionsRef.current || {}),
+    [send],
+  );
+  const reload = useCallback(() => { setReloadKey((k) => k + 1); }, []);
 
   // Follow the exact persisted message through the steward. Inspection is read-only;
   // after 45 seconds without activity we ask once for the server's narrowly allowlisted
@@ -391,8 +468,16 @@ export function useRoomThread(worldId, room) {
         // reply bubbles must not (see the message-poll settle guard).
         if (renderable > 0) sawLiveStepsRef.current = true;
         if (renderable !== lastCount) { lastCount = renderable; lastActivity = Date.now(); }
-        // Dead-bridge insurance only: fully silent (no new step, no reply) for a long stretch.
-        if (Date.now() - lastActivity > 180000) setAwaiting(false);
+        // Dead-bridge insurance: fully silent (no new step, no reply) for a long stretch.
+        // This used to just switch the working bar off, which rendered a DEAD turn as a
+        // quiet settle — the room looked idle, as if you had never asked (corner:bridge
+        // frontend-visibility D1, the reported symptom). It now says so out loud and
+        // offers Retry / Nudge; RoomRecoveryNotice renders it at the thread tail.
+        if (Date.now() - lastActivity > 180000) {
+          silentTurnRef.current = true;
+          setAwaiting(false);
+          setTurnHealth((h) => ((h && h.state === 'needs_attention') ? h : { state: 'needs_attention', cause: 'agent_silent', repaired: false }));
+        }
       })
       .catch(() => {});
     poll();
@@ -461,10 +546,25 @@ export function useRoomThread(worldId, room) {
     else if (room.isProject) { params.set('project', room.id); params.set('project_only', '1'); }
     else params.set('agent', room.id);
     params.set('limit', '40');
+    // A FAILED load must never look like an empty room (corner:bridge frontend-visibility
+    // D2). The old code mapped !r.ok to null and then read `d?.messages` off it, so a
+    // single 401/500 on the 10s reconcile poll produced raw=[] → setMessages([]) →
+    // status 'empty' → and it CACHED that emptiness, so leaving the room and coming back
+    // repainted the wipe. Most common trigger: a phone waking up and racing token
+    // refresh. Now a failed fetch commits nothing, caches nothing, and simply marks the
+    // feed stale so the surface can say "showing the last loaded messages".
+    const markFeedStale = () => {
+      setConnection((c) => (c.feed === 'stale' ? c : { ...c, feed: 'stale' }));
+      // 'error' only when there is nothing on screen to protect — a first load that
+      // never landed. A room already rendering keeps its thread.
+      setStatus((s) => (s === 'loading' ? 'error' : s));
+    };
     const load = () => authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => (r && r.ok ? r.json() : null))
       .then((d) => {
         if (!alive) return;
+        if (!d) { markFeedStale(); return; }
+        setConnection((c) => (c.feed === 'live' ? c : { ...c, feed: 'live' }));
         const raw = (Array.isArray(d?.messages) ? d.messages : [])
           // Follow-up TRIGGER rows are a system prompt to the agent (role:user,
           // source:task-followup, body "[FOLLOWUP TRIGGER ...]"), not a human
@@ -486,10 +586,21 @@ export function useRoomThread(worldId, room) {
             agentName: (m.role === 'user' || m.user_name) ? (m.user_name || 'You') : titleForAgent(m.agent || room.name),
             text: m.text || '', time: hhmm(m.timestamp), ts: m.timestamp || null,
           })));
-        // Drop any optimistic message the server now reflects (matched by text), so the
-        // real row replaces it with no duplicate.
+        // Drop any optimistic message the server now reflects, so the real row replaces
+        // it with no duplicate. Keyed on the row id the POST handed back — text matching
+        // deleted the WRONG bubble whenever the room already contained the same words
+        // (send "ok" into a thread with an older "ok" and the fresh bubble vanished for a
+        // few seconds), and collapsed two identical rapid sends into one. Text is kept
+        // only as the fallback for a send whose POST response never came back, and a
+        // FAILED bubble is never reconciled away — it has no server row and its whole job
+        // is to stay put until you retry it.
+        const serverIds = new Set(raw.map((m) => String(m.id || '')).filter(Boolean));
         const userTexts = new Set(raw.filter((m) => m.role === 'user' || m.user_name).map((m) => (m.text || '').trim()));
-        setPending((prev) => prev.filter((op) => !userTexts.has((op.text || '').trim())));
+        setPending((prev) => prev.filter((op) => {
+          if (op.failed) return true;
+          if (op.serverId) return !serverIds.has(op.serverId);
+          return !userTexts.has((op.text || '').trim());
+        }));
         // The live Goal Thread (agent-talk): structured blocks ride on a message's
         // metadata.blocks. The agent re-emits the current thread state in its latest
         // structured reply, so the freshest message that carries blocks IS the thread.
@@ -577,6 +688,12 @@ export function useRoomThread(worldId, room) {
         const tms = (m) => (m.ts ? new Date(m.ts).getTime() : 0) || 0;
         const newestUser = msgs.filter((m) => m.isUser && m.id).sort((a, b) => tms(b) - tms(a))[0];
         const newestReply = msgs.filter((m) => !m.isUser).sort((a, b) => tms(b) - tms(a))[0];
+        // A turn we declared dead that came back to life: drop the notice the moment a
+        // real reply lands, so the "went quiet" row never outlives the answer.
+        if (silentTurnRef.current && newestReply && lastSentTsRef.current && tms(newestReply) >= lastSentTsRef.current) {
+          silentTurnRef.current = false;
+          setTurnHealth(null);
+        }
         if (!baselineRef.current) {
           // First load for this room: remember where the thread is.
           baselineRef.current = true;
@@ -587,6 +704,9 @@ export function useRoomThread(worldId, room) {
           // (consistent "is it working" whether you sent the message or just walked in).
           if (newestUser && (!newestReply || tms(newestReply) < tms(newestUser)) && (Date.now() - tms(newestUser) < 180000)) {
             setLastSentId(String(newestUser.id));
+            // Remember the words too: walking into a mid-turn room and watching it die
+            // must offer the same Retry as sending it yourself.
+            lastSentTextRef.current = newestUser.text || lastSentTextRef.current;
             setAwaiting(true);
             setLiveSteps([]);
             sawLiveStepsRef.current = false;
@@ -595,6 +715,8 @@ export function useRoomThread(worldId, room) {
           // A newer user message than anything we've tracked → the agent is now on it.
           lastSentTsRef.current = tms(newestUser);
           setLastSentId(String(newestUser.id));
+          lastSentTextRef.current = newestUser.text || lastSentTextRef.current;
+          silentTurnRef.current = false;
           setAwaiting(true);
           setLiveSteps([]);
           sawLiveStepsRef.current = false;
@@ -610,7 +732,7 @@ export function useRoomThread(worldId, room) {
         // Refresh the session render cache with what this room actually shows now.
         threadCache.set(threadCacheKey(worldId, room), { messages: msgs, blocks: liveBlocks, sig });
       })
-      .catch(() => { if (alive) setStatus('error'); });
+      .catch(() => { if (alive) markFeedStale(); });
     load();
 
     // ── Supabase realtime subscription for live messages ──────────────────────
@@ -618,6 +740,9 @@ export function useRoomThread(worldId, room) {
     // Subscription filters match the room-scoping logic (client_id + project/mission/agent).
     // On INSERT, call load() to refresh and render the new message immediately.
     let channel = null;
+    let retryTimer = null;
+    let retryAttempt = 0;
+    let subscribeRoom = () => {};
     if (supabase) {
       // room_id single-filter subscription (corner:one-write-path R5, 2026-07-01).
       // postgres_changes supports exactly ONE `column=eq.value` filter; the old
@@ -637,15 +762,69 @@ export function useRoomThread(worldId, room) {
       }
       const filter = `room_id=eq.${roomIdFilter}`;
 
-      channel = supabase
-        .channel(`cv6-thread-${worldId}-${room.id}`)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'messages', filter },
-          () => { if (alive) load(); }
-        )
-        .subscribe();
+      // Self-healing channel (the cv3 R74 pattern, ported here — corner:bridge
+      // frontend-visibility D5). `.subscribe()` used to be called with no status
+      // callback at all: CHANNEL_ERROR / TIMED_OUT / CLOSED were never observed, there
+      // was no reconnect, and no history catch-up on re-subscribe. A socket that quietly
+      // died left the room permanently 0-10s laggy with zero signal — and made the poll
+      // a single point of failure. Now: exponential-backoff resubscribe, and a load() on
+      // every SUBSCRIBED so rows that landed while the socket was down come straight in.
+      subscribeRoom = () => {
+        if (!alive || !supabase) return;
+        try { if (channel) supabase.removeChannel(channel); } catch { /* already gone */ }
+        channel = supabase
+          .channel(`cv6-thread-${worldId}-${room.id}-${Date.now()}`)
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'messages', filter },
+            () => { if (alive) load(); }
+          )
+          .subscribe((channelStatus) => {
+            if (!alive) return;
+            if (channelStatus === 'SUBSCRIBED') {
+              retryAttempt = 0;
+              setConnection((c) => (c.realtime === 'live' ? c : { ...c, realtime: 'live' }));
+              load();   // catch-up for anything missed while the socket was down
+            } else if (channelStatus === 'CHANNEL_ERROR' || channelStatus === 'TIMED_OUT' || channelStatus === 'CLOSED') {
+              setConnection((c) => (c.realtime === 'reconnecting' ? c : { ...c, realtime: 'reconnecting' }));
+              const delay = Math.min(30000, 1000 * (2 ** retryAttempt));
+              retryAttempt += 1;
+              if (retryTimer) clearTimeout(retryTimer);
+              retryTimer = setTimeout(subscribeRoom, delay);
+            }
+          });
+      };
+      subscribeRoom();
+    } else {
+      setConnection((c) => (c.realtime === 'off' ? c : { ...c, realtime: 'off' }));
     }
+
+    // ── Foreground catch-up (corner:bridge frontend-visibility D4) ────────────
+    // Inside the phone's web view, backgrounding freezes JS timers and kills the
+    // realtime socket. Nothing in the CV6 chat path listened for the app coming BACK,
+    // so a resumed thread sat frozen until the next 10s tick — and if that first
+    // request 401'd on a not-yet-refreshed token, the old code wiped the thread. Refresh
+    // the session FIRST, then reload, then make sure the socket is really up.
+    const onWake = () => {
+      if (!alive) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      const refreshed = (supabase && supabase.auth && supabase.auth.getSession)
+        ? Promise.resolve(supabase.auth.getSession()).catch(() => null)
+        : Promise.resolve(null);
+      refreshed.then(() => {
+        if (!alive) return;
+        load();
+        if (supabase && channel && channel.state !== 'joined') subscribeRoom();
+      });
+    };
+    const onOnline = () => { setConnection((c) => ({ ...c, online: true })); onWake(); };
+    const onOffline = () => { setConnection((c) => ({ ...c, online: false })); };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', onWake);
+      window.addEventListener('online', onOnline);
+      window.addEventListener('offline', onOffline);
+    }
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onWake);
 
     // Live thread: poll as a reconcile fallback. Realtime carries the live load, but
     // realtime can drop, so the poll ensures we stay in sync. Relaxed to 10s since
@@ -654,6 +833,13 @@ export function useRoomThread(worldId, room) {
     return () => {
       alive = false;
       clearInterval(t);
+      if (retryTimer) clearTimeout(retryTimer);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', onWake);
+        window.removeEventListener('online', onOnline);
+        window.removeEventListener('offline', onOffline);
+      }
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onWake);
       if (channel && supabase) supabase.removeChannel(channel);
     };
   }, [worldId, room?.id, room?.name, room?.isProject, room?.isMission, room?.missionSlug, reloadKey]);
@@ -662,10 +848,22 @@ export function useRoomThread(worldId, room) {
   // Memoized so the returned array keeps a STABLE reference when nothing changed — otherwise a
   // fresh array every render defeats the message poll's no-op guard and yanks the scroll.
   const withWork = useMemo(
-    () => injectWorkSteps(pending.length ? [...messages, ...pending] : messages, stepsByParent, awaiting, lastSentId),
-    [messages, pending, stepsByParent, awaiting, lastSentId],
+    () => {
+      // A failed bubble carries its own retry, so every thread renderer gets tap-to-retry
+      // without threading a handler through four component layers. Client-only object,
+      // never cached or serialized.
+      const outbox = pending.some((p) => p.failed)
+        ? pending.map((p) => (p.failed ? { ...p, onRetry: () => retrySend(p.optId) } : p))
+        : pending;
+      return injectWorkSteps(outbox.length ? [...messages, ...outbox] : messages, stepsByParent, awaiting, lastSentId);
+    },
+    [messages, pending, stepsByParent, awaiting, lastSentId, retrySend],
   );
-  return { messages: withWork, archivedMessages, blocks, status, send, clearRoom, awaiting, awaitingSince: awaiting ? lastSentTsRef.current : null, liveSteps, turnHealth };
+  return {
+    messages: withWork, archivedMessages, blocks, status, send, clearRoom, awaiting,
+    awaitingSince: awaiting ? lastSentTsRef.current : null, liveSteps, turnHealth,
+    connection, retryTurn, nudgeTurn, reload,
+  };
 }
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──
