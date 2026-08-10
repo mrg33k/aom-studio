@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PrivacyInfo.xcprivacy — Corner native iOS
+  corner:native-ios Stage 1
+
+  Required for every new app and update since 2024-05-01, and the source Xcode
+  aggregates into the privacy report that backs the App Store nutrition labels.
+
+  THIS ONE IS TRUTHFUL, WHICH THE CAPACITOR SHELL'S WAS NOT. That manifest declared
+  NSPrivacyCollectedDataTypes = [] while the app collected email, name, and user
+  content linked to identity (audit finding F5) — nutrition labels built from it
+  would have been false, which is a 5.1.1 / 2.3.1 accuracy problem on top of the
+  privacy one.
+
+  What Corner actually collects, and why each entry is here:
+    - Email address and name: the account itself. Linked to identity by definition.
+    - "Other User Content": chat messages and any file sent into a room.
+  All three are collected for App Functionality only. Nothing is used for tracking,
+  advertising, or analytics — NSPrivacyTracking is false and there are no tracking
+  domains, and that stays true only as long as no analytics SDK is added.
+
+  Required-reason APIs: this target reads UIDevice.current.name for the device row's
+  human label, and UserDefaults is used by the Supabase SDK. UserDefaults is declared
+  with reason CA92.1 (access limited to the app itself). No file-timestamp, disk-space,
+  active-keyboard, or system-boot-time API is used.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
