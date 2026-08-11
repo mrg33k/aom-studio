@@ -4,7 +4,7 @@
 //   GET    /api/support/wishes?access_code=XXX  → client status lookup (wish + visible updates)
 //   PATCH  /api/support/wishes?id=...           → { status?, response?, author? }
 
-import { requiredTenantFromEnv, resolveTenantContext } from '../_lib/tenantContext.js';
+import { requiredTenantFromEnv, resolveTenantContext, TenantContextError } from '../_lib/tenantContext.js';
 import { TenantAuthError } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -61,21 +61,30 @@ export default async function handler(req, res) {
       const updates = await ur.json();
       return res.status(200).json({ ok: true, wish, updates, status_label: CLIENT_LABEL[wish.status] || wish.status });
     }
-    // Tenant scope (corner:support R3). Support intake is single-tenant today:
-    // the watcher reads only the configured support mailboxes, so every wish row is that tenant's and the
-    // table has no world column yet. A verified non-aom world gets an honestly
-    // empty list; it must never see the support desk. JWT-less callers stay pinned to
-    // the configured support tenant so the legacy surfaces (/support/admin, ?cv4=1) keep working. When a
-    // second tenant gets a support intake, add a world column and filter here.
+    // Tenant scope (corner:support R3 + security-sweep 2026-08-10). Support
+    // intake is single-tenant today: the watcher reads only the configured
+    // support mailboxes, so every wish row is that tenant's and the table has no
+    // world column yet. The admin list carries client PII (email, name, message)
+    // plus the secret access_code, so EVERY caller of this path must now prove a
+    // verified session entitled to the requested world — a JWT-less request used
+    // to be pinned to the support tenant and handed the whole table (the leak
+    // this closes; same class as the finance breach). A verified non-support
+    // world gets an honestly empty list; it must never see the support desk. The
+    // client status lookup (?access_code above) is unaffected — that path proves
+    // possession of the row's own secret. When a second tenant gets a support
+    // intake, add a world column and filter here.
     const supportTenant = requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']);
     const world = (typeof req.query.world === 'string' && req.query.world.trim().toLowerCase()) || supportTenant;
-    if (world !== supportTenant) {
-      try {
-        await resolveTenantContext(req, { fallback: world });
-      } catch (err) {
-        if (err instanceof TenantAuthError) return res.status(err.status).json({ ok: false, error: err.message });
-        throw err;
+    let tctx;
+    try {
+      tctx = await resolveTenantContext(req, { fallback: world });
+    } catch (err) {
+      if (err instanceof TenantAuthError || err instanceof TenantContextError) {
+        return res.status(err.status).json({ ok: false, error: err.message });
       }
+      throw err;
+    }
+    if (tctx.tenantId !== supportTenant) {
       return res.status(200).json({ ok: true, wishes: [] });
     }
     // Default admin list = real asks only. dismissed/spam stay out unless asked
@@ -154,6 +163,23 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
+    // Admin write (status change + client email send). Same gate as the admin
+    // list: was fully open, so anyone could rewrite a wish's status and trigger
+    // an outbound email carrying arbitrary text to the client's address. Require
+    // a verified session entitled to the support tenant.
+    const supportTenant = requiredTenantFromEnv(['SUPPORT_TENANT_ID', 'CORNER_HOME_TENANT']);
+    let patchCtx;
+    try {
+      patchCtx = await resolveTenantContext(req, { fallback: supportTenant });
+    } catch (err) {
+      if (err instanceof TenantAuthError || err instanceof TenantContextError) {
+        return res.status(err.status).json({ ok: false, error: err.message });
+      }
+      throw err;
+    }
+    if (patchCtx.tenantId !== supportTenant) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
     const { id } = req.query;
     if (!id) return res.status(400).json({ ok: false, error: 'id required' });
     const { status, response, author } = req.body || {};

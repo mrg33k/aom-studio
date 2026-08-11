@@ -3,6 +3,8 @@
 // Returns which project IDs have at least one project_access entry (i.e. are shared).
 // Uses service role key to bypass RLS — browser can't query project_access for other users.
 
+import { callerIdentity } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -13,6 +15,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
 
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+  // Service-key read of project_access — was fully unauthenticated. Require any
+  // verified session (a logged-in dashboard user renders share badges for their
+  // own project ids); anonymous callers are refused.
+  const who = await callerIdentity(req)
+  if (!who) return res.status(401).json({ error: 'authentication required' })
 
   const { project_ids } = req.query
   if (!project_ids) return res.status(400).json({ error: 'project_ids required' })

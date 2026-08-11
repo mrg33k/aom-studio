@@ -1,3 +1,5 @@
+import { requireSuperAdmin, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -25,6 +27,15 @@ export default async function handler(req, res) {
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(500).json({ error: 'Supabase not configured' });
+  }
+
+  // CSV export of member PII (name, email, phone) for arsenal town managers.
+  // Was a fully unauthenticated service-key export — super-admin only now.
+  try {
+    await requireSuperAdmin(req);
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    return res.status(500).json({ error: 'Auth verification failed' });
   }
 
   try {

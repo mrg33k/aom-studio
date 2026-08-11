@@ -9,8 +9,26 @@
 // POST /api/ai-hours/clients         → insert new client
 // PATCH /api/ai-hours/clients?id=... → update current_session
 
+import { requireSuperAdmin, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Every admin path (full list, insert, session update) is super-admin-only.
+// The rows carry each client's secret access_code plus PII (name, email) and the
+// list path was fully public — an unauthenticated GET returned the entire client
+// roster with codes (the leak this closes). The client portal path
+// (GET ?access_code=...) stays open: it proves possession of one row's secret.
+async function requireAdmin(req, res) {
+  try {
+    await requireSuperAdmin(req);
+    return true;
+  } catch (err) {
+    if (err instanceof TenantAuthError) res.status(err.status).json({ ok: false, error: err.message });
+    else res.status(500).json({ ok: false, error: 'Auth verification failed' });
+    return false;
+  }
+}
 
 function supa(path, opts = {}) {
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -47,7 +65,8 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ ok: true, client: data[0] });
     }
-    // Admin use: return all clients ordered by created_at
+    // Admin use: return all clients ordered by created_at — super-admin only.
+    if (!(await requireAdmin(req, res))) return;
     const r = await supa('ai_hours_clients?select=*&order=created_at.desc');
     if (!r.ok) {
       const err = await r.text();
@@ -59,6 +78,7 @@ export default async function handler(req, res) {
 
   // POST — insert new client
   if (req.method === 'POST') {
+    if (!(await requireAdmin(req, res))) return;
     const { access_code, client_name, email, current_session, granted_by, notes } = req.body || {};
     if (!access_code || !client_name) {
       return res.status(400).json({ ok: false, error: 'access_code and client_name required' });
@@ -85,6 +105,7 @@ export default async function handler(req, res) {
 
   // PATCH — update current_session for a client
   if (req.method === 'PATCH') {
+    if (!(await requireAdmin(req, res))) return;
     const { id } = req.query;
     const { current_session } = req.body || {};
     if (!id) {

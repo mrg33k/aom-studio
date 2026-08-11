@@ -12,6 +12,8 @@
 //     (last_naming_nudge_at IS NULL  OR  now - last_naming_nudge_at >= 3 days)
 //   - Named EAs: never nudge
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -95,6 +97,16 @@ export default async function handler(req, res) {
 
   const clientId = (req.query.client_id || '').trim().toLowerCase();
   if (!clientId) return res.status(400).json({ error: 'client_id required' });
+
+  // GET was unauthenticated and returned any tenant's computed EA system prompt.
+  // The prompt is world-scoped config — require the caller's JWT prove access to
+  // that world (super-admin passes for every world).
+  try {
+    await verifyTenant(clientId, req);
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    return res.status(500).json({ error: 'Auth verification failed' });
+  }
 
   try {
     const headers = {

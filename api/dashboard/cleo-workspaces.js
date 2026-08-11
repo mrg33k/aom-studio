@@ -3,6 +3,8 @@
 // GET  /api/dashboard/cleo-workspaces?slug=X     -- get workspace detail by slug
 // Optional: ?client=X (ilike), ?status=X (exact)
 
+import { requireSuperAdmin, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -23,6 +25,16 @@ export default async function handler(req, res) {
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(500).json({ error: 'Supabase not configured' })
+  }
+
+  // Lists every video_workspace across all clients (no per-world scoping exists
+  // in the payloads), so this is global internal production data — super-admin
+  // only. Was fully unauthenticated.
+  try {
+    await requireSuperAdmin(req)
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    return res.status(500).json({ error: 'Auth verification failed' })
   }
 
   const { slug, client: clientFilter, status: statusFilter } = req.query

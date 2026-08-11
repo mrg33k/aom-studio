@@ -19,6 +19,8 @@
 //   } | null
 // }
 
+import { verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -38,6 +40,16 @@ export default async function handler(req, res) {
   if (!rawSlug) return res.status(400).json({ error: 'slug required' });
   if (!/^[a-z0-9][a-z0-9-_]{0,64}$/.test(rawSlug)) {
     return res.status(400).json({ error: 'invalid slug' });
+  }
+
+  // GET was unauthenticated and honored any ?slug=, returning that project's
+  // summary narrative/event data. Require the caller prove access to the
+  // project — same gate as missions.js / missions-created.js.
+  try {
+    await verifyProjectAccess(rawSlug, req);
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    return res.status(500).json({ error: 'Auth verification failed' });
   }
 
   try {

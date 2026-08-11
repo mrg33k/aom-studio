@@ -1,6 +1,8 @@
 // GET /api/members/[id] - Get member details including company info
 // PUT /api/members/[id] - Update member company linkage
 
+import { requireSuperAdmin, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -19,6 +21,16 @@ export default async function handler(req, res) {
 
   if (!id) {
     return res.status(400).json({ error: 'Member ID is required' });
+  }
+
+  // Member + company rows are PII (email, display_name, company linkage). Both
+  // methods (read + the company-linkage write) were fully unauthenticated over
+  // the service key — super-admin only now.
+  try {
+    await requireSuperAdmin(req);
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    return res.status(500).json({ error: 'Auth verification failed' });
   }
 
   // Initialize Supabase client

@@ -47,7 +47,16 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
+    // GET was unauthenticated and honored any ?world=, returning that world's
+    // full bug list (107 rows live). Require the world and verify the caller's
+    // JWT may access it — mirror the POST gate below.
     const world = clean(req.query.world || 'aom', 60) || 'aom';
+    try {
+      await verifyTenant(world, req);
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      return res.status(500).json({ error: 'Auth verification failed' });
+    }
     const bugs = await loadBugs(world);
     return res.status(200).json({ bugs, count: bugs.length, updated: new Date().toISOString() });
   }

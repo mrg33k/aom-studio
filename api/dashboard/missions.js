@@ -12,6 +12,8 @@
 //       ...
 //     ] }
 
+import { verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const EVENTS_TABLE = 'events'
@@ -48,6 +50,16 @@ export default async function handler(req, res) {
 
   const project = String(req.query.project || '').trim()
   if (!project) return res.status(400).json({ error: 'project required' })
+
+  // GET was unauthenticated and honored any ?project=, so any caller could read
+  // an arbitrary tenant's mission tree (cross-tenant metadata leak). Require the
+  // caller prove access to the project — same gate as missions-created.js.
+  try {
+    await verifyProjectAccess(project, req)
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    return res.status(500).json({ error: 'Auth verification failed' })
+  }
 
   // Anchor the match so 'corner' doesn't bleed into 'corner-adjacent'. The
   // colon separator is the key: agents starting with `<project>:` are
