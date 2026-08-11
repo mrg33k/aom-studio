@@ -16,6 +16,8 @@ test-screenshots/
 # favicon system (aom:favicon-system) — brand marks must ship
 !public/brand/**/*.png
 !ios/App/App/Assets.xcassets/AppIcon.appiconset/*.png
+# native app asset catalog — imageset bitmaps are source, not build junk
+!ios-native/Corner/Assets.xcassets/**/*.png
 !public/mission-water/**/*.png
 !public/ssg/**/*.png
 
