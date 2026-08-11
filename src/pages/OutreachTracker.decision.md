@@ -208,3 +208,83 @@ Empty why_calling degrades to a generic but safe line — no crash, no nonsense.
 lead status to Spoke; a rep who emails without a real conversation overstates contact depth by
 one rung, visible and correctable in the tracker. Admin view is untouched by construction
 (scriptSteps ternary), verified implicitly by the rep-view checks but not re-screenshotted.
+
+---
+
+# Decision record — visual setter flow, rep Call Mode (2026-08-11, round 2)
+
+## agent
+
+Rex.
+
+## call
+
+I rebuilt the rep script as a visual flow because Patrik watched a rep-eye view of the prose
+version and named the failure: commission callers freeze on a wall of text. The design decision
+is one visual grammar carried through the card: WHITE CARD WITH QUOTES = words that leave your
+mouth; italic gray = coaching never spoken; colored left-rail IF cards = branches (green = they
+pick a day, bronze = they ask / send an email, gray = a no). Structure follows Patrik's four
+live directives in order: an ask-for beat first (who you want, what it's about — with the
+gatekeeper answer ready), an icebreaker that is local and human so the prospect talks before any
+content lands, one fact + one ask, then every exit as its own colored card including the
+previously missing YES path. The fun layer prices failure at zero (banner: every no costs you
+nothing, live queue count) and pays off every logged outcome with a line instead of a receipt.
+On rep mobile the script now renders ABOVE the research panels — mid-call the SAY card must sit
+under the dial button. Admin keeps the untouched 5-step. Spoken company references drop the
+legal suffix; nobody says "LLC's" aloud.
+
+## artifact
+
+`src/pages/OutreachTracker.jsx`, commits cd49a90c + 399e7432 + 8d494706 + fc9677f9 + c04dc73a.
+
+## measured
+
+**design_spacing_check.py (final file, real output):**
+
+```
+  RESULT: FAIL
+    - SPACING SPRAWL: 11 distinct spacing values (cap 10).
+    - NO HIERARCHY: the page uses a single font size (or none).
+```
+
+Same two pre-existing whole-file readings as the three records above (JSX-inline parser gap);
+the flow reuses the card's existing tokens only — 8/16/24 spacing, 11/13/15/17 type, the
+established bronze/green/gray rails.
+
+**Live verification (headless Playwright, real rep logins):**
+
+```
+corrected full-flow check: who banner=OK, gatekeeper branch=OK, mission line=OK,
+  icebreaker chips=OK, yes branch=OK, no branch=OK — VERIFIED both widths
+mobile order check: LIVE on attempt 2: script above research on mobile (banner y=421 < site y=2401)
+```
+
+Verifier lesson worth recording: the first two watchers timed out claiming the deploy never
+landed — the deploy was live the whole time; CSS text-transform uppercases innerText, so my
+case-sensitive label checks could never match. Vercel showed every build Ready. The corrected
+case-insensitive checks passed instantly. 26 minutes lost to a verifier bug, zero to the site.
+
+Screenshots read and judged at full size: rep-flow-final-desktop.png, rep-flow-final-390.png
+(caught research-above-script ordering on mobile), rep-mobile-script-first.png (shipped state).
+
+## uncertain
+
+The payoff toasts are code-reviewed but not interaction-tested — verifying them would log fake
+touchpoints on real leads, so no watcher ever clicks an outcome; if a toast line renders wrong
+it will be a rep who sees it first. The two icebreaker chips are fixed lines — two reps working
+the same queue for a week will wear them out, and nothing rotates them. The admin script path
+was refactored into the {!isRep} branch and verified by code shape, not re-screenshotted as
+admin. And "16 calls today" in Ashley's header during verification means outcomes are being
+logged on live leads tonight — if any of those were someone testing, real lead statuses moved.
+
+## would_change
+
+Rotate 4-6 icebreaker lines by day so they do not wear out. A safe way to interaction-test
+outcome logging (a sandbox lead flagged test=true). Admin-view screenshot in the verify loop.
+
+## risk
+
+All changes are gated on repSession.role='rep'; a session with no rep row renders the admin
+view exactly as before. Worst realistic failure is a stale merge-field (empty contact_name)
+degrading a SAY card to "the owner" phrasing — awkward, not broken. Outcome logging paths are
+shared with the shipped build and unchanged except the toast copy.
