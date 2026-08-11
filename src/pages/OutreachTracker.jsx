@@ -1,7 +1,10 @@
 // AOM Construction Outreach Tracker
 // Route: /outreach — soft password gate (AOM2026, remembered in localStorage)
 // Backend: Supabase outreach_leads + outreach_touchpoints
-// Brand: obsidian #060606 / ivory #F6F6F4 / gold #C4A46A / Bricolage Grotesque + Inter
+// Brand: AOM light editorial (unified w/ Call Mode 2026-08-10) — ivory ground #F7F6F3,
+//   surface #FFFFFF, secondary #F1EFEA, ink #17170F, body #43423A, muted #77746A,
+//   hairline #E4E2DB / control #D3D0C7, single bronze accent #B58A38 (text #8A6828),
+//   square corners, flat, 1px hairlines. Bricolage Grotesque display + Inter body.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
@@ -78,28 +81,29 @@ function needScoreColor(score) {
   const s = Number(score) || 0
   if (s >= 7) return '#D95050' // red
   if (s >= 6) return '#D07830' // orange
-  if (s >= 5) return '#C4A46A' // gold
+  if (s >= 5) return '#B58A38' // bronze
   if (s >= 1) return '#5E7A5E' // muted green
-  return '#444'
+  return '#8B8880'
 }
 
 function needScoreTextColor(score) {
   const s = Number(score) || 0
-  if (s >= 5) return '#060606' // dark text on light badge
-  return '#F6F6F4'
+  if (s >= 5) return '#17170F' // ink text on warm (orange/bronze) badge
+  return '#F6F6F4'              // ivory on green / neutral fill
 }
 
 function statusBadgeStyle(status) {
+  // Light-theme status chips — soft tints on ivory, all text clears AA
   const map = {
-    'Won':               { bg: '#0F2B0F', color: '#5ECF5E', border: '#1a4a1a' },
-    'Meeting booked':    { bg: '#0A1E30', color: '#5EB5CF', border: '#1a3a50' },
-    'Proposal sent':     { bg: '#1A0F30', color: '#A87ECF', border: '#3a1a50' },
-    'Spoke':             { bg: '#0F1F0F', color: '#8FC88F', border: '#1a3a1a' },
-    'Left VM':           { bg: '#1E1800', color: '#C8A84A', border: '#3a3010' },
-    'Called (no answer)':{ bg: '#1E1200', color: '#A87A30', border: '#3a2a00' },
-    'Lost / Not a fit':  { bg: '#1a1a1a', color: '#666', border: '#333' },
+    'Won':               { bg: '#E7F0E7', color: '#2E5A2E', border: '#C5DCC5' },
+    'Meeting booked':    { bg: '#E4EEF3', color: '#2A5A72', border: '#C3DBE6' },
+    'Proposal sent':     { bg: '#EDE7F3', color: '#5A3E72', border: '#D5C6E2' },
+    'Spoke':             { bg: '#EAF1EA', color: '#3E5E3E', border: '#CBDDCB' },
+    'Left VM':           { bg: '#FBF4E4', color: '#8A6828', border: '#E9D9AE' },
+    'Called (no answer)':{ bg: '#F4EEE2', color: '#7A5A28', border: '#E2D3B0' },
+    'Lost / Not a fit':  { bg: '#F1EFEA', color: '#77746A', border: '#D3D0C7' },
   }
-  const m = map[status] || { bg: '#111', color: '#888', border: '#2a2a2a' }
+  const m = map[status] || { bg: '#FFFFFF', color: '#77746A', border: '#D3D0C7' }
   return {
     background: m.bg,
     color: m.color,
@@ -450,7 +454,7 @@ function CallMode({ leads, updateLead }) {
               </h1>
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 12, color: '#77746A', fontFamily: 'Inter,sans-serif', fontSize: 13 }}>
                 {lead.need_score && (
-                  <span style={{ fontWeight: 700, fontSize: 11, lineHeight: 1, letterSpacing: '.1em', textTransform: 'uppercase', padding: '4px 8px', color: '#fff', background: needScoreColor(lead.need_score), fontFamily: 'Inter,sans-serif' }}>
+                  <span style={{ fontWeight: 700, fontSize: 11, lineHeight: 1, letterSpacing: '.1em', textTransform: 'uppercase', padding: '4px 8px', color: needScoreTextColor(lead.need_score), background: needScoreColor(lead.need_score), fontFamily: 'Inter,sans-serif' }}>
                     Need {lead.need_score}
                   </span>
                 )}
@@ -718,7 +722,7 @@ function PasswordGate({ onUnlock }) {
   return (
     <div style={{
       minHeight: '100dvh',
-      background: '#060606',
+      background: '#F7F6F3',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -731,7 +735,7 @@ function PasswordGate({ onUnlock }) {
         fontFamily: "'Bricolage Grotesque', sans-serif",
         fontWeight: 800,
         fontSize: '1.75rem',
-        color: '#C4A46A',
+        color: '#17170F',
         letterSpacing: '-0.02em',
         marginBottom: '2.5rem',
       }}>
@@ -748,14 +752,14 @@ function PasswordGate({ onUnlock }) {
           fontWeight: 800,
           fontSize: '1.2rem',
           letterSpacing: '0.12em',
-          color: '#F6F6F4',
+          color: '#17170F',
           margin: '0 0 0.5rem',
           textTransform: 'uppercase',
         }}>
           Construction Outreach
         </h1>
         <p style={{
-          color: '#666',
+          color: '#77746A',
           fontSize: '0.85rem',
           margin: '0 0 2rem',
           letterSpacing: '0.04em',
@@ -773,9 +777,9 @@ function PasswordGate({ onUnlock }) {
             style={{
               width: '100%',
               boxSizing: 'border-box',
-              background: '#111',
-              border: `1px solid ${err ? '#D95050' : '#2a2a2a'}`,
-              color: '#F6F6F4',
+              background: '#FFFFFF',
+              border: `1px solid ${err ? '#B03A3A' : '#D3D0C7'}`,
+              color: '#17170F',
               padding: '0.85rem 1rem',
               fontSize: '1rem',
               fontFamily: "'Inter', sans-serif",
@@ -786,7 +790,7 @@ function PasswordGate({ onUnlock }) {
             }}
           />
           {err && (
-            <p style={{ color: '#D95050', fontSize: '0.8rem', margin: '0 0 1rem' }}>
+            <p style={{ color: '#B03A3A', fontSize: '0.8rem', margin: '0 0 1rem' }}>
               Incorrect access code.
             </p>
           )}
@@ -794,8 +798,8 @@ function PasswordGate({ onUnlock }) {
             type="submit"
             style={{
               width: '100%',
-              background: '#C4A46A',
-              color: '#060606',
+              background: '#B58A38',
+              color: '#17170F',
               border: 'none',
               padding: '0.85rem',
               fontFamily: "'Bricolage Grotesque', sans-serif",
@@ -835,14 +839,16 @@ function DashboardHeader({ leads, onLock }) {
 
   return (
     <div style={{
-      background: '#060606',
-      borderBottom: '1px solid #1a1a1a',
+      background: '#FFFFFF',
+      borderBottom: '1px solid #E4E2DB',
       padding: '1rem 1rem 0',
       position: 'sticky',
       top: 0,
       zIndex: 100,
     }}>
-      {/* Top row: logo + meta + actions */}
+      {/* Top row: logo + meta + actions.
+          Right zone (rolezone) is where a future rep/role indicator drops in
+          without disturbing the lockup. */}
       <div style={{
         display: 'flex',
         alignItems: 'flex-start',
@@ -854,7 +860,7 @@ function DashboardHeader({ leads, onLock }) {
             fontFamily: "'Bricolage Grotesque', sans-serif",
             fontWeight: 800,
             fontSize: '0.7rem',
-            color: '#C4A46A',
+            color: '#8A6828',
             letterSpacing: '0.15em',
             textTransform: 'uppercase',
             marginBottom: '0.15rem',
@@ -865,26 +871,26 @@ function DashboardHeader({ leads, onLock }) {
             fontFamily: "'Bricolage Grotesque', sans-serif",
             fontWeight: 800,
             fontSize: '1.1rem',
-            color: '#F6F6F4',
+            color: '#17170F',
             letterSpacing: '-0.01em',
             textTransform: 'uppercase',
           }}>
             Outreach Tracker
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div data-rolezone style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{
               fontFamily: "'Bricolage Grotesque', sans-serif",
               fontWeight: 800,
               fontSize: '1.5rem',
-              color: '#F6F6F4',
+              color: '#17170F',
               lineHeight: 1,
             }}>{contactedToday}</div>
             <div style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.65rem',
-              color: '#555',
+              color: '#77746A',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
             }}>Today</div>
@@ -893,8 +899,8 @@ function DashboardHeader({ leads, onLock }) {
             onClick={onLock}
             style={{
               background: 'transparent',
-              border: '1px solid #2a2a2a',
-              color: '#555',
+              border: '1px solid #D3D0C7',
+              color: '#43423A',
               padding: '0.4rem 0.75rem',
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.7rem',
@@ -921,7 +927,7 @@ function DashboardHeader({ leads, onLock }) {
             fontFamily: "'Bricolage Grotesque', sans-serif",
             fontWeight: 700,
             fontSize: '0.8rem',
-            color: '#F6F6F4',
+            color: '#17170F',
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
           }}>
@@ -930,20 +936,20 @@ function DashboardHeader({ leads, onLock }) {
           <span style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: '0.7rem',
-            color: '#555',
+            color: '#77746A',
           }}>
             Goal: {GOAL} retainers
           </span>
         </div>
         <div style={{
           height: 4,
-          background: '#1a1a1a',
+          background: '#E4E2DB',
           width: '100%',
         }}>
           <div style={{
             height: '100%',
             width: `${progress}%`,
-            background: '#C4A46A',
+            background: '#B58A38',
             transition: 'width 0.4s ease',
           }} />
         </div>
@@ -953,8 +959,8 @@ function DashboardHeader({ leads, onLock }) {
       <div style={{
         display: 'flex',
         gap: '0',
-        borderTop: '1px solid #1a1a1a',
-        borderLeft: '1px solid #1a1a1a',
+        borderTop: '1px solid #E4E2DB',
+        borderLeft: '1px solid #E4E2DB',
         marginBottom: '0.75rem',
       }}>
         {repStats.map(rep => (
@@ -962,14 +968,14 @@ function DashboardHeader({ leads, onLock }) {
             flex: 1,
             textAlign: 'center',
             padding: '0.5rem 0.25rem',
-            borderRight: '1px solid #1a1a1a',
-            borderBottom: '1px solid #1a1a1a',
+            borderRight: '1px solid #E4E2DB',
+            borderBottom: '1px solid #E4E2DB',
           }}>
             <div style={{
               fontFamily: "'Bricolage Grotesque', sans-serif",
               fontWeight: 700,
               fontSize: '0.65rem',
-              color: '#C4A46A',
+              color: '#8A6828',
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
               marginBottom: '0.2rem',
@@ -979,7 +985,7 @@ function DashboardHeader({ leads, onLock }) {
             <div style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.65rem',
-              color: '#666',
+              color: '#77746A',
             }}>
               {rep.total}L / {rep.won}W
             </div>
@@ -1002,14 +1008,14 @@ function DashboardHeader({ leads, onLock }) {
             flexShrink: 0,
             textAlign: 'center',
             padding: '0.35rem 0.6rem',
-            border: '1px solid #1a1a1a',
-            background: '#0a0a0a',
+            border: '1px solid #E4E2DB',
+            background: '#F1EFEA',
           }}>
             <div style={{
               fontFamily: "'Bricolage Grotesque', sans-serif",
               fontWeight: 700,
               fontSize: '1rem',
-              color: '#F6F6F4',
+              color: '#17170F',
               lineHeight: 1,
             }}>
               {statusCounts[s] || 0}
@@ -1017,7 +1023,7 @@ function DashboardHeader({ leads, onLock }) {
             <div style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.6rem',
-              color: '#B6B2AB',
+              color: '#77746A',
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
               marginTop: '0.2rem',
@@ -1087,9 +1093,9 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
 
   return (
     <div style={{
-      borderLeft: `4px solid ${score >= 1 ? scoreColor : '#222'}`,
-      borderBottom: '1px solid #1a1a1a',
-      background: expanded ? '#080808' : '#060606',
+      borderLeft: `4px solid ${score >= 1 ? scoreColor : '#D3D0C7'}`,
+      borderBottom: '1px solid #E4E2DB',
+      background: expanded ? '#FFFFFF' : '#F7F6F3',
       transition: 'background 0.15s',
     }}>
       {/* Card header — always visible, tap to expand */}
@@ -1110,7 +1116,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             fontFamily: "'Bricolage Grotesque', sans-serif",
             fontWeight: 700,
             fontSize: '0.95rem',
-            color: '#F6F6F4',
+            color: '#17170F',
             textTransform: 'uppercase',
             letterSpacing: '0.02em',
             whiteSpace: 'nowrap',
@@ -1122,7 +1128,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
           <div style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: '0.75rem',
-            color: '#666',
+            color: '#77746A',
             marginTop: '0.2rem',
             display: 'flex',
             alignItems: 'center',
@@ -1130,7 +1136,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             flexWrap: 'wrap',
           }}>
             {lead.trade && <span>{lead.trade}</span>}
-            {lead.trade && lead.city && <span style={{ color: '#333' }}>·</span>}
+            {lead.trade && lead.city && <span style={{ color: '#C0BDB5' }}>·</span>}
             {lead.city && <span>{lead.city}</span>}
             {score >= 1 && (
               <span style={{
@@ -1151,9 +1157,9 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
               fontSize: '0.58rem',
               letterSpacing: '0.08em',
               padding: '0.1rem 0.35rem',
-              border: `1px solid ${hasWebsite(lead) ? '#3a3320' : '#242424'}`,
-              color: hasWebsite(lead) ? '#C4A46A' : '#555',
-              background: hasWebsite(lead) ? '#161206' : '#0c0c0c',
+              border: `1px solid ${hasWebsite(lead) ? '#E9D9AE' : '#D3D0C7'}`,
+              color: hasWebsite(lead) ? '#8A6828' : '#77746A',
+              background: hasWebsite(lead) ? '#FBF4E4' : '#F1EFEA',
             }}>
               {hasWebsite(lead) ? 'HAS SITE' : 'NO SITE'}
             </span>
@@ -1162,7 +1168,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             <div style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.75rem',
-              color: '#888',
+              color: '#77746A',
               marginTop: '0.15rem',
             }}>
               {lead.contact_name}{lead.title ? `, ${lead.title}` : ''}
@@ -1189,9 +1195,9 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.25rem',
-                    background: '#080c0f',
-                    border: '1px solid #1a2e3a',
-                    color: '#7bbfdf',
+                    background: '#FFFFFF',
+                    border: '1px solid #D3D0C7',
+                    color: '#8A6828',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.7rem',
                     letterSpacing: '0.01em',
@@ -1218,9 +1224,9 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.25rem',
-                    background: '#0f0f0f',
-                    border: '1px solid #2a2a2a',
-                    color: '#C4A46A',
+                    background: '#FFFFFF',
+                    border: '1px solid #D3D0C7',
+                    color: '#43423A',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.72rem',
                     letterSpacing: '0.02em',
@@ -1230,7 +1236,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     boxSizing: 'border-box',
                   }}
                 >
-                  <span style={{ fontSize: '0.58rem', color: '#666', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Office</span>
+                  <span style={{ fontSize: '0.58rem', color: '#77746A', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Office</span>
                   {lead.phone}
                 </a>
               )}
@@ -1244,9 +1250,9 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.25rem',
-                    background: '#100e08',
-                    border: '1px solid #C4A46A',
-                    color: '#F6F6F4',
+                    background: '#FBF4E4',
+                    border: '1px solid #B58A38',
+                    color: '#17170F',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.72rem',
                     fontWeight: 600,
@@ -1257,7 +1263,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     boxSizing: 'border-box',
                   }}
                 >
-                  <span style={{ fontSize: '0.58rem', color: '#C4A46A', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>Cell</span>
+                  <span style={{ fontSize: '0.58rem', color: '#8A6828', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>Cell</span>
                   {lead.owner_phone}
                 </a>
               )}
@@ -1271,9 +1277,9 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.25rem',
-                    background: '#0f0f0f',
-                    border: '1px solid #2a2a2a',
-                    color: '#C4A46A',
+                    background: '#FFFFFF',
+                    border: '1px solid #D3D0C7',
+                    color: '#8A6828',
                     fontFamily: "'Inter', sans-serif",
                     fontSize: '0.7rem',
                     letterSpacing: '0.02em',
@@ -1288,7 +1294,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   }}
                 >
                   {lead.owner_email && (
-                    <span style={{ fontSize: '0.58rem', color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>Owner</span>
+                    <span style={{ fontSize: '0.58rem', color: '#77746A', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>Owner</span>
                   )}
                   {lead.owner_email || lead.email}
                 </a>
@@ -1306,9 +1312,9 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.3rem',
-                  background: hasRealLinkedIn(lead) ? '#0A1622' : 'transparent',
-                  border: hasRealLinkedIn(lead) ? '1px solid #1E4A6B' : '1px solid #2a2a2a',
-                  color: hasRealLinkedIn(lead) ? '#5EA9E0' : '#555',
+                  background: hasRealLinkedIn(lead) ? '#FFFFFF' : 'transparent',
+                  border: hasRealLinkedIn(lead) ? '1px solid #D3D0C7' : '1px solid #D3D0C7',
+                  color: hasRealLinkedIn(lead) ? '#43423A' : '#77746A',
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '0.72rem',
                   letterSpacing: '0.02em',
@@ -1348,7 +1354,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
               appearance: 'none',
               WebkitAppearance: 'none',
               paddingRight: '1.2rem',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23666'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%2377746A'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'right 0.4rem center',
             }}
@@ -1361,7 +1367,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             <div style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.65rem',
-              color: '#555',
+              color: '#77746A',
               letterSpacing: '0.04em',
             }}>
               {lead.assigned_to}
@@ -1369,7 +1375,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
           )}
 
           {/* Expand caret */}
-          <div style={{ color: '#333', fontSize: '0.6rem' }}>
+          <div style={{ color: '#A5A29A', fontSize: '0.6rem' }}>
             {expanded ? '▲' : '▼'}
           </div>
         </div>
@@ -1379,7 +1385,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
       {expanded && (
         <div style={{
           padding: '0 1rem 1.25rem 1rem',
-          borderTop: '1px solid #131313',
+          borderTop: '1px solid #E4E2DB',
         }}>
           {/* Call kit */}
           <div style={{ margin: '0.85rem 0' }}>
@@ -1402,8 +1408,8 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.3rem',
-                  background: '#C4A46A',
-                  color: '#060606',
+                  background: '#B58A38',
+                  color: '#17170F',
                   padding: '0.6rem 1rem',
                   fontFamily: "'Bricolage Grotesque', sans-serif",
                   fontWeight: 700,
@@ -1428,9 +1434,9 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.3rem',
-                  background: lead.owner_phone ? 'transparent' : '#C4A46A',
-                  color: lead.owner_phone ? '#C4A46A' : '#060606',
-                  border: lead.owner_phone ? '1px solid #2a2a2a' : 'none',
+                  background: lead.owner_phone ? 'transparent' : '#B58A38',
+                  color: lead.owner_phone ? '#43423A' : '#17170F',
+                  border: lead.owner_phone ? '1px solid #D3D0C7' : 'none',
                   padding: '0.6rem 1rem',
                   fontFamily: "'Bricolage Grotesque', sans-serif",
                   fontWeight: 700,
@@ -1458,8 +1464,8 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   alignItems: 'center',
                   gap: '0.3rem',
                   background: 'transparent',
-                  color: '#C4A46A',
-                  border: '1px solid #C4A46A',
+                  color: '#8A6828',
+                  border: '1px solid #B58A38',
                   padding: '0.6rem 1rem',
                   fontFamily: "'Bricolage Grotesque', sans-serif",
                   fontWeight: 700,
@@ -1493,7 +1499,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     href={lead.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ ...valueStyle, color: '#7bbfdf', textDecoration: 'none' }}
+                    style={{ ...valueStyle, color: '#8A6828', textDecoration: 'none' }}
                   >
                     {cleanDomain(lead.website)} ↗
                   </a>
@@ -1516,7 +1522,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   <div style={labelStyle}>Owner Email</div>
                   <a
                     href={`mailto:${lead.owner_email}`}
-                    style={{ ...valueStyle, color: '#C4A46A', textDecoration: 'none' }}
+                    style={{ ...valueStyle, color: '#8A6828', textDecoration: 'none' }}
                   >
                     {lead.owner_email}
                   </a>
@@ -1527,7 +1533,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   <div style={labelStyle}>{lead.owner_email ? 'Office Email' : 'Email'}</div>
                   <a
                     href={`mailto:${lead.email}`}
-                    style={{ ...valueStyle, color: lead.owner_email ? '#888' : '#C4A46A', textDecoration: 'none' }}
+                    style={{ ...valueStyle, color: lead.owner_email ? '#77746A' : '#8A6828', textDecoration: 'none' }}
                   >
                     {lead.email}
                   </a>
@@ -1585,7 +1591,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
           </div>
 
           {/* Touchpoints */}
-          <div style={{ borderTop: '1px solid #1a1a1a', paddingTop: '0.85rem' }}>
+          <div style={{ borderTop: '1px solid #E4E2DB', paddingTop: '0.85rem' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1595,7 +1601,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
               <div style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '0.65rem',
-                color: '#555',
+                color: '#77746A',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
               }}>
@@ -1605,8 +1611,8 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                 onClick={() => setAddingTp(p => !p)}
                 style={{
                   background: 'transparent',
-                  border: '1px solid #2a2a2a',
-                  color: '#888',
+                  border: '1px solid #D3D0C7',
+                  color: '#43423A',
                   padding: '0.3rem 0.6rem',
                   fontFamily: "'Inter', sans-serif",
                   fontSize: '0.65rem',
@@ -1623,8 +1629,8 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
             {/* Add touchpoint form */}
             {addingTp && (
               <div style={{
-                background: '#0a0a0a',
-                border: '1px solid #1a1a1a',
+                background: '#F1EFEA',
+                border: '1px solid #E4E2DB',
                 padding: '0.75rem',
                 marginBottom: '0.75rem',
                 display: 'flex',
@@ -1660,8 +1666,8 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     disabled={tpSaving}
                     style={{
                       flex: 1,
-                      background: '#C4A46A',
-                      color: '#060606',
+                      background: '#B58A38',
+                      color: '#17170F',
                       border: 'none',
                       padding: '0.6rem',
                       fontFamily: "'Bricolage Grotesque', sans-serif",
@@ -1679,8 +1685,8 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                     onClick={() => setAddingTp(false)}
                     style={{
                       background: 'transparent',
-                      border: '1px solid #2a2a2a',
-                      color: '#666',
+                      border: '1px solid #D3D0C7',
+                      color: '#77746A',
                       padding: '0.6rem 0.75rem',
                       fontFamily: "'Inter', sans-serif",
                       fontSize: '0.75rem',
@@ -1701,25 +1707,25 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                 gap: '0.5rem',
                 alignItems: 'flex-start',
                 padding: '0.5rem 0',
-                borderBottom: '1px solid #111',
+                borderBottom: '1px solid #E4E2DB',
                 fontSize: '0.75rem',
                 fontFamily: "'Inter', sans-serif",
               }}>
-                <span style={{ color: '#555', flexShrink: 0, minWidth: 88 }}>{tp.date}</span>
+                <span style={{ color: '#77746A', flexShrink: 0, minWidth: 88 }}>{tp.date}</span>
                 <span style={{
                   fontFamily: "'Bricolage Grotesque', sans-serif",
                   fontWeight: 700,
                   fontSize: '0.6rem',
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: '#C4A46A',
+                  color: '#8A6828',
                   flexShrink: 0,
                   minWidth: 52,
                   paddingTop: '0.05rem',
                 }}>
                   {tp.channel}
                 </span>
-                <span style={{ color: '#aaa', lineHeight: 1.4 }}>{tp.note}</span>
+                <span style={{ color: '#43423A', lineHeight: 1.4 }}>{tp.note}</span>
               </div>
             ))}
 
@@ -1727,7 +1733,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
               <div style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '0.75rem',
-                color: '#333',
+                color: '#A5A29A',
                 padding: '0.5rem 0',
               }}>
                 No touchpoints yet.
@@ -1744,7 +1750,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
 const labelStyle = {
   fontFamily: "'Inter', sans-serif",
   fontSize: '0.62rem',
-  color: '#555',
+  color: '#77746A',
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
   display: 'block',
@@ -1754,14 +1760,14 @@ const labelStyle = {
 const valueStyle = {
   fontFamily: "'Inter', sans-serif",
   fontSize: '0.8rem',
-  color: '#aaa',
+  color: '#43423A',
   lineHeight: 1.4,
 }
 
 const editInputStyle = {
-  background: '#0a0a0a',
-  border: '1px solid #1a1a1a',
-  color: '#F6F6F4',
+  background: '#FFFFFF',
+  border: '1px solid #D3D0C7',
+  color: '#17170F',
   padding: '0.5rem 0.6rem',
   fontSize: '0.8rem',
   fontFamily: "'Inter', sans-serif",
@@ -1775,7 +1781,7 @@ const editInputStyle = {
 const editSelectStyle = {
   ...editInputStyle,
   cursor: 'pointer',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23555'/%3E%3C/svg%3E")`,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%2377746A'/%3E%3C/svg%3E")`,
   backgroundRepeat: 'no-repeat',
   backgroundPosition: 'right 0.6rem center',
   paddingRight: '1.75rem',
@@ -1786,16 +1792,16 @@ function CallBlock({ num, label, text, bullets, wide }) {
   if (!text) return null
   return (
     <div style={{
-      background: '#0d0d0d',
-      border: '1px solid #1a1a1a',
-      borderLeft: '2px solid #C4A46A',
+      background: '#FFFFFF',
+      border: '1px solid #E4E2DB',
+      borderLeft: '2px solid #B58A38',
       padding: '0.6rem 0.75rem',
       gridColumn: wide ? '1 / -1' : 'auto',
     }}>
       <div style={{
         fontFamily: "'Inter', sans-serif",
         fontSize: '0.6rem',
-        color: '#C4A46A',
+        color: '#8A6828',
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
         marginBottom: '0.35rem',
@@ -1819,11 +1825,11 @@ function CallBlock({ num, label, text, bullets, wide }) {
               gap: '0.5rem',
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.8rem',
-              color: '#D0D0CE',
+              color: '#17170F',
               lineHeight: 1.5,
               marginBottom: '0.2rem',
             }}>
-              <span style={{ color: '#C4A46A', flexShrink: 0 }}>•</span>
+              <span style={{ color: '#B58A38', flexShrink: 0 }}>•</span>
               <span>{g.replace(/^[-•*]\s*/, '')}</span>
             </div>
           ))
@@ -1831,7 +1837,7 @@ function CallBlock({ num, label, text, bullets, wide }) {
           <div style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: '0.8rem',
-            color: '#D0D0CE',
+            color: '#17170F',
             lineHeight: 1.5,
           }}>
             {text}
@@ -1846,15 +1852,15 @@ function MutedBlock({ label, text }) {
   return (
     <div style={{
       gridColumn: '1 / -1',
-      background: '#0a0a0a',
-      border: '1px solid #161616',
-      borderLeft: '2px solid #333',
+      background: '#F1EFEA',
+      border: '1px solid #E4E2DB',
+      borderLeft: '2px solid #C0BDB5',
       padding: '0.55rem 0.75rem',
     }}>
       <div style={{
         fontFamily: "'Inter', sans-serif",
         fontSize: '0.6rem',
-        color: '#777',
+        color: '#77746A',
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
         marginBottom: '0.3rem',
@@ -1867,11 +1873,11 @@ function MutedBlock({ label, text }) {
           gap: '0.5rem',
           fontFamily: "'Inter', sans-serif",
           fontSize: '0.74rem',
-          color: '#999',
+          color: '#5F5D56',
           lineHeight: 1.5,
           marginBottom: '0.15rem',
         }}>
-          <span style={{ color: '#555', flexShrink: 0 }}>•</span>
+          <span style={{ color: '#A5A29A', flexShrink: 0 }}>•</span>
           <span>{g.replace(/^[-•*]\s*/, '')}</span>
         </div>
       ))}
@@ -1893,15 +1899,15 @@ function CallKit({ lead, columns }) {
           display: 'flex',
           gap: '0.5rem',
           alignItems: 'baseline',
-          background: '#0b120b',
-          border: '1px solid #1c2a1c',
-          borderLeft: '2px solid #5a9e5a',
+          background: '#F0F4EE',
+          border: '1px solid #DCE5D8',
+          borderLeft: '2px solid #4A6B4A',
           padding: '0.5rem 0.75rem',
         }}>
           <span style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: '0.6rem',
-            color: '#7bbd7b',
+            color: '#4A6B4A',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
             whiteSpace: 'nowrap',
@@ -1912,7 +1918,7 @@ function CallKit({ lead, columns }) {
           <span style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: '0.76rem',
-            color: '#b8c9b8',
+            color: '#43423A',
             lineHeight: 1.45,
           }}>
             {lead.alive_evidence}
@@ -1941,7 +1947,7 @@ function CallKit({ lead, columns }) {
           gridColumn: '1 / -1',
           fontFamily: "'Inter', sans-serif",
           fontSize: '0.72rem',
-          color: '#777',
+          color: '#77746A',
           lineHeight: 1.5,
         }}>
           {lead.notes}
@@ -1975,13 +1981,13 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
   const th = {
     fontFamily: "'Inter', sans-serif",
     fontSize: '0.6rem',
-    color: '#C4A46A',
+    color: '#8A6828',
     letterSpacing: '0.1em',
     textTransform: 'uppercase',
     textAlign: 'left',
     padding: '0.6rem 0.6rem',
-    borderBottom: '1px solid #1f1f1f',
-    background: '#060606',
+    borderBottom: '1px solid #D3D0C7',
+    background: '#F1EFEA',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
     userSelect: 'none',
@@ -1989,15 +1995,15 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
   const td = {
     fontFamily: "'Inter', sans-serif",
     fontSize: '0.78rem',
-    color: '#D0D0CE',
+    color: '#43423A',
     padding: '0.55rem 0.6rem',
-    borderBottom: '1px solid #101010',
+    borderBottom: '1px solid #E4E2DB',
     verticalAlign: 'top',
   }
   const sel = {
-    background: '#0d0d0d',
-    color: '#D0D0CE',
-    border: '1px solid #1f1f1f',
+    background: '#FFFFFF',
+    color: '#43423A',
+    border: '1px solid #D3D0C7',
     fontFamily: "'Inter', sans-serif",
     fontSize: '0.72rem',
     padding: '0.25rem 0.3rem',
@@ -2029,12 +2035,12 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
               <React.Fragment key={lead.id}>
                 <tr
                   onClick={() => onToggle(lead.id)}
-                  style={{ cursor: 'pointer', background: open ? '#0a0a0a' : 'transparent' }}
+                  style={{ cursor: 'pointer', background: open ? '#FBFAF8' : 'transparent' }}
                 >
-                  <td style={{ ...td, fontWeight: 600, color: '#EDEDEB' }}>
+                  <td style={{ ...td, fontWeight: 600, color: '#17170F' }}>
                     {lead.company}
                     {lead.contact_name && (
-                      <div style={{ fontWeight: 400, fontSize: '0.68rem', color: '#777', marginTop: '0.1rem' }}>
+                      <div style={{ fontWeight: 400, fontSize: '0.68rem', color: '#77746A', marginTop: '0.1rem' }}>
                         {lead.contact_name}{lead.title ? `, ${lead.title}` : ''}
                       </div>
                     )}
@@ -2045,7 +2051,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                   <td style={td}>
                     <span style={{
                       background: needScoreColor(lead.need_score),
-                      color: '#0a0a0a',
+                      color: needScoreTextColor(lead.need_score),
                       fontWeight: 700,
                       fontSize: '0.68rem',
                       padding: '0.12rem 0.4rem',
@@ -2058,18 +2064,18 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       fontSize: '0.54rem',
                       letterSpacing: '0.07em',
                       marginTop: '0.2rem',
-                      color: hasWebsite(lead) ? '#C4A46A' : '#555',
+                      color: hasWebsite(lead) ? '#8A6828' : '#77746A',
                     }}>
                       {hasWebsite(lead) ? 'HAS SITE' : 'NO SITE'}
                     </div>
                   </td>
                   <td
                     title={lead.employees || ''}
-                    style={{ ...td, fontSize: '0.72rem', color: '#999', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    style={{ ...td, fontSize: '0.72rem', color: '#77746A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                   >
                     {lead.employees
                       ? lead.employees.replace(/\s*\(.*$/, '')
-                      : <span style={{ color: '#444' }}>—</span>}
+                      : <span style={{ color: '#A5A29A' }}>—</span>}
                   </td>
                   {/* Website column */}
                   <td style={{ ...td, fontSize: '0.72rem' }}>
@@ -2080,7 +2086,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                           rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
                           style={{
-                            color: '#7bbfdf',
+                            color: '#8A6828',
                             textDecoration: 'none',
                             display: 'block',
                             whiteSpace: 'nowrap',
@@ -2090,24 +2096,24 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                         >
                           {cleanDomain(lead.website)} ↗
                         </a>
-                      : <span style={{ color: '#333', fontSize: '0.66rem' }}>site pending</span>
+                      : <span style={{ color: '#A5A29A', fontSize: '0.66rem' }}>site pending</span>
                     }
                   </td>
                   {/* Contact column — office / owner cell / email / LinkedIn */}
                   <td style={td}>
                     {/* Office phone */}
                     {lead.phone
-                      ? <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} style={{ color: '#C4A46A', textDecoration: 'none', whiteSpace: 'nowrap', display: 'block', fontSize: '0.72rem' }}>
-                          <span style={{ color: '#555', fontSize: '0.58rem', marginRight: '0.2rem' }}>Office</span>{lead.phone}
+                      ? <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} style={{ color: '#8A6828', textDecoration: 'none', whiteSpace: 'nowrap', display: 'block', fontSize: '0.72rem' }}>
+                          <span style={{ color: '#77746A', fontSize: '0.58rem', marginRight: '0.2rem' }}>Office</span>{lead.phone}
                         </a>
-                      : <span style={{ color: '#444' }}>—</span>}
+                      : <span style={{ color: '#A5A29A' }}>—</span>}
                     {/* Owner cell — emphasized */}
                     {lead.owner_phone && (
                       <a
                         href={`tel:${lead.owner_phone}`}
                         onClick={e => e.stopPropagation()}
                         style={{
-                          color: '#F6F6F4',
+                          color: '#17170F',
                           fontWeight: 600,
                           textDecoration: 'none',
                           whiteSpace: 'nowrap',
@@ -2116,7 +2122,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                           marginTop: '0.2rem',
                         }}
                       >
-                        <span style={{ color: '#C4A46A', fontSize: '0.58rem', marginRight: '0.2rem', fontWeight: 700 }}>Cell</span>{lead.owner_phone}
+                        <span style={{ color: '#8A6828', fontSize: '0.58rem', marginRight: '0.2rem', fontWeight: 700 }}>Cell</span>{lead.owner_phone}
                       </a>
                     )}
                     {/* Email — owner first */}
@@ -2126,7 +2132,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                         onClick={e => e.stopPropagation()}
                         title={lead.owner_email || lead.email}
                         style={{
-                          color: '#C4A46A',
+                          color: '#8A6828',
                           textDecoration: 'none',
                           whiteSpace: 'nowrap',
                           display: 'block',
@@ -2137,7 +2143,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                         }}
                       >
                         {lead.owner_email
-                          ? <><span style={{ color: '#888', fontSize: '0.58rem', marginRight: '0.2rem' }}>Owner</span>{lead.owner_email}</>
+                          ? <><span style={{ color: '#77746A', fontSize: '0.58rem', marginRight: '0.2rem' }}>Owner</span>{lead.owner_email}</>
                           : lead.email}
                       </a>
                     )}
@@ -2149,7 +2155,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                         ? `View ${lead.contact_name || lead.company} on LinkedIn`
                         : `Search for ${lead.contact_name || lead.company} on LinkedIn`}
                       style={{
-                        color: hasRealLinkedIn(lead) ? '#5EA9E0' : '#555',
+                        color: hasRealLinkedIn(lead) ? '#43423A' : '#77746A',
                         textDecoration: 'none',
                         whiteSpace: 'nowrap',
                         display: 'block',
@@ -2158,15 +2164,15 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       }}
                     >{hasRealLinkedIn(lead) ? 'LinkedIn ↗' : 'Search LinkedIn ⌕'}</a>
                   </td>
-                  <td style={{ ...td, fontSize: '0.72rem', color: '#999' }}>
+                  <td style={{ ...td, fontSize: '0.72rem', color: '#43423A' }}>
                     {lead.street_address
                       ? <a
                           href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(MAPS_ORIGIN)}&destination=${encodeURIComponent(lead.street_address)}`}
                           target="_blank" rel="noreferrer"
                           onClick={e => e.stopPropagation()}
                           title="Open drive route from Dunbar Dr"
-                          style={{ color: '#999', textDecoration: 'none' }}
-                        >{lead.street_address} <span style={{ color: '#C4A46A', fontSize: '0.65rem' }}>↗</span></a>
+                          style={{ color: '#43423A', textDecoration: 'none' }}
+                        >{lead.street_address} <span style={{ color: '#8A6828', fontSize: '0.65rem' }}>↗</span></a>
                       : '—'}
                   </td>
                   <td style={{ ...td, verticalAlign: 'middle' }}>
@@ -2193,7 +2199,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                 </tr>
                 {open && (
                   <tr>
-                    <td colSpan={cols.length} style={{ ...td, background: '#0a0a0a', padding: '0.75rem 0.9rem' }}>
+                    <td colSpan={cols.length} style={{ ...td, background: '#FBFAF8', padding: '0.75rem 0.9rem' }}>
                       <CallKit lead={lead} columns={2} />
                     </td>
                   </tr>
@@ -2219,7 +2225,7 @@ function CriteriaStrip() {
     'Dated or inconsistent branding',
   ]
   return (
-    <div style={{ borderBottom: '1px solid #131313', background: '#050505' }}>
+    <div style={{ borderBottom: '1px solid #E4E2DB', background: '#F1EFEA' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -2233,33 +2239,33 @@ function CriteriaStrip() {
           cursor: 'pointer',
           fontFamily: "'Inter', sans-serif",
           fontSize: '0.6rem',
-          color: '#C4A46A',
+          color: '#8A6828',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
         }}
       >
         <span>How this list is built — what the NEED number means</span>
-        <span style={{ color: '#555' }}>{open ? '▲' : '▼'}</span>
+        <span style={{ color: '#77746A' }}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
         <div style={{
           padding: '0 1rem 0.9rem 1rem',
           fontFamily: "'Inter', sans-serif",
           fontSize: '0.75rem',
-          color: '#aaa',
+          color: '#43423A',
           lineHeight: 1.55,
         }}>
           <div style={{ marginBottom: '0.5rem' }}>
             Every company on this page cleared two bars before it was added:
           </div>
           <div style={{ marginBottom: '0.35rem' }}>
-            <span style={{ color: '#D0D0CE', fontWeight: 600 }}>1. Can they afford us.</span>{' '}
+            <span style={{ color: '#17170F', fontWeight: 600 }}>1. Can they afford us.</span>{' '}
             15+ years state-licensed, commercial trade, a real crew (not a one-man shop), and not an
             enterprise that already runs an agency.
           </div>
           <div style={{ marginBottom: '0.4rem' }}>
-            <span style={{ color: '#D0D0CE', fontWeight: 600 }}>2. Do they need us.</span>{' '}
-            The <span style={{ color: '#C4A46A' }}>NEED</span> badge is a count of marketing gaps we
+            <span style={{ color: '#17170F', fontWeight: 600 }}>2. Do they need us.</span>{' '}
+            The <span style={{ color: '#8A6828', fontWeight: 600 }}>NEED</span> badge is a count of marketing gaps we
             verified by checking each company by hand. Minimum 4 to make the list. The gaps we look for:
           </div>
           <div style={{
@@ -2269,11 +2275,11 @@ function CriteriaStrip() {
             marginBottom: '0.5rem',
           }}>
             {gapItems.map((g, i) => (
-              <span key={i} style={{ color: '#888' }}>• {g}</span>
+              <span key={i} style={{ color: '#77746A' }}>• {g}</span>
             ))}
           </div>
-          <div style={{ color: '#888' }}>
-            <span style={{ color: '#D95050', fontWeight: 600 }}>NEED 7</span> = worst presence, hottest door.
+          <div style={{ color: '#77746A' }}>
+            <span style={{ color: '#B03A3A', fontWeight: 600 }}>NEED 7</span> = worst presence, hottest door.
             Open a lead to see the opener line and the exact ways we can help that company.
           </div>
         </div>
@@ -2295,13 +2301,13 @@ function FilterBar({ filterDay, setFilterDay, filterStatus, setFilterStatus, fil
     whiteSpace: 'nowrap',
     minHeight: 36,
   }
-  const activeChip = { ...chipBase, background: '#C4A46A', color: '#060606' }
-  const inactiveChip = { ...chipBase, background: '#0f0f0f', color: '#666', border: '1px solid #1a1a1a' }
+  const activeChip = { ...chipBase, background: '#B58A38', color: '#17170F' }
+  const inactiveChip = { ...chipBase, background: '#FFFFFF', color: '#43423A', border: '1px solid #D3D0C7' }
 
   return (
     <div style={{
-      background: '#060606',
-      borderBottom: '1px solid #1a1a1a',
+      background: '#F7F6F3',
+      borderBottom: '1px solid #E4E2DB',
       padding: '0.5rem 1rem',
       display: 'flex',
       flexDirection: 'column',
@@ -2331,7 +2337,7 @@ function FilterBar({ filterDay, setFilterDay, filterStatus, setFilterStatus, fil
           </button>
         ))}
 
-        <div style={{ width: 1, background: '#1a1a1a', flexShrink: 0, margin: '0 0.15rem' }} />
+        <div style={{ width: 1, background: '#D3D0C7', flexShrink: 0, margin: '0 0.15rem' }} />
 
         {/* Rep filter */}
         {['all', ...REPS].map(r => (
@@ -2445,8 +2451,8 @@ export default function OutreachTracker() {
   return (
     <div style={{
       minHeight: '100dvh',
-      background: '#060606',
-      color: '#F6F6F4',
+      background: '#F7F6F3',
+      color: '#17170F',
       fontFamily: "'Inter', sans-serif",
     }}>
       {/* Sticky header */}
@@ -2476,14 +2482,16 @@ export default function OutreachTracker() {
         />
       </div>
 
+      {/* View switcher — a discrete tab group. A future restricted-rep role can
+          filter this VIEWS array (e.g. Call Mode only) without touching layout. */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
         gap: '0.4rem',
         padding: '0.45rem 1rem',
-        borderBottom: '1px solid #131313',
-        background: '#050505',
+        borderBottom: '1px solid #E4E2DB',
+        background: '#F1EFEA',
       }}>
         {['table', 'cards', 'call'].map(v => (
           <button
@@ -2496,9 +2504,9 @@ export default function OutreachTracker() {
               textTransform: 'uppercase',
               padding: '0.3rem 0.7rem',
               cursor: 'pointer',
-              background: view === v ? '#C4A46A' : 'none',
-              color: view === v ? '#0a0a0a' : '#777',
-              border: view === v ? '1px solid #C4A46A' : '1px solid #222',
+              background: view === v ? '#B58A38' : '#FFFFFF',
+              color: view === v ? '#17170F' : '#43423A',
+              border: view === v ? '1px solid #B58A38' : '1px solid #D3D0C7',
               fontWeight: view === v ? 700 : 400,
             }}
           >
@@ -2516,7 +2524,7 @@ export default function OutreachTracker() {
           padding: '3rem 1rem',
           fontFamily: "'Inter', sans-serif",
           fontSize: '0.85rem',
-          color: '#444',
+          color: '#A5A29A',
         }}>
           Loading leads...
         </div>
@@ -2526,7 +2534,7 @@ export default function OutreachTracker() {
         <div style={{
           textAlign: 'center',
           padding: '3rem 1rem',
-          color: '#D95050',
+          color: '#B03A3A',
           fontSize: '0.85rem',
         }}>
           Error: {error}
@@ -2550,9 +2558,9 @@ export default function OutreachTracker() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '0.75rem 1rem',
-            background: '#060606',
-            borderBottom: '1px solid #1a1a1a',
-            borderTop: day !== (days[0]) ? '2px solid #0f0f0f' : '1px solid #1a1a1a',
+            background: '#F1EFEA',
+            borderBottom: '1px solid #E4E2DB',
+            borderTop: day !== (days[0]) ? '2px solid #E4E2DB' : '1px solid #E4E2DB',
             position: 'sticky',
             top: 0,
             zIndex: 50,
@@ -2563,7 +2571,7 @@ export default function OutreachTracker() {
                 fontFamily: "'Bricolage Grotesque', sans-serif",
                 fontWeight: 700,
                 fontSize: '0.75rem',
-                color: '#C4A46A',
+                color: '#8A6828',
                 textTransform: 'uppercase',
                 letterSpacing: '0.1em',
                 marginBottom: '0.1rem',
@@ -2573,7 +2581,7 @@ export default function OutreachTracker() {
               <div style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: '0.65rem',
-                color: '#444',
+                color: '#77746A',
               }}>
                 {dayLeads.length} lead{dayLeads.length !== 1 ? 's' : ''}
               </div>
@@ -2586,8 +2594,8 @@ export default function OutreachTracker() {
                 style={{
                   flexShrink: 0,
                   background: 'transparent',
-                  border: '1px solid #C4A46A',
-                  color: '#C4A46A',
+                  border: '1px solid #B58A38',
+                  color: '#8A6828',
                   padding: '0.4rem 0.65rem',
                   fontFamily: "'Bricolage Grotesque', sans-serif",
                   fontWeight: 700,
@@ -2613,8 +2621,8 @@ export default function OutreachTracker() {
               padding: '1.5rem 1rem',
               fontFamily: "'Inter', sans-serif",
               fontSize: '0.8rem',
-              color: '#333',
-              borderBottom: '1px solid #1a1a1a',
+              color: '#A5A29A',
+              borderBottom: '1px solid #E4E2DB',
             }}>
               No leads match the current filters.
             </div>
@@ -2643,17 +2651,17 @@ export default function OutreachTracker() {
       {!loading && !error && (
         <div style={{
           padding: '2rem 1rem',
-          borderTop: '1px solid #111',
+          borderTop: '1px solid #E4E2DB',
           fontFamily: "'Inter', sans-serif",
           fontSize: '0.7rem',
-          color: '#2a2a2a',
+          color: '#A5A29A',
           textAlign: 'center',
           lineHeight: 1.6,
         }}>
           Batch 1 — 20 leads loaded.
           <br />
           To load aom-construction-master.csv: run{' '}
-          <code style={{ color: '#3a3a3a', fontFamily: 'monospace' }}>
+          <code style={{ color: '#77746A', fontFamily: 'monospace' }}>
             scripts/import-outreach-leads.py
           </code>
         </div>
