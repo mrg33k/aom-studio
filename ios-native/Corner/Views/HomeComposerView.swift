@@ -107,7 +107,11 @@ final class IntakeRouter: ObservableObject {
                     candidates: candidates, recentRooms: recentRooms
                 )
                 if decision.isAutoRoute, let room = decision.target?.resolveRoom() {
-                    await self.openAndSeed(room)
+                    // Corner CHOSE this room — stamp the seed with the R11 provenance so
+                    // room-activity quarantines the exchange out of the room's digest
+                    // until the user accepts it. A room the user picks in the confirm
+                    // sheet carries no stamp (openAndSeed's default nil).
+                    await self.openAndSeed(room, routed: RouteProvenance(confidence: decision.confidence ?? 0))
                     return
                 }
                 // Below the auto bar, or unmatched → confirm before anything is sent.
@@ -129,12 +133,16 @@ final class IntakeRouter: ObservableObject {
 
     /// Open a room and seed the pending text into it, matching the web's openAndSeed —
     /// seed first so the row is already in the room's initial load, then navigate.
-    func openAndSeed(_ room: Room) async {
+    ///
+    /// `routed` is non-nil only on an AUTO-open (the router chose the room); a room the
+    /// user picked in the confirm sheet passes nil, so it is never quarantined — the exact
+    /// split seedRoom draws with its `auto` argument.
+    func openAndSeed(_ room: Room, routed: RouteProvenance? = nil) async {
         let text = pendingText
         let mode = pendingMode
         guard !text.isEmpty else { reset(); return }
         do {
-            _ = try await api.send(text: text, room: room, interactionMode: mode)
+            _ = try await api.send(text: text, room: room, interactionMode: mode, routed: routed)
             reset()
             onOpen(room)
         } catch {

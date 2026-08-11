@@ -147,4 +147,34 @@ final class RoomRoutingTests: XCTestCase {
         XCTAssertEqual(meta["mission_slug"], "corner:native-ios")
         XCTAssertEqual(meta["interaction_mode"], "work")
     }
+
+    // MARK: - R11 route-provenance stamp (mirrors seedRoom's metadata.routed)
+
+    /// An AUTO-routed send — the front door chose the room — must carry the R11 stamp
+    /// so room-activity.js quarantines the exchange out of the room's digest until the
+    /// user accepts it. Without it one native misroute re-teaches the router (R10/R11).
+    func testAutoRoutedSendBodyCarriesRoutedStamp() throws {
+        let body = Room(
+            world: "aom",
+            kind: .mission(slug: "corner:native-ios", project: "corner"),
+            title: "", subtitle: ""
+        ).sendBody(text: "hello", routed: RouteProvenance(confidence: 0.91))
+        let meta = try XCTUnwrap(body["metadata"] as? [String: Any])
+        let routed = try XCTUnwrap(meta["routed"] as? [String: Any])
+        XCTAssertEqual(routed["auto"] as? Bool, true)
+        XCTAssertEqual(routed["confidence"] as? Double, 0.91)
+        // The canonical slug + mode still ride alongside the stamp.
+        XCTAssertEqual(meta["mission_slug"] as? String, "corner:native-ios")
+        XCTAssertEqual(meta["interaction_mode"] as? String, "work")
+    }
+
+    /// A room the USER picked (or the room composer) carries NO stamp — matching
+    /// seedRoom, where only an automatic choice is provisional. Absence IS the accepted
+    /// state; there is no `accepted: false`.
+    func testUserPickedSendBodyHasNoRoutedStamp() throws {
+        let body = Room(world: "aom", kind: .project(slug: "corner"), title: "", subtitle: "")
+            .sendBody(text: "hello")
+        let meta = try XCTUnwrap(body["metadata"] as? [String: Any])
+        XCTAssertNil(meta["routed"])
+    }
 }

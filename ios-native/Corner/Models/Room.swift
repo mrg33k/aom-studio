@@ -15,6 +15,15 @@
 
 import Foundation
 
+/// The R11 route-provenance stamp: what the front-door router decided when it chose a
+/// room ON ITS OWN. Mirrors the `auto` object useIntakeRoute threads into seedRoom —
+/// present on an AUTO-open, absent on a room the user picked. Its whole job is to let
+/// `api/dashboard/room-activity.js` quarantine an auto-routed exchange out of the room's
+/// digest until the user accepts it (see the `routed` stamp in sendBody).
+struct RouteProvenance: Equatable {
+    let confidence: Double
+}
+
 struct Room: Identifiable, Hashable {
     enum Kind: Hashable {
         case agent(slug: String)
@@ -118,26 +127,39 @@ struct Room: Identifiable, Hashable {
     /// The POST body for a send. Shapes copied from useRoomThread.send() — the
     /// canonical "<project>:<mission>" slug rides in metadata so the mission never
     /// enters the bare-slug first-wins lottery server-side.
-    func sendBody(text: String, interactionMode: String = "work") -> [String: Any] {
+    ///
+    /// `routed` is the R11 provenance stamp, and it is present ONLY when Corner's router
+    /// auto-opened this room from the home composer — never when the user picked it. It
+    /// mirrors seedRoom's `metadata.routed { auto: true, confidence }` byte-for-byte, and
+    /// it is the single thing that makes room-activity.js hold the exchange out of the
+    /// room's digest until the user accepts it. Without it a native auto-route immediately
+    /// shapes the room's description, so one misroute teaches the router to repeat itself
+    /// ("the rule protects a room exactly once", R10/R11).
+    func sendBody(text: String, interactionMode: String = "work", routed: RouteProvenance? = nil) -> [String: Any] {
         var body: [String: Any] = [
             "client_id": world,
             "text": text,
             "role": "user",
             "source": Config.messageSource,
         ]
+        var metadata: [String: Any] = ["interaction_mode": interactionMode]
         switch kind {
         case .agent(let slug):
             body["agent"] = slug
-            body["metadata"] = ["interaction_mode": interactionMode]
         case .project(let slug):
             body["agent"] = "corner"
             body["project"] = slug
-            body["metadata"] = ["interaction_mode": interactionMode]
         case .mission(let slug, let project):
             body["agent"] = "corner"
             body["project"] = project
-            body["metadata"] = ["mission_slug": slug, "interaction_mode": interactionMode]
+            metadata["mission_slug"] = slug
         }
+        if let routed {
+            // Match seedRoom's shape exactly: { auto: true, confidence: <number> }. The
+            // absence of `accepted` IS the pending state — there is no `accepted: false`.
+            metadata["routed"] = ["auto": true, "confidence": routed.confidence]
+        }
+        body["metadata"] = metadata
         return body
     }
 

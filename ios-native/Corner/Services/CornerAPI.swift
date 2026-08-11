@@ -189,12 +189,27 @@ final class CornerAPI: ObservableObject {
     /// POST /api/dashboard/supabase-messages — the user row whose arrival dispatches
     /// the agent. Returns the created row; its id is the parent the bridge keys every
     /// step heartbeat to, which is what makes the working indicator honest.
+    ///
+    /// The `MessageTransport` witness. Every send through this entry point is a room the
+    /// user is already inside (the room composer, a room picked in the confirm sheet), so
+    /// it never carries a route stamp — it forwards with `routed: nil`.
     @discardableResult
     func send(text: String, room: Room, interactionMode: String = "work") async throws -> MessageRow? {
+        try await send(text: text, room: room, interactionMode: interactionMode, routed: nil)
+    }
+
+    /// The home-composer seed path. `routed` is the R11 provenance stamp, present ONLY
+    /// when Corner's router auto-opened this room for a room-less message. It is what lets
+    /// `api/dashboard/room-activity.js` quarantine the exchange out of the room's digest
+    /// until the user accepts it — mirroring seedRoom's `metadata.routed { auto, confidence }`.
+    /// Kept off the `MessageTransport` protocol on purpose: provenance is an intake concern,
+    /// not part of the room-thread seam the failure tests run against.
+    @discardableResult
+    func send(text: String, room: Room, interactionMode: String, routed: RouteProvenance?) async throws -> MessageRow? {
         let request = try await authorizedRequest(
             path: "/api/dashboard/supabase-messages",
             method: "POST",
-            jsonBody: room.sendBody(text: text, interactionMode: interactionMode)
+            jsonBody: room.sendBody(text: text, interactionMode: interactionMode, routed: routed)
         )
         let data = try await run(request)
         return (try? JSONDecoder().decode(SendEnvelope.self, from: data))?.message
