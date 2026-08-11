@@ -242,7 +242,17 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
       }])
       onCallLogged?.()
       clearTimeout(toastTimer.current)
-      setToastText(`${lead.company} → ${outcome}${noteInput.trim() ? ' · note saved' : ''}`)
+      // Every logged call gets a payoff line, not a database receipt — the job
+      // has to feel light or the reps stop dialing
+      const TOAST_LINES = {
+        'Booked':     "BOOKED — that's the whole job. Patrik takes it from here.",
+        'No answer':  'No answer. Costs you nothing — next.',
+        'Left VM':    'Voicemail left. Seed planted.',
+        'Spoke':      "A real conversation — that's the hard part done.",
+        'Not a fit':  'Not a fit. Their loss — next lead.',
+        'Sent email': "Email away. Ball's in their court.",
+      }
+      setToastText(`${lead.company} — ${TOAST_LINES[outcome] || outcome}${noteInput.trim() ? ' · note saved' : ''}`)
       toastTimer.current = setTimeout(() => setToastText(''), 2200)
     }
     const newLogged = new Set(loggedIds)
@@ -583,6 +593,10 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                 const ifDo    = { margin: 0, marginTop: 8, fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }
                 return (
                   <div>
+                    <div style={{ background: '#FBF4E4', borderLeft: '2px solid #B58A38', padding: 16, marginBottom: 24, fontFamily: 'Inter,sans-serif', fontSize: 15, lineHeight: 1.6, color: '#17170F' }}>
+                      Your whole job: get Patrik 15 minutes. Every no costs you
+                      nothing — there are {leftCount} more in the queue.
+                    </div>
                     <div style={row}>
                       <div style={numeral}>1</div>
                       <div>
