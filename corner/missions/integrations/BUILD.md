@@ -136,3 +136,26 @@ Production proof:
 - Live counters after acceptance: `codex_fallback_queued=1`, `codex_fallback_unavailable=0`.
 
 **Status:** shipped and verified on canonical production.
+
+### R5 — Live Codex progress and single-owner room routing
+
+Stream safe, user-facing progress from the local Codex runner into the existing
+room step timeline so desktop and mobile show that Codex has claimed a turn,
+is working, and has stopped. Prevent the shadow room bridge from also accepting
+a server-verified local-runner turn, which otherwise creates a second reply and
+can attach work steps to the wrong point in the conversation.
+
+Planned checks:
+
+- Convert Codex JSONL lifecycle events into generic progress labels without
+  exposing raw shell commands, local paths, model reasoning, or credentials.
+- Authenticate every progress write against the claimed device and job, and
+  derive room/user scope from the original server-owned message.
+- Emit the existing `message_step` shape, including the settled sentinel used
+  by both desktop and mobile waiting indicators.
+- Make both bridge implementations yield only when a matching verified runner
+  job exists for the message, device, user, and tenant.
+- Verify focused tests, production build, canonical deployment, and a live
+  tool-using turn with exactly one assistant reply.
+
+**Status:** in progress.

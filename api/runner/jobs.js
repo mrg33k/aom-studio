@@ -1,5 +1,6 @@
 import { authenticateRunner, runnerConfigAvailable, runnerServiceHeaders, runnerSupabaseUrl } from '../_lib/runnerAuth.js'
 import { writeMessageRow } from '../_lib/write-message.js'
+import { randomUUID } from 'node:crypto'
 
 function cleanError(value) {
   return String(value || 'The local Codex process stopped unexpectedly.').replace(/\s+/g, ' ').trim().slice(0, 500)
@@ -41,6 +42,32 @@ async function messageForJob(job) {
   if (!response.ok) return null
   const rows = await response.json()
   return rows?.[0] || null
+}
+
+async function writeRunnerStep({ device, job, message, stepIndex, text, status }) {
+  const response = await fetch(runnerSupabaseUrl('/rest/v1/events'), {
+    method: 'POST',
+    headers: runnerServiceHeaders('return=minimal'),
+    body: JSON.stringify({
+      id: randomUUID(),
+      event_type: 'message_step',
+      agent: message.agent || 'corner',
+      timestamp: new Date().toISOString(),
+      payload: {
+        parent_message_id: message.id,
+        step_index: stepIndex,
+        text,
+        status,
+        client_id: message.client_id,
+        world_id: message.client_id,
+        project: message.project || '',
+        emitter: 'corner-runner',
+        runner_job_id: job.id,
+        runner_device_id: device.id,
+      },
+    }),
+  })
+  return response.ok
 }
 
 async function contextForMessage(message) {
@@ -131,6 +158,37 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, status })
   }
 
+  if (req.method === 'POST' && req.body?.action === 'progress') {
+    const jobId = String(req.body?.job_id || '')
+    const stepIndex = Number(req.body?.step_index)
+    const text = String(req.body?.text || '').replace(/\s+/g, ' ').trim().slice(0, 180)
+    const status = String(req.body?.status || 'in_progress')
+    if (!jobId || !Number.isInteger(stepIndex) || stepIndex < 0 || stepIndex > 9998 || !text) {
+      return res.status(400).json({ error: 'Valid job_id, step_index, and text required' })
+    }
+    if (!['in_progress', 'done'].includes(status)) {
+      return res.status(400).json({ error: 'Progress status must be in_progress or done' })
+    }
+    const jobResponse = await fetch(
+      runnerSupabaseUrl(
+        `/rest/v1/corner_runner_jobs?id=eq.${encodeURIComponent(jobId)}`
+        + `&device_id=eq.${encodeURIComponent(device.id)}&select=*&limit=1`,
+      ),
+      { headers: runnerServiceHeaders() },
+    )
+    const jobRows = jobResponse.ok ? await jobResponse.json() : []
+    const job = jobRows?.[0]
+    if (!job) return res.status(404).json({ error: 'Runner job not found' })
+    if (!['claimed', 'running'].includes(job.status)) {
+      return res.status(409).json({ error: 'Runner job is no longer active' })
+    }
+    const message = await messageForJob(job)
+    if (!message) return res.status(404).json({ error: 'Original message not found' })
+    const written = await writeRunnerStep({ device, job, message, stepIndex, text, status })
+    if (!written) return res.status(502).json({ error: 'Could not record runner progress' })
+    return res.status(200).json({ ok: true })
+  }
+
   if (req.method === 'GET') {
     await updateDevice(device.id, { status: 'online' })
     const claim = await fetch(runnerSupabaseUrl('/rest/v1/rpc/claim_corner_runner_job'), {
@@ -155,6 +213,14 @@ export default async function handler(req, res) {
     const context = await contextForMessage(message)
     await updateDevice(device.id, { status: 'working' })
     await updateJob(device.id, job.id, { status: 'running', lease_expires_at: new Date(Date.now() + 120_000).toISOString() })
+    await writeRunnerStep({
+      device,
+      job,
+      message,
+      stepIndex: 0,
+      text: `Codex picked this up on ${device.name}`,
+      status: 'in_progress',
+    })
     return res.status(200).json({
       job: {
         id: job.id,
@@ -216,6 +282,14 @@ export default async function handler(req, res) {
         error: reason,
       })
     }
+    await writeRunnerStep({
+      device,
+      job,
+      message,
+      stepIndex: 9999,
+      text: 'settled',
+      status: 'done',
+    })
     await updateDevice(device.id, { status: 'online' })
     return res.status(200).json({ ok: true })
   }

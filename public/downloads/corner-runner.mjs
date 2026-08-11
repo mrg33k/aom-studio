@@ -162,10 +162,27 @@ function runCodex(job, config) {
     const child = spawn('codex', codexArgs, { stdio: ['pipe', 'pipe', 'pipe'] })
     let stderr = ''
     let settled = false
-    child.stdout.on('data', () => {})
+    const progressState = { nextIndex: 1, itemSteps: new Map() }
+    let stdoutBuffer = ''
+    let progressWrites = Promise.resolve()
+    child.stdout.on('data', (chunk) => {
+      stdoutBuffer += chunk.toString('utf8')
+      const lines = stdoutBuffer.split('\n')
+      stdoutBuffer = lines.pop() || ''
+      for (const line of lines) {
+        let event
+        try { event = JSON.parse(line) } catch { continue }
+        const step = codexProgressForEvent(event, progressState)
+        if (!step) continue
+        progressWrites = progressWrites
+          .then(() => reportProgress(config, job.id, step))
+          .catch(() => {})
+      }
+    })
     child.stderr.on('data', (chunk) => { stderr = `${stderr}${chunk}`.slice(-64_000) })
     child.on('error', (error) => finish(error))
-    child.on('close', (code) => {
+    child.on('close', async (code) => {
+      await progressWrites
       if (code !== 0) {
         if (stderr.trim()) process.stderr.write(`${stderr.trim()}\n`)
         return finish(new Error(`Codex exited with status ${code}. Check the runner Terminal for details.`))
@@ -192,10 +209,41 @@ function runCodex(job, config) {
   })
 }
 
+function progressLabel(command) {
+  const value = String(command || '').toLowerCase()
+  if (/\b(test|vitest|playwright|pytest|npm run build|pnpm build|yarn build|tsc)\b/.test(value)) return 'Running checks'
+  if (/\b(apply_patch|patch|perl -[pi]|sed -i)\b/.test(value)) return 'Making changes'
+  if (/\b(rg|grep|find|ls|git status|git diff|sed|head|tail|cat)\b/.test(value)) return 'Reading through the project'
+  return 'Working through the request'
+}
+
+export function codexProgressForEvent(event, state = { nextIndex: 1, itemSteps: new Map() }) {
+  const item = event?.item
+  if (!item || item.type !== 'command_execution' || !item.id) return null
+  if (event.type === 'item.started') {
+    const index = state.nextIndex++
+    state.itemSteps.set(item.id, index)
+    return { step_index: index, text: progressLabel(item.command), status: 'in_progress' }
+  }
+  if (event.type === 'item.completed') {
+    const index = state.itemSteps.get(item.id)
+    if (!Number.isInteger(index)) return null
+    return { step_index: index, text: progressLabel(item.command), status: 'done' }
+  }
+  return null
+}
+
 async function heartbeat(config, jobId = '') {
   return api(config, '/api/runner/jobs', {
     method: 'POST',
     body: JSON.stringify({ action: 'heartbeat', job_id: jobId || null }),
+  })
+}
+
+async function reportProgress(config, jobId, step) {
+  return api(config, '/api/runner/jobs', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'progress', job_id: jobId, ...step }),
   })
 }
 

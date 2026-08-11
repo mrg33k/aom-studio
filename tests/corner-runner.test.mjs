@@ -19,7 +19,7 @@ const {
   resolveRunnerPreference,
   runnerRoomPreferenceKey,
 } = await import('../api/_lib/runnerJobs.js')
-const { buildCodexPrompt, normalizeServer } = await import('../public/downloads/corner-runner.mjs')
+const { buildCodexPrompt, codexProgressForEvent, normalizeServer } = await import('../public/downloads/corner-runner.mjs')
 const { MODEL_OPTIONS } = await import('../src/dashboard/components/cv3/chat/chatConstants.js')
 
 test('pairing codes are readable, high-entropy, and hashed before storage', () => {
@@ -108,6 +108,30 @@ test('runner permits HTTPS and localhost HTTP but refuses cleartext remote serve
   assert.equal(normalizeServer('https://aheadofmarket.com/path'), 'https://aheadofmarket.com')
   assert.equal(normalizeServer('http://127.0.0.1:5173'), 'http://127.0.0.1:5173')
   assert.throws(() => normalizeServer('http://example.com'), /refuses non-local HTTP/)
+})
+
+test('Codex JSONL command events become safe progress without exposing commands or paths', () => {
+  const state = { nextIndex: 1, itemSteps: new Map() }
+  const started = codexProgressForEvent({
+    type: 'item.started',
+    item: { id: 'item-1', type: 'command_execution', command: 'rg -n secret /Users/private/project' },
+  }, state)
+  const completed = codexProgressForEvent({
+    type: 'item.completed',
+    item: { id: 'item-1', type: 'command_execution', command: 'rg -n secret /Users/private/project' },
+  }, state)
+  assert.deepEqual(started, { step_index: 1, text: 'Reading through the project', status: 'in_progress' })
+  assert.deepEqual(completed, { step_index: 1, text: 'Reading through the project', status: 'done' })
+  assert.doesNotMatch(JSON.stringify([started, completed]), /secret|Users|rg -n/)
+})
+
+test('runner progress endpoint derives scope from an authenticated active job', () => {
+  const api = readFileSync(new URL('../api/runner/jobs.js', import.meta.url), 'utf8')
+  assert.match(api, /action === 'progress'/)
+  assert.match(api, /device_id=eq\.\$\{encodeURIComponent\(device\.id\)\}/)
+  assert.match(api, /parent_message_id: message\.id/)
+  assert.match(api, /stepIndex: 9999/)
+  assert.doesNotMatch(api, /client_id: req\.body/)
 })
 
 test('dashboard write path strips client runner markers and stamps only verified devices', () => {
