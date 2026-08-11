@@ -113,3 +113,45 @@ export function curateTitledAgents(agents = []) {
   }
   return out.sort((x, y) => x._order - y._order);
 }
+
+// Tenant-agnostic, user-facing one-liners for the composer's Agent picker. These
+// are deliberately NOT the agent-profiles.js copy — that copy is AOM-internal
+// ("COO energy", "client delivery") and would read wrong for a user who runs their
+// own company (or several). Here every blurb describes what the agent does for
+// YOU and YOUR business, whoever you are. Gary = Operations, not "AOM's COO".
+export const AGENT_PICKER_BLURBS = {
+  corner: 'Front desk — routes you to the right agent.',
+  director: 'Sets the creative direction before anything gets designed.',
+  gary: 'Runs and manages your business, or businesses — delivery, priorities, and keeping things on track.',
+  elon: 'Keeps the whole system healthy and points work to the right place.',
+  rex: 'Your executive assistant — handles the day-to-day and keeps things moving.',
+  jacob: 'Finds leads and writes the outreach that starts conversations.',
+  alex: 'Sharpens strategy, positioning, and the numbers behind a deal.',
+  steffen: 'Owns the look — brand, visual identity, and design decisions.',
+  bobby: 'Builds and ships your websites and app screens.',
+  cleo: 'Turns raw footage into finished, platform-ready video.',
+  tony: 'Plans and posts your social content across platforms.',
+  steve: 'Advises on the tech, checks quality, and builds the pitch.',
+  elmo: 'Reviews and QAs work before it ships.',
+  pixel: 'Generates images, thumbnails, and media assets.',
+};
+
+// The Auto / front-desk default that always leads the picker.
+const PICKER_AUTO_ENTRY = {
+  slug: 'corner',
+  title: 'Auto',
+  blurb: AGENT_PICKER_BLURBS.corner,
+};
+
+// The ordered list the Agent picker renders: an Auto/front-desk entry first, then
+// the full titled roster. `agents` is the live agent list (so tenant-created agents
+// still appear, via curateTitledAgents); each row carries { slug, title, blurb }.
+export function pickerAgents(agents = []) {
+  const roster = curateTitledAgents(agents).map((a) => ({
+    slug: a.slug,
+    title: a.title || AGENT_TITLES[a.slug] || cap(a.slug),
+    blurb: AGENT_PICKER_BLURBS[a.slug] || `Talk to ${a.title || a.slug}.`,
+  }));
+  return [PICKER_AUTO_ENTRY, ...roster.filter((a) => a.slug !== 'corner')];
+}
+
