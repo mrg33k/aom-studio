@@ -68,11 +68,24 @@ struct ASCIIBackground: View {
 
                         let pt = CGPoint(x: Double(c) * cell, y: Double(r) * cell)
 
-                        // Bronze embers ride the crest of the wave; everything else
-                        // is cream. Both kept low-alpha so the login stays legible.
-                        if level > 1.18 {
-                            let glow = min(1, (level - 1.18) * 3)
-                            ctx.opacity = 0.16 + glow * 0.5
+                        // Bronze embers ride the wave CRESTS; everything else is cream.
+                        //
+                        // The old test gated gold on `level` (= v·gather), so a glyph only
+                        // turned gold where a wave crest AND the radial gather peak landed
+                        // on the same cell — and that peak sits directly under the form's
+                        // centre scrim, so the rare ember that did appear was smothered. Gold
+                        // was effectively never on screen. Here gold rides `v` (the crest,
+                        // which peaks all across the field every frame) with only a light
+                        // centre bias, so the warm glyphs gather toward the wordmark without
+                        // needing the exact hot-spot the scrim covers. The band is narrow
+                        // (top crests only) so cream still owns the field, and the opacity
+                        // floor is lifted to 0.32 so each ember reads through the scrim
+                        // instead of dissolving into it. `glow` fades an ember UP from that
+                        // floor to a confident crest so it is a scatter, never a gold slab.
+                        let goldScore = v + gather * 0.28
+                        if goldScore > 1.05 {
+                            let glow = min(1, (goldScore - 1.05) * 5)
+                            ctx.opacity = 0.32 + glow * 0.44
                             ctx.draw(ctx.resolve(Text(String(Self.ramp[idx]))
                                 .font(font).foregroundStyle(Theme.accent)), at: pt, anchor: .topLeading)
                         } else {
