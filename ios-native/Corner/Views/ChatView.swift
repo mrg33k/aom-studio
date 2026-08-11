@@ -154,10 +154,10 @@ struct ChatView: View {
     private func catchUpBanner(_ text: String) -> some View {
         HStack(spacing: Theme.s2) {
             Image(systemName: "arrow.down.circle")
-            Text(text).font(.caption)
+            Text(text).font(.hkCaption)
             Spacer()
             Button("Dismiss") { model.catchUpNotice = nil }
-                .font(.caption)
+                .font(.hkCaption)
         }
         .foregroundStyle(Theme.inkSoft)
         .padding(.horizontal, Theme.s3)
@@ -167,9 +167,9 @@ struct ChatView: View {
 
     private func centeredNotice(_ text: String, systemImage: String) -> some View {
         VStack(spacing: Theme.s2) {
-            Image(systemName: systemImage).font(.title2)
+            Image(systemName: systemImage).font(.hkTitle2)
             Text(text)
-                .font(.footnote)
+                .font(.hkFootnote)
                 .multilineTextAlignment(.center)
         }
         .foregroundStyle(Theme.inkSoft)
@@ -236,7 +236,7 @@ struct TurnIndicatorView: View {
             HStack(spacing: Theme.s2) {
                 ProgressView().controlSize(.small)
                 Text(detail ?? "Working…")
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.inkSoft)
                     .lineLimit(2)
             }
@@ -253,10 +253,10 @@ struct TurnIndicatorView: View {
             RaisedCard(tint: Theme.warning.opacity(0.4)) {
                 VStack(alignment: .leading, spacing: Theme.s2) {
                     Label("No reply — this turn stopped", systemImage: "exclamationmark.triangle.fill")
-                        .font(.footnote.weight(.semibold))
+                        .font(.hkFootnote.weight(.semibold))
                         .foregroundStyle(Theme.warning)
                     Text("Nothing came back for three minutes. Your message was delivered; the agent never answered it.")
-                        .font(.caption)
+                        .font(.hkCaption)
                         .foregroundStyle(Theme.inkSoft)
                     HStack(spacing: Theme.s3) {
                         if sentText?.isEmpty == false {
@@ -291,16 +291,16 @@ struct OutboxBubbleView: View {
             Spacer(minLength: 48)
             VStack(alignment: .trailing, spacing: Theme.s1) {
                 Text(item.text)
-                    .font(.body)
-                    .foregroundStyle(Theme.ink)
-                    .padding(.horizontal, Theme.s3)
+                    .font(.hkBody)
+                    .foregroundStyle(Theme.userBubbleInk)
+                    .padding(.horizontal, Theme.s4)
                     .padding(.vertical, 10)
                     .background(
                         Theme.userBubble,
-                        in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous)
+                        in: MessageBubbleView.bubbleShape(user: true)
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous)
+                        MessageBubbleView.bubbleShape(user: true)
                             .strokeBorder(item.isFailed ? Theme.danger.opacity(0.8) : Color.clear, lineWidth: 1)
                     )
                     .opacity(item.isFailed ? 1 : 0.55)
@@ -309,7 +309,7 @@ struct OutboxBubbleView: View {
                 if let failure = item.failureMessage {
                     VStack(alignment: .trailing, spacing: Theme.s1) {
                         Text("Not sent — \(failure)")
-                            .font(.caption2)
+                            .font(.hkCaption2)
                             .foregroundStyle(Theme.danger)
                             .multilineTextAlignment(.trailing)
                         HStack(spacing: Theme.s3) {
@@ -318,16 +318,16 @@ struct OutboxBubbleView: View {
                             // an ambient tint set three views up to look like the
                             // primary choice.
                             Button("Retry", action: retry)
-                                .font(.caption.weight(.semibold))
+                                .font(.hkCaption.weight(.semibold))
                                 .foregroundStyle(Theme.accent)
                             Button("Discard", role: .destructive, action: discard)
-                                .font(.caption)
+                                .font(.hkCaption)
                                 .foregroundStyle(Theme.inkSoft)
                         }
                     }
                 } else {
                     Text("Sending…")
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                 }
             }

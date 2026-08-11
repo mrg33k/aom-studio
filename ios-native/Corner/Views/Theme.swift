@@ -1,45 +1,68 @@
 // Theme.swift — Corner native iOS
-// corner:native-ios Stage 1
+// corner:native-ios R4 — the CV6 design system, ported for real.
 //
-// A small, deliberate token set. Corner is an ink-ground product: obsidian ground,
-// ivory type, one warm accent. These are tokens rather than literals scattered through
-// the views so the phone product can be re-tuned in one place when CV6's design system
-// is properly ported (Stage 2) — and so nothing here quietly invents a fourth grey.
+// These are the LIVE web dashboard's tokens (cv6next/cv6.css, dark theme — the
+// default), not approximations: Corner is a blue-accent product on near-black
+// ink grounds. The old bronze-gold set was AOM's editorial brand, which Corner
+// deliberately is not. Every value here traces to a named CSS custom property;
+// if it isn't in cv6.css it doesn't belong in this file.
 
 import SwiftUI
 
+extension Color {
+    /// A CV6 hex token, verbatim from cv6.css — so the file reads like the stylesheet.
+    init(cv6 hex: UInt32, opacity: Double = 1) {
+        self.init(
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255,
+            opacity: opacity
+        )
+    }
+}
+
 enum Theme {
-    // Ground
-    static let ground = Color(red: 0.043, green: 0.047, blue: 0.055)
-    static let raised = Color(red: 0.086, green: 0.094, blue: 0.106)
-    static let hairline = Color.white.opacity(0.08)
+    // Ground — --ground / --surface / --surface-2
+    static let ground = Color(cv6: 0x0A0A0B)
+    static let raised = Color(cv6: 0x161619)
+    static let raised2 = Color(cv6: 0x1C1C21)
+    static let hairline = Color.white.opacity(0.09)   // --hair
+    static let divider = Color.white.opacity(0.07)    // --divider
+    static let chipFill = Color.white.opacity(0.06)   // --chip
 
-    // Ink
-    static let ink = Color(red: 0.945, green: 0.941, blue: 0.925)
-    static let inkSoft = Color(red: 0.945, green: 0.941, blue: 0.925).opacity(0.62)
-    static let inkFaint = Color(red: 0.945, green: 0.941, blue: 0.925).opacity(0.38)
+    // Composer — its own three surfaces on the web, kept distinct on purpose
+    static let composer = Color(cv6: 0x131317)        // --composer-solid
+    static let composerCard = Color(cv6: 0x202026)    // --composer-card-solid
+    static let composerControl = Color(cv6: 0x292930) // --composer-control-solid
 
-    // Accent + signals
-    static let accent = Color(red: 0.867, green: 0.686, blue: 0.376)
-    static let accentWeak = Color(red: 0.867, green: 0.686, blue: 0.376).opacity(0.16)
-    static let userBubble = Color(red: 0.180, green: 0.204, blue: 0.243)
-    static let agentBubble = Color(red: 0.106, green: 0.114, blue: 0.129)
-    static let warning = Color(red: 0.945, green: 0.706, blue: 0.353)
-    static let danger = Color(red: 0.906, green: 0.400, blue: 0.365)
-    /// The "active" status dot / hero dot — a live green, matching the web's lime signal.
-    static let live = Color(red: 0.353, green: 0.859, blue: 0.451)
+    // Ink — --fg / --muted / --faint (solid colors on the web, not opacities)
+    static let ink = Color(cv6: 0xE9E9EC)
+    static let inkSoft = Color(cv6: 0x9A9AA2)
+    static let inkFaint = Color(cv6: 0x62626B)
 
-    // Room-row contract §1 — type-chip + category tones. Tokens, never literals in a view.
-    //   PROJECT → --violet-400 (#8b7cf6) on rgba(139,124,246,.18)
-    //   MISSION → --teal-400  (#2dd4bf) on rgba(45,212,191,.16)
-    //   AGENT   → --accent               on --accent-weak
-    static let violet = Color(red: 0.545, green: 0.486, blue: 0.965)
-    static let teal   = Color(red: 0.176, green: 0.831, blue: 0.749)
-    static let pink   = Color(red: 0.957, green: 0.447, blue: 0.714)
-    static let lime   = Color(red: 0.639, green: 0.902, blue: 0.208)
-    static let amber  = Color(red: 0.961, green: 0.620, blue: 0.043)
-    static let violetWeak = Color(red: 0.545, green: 0.486, blue: 0.965).opacity(0.18)
-    static let tealWeak   = Color(red: 0.176, green: 0.831, blue: 0.749).opacity(0.16)
+    // Accent + signals — Corner blue, --warn, --error, --success
+    static let accent = Color(cv6: 0x3B82F6)
+    static let accentWeak = Color(cv6: 0x3B82F6, opacity: 0.16)
+    static let warning = Color(cv6: 0xFBBF24)
+    static let danger = Color(cv6: 0xF87171)
+    static let success = Color(cv6: 0x34D399)
+    /// --status-working: the lime "an agent is moving" signal.
+    static let live = Color(cv6: 0xA3E635)
+
+    // Bubbles — user rides the accent with white ink; agent sits on surface-2
+    // with a hairline, exactly the web's .cv6-mob-bubble pair.
+    static let userBubble = accent
+    static let userBubbleInk = Color.white
+    static let agentBubble = raised2
+
+    // Raw palette — the web's *-400 row, for category tints and chips.
+    static let violet = Color(cv6: 0xA855F7)
+    static let teal   = Color(cv6: 0x2DD4BF)
+    static let pink   = Color(cv6: 0xF472B6)
+    static let lime   = Color(cv6: 0xA3E635)
+    static let amber  = Color(cv6: 0xFBBF24)
+    static let violetWeak = Color(cv6: 0xA855F7, opacity: 0.18)
+    static let tealWeak   = Color(cv6: 0x2DD4BF, opacity: 0.16)
 
     /// The six category tints, in the web's `tintFor` order, and the same stable-hash
     /// pick — so a room's left-edge colour matches between the phone and the web.
@@ -58,8 +81,14 @@ enum Theme {
     static let s5: CGFloat = 24
     static let s6: CGFloat = 32
 
+    // Radii — --radius-card 16 / --radius-button 13 / --radius-control 11 / the
+    // mobile input shell's 8. Bubbles carry the web's 18 with a 4pt tail corner.
     static let bubbleRadius: CGFloat = 18
-    static let cardRadius: CGFloat = 14
+    static let bubbleTail: CGFloat = 4
+    static let cardRadius: CGFloat = 16
+    static let buttonRadius: CGFloat = 13
+    static let controlRadius: CGFloat = 11
+    static let shellRadius: CGFloat = 8
 }
 
 /// A card that carries the ground's raised surface plus a hairline. Used by link

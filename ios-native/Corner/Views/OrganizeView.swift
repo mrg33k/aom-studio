@@ -80,21 +80,21 @@ struct OrganizeView: View {
                     } label: {
                         HStack(spacing: Theme.s3) {
                             Image(systemName: "tray.full")
-                                .font(.footnote)
+                                .font(.hkFootnote)
                                 .foregroundStyle(Theme.warning)
                                 .frame(width: 34, height: 34)
                                 .background(Theme.warning.opacity(0.16), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(review.waitingCount == 1 ? "1 file needs your review" : "\(review.waitingCount) files need your review")
-                                    .font(.body.weight(.semibold))
+                                    .font(.hkBody.weight(.semibold))
                                     .foregroundStyle(Theme.ink)
                                 Text("Start with the newest hand-off")
-                                    .font(.caption)
+                                    .font(.hkCaption)
                                     .foregroundStyle(Theme.inkSoft)
                             }
                             Spacer(minLength: 0)
                             Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
+                                .font(.hkCaption.weight(.semibold))
                                 .foregroundStyle(Theme.inkFaint)
                         }
                         .contentShape(Rectangle())
@@ -109,7 +109,7 @@ struct OrganizeView: View {
                 Section {
                     HStack(spacing: Theme.s2) {
                         ProgressView().controlSize(.small)
-                        Text("Loading your projects…").font(.footnote).foregroundStyle(Theme.inkSoft)
+                        Text("Loading your projects…").font(.hkFootnote).foregroundStyle(Theme.inkSoft)
                     }
                 }
                 .listRowBackground(Theme.raised.opacity(0.6))
@@ -117,10 +117,10 @@ struct OrganizeView: View {
                 Section {
                     VStack(alignment: .leading, spacing: Theme.s2) {
                         Label(message, systemImage: "exclamationmark.triangle")
-                            .font(.footnote)
+                            .font(.hkFootnote)
                             .foregroundStyle(Theme.warning)
                         Button("Try again") { Task { await store.loadProjects() } }
-                            .font(.footnote.weight(.semibold))
+                            .font(.hkFootnote.weight(.semibold))
                     }
                 }
                 .listRowBackground(Theme.raised.opacity(0.6))
@@ -130,23 +130,23 @@ struct OrganizeView: View {
                         Button { store.open(project) } label: {
                             HStack(spacing: Theme.s3) {
                                 Image(systemName: project.isPersonal ? "person.crop.square" : "folder")
-                                    .font(.footnote)
+                                    .font(.hkFootnote)
                                     .foregroundStyle(project.isPersonal ? Theme.accent : Theme.inkSoft)
                                     .frame(width: 34, height: 34)
                                     .background(Theme.raised, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(project.name)
-                                        .font(.body.weight(.semibold))
+                                        .font(.hkBody.weight(.semibold))
                                         .foregroundStyle(Theme.ink)
                                     if project.isPersonal {
                                         Text("Files you dropped into 1:1 chats")
-                                            .font(.caption)
+                                            .font(.hkCaption)
                                             .foregroundStyle(Theme.inkSoft)
                                     }
                                 }
                                 Spacer(minLength: 0)
                                 Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
+                                    .font(.hkCaption.weight(.semibold))
                                     .foregroundStyle(Theme.inkFaint)
                             }
                             .contentShape(Rectangle())
@@ -266,7 +266,7 @@ struct OrganizeFolderView: View {
             VStack(spacing: Theme.s3) {
                 ProgressView()
                 Text("Opening \(store.openProject?.name ?? "the folder")…")
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.inkSoft)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -274,10 +274,10 @@ struct OrganizeFolderView: View {
         case .error(let message):
             VStack(spacing: Theme.s3) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.title)
+                    .font(.hkTitle)
                     .foregroundStyle(Theme.warning)
                 Text(message)
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.s5)
@@ -296,7 +296,7 @@ struct OrganizeFolderView: View {
                         // The server hit its own row cap. Said out loud, because a
                         // silently short list is the worst kind of wrong.
                         Label("This folder has more files than one load can carry. Search narrows it.", systemImage: "info.circle")
-                            .font(.caption)
+                            .font(.hkCaption)
                             .foregroundStyle(Theme.inkSoft)
                             .listRowBackground(Theme.raised.opacity(0.6))
                     }
@@ -361,10 +361,10 @@ struct OrganizeEmptyState: View {
     var body: some View {
         VStack(spacing: Theme.s2) {
             Text(title)
-                .font(.headline)
+                .font(.hkHeadline)
                 .foregroundStyle(Theme.ink)
             Text(message)
-                .font(.footnote)
+                .font(.hkFootnote)
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
         }
@@ -387,7 +387,7 @@ struct OrganizeFileRow: View {
     var body: some View {
         HStack(spacing: Theme.s3) {
             Image(systemName: file.kind.symbol)
-                .font(.footnote)
+                .font(.hkFootnote)
                 .foregroundStyle(file.needsReview ? Theme.warning : Theme.inkSoft)
                 .frame(width: 32, height: 32)
                 .background(
@@ -396,18 +396,18 @@ struct OrganizeFileRow: View {
                 )
             VStack(alignment: .leading, spacing: 2) {
                 Text(file.name)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.hkSubheadline.weight(.semibold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 Text(subtitle)
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
                     .lineLimit(1)
             }
             Spacer(minLength: Theme.s2)
             if file.needsReview {
                 Text("REVIEW")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.hanken(9).weight(.bold))
                     .foregroundStyle(Theme.ground)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
@@ -455,12 +455,12 @@ struct OrganizeChip: View {
                 // neighbours, so the whole row lost its baseline. A chip either fits on
                 // one line or scrolls past — it never reflows.
                 Text(label)
-                    .font(.caption.weight(.semibold))
+                    .font(.hkCaption.weight(.semibold))
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
                 if count > 0 {
                     Text("\(count)")
-                        .font(.caption2.weight(.bold).monospacedDigit())
+                        .font(.hkCaption2.weight(.bold).monospacedDigit())
                         .foregroundStyle(isOn ? Theme.ground.opacity(0.7) : Theme.inkFaint)
                 }
             }
@@ -489,10 +489,10 @@ struct NoWorkspaceNotice: View {
     var body: some View {
         VStack(spacing: Theme.s2) {
             Text("No workspace on this account")
-                .font(.headline)
+                .font(.hkHeadline)
                 .foregroundStyle(Theme.ink)
             Text("Sign in with the login you use on the web, or ask whoever invited you to finish setting up your account.")
-                .font(.footnote)
+                .font(.hkFootnote)
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
         }

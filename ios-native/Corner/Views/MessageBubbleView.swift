@@ -55,7 +55,7 @@ struct MessageBubbleView: View {
                     VStack(alignment: .leading, spacing: Theme.s2) {
                         if showsAuthor {
                             Text(row.displayName)
-                                .font(.subheadline.weight(.semibold))
+                                .font(.hkSubheadline.weight(.semibold))
                                 .foregroundStyle(Theme.ink)
                         }
                         payload(content, alignment: .leading)
@@ -83,15 +83,24 @@ struct MessageBubbleView: View {
     private func payload(_ content: MessageContent, alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: Theme.s2) {
             if !content.prose.isEmpty {
+                // The web's .cv6-mob-bubble pair, verbatim: user = accent fill +
+                // white ink + a 4pt tail at the bottom-trailing corner; agent =
+                // surface-2 + hairline + the tail at the top-leading corner.
                 Text(MessageBubbleView.attributed(content.prose))
-                    .font(.body)
-                    .foregroundStyle(Theme.ink)
-                    .padding(.horizontal, Theme.s3)
+                    .font(.hkBody)
+                    .foregroundStyle(row.isUser ? Theme.userBubbleInk : Theme.ink)
+                    .padding(.horizontal, Theme.s4)
                     .padding(.vertical, 10)
                     .background(
                         row.isUser ? Theme.userBubble : Theme.agentBubble,
-                        in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous)
+                        in: MessageBubbleView.bubbleShape(user: row.isUser)
                     )
+                    .overlay {
+                        if !row.isUser {
+                            MessageBubbleView.bubbleShape(user: false)
+                                .strokeBorder(Theme.hairline, lineWidth: 1)
+                        }
+                    }
                     .textSelection(.enabled)
                     .contextMenu {
                         Button {
@@ -105,11 +114,11 @@ struct MessageBubbleView: View {
                 // intent — it is something this build cannot show. Say that rather
                 // than render an empty bubble the user reads as a bug.
                 Text("Nothing this version can display")
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.inkFaint)
                     .padding(.horizontal, Theme.s3)
                     .padding(.vertical, Theme.s2)
-                    .background(Theme.agentBubble, in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous))
+                    .background(Theme.agentBubble, in: MessageBubbleView.bubbleShape(user: false))
             }
 
             // Files in the thread. An image renders as the image — a photo the
@@ -141,7 +150,7 @@ struct MessageBubbleView: View {
     private func timeBelow(alignment: HorizontalAlignment) -> some View {
         if let time = timeLabel {
             Text(time)
-                .font(.caption2.monospaced())
+                .font(.hkCaption2.monospaced())
                 .foregroundStyle(Theme.inkFaint)
                 .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
         }
@@ -165,6 +174,18 @@ struct MessageBubbleView: View {
             formatter.dateFormat = "MMM d, h:mm a"
         }
         return formatter.string(from: date)
+    }
+
+    /// The web bubble's corner geometry: 18pt rounds with one 4pt "tail" corner —
+    /// bottom-trailing on the user's side, top-leading on the agent's.
+    static func bubbleShape(user: Bool) -> UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: user ? Theme.bubbleRadius : Theme.bubbleTail,
+            bottomLeadingRadius: Theme.bubbleRadius,
+            bottomTrailingRadius: user ? Theme.bubbleTail : Theme.bubbleRadius,
+            topTrailingRadius: Theme.bubbleRadius,
+            style: .continuous
+        )
     }
 
     static func attributed(_ raw: String) -> AttributedString {
@@ -197,7 +218,7 @@ private struct TurnAvatar: View {
 
     var body: some View {
         Text(visible ? glyph : "")
-            .font(.caption.weight(.bold))
+            .font(.hkCaption.weight(.bold))
             .foregroundStyle(Theme.tint(for: name))
             .frame(width: 30, height: 30)
             .background(
@@ -228,11 +249,11 @@ struct LinkCardView: View {
             RaisedCard {
                 HStack(spacing: Theme.s3) {
                     Image(systemName: "arrow.up.right.square")
-                        .font(.title3)
+                        .font(.hkTitle3)
                         .foregroundStyle(Theme.accent)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title)
-                            .font(.footnote.weight(.semibold))
+                            .font(.hkFootnote.weight(.semibold))
                             .foregroundStyle(Theme.ink)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
@@ -242,7 +263,7 @@ struct LinkCardView: View {
                         // under the other, which reads as a rendering bug.
                         if title.caseInsensitiveCompare(card.host) != .orderedSame {
                             Text(card.host)
-                                .font(.caption2)
+                                .font(.hkCaption2)
                                 .foregroundStyle(Theme.inkFaint)
                                 .lineLimit(1)
                         }
@@ -298,7 +319,7 @@ struct AttachmentCardView: View {
                 HStack(spacing: Theme.s2) {
                     Image(systemName: "photo.badge.exclamationmark").foregroundStyle(Theme.warning)
                     Text("Preview didn't load — tap to open")
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkSoft)
                 }
                 .frame(maxWidth: .infinity, minHeight: 64)
@@ -334,26 +355,26 @@ struct AttachmentCardView: View {
                     Color.clear
                 } else {
                     Image(systemName: attachment.kind.symbol)
-                        .font(.footnote)
+                        .font(.hkFootnote)
                         .foregroundStyle(Theme.accent)
                 }
             }
             .frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(attachment.name)
-                    .font(.caption.weight(.medium))
+                    .font(.hkCaption.weight(.medium))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Text(subtitle)
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
             if isWaiting {
                 Text("Review")
-                    .font(.caption2.weight(.semibold))
+                    .font(.hkCaption2.weight(.semibold))
                     .foregroundStyle(Theme.warning)
             }
         }

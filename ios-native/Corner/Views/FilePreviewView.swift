@@ -108,13 +108,13 @@ struct FilePreviewView: View {
                     ProgressView(value: fraction)
                         .frame(maxWidth: 220)
                     Text("\(Int(fraction * 100))%")
-                        .font(.caption.monospacedDigit())
+                        .font(.hkCaption.monospacedDigit())
                         .foregroundStyle(Theme.inkFaint)
                 } else {
                     ProgressView()
                 }
                 Text(sizeHint)
-                    .font(.caption)
+                    .font(.hkCaption)
                     .foregroundStyle(Theme.inkSoft)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -122,10 +122,10 @@ struct FilePreviewView: View {
         case .failed(let message):
             VStack(spacing: Theme.s3) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.title)
+                    .font(.hkTitle)
                     .foregroundStyle(Theme.warning)
                 Text(message)
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.s5)
@@ -140,7 +140,7 @@ struct FilePreviewView: View {
                     // The last resort that always exists for a store URL: hand it to
                     // Safari. Better than a dead end inside our own sheet.
                     Link("Open in Safari", destination: url)
-                        .font(.caption)
+                        .font(.hkCaption)
                         .foregroundStyle(Theme.accent)
                 }
             }
@@ -177,10 +177,10 @@ struct FilePreviewView: View {
             HStack(spacing: Theme.s3) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Waiting on you")
-                        .font(.caption.weight(.semibold))
+                        .font(.hkCaption.weight(.semibold))
                         .foregroundStyle(Theme.warning)
                     Text("Your verdict goes back to the room.")
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                 }
                 Spacer(minLength: 0)
@@ -294,9 +294,9 @@ struct TextFileReader: View {
         Group {
             if let failure {
                 VStack(spacing: Theme.s2) {
-                    Image(systemName: "doc.questionmark").font(.title).foregroundStyle(Theme.warning)
+                    Image(systemName: "doc.questionmark").font(.hkTitle).foregroundStyle(Theme.warning)
                     Text(failure)
-                        .font(.footnote)
+                        .font(.hkFootnote)
                         .foregroundStyle(Theme.inkSoft)
                         .multilineTextAlignment(.center)
                 }
@@ -307,7 +307,7 @@ struct TextFileReader: View {
                     VStack(alignment: .leading, spacing: Theme.s3) {
                         if truncated {
                             Text("Showing the first \(TextFileReader.maximumBytes / 1000)KB of a longer file. Share it to open the whole thing elsewhere.")
-                                .font(.caption2)
+                                .font(.hkCaption2)
                                 .foregroundStyle(Theme.warning)
                                 .padding(.bottom, Theme.s1)
                         }

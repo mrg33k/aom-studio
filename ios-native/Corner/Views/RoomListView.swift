@@ -188,16 +188,16 @@ struct RoomListView: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Theme.warning.opacity(0.16))
                     .frame(width: 40, height: 40)
-                Image(systemName: "tray.full").font(.footnote).foregroundStyle(Theme.warning)
+                Image(systemName: "tray.full").font(.hkFootnote).foregroundStyle(Theme.warning)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("Waiting on you").font(.body.weight(.semibold)).foregroundStyle(Theme.ink)
+                Text("Waiting on you").font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
                 Text(review.waitingCount == 1 ? "1 file needs a verdict" : "\(review.waitingCount) files need a verdict")
-                    .font(.caption).foregroundStyle(Theme.inkSoft)
+                    .font(.hkCaption).foregroundStyle(Theme.inkSoft)
             }
             Spacer(minLength: 0)
             Text("\(review.waitingCount)")
-                .font(.caption.weight(.bold).monospacedDigit())
+                .font(.hkCaption.weight(.bold).monospacedDigit())
                 .foregroundStyle(Theme.ground)
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(Theme.warning, in: Capsule())
@@ -233,7 +233,7 @@ struct RoomListView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text.uppercased())
-            .font(.caption2.weight(.semibold))
+            .font(.hkCaption2.weight(.semibold))
             .tracking(0.8)
             .foregroundStyle(Theme.inkFaint)
             .padding(.top, Theme.s3)
@@ -244,7 +244,7 @@ struct RoomListView: View {
     private var loadingRow: some View {
         HStack(spacing: Theme.s2) {
             ProgressView().controlSize(.small)
-            Text("Loading your rooms…").font(.footnote).foregroundStyle(Theme.inkSoft)
+            Text("Loading your rooms…").font(.hkFootnote).foregroundStyle(Theme.inkSoft)
         }
         .padding(.vertical, Theme.s3)
         .plainCardRow()
@@ -252,9 +252,9 @@ struct RoomListView: View {
 
     private var emptyRow: some View {
         VStack(alignment: .leading, spacing: Theme.s1) {
-            Text("No recent rooms").font(.body.weight(.semibold)).foregroundStyle(Theme.ink)
+            Text("No recent rooms").font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
             Text("Search above to open a project, mission, or agent room.")
-                .font(.footnote).foregroundStyle(Theme.inkSoft)
+                .font(.hkFootnote).foregroundStyle(Theme.inkSoft)
         }
         .padding(Theme.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -264,13 +264,13 @@ struct RoomListView: View {
 
     private var noWorldNotice: some View {
         VStack(alignment: .leading, spacing: Theme.s2) {
-            Text("No workspace on this account").font(.headline).foregroundStyle(Theme.ink)
+            Text("No workspace on this account").font(.hkHeadline).foregroundStyle(Theme.ink)
             Text("If you have more than one Corner login, sign out and use the one you sign in with on the web.")
-                .font(.footnote).foregroundStyle(Theme.inkSoft)
+                .font(.hkFootnote).foregroundStyle(Theme.inkSoft)
             Text("If this is your only login, ask whoever invited you to finish setting up your account.")
-                .font(.footnote).foregroundStyle(Theme.inkFaint)
+                .font(.hkFootnote).foregroundStyle(Theme.inkFaint)
             Button("Sign out") { Task { await api.signOut() } }
-                .font(.footnote.weight(.semibold))
+                .font(.hkFootnote.weight(.semibold))
                 .padding(.top, Theme.s1)
         }
         .padding(.vertical, Theme.s2)
@@ -279,7 +279,7 @@ struct RoomListView: View {
 
     private func railErrorRow(_ message: String) -> some View {
         Label(message, systemImage: "exclamationmark.triangle")
-            .font(.footnote).foregroundStyle(Theme.warning)
+            .font(.hkFootnote).foregroundStyle(Theme.warning)
             .padding(.vertical, Theme.s2)
             .plainCardRow()
     }
@@ -315,20 +315,20 @@ private struct RoomRowCard: View {
                 Monogram(title: room.title, tint: tint, hero: true)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: Theme.s2) {
-                        Text(room.title).font(.title2.weight(.bold)).foregroundStyle(Theme.ink).lineLimit(1)
+                        Text(room.title).font(.hkTitle2.weight(.bold)).foregroundStyle(Theme.ink).lineLimit(1)
                         TypeChip(room: room)
                     }
                     if heroActive {
                         HStack(spacing: 6) {
                             Circle().fill(Theme.live).frame(width: 8, height: 8)
-                            Text("active").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.live)
+                            Text("active").font(.hkSubheadline.weight(.semibold)).foregroundStyle(Theme.live)
                         }
                     } else if !entry.preview.isEmpty {
-                        Text(entry.preview).font(.subheadline).foregroundStyle(Theme.inkSoft).lineLimit(1)
+                        Text(entry.preview).font(.hkSubheadline).foregroundStyle(Theme.inkSoft).lineLimit(1)
                     }
                 }
                 Spacer(minLength: Theme.s2)
-                Text(RelTime.of(entry.ts)).font(.caption.monospaced()).foregroundStyle(Theme.inkFaint)
+                Text(RelTime.of(entry.ts)).font(.hkCaption.monospaced()).foregroundStyle(Theme.inkFaint)
             }
             if heroActive { IndeterminateBar() }
         }
@@ -342,18 +342,18 @@ private struct RoomRowCard: View {
             Monogram(title: room.title, tint: tint, hero: false)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: Theme.s2) {
-                    Text(room.title).font(.body.weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                    Text(room.title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                     TypeChip(room: room)
                 }
                 if !entry.preview.isEmpty {
-                    Text(entry.preview).font(.caption).foregroundStyle(Theme.inkSoft).lineLimit(1)
+                    Text(entry.preview).font(.hkCaption).foregroundStyle(Theme.inkSoft).lineLimit(1)
                 }
             }
             Spacer(minLength: Theme.s2)
             VStack(alignment: .trailing, spacing: 6) {
                 let age = RelTime.of(entry.ts)
                 if !age.isEmpty {
-                    Text(age).font(.caption2.monospaced()).foregroundStyle(Theme.inkFaint)
+                    Text(age).font(.hkCaption2.monospaced()).foregroundStyle(Theme.inkFaint)
                 }
                 if unread { Circle().fill(Theme.live).frame(width: 9, height: 9) }
             }
@@ -376,7 +376,7 @@ private struct TypeChip: View {
     }
     var body: some View {
         Text(room.typeLabel)
-            .font(.system(size: 10, weight: .bold))
+            .font(.hanken(10).weight(.bold))
             .tracking(0.6)
             .foregroundStyle(fg)
             .padding(.horizontal, 8)
@@ -407,7 +407,7 @@ private struct Monogram: View {
 
     var body: some View {
         Text(glyph)
-            .font(hero ? .title3.weight(.bold) : .subheadline.weight(.bold))
+            .font(hero ? Font.hanken(20).weight(.bold) : Font.hanken(15).weight(.bold))
             .foregroundStyle(hero ? Theme.ground : Theme.ink)
             .frame(width: size, height: size)
             .background(
@@ -427,16 +427,16 @@ private struct UtilityRow: View {
     var body: some View {
         HStack(spacing: Theme.s3) {
             Image(systemName: symbol)
-                .font(.footnote).foregroundStyle(Theme.inkSoft)
+                .font(.hkFootnote).foregroundStyle(Theme.inkSoft)
                 .frame(width: 38, height: 38)
                 .background(Theme.raised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.body.weight(.semibold)).foregroundStyle(Theme.ink)
-                Text(subtitle).font(.caption).foregroundStyle(Theme.inkSoft)
+                Text(title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
+                Text(subtitle).font(.hkCaption).foregroundStyle(Theme.inkSoft)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Theme.inkFaint)
+            Image(systemName: "chevron.right").font(.hkCaption.weight(.semibold)).foregroundStyle(Theme.inkFaint)
         }
         .padding(.vertical, Theme.s3)
         .padding(.horizontal, Theme.s3)
@@ -515,7 +515,7 @@ struct RoomAvatar: View {
 
     var body: some View {
         Text(initials)
-            .font(.caption.weight(.bold))
+            .font(.hkCaption.weight(.bold))
             .foregroundStyle(Theme.ink)
             .frame(width: 34, height: 34)
             .background(Circle().fill(Theme.raised))
@@ -580,7 +580,7 @@ struct HomePreviewHarness: View {
                     RoomRowCard(entry: entry, isHero: index == 0).plainCardRow()
                 }
                 Text("TOOLS")
-                    .font(.caption2.weight(.semibold)).tracking(0.8).foregroundStyle(Theme.inkFaint)
+                    .font(.hkCaption2.weight(.semibold)).tracking(0.8).foregroundStyle(Theme.inkFaint)
                     .padding(.top, Theme.s3).padding(.bottom, Theme.s1).plainCardRow()
                 UtilityRow(title: "Files", subtitle: "Everything your crew produced", symbol: "folder").plainCardRow()
                 UtilityRow(title: "Tracker", subtitle: "Issues and client tickets", symbol: "checklist").plainCardRow()

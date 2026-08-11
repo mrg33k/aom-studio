@@ -78,15 +78,15 @@ struct TrackerView: View {
         case .idle, .loading:
             VStack(spacing: Theme.s3) {
                 ProgressView()
-                Text("Loading the boards…").font(.footnote).foregroundStyle(Theme.inkSoft)
+                Text("Loading the boards…").font(.hkFootnote).foregroundStyle(Theme.inkSoft)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .error(let message):
             VStack(spacing: Theme.s3) {
-                Image(systemName: "exclamationmark.triangle").font(.title).foregroundStyle(Theme.warning)
+                Image(systemName: "exclamationmark.triangle").font(.hkTitle).foregroundStyle(Theme.warning)
                 Text(message)
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.s5)
@@ -108,7 +108,7 @@ struct TrackerView: View {
     private var noticeBar: some View {
         if let notice = store.notice {
             Text(notice.text)
-                .font(.caption.weight(.medium))
+                .font(.hkCaption.weight(.medium))
                 .foregroundStyle(notice.isFailure ? Theme.danger : Theme.ink)
                 .padding(.horizontal, Theme.s4)
                 .padding(.vertical, Theme.s2)
@@ -140,20 +140,20 @@ struct TrackerBoardBody: View {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: Theme.s2) {
                         Text(store.activeBoard?.name ?? "Tracker")
-                            .font(.subheadline.weight(.bold))
+                            .font(.hkSubheadline.weight(.bold))
                             .foregroundStyle(Theme.ink)
                         Image(systemName: "chevron.down")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(Theme.inkFaint)
                     }
                     Text(headerSubtitle)
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkSoft)
                 }
                 Spacer(minLength: 0)
                 if store.activeBoard?.isReadOnly == true {
                     Text("READ ONLY")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.hanken(9).weight(.bold))
                         .foregroundStyle(Theme.inkFaint)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -196,10 +196,10 @@ struct TrackerBoardBody: View {
     private var emptyState: some View {
         VStack(spacing: Theme.s2) {
             Text(store.emptyReason == nil ? "Nothing on this board" : "This board could not be read")
-                .font(.headline)
+                .font(.hkHeadline)
                 .foregroundStyle(Theme.ink)
             Text(store.emptyReason ?? "New issues land here.")
-                .font(.footnote)
+                .font(.hkFootnote)
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
         }
@@ -250,16 +250,16 @@ struct TrackerIssueRow: View {
                 .padding(.top, 6)
             VStack(alignment: .leading, spacing: 3) {
                 Text(issue.title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.hkSubheadline.weight(.semibold))
                     .foregroundStyle(issue.status == .done ? Theme.inkFaint : Theme.ink)
                     .lineLimit(2)
                 HStack(spacing: Theme.s2) {
                     Text(issue.statusLabel.uppercased())
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.hanken(9).weight(.bold))
                         .foregroundStyle(TrackerBoardBody.statusColor(issue.status))
                     if !issue.area.isEmpty {
                         Text(issue.area)
-                            .font(.caption2)
+                            .font(.hkCaption2)
                             .foregroundStyle(Theme.inkFaint)
                             .lineLimit(1)
                     }
@@ -268,7 +268,7 @@ struct TrackerIssueRow: View {
             Spacer(minLength: Theme.s2)
             if !issue.owner.isEmpty {
                 Text(issue.ownerInitials)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.hanken(10).weight(.bold))
                     .foregroundStyle(Theme.inkSoft)
                     .frame(width: 26, height: 26)
                     .background(Theme.ground, in: Circle())
@@ -300,18 +300,18 @@ struct TrackerSwitcher: View {
                                 .frame(width: 8, height: 8)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(board.name)
-                                    .font(.body.weight(.semibold))
+                                    .font(.hkBody.weight(.semibold))
                                     .foregroundStyle(Theme.ink)
                                 if !board.scope.isEmpty {
                                     Text(board.scope)
-                                        .font(.caption)
+                                        .font(.hkCaption)
                                         .foregroundStyle(Theme.inkSoft)
                                 }
                             }
                             Spacer(minLength: 0)
                             if board.openCount > 0 {
                                 Text("\(board.openCount)")
-                                    .font(.caption.monospacedDigit())
+                                    .font(.hkCaption.monospacedDigit())
                                     .foregroundStyle(Theme.inkFaint)
                             }
                         }
@@ -360,11 +360,11 @@ struct IssueDetailSheet: View {
             Form {
                 Section {
                     Text(issue.title)
-                        .font(.headline)
+                        .font(.hkHeadline)
                         .foregroundStyle(Theme.ink)
                     if !issue.detail.isEmpty {
                         Text(issue.detail)
-                            .font(.footnote)
+                            .font(.hkFootnote)
                             .foregroundStyle(Theme.inkSoft)
                     }
                 }
@@ -390,7 +390,7 @@ struct IssueDetailSheet: View {
                         Text(store.activeBoard?.isReadOnly == true
                              ? "This board mirrors the client's own tracker. Changes are made there."
                              : "This tracker's rows can be added to but not edited from here.")
-                            .font(.caption2)
+                            .font(.hkCaption2)
                             .foregroundStyle(Theme.inkFaint)
                     }
                 }
@@ -408,7 +408,7 @@ struct IssueDetailSheet: View {
                         // app to Safari on purpose — nothing about the wider web belongs
                         // embedded inside a product surface.
                         Link("Open the page this is about", destination: url)
-                            .font(.footnote)
+                            .font(.hkFootnote)
                     }
                 }
                 .foregroundStyle(Theme.ink)
@@ -476,12 +476,12 @@ struct NewIssueSheet: View {
                     TextEditor(text: $detail)
                         .frame(minHeight: 90)
                         .scrollContentBackground(.hidden)
-                        .font(.callout)
+                        .font(.hkCallout)
                 } header: {
                     Text("What should happen instead")
                 } footer: {
                     Text("This becomes the row's expected result — what \"fixed\" means.")
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                 }
                 .listRowBackground(Theme.raised.opacity(0.6))

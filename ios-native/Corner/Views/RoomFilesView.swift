@@ -81,7 +81,7 @@ struct RoomFilesView: View {
         List {
             Section {
                 Text("Everything that crossed this chat. Nothing else.")
-                    .font(.caption)
+                    .font(.hkCaption)
                     .foregroundStyle(Theme.inkFaint)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -107,7 +107,7 @@ struct RoomFilesView: View {
             if store.windowFull {
                 Section {
                     Text("Showing the newest files in this chat. Older ones exist — ask the agent for one by name.")
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                         .listRowBackground(Color.clear)
                 }
@@ -146,24 +146,24 @@ struct RoomFilesView: View {
                         .fill(Theme.raised)
                         .frame(width: 38, height: 38)
                     Image(systemName: file.kind.symbol)
-                        .font(.footnote)
+                        .font(.hkFootnote)
                         .foregroundStyle(file.kind == .photo ? Theme.accent : Theme.inkSoft)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(file.name)
-                        .font(.footnote.weight(.medium))
+                        .font(.hkFootnote.weight(.medium))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Text(file.metaLine)
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 if store.isWaiting(file) {
                     Text("Review")
-                        .font(.caption2.weight(.semibold))
+                        .font(.hkCaption2.weight(.semibold))
                         .foregroundStyle(Theme.warning)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
@@ -173,11 +173,11 @@ struct RoomFilesView: View {
                     // without its gate pass says so on its own card rather than being
                     // silently withheld.
                     Text("Ungated")
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                 }
                 Image(systemName: "chevron.right")
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
             }
             .contentShape(Rectangle())
@@ -194,21 +194,21 @@ struct RoomFilesView: View {
             case .loading:
                 ProgressView()
             case .error(let message):
-                Image(systemName: "wifi.exclamationmark").font(.title2).foregroundStyle(Theme.inkSoft)
+                Image(systemName: "wifi.exclamationmark").font(.hkTitle2).foregroundStyle(Theme.inkSoft)
                 Text(message)
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
                 Text("They're safe — this retries on its own.")
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
             default:
-                Image(systemName: "tray").font(.title2).foregroundStyle(Theme.inkFaint)
+                Image(systemName: "tray").font(.hkTitle2).foregroundStyle(Theme.inkFaint)
                 Text("No files have crossed this chat yet.")
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.inkSoft)
                 Text("Files an agent sends you, and files you send them, land here.")
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
                     .multilineTextAlignment(.center)
             }

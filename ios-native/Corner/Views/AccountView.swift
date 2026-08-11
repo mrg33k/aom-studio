@@ -101,12 +101,12 @@ struct AccountView: View {
                     Label("Not receiving notifications", systemImage: "bell.badge.slash")
                         .foregroundStyle(Theme.warning)
                     Text("This device could not be registered: \(error)")
-                        .font(.caption)
+                        .font(.hkCaption)
                         .foregroundStyle(Theme.inkSoft)
                     Button("Try again") {
                         Task { await push.registerCurrentTokenIfAny() }
                     }
-                    .font(.caption.weight(.semibold))
+                    .font(.hkCaption.weight(.semibold))
                 }
             } else if push.deviceToken == nil {
                 Label("Setting up…", systemImage: "bell")
@@ -119,10 +119,10 @@ struct AccountView: View {
             VStack(alignment: .leading, spacing: Theme.s1) {
                 Label("Off", systemImage: "bell.slash")
                 Text("iOS only asks once. Turn Corner's notifications back on in the Settings app.")
-                    .font(.caption)
+                    .font(.hkCaption)
                     .foregroundStyle(Theme.inkSoft)
                 if let url = URL(string: UIApplication.openSettingsURLString) {
-                    Link("Open Settings", destination: url).font(.caption.weight(.semibold))
+                    Link("Open Settings", destination: url).font(.hkCaption.weight(.semibold))
                 }
             }
         default:
@@ -188,13 +188,13 @@ struct DeleteAccountView: View {
                 Section("What is deleted") {
                     ForEach(summary.deletes ?? [], id: \.self) { line in
                         Label(line, systemImage: "trash")
-                            .font(.footnote)
+                            .font(.hkFootnote)
                     }
                 }
                 Section {
                     ForEach(summary.keeps ?? [], id: \.self) { line in
                         Label(line, systemImage: "text.append")
-                            .font(.footnote)
+                            .font(.hkFootnote)
                     }
                 } header: {
                     Text("What stays")
@@ -211,7 +211,7 @@ struct DeleteAccountView: View {
                 TextField(requiredWord, text: $typed)
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
-                    .font(.body.monospaced())
+                    .font(.hkBody.monospaced())
                 Button(role: .destructive) {
                     Task { await confirmDelete() }
                 } label: {
@@ -235,20 +235,20 @@ struct DeleteAccountView: View {
     private func failure(_ message: String) -> some View {
         VStack(spacing: Theme.s4) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
+                .font(.hkLargeTitle)
                 .foregroundStyle(Theme.warning)
             Text("Your account was not deleted")
-                .font(.headline)
+                .font(.hkHeadline)
                 .foregroundStyle(Theme.ink)
             Text(message)
-                .font(.footnote)
+                .font(.hkFootnote)
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
             // The endpoint deletes data first and the auth user last, precisely so a
             // partial failure leaves an account that can still sign in and try again.
             // Saying so is the difference between a scary dead end and a retry.
             Text("You are still signed in and nothing is lost. You can try again.")
-                .font(.caption)
+                .font(.hkCaption)
                 .foregroundStyle(Theme.inkFaint)
                 .multilineTextAlignment(.center)
             Button("Try again") { Task { await load() } }

@@ -51,15 +51,15 @@ struct BlockView: View {
     private var stepBlock: some View {
         HStack(alignment: .top, spacing: Theme.s2) {
             Image(systemName: stepSymbol)
-                .font(.footnote)
+                .font(.hkFootnote)
                 .foregroundStyle(block.state == "done" ? Theme.accent : Theme.inkFaint)
                 .frame(width: 16)
             VStack(alignment: .leading, spacing: 2) {
                 Text(block.title ?? "Step")
-                    .font(.footnote.weight(.medium))
+                    .font(.hkFootnote.weight(.medium))
                     .foregroundStyle(block.state == "done" ? Theme.inkSoft : Theme.ink)
                 if let detail = block.detail {
-                    Text(detail).font(.caption2).foregroundStyle(Theme.inkFaint)
+                    Text(detail).font(.hkCaption2).foregroundStyle(Theme.inkFaint)
                 }
             }
             Spacer(minLength: 0)
@@ -81,10 +81,10 @@ struct BlockView: View {
                 Image(systemName: icon).foregroundStyle(tint)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(block.title ?? defaultTitle)
-                        .font(.footnote.weight(.semibold))
+                        .font(.hkFootnote.weight(.semibold))
                         .foregroundStyle(Theme.ink)
                     if let detail = block.detail {
-                        Text(detail).font(.caption).foregroundStyle(Theme.inkSoft)
+                        Text(detail).font(.hkCaption).foregroundStyle(Theme.inkSoft)
                     }
                 }
                 Spacer(minLength: 0)
@@ -96,7 +96,7 @@ struct BlockView: View {
         RaisedCard {
             VStack(alignment: .leading, spacing: Theme.s2) {
                 if let title = block.title {
-                    Text(title).font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink)
+                    Text(title).font(.hkFootnote.weight(.semibold)).foregroundStyle(Theme.ink)
                 }
                 // The bullet list is ONE object, so its lines sit tighter than the gaps
                 // between the card's parts. Spacing them on the same step as
@@ -109,17 +109,17 @@ struct BlockView: View {
                         // to match or the rhythm never sits.
                         HStack(alignment: .firstTextBaseline, spacing: Theme.s2) {
                             Text("•")
-                                .font(.caption)
+                                .font(.hkCaption)
                                 .foregroundStyle(Theme.accent)
                             Text(line)
-                                .font(.caption)
+                                .font(.hkCaption)
                                 .foregroundStyle(Theme.inkSoft)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
                 if block.bullets.isEmpty, let detail = block.detail {
-                    Text(detail).font(.caption).foregroundStyle(Theme.inkSoft)
+                    Text(detail).font(.hkCaption).foregroundStyle(Theme.inkSoft)
                 }
                 optionChips
             }
@@ -130,11 +130,11 @@ struct BlockView: View {
         RaisedCard {
             VStack(alignment: .leading, spacing: Theme.s2) {
                 if let file = block.title {
-                    Text(file).font(.caption2.monospaced()).foregroundStyle(Theme.inkFaint)
+                    Text(file).font(.hkCaption2.monospaced()).foregroundStyle(Theme.inkFaint)
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
                     Text(block.code ?? block.detail ?? "")
-                        .font(.caption.monospaced())
+                        .font(.hkCaption.monospaced())
                         .foregroundStyle(Theme.ink)
                         .textSelection(.enabled)
                 }
@@ -191,7 +191,7 @@ struct BlockView: View {
     private var galleryCaption: some View {
         if let caption = block.caption, !caption.isEmpty {
             Text(caption)
-                .font(.caption2)
+                .font(.hkCaption2)
                 .foregroundStyle(Theme.inkFaint)
         }
     }
@@ -203,27 +203,27 @@ struct BlockView: View {
         RaisedCard {
             VStack(alignment: .leading, spacing: Theme.s2) {
                 HStack(spacing: Theme.s2) {
-                    Image(systemName: "envelope").font(.caption).foregroundStyle(Theme.accent)
+                    Image(systemName: "envelope").font(.hkCaption).foregroundStyle(Theme.accent)
                     Text(block.raw["from"]?.stringValue ?? "Email")
-                        .font(.caption.weight(.semibold))
+                        .font(.hkCaption.weight(.semibold))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                 }
                 if let subject = block.raw["subject"]?.stringValue, !subject.isEmpty {
-                    Text(subject).font(.footnote.weight(.medium)).foregroundStyle(Theme.ink)
+                    Text(subject).font(.hkFootnote.weight(.medium)).foregroundStyle(Theme.ink)
                 }
                 if let quote = block.raw["quote"]?.stringValue, !quote.isEmpty {
                     Text(quote)
-                        .font(.caption)
+                        .font(.hkCaption)
                         .foregroundStyle(Theme.inkSoft)
                         .lineLimit(6)
                 }
                 ForEach(emailAttachments) { file in
                     Button { onOpenFile(file) } label: {
                         HStack(spacing: Theme.s2) {
-                            Image(systemName: file.kind.symbol).font(.caption2).foregroundStyle(Theme.accent)
-                            Text(file.name).font(.caption).foregroundStyle(Theme.ink).lineLimit(1)
+                            Image(systemName: file.kind.symbol).font(.hkCaption2).foregroundStyle(Theme.accent)
+                            Text(file.name).font(.hkCaption).foregroundStyle(Theme.ink).lineLimit(1)
                             Spacer(minLength: 0)
                         }
                     }
@@ -245,9 +245,9 @@ struct BlockView: View {
 
     private var thinkingBlock: some View {
         HStack(spacing: Theme.s2) {
-            Image(systemName: "ellipsis.bubble").font(.caption)
+            Image(systemName: "ellipsis.bubble").font(.hkCaption)
             Text(block.title ?? block.detail ?? "Thinking")
-                .font(.caption.italic())
+                .font(.hkCaption.italic())
         }
         .foregroundStyle(Theme.inkFaint)
     }
@@ -256,7 +256,7 @@ struct BlockView: View {
         RaisedCard {
             VStack(alignment: .leading, spacing: Theme.s2) {
                 if let prompt = block.title ?? block.detail {
-                    Text(prompt).font(.footnote).foregroundStyle(Theme.ink)
+                    Text(prompt).font(.hkFootnote).foregroundStyle(Theme.ink)
                 }
                 optionChips
             }
@@ -276,7 +276,7 @@ struct BlockView: View {
                         onOption(label)
                     } label: {
                         Text(label)
-                            .font(.caption.weight(.medium))
+                            .font(.hkCaption.weight(.medium))
                             .padding(.horizontal, Theme.s3)
                             .padding(.vertical, 6)
                             .background(Theme.ground, in: Capsule())
@@ -297,27 +297,27 @@ struct BlockView: View {
             VStack(alignment: .leading, spacing: Theme.s2) {
                 HStack(spacing: Theme.s2) {
                     Image(systemName: BlockView.kindSymbol(block.kind))
-                        .font(.caption)
+                        .font(.hkCaption)
                         .foregroundStyle(Theme.inkSoft)
                     Text(BlockView.kindLabel(block.kind))
-                        .font(.caption2.weight(.semibold))
+                        .font(.hkCaption2.weight(.semibold))
                         .textCase(.uppercase)
                         .foregroundStyle(Theme.inkFaint)
                     Spacer(minLength: 0)
                 }
                 if let title = block.title {
-                    Text(title).font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink)
+                    Text(title).font(.hkFootnote.weight(.semibold)).foregroundStyle(Theme.ink)
                 }
                 if let detail = block.detail {
-                    Text(detail).font(.caption).foregroundStyle(Theme.inkSoft).lineLimit(6)
+                    Text(detail).font(.hkCaption).foregroundStyle(Theme.inkSoft).lineLimit(6)
                 }
                 if let rows = block.rowCount {
                     Text(rows == 1 ? "1 row" : "\(rows) rows")
-                        .font(.caption2).foregroundStyle(Theme.inkFaint)
+                        .font(.hkCaption2).foregroundStyle(Theme.inkFaint)
                 }
                 if block.title == nil && block.detail == nil {
                     Text("Open Corner on the web to see this.")
-                        .font(.caption).foregroundStyle(Theme.inkSoft)
+                        .font(.hkCaption).foregroundStyle(Theme.inkSoft)
                 }
                 optionChips
             }
@@ -376,7 +376,7 @@ struct GalleryTile: View {
                         ZStack {
                             Theme.agentBubble
                             Image(systemName: "photo.badge.exclamationmark")
-                                .font(.caption)
+                                .font(.hkCaption)
                                 .foregroundStyle(Theme.inkFaint)
                         }
                     default:

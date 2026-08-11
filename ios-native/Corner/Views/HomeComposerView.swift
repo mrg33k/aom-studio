@@ -198,7 +198,7 @@ struct HomeComposerBar: View {
             TextField("Type a task, a question, or a half-formed idea…", text: $text, axis: .vertical)
                 .lineLimit(1...5)
                 .focused($focused)
-                .font(.body)
+                .font(.hkBody)
                 .foregroundStyle(Theme.ink)
                 .padding(.horizontal, Theme.s3)
                 .padding(.vertical, Theme.s3)
@@ -213,7 +213,7 @@ struct HomeComposerBar: View {
                     mode = isPlan ? "work" : "plan"
                 } label: {
                     Text(isPlan ? "Plan" : "Work")
-                        .font(.caption.weight(.bold))
+                        .font(.hkCaption.weight(.bold))
                         .foregroundStyle(isPlan ? Theme.accent : Theme.inkSoft)
                         .padding(.horizontal, Theme.s3)
                         .frame(height: 32)
@@ -230,7 +230,7 @@ struct HomeComposerBar: View {
                 .accessibilityLabel(isPlan ? "Plan mode. Switch to Work." : "Work mode. Switch to Plan.")
 
                 Text(isPlan ? "Corner will propose a plan first" : "Corner will get started")
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
                     .lineLimit(1)
 
@@ -307,7 +307,7 @@ struct IntakeConfirmSheet: View {
                 VStack(alignment: .leading, spacing: Theme.s4) {
                     if let error = intake.errorText {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
-                            .font(.footnote)
+                            .font(.hkFootnote)
                             .foregroundStyle(Theme.warning)
                     }
 
@@ -319,7 +319,7 @@ struct IntakeConfirmSheet: View {
 
                     if !intake.pendingText.isEmpty {
                         Text("“\(intake.pendingText)”")
-                            .font(.footnote.italic())
+                            .font(.hkFootnote.italic())
                             .foregroundStyle(Theme.inkSoft)
                             .padding(.leading, Theme.s3)
                             .overlay(alignment: .leading) {
@@ -345,20 +345,20 @@ struct IntakeConfirmSheet: View {
     private func suggestionCard(_ room: Room) -> some View {
         VStack(alignment: .leading, spacing: Theme.s3) {
             Text("Looks like this belongs to")
-                .font(.caption)
+                .font(.hkCaption)
                 .foregroundStyle(Theme.inkSoft)
             HStack(spacing: Theme.s2) {
-                Text(room.title).font(.title3.weight(.bold)).foregroundStyle(Theme.ink)
+                Text(room.title).font(.hkTitle3.weight(.bold)).foregroundStyle(Theme.ink)
                 SheetTypeChip(room: room)
             }
             if !intake.reasoning.isEmpty {
-                Text(intake.reasoning).font(.footnote).foregroundStyle(Theme.inkSoft)
+                Text(intake.reasoning).font(.hkFootnote).foregroundStyle(Theme.inkSoft)
             }
             Button {
                 Task { await intake.openAndSeed(room) }
             } label: {
                 Text("Open \(room.title)")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.hkSubheadline.weight(.semibold))
                     .foregroundStyle(Theme.ground)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
@@ -369,7 +369,7 @@ struct IntakeConfirmSheet: View {
                 showPicker = true
             } label: {
                 Text("Choose another room")
-                    .font(.subheadline.weight(.medium))
+                    .font(.hkSubheadline.weight(.medium))
                     .foregroundStyle(Theme.inkSoft)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
@@ -386,13 +386,13 @@ struct IntakeConfirmSheet: View {
     private var picker: some View {
         VStack(alignment: .leading, spacing: Theme.s2) {
             Text("Send this into a room")
-                .font(.subheadline.weight(.semibold))
+                .font(.hkSubheadline.weight(.semibold))
                 .foregroundStyle(Theme.ink)
 
             HStack(spacing: Theme.s2) {
-                Image(systemName: "magnifyingglass").font(.footnote).foregroundStyle(Theme.inkFaint)
+                Image(systemName: "magnifyingglass").font(.hkFootnote).foregroundStyle(Theme.inkFaint)
                 TextField("Search rooms", text: $query)
-                    .font(.body).foregroundStyle(Theme.ink)
+                    .font(.hkBody).foregroundStyle(Theme.ink)
             }
             .padding(.horizontal, Theme.s3)
             .padding(.vertical, 10)
@@ -406,9 +406,9 @@ struct IntakeConfirmSheet: View {
                     } label: {
                         HStack(spacing: Theme.s3) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(room.title).font(.body.weight(.medium)).foregroundStyle(Theme.ink).lineLimit(1)
+                                Text(room.title).font(.hkBody.weight(.medium)).foregroundStyle(Theme.ink).lineLimit(1)
                                 if !room.subtitle.isEmpty {
-                                    Text(room.subtitle).font(.caption2).foregroundStyle(Theme.inkFaint).lineLimit(1)
+                                    Text(room.subtitle).font(.hkCaption2).foregroundStyle(Theme.inkFaint).lineLimit(1)
                                 }
                             }
                             Spacer(minLength: Theme.s2)
@@ -424,7 +424,7 @@ struct IntakeConfirmSheet: View {
             }
 
             Text("Starting a brand-new project or mission happens on the web for now.")
-                .font(.caption2)
+                .font(.hkCaption2)
                 .foregroundStyle(Theme.inkFaint)
                 .padding(.top, Theme.s1)
         }
@@ -443,7 +443,7 @@ private struct SheetTypeChip: View {
     }
     var body: some View {
         Text(room.typeLabel)
-            .font(.system(size: 9.5, weight: .bold))
+            .font(.hanken(9.5).weight(.bold))
             .tracking(0.6)
             .foregroundStyle(fg)
             .padding(.horizontal, 7)

@@ -46,6 +46,10 @@ struct CornerApp: App {
     @StateObject private var push = PushService.shared
     @StateObject private var router = AppRouter.shared
 
+    init() {
+        CornerTypography.install()
+    }
+
     var body: some Scene {
         WindowGroup {
             rootContent
@@ -53,6 +57,8 @@ struct CornerApp: App {
                 .environmentObject(push)
                 .environmentObject(router)
                 .tint(Theme.accent)
+                // Unstyled text (button labels, alerts) rides the brand face too.
+                .environment(\.font, .hkBody)
                 // Corner is an ink-ground product; the phone app does not offer a light
                 // mode it has not been designed for.
                 .preferredColorScheme(.dark)

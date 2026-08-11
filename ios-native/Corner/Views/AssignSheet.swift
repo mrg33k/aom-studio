@@ -72,7 +72,7 @@ struct AssignSheet: View {
         List {
             Section {
                 Text(label)
-                    .font(.footnote.weight(.semibold))
+                    .font(.hkFootnote.weight(.semibold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(2)
             } header: {
@@ -89,15 +89,15 @@ struct AssignSheet: View {
                             RoomAvatar(title: agent.title)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(agent.title)
-                                    .font(.body.weight(.semibold))
+                                    .font(.hkBody.weight(.semibold))
                                     .foregroundStyle(Theme.ink)
                                 Text(agent.subtitle)
-                                    .font(.caption)
+                                    .font(.hkCaption)
                                     .foregroundStyle(Theme.inkSoft)
                             }
                             Spacer(minLength: 0)
                             Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
+                                .font(.hkCaption.weight(.semibold))
                                 .foregroundStyle(Theme.inkFaint)
                         }
                         .contentShape(Rectangle())
@@ -128,13 +128,13 @@ struct AssignSheet: View {
     private var confirmation: some View {
         VStack(spacing: Theme.s3) {
             Image(systemName: "checkmark.circle")
-                .font(.largeTitle)
+                .font(.hkLargeTitle)
                 .foregroundStyle(Theme.accent)
             Text("\(selected?.title ?? "The agent") has it")
-                .font(.headline)
+                .font(.hkHeadline)
                 .foregroundStyle(Theme.ink)
             Text("The ask is in their room. Open it to follow along.")
-                .font(.footnote)
+                .font(.hkFootnote)
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
         }
@@ -192,13 +192,13 @@ struct AssignConfirmForm: View {
                 TextEditor(text: $notes)
                     .frame(minHeight: 110)
                     .scrollContentBackground(.hidden)
-                    .font(.callout)
+                    .font(.hkCallout)
                     .foregroundStyle(Theme.ink)
             } header: {
                 Text("What they need to know")
             } footer: {
                 Text("Optional. Whatever is here is what they read.")
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
             }
             .listRowBackground(Theme.raised.opacity(0.6))
@@ -215,7 +215,7 @@ struct AssignConfirmForm: View {
                     HStack {
                         if sending { ProgressView().controlSize(.small) }
                         Text(sending ? "Sending…" : "Send it to \(agent.title)")
-                            .font(.body.weight(.semibold))
+                            .font(.hkBody.weight(.semibold))
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -223,7 +223,7 @@ struct AssignConfirmForm: View {
                 .disabled(sending)
 
                 Button("Pick someone else", action: pickAgain)
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .disabled(sending)
             }
             .listRowBackground(Color.clear)
@@ -241,10 +241,10 @@ struct AssignConsequenceCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.s2) {
             Text(label)
-                .font(.subheadline.weight(.semibold))
+                .font(.hkSubheadline.weight(.semibold))
                 .foregroundStyle(Theme.ink)
             Text("This posts the ask into \(agent.title)'s room. They pick it up there.")
-                .font(.caption)
+                .font(.hkCaption)
                 .foregroundStyle(Theme.inkSoft)
         }
         .padding(.vertical, Theme.s1)
@@ -260,10 +260,10 @@ struct AssignFailureCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.s1) {
             Text("Nothing was sent")
-                .font(.footnote.weight(.semibold))
+                .font(.hkFootnote.weight(.semibold))
                 .foregroundStyle(Theme.danger)
             Text(reason)
-                .font(.caption)
+                .font(.hkCaption)
                 .foregroundStyle(Theme.inkSoft)
         }
     }

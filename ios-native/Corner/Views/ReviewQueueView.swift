@@ -58,7 +58,7 @@ struct ReviewQueueView: View {
             } footer: {
                 if review.total > review.items.count {
                     Text("Showing \(review.items.count) of \(review.total).")
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                 }
             }
@@ -74,19 +74,19 @@ struct ReviewQueueView: View {
                     .fill(Theme.raised)
                     .frame(width: 38, height: 38)
                 Image(systemName: item.kind.symbol)
-                    .font(.footnote)
+                    .font(.hkFootnote)
                     .foregroundStyle(Theme.accent)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
-                    .font(.footnote.weight(.medium))
+                    .font(.hkFootnote.weight(.medium))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Text([item.location, RoomFile.relativeAge(item.date)]
                     .filter { !$0.isEmpty }
                     .joined(separator: " · "))
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
                     .lineLimit(1)
             }
@@ -95,7 +95,7 @@ struct ReviewQueueView: View {
                 ProgressView().controlSize(.small)
             } else {
                 Image(systemName: "chevron.right")
-                    .font(.caption2)
+                    .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
             }
         }
@@ -113,12 +113,12 @@ struct ReviewQueueView: View {
                 Image(systemName: notice.isFailure ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
                     .foregroundStyle(notice.isFailure ? Theme.danger : Theme.accent)
                 Text(notice.text)
-                    .font(.caption)
+                    .font(.hkCaption)
                     .foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 Button { review.notice = nil } label: {
-                    Image(systemName: "xmark").font(.caption2)
+                    Image(systemName: "xmark").font(.hkCaption2)
                 }
                 .foregroundStyle(Theme.inkFaint)
             }
@@ -131,12 +131,12 @@ struct ReviewQueueView: View {
 
     private var emptyState: some View {
         VStack(spacing: Theme.s2) {
-            Image(systemName: "checkmark.circle").font(.title2).foregroundStyle(Theme.accent)
+            Image(systemName: "checkmark.circle").font(.hkTitle2).foregroundStyle(Theme.accent)
             Text("Nothing is waiting on you.")
-                .font(.footnote)
+                .font(.hkFootnote)
                 .foregroundStyle(Theme.inkSoft)
             Text("Files agents hand you show up here until you give a verdict.")
-                .font(.caption2)
+                .font(.hkCaption2)
                 .foregroundStyle(Theme.inkFaint)
                 .multilineTextAlignment(.center)
         }
@@ -146,8 +146,8 @@ struct ReviewQueueView: View {
 
     private func message_(_ text: String) -> some View {
         VStack(spacing: Theme.s2) {
-            Image(systemName: "wifi.exclamationmark").font(.title2).foregroundStyle(Theme.inkSoft)
-            Text(text).font(.footnote).foregroundStyle(Theme.inkSoft).multilineTextAlignment(.center)
+            Image(systemName: "wifi.exclamationmark").font(.hkTitle2).foregroundStyle(Theme.inkSoft)
+            Text(text).font(.hkFootnote).foregroundStyle(Theme.inkSoft).multilineTextAlignment(.center)
         }
         .padding(.horizontal, Theme.s5)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -129,10 +129,10 @@ struct ReviewDecisionForm: View {
                 RaisedCard(tint: Theme.danger.opacity(0.5)) {
                     VStack(alignment: .leading, spacing: Theme.s1) {
                         Text("Nothing was recorded")
-                            .font(.footnote.weight(.semibold))
+                            .font(.hkFootnote.weight(.semibold))
                             .foregroundStyle(Theme.danger)
                         Text(failure)
-                            .font(.caption)
+                            .font(.hkCaption)
                             .foregroundStyle(Theme.inkSoft)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -148,17 +148,17 @@ struct ReviewDecisionForm: View {
     private var fileHeader: some View {
         HStack(spacing: Theme.s3) {
             Image(systemName: attachment.kind.symbol)
-                .font(.title3)
+                .font(.hkTitle3)
                 .foregroundStyle(Theme.accent)
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(attachment.name)
-                    .font(.footnote.weight(.semibold))
+                    .font(.hkFootnote.weight(.semibold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(2)
                 if !locationLabel.isEmpty {
                     Text(locationLabel)
-                        .font(.caption2)
+                        .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                 }
             }
@@ -205,15 +205,15 @@ struct ReviewDecisionForm: View {
         RaisedCard(tint: tint.opacity(0.3)) {
             HStack(alignment: .top, spacing: Theme.s3) {
                 Image(systemName: icon)
-                    .font(.title3)
+                    .font(.hkTitle3)
                     .foregroundStyle(tint)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.footnote.weight(.semibold))
+                        .font(.hkFootnote.weight(.semibold))
                         .foregroundStyle(Theme.ink)
                     Text(detail)
-                        .font(.caption)
+                        .font(.hkCaption)
                         .foregroundStyle(Theme.inkSoft)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -229,12 +229,12 @@ struct ReviewDecisionForm: View {
             // caption read as a separate statement floating between two things.
             VStack(alignment: .leading, spacing: Theme.s1) {
                 Text("What needs to change?")
-                    .font(.footnote.weight(.semibold))
+                    .font(.hkFootnote.weight(.semibold))
                     .foregroundStyle(Theme.ink)
                 // The words here become the worker's brief verbatim. Saying so is the
                 // difference between a comment and an instruction.
                 Text("This becomes the agent's task, word for word.")
-                    .font(.caption)
+                    .font(.hkCaption)
                     .foregroundStyle(Theme.inkFaint)
             }
 
@@ -248,7 +248,7 @@ struct ReviewDecisionForm: View {
                         .strokeBorder(Theme.hairline, lineWidth: 1)
                 )
                 .foregroundStyle(Theme.ink)
-                .font(.body)
+                .font(.hkBody)
 
             HStack(spacing: Theme.s3) {
                 Button("Back") { onMode(.choosing) }
@@ -273,12 +273,12 @@ struct ReviewDecisionForm: View {
             RaisedCard(tint: Theme.accent.opacity(0.35)) {
                 VStack(alignment: .leading, spacing: Theme.s1) {
                     Text("Approve this?")
-                        .font(.footnote.weight(.semibold))
+                        .font(.hkFootnote.weight(.semibold))
                         .foregroundStyle(Theme.ink)
                     // Say the actual consequence, in the user's terms: the room hears it
                     // under their name, and there is no undo.
                     Text("The room sees that you approved it, under your name. Approvals can't be undone — only \"not for review\" can.")
-                        .font(.caption)
+                        .font(.hkCaption)
                         .foregroundStyle(Theme.inkSoft)
                         .fixedSize(horizontal: false, vertical: true)
                 }

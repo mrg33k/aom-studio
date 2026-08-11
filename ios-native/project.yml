@@ -85,6 +85,11 @@ targets:
             CFBundleTypeRole: Editor
             CFBundleURLSchemes:
               - corner
+        # Corner's brand face (CV6 web ships it from Google Fonts; here it is
+        # bundled). One variable TTF carries every weight Thin→Black. OFL.txt
+        # rides alongside — the license requires it to travel with the font.
+        UIAppFonts:
+          - HankenGrotesk-VF.ttf
     # Entitlements are per-config FILES (hand-managed in Support/), not a single
     # generated one: Debug installs to a physical device today, and no APNs key
     # exists yet in the portal — a push entitlement in Debug demands a
