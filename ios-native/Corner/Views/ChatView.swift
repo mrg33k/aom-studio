@@ -191,7 +191,11 @@ struct ChatView: View {
                     room: model.room,
                     modelChoice: model.modelChoice,
                     onSelectModel: { id in await model.selectModel(id) },
-                    onOpenFiles: { showingSettings = false; showingFiles = true }
+                    onOpenFiles: { showingSettings = false; showingFiles = true },
+                    onClearRoom: {
+                        let ok = await model.clearRoom()
+                        return ok
+                    }
                 )
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)

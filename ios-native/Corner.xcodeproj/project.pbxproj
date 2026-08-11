@@ -67,6 +67,7 @@
 		E40FFC19D015526252E7DA4C /* MessageTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFC308C0F588971B5149FAA /* MessageTransport.swift */; };
 		E4993169B470D0B135C28721 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 511F13AF96453AFD60AFD6A5 /* Config.swift */; };
 		E575CF7FB137D70F8DC7CFB2 /* NewRoomSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F453FA5B1DE0CAE3D48719C /* NewRoomSheet.swift */; };
+		E8B80F143EFA78E8DDC4C953 /* SessionHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6163C7CC8968AAD5CB272E08 /* SessionHistoryView.swift */; };
 		E8E73FFFDA7DF9FA8064EF47 /* BlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5CFBB6863CA0F004E7A1BF1 /* BlockView.swift */; };
 		EC1499CF15C0D29AEF56EA2B /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C62786309F50F5448B66011A /* FileStore.swift */; };
 		ECB52710BD4D59929EE091DC /* FakeTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4988E1AE930BD71A16CE2EEE /* FakeTransport.swift */; };
@@ -118,6 +119,7 @@
 		53452A91F35EB1FCB0A97D20 /* DebugAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugAuth.swift; sourceTree = "<group>"; };
 		5A37CB7AFC65227A32353A1D /* ReviewStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewStore.swift; sourceTree = "<group>"; };
 		602A96887BE24D9CBBF02832 /* RenderGalleryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderGalleryTests.swift; sourceTree = "<group>"; };
+		6163C7CC8968AAD5CB272E08 /* SessionHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryView.swift; sourceTree = "<group>"; };
 		67A307160A2BA6304E0D969F /* BackgroundWorkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundWorkView.swift; sourceTree = "<group>"; };
 		6E3B3D011843BAF1D207471C /* OrganizeFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizeFile.swift; sourceTree = "<group>"; };
 		714FB0F47259B6FE53E2B007 /* DeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkTests.swift; sourceTree = "<group>"; };
@@ -198,6 +200,7 @@
 				BDD31795F9B656F625EAD892 /* RoomListView.swift */,
 				8FE3EAACFEA3E82CAEC19854 /* RoomSettingsView.swift */,
 				916A7D1153B518D56BC67226 /* RootView.swift */,
+				6163C7CC8968AAD5CB272E08 /* SessionHistoryView.swift */,
 				DC4E330537A94F6BCADAAAD4 /* SignInView.swift */,
 				738107B73EFB279CB127593B /* Theme.swift */,
 				30D577DF665C37F7C6CDC690 /* TrackerView.swift */,
@@ -480,6 +483,7 @@
 				09C9ADE896667C4859CA462C /* RoomSettingsView.swift in Sources */,
 				DA5EDE403E83544994CC49AF /* RoomStore.swift in Sources */,
 				2B98AAF3B36FDA0762FFCB64 /* RootView.swift in Sources */,
+				E8B80F143EFA78E8DDC4C953 /* SessionHistoryView.swift in Sources */,
 				0488714B0ACA56A6F88863C2 /* SignInView.swift in Sources */,
 				256F30250207446B2B8E8AC2 /* Theme.swift in Sources */,
 				4B264EB64750986042B1356F /* TrackerModels.swift in Sources */,

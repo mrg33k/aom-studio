@@ -20,6 +20,8 @@ struct RoomSettingsView: View {
     /// Fires when the user picks a new model in the sheet.
     let onSelectModel: (String) async -> Void
     let onOpenFiles: () -> Void
+    /// Fires when the user confirms "Start a fresh session". Returns true on success.
+    let onClearRoom: (() async -> Bool)?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -32,17 +34,25 @@ struct RoomSettingsView: View {
     @State private var section: SettingsSection = .general
 
     enum SettingsSection: String, CaseIterable, Identifiable {
-        case general = "General"
-        case access  = "Access"
+        case general    = "General"
+        case access     = "Access"
         case specialist = "Specialist"
+        case history    = "History"
         var id: String { rawValue }
     }
 
-    init(room: Room, modelChoice: String, onSelectModel: @escaping (String) async -> Void, onOpenFiles: @escaping () -> Void) {
+    init(
+        room: Room,
+        modelChoice: String,
+        onSelectModel: @escaping (String) async -> Void,
+        onOpenFiles: @escaping () -> Void,
+        onClearRoom: (() async -> Bool)? = nil
+    ) {
         self.room = room
         self.modelChoice = modelChoice
         self.onSelectModel = onSelectModel
         self.onOpenFiles = onOpenFiles
+        self.onClearRoom = onClearRoom
 
         // Resolve initial follow state from the web's muted-rooms key.
         let isMuted = RoomSettingsView.readMuted()[room.id] == true
@@ -196,6 +206,22 @@ struct RoomSettingsView: View {
                         Text("Changes persist for this room.")
                             .font(.hanken(12))
                             .foregroundStyle(Theme.inkSoft)
+                            .listRowBackground(Color.clear)
+                    }
+                }
+
+                // ── History tab ─────────────────────────────────────────────
+                if section == .history {
+                    Section {
+                        Text("Clear starts a fresh screen and agent session. Earlier messages stay here. Files and memories are kept.")
+                            .font(.hanken(12))
+                            .foregroundStyle(Theme.inkSoft)
+                            .listRowBackground(Color.clear)
+                    }
+                    Section {
+                        SessionHistoryView(room: room, onClearRoom: onClearRoom)
+                            .frame(minHeight: 220)
+                            .listRowInsets(EdgeInsets())
                             .listRowBackground(Color.clear)
                     }
                 }
