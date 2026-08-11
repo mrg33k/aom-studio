@@ -125,3 +125,86 @@ prose at render time — the audit already knows; prose-matching is the fragile 
 False dead: a working site matching the phrases shows "does not load" — rep taps Open and finds it
 loads; embarrassing line, one-tap recoverable, no data loss. False alive (regex miss): the old
 blank frame, no regression. No write path touched; display only.
+
+---
+
+# Decision record — setter script + follow-up email in rep Call Mode (2026-08-11)
+
+## agent
+
+Rex.
+
+## artifact
+
+`src/pages/OutreachTracker.jsx`, commits 7d68364f + c12cdc06 + aac40966 + 7d5fb4b0 — rep-view
+setter script replacing the consultative card, follow-up email panel (copy + mailto, merge
+fields), and the Sent email outcome logged as an email touchpoint.
+
+## call
+
+I shipped the icebreaker-first setter script for role=rep because the consultative script was
+written for an expert and the reps are not experts — Patrik's direction, applied in three rounds
+live with him: the call's only job is booking discovery, too many words is an automatic no, and
+the prospect must SPEAK before any content lands. Final structure: (1) greet + "out here in
+Phoenix" + a light local weather beat the rep varies like a person, then a hard stop to listen;
+(2) ONE company fact + "we don't want to assume, but we think there might be something there" +
+the 15-minute ask; (3) one deflection for every question; (4) the send-me-an-email path wired to
+the preset; (5) one clean exit for every no. I sourced the fact from why_calling (caller-voiced
+by construction) after the hook field proved to be greeting boilerplate, cut long facts at the
+clause break, and kept admin on the full 5-step — setters set, Patrik runs discovery. The email
+preset says even less than the call: the fact, the ask, the site link in the signature doing any
+selling silently.
+
+## measured
+
+**design_spacing_check.py on the edited file (real output):**
+
+```
+  RESULT: FAIL
+    - SPACING SPRAWL: 11 distinct spacing values (cap 10).
+    - NO HIERARCHY: the page uses a single font size (or none).
+```
+
+Identical readings to the pre-change file (see the two records above — same parser gap on JSX
+inline styles, same pre-existing 11-value scale). My additions reuse only values already in the
+file's set: spacing 8/24/44, font sizes 11/13, the existing bronze/ivory tokens.
+
+**Live verification, three deploy rounds, headless Playwright as rep `jams`:**
+
+```
+r1 LIVE on attempt 2: setter script OK, deflection OK, email panel OK, sent-email outcome OK, old 5-step gone for rep OK
+r2 LIVE on attempt 2: all checks pass   (double-greeting removed — hook now sourced from why_calling)
+r3 LIVE on attempt 2: opener trimmed, verified   ("Patrik took a look at your company" absent, "We don't want to assume" present)
+r4 LIVE on attempt 2: icebreaker structure verified   ("out here in Phoenix" + "cooling down" + "STOP and listen" + one-fact reason step)
+```
+
+Screenshots read and judged at full size: rep-jams-setter-script.png (caught the double
+greeting), rep-jams-setter-final.png (caught the double "looked at your company"),
+rep-jams-setter-icebreaker.png (shipped state — icebreaker first, clause-cut fact second).
+
+## uncertain
+
+The hook line is the first sentence (clause-cut past 100 chars) of why_calling across all 45
+assigned leads, and I visually verified exactly two (CRG's email/Google line, and the dead-site
+branch). Some of the other 43 may still run long or lead with something a setter should not say
+cold — I did not audit the full set. The printed icebreaker examples are August-specific
+("cooling down", "this heat") — the coaching line tells reps to vary it like a person, but the
+printed examples will read stale by winter and Phoenix-specific once other states are dialed.
+"Would Tuesday or Thursday work?" is hardcoded; a rep calling ON a Thursday offers a day that is
+today, which reads scripted the moment it happens. And the copy button uses navigator.clipboard,
+which I verified in headless Chromium but not on the reps' actual phones — some Android browsers
+fail writeText silently, in which case the toast never appears and the rep may believe the email
+copied when it did not.
+
+## would_change
+
+Compute the day pair from today's date (next two weekdays, never today). Run a one-off audit
+dumping all 45 hook lines sorted by length for Patrik to skim before the reps' first shift.
+Per-rep phone number in the email signature once they have AOM addresses.
+
+## risk
+
+Empty why_calling degrades to a generic but safe line — no crash, no nonsense. "Sent email" maps
+lead status to Spoke; a rep who emails without a real conversation overstates contact depth by
+one rung, visible and correctable in the tracker. Admin view is untouched by construction
+(scriptSteps ternary), verified implicitly by the rep-view checks but not re-screenshotted.
