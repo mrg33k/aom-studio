@@ -30,6 +30,13 @@ struct MessageBubbleView: View {
     var showsAuthor: Bool = true
 
     @State private var previewing: Attachment?
+    /// Measured natural height of the prose text (set on first appear by the ghost overlay).
+    /// Starts at 0 so no clamp fires before measurement; updates atomically on main thread.
+    @State private var naturalProseHeight: CGFloat = 0
+    /// True once the user has tapped "Show more" to expand a clamped bubble.
+    @State private var proseExpanded: Bool = false
+    /// The height threshold past which prose is clamped — ~8 body lines at 20pt/line.
+    private static let clampThreshold: CGFloat = 168
 
     private var content: MessageContent { MessageContent.build(from: row) }
 
@@ -83,6 +90,14 @@ struct MessageBubbleView: View {
     private func payload(_ content: MessageContent, alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: Theme.s2) {
             if !content.prose.isEmpty {
+                // Clamp tall messages at ~168pt with a bottom fade, matching the
+                // web's show-more pattern. naturalProseHeight starts at 0 so the
+                // bubble renders unclamped; the hidden measurement ghost fires on
+                // first appear and sets the real height, clamping on re-render.
+                let needsClamp = naturalProseHeight > MessageBubbleView.clampThreshold
+                let isCollapsed = needsClamp && !proseExpanded
+
+                VStack(alignment: alignment, spacing: 0) {
                 // The web's .cv6-mob-bubble pair, verbatim: user = accent fill +
                 // white ink + a 4pt tail at the bottom-trailing corner; agent =
                 // surface-2 + hairline + the tail at the top-leading corner.
@@ -91,6 +106,9 @@ struct MessageBubbleView: View {
                     .foregroundStyle(row.isUser ? Theme.userBubbleInk : Theme.ink)
                     .padding(.horizontal, Theme.s4)
                     .padding(.vertical, 10)
+                    .frame(maxHeight: isCollapsed ? MessageBubbleView.clampThreshold : .infinity,
+                           alignment: .topLeading)
+                    .clipped()
                     .background(
                         row.isUser ? Theme.userBubble : Theme.agentBubble,
                         in: MessageBubbleView.bubbleShape(user: row.isUser)
@@ -99,6 +117,25 @@ struct MessageBubbleView: View {
                         if !row.isUser {
                             MessageBubbleView.bubbleShape(user: false)
                                 .strokeBorder(Theme.hairline, lineWidth: 1)
+                        }
+                        // Fade gradient at the bottom edge when clamped.
+                        // allowsHitTesting(false) so text selection still works.
+                        if isCollapsed {
+                            VStack(spacing: 0) {
+                                Spacer()
+                                LinearGradient(
+                                    colors: [
+                                        .clear,
+                                        (row.isUser ? Theme.userBubble : Theme.agentBubble)
+                                            .opacity(0.96)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                                .frame(height: 52)
+                            }
+                            .clipShape(MessageBubbleView.bubbleShape(user: row.isUser))
+                            .allowsHitTesting(false)
                         }
                     }
                     .textSelection(.enabled)
@@ -109,6 +146,49 @@ struct MessageBubbleView: View {
                             Label("Copy", systemImage: "doc.on.doc")
                         }
                     }
+                    // ── Height measurement ghost ─────────────────────────────
+                    // A hidden, fixedSize copy of the text sits in an overlay so
+                    // it can report its natural (unclamped) height. fixedSize
+                    // overrides the parent's 168pt proposal, giving the embedded
+                    // GeometryReader the full text height instead of the clamped
+                    // frame height. Fires once per bubble appearance; invisible.
+                    .overlay(alignment: .topLeading) {
+                        Text(MessageBubbleView.attributed(content.prose))
+                            .font(.hkBody)
+                            .padding(.horizontal, Theme.s4)
+                            .padding(.vertical, 10)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .opacity(0)
+                            .allowsHitTesting(false)
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear.onAppear {
+                                        let h = geo.size.height
+                                        if naturalProseHeight != h { naturalProseHeight = h }
+                                    }
+                                }
+                            )
+                    }
+
+                // "Show more / Show less" sits below the bubble, not inside it,
+                // so the tap target is always reachable regardless of clamp state.
+                if needsClamp {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proseExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(proseExpanded ? "Show less" : "Show more")
+                            Image(systemName: proseExpanded ? "chevron.up" : "chevron.down")
+                                .imageScale(.small)
+                        }
+                        .font(.hkCaption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                    }
+                    .padding(.top, Theme.s1)
+                }
+                }
             } else if content.isEmpty {
                 // A row with no text and no renderable payload is not blank by
                 // intent — it is something this build cannot show. Say that rather
