@@ -148,9 +148,11 @@ struct RoomListView: View {
             }
         } else {
             ForEach(Array(store.recent.enumerated()), id: \.element.id) { index, entry in
-                RoomRowCard(entry: entry, isHero: index == 0)
-                    .onTapGesture { router.open(entry.room) }
-                    .plainCardRow()
+                Button { router.open(entry.room) } label: {
+                    RoomRowCard(entry: entry, isHero: index == 0)
+                }
+                .buttonStyle(CardButtonStyle())
+                .plainCardRow()
             }
         }
     }
@@ -160,17 +162,27 @@ struct RoomListView: View {
     @ViewBuilder
     private var toolsRows: some View {
         sectionLabel("Tools")
-        UtilityRow(title: "Files", subtitle: "Everything your crew produced", symbol: "folder")
-            .onTapGesture { router.open(.organize) }
-            .plainCardRow()
-        UtilityRow(title: "Tracker", subtitle: "Issues and client tickets", symbol: "checklist")
-            .onTapGesture { router.open(.tracker) }
-            .plainCardRow()
+        Button { router.open(.organize) } label: {
+            UtilityRow(title: "Files", subtitle: "Everything your crew produced", symbol: "folder")
+        }
+        .buttonStyle(CardButtonStyle())
+        .plainCardRow()
+        Button { router.open(.tracker) } label: {
+            UtilityRow(title: "Tracker", subtitle: "Issues and client tickets", symbol: "checklist")
+        }
+        .buttonStyle(CardButtonStyle())
+        .plainCardRow()
     }
 
     // MARK: - Waiting on you (gated to > 0 — a permanent zero is a signal that stops being read)
 
     private var waitingRow: some View {
+        Button { router.open(.review) } label: { waitingCard }
+            .buttonStyle(CardButtonStyle())
+            .plainCardRow()
+    }
+
+    private var waitingCard: some View {
         HStack(spacing: Theme.s3) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -193,8 +205,6 @@ struct RoomListView: View {
         .padding(Theme.s3)
         .cardSurface(fill: Theme.warning.opacity(0.10), border: Theme.warning.opacity(0.35), edge: Theme.warning)
         .contentShape(Rectangle())
-        .onTapGesture { router.open(.review) }
-        .plainCardRow()
     }
 
     // MARK: - Search (flat, every room the rail knows — including agents)
@@ -210,9 +220,11 @@ struct RoomListView: View {
         } else {
             sectionLabel("Results")
             ForEach(matches) { room in
-                RoomRowCard(entry: RoomStore.RecentRoom(room: room, ts: 0, preview: ""), isHero: false)
-                    .onTapGesture { router.open(room) }
-                    .plainCardRow()
+                Button { router.open(room) } label: {
+                    RoomRowCard(entry: RoomStore.RecentRoom(room: room, ts: 0, preview: ""), isHero: false)
+                }
+                .buttonStyle(CardButtonStyle())
+                .plainCardRow()
             }
         }
     }
@@ -456,6 +468,18 @@ private struct IndeterminateBar: View {
 }
 
 // MARK: - Card + row styling helpers
+
+/// Pressed feedback for card rows: the card dims and settles the moment the finger
+/// lands. A row without this reads as a dead screen for the ~300ms before the push,
+/// which is exactly the "taps don't do anything" complaint.
+struct CardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
 
 private extension View {
     /// A rounded card surface with a 3px tinted left edge, clipped to the corner radius.
