@@ -101,6 +101,9 @@ final class ChatViewModel: ObservableObject {
     /// long absence is acknowledged instead of silently scrolling.
     @Published var catchUpNotice: String?
     @Published var draft = ""
+    /// "work" or "plan" — persisted per-room in UserDefaults so mode survives app restarts,
+    /// matching the web's localStorage.cv6.chatMode.<roomKey> pattern.
+    @Published var chatMode: String
 
     // R4 composer: staged uploads + the room's model preference.
     @Published private(set) var staged: [CornerAPI.UploadedFile] = []
@@ -168,6 +171,16 @@ final class ChatViewModel: ObservableObject {
         self.stepInterval = stepInterval
         self.reconcileInterval = reconcileInterval
         self.onFirstReply = onFirstReply
+        // Restore per-room mode, defaulting to work — mirrors web's localStorage.cv6.chatMode.<key>
+        let saved = UserDefaults.standard.string(forKey: "chatMode.\(room.id)")
+        self.chatMode = saved == "plan" ? "plan" : "work"
+    }
+
+    /// Set work or plan mode for this room, persisted across sessions.
+    func setMode(_ mode: String) {
+        let value = mode == "plan" ? "plan" : "work"
+        chatMode = value
+        UserDefaults.standard.set(value, forKey: "chatMode.\(room.id)")
     }
 
     var thread: [ThreadItem] {
@@ -506,12 +519,15 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func deliver(_ item: OutboxItem) {
+        // Capture the mode at send time so a mid-flight toggle doesn't change what the
+        // agent already received. Mode is the user's INTENT when they pressed send.
+        let mode = chatMode
         Task { [weak self] in
             guard let self else { return }
             do {
                 let created = try await self.api.send(
                     text: item.text, room: self.room,
-                    interactionMode: "work", attachments: item.attachments
+                    interactionMode: mode, attachments: item.attachments
                 )
                 if let created {
                     self.beginTurn(

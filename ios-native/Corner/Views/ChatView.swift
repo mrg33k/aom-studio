@@ -298,9 +298,13 @@ struct ChatView: View {
         .animation(.easeOut(duration: 0.2), value: composerFocused)
     }
 
-    /// Row 2 — the action row: the model choice on the left, send on the right.
+    /// Row 2 — the action row: Work/Plan toggle + model choice on the left, send on the right.
     private var actionRow: some View {
         HStack(spacing: 6) {
+            // Work / Plan toggle — always visible so mode is never buried in a menu.
+            // Matches the web's Commands → Work / Plan segmented control.
+            modePicker
+
             Menu {
                 ForEach(ChatView.modelOptions, id: \.id) { option in
                     Button {
@@ -360,6 +364,47 @@ struct ChatView: View {
             .disabled(!canSend)
             .accessibilityLabel("Send")
         }
+    }
+
+    /// Two-button Work / Plan segmented pill.
+    /// Active pill: surface card background + border + full-weight ink.
+    /// Inactive pill: transparent + muted ink. Height matches the model chip (30pt).
+    private var modePicker: some View {
+        HStack(spacing: 0) {
+            ForEach(["work", "plan"], id: \.self) { mode in
+                let active = model.chatMode == mode
+                Button {
+                    model.setMode(mode)
+                } label: {
+                    Text(mode.capitalized)
+                        .font(.hanken(11.5).weight(.bold))
+                        .foregroundStyle(active ? Theme.ink : Theme.inkSoft)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 24)
+                        .background(
+                            active ? Theme.composerCard : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .strokeBorder(
+                                    active ? Theme.hairline : Color.clear,
+                                    lineWidth: 1
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(active ? [.isSelected] : [])
+                .animation(.easeOut(duration: 0.12), value: model.chatMode)
+            }
+        }
+        .padding(3)
+        .frame(width: 110, height: 30)
+        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
+        )
     }
 
     /// Staged files, as removable chips above the shell — the web's pinned-chip row.
