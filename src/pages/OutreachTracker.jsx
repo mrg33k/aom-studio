@@ -147,6 +147,30 @@ function hasRealLinkedIn(lead) {
   return !!(lead.linkedin && (lead.linkedin.includes('/in/') || lead.linkedin.includes('/company/')))
 }
 
+// Extract instagram handle from a URL or @handle string
+function extractInstagramHandle(val) {
+  if (!val) return null
+  // Strip URL: https://www.instagram.com/handle/ → handle
+  const m = val.match(/instagram\.com\/([^/?#\s]+)/i)
+  if (m) return m[1].replace(/\/$/, '')
+  // Strip @ prefix and whitespace
+  const clean = val.replace(/^@/, '').trim()
+  return clean || null
+}
+
+// Returns true when a real instagram handle or URL is stored
+function hasRealInstagram(lead) {
+  return !!(lead.instagram && extractInstagramHandle(lead.instagram))
+}
+
+// Build the Instagram profile URL (or a Google Images fallback search)
+function buildInstagramURL(lead) {
+  const handle = lead.instagram ? extractInstagramHandle(lead.instagram) : null
+  if (handle) return `https://www.instagram.com/${handle}/`
+  const kw = [lead.company, lead.city, 'Arizona', 'construction site work'].filter(Boolean).join(' ')
+  return `https://www.google.com/search?q=${encodeURIComponent(kw)}&tbm=isch`
+}
+
 // Strip https://www. from a URL and return the bare domain (e.g. "hinkleci.com")
 function cleanDomain(url) {
   if (!url) return null
@@ -586,6 +610,64 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                 )}
               </div>
 
+              {/* Instagram panel */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '30%', background: 'linear-gradient(135deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888)', flexShrink: 0 }} />
+                  Instagram
+                </div>
+                {hasRealInstagram(lead) ? (
+                  <div>
+                    {/* Profile preview — attempts iframe, Instagram blocks it so we show a styled fallback */}
+                    <a
+                      href={buildInstagramURL(lead)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'block', border: '1px solid #D3D0C7', background: '#F8F4F0', padding: '14px 16px', textDecoration: 'none', marginBottom: 8, position: 'relative' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {/* IG gradient icon */}
+                        <div style={{ width: 36, height: 36, borderRadius: '30%', background: 'linear-gradient(135deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <rect x="2" y="2" width="20" height="20" rx="5" stroke="white" strokeWidth="2"/>
+                            <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="2"/>
+                            <circle cx="17.5" cy="6.5" r="1.5" fill="white"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <div style={{ fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: 14, color: '#17170F', lineHeight: 1.2 }}>
+                            @{extractInstagramHandle(lead.instagram)}
+                          </div>
+                          <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#77746A', marginTop: 2 }}>
+                            Tap to open their profile · see recent posts
+                          </div>
+                        </div>
+                        <div style={{ marginLeft: 'auto', fontFamily: 'Inter,sans-serif', fontSize: 12, color: '#8A6828', fontWeight: 600 }}>↗</div>
+                      </div>
+                    </a>
+                    {/* Recent posts hint */}
+                    <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 12, color: '#77746A', lineHeight: 1.5 }}>
+                      Open their profile to see recent project photos before you call.
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <a
+                      href={buildInstagramURL(lead)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #D3D0C7', background: '#FFFFFF', padding: '10px 12px', textDecoration: 'none', color: '#43423A', fontFamily: 'Inter,sans-serif', fontSize: 13, minHeight: 44, boxSizing: 'border-box' }}
+                    >
+                      <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '30%', background: 'linear-gradient(135deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888)', flexShrink: 0 }} />
+                      Find on Instagram ↗
+                    </a>
+                    <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#A5A29A', marginTop: 6 }}>
+                      No handle stored — paste it in their lead card to save for next time.
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Alive evidence */}
               {lead.alive_evidence && (
                 <div style={{ background: '#F0F4EE', borderLeft: '2px solid #4A6B4A', padding: '12px 16px', marginBottom: 24 }}>
@@ -633,6 +715,10 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   <a href={hasRealLinkedIn(lead) ? lead.linkedin : buildLinkedInURL(lead)} target="_blank" rel="noopener noreferrer" style={linkBtnStyle}>
                     {hasRealLinkedIn(lead) ? 'LinkedIn ↗' : 'Find on LinkedIn ↗'}
+                  </a>
+                  <a href={buildInstagramURL(lead)} target="_blank" rel="noopener noreferrer" style={{ ...linkBtnStyle, gap: 6 }}>
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '30%', background: 'linear-gradient(135deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888)', flexShrink: 0 }} />
+                    {hasRealInstagram(lead) ? 'Instagram ↗' : 'Find on Instagram ↗'}
                   </a>
                   {lead.street_address && lead.city && (
                     <a href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(MAPS_ORIGIN)}&destination=${encodeURIComponent(`${lead.street_address}, ${lead.city}, AZ`)}&travelmode=driving`} target="_blank" rel="noopener noreferrer" style={linkBtnStyle}>
@@ -1611,6 +1697,34 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
               >
                 {hasRealLinkedIn(lead) ? 'LinkedIn ↗' : 'Search LinkedIn ⌕'}
               </a>
+
+              <a
+                href={buildInstagramURL(lead)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={e => e.stopPropagation()}
+                title={hasRealInstagram(lead)
+                  ? `View @${extractInstagramHandle(lead.instagram)} on Instagram`
+                  : `Find ${lead.company} on Instagram`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  background: hasRealInstagram(lead) ? '#FFFFFF' : 'transparent',
+                  border: '1px solid #D3D0C7',
+                  color: hasRealInstagram(lead) ? '#43423A' : '#77746A',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.72rem',
+                  letterSpacing: '0.02em',
+                  padding: '0.3rem 0.5rem',
+                  textDecoration: 'none',
+                  minHeight: 30,
+                  boxSizing: 'border-box',
+                }}
+              >
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '30%', background: 'linear-gradient(135deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888)', flexShrink: 0 }} />
+                {hasRealInstagram(lead) ? `@${extractInstagramHandle(lead.instagram)}` : 'Instagram ⌕'}
+              </a>
             </div>
           )}
         </div>
@@ -1770,7 +1884,7 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
           </div>
 
           {/* Address + revenue + website + email row */}
-          {(lead.street_address || lead.revenue || lead.email || lead.owner_email || lead.website) && (
+          {(lead.street_address || lead.revenue || lead.email || lead.owner_email || lead.website || true) && (
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
@@ -1790,6 +1904,23 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
                   </a>
                 </div>
               )}
+              {/* Instagram — editable field for reps to paste the handle */}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '30%', background: 'linear-gradient(135deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888)' }} />
+                  Instagram
+                </label>
+                <input
+                  type="text"
+                  defaultValue={lead.instagram || ''}
+                  placeholder="@handle or instagram.com/handle"
+                  onBlur={e => {
+                    const val = e.target.value.trim()
+                    if (val !== (lead.instagram || '')) onUpdate('instagram', val || null)
+                  }}
+                  style={{ ...editInputStyle, width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
               {lead.street_address && (
                 <div>
                   <div style={labelStyle}>Address</div>
@@ -2658,6 +2789,325 @@ function FilterBar({ filterDay, setFilterDay, filterStatus, setFilterStatus, fil
   )
 }
 
+// ─── Admin Team View ──────────────────────────────────────────────────────────
+// Shows all reps (role='rep') with batch progress, outcome breakdown,
+// a Reload Batch button (assigns fresh 15), and a Promote/Demote button.
+function AdminTeamView({ leads }) {
+  const [reps, setReps] = useState([])
+  const [assignments, setAssignments] = useState({}) // { username: [lead_id, ...] }
+  const [loadingTeam, setLoadingTeam] = useState(true)
+  const [reloading, setReloading] = useState({})   // { username: bool }
+  const [promoting, setPromoting] = useState({})   // { username: bool }
+  const [toast, setToast] = useState(null)
+
+  function showToast(msg) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3500)
+  }
+
+  async function loadTeamData() {
+    setLoadingTeam(true)
+    const [{ data: repData }, { data: assignData }] = await Promise.all([
+      sb.from('outreach_reps').select('*').eq('role', 'rep').order('display_name'),
+      sb.from('outreach_rep_assignments').select('rep_username, lead_id').eq('is_current', true),
+    ])
+    setReps(repData || [])
+    const map = {}
+    for (const row of (assignData || [])) {
+      if (!map[row.rep_username]) map[row.rep_username] = []
+      map[row.rep_username].push(row.lead_id)
+    }
+    setAssignments(map)
+    setLoadingTeam(false)
+  }
+
+  useEffect(() => { loadTeamData() }, [])
+
+  async function handleReload(rep) {
+    setReloading(prev => ({ ...prev, [rep.username]: true }))
+    try {
+      // 1. Retire current batch
+      await sb.from('outreach_rep_assignments')
+        .update({ is_current: false })
+        .eq('rep_username', rep.username)
+        .eq('is_current', true)
+
+      // 2. Next batch number
+      const { data: existing } = await sb.from('outreach_rep_assignments')
+        .select('batch_number')
+        .eq('rep_username', rep.username)
+        .order('batch_number', { ascending: false })
+        .limit(1)
+      const nextBatch = (existing && existing[0] ? existing[0].batch_number : 0) + 1
+
+      // 3. Leads currently in other reps' active batches (excluded from eligibility)
+      const { data: otherBatches } = await sb.from('outreach_rep_assignments')
+        .select('lead_id')
+        .eq('is_current', true)
+      const otherIds = new Set((otherBatches || []).map(r => r.lead_id))
+
+      // 4. Today's touchpoints by reps OTHER than the target rep
+      const today = todayStr()
+      const { data: touchData } = await sb.from('outreach_touchpoints')
+        .select('lead_id, rep_username')
+        .eq('date', today)
+        .eq('channel', 'call')
+      const calledByOthers = new Set(
+        (touchData || [])
+          .filter(r => r.rep_username !== rep.username)
+          .map(r => r.lead_id)
+      )
+
+      // 5. Filter eligible leads (same rules as auto-assign)
+      const eligible = leads.filter(l => {
+        if (!rep.trusted && (l.need_score || 0) >= 7) return false
+        if (otherIds.has(l.id)) return false
+        if (calledByOthers.has(l.id)) return false
+        return true
+      })
+
+      const batch = eligible.slice(0, 15)
+      if (batch.length > 0) {
+        const rows = batch.map(l => ({
+          rep_username: rep.username,
+          lead_id: l.id,
+          batch_number: nextBatch,
+          is_current: true,
+        }))
+        await sb.from('outreach_rep_assignments').insert(rows)
+      }
+      showToast(`${rep.display_name}: batch #${nextBatch} — ${batch.length} leads assigned`)
+      await loadTeamData()
+    } catch (e) {
+      showToast(`Error: ${e.message}`)
+    } finally {
+      setReloading(prev => ({ ...prev, [rep.username]: false }))
+    }
+  }
+
+  async function handlePromote(rep) {
+    setPromoting(prev => ({ ...prev, [rep.username]: true }))
+    try {
+      const newTrusted = !rep.trusted
+      await sb.from('outreach_reps').update({ trusted: newTrusted }).eq('username', rep.username)
+      setReps(prev => prev.map(r => r.username === rep.username ? { ...r, trusted: newTrusted } : r))
+      showToast(`${rep.display_name} ${newTrusted ? 'promoted to Trusted' : 'set to Standard'}`)
+    } catch (e) {
+      showToast(`Error: ${e.message}`)
+    } finally {
+      setPromoting(prev => ({ ...prev, [rep.username]: false }))
+    }
+  }
+
+  const OUTCOME_LABELS = {
+    booked: 'Booked',
+    spoke: 'Spoke',
+    left_vm: 'Left VM',
+    no_answer: 'No Answer',
+    not_a_fit: 'Not a Fit',
+    new: 'Pending',
+  }
+  const OUTCOME_COLORS = {
+    booked: '#1A7A4A',
+    spoke: '#2563EB',
+    left_vm: '#B58A38',
+    no_answer: '#77746A',
+    not_a_fit: '#B03A3A',
+    new: '#A5A29A',
+  }
+
+  if (loadingTeam) {
+    return (
+      <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#A5A29A', fontSize: '0.85rem', fontFamily: "'Inter', sans-serif" }}>
+        Loading team data...
+      </div>
+    )
+  }
+
+  if (reps.length === 0) {
+    return (
+      <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#A5A29A', fontSize: '0.85rem', fontFamily: "'Inter', sans-serif" }}>
+        No reps found. Add reps in the outreach_reps table.
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ maxWidth: 860, margin: '0 auto', padding: '1.5rem 1rem' }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 16, right: 16, zIndex: 9999,
+          background: '#17170F', color: '#F7F6F3',
+          padding: '0.65rem 1rem', fontSize: '0.8rem',
+          fontFamily: "'Inter', sans-serif",
+          boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+          maxWidth: 320,
+        }}>
+          {toast}
+        </div>
+      )}
+
+      <div style={{ marginBottom: '1.25rem' }}>
+        <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: '1.05rem', color: '#17170F', marginBottom: '0.25rem' }}>
+          Rep Team
+        </div>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.72rem', color: '#77746A' }}>
+          Current batch progress for each rep. Reload assigns a fresh batch of 15. Promote unlocks S-tier leads for future batches.
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {reps.map(rep => {
+          const batchIds = assignments[rep.username] || []
+          const batchLeads = batchIds.map(id => leads.find(l => l.id === id)).filter(Boolean)
+          const called = batchLeads.filter(l => l.status && l.status !== 'new').length
+          const total = batchIds.length
+
+          // Count outcomes across leads in this batch
+          const outcomes = {}
+          for (const l of batchLeads) {
+            const s = l.status || 'new'
+            outcomes[s] = (outcomes[s] || 0) + 1
+          }
+
+          return (
+            <div key={rep.username} style={{
+              background: '#FFFFFF',
+              border: '1px solid #E4E2DB',
+              padding: '1rem 1.25rem',
+            }}>
+              {/* Top row: name + trust badge + actions */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.9rem', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: '0.9rem', color: '#17170F' }}>
+                    {rep.display_name}
+                  </div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.62rem', color: '#A5A29A', marginTop: '0.1rem' }}>
+                    @{rep.username}
+                  </div>
+                </div>
+
+                {/* Trust badge */}
+                <div style={{
+                  background: rep.trusted ? '#F0F9F4' : '#F1EFEA',
+                  border: `1px solid ${rep.trusted ? '#1A7A4A' : '#D3D0C7'}`,
+                  color: rep.trusted ? '#1A7A4A' : '#77746A',
+                  padding: '0.2rem 0.5rem',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.58rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  flexShrink: 0,
+                }}>
+                  {rep.trusted ? 'Trusted' : 'Standard'}
+                </div>
+
+                {/* Promote / Demote */}
+                <button
+                  onClick={() => handlePromote(rep)}
+                  disabled={promoting[rep.username]}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #D3D0C7',
+                    color: '#43423A',
+                    padding: '0.3rem 0.65rem',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '0.62rem',
+                    cursor: promoting[rep.username] ? 'default' : 'pointer',
+                    fontWeight: 500,
+                    opacity: promoting[rep.username] ? 0.5 : 1,
+                    minHeight: 32,
+                    flexShrink: 0,
+                  }}
+                >
+                  {promoting[rep.username] ? '...' : rep.trusted ? 'Demote' : 'Promote'}
+                </button>
+
+                {/* Reload Batch */}
+                <button
+                  onClick={() => handleReload(rep)}
+                  disabled={reloading[rep.username]}
+                  style={{
+                    background: reloading[rep.username] ? '#F1EFEA' : '#B58A38',
+                    border: '1px solid #B58A38',
+                    color: reloading[rep.username] ? '#77746A' : '#17170F',
+                    padding: '0.3rem 0.75rem',
+                    fontFamily: "'Bricolage Grotesque', sans-serif",
+                    fontSize: '0.62rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.07em',
+                    textTransform: 'uppercase',
+                    cursor: reloading[rep.username] ? 'default' : 'pointer',
+                    minHeight: 32,
+                    flexShrink: 0,
+                  }}
+                >
+                  {reloading[rep.username] ? 'Assigning...' : 'Reload Batch'}
+                </button>
+              </div>
+
+              {/* Progress bar */}
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.35rem' }}>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.68rem', color: '#77746A' }}>
+                    Batch progress
+                  </div>
+                  <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: '0.82rem', color: '#17170F' }}>
+                    {called} of {total} called
+                  </div>
+                </div>
+                <div style={{ height: 3, background: '#F1EFEA' }}>
+                  <div style={{
+                    height: '100%',
+                    width: total > 0 ? `${Math.round((called / total) * 100)}%` : '0%',
+                    background: called === total && total > 0 ? '#1A7A4A' : '#B58A38',
+                    transition: 'width 0.3s ease',
+                  }} />
+                </div>
+              </div>
+
+              {/* Outcome breakdown chips */}
+              {total > 0 ? (
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  {Object.entries(outcomes)
+                    .sort(([a], [b]) => {
+                      const ORDER = ['booked', 'spoke', 'left_vm', 'no_answer', 'not_a_fit', 'new']
+                      return ORDER.indexOf(a) - ORDER.indexOf(b)
+                    })
+                    .map(([status, count]) => (
+                      <div key={status} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        background: '#F7F6F3',
+                        border: '1px solid #E4E2DB',
+                        padding: '0.2rem 0.5rem',
+                      }}>
+                        <div style={{
+                          width: 5, height: 5, borderRadius: '50%',
+                          background: OUTCOME_COLORS[status] || '#77746A',
+                          flexShrink: 0,
+                        }} />
+                        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.62rem', color: '#43423A' }}>
+                          {count} {OUTCOME_LABELS[status] || status}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.68rem', color: '#A5A29A' }}>
+                  No batch assigned. Click Reload Batch to assign 15 leads.
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function OutreachTracker() {
   // Auth: legacy admin flag OR rep session from outreach_reps table
@@ -2669,6 +3119,8 @@ export default function OutreachTracker() {
   // Today's call tracking: lead_ids called by OTHER reps today, and this rep's own count
   const [calledTodayByOthers, setCalledTodayByOthers] = useState(() => new Set())
   const [todayRepCallCount, setTodayRepCallCount] = useState(0)
+  // repBatch: null = initializing/unset, array of lead IDs = ready (may be empty)
+  const [repBatch, setRepBatch] = useState(null)
 
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
@@ -2725,16 +3177,88 @@ export default function OutreachTracker() {
   }, [])
 
   useEffect(() => {
-    const isAuthed = unlocked || repSession
-    if (isAuthed) loadLeads()
-    if (repSession) {
-      loadTodayTouchpoints(repSession)
-      // Show onboarding walkthrough on first login (unless already seen or skipped)
-      if (repSession.role === 'rep' && !repOnboardingDone(repSession.username)) {
-        setShowOnboarding(true)
+    if (!unlocked && !repSession) return
+
+    async function init() {
+      setLoading(true)
+      setError(null)
+
+      // 1. Load all leads
+      const { data: leadsData, error: leadsErr } = await sb
+        .from('outreach_leads')
+        .select('*')
+        .order('need_score', { ascending: false })
+        .order('company', { ascending: true })
+      if (leadsErr) { setError(leadsErr.message); setLoading(false); return }
+      const sortedLeads = [...(leadsData || [])].sort(warmthCompare)
+      setLeads(sortedLeads)
+      setLoading(false)
+
+      if (repSession) {
+        // 2. Load today's touchpoints
+        const today = todayStr()
+        const { data: touchData } = await sb
+          .from('outreach_touchpoints')
+          .select('lead_id, rep_username')
+          .eq('date', today)
+          .eq('channel', 'call')
+          .not('rep_username', 'is', null)
+        const byOthers = new Set()
+        let myCount = 0
+        for (const row of (touchData || [])) {
+          if (row.rep_username !== repSession.username) byOthers.add(row.lead_id)
+          else myCount++
+        }
+        setCalledTodayByOthers(byOthers)
+        setTodayRepCallCount(myCount)
+
+        // 3. Batch check / auto-assign (reps only, not admin)
+        if (repSession.role === 'rep') {
+          const { data: batchData } = await sb
+            .from('outreach_rep_assignments')
+            .select('lead_id')
+            .eq('rep_username', repSession.username)
+            .eq('is_current', true)
+            .order('assigned_at', { ascending: true })
+          if (batchData && batchData.length > 0) {
+            // Existing batch: use it
+            setRepBatch(batchData.map(r => r.lead_id))
+          } else {
+            // No active batch — auto-assign first 15 eligible leads
+            const { data: otherBatches } = await sb
+              .from('outreach_rep_assignments')
+              .select('lead_id')
+              .eq('is_current', true)
+            const otherIds = new Set((otherBatches || []).map(r => r.lead_id))
+            const eligible = sortedLeads.filter(l => {
+              if (!repSession.trusted && (l.need_score || 0) >= 7) return false
+              if (otherIds.has(l.id)) return false
+              if (byOthers.has(l.id)) return false
+              return true
+            })
+            const batch = eligible.slice(0, 15)
+            if (batch.length > 0) {
+              const rows = batch.map(l => ({
+                rep_username: repSession.username,
+                lead_id: l.id,
+                batch_number: 1,
+                is_current: true,
+              }))
+              await sb.from('outreach_rep_assignments').insert(rows)
+            }
+            setRepBatch(batch.map(l => l.id))
+          }
+        }
+
+        // 4. Onboarding on first login
+        if (repSession.role === 'rep' && !repOnboardingDone(repSession.username)) {
+          setShowOnboarding(true)
+        }
       }
     }
-  }, [unlocked, repSession, loadLeads, loadTodayTouchpoints])
+
+    init()
+  }, [unlocked, repSession])
 
   const updateLead = useCallback(async (id, field, value) => {
     const { error: err } = await sb
@@ -2769,15 +3293,12 @@ export default function OutreachTracker() {
     leads: filtered.filter(l => l.day_route === day),
   }))
 
-  // ── Rep filter (restricted queue) ────────────────────────────────────────────
-  // S-tier gate: exclude need_score >= 7 for non-trusted reps.
-  // No same-day double-call: exclude any lead another rep has already called today.
-  // Exception: leads the current rep has already touched remain in their queue.
-  const repFiltered = repSession ? leads.filter(l => {
-    if (!repSession.trusted && (l.need_score || 0) >= 7) return false
-    if (calledTodayByOthers.has(l.id)) return false
-    return true
-  }) : []
+  // ── Rep queue (batch-based) ──────────────────────────────────────────────────
+  // Reps see only their current assigned batch of 15 leads, in assignment order.
+  // repBatch is null while initializing, an array of lead IDs once ready.
+  const repFiltered = repSession && repBatch !== null
+    ? repBatch.map(id => leads.find(l => l.id === id)).filter(Boolean)
+    : []
 
   // ── Auth gate ────────────────────────────────────────────────────────────────
   // Order: rep session > legacy admin unlock > login screen
@@ -2829,9 +3350,9 @@ export default function OutreachTracker() {
           onRestartOnboarding={() => setShowOnboarding(true)}
         />
 
-        {loading && (
+        {(loading || repBatch === null) && !error && (
           <div style={{ textAlign: 'center', padding: '3rem 1rem', fontSize: '0.85rem', color: '#A5A29A' }}>
-            Loading leads...
+            {loading ? 'Loading leads...' : 'Assigning your batch...'}
           </div>
         )}
         {error && (
@@ -2839,7 +3360,7 @@ export default function OutreachTracker() {
             Error: {error}
           </div>
         )}
-        {!loading && !error && (
+        {!loading && !error && repBatch !== null && (
           <CallMode
             leads={repFiltered}
             updateLead={updateLead}
@@ -2898,7 +3419,7 @@ export default function OutreachTracker() {
         borderBottom: '1px solid #E4E2DB',
         background: '#F1EFEA',
       }}>
-        {['table', 'cards', 'call'].map(v => (
+        {['table', 'cards', 'call', 'team'].map(v => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -2915,7 +3436,7 @@ export default function OutreachTracker() {
               fontWeight: view === v ? 700 : 400,
             }}
           >
-            {v === 'table' ? 'Spreadsheet' : v === 'cards' ? 'Cards' : '📞 Call Mode'}
+            {v === 'table' ? 'Spreadsheet' : v === 'cards' ? 'Cards' : v === 'call' ? '📞 Call Mode' : 'Team'}
           </button>
         ))}
       </div>
@@ -3051,6 +3572,10 @@ export default function OutreachTracker() {
           updateLead={updateLead}
           repSession={repSession}
         />
+      )}
+
+      {view === 'team' && (
+        <AdminTeamView leads={leads} />
       )}
 
       {/* Import note at bottom */}
