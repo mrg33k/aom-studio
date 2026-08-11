@@ -34,6 +34,7 @@ struct AccountView: View {
     @State private var showingAvatarEdit = false
     @State private var workspaceRooms: [CornerAPI.ProjectRow] = []
     @State private var workspaceFailed = false
+    @State private var showingIntegrations = false
 
     var body: some View {
         NavigationStack {
@@ -41,6 +42,27 @@ struct AccountView: View {
                 appearanceSection
                 workspaceSection
                 accountSection
+                // Integrations — connected services (read-only v1)
+                Section("Connected services") {
+                    NavigationLink {
+                        IntegrationsView()
+                            .environmentObject(api)
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Integrations")
+                                    .font(.hanken(14).weight(.medium))
+                                    .foregroundStyle(Theme.ink)
+                                Text("OAuth accounts and service connections.")
+                                    .font(.hanken(12))
+                                    .foregroundStyle(Theme.inkSoft)
+                            }
+                        } icon: {
+                            Image(systemName: "puzzlepiece.extension.fill")
+                                .foregroundStyle(Theme.accent)
+                        }
+                    }
+                }
                 Section {
                     notificationRow
                 } header: {
@@ -224,7 +246,6 @@ struct AccountView: View {
 
     private var plannedSection: some View {
         Section {
-            plannedRow("Connections", detail: "OAuth accounts and service scopes")
             plannedRow("Secrets", detail: "Managed keys and rotation history")
             plannedRow("Agent permissions", detail: "Per-agent autonomy controls")
         } header: {

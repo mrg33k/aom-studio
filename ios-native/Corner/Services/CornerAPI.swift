@@ -513,6 +513,30 @@ final class CornerAPI: ObservableObject {
         return (try? JSONDecoder().decode(MissionsTreeEnvelope.self, from: data))?.projects ?? []
     }
 
+    // MARK: - Integrations
+
+    /// One connected-integration entry from `/api/integrations/list`.
+    struct IntegrationEntry: Decodable {
+        let slug: String
+        let status: String          // "connected" | "disconnected"
+        let connected_at: String?
+        let system: Bool?
+        let system_note: String?
+    }
+
+    private struct IntegrationsEnvelope: Decodable {
+        let integrations: [IntegrationEntry]
+    }
+
+    /// Fetch the account's connected integration state from the server.
+    /// Returns the raw entries (caller decides what "connected" means).
+    /// Throws when the server is unreachable or returns a non-2xx response.
+    func fetchIntegrationsList() async throws -> [IntegrationEntry] {
+        let request = try await authorizedRequest(path: "/api/integrations/list")
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(IntegrationsEnvelope.self, from: data))?.integrations ?? []
+    }
+
     // MARK: - Recency (the home timeline)
 
     /// One entry per active room from `/api/dashboard/room-activity`: when it last saw
