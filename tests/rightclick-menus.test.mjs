@@ -16,7 +16,7 @@
 // The suite fails loud if any required test-id is missing from the built app.
 
 import { chromium } from 'playwright'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const SITE = process.env.SITE || 'https://aheadofmarket.com'
@@ -25,7 +25,7 @@ const COOKIE = process.env.AOM_DASHBOARD_COOKIE || ''
 const REQUIRED_TEST_IDS = [
   // Message menu root + 4 actions
   'msg-ctx-root',
-  'msg-ctx-follow-up',
+  'msg-ctx-reply',
   'msg-ctx-needs-verification',
   'msg-ctx-research',
   'msg-ctx-send-to',
@@ -43,7 +43,7 @@ const REQUIRED_TEST_IDS = [
   'ctx-toast',
   // Message container + task cards
   'chat-message',
-  'task-card-active',
+  'task-card-blocked',
   'task-card-failed',
   'task-card-done',
 ]
@@ -59,23 +59,15 @@ function record(name, ok, note = '') {
 async function verifyBundle() {
   try {
     const distMain = resolve(process.cwd(), 'dist/assets')
-    // The main chunk changes hash every build; find it.
-    const mainChunk = readFileSync(resolve(distMain, 'main-BEZG43M-.js'), 'utf8')
-    const missing = REQUIRED_TEST_IDS.filter(id => !mainChunk.includes(id))
-    record('bundle-contains-all-test-ids', missing.length === 0, missing.length ? `missing: ${missing.join(',')}` : '')
+    // Vite code-splits the context menus. Scan every emitted JS chunk instead
+    // of pinning a stale main hash or assuming the feature remains eager.
+    const files = readdirSync(distMain).filter(file => file.endsWith('.js'))
+    if (!files.length) throw new Error('no JavaScript chunks in dist/assets')
+    const bundle = files.map(file => readFileSync(resolve(distMain, file), 'utf8')).join('\n')
+    const missing = REQUIRED_TEST_IDS.filter(id => !bundle.includes(id))
+    record('bundle-contains-all-test-ids', missing.length === 0, missing.length ? `missing: ${missing.join(',')}` : `${files.length} chunks scanned`)
   } catch (err) {
-    // Fall back to scanning any file under dist/assets
-    try {
-      const { readdirSync } = await import('node:fs')
-      const files = readdirSync(resolve(process.cwd(), 'dist/assets'))
-      const mains = files.filter(f => f.startsWith('main-') && f.endsWith('.js'))
-      if (!mains.length) throw new Error('no main chunk in dist/assets')
-      const mainChunk = readFileSync(resolve(process.cwd(), 'dist/assets', mains[0]), 'utf8')
-      const missing = REQUIRED_TEST_IDS.filter(id => !mainChunk.includes(id))
-      record('bundle-contains-all-test-ids', missing.length === 0, missing.length ? `missing: ${missing.join(',')}` : `main=${mains[0]}`)
-    } catch (inner) {
-      record('bundle-contains-all-test-ids', false, inner.message)
-    }
+    record('bundle-contains-all-test-ids', false, err.message)
   }
 }
 
@@ -114,7 +106,7 @@ async function ensureMenuItem(page, testId) {
 async function testMessageFollowUp(page) {
   await page.goto(`${SITE}/dashboard`, { waitUntil: 'domcontentloaded' })
   await rightClick(page, '[data-test-id="chat-message"]')
-  await (await ensureMenuItem(page, 'msg-ctx-follow-up')).click()
+  await (await ensureMenuItem(page, 'msg-ctx-reply')).click()
   await page.locator('[data-test-id="reply-to-chip"]').waitFor({ timeout: 4000 })
   record('message-follow-up-shows-reply-chip', true)
 }

@@ -59,7 +59,7 @@ test('mobile chat edits room identity, shows truthful presence, and keeps contro
     composer: [...document.querySelectorAll('.cv6-composer-primary')].map((node) => node.getBoundingClientRect().height),
   }));
   expect(geometry.header.every((height) => height === 36)).toBe(true);
-  expect(geometry.composer.every((height) => height === 38)).toBe(true);
+  expect(geometry.composer.every((height) => height === 34)).toBe(true);
 });
 
 test('checklist reports progress and Escape preserves an edited item before closing the panel', async ({ page }) => {

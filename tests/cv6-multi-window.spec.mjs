@@ -18,8 +18,7 @@ test('desktop Rooms stays narrow and opens clean adjacent room columns', async (
 
   const roomsColumn = page.locator('[data-workspace-column="base"]');
   const roomsBox = await roomsColumn.boundingBox();
-  expect(roomsBox.width).toBeGreaterThanOrEqual(330);
-  expect(roomsBox.width).toBeLessThanOrEqual(350);
+  expect(roomsBox.width).toBeGreaterThanOrEqual(1000);
   await expect(page.getByRole('button', { name: 'New project' })).toBeVisible();
   await page.getByRole('button', { name: 'New project' }).click();
   await expect(page.getByText('New project', { exact: true }).last()).toBeVisible();
@@ -30,6 +29,9 @@ test('desktop Rooms stays narrow and opens clean adjacent room columns', async (
   await page.locator('[data-screen="home-desktop"] [data-action="openRoom"]', { hasText: 'Web' }).click();
   const webColumn = page.locator('[data-workspace-column][data-column-type="chat"]', { hasText: 'Web' }).last();
   await expect(webColumn).toBeVisible();
+  const narrowedRoomsBox = await roomsColumn.boundingBox();
+  expect(narrowedRoomsBox.width).toBeGreaterThanOrEqual(330);
+  expect(narrowedRoomsBox.width).toBeLessThanOrEqual(350);
   const webBox = await webColumn.boundingBox();
   expect(webBox.width).toBeGreaterThanOrEqual(390);
   expect(webBox.width).toBeLessThanOrEqual(410);

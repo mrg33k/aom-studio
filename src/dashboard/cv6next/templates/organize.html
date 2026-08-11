@@ -105,15 +105,13 @@
       </div>
       <div style="position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.55);border-radius:16px;padding:6px 12px;font-size:11.5px;font-weight:600;color:#fff;">Click anywhere to comment</div>
     </div>
-    <!-- verdict rail (rehomed verbatim from the Review tool — R15b tier: verdict trio
-         loudest, Assign + Download one quiet tier down, zero accent on utilities) -->
+    <!-- Review is download-or-send-changes. Download silently clears the waiting
+         flag; legacy dismissed rows retain Restore elsewhere. -->
     <div style="width:330px;flex:none;border-left:1px solid var(--divider);overflow-y:auto;">
       <div style="padding:22px;">
         <div class="eyebrow" style="margin-bottom:12px;">This file</div>
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:18px;color:var(--muted);font-size:13px;"><span class="ava is-green" data-mod="is-:deliverable.whoTint" style="width:26px;height:26px;font-size:10px;" data-bind="deliverable.whoInitials">EL</span><span>From <strong style="color:var(--fg);" data-bind="deliverable.who">Elon</strong></span></div>
         <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:18px;">
-          <button style="height:46px;border-radius:23px;border:none;background:var(--success);color:#06281c;font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="approve" data-arg="deliverable.id"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve</button>
-          <button style="height:46px;border-radius:23px;border:1px solid rgba(248,113,113,.38);background:transparent;color:var(--error,#F87171);font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="dismiss" data-arg="deliverable.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Dismiss</button>
           <button style="height:46px;border-radius:23px;border:1px solid var(--hair);background:transparent;color:var(--fg);font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="requestChanges" data-arg="deliverable.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h12"/></svg>Request changes</button>
           <div style="display:flex;gap:9px;">
             <button style="flex:1;height:38px;border-radius:19px;border:1px solid var(--hair);background:transparent;color:var(--fg);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" data-action="download" data-arg="deliverable.id"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Download</button>
@@ -242,11 +240,9 @@
     <div style="flex:1;min-width:0;font-size:12.5px;color:var(--muted);line-height:1.3;"><span data-bind="deliverable.openCount">3</span> <span data-bind="deliverable.commentsLabelLower">pin-comments</span> queued for <span data-bind="deliverable.who">Gary</span></div>
     <span style="font-size:12.5px;font-weight:600;color:var(--accent);">View</span>
   </div>
-  <!-- Decision bar: verdict trio first, then quiet utilities. -->
+  <!-- Decision bar: send changes, or download and clear waiting. -->
   <div style="flex:none;padding:12px 16px 14px;border-top:1px solid var(--divider);background:var(--ground);display:flex;flex-direction:column;gap:8px;">
     <div style="display:flex;gap:8px;">
-      <button style="flex:1;min-width:0;height:48px;border-radius:24px;border:none;background:var(--success);color:#06281c;font-size:13px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="approve" data-arg="deliverable.id">Approve</button>
-      <button style="flex:1;min-width:0;height:48px;border-radius:24px;border:1px solid rgba(248,113,113,.38);background:transparent;color:var(--error,#F87171);font-size:13px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="dismiss" data-arg="deliverable.id">Dismiss</button>
       <button style="flex:1;min-width:0;height:48px;border-radius:24px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="requestChanges" data-arg="deliverable.id">Changes</button>
     </div>
     <div style="display:flex;gap:8px;">

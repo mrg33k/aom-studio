@@ -1942,6 +1942,10 @@
   background:transparent;
   overflow:visible;
 }
+[data-cv6][data-screen="home-mobile"] .mresumelist,
+[data-cv6][data-screen="home-mobile"] .mresumecard {
+  touch-action:pan-x pan-y;
+}
 /* 20 rows max on mobile. Desktop's digest caps at 6 the same way (nth-child(n+7)),
    so the cap stays a display concern and the shared `recent` array is the source. */
 [data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:nth-child(n+21) { display:none; }

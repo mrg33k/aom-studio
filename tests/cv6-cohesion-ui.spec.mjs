@@ -27,9 +27,9 @@ test('desktop room spine and file rail keep context and attention honest', async
 
   await expect(page.locator('[data-column-type="chat"]', { hasText: 'Web' })).toBeVisible()
   await page.getByRole('button', { name: 'Files', exact: true }).last().click()
-  await expect(page.getByRole('button', { name: 'Find in chat draft-strategy.pdf' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Find in chat final-copy.docx' })).toBeVisible()
-  await page.getByRole('button', { name: 'Find in chat final-copy.docx' }).click()
+  await expect(page.getByRole('button', { name: 'Preview draft-strategy.pdf' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Preview final-copy.docx' })).toBeVisible()
+  await page.getByRole('button', { name: 'Preview final-copy.docx' }).click()
   await expect(page.getByText('Files in this room')).toHaveCount(0)
   await page.screenshot({ path: '/tmp/corner-m11-desktop.png', fullPage: true })
 })
@@ -59,23 +59,23 @@ test('mobile Settings makes planned capability status explicit', async ({ page }
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
   const drawer = page.locator('.navdrawer')
   await expect(drawer).toBeVisible()
-  expect(await drawer.locator('.nl').allTextContents()).toEqual(['Rooms', 'Email', 'Settings'])
+  expect(await drawer.locator('.nl').allTextContents()).toEqual(['Rooms', 'Email', 'Background work', 'Settings'])
   await page.waitForTimeout(250)
   await page.screenshot({ path: '/tmp/corner-m11-mobile.png', fullPage: true })
 })
 
-test('M12 mobile Home gives recent work and room types distinct visual homes', async ({ page }) => {
+test('mobile Home gives recent work and room types distinct visual homes', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await open(page, 'demo=m12-mobile&screen=home')
 
-  await expect(page.getByText('Pick up where')).toBeVisible()
+  await expect(page.getByText('All rooms', { exact: true })).toBeVisible()
   await expect(page.getByText('Projects', { exact: true })).toBeVisible()
   await expect(page.getByText('Agent rooms', { exact: true })).toBeVisible()
   await expect(page.getByText(/Chat-serving alert/)).toHaveCount(0)
   await expect(page.locator('.mresumecard')).toHaveCount(4)
 
   const rail = page.locator('.mresumelist')
-  expect(await rail.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
+  expect(await rail.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
   const agentCard = await page.locator('.agent-rooms').boundingBox()
   const projectList = await page.locator('.project-list').boundingBox()
   expect(agentCard.y + agentCard.height).toBeLessThan(projectList.y)

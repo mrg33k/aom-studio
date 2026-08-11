@@ -174,7 +174,7 @@ test('mobile Files opens out-of-tree previews and keeps comments attached', asyn
   const video = page.locator('.doc video').first()
   await expect(video).toBeVisible()
   await expect.poll(() => video.evaluate((node) => node.readyState), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
-  await expect(page.locator('[data-vscrub]')).toBeVisible({ timeout: 5_000 })
+  await expect(video).toHaveAttribute('controls', '')
 
   await expect(page.getByText(/must be downloaded|preview is not available|couldn't load this/i)).toHaveCount(0)
   expect(pageErrors).toEqual([])

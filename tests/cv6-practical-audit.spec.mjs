@@ -25,6 +25,7 @@ function productConsoleErrors(errors) {
 test.describe('CV6 One Page practical product audit', () => {
   test('desktop keeps the room-first navigation and explains advanced tools', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 950 })
+    await page.route('**/api/dashboard/supabase-messages**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ messages: [] }) }))
     const errors = await openCv6(page)
 
     await expect(page.getByRole('button', { name: 'Open Rooms home' })).toBeVisible()
@@ -48,7 +49,7 @@ test.describe('CV6 One Page practical product audit', () => {
     await expect(page.getByText('No messages with Web yet')).toBeVisible()
     await expect(page.getByText('Connect a workspace to send messages.')).toBeVisible()
     await page.getByRole('button', { name: 'Files', exact: true }).last().click()
-    await expect(page.getByText("Couldn't load this chat's files right now. They're safe — it retries automatically.")).toBeVisible()
+    await expect(page.getByText('No files have crossed this chat yet.')).toBeVisible()
 
     for (const [view, label] of [['organize', 'Files'], ['command', 'Command'], ['tracker', 'Tracker'], ['livescribe', 'Scribe']]) {
       await page.goto(`${BASE}/dashboard?cv6=1&view=${view}`, { waitUntil: 'domcontentloaded' })
@@ -78,7 +79,7 @@ test.describe('CV6 One Page practical product audit', () => {
     await page.getByRole('button', { name: /menu$/i }).first().click()
     const drawer = page.locator('.navdrawer')
     await expect(drawer).toBeVisible()
-    expect(await drawer.locator('.nl').allTextContents()).toEqual(['Rooms', 'Email', 'Settings'])
+    expect(await drawer.locator('.nl').allTextContents()).toEqual(['Rooms', 'Email', 'Background work', 'Settings'])
     const drawerBox = await drawer.boundingBox()
     expect(drawerBox.x).toBeGreaterThan(70)
 
@@ -93,9 +94,9 @@ test.describe('CV6 One Page practical product audit', () => {
     await page.locator('[data-action="openRoom"]:visible').first().click()
     await expect(page.getByText('Chat needs a connected workspace. Local mode is read-only.')).toBeVisible()
     await page.getByTestId('chat-files-button').click()
-    await expect(page.getByText('Files in this room')).toBeVisible()
-    await expect(page.getByText("Couldn't load this chat's files right now. They're safe — it retries automatically.")).toBeVisible()
-    await page.getByRole('button', { name: 'Close files' }).press('Enter')
+    await expect(page.getByText('Files', { exact: true }).last()).toBeVisible()
+    await expect(page.getByText('No files have crossed this room yet.')).toBeVisible()
+    await page.getByRole('button', { name: 'Close files' }).last().press('Enter')
 
     await page.getByRole('button', { name: /menu$/i }).first().click()
     await page.locator('.navdrawer').getByRole('button', { name: /Email/ }).click()

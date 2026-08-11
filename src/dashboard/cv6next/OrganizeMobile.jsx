@@ -356,11 +356,13 @@ export default function OrganizeMobile({ onNav, onOpenNav, onSearch, onAssignFil
     setMission: (id) => selectMission(id || '__all'),
     setSort: (id) => setSort(id === 'az' ? 'az' : 'newest'),
     // ── the rehomed review actions ──
-    approve: (id) => { review.actions.approve(id); afterVerdict(); },
-    dismiss: (id) => { review.actions.dismiss(id); afterVerdict(); },
     requestChanges: () => setChangesOpen(true),
     sendChecklist: (id) => review.actions.sendChecklist(id),
-    download: (id) => review.actions.download(id),
+    download: (id) => {
+      review.actions.approve(id);
+      review.actions.download(id);
+      afterVerdict();
+    },
     openPin: (id) => openPinById(id),
     openComments: () => {},
     toggleReviewed: () => setReviewedOn((v) => !v),

@@ -361,11 +361,12 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
     toggleSelect: () => {},
     toggleSelectMode: () => {},
     // ── the rehomed review actions ──
-    approve: (id) => review.actions.approve(id),
-    dismiss: (id) => review.actions.dismiss(id),
     requestChanges: () => setChangesOpen(true),
     sendChecklist: (id) => review.actions.sendChecklist(id),
-    download: (id) => review.actions.download(id),
+    download: (id) => {
+      review.actions.approve(id);
+      review.actions.download(id);
+    },
     openPin: (id) => openPinById(id),
     openComments: () => {},
     toggleReviewed: () => setReviewedOn((v) => !v),

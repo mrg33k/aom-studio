@@ -19,7 +19,7 @@ test('desktop keeps one compact room-first top bar across sibling views', async 
     await expect(topbar.getByRole('button', { name: 'Open Email column', exact: true })).toBeVisible()
     await expect(topbar.getByRole('button', { name: /theme\. Switch to/i })).toBeVisible()
     await expect(topbar.getByRole('button', { name: 'Search', exact: true })).toBeVisible()
-    await expect(topbar.getByRole('button', { name: 'Profile', exact: true })).toBeVisible()
+    await expect(topbar.getByRole('button', { name: 'Edit your profile', exact: true })).toBeVisible()
     await expect(topbar.locator('.ctile')).toHaveCount(0)
     heights.push((await topbar.boundingBox()).height)
   }
@@ -41,7 +41,7 @@ test('390px menu trigger and right-side drawer share one spatial model', async (
   await menu.click()
   const drawer = page.locator('.navdrawer')
   await expect(drawer).toBeVisible()
-  expect(await drawer.locator('.nl').allTextContents()).toEqual(['Rooms', 'Email', 'Settings'])
+  expect(await drawer.locator('.nl').allTextContents()).toEqual(['Rooms', 'Email', 'Background work', 'Settings'])
   const box = await drawer.boundingBox()
   expect(box.x).toBeGreaterThan(70)
 

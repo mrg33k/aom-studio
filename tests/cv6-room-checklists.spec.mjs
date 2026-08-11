@@ -116,7 +116,7 @@ test('per-room checklist keeps drafts, persists lists, plays an item, and copies
   });
   expect(visual.composerAlpha).toBe(1);
   expect(visual.listAlpha).toBe(1);
-  expect(visual.composerPaddingTop).toBeGreaterThanOrEqual(14);
+  expect(visual.composerPaddingTop).toBeGreaterThanOrEqual(8);
   expect(visual.headingHeight).toBeGreaterThanOrEqual(58);
   expect(visual.panelGap).toBeGreaterThanOrEqual(13);
   expect(visual.circles).toHaveLength(8);

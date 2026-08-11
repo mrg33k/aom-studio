@@ -52,8 +52,8 @@ test('mobile shell reaches the physical bottom and Chat header actions are circu
   expect(geometry.composerBottomGap).toBeLessThanOrEqual(40)
 
   await files.click()
-  await expect(page.getByText('Files in this room')).toBeVisible()
-  await page.getByRole('button', { name: 'Close files' }).click()
+  await expect(page.getByText('Files', { exact: true }).last()).toBeVisible()
+  await page.getByRole('button', { name: 'Close files' }).last().click()
   await more.click()
   await expect(page.getByRole('menu', { name: /More for Web/ })).toBeVisible()
   await page.screenshot({ path: '/tmp/corner-r15-mobile-shell-icons.png' })
