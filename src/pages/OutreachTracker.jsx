@@ -200,6 +200,7 @@ const CM_OUTCOME_STATUS = {
   'Spoke':     'Spoke',
   'Booked':    'Meeting booked',
   'Not a fit': 'Lost / Not a fit',
+  'Sent email': 'Spoke',
 }
 
 // ─── Call Mode ────────────────────────────────────────────────────────────────
@@ -235,7 +236,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
       await sb.from('outreach_touchpoints').insert([{
         lead_id: lead.id,
         date: today,
-        channel: 'call',
+        channel: outcome === 'Sent email' ? 'email' : 'call',
         note: noteInput.trim() || outcome,
         ...(repSession ? { rep_username: repSession.username } : {}),
       }])
@@ -260,11 +261,11 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
 
   // Keyboard shortcuts — 1-5 for outcomes, space/enter for next
   useEffect(() => {
-    const OUTCOMES = ['No answer', 'Left VM', 'Spoke', 'Booked', 'Not a fit']
+    const OUTCOMES = ['No answer', 'Left VM', 'Spoke', 'Booked', 'Not a fit', 'Sent email']
     const handler = (e) => {
       const tag = e.target.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      if (e.key >= '1' && e.key <= '5') {
+      if (e.key >= '1' && e.key <= '6') {
         e.preventDefault()
         logRef.current && logRef.current(OUTCOMES[parseInt(e.key) - 1])
       }
@@ -307,20 +308,46 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
   const leftCount  = leads.length - loggedIds.size
 
   const OUTCOME_BTNS = [
-    { label: 'No answer', win: false },
-    { label: 'Left VM',   win: false },
-    { label: 'Spoke',     win: false },
-    { label: 'Booked',    win: true  },
-    { label: 'Not a fit', win: false },
+    { label: 'No answer',  win: false },
+    { label: 'Left VM',    win: false },
+    { label: 'Spoke',      win: false },
+    { label: 'Booked',     win: true  },
+    { label: 'Not a fit',  win: false },
+    { label: 'Sent email', win: false },
   ]
 
-  const scriptSteps = [
+  // One sentence the rep reads verbatim — the only content in the setter call.
+  // The call's whole job is booking discovery; anything more is a reason to say no.
+  const hookLine = isDead && domain
+    ? `Your website at ${domain} isn't loading at all right now.`
+    : (() => {
+        const src = (lead.hook || lead.site_issue || '').trim()
+        if (!src) return 'We took a look at how your company shows up online.'
+        const first = src.split(/\.\s+/)[0]
+        return first.endsWith('.') ? first : `${first}.`
+      })()
+  const isRep     = repSession?.role === 'rep'
+  const firstName = (lead.contact_name || '').split(' ')[0] || ''
+  const repName   = repSession?.display_name || 'the team'
+
+  const fullSteps = [
     { num: 1, label: 'Front desk — first words',         text: lead.intro_line,   bullets: false, highlight: false },
     { num: 2, label: 'When the owner picks up',          text: lead.hook,         bullets: false, highlight: false },
     { num: 3, label: 'Why we\'re calling',               text: lead.why_calling,  bullets: false, highlight: false },
     { num: 4, label: 'Questions to ask',                 text: lead.questions,    bullets: true,  highlight: false },
     { num: 5, label: 'The ask — permission to stop by',  text: lead.meeting_ask,  bullets: false, highlight: true  },
   ]
+  const setterSteps = [
+    { num: 1, label: 'The whole call — one breath', text: `"Hi, is this ${firstName || 'the owner'}? This is ${repName} with Ahead of Market. ${hookLine} Patrik took a look at your company and we think there might be something there — he'd like 15 minutes to walk you through what we found and see if we can help. Would Tuesday or Thursday work?"`, bullets: false, highlight: false },
+    { num: 2, label: 'They ask anything — price, what we do, who', text: `"Honestly, that's Patrik's side, I just book his time. Tuesday or Thursday?"`, bullets: false, highlight: false },
+    { num: 3, label: '"Send me an email"', text: `"Will do, it'll be from me within the hour. If it looks right I'll check back Thursday. Fair?" Copy the email from the panel on the right, send it, log Sent email.`, bullets: false, highlight: true },
+    { num: 4, label: 'A no, or they\'re short with you', text: `"No problem, I'll leave you be. Good luck out there." And you're out — next lead.`, bullets: false, highlight: false },
+  ]
+  const scriptSteps = isRep ? setterSteps : fullSteps
+
+  const emailTo      = lead.owner_email || lead.email || ''
+  const emailSubject = lead.company || ''
+  const emailBody    = `Hi ${firstName || 'there'},\n\n${repName} from Ahead of Market — we spoke earlier. The one thing worth repeating: ${hookLine}\n\nPatrik would like 15 minutes to walk you through what we found and see if we can help. Reply with a day that works.\n\n${repName}\naheadofmarket.com`
 
   const linkBtnStyle = {
     fontFamily: 'Inter,sans-serif',
@@ -667,6 +694,39 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                     <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#A5A29A', marginTop: 8 }}>
                       No handle stored — paste it in their lead card to save for next time.
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Follow-up email — preset, merge fields filled; "send me an email" is the
+                  most common positive exit and speed is the whole impression */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, marginBottom: 8 }}>
+                  Follow-up email
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`Subject: ${emailSubject}\n\n${emailBody}`).then(() => {
+                      clearTimeout(toastTimer.current)
+                      setToastText('Email copied — paste it into your mail app')
+                      toastTimer.current = setTimeout(() => setToastText(''), 2200)
+                    })
+                  }}
+                  style={{ display: 'block', width: '100%', textAlign: 'center', border: '1px solid #B58A38', color: '#8A6828', background: '#FBF4E4', fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: 13, padding: '10px 12px', minHeight: 44, lineHeight: '20px', cursor: 'pointer', boxSizing: 'border-box' }}
+                >
+                  Copy the email
+                </button>
+                {emailTo ? (
+                  <a
+                    href={`mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`}
+                    style={{ display: 'block', marginTop: 8, textAlign: 'center', border: '1px solid #D3D0C7', background: '#FFFFFF', color: '#43423A', fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: 13, padding: '10px 12px', minHeight: 44, lineHeight: '20px', textDecoration: 'none', boxSizing: 'border-box' }}
+                  >
+                    Open in Mail → {emailTo}
+                  </a>
+                ) : (
+                  <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#A5A29A', marginTop: 8 }}>
+                    No email on file — ask for one on the call, then paste and send.
                   </div>
                 )}
               </div>
