@@ -326,7 +326,9 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
     : (() => {
         const src = (lead.why_calling || '').trim()
         if (!src) return 'We took a look at how your company shows up online.'
-        const first = src.split(/\.\s+/)[0]
+        let first = src.split(/\.\s+/)[0]
+        // one FACT, not a paragraph — cut at the ", and " clause break when long
+        if (first.length > 100 && first.includes(', and ')) first = first.split(', and ')[0]
         return first.endsWith('.') ? first : `${first}.`
       })()
   const isRep     = repSession?.role === 'rep'
@@ -341,10 +343,11 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
     { num: 5, label: 'The ask — permission to stop by',  text: lead.meeting_ask,  bullets: false, highlight: true  },
   ]
   const setterSteps = [
-    { num: 1, label: 'The whole call — one breath', text: `"Hi, is this ${firstName || 'the owner'}? This is ${repName} with Ahead of Market. ${hookLine} We don't want to assume, but we think there might be something there — Patrik would like 15 minutes to walk you through what we found and see if we can help. Would Tuesday or Thursday work?"`, bullets: false, highlight: false },
-    { num: 2, label: 'They ask anything — price, what we do, who', text: `"Honestly, that's Patrik's side, I just book his time. Tuesday or Thursday?"`, bullets: false, highlight: false },
-    { num: 3, label: '"Send me an email"', text: `"Will do, it'll be from me within the hour. If it looks right I'll check back Thursday. Fair?" Copy the email from the panel on the right, send it, log Sent email.`, bullets: false, highlight: true },
-    { num: 4, label: 'A no, or they\'re short with you', text: `"No problem, I'll leave you be. Good luck out there." And you're out — next lead.`, bullets: false, highlight: false },
+    { num: 1, label: 'The icebreaker — local, human, they talk first', text: `"Hi, is this ${firstName || 'the owner'}? This is ${repName} with Ahead of Market, out here in Phoenix." Then one light, human, local beat — "Hope it's finally cooling down out your way?" · "You out on a job in this heat?" — say it like a person, not a line. Then STOP and listen. They talk first; now it's a conversation, not a pitch.`, bullets: false, highlight: false },
+    { num: 2, label: 'The reason — one fact, one ask', text: `"${hookLine} We don't want to assume, but we think there might be something there — Patrik would like 15 minutes to walk you through it and see if we can help. Would Tuesday or Thursday work?"`, bullets: false, highlight: false },
+    { num: 3, label: 'They ask anything — price, what we do, who', text: `"Honestly, that's Patrik's side, I just book his time. Tuesday or Thursday?"`, bullets: false, highlight: false },
+    { num: 4, label: '"Send me an email"', text: `"Will do, it'll be from me within the hour. If it looks right I'll check back Thursday. Fair?" Copy the email from the panel on the right, send it, log Sent email.`, bullets: false, highlight: true },
+    { num: 5, label: 'A no, or they\'re short with you', text: `"No problem, I'll leave you be. Good luck out there." And you're out — next lead.`, bullets: false, highlight: false },
   ]
   const scriptSteps = isRep ? setterSteps : fullSteps
 
