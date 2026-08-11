@@ -461,10 +461,24 @@ struct ChatView: View {
                     }
                 }
                 .padding(.horizontal, Theme.s4)
-                .padding(.vertical, Theme.s3)
+                .padding(.top, Theme.s3)
+                // 10pt of clear air between the tail (the turn indicator / progress
+                // loader) and the composer card — it sat flush under it (Patrik
+                // 2026-08-11).
+                .padding(.bottom, Theme.s3 + 10)
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
+            // Landing in a room means landing at the BOTTOM — the anchor alone can
+            // settle a hair short once images and cards size in, so the first ready
+            // render pins the tail explicitly.
+            .onChange(of: model.loadState) { _, state in
+                if case .ready = state {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        proxy.scrollTo("turn-indicator", anchor: .bottom)
+                    }
+                }
+            }
             .onChange(of: model.thread.count) { _, _ in
                 if !isSearching { scrollToEnd(proxy) }
             }

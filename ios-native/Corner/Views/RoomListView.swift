@@ -28,19 +28,21 @@ struct RoomListView: View {
     @State private var query = ""
     @State private var showingNewRoom = false
     @State private var showingBackgroundWork = false
+    @State private var showingNotifications = false
     /// The pinned search field (Patrik 2026-08-11): .searchable's pull-down kept getting
     /// missed, so the search chip in the top bar toggles a visible field row instead.
     @State private var searchOpen = false
     @FocusState private var searchFocused: Bool
 
-    /// The home filters (Patrik 2026-08-11 — the home + directory screens merged on
-    /// purpose, "calling a spade a spade"): Recent is the default recency feed, All is
-    /// the complete directory, Agents IS the per-conversation agent picker, Projects is
-    /// a swipeable project carousel whose tap reveals that project's rooms.
+    /// The home filters, Patrik's final cut (2026-08-11): ALL is the recency-sorted
+    /// feed (Recent folded into it — one default view), Agents IS the per-conversation
+    /// agent picker, Projects is the swipeable carousel. + New rides the same pill row.
     private enum HomeFilter: String, CaseIterable {
-        case recent = "Recent", all = "All", agents = "Agents", projects = "Projects"
+        case all = "All", agents = "Agents", projects = "Projects"
     }
-    @State private var filter: HomeFilter = .recent
+    @State private var filter: HomeFilter = .all
+    /// Bumped by the top bar's voice chip; the home composer starts dictation on change.
+    @State private var voiceTrigger = 0
     /// The project the Projects carousel has open, by slug.
     @State private var openProjectSlug: String?
     /// Rooms swiped out of the Recent feed — Patrik's fast feed cleanup. Local to this
@@ -63,13 +65,10 @@ struct RoomListView: View {
                 eyebrowRow
                 filterChips
                 switch filter {
-                case .recent:
-                    if review.waitingCount > 0 { waitingRow }
+                case .all:
                     recencyRows
                     toolsRows
                     if let error = store.railError { railErrorRow(error) }
-                case .all:
-                    directoryRows
                 case .agents:
                     agentRows
                 case .projects:
@@ -108,8 +107,11 @@ struct RoomListView: View {
         // Hidden while searching — search is a different intent from starting work.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if api.world != nil && query.isEmpty && !searchOpen {
-                HomeComposerBar(intake: intake, candidates: intakeCandidates, recentRooms: intakeRecentRooms)
-                    .background(Theme.ground)
+                HomeComposerBar(
+                    intake: intake, candidates: intakeCandidates,
+                    recentRooms: intakeRecentRooms, voiceTrigger: voiceTrigger
+                )
+                .background(Theme.ground)
             }
         }
         .sheet(isPresented: $intake.showConfirm) {
@@ -122,6 +124,10 @@ struct RoomListView: View {
                 router.open(newRoom)
             }
             .environmentObject(api)
+        }
+        .sheet(isPresented: $showingNotifications) {
+            NotificationsView(recent: store.recent)
+                .environmentObject(router)
         }
         .sheet(isPresented: $showingBackgroundWork) {
             BackgroundWorkView()
@@ -150,21 +156,16 @@ struct RoomListView: View {
 
             Spacer(minLength: Theme.s2)
 
+            // Voice chip — the web top bar's headphones slot. Today it starts
+            // dictation in the home composer (the real voice feature the phone
+            // has); the AirPods call mode stays its own scoped mission.
             Button {
-                showingNewRoom = true
+                withAnimation(.easeOut(duration: 0.15)) { searchOpen = false }
+                voiceTrigger += 1
             } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("New")
-                        .font(.hkCaption.weight(.semibold))
-                }
-                .foregroundStyle(Theme.accent)
-                .padding(.horizontal, 12)
-                .frame(height: 36)
-                .background(Theme.accentWeak, in: Capsule())
+                TopBarChip(symbol: "headphones", active: false)
             }
-            .accessibilityLabel("New room")
+            .accessibilityLabel("Voice — dictate into the composer")
 
             // Search chip — toggles the pinned field under the bar. The old
             // .searchable pull-down kept getting missed; a visible field doesn't.
@@ -184,10 +185,10 @@ struct RoomListView: View {
             // The hamburger — real destinations only. Review's waiting count is
             // the badge dot here and the count line inside.
             Menu {
-                Button { router.open(.review) } label: {
+                Button { showingNotifications = true } label: {
                     Label(review.waitingCount > 0
-                        ? "Review queue — \(review.waitingCount) waiting"
-                        : "Review queue", systemImage: "bell")
+                        ? "Notifications — \(review.waitingCount) new"
+                        : "Notifications", systemImage: "bell")
                 }
                 Button { showingBackgroundWork = true } label: {
                     Label(bgWork.total > 0
@@ -284,14 +285,10 @@ struct RoomListView: View {
     }
 
     private var chipCount: [HomeFilter: Int] {
-        let agents = AgentRoster.all.count
-        let projects = store.projects.count
-        let missions = store.projects.reduce(0) { $0 + $1.missions.count }
-        return [
-            .recent: store.recent.filter { !hiddenRoomIDs.contains($0.room.roomID) }.count,
-            .all: agents + projects + missions,
-            .agents: agents,
-            .projects: projects,
+        [
+            .all: store.recent.filter { !hiddenRoomIDs.contains($0.room.roomID) }.count,
+            .agents: AgentRoster.all.count,
+            .projects: store.projects.count,
         ]
     }
 
@@ -319,48 +316,28 @@ struct RoomListView: View {
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(filter == f ? [.isSelected] : [])
             }
+
+            // + New rides the pill row (Patrik 2026-08-11) — in line with the
+            // filters, off the top navigation.
+            Button { showingNewRoom = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("New")
+                        .font(.hanken(14).weight(.semibold))
+                }
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 14)
+                .frame(height: 38)
+                .background(Theme.accentWeak, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("New room")
+
             Spacer(minLength: 0)
         }
         .padding(.vertical, Theme.s1)
         .plainCardRow()
-    }
-
-    // MARK: - All (the complete directory, recency-first)
-
-    /// Every room the rail knows — agents, projects, missions — newest activity first,
-    /// dormant rooms after, alphabetical inside each band. Hidden rooms appear here
-    /// (nothing is ever lost) and a leading swipe puts them back in Recent.
-    @ViewBuilder
-    private var directoryRows: some View {
-        let tsByID = Dictionary(store.recent.map { ($0.room.roomID, $0) }, uniquingKeysWith: { a, _ in a })
-        let agents: [Room] = api.world.map { world in
-            AgentRoster.all.map { Room(world: world, kind: .agent(slug: $0.slug), title: $0.title, subtitle: $0.subtitle) }
-        } ?? []
-        let projectsAndMissions: [Room] = store.projects.flatMap { [$0.room] + $0.missions }
-        let everything = (agents + projectsAndMissions).sorted { a, b in
-            let ta = tsByID[a.roomID]?.ts ?? 0
-            let tb = tsByID[b.roomID]?.ts ?? 0
-            if ta != tb { return ta > tb }
-            return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
-        }
-        sectionLabel("Everything")
-        ForEach(everything, id: \.roomID) { room in
-            let entry = tsByID[room.roomID] ?? RoomStore.RecentRoom(room: room, ts: 0, preview: "")
-            Button { router.open(room) } label: {
-                RoomRowCard(entry: RoomStore.RecentRoom(room: room, ts: entry.ts, preview: entry.preview), isHero: false)
-                    .opacity(hiddenRoomIDs.contains(room.roomID) ? 0.55 : 1)
-            }
-            .buttonStyle(CardButtonStyle())
-            .plainCardRow()
-            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                if hiddenRoomIDs.contains(room.roomID) {
-                    Button { setHidden(room, false) } label: {
-                        Label("Show in Recent", systemImage: "eye")
-                    }
-                    .tint(Theme.accent)
-                }
-            }
-        }
     }
 
     // MARK: - Projects (the swipeable carousel; tap a card, its rooms appear)
@@ -642,9 +619,20 @@ struct RoomListView: View {
             ForEach(matches) { room in
                 Button { router.open(room) } label: {
                     RoomRowCard(entry: RoomStore.RecentRoom(room: room, ts: 0, preview: ""), isHero: false)
+                        .opacity(hiddenRoomIDs.contains(room.roomID) ? 0.55 : 1)
                 }
                 .buttonStyle(CardButtonStyle())
                 .plainCardRow()
+                // A room swiped out of the feed comes back from here — search is
+                // where every room lives, so it is also where hiding is undone.
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    if hiddenRoomIDs.contains(room.roomID) {
+                        Button { setHidden(room, false) } label: {
+                            Label("Show in feed", systemImage: "eye")
+                        }
+                        .tint(Theme.accent)
+                    }
+                }
             }
         }
     }
@@ -852,7 +840,7 @@ private struct AgentPickerRow: View {
 
 /// The monogram avatar (contract §1 part 2): two letters on every row including the hero,
 /// uppercased. Never a face. Hero fills with the tint; quiet is an outlined disc.
-private struct Monogram: View {
+struct Monogram: View {
     let title: String
     let tint: Color
     let hero: Bool
@@ -1054,7 +1042,7 @@ struct HomePreviewHarness: View {
                 .padding(.top, Theme.s2)
                 .plainCardRow()
                 HStack(spacing: Theme.s2) {
-                    ForEach(["Recent 7", "All 33", "Agents 13", "Projects 7"], id: \.self) { label in
+                    ForEach(["All 7", "Agents 13", "Projects 7", "+ New"], id: \.self) { label in
                         let selected = label.hasPrefix("Recent")
                         Text(label)
                             .font(.hanken(14).weight(.semibold))
@@ -1096,16 +1084,7 @@ struct HomePreviewHarness: View {
                             .frame(height: 20)
                             .foregroundStyle(Theme.ink)
                         Spacer(minLength: Theme.s2)
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("New")
-                                .font(.hkCaption.weight(.semibold))
-                        }
-                        .foregroundStyle(Theme.accent)
-                        .padding(.horizontal, 12)
-                        .frame(height: 36)
-                        .background(Theme.accentWeak, in: Capsule())
+                        TopBarChip(symbol: "headphones", active: false)
                         TopBarChip(symbol: "magnifyingglass", active: searchOpen)
                         TopBarChip(symbol: "line.3.horizontal", active: false)
                             .overlay(alignment: .topTrailing) {

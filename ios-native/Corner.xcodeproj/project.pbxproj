@@ -64,6 +64,7 @@
 		D1FFF5E4326042FDCC1D1C95 /* ReviewDecisionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8CA935ACABC0C1E275A24EE /* ReviewDecisionSheet.swift */; };
 		D5AC8F72E32D152ADD09E7E2 /* OrganizeFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3B3D011843BAF1D207471C /* OrganizeFile.swift */; };
 		D9FFF59D4BF03630C15A0404 /* MessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC55DE9AD33D944A1172351 /* MessageRow.swift */; };
+		DA1EB5D4B866DFE79EF1D58D /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78195C7CEC61A8E2A7C22582 /* NotificationsView.swift */; };
 		DA5EDE403E83544994CC49AF /* RoomStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D8FE03F68E468709423ABF /* RoomStore.swift */; };
 		E088321A5DD334011E79ED97 /* Attachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE9EA2C183A1DE148D6AC9D /* Attachment.swift */; };
 		E40FFC19D015526252E7DA4C /* MessageTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFC308C0F588971B5149FAA /* MessageTransport.swift */; };
@@ -129,6 +130,7 @@
 		6E3B3D011843BAF1D207471C /* OrganizeFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizeFile.swift; sourceTree = "<group>"; };
 		714FB0F47259B6FE53E2B007 /* DeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkTests.swift; sourceTree = "<group>"; };
 		738107B73EFB279CB127593B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		78195C7CEC61A8E2A7C22582 /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
 		7CF99DF9192383E26F1255FB /* IntegrationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsView.swift; sourceTree = "<group>"; };
 		80716889B1EAF64D5F4D475E /* AttachmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentTests.swift; sourceTree = "<group>"; };
 		81D8FE03F68E468709423ABF /* RoomStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomStore.swift; sourceTree = "<group>"; };
@@ -197,6 +199,7 @@
 				7CF99DF9192383E26F1255FB /* IntegrationsView.swift */,
 				07EAECF062E7FAA88D07CFCA /* MessageBubbleView.swift */,
 				4F453FA5B1DE0CAE3D48719C /* NewRoomSheet.swift */,
+				78195C7CEC61A8E2A7C22582 /* NotificationsView.swift */,
 				DA762654D7DF58269E50F794 /* OrganizeView.swift */,
 				277963E40CC1BA7254A5AFEB /* PreviewHarness.swift */,
 				D8CA935ACABC0C1E275A24EE /* ReviewDecisionSheet.swift */,
@@ -472,6 +475,7 @@
 				D9FFF59D4BF03630C15A0404 /* MessageRow.swift in Sources */,
 				E40FFC19D015526252E7DA4C /* MessageTransport.swift in Sources */,
 				E575CF7FB137D70F8DC7CFB2 /* NewRoomSheet.swift in Sources */,
+				DA1EB5D4B866DFE79EF1D58D /* NotificationsView.swift in Sources */,
 				D5AC8F72E32D152ADD09E7E2 /* OrganizeFile.swift in Sources */,
 				A8CE144E7B95956A1649A091 /* OrganizeStore.swift in Sources */,
 				F42C78E0F08A0C382DEED0EC /* OrganizeView.swift in Sources */,

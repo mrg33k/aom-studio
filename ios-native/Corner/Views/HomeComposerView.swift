@@ -184,6 +184,9 @@ struct HomeComposerBar: View {
     /// Rebuilt lazily on send so a room-list poll never rebinds the bar mid-type.
     let candidates: () -> [String: Any]
     let recentRooms: () -> [[String: Any]]
+    /// Bumped by the top bar's voice chip — each change starts dictation here,
+    /// so "voice" in the navigation lands the user talking into the composer.
+    var voiceTrigger: Int = 0
 
     @State private var text = ""
     /// Same semantic key the web persists the intake mode under (localStorage
@@ -311,6 +314,11 @@ struct HomeComposerBar: View {
         .padding(.horizontal, Theme.s3)
         .padding(.top, Theme.s2)
         .padding(.bottom, Theme.s1)
+        // The top bar's voice chip lands here: each bump starts dictation (never
+        // stops it — stopping stays an explicit tap on the mic or the chip).
+        .onChange(of: voiceTrigger) { _, _ in
+            if speech.supported, !speech.isListening { toggleDictation() }
+        }
         #if DEBUG
         .onAppear {
             // Design-proof rig only: the PreviewHarness launches force the recording /
