@@ -128,4 +128,11 @@ Implementation and release checks:
 - The runner's canonical server was corrected to `https://www.aheadofmarket.com`; the former apex redirect stripped its authorization header.
 - 16 focused Node tests, 22 bridge honesty tests, Python compilation, and the Vite production build pass.
 
-**Status:** verified and ready for production release.
+Production proof:
+
+- Dashboard/API commit `d653658f` deployed as Vercel production `dpl_DnkcJcNED91VJoARWrqkRGjm2guf` and serves both the `Auto (Claude → Codex)` UI and canonical runner endpoint.
+- Bridge commits `e090cc81a` and `cb36f5376` are on `master`; the room bridge restarted healthy as PID 90621.
+- Authenticated `bridge-smoke` turn `5234926d` hit the real disabled-subscription banner, queued runner job `051f5a81`, and returned `FALLBACK_SMOKE_OK_2` with source `corner-runner` and `local_codex: true`.
+- Live counters after acceptance: `codex_fallback_queued=1`, `codex_fallback_unavailable=0`.
+
+**Status:** shipped and verified on canonical production.
