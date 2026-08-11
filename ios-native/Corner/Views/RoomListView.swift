@@ -45,11 +45,39 @@ struct RoomListView: View {
         .searchable(text: $query, prompt: "Search rooms")
         .refreshable { await store.load() }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { router.showingSettings = true } label: {
-                    Image(systemName: "person.crop.circle")
+            // The web mobile home's top bar (TopBar contract, R209): theme chip,
+            // bell with the needs-you dot, gradient avatar. Search stays native
+            // (the pull-down field). Every control does its real thing — the bell
+            // opens the review queue and its dot IS review.waitingCount.
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button { cycleTheme() } label: {
+                    Image(systemName: themeGlyph)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.inkSoft)
                 }
-                .accessibilityLabel("Account")
+                .accessibilityLabel("Theme")
+
+                Button { router.open(.review) } label: {
+                    Image(systemName: "bell")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.inkSoft)
+                        .overlay(alignment: .topTrailing) {
+                            if review.waitingCount > 0 {
+                                Circle()
+                                    .fill(Theme.warning)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 2, y: -2)
+                            }
+                        }
+                }
+                .accessibilityLabel(review.waitingCount > 0
+                    ? "Review queue — \(review.waitingCount) waiting"
+                    : "Review queue")
+
+                Button { router.showingSettings = true } label: {
+                    AvatarDisc(name: api.userDisplayName ?? api.userEmail ?? "?", size: 30)
+                }
+                .accessibilityLabel("Settings")
             }
         }
         .sheet(isPresented: $router.showingSettings) {
@@ -74,6 +102,23 @@ struct RoomListView: View {
             review.startPolling()
         }
         .onChange(of: api.world) { _, _ in store.refresh() }
+    }
+
+    // MARK: - Theme cycle (SharedNav's ThemeCycle: Light → Dark → Glass)
+
+    private var themeGlyph: String {
+        switch ThemeManager.shared.kind {
+        case .dark: return "moon"
+        case .light: return "sun.max"
+        case .glass: return "sparkle"
+        }
+    }
+
+    private func cycleTheme() {
+        let all = ThemeKind.allCases
+        let current = ThemeManager.shared.kind
+        let next = all[(all.firstIndex(of: current)! + 1) % all.count]
+        ThemeManager.shared.kind = next
     }
 
     // MARK: - Intake payloads (candidates the routing brain ranks against)
@@ -588,6 +633,23 @@ struct HomePreviewHarness: View {
             .scrollContentBackground(.hidden)
             .background(Theme.ground)
             .navigationTitle("Corner")
+            // The same top bar the real home ships (theme / bell / avatar) with
+            // sample state — a waiting dot on the bell, Patrik's initial — so the
+            // design capture proves the bar, not just the list.
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Image(systemName: "moon")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.inkSoft)
+                    Image(systemName: "bell")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.inkSoft)
+                        .overlay(alignment: .topTrailing) {
+                            Circle().fill(Theme.warning).frame(width: 8, height: 8).offset(x: 2, y: -2)
+                        }
+                    AvatarDisc(name: "Patrik", size: 30)
+                }
+            }
         }
         .preferredColorScheme(ThemeManager.shared.colorScheme)
     }

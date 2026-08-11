@@ -33,6 +33,7 @@
 		5CCD87F91BDBF76B032178E5 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = B367859B24AAEF52EBFEE774 /* Typography.swift */; };
 		64A1F4E8A28A7508AA474B8F /* ChatViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B389E68564C3776CD2DBC754 /* ChatViewModelTests.swift */; };
 		64C84398FCE2AEEB0B12C3C2 /* RenderGalleryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 602A96887BE24D9CBBF02832 /* RenderGalleryTests.swift */; };
+		6F95B95DBC7CD27B3132F7D7 /* ASCIIBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE25EB01A73281103C7D018 /* ASCIIBackground.swift */; };
 		6F9C32B58252C90AD5D3FB12 /* OrganizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBDCCA9EDDA20D17DD9F490 /* OrganizeTests.swift */; };
 		74493D719E1C7DFEEB61A489 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3984DE7AC39AFF032327719 /* AppRouter.swift */; };
 		7924B8A0025880C33F1527B8 /* HankenGrotesk-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */; };
@@ -118,6 +119,7 @@
 		9DBDCCA9EDDA20D17DD9F490 /* OrganizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizeTests.swift; sourceTree = "<group>"; };
 		A5CFBB6863CA0F004E7A1BF1 /* BlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockView.swift; sourceTree = "<group>"; };
 		A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "HankenGrotesk-VF.ttf"; sourceTree = "<group>"; };
+		ACE25EB01A73281103C7D018 /* ASCIIBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASCIIBackground.swift; sourceTree = "<group>"; };
 		ADE9EA2C183A1DE148D6AC9D /* Attachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Attachment.swift; sourceTree = "<group>"; };
 		B367859B24AAEF52EBFEE774 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		B389E68564C3776CD2DBC754 /* ChatViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModelTests.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 			isa = PBXGroup;
 			children = (
 				DCF3E52AD81A2EC95CEED4E8 /* AccountView.swift */,
+				ACE25EB01A73281103C7D018 /* ASCIIBackground.swift */,
 				2A92F26E1C6D5083CFB19872 /* AssignSheet.swift */,
 				A5CFBB6863CA0F004E7A1BF1 /* BlockView.swift */,
 				9230C3027553EA9247E87A7B /* ChatView.swift */,
@@ -400,6 +403,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6F95B95DBC7CD27B3132F7D7 /* ASCIIBackground.swift in Sources */,
 				312766B6F9DA582A0B9299E4 /* AccountView.swift in Sources */,
 				74493D719E1C7DFEEB61A489 /* AppRouter.swift in Sources */,
 				3E19C3887D4D24B99A3923AD /* AssignSheet.swift in Sources */,

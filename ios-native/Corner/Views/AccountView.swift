@@ -326,9 +326,11 @@ private struct ThemeSwatch: View {
 }
 
 /// The web's gradient avatar disc (--avatar: 135deg accent → blue-700) with the
-/// account's initials. Display-only here; photo/initials editing stays on the web.
-private struct AvatarDisc: View {
+/// account's initials. Display-only; photo/initials editing stays on the web.
+/// Shared: the Settings account card and the home top bar both wear it.
+struct AvatarDisc: View {
     let name: String
+    var size: CGFloat = 44
 
     private var initials: String {
         let words = name.split(separator: " ")
@@ -338,9 +340,9 @@ private struct AvatarDisc: View {
 
     var body: some View {
         Text(initials)
-            .font(.hanken(15).weight(.bold))
+            .font(.hanken(size * 0.34).weight(.bold))
             .foregroundStyle(.white)
-            .frame(width: 44, height: 44)
+            .frame(width: size, height: size)
             .background(
                 LinearGradient(
                     colors: [Color(cv6: 0x3B82F6), Color(cv6: 0x1D4ED8)],

@@ -45,6 +45,15 @@ struct SignInView: View {
         ZStack {
             Self.bg.ignoresSafeArea()
             MeshBlobBackground()
+            // The living flow field — Corner is a machine that never sleeps, and
+            // the first screen reads like looking INTO it. Emerald embers to match
+            // the login's own accent; the center scrim keeps the form the hero.
+            ASCIIBackground(ember: Self.emerald2)
+            RadialGradient(
+                colors: [Self.bg.opacity(0.85), Self.bg.opacity(0.0)],
+                center: .center, startRadius: 8, endRadius: 330
+            )
+            .ignoresSafeArea()
             CornerMarks()
 
             VStack(spacing: 0) {
@@ -159,22 +168,25 @@ struct SignInView: View {
                 else {
                     Text("Sign in")
                         .font(.hanken(15).weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.white.opacity(canSubmit ? 1 : 0.55))
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 13)
+            // The waiting state mutes the gradient but stays OPAQUE — a see-through
+            // button over the glyph field reads as watermarked, not as disabled.
             .background(
                 LinearGradient(
-                    colors: [Self.emerald, Self.emerald2],
+                    colors: [Self.emerald.opacity(canSubmit ? 1 : 0.38),
+                             Self.emerald2.opacity(canSubmit ? 1 : 0.38)],
                     startPoint: .topLeading, endPoint: .bottomTrailing
                 ),
                 in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
-            .shadow(color: Self.emerald.opacity(0.20), radius: 11, y: 6)
+            .background(Self.bg, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .shadow(color: Self.emerald.opacity(canSubmit ? 0.20 : 0), radius: 11, y: 6)
         }
         .disabled(!canSubmit)
-        .opacity(canSubmit ? 1 : 0.45)
     }
 
     private var inviteOnly: some View {
