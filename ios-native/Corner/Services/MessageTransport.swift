@@ -27,6 +27,7 @@ protocol MessageTransport: AnyObject {
     @discardableResult
     func send(text: String, room: Room, interactionMode: String) async throws -> MessageRow?
     func fetchSteps(room: Room, limit: Int) async throws -> [MessageStep]
+    func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep]
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing
 }
 
@@ -39,6 +40,20 @@ extension MessageTransport {
         text: String, room: Room, interactionMode: String, attachments: [Attachment]
     ) async throws -> MessageRow? {
         try await send(text: text, room: room, interactionMode: interactionMode)
+    }
+
+    /// R15 routing seam. Existing fakes and non-room callers keep the old behavior;
+    /// CornerAPI overrides this to stamp the selected specialist on the user row.
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String,
+        attachments: [Attachment], roomAgent: String?
+    ) async throws -> MessageRow? {
+        try await send(text: text, room: room, interactionMode: interactionMode, attachments: attachments)
+    }
+
+    func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep] {
+        try await fetchSteps(room: room, limit: limit)
     }
 }
 

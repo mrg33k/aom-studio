@@ -51,6 +51,7 @@ const I = {
   checklist: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.2 1.2L6.5 5M3 12l1.2 1.2L6.5 11M3 18l1.2 1.2L6.5 17"/></svg>,
   brain: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 4.5A3.5 3.5 0 0 0 6 8v1a3 3 0 0 0-1 5.83V16a3 3 0 0 0 3 3h1.5M14.5 4.5A3.5 3.5 0 0 1 18 8v1a3 3 0 0 1 1 5.83V16a3 3 0 0 1-3 3h-1.5M12 3v18M8 9h4M12 15h4" /></svg>,
   computer: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+  person: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>,
   check: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg>,
 };
 
@@ -108,6 +109,7 @@ function CommandsMenu({
   interactionMode,
   setInteractionMode,
   model,
+  agent,
   runner,
   onOpenRunner,
 }) {
@@ -130,9 +132,13 @@ function CommandsMenu({
         aria-label="Commands"
         style={{ ...UTILITY_BTN, width: 'auto', minWidth: 38, padding: '0 10px', gap: 7, cursor: 'pointer', background: open || selectedImageTool ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${open ? 'var(--accent)' : 'var(--hair)'}`, color: open || selectedImageTool || isRecording ? 'var(--accent)' : 'var(--muted)', transition: 'background .15s, color .15s, border-color .15s' }}>
         {isRecording ? I.stop : I.sparkles}
-        <span data-testid="cv6-current-model" style={{ color: open ? 'var(--accent)' : 'var(--fg)', font: '700 11.5px var(--font-sans)', whiteSpace: 'nowrap' }}>
-          {model.loading ? 'Model…' : model.unavailable ? 'Model unavailable' : model.shortLabel}
-        </span>
+        {agent?.enabled ? (
+          <span data-testid="cv6-current-agent" style={{ color: open ? 'var(--accent)' : 'var(--fg)', font: '700 11.5px var(--font-sans)', whiteSpace: 'nowrap' }}>{agent.title}</span>
+        ) : (
+          <span data-testid="cv6-current-model" style={{ color: open ? 'var(--accent)' : 'var(--fg)', font: '700 11.5px var(--font-sans)', whiteSpace: 'nowrap' }}>
+            {model.loading ? 'Model…' : model.unavailable ? 'Model unavailable' : model.shortLabel}
+          </span>
+        )}
       </button>
       {open ? (
         <>
@@ -158,6 +164,11 @@ function CommandsMenu({
                   );
                 })}
               </div>
+              {agent?.enabled ? (
+                <MenuRow icon={I.person} label={`Talking to: ${agent.title}`}
+                  detail={agent.blurb || 'Choose who handles this room'} hasSubmenu
+                  onClick={() => setView('agent')} testid="cv6-commands-agent" />
+              ) : null}
               <MenuRow icon={I.brain} label={model.unavailable ? 'Model unavailable' : `Model: ${model.label}`}
                 detail={model.unavailable ? 'Could not load this room’s saved model' : model.routeDetail} hasSubmenu
                 onClick={() => setView('model')} testid="cv6-commands-model" />
@@ -188,6 +199,22 @@ function CommandsMenu({
                   onClick={() => { setSelectedImageTool(tool.id); setOpen(false); }}
                   testid={`cv6-commands-image-gen-${tool.id}`} />
               ))}
+            </>
+          ) : view === 'agent' ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px 6px' }}>
+                <button type="button" onClick={() => setView('root')} aria-label="Back to commands" style={{ width: 20, height: 20, borderRadius: 6, background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>{I.back}</button>
+                <span className="eyebrow">Who answers this room</span>
+              </div>
+              {(agent?.roster || []).map((option) => {
+                const selected = agent.roomSelection === option.slug;
+                return (
+                  <MenuRow key={option.slug} icon={selected ? I.check : I.person} label={option.title} detail={option.blurb}
+                    tint={selected ? 'var(--accent)' : null}
+                    onClick={async () => { const saved = await agent.select(option.slug); if (saved) setOpen(false); }}
+                    testid={`cv6-commands-agent-${option.slug}`} />
+                );
+              })}
             </>
           ) : (
             <>
@@ -233,6 +260,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
     pasteChips, addPasteChip, removePasteChip,
     selectedImageTool, setSelectedImageTool,
     interactionMode = 'work', setInteractionMode,
+    agentPicker,
   } = useChatComposerCtx();
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx();
   const { isVoiceActive, setIsVoiceActive } = useChatVoiceCtx();
@@ -461,7 +489,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
           </div>
         </div>}
         <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: checklistOpen ? 12 : 10 }}>
-          <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} interactionMode={interactionMode} setInteractionMode={setInteractionMode} model={model} runner={runner} onOpenRunner={() => setRunnerOpen(true)} />
+          <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} interactionMode={interactionMode} setInteractionMode={setInteractionMode} model={model} agent={agentPicker} runner={runner} onOpenRunner={() => setRunnerOpen(true)} />
           <button type="button" className="cv6-composer-util" data-testid="room-checklist-toggle" title={checklistOpen ? 'Back to message' : 'Room checklists'} aria-label={checklistOpen ? 'Close room checklists' : 'Open room checklists'} aria-pressed={checklistOpen}
             onClick={() => { setCommandsOpen(false); setChecklistOpen((open) => !open); }}
             style={{ ...UTILITY_BTN, background: checklistOpen ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${checklistOpen ? 'var(--accent)' : 'var(--hair)'}`, color: checklistOpen ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer' }}>

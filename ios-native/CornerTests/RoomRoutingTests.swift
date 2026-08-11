@@ -133,6 +133,25 @@ final class RoomRoutingTests: XCTestCase {
         XCTAssertEqual(body["project"] as? String, "corner")
     }
 
+    func testProjectSendBodyUsesSelectedRoomSpecialist() {
+        let room = Room(world: "aom", kind: .project(slug: "corner"), title: "", subtitle: "")
+        let body = room.sendBody(text: "hello", roomAgent: "elon")
+        XCTAssertEqual(body["agent"] as? String, "elon")
+        XCTAssertEqual(body["project"] as? String, "corner")
+        XCTAssertEqual(room.agentPreferenceKey, "project:corner")
+    }
+
+    func testMissionRoomSpecialistKeyIsCanonicalAndIndependent() {
+        let room = Room(
+            world: "aom",
+            kind: .mission(slug: "corner:native-ios", project: "corner"),
+            title: "", subtitle: ""
+        )
+        XCTAssertEqual(room.agentPreferenceKey, "mission:corner:native-ios")
+        XCTAssertEqual(room.sendBody(text: "hello", roomAgent: "default")["agent"] as? String, "corner")
+        XCTAssertEqual(room.sendBody(text: "hello", roomAgent: "rex")["agent"] as? String, "rex")
+    }
+
     /// The canonical slug must ride in metadata. Sending the bare tail drops the
     /// mission into the server's first-wins slug lottery.
     func testMissionSendBodyCarriesCanonicalSlugInMetadata() throws {

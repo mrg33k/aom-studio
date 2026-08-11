@@ -131,6 +131,11 @@ final class ChatViewModel: ObservableObject {
     /// this room's own choice, else the workspace "_all", else automatic.
     @Published private(set) var modelChoice = "default"
     @Published private(set) var modelSaving = false
+    /// Who answers this project/mission room. "default" means the room's own
+    /// identity; agent 1:1 rooms never expose the selector.
+    @Published private(set) var roomAgentChoice = "default"
+    @Published private(set) var roomAgentRoster: [CornerAPI.RoomAgentOption] = []
+    @Published private(set) var roomAgentSaving = false
 
     private let api: MessageTransport
     /// Uploads + model prefs are CornerAPI-only concerns (the transport seam is the
@@ -461,7 +466,7 @@ final class ChatViewModel: ObservableObject {
         // 100, matching the web's persistence poll. The steps feed is shared by every
         // room in the world; 40 lets a busy afternoon push a long turn's early steps
         // out of the window, which reads here as the turn losing its heartbeat.
-        let steps = (try? await api.fetchSteps(room: room, limit: 100)) ?? []
+        let steps = (try? await api.fetchSteps(room: room, roomAgent: roomAgentChoice, limit: 100)) ?? []
         // Steps keyed to ANY user row folded into this turn count — a follow-up
         // re-keys the display but the bridge keeps emitting against the original id.
         let mine = steps.filter { step in
@@ -597,6 +602,39 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Room specialist preference (R15)
+
+    func loadRoomAgentPreference() async {
+        guard let key = room.agentPreferenceKey else { return }
+        guard let result = try? await live.roomAgents() else { return }
+        roomAgentRoster = result.agents
+        let saved = result.assignments[key, default: ""]
+            .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        roomAgentChoice = saved.isEmpty ? "default" : saved
+    }
+
+    func selectRoomAgent(_ slug: String) async {
+        guard let key = room.agentPreferenceKey, !roomAgentSaving else { return }
+        let next = slug.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalized = next.isEmpty ? "default" : next
+        guard normalized != roomAgentChoice else { return }
+        let previous = roomAgentChoice
+        roomAgentChoice = normalized
+        roomAgentSaving = true
+        defer { roomAgentSaving = false }
+        do {
+            try await live.setRoomAgent(preferenceKey: key, agent: normalized)
+        } catch {
+            roomAgentChoice = previous
+        }
+    }
+
+    var roomAgentTitle: String {
+        guard roomAgentChoice != "default" else { return "Room default" }
+        return roomAgentRoster.first(where: { $0.slug == roomAgentChoice })?.title
+            ?? AgentRoster.title(for: roomAgentChoice)
+    }
+
     func retry(_ item: OutboxItem) {
         guard let index = outbox.firstIndex(where: { $0.id == item.id }) else { return }
         outbox[index].state = .sending
@@ -648,7 +686,8 @@ final class ChatViewModel: ObservableObject {
             do {
                 let created = try await self.api.send(
                     text: item.text, room: self.room,
-                    interactionMode: mode, attachments: item.attachments
+                    interactionMode: mode, attachments: item.attachments,
+                    roomAgent: self.roomAgentChoice
                 )
                 if let created {
                     self.beginTurn(

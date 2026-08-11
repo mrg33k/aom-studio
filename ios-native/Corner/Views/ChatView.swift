@@ -231,6 +231,7 @@ struct ChatView: View {
                 // room rather than only when the review screen is opened.
                 Task { await review.load() }
                 Task { await model.loadModelPreference() }
+                Task { await model.loadRoomAgentPreference() }
                 // Stamp the per-room read time so the home dot clears immediately.
                 ReadStateStore.shared.markRead(
                     roomID: model.room.roomID,
@@ -826,6 +827,33 @@ struct ChatView: View {
                 Label("Model — \(ChatView.shortModelLabel(model.modelChoice))", systemImage: "cpu")
             }
 
+            if model.room.agentPreferenceKey != nil {
+                Menu {
+                    Button {
+                        Task { await model.selectRoomAgent("default") }
+                    } label: {
+                        if model.roomAgentChoice == "default" {
+                            Label("Room default", systemImage: "checkmark")
+                        } else {
+                            Text("Room default")
+                        }
+                    }
+                    ForEach(model.roomAgentRoster) { specialist in
+                        Button {
+                            Task { await model.selectRoomAgent(specialist.slug) }
+                        } label: {
+                            if specialist.slug == model.roomAgentChoice {
+                                Label(specialist.title, systemImage: "checkmark")
+                            } else {
+                                Text(specialist.title)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Specialist — \(model.roomAgentTitle)", systemImage: "person.crop.circle")
+                }
+            }
+
             Button { showingFiles = true } label: {
                 Label("Files in this room", systemImage: "folder")
             }
@@ -845,12 +873,14 @@ struct ChatView: View {
                     .strokeBorder(Theme.hairline, lineWidth: 1)
             )
         }
-        .accessibilityLabel("Commands — mode, model, files")
+        .accessibilityLabel("Commands — specialist, mode, model, files")
     }
 
     private var commandsChipLabel: String {
-        let modelLabel = ChatView.shortModelLabel(model.modelChoice)
-        return model.chatMode == "plan" ? "\(modelLabel) · Plan" : modelLabel
+        let primary = model.room.agentPreferenceKey == nil
+            ? ChatView.shortModelLabel(model.modelChoice)
+            : model.roomAgentTitle
+        return model.chatMode == "plan" ? "\(primary) · Plan" : primary
     }
 
     /// Staged files, as removable chips above the shell — the web's pinned-chip row.

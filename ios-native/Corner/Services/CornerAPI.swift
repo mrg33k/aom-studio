@@ -232,14 +232,36 @@ final class CornerAPI: ObservableObject {
     @discardableResult
     func send(
         text: String, room: Room, interactionMode: String,
+        attachments: [Attachment], roomAgent: String?
+    ) async throws -> MessageRow? {
+        try await send(
+            text: text, room: room, interactionMode: interactionMode,
+            routed: nil, attachments: attachments, roomAgent: roomAgent
+        )
+    }
+
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String,
         routed: RouteProvenance?, attachments: [Attachment]
+    ) async throws -> MessageRow? {
+        try await send(
+            text: text, room: room, interactionMode: interactionMode,
+            routed: routed, attachments: attachments, roomAgent: nil
+        )
+    }
+
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String,
+        routed: RouteProvenance?, attachments: [Attachment], roomAgent: String?
     ) async throws -> MessageRow? {
         let request = try await authorizedRequest(
             path: "/api/dashboard/supabase-messages",
             method: "POST",
             jsonBody: room.sendBody(
                 text: text, interactionMode: interactionMode,
-                routed: routed, attachments: attachments
+                routed: routed, attachments: attachments, roomAgent: roomAgent
             )
         )
         let data = try await run(request)
@@ -336,6 +358,51 @@ final class CornerAPI: ObservableObject {
             path: "/api/dashboard/agent-model",
             method: "PATCH",
             jsonBody: ["slug": preferenceKey, "model": model, "client_id": world]
+        )
+        _ = try await run(request)
+    }
+
+    // MARK: - Room specialist preference (corner:native-ios R15)
+
+    struct RoomAgentOption: Decodable, Identifiable, Equatable {
+        let slug: String
+        let title: String
+        let role: String
+        var id: String { slug }
+    }
+
+    struct RoomAgentsResult: Equatable {
+        let agents: [RoomAgentOption]
+        let assignments: [String: String]
+    }
+
+    /// GET returns the live agent_status roster plus this world's room map. The
+    /// roster is deliberately server-owned so the 72-hour agent sweep reaches the
+    /// phone without waiting for another App Store build.
+    func roomAgents() async throws -> RoomAgentsResult {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/room-agent",
+            queryItems: [URLQueryItem(name: "client", value: world)]
+        )
+        let data = try await run(request)
+        struct Envelope: Decodable {
+            let agents: [RoomAgentOption]
+            let assignments: [String: String]
+        }
+        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: data) else {
+            throw APIError.decoding
+        }
+        return RoomAgentsResult(agents: envelope.agents, assignments: envelope.assignments)
+    }
+
+    /// PATCH assigns who answers one canonical room, or clears it with "default".
+    func setRoomAgent(preferenceKey: String, agent: String) async throws {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/room-agent",
+            method: "PATCH",
+            jsonBody: ["room": preferenceKey, "agent": agent, "client_id": world]
         )
         _ = try await run(request)
     }
@@ -447,9 +514,15 @@ final class CornerAPI: ObservableObject {
     /// every room in the world, and 40 let a busy afternoon push a long turn's own
     /// steps out of the window — which read as the turn losing its heartbeat.
     func fetchSteps(room: Room, limit: Int = 100) async throws -> [MessageStep] {
+        try await fetchSteps(room: room, roomAgent: nil, limit: limit)
+    }
+
+    func fetchSteps(room: Room, roomAgent: String?, limit: Int = 100) async throws -> [MessageStep] {
+        let selected = (roomAgent ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let stepAgent = selected.isEmpty || selected == "default" ? room.stepAgentSlug : selected
         var items = [
             URLQueryItem(name: "client_id", value: room.world),
-            URLQueryItem(name: "agent", value: room.stepAgentSlug),
+            URLQueryItem(name: "agent", value: stepAgent),
             URLQueryItem(name: "limit", value: String(limit)),
         ]
         if let project = room.stepProjectSlug {

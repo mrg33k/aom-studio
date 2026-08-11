@@ -41,6 +41,8 @@ import useChatSettings from '../components/cv3/chat/useChatSettings.js';
 import VoiceModeBar from '../components/cv3/thread/VoiceModeBar.jsx';
 import Cv6InputBar from './Cv6InputBar.jsx';
 import { roomChecklistKey } from './data/roomKeys.js';
+import { dispatchAgentSlug, roomAgentPreferenceKey, resolveEffectiveRoomAgent } from './data/agentPreferences.js';
+import { pickerAgents } from './data/agentTitles.js';
 import VoiceChat from '../components/VoiceChat.jsx';
 
 const READ_ONLY_COPY = 'Chat needs a connected workspace. Local mode is read-only.';
@@ -149,6 +151,41 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     try { localStorage.setItem(`cv6.chatMode.${currentChatKey}`, value); } catch { /* private mode */ }
   }, [currentChatKey]);
 
+  const agentPreferenceKey = roomAgentPreferenceKey(room);
+  const [agentAssignments, setAgentAssignments] = useState({});
+  const [roomAgentRoster, setRoomAgentRoster] = useState([]);
+  const [agentSaving, setAgentSaving] = useState(false);
+  const loadRoomAgents = useCallback(() => {
+    if (!worldId || !agentPreferenceKey) {
+      setAgentAssignments({});
+      setRoomAgentRoster([]);
+      return Promise.resolve({});
+    }
+    return authFetch(`/api/dashboard/room-agent?client=${encodeURIComponent(worldId)}`)
+      .then((response) => {
+        if (!response?.ok) throw new Error('room specialist load failed');
+        return response.json();
+      })
+      .then(({ agents: liveAgents, assignments }) => {
+        const next = assignments && typeof assignments === 'object' ? assignments : {};
+        setAgentAssignments(next);
+        setRoomAgentRoster(Array.isArray(liveAgents) ? liveAgents : []);
+        return next;
+      })
+      .catch(() => {
+        setAgentAssignments({});
+        setRoomAgentRoster([]);
+        return {};
+      });
+  }, [worldId, agentPreferenceKey]);
+  useEffect(() => {
+    loadRoomAgents();
+    window.addEventListener('aom-agent-pref-changed', loadRoomAgents);
+    return () => window.removeEventListener('aom-agent-pref-changed', loadRoomAgents);
+  }, [loadRoomAgents]);
+  const selectedAgentSlug = resolveEffectiveRoomAgent(agentAssignments, agentPreferenceKey).slug;
+  const dispatchAgent = dispatchAgentSlug(selectedAgentSlug);
+
   // ── Throwaway messages slice. The col3 thread renders from useRoomThread; the
   // CV4 hooks only need setMessages for optimistic rows, which we let the thread
   // poll surface instead. ──
@@ -176,22 +213,51 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   //     brings CV6 in line with them.
   const postToRoom = useCallback((text, role, options) => {
     if (!worldId || !room) return Promise.resolve();
-    const { source: sourceOverride, ...rest } = options || {};
+    const { source: sourceOverride, agent: agentOverride, ...rest } = options || {};
     const source = sourceOverride || 'corner-dashboard';
     const extraMeta = Object.keys(rest).length ? rest : null;
     const author = role === 'user' && userIdentity.user_id
       ? { user_id: userIdentity.user_id, ...(userIdentity.user_name ? { user_name: userIdentity.user_name } : {}) }
       : {};
     const base = { client_id: worldId, text, role, source, ...author };
+    const roomAgent = agentOverride || dispatchAgent;
     const payload = room.isMission
-      ? { ...base, agent: 'corner', project: room.projectSlug, metadata: { mission_slug: room.missionSlug || room.id, ...(extraMeta || {}) } }
+      ? { ...base, agent: roomAgent, project: room.projectSlug, metadata: { mission_slug: room.missionSlug || room.id, ...(extraMeta || {}) } }
       : room.isProject
-        ? { ...base, agent: 'corner', project: room.id, ...(extraMeta ? { metadata: extraMeta } : {}) }
+        ? { ...base, agent: roomAgent, project: room.id, ...(extraMeta ? { metadata: extraMeta } : {}) }
         : { ...base, agent: room.id, ...(extraMeta ? { metadata: extraMeta } : {}) };
     return authFetch('/api/dashboard/supabase-messages', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     });
-  }, [worldId, room, userIdentity]);
+  }, [worldId, room, userIdentity, dispatchAgent]);
+
+  const selectRoomAgent = useCallback(async (slug) => {
+    if (!worldId || !agentPreferenceKey || agentSaving) return false;
+    const nextSlug = String(slug || 'default').trim().toLowerCase();
+    if (nextSlug === selectedAgentSlug) return true;
+    const previous = agentAssignments;
+    setAgentSaving(true);
+    setAgentAssignments((current) => {
+      const next = { ...current };
+      if (nextSlug === 'default') delete next[agentPreferenceKey];
+      else next[agentPreferenceKey] = nextSlug;
+      return next;
+    });
+    try {
+      const response = await authFetch('/api/dashboard/room-agent', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room: agentPreferenceKey, agent: nextSlug, client_id: worldId }),
+      });
+      if (!response?.ok) throw new Error('room specialist save failed');
+      window.dispatchEvent(new Event('aom-agent-pref-changed'));
+      return true;
+    } catch {
+      setAgentAssignments(previous);
+      return false;
+    } finally {
+      setAgentSaving(false);
+    }
+  }, [worldId, agentPreferenceKey, agentSaving, selectedAgentSlug, agentAssignments]);
 
   // ── Send: image-gen branch when a tool is pinned, else plain text via the
   // thread's own send (keeps the col3 optimistic bubble). ──
@@ -276,7 +342,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       // words in two places at once, so the thread's copy wins.
       let keptInThread = false;
       const ok = typeof quickSend === 'function'
-        ? await quickSend(text, { interactionMode, onKeptInThread: (reason) => { keptInThread = true; setSendError(SEND_ERROR_COPY[reason] || SEND_ERROR_COPY.server); } })
+        ? await quickSend(text, { interactionMode, agent: dispatchAgent, onKeptInThread: (reason) => { keptInThread = true; setSendError(SEND_ERROR_COPY[reason] || SEND_ERROR_COPY.server); } })
         : false;
       if (ok !== false) acceptIfRouted();
       if (ok === false && !keptInThread) {
@@ -289,7 +355,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     } finally {
       sendingRef.current = false;
     }
-  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode, acceptIfRouted]);
+  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode, dispatchAgent, acceptIfRouted]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -305,9 +371,9 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     checklistSendingRef.current = true;
     // Keep the checklist visible: Play is one step inside list triage, not an
     // instruction to dismiss the whole composer before the next item is handled.
-    try { return await quickSend(value, { interactionMode, keepComposerOpen: true }); }
+    try { return await quickSend(value, { interactionMode, agent: dispatchAgent, keepComposerOpen: true }); }
     finally { checklistSendingRef.current = false; }
-  }, [quickSend, interactionMode]);
+  }, [quickSend, interactionMode, dispatchAgent]);
 
   // Whole-list Play: one message carrying the list verbatim as a work order.
   // Numbered plain lines read correctly on both renderers (desktop markdown,
@@ -317,9 +383,9 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     const message = formatChecklistWorkOrder(list);
     if (!message || typeof quickSend !== 'function' || checklistSendingRef.current) return false;
     checklistSendingRef.current = true;
-    try { return await quickSend(message, { interactionMode, keepComposerOpen: true }); }
+    try { return await quickSend(message, { interactionMode, agent: dispatchAgent, keepComposerOpen: true }); }
     finally { checklistSendingRef.current = false; }
-  }, [quickSend, interactionMode]);
+  }, [quickSend, interactionMode, dispatchAgent]);
 
   // ── Voice slice ──
   const voiceChatRef = useRef(null);
@@ -332,7 +398,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
 
   // ── Recording (dictation) routes transcribed text through the room send. ──
   const sendTextRef = useRef(null);
-  sendTextRef.current = (text) => { if (text && typeof quickSend === 'function') quickSend(String(text).trim()); };
+  sendTextRef.current = (text) => { if (text && typeof quickSend === 'function') quickSend(String(text).trim(), { agent: dispatchAgent }); };
 
   // ── Real CV4 hooks, scoped to the room ──
   const attach = useChatAttachments({ selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef: sendTextRef });
@@ -346,11 +412,25 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     onBack: onClose, chatInputFocused, setChatInputFocused,
   }), [selectedAgent, selectedProject, agents, worldId, currentUser, userIdentity, onClose, chatInputFocused]);
 
+  const agentRoster = useMemo(() => pickerAgents(roomAgentRoster), [roomAgentRoster]);
+  const agentPicker = useMemo(() => {
+    const current = agentRoster.find((entry) => entry.slug === selectedAgentSlug) || agentRoster[0];
+    return {
+      enabled: !!agentPreferenceKey,
+      title: current?.title || 'Room default',
+      blurb: current?.blurb || '',
+      roster: agentRoster,
+      roomSelection: selectedAgentSlug,
+      saving: agentSaving,
+      select: selectRoomAgent,
+    };
+  }, [agentRoster, selectedAgentSlug, agentPreferenceKey, agentSaving, selectRoomAgent]);
+
   const composerValue = useMemo(() => ({
     input, setInput, inputRef, handleSend, handleKeyDown,
     pasteChips, addPasteChip, removePasteChip, selectedImageTool, setSelectedImageTool,
-    interactionMode, setInteractionMode: changeInteractionMode,
-  }), [input, handleSend, handleKeyDown, pasteChips, addPasteChip, removePasteChip, selectedImageTool, interactionMode, changeInteractionMode]);
+    interactionMode, setInteractionMode: changeInteractionMode, agentPicker,
+  }), [input, handleSend, handleKeyDown, pasteChips, addPasteChip, removePasteChip, selectedImageTool, interactionMode, changeInteractionMode, agentPicker]);
 
   const messagesValue = useMemo(() => ({ setMessages }), [setMessages]);
 

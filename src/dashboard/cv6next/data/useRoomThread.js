@@ -952,19 +952,22 @@ class RoomThreadEngine {
       isFile: false, fileName: '', attachmentUrl: '', fileMime: '', fileSize: 0, blocks: null,
     }]);
     const interactionMode = options?.interactionMode === 'plan' ? 'plan' : 'work';
+    // Project and mission rooms keep one shared thread, but the room's saved
+    // specialist decides who handles this turn. Agent 1:1 rooms remain fixed.
+    const roomAgent = options?.agent || 'corner';
     const payload = room.isMission
       // Send the CANONICAL "<project>:<mission>" slug (room.missionSlug), not the bare
       // tail — write-message.js passes a slug containing ':' through untouched, so the
       // mission never enters the bare-slug first-wins lottery (Bug 1).
-      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), interaction_mode: interactionMode } }
+      ? { client_id: worldId, agent: roomAgent, project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), interaction_mode: interactionMode } }
       : room.isProject
-        ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } }
+        ? { client_id: worldId, agent: roomAgent, project: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } }
         : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } };
     // Show "working" the instant you send, so the thread never looks dead.
     this.sawLiveSteps = false;
     this.lastSentTs = now.getTime();
     this.lastSentText = body;
-    this.lastSentOptions = { interactionMode };
+    this.lastSentOptions = { interactionMode, agent: roomAgent };
     this.silentTurn = false;
     this.commit({ awaiting: true, turnHealth: { state: 'accepted', cause: null, repaired: false }, liveSteps: [] });
     // A failed send KEEPS its bubble (corner:bridge frontend-visibility D3). Deleting it

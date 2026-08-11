@@ -153,6 +153,20 @@ struct Room: Identifiable, Hashable {
         }
     }
 
+    /// Canonical key shared by native, web, /api/dashboard/room-agent, and the
+    /// room bridge. A mission keeps its own staffing choice instead of inheriting
+    /// the whole project's choice. Agent 1:1 rooms are already the specialist.
+    var agentPreferenceKey: String? {
+        switch kind {
+        case .agent:
+            return nil
+        case .project(let slug):
+            return "project:\(slug)"
+        case .mission(let slug, _):
+            return "mission:\(slug)"
+        }
+    }
+
     /// The room key for the private checklist store — mirrors roomChecklistKey() in
     /// src/dashboard/cv6next/data/roomKeys.js. Missions carry the canonical
     /// "<project>:<mission>" slug that is already baked into `kind.mission.slug`.
@@ -168,7 +182,8 @@ struct Room: Identifiable, Hashable {
         text: String,
         interactionMode: String = "work",
         routed: RouteProvenance? = nil,
-        attachments: [Attachment] = []
+        attachments: [Attachment] = [],
+        roomAgent: String? = nil
     ) -> [String: Any] {
         var body: [String: Any] = [
             "client_id": world,
@@ -189,10 +204,10 @@ struct Room: Identifiable, Hashable {
         case .agent(let slug):
             body["agent"] = slug
         case .project(let slug):
-            body["agent"] = "corner"
+            body["agent"] = Self.dispatchAgent(roomAgent)
             body["project"] = slug
         case .mission(let slug, let project):
-            body["agent"] = "corner"
+            body["agent"] = Self.dispatchAgent(roomAgent)
             body["project"] = project
             metadata["mission_slug"] = slug
         }
@@ -203,6 +218,11 @@ struct Room: Identifiable, Hashable {
         }
         body["metadata"] = metadata
         return body
+    }
+
+    private static func dispatchAgent(_ selection: String?) -> String {
+        let slug = (selection ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return slug.isEmpty || slug == "default" ? "corner" : slug
     }
 
     // MARK: - Parsing a room_id back into a Room (the deep-link path)

@@ -113,3 +113,37 @@ export function curateTitledAgents(agents = []) {
   }
   return out.sort((x, y) => x._order - y._order);
 }
+
+export const AGENT_PICKER_BLURBS = {
+  director: 'Sets the creative direction before anything gets designed.',
+  gary: 'Runs delivery, priorities, and keeps the business on track.',
+  elon: 'Keeps the whole system healthy and points work to the right place.',
+  rex: 'Handles the day-to-day and keeps the work moving.',
+  jacob: 'Finds leads and writes the outreach that starts conversations.',
+  alex: 'Sharpens strategy, positioning, and the numbers behind a deal.',
+  steffen: 'Owns brand, visual identity, and design decisions.',
+  bobby: 'Builds and ships websites and app screens.',
+  cleo: 'Turns raw footage into finished, platform-ready video.',
+  tony: 'Plans and posts social content across platforms.',
+  steve: 'Advises on technology, checks quality, and builds the pitch.',
+  elmo: 'Reviews and QAs work before it ships.',
+  pixel: 'Generates images, thumbnails, and media assets.',
+};
+
+const ROOM_DEFAULT_ENTRY = {
+  slug: 'default',
+  title: 'Room default',
+  blurb: 'Use this room’s own specialist identity.',
+};
+
+// The API supplies the live, tenant-scoped roster. Do not inflate it with the
+// hard-coded dashboard roster here: the 72-hour upgrade sweep and agent_status are
+// the source of truth for who can answer right now.
+export function pickerAgents(agents = []) {
+  const roster = (agents || []).map((a) => ({
+    slug: String(a.slug || '').trim().toLowerCase(),
+    title: a.title || titleForAgent(a),
+    blurb: AGENT_PICKER_BLURBS[a.slug] || a.role || `Talk to ${a.title || a.slug}.`,
+  })).filter((a) => a.slug && a.slug !== 'default');
+  return [ROOM_DEFAULT_ENTRY, ...roster];
+}
