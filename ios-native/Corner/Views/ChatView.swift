@@ -303,17 +303,52 @@ struct ChatView: View {
 
     /// Avatar + room name + live status — the web's desktop-room-header, compressed
     /// for the phone's nav bar. Tapping it opens room settings.
+    /// The slug of this room's specialist when it IS a 1:1 agent room, else nil.
+    private var currentAgentSlug: String? {
+        if case .agent(let slug) = model.room.kind { return slug }
+        return nil
+    }
+
+    // The title is the specialist switcher — CV4's ContextNav click-to-switch
+    // dropdown, native. Tap the header, pick a specialist, and AppRouter's
+    // replace-don't-stack rule swaps this chat for theirs in place. Room
+    // settings rides at the bottom (the header tap used to open it directly;
+    // it also stays in the ⋯ menu).
     private var headerTitle: some View {
-        Button {
-            showingSettings = true
+        Menu {
+            Section("Switch specialist") {
+                ForEach(AgentRoster.all, id: \.slug) { entry in
+                    Button {
+                        router.open(Room(world: model.room.world,
+                                         kind: .agent(slug: entry.slug),
+                                         title: entry.title,
+                                         subtitle: entry.subtitle))
+                    } label: {
+                        if entry.slug == currentAgentSlug {
+                            Label(entry.title, systemImage: "checkmark")
+                        } else {
+                            Text(entry.title)
+                        }
+                    }
+                }
+            }
+            Divider()
+            Button { showingSettings = true } label: {
+                Label("Room settings", systemImage: "gearshape")
+            }
         } label: {
             HStack(spacing: 8) {
                 RoomAvatarView(room: model.room, size: 30, isActive: model.isAwaiting)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(model.room.title)
-                        .font(.hanken(15).weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        Text(model.room.title)
+                            .font(.hanken(15).weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                            .lineLimit(1)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
                     // Status line: "active" with a live dot when a turn is running,
                     // else the room's subtitle (specialist / project / mission).
                     HStack(spacing: 4) {
@@ -339,7 +374,7 @@ struct ChatView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Room settings for \(model.room.title)")
+        .accessibilityLabel("\(model.room.title) — switch specialist or open room settings")
     }
 
     // MARK: - Search bar (R5)

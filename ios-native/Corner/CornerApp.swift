@@ -75,7 +75,23 @@ struct CornerApp: App {
         // (`-homePreview`, `-chatPreview`, `-composerPreview`). Synthetic data, Debug
         // builds only, no production data touched.
         let args = ProcessInfo.processInfo.arguments
-        if args.contains("-chatPreview") {
+        if args.contains("-chatHeaderPreview") {
+            // The REAL ChatView (not the fixture harness) so the header's specialist
+            // switcher can be captured: unauthenticated, the thread shows its empty
+            // state but the principal toolbar — avatar, title, chevron, Menu — is the
+            // shipping code path. The stack binds router.path exactly like RootView
+            // so a switch actually navigates in the proof, not just in production.
+            // R14 proof mode.
+            NavigationStack(path: $router.path) {
+                ChatView(room: Room(world: "aom",
+                                    kind: .agent(slug: AgentRoster.all[0].slug),
+                                    title: AgentRoster.all[0].title,
+                                    subtitle: AgentRoster.all[0].subtitle))
+                    .navigationDestination(for: Route.self) { route in
+                        if case .room(let room) = route { ChatView(room: room) }
+                    }
+            }
+        } else if args.contains("-chatPreview") {
             ChatPreviewHarness()
         } else if args.contains("-settingsPreview") {
             // The Settings sheet's own render, no auth: identity rows show their
