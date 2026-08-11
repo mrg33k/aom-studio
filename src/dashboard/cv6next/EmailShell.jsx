@@ -7,6 +7,7 @@
 // Tab choice sticks per session so a phone check-in lands where you left off.
 import React, { useState, useEffect, useCallback } from 'react';
 import Campaign from './Campaign.jsx';
+import ColumnExpandButton from './ColumnExpandButton.jsx';
 import { useWorldId } from '../lib/tenantContext.jsx';
 import { authFetch } from '../lib/authFetch';
 
