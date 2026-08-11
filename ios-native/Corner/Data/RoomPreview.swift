@@ -58,6 +58,10 @@ enum RoomPreview {
         if regex(lower, #"\b(?:smoke|probe|acceptance|regression)\b.*\b(?:test|check|ping)\b"#) { return true }
         if regex(t, #"^R\d+\b.*\bcheck\b"#) { return true }
 
+        // 5b. Session lifecycle stamps — "session restarted", "session was reset",
+        //     "new session started". Transport facts, not conversation.
+        if regex(lower, #"\bsession\b.*\b(?:restart|restarted|reset|recycled|started over)\b"#) { return true }
+
         // 6. Internal identifiers surfacing as prose.
         if regex(t, #"^[A-Za-z0-9_.-]+:(?:agent|mission|project):"#) { return true }               // room_id shape
         if regex(lower, #"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"#) { return true } // bare uuid

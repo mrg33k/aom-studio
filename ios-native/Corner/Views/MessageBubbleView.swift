@@ -40,10 +40,27 @@ struct MessageBubbleView: View {
 
     private var content: MessageContent { MessageContent.build(from: row) }
 
+    /// Machine plumbing wearing a chat bubble is noise (Patrik 2026-08-11): probes,
+    /// dispatcher receipts, session-restart stamps. Same classifier as the preview
+    /// hygiene — the row stays visible, but as a quiet system line, not a voice.
+    private var isSystemNoise: Bool {
+        let c = content
+        guard c.attachments.isEmpty, c.links.isEmpty, c.blocks.isEmpty else { return false }
+        return !c.prose.isEmpty && RoomPreview.isMachine(c.prose)
+    }
+
     var body: some View {
         let content = self.content
         Group {
-            if row.isUser {
+            if isSystemNoise {
+                Text(content.prose)
+                    .font(.hkCaption2)
+                    .foregroundStyle(Theme.inkFaint)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 2)
+                    .textSelection(.enabled)
+            } else if row.isUser {
                 // The user's own turn: right-aligned, no avatar (it is them), time
                 // below the bubble. Matches the web mobile user turn.
                 HStack(spacing: 0) {

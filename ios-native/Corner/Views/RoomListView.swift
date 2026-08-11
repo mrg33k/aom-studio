@@ -26,12 +26,27 @@ struct RoomListView: View {
     @State private var query = ""
     @State private var showingNewRoom = false
 
-    /// The web chat directory's filter chips (All / Agents / Projects). Agents IS the
-    /// per-conversation agent picker: every specialist as their own conversation row.
+    /// The home filters (Patrik 2026-08-11 — the home + directory screens merged on
+    /// purpose, "calling a spade a spade"): Recent is the default recency feed, All is
+    /// the complete directory, Agents IS the per-conversation agent picker, Projects is
+    /// a swipeable project carousel whose tap reveals that project's rooms.
     private enum HomeFilter: String, CaseIterable {
-        case all = "All", agents = "Agents", projects = "Projects"
+        case recent = "Recent", all = "All", agents = "Agents", projects = "Projects"
     }
-    @State private var filter: HomeFilter = .all
+    @State private var filter: HomeFilter = .recent
+    /// The project the Projects carousel has open, by slug.
+    @State private var openProjectSlug: String?
+    /// Rooms swiped out of the Recent feed — Patrik's fast feed cleanup. Local to this
+    /// device (UserDefaults); the room stays in All / Projects / search, and a swipe in
+    /// All puts it back. Server-side sync can ride the read-state lane when it lands.
+    @State private var hiddenRoomIDs: Set<String> = Set(
+        UserDefaults.standard.stringArray(forKey: "home_hidden_rooms") ?? []
+    )
+
+    private func setHidden(_ room: Room, _ hidden: Bool) {
+        if hidden { hiddenRoomIDs.insert(room.roomID) } else { hiddenRoomIDs.remove(room.roomID) }
+        UserDefaults.standard.set(Array(hiddenRoomIDs), forKey: "home_hidden_rooms")
+    }
 
     var body: some View {
         List {
@@ -41,15 +56,17 @@ struct RoomListView: View {
                 eyebrowRow
                 filterChips
                 switch filter {
-                case .all:
+                case .recent:
                     if review.waitingCount > 0 { waitingRow }
                     recencyRows
                     toolsRows
                     if let error = store.railError { railErrorRow(error) }
+                case .all:
+                    directoryRows
                 case .agents:
                     agentRows
                 case .projects:
-                    projectRows
+                    projectCarousel
                 }
             } else {
                 searchRows
@@ -166,7 +183,13 @@ struct RoomListView: View {
     private var chipCount: [HomeFilter: Int] {
         let agents = AgentRoster.all.count
         let projects = store.projects.count
-        return [.all: agents + projects, .agents: agents, .projects: projects]
+        let missions = store.projects.reduce(0) { $0 + $1.missions.count }
+        return [
+            .recent: store.recent.filter { !hiddenRoomIDs.contains($0.room.roomID) }.count,
+            .all: agents + projects + missions,
+            .agents: agents,
+            .projects: projects,
+        ]
     }
 
     private var filterChips: some View {
@@ -197,6 +220,110 @@ struct RoomListView: View {
         }
         .padding(.vertical, Theme.s1)
         .plainCardRow()
+    }
+
+    // MARK: - All (the complete directory, recency-first)
+
+    /// Every room the rail knows — agents, projects, missions — newest activity first,
+    /// dormant rooms after, alphabetical inside each band. Hidden rooms appear here
+    /// (nothing is ever lost) and a leading swipe puts them back in Recent.
+    @ViewBuilder
+    private var directoryRows: some View {
+        let tsByID = Dictionary(store.recent.map { ($0.room.roomID, $0) }, uniquingKeysWith: { a, _ in a })
+        let agents: [Room] = api.world.map { world in
+            AgentRoster.all.map { Room(world: world, kind: .agent(slug: $0.slug), title: $0.title, subtitle: $0.subtitle) }
+        } ?? []
+        let projectsAndMissions: [Room] = store.projects.flatMap { [$0.room] + $0.missions }
+        let everything = (agents + projectsAndMissions).sorted { a, b in
+            let ta = tsByID[a.roomID]?.ts ?? 0
+            let tb = tsByID[b.roomID]?.ts ?? 0
+            if ta != tb { return ta > tb }
+            return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+        }
+        sectionLabel("Everything")
+        ForEach(everything, id: \.roomID) { room in
+            let entry = tsByID[room.roomID] ?? RoomStore.RecentRoom(room: room, ts: 0, preview: "")
+            Button { router.open(room) } label: {
+                RoomRowCard(entry: RoomStore.RecentRoom(room: room, ts: entry.ts, preview: entry.preview), isHero: false)
+                    .opacity(hiddenRoomIDs.contains(room.roomID) ? 0.55 : 1)
+            }
+            .buttonStyle(CardButtonStyle())
+            .plainCardRow()
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                if hiddenRoomIDs.contains(room.roomID) {
+                    Button { setHidden(room, false) } label: {
+                        Label("Show in Recent", systemImage: "eye")
+                    }
+                    .tint(Theme.accent)
+                }
+            }
+        }
+    }
+
+    // MARK: - Projects (the swipeable carousel; tap a card, its rooms appear)
+
+    @ViewBuilder
+    private var projectCarousel: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Theme.s2) {
+                ForEach(store.projects, id: \.room.id) { group in
+                    let slug: String? = {
+                        if case .project(let s) = group.room.kind { return s }
+                        return nil
+                    }()
+                    let isOpen = slug != nil && slug == openProjectSlug
+                    Button {
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            openProjectSlug = isOpen ? nil : slug
+                        }
+                    } label: {
+                        VStack(spacing: 6) {
+                            Monogram(title: group.room.title, tint: Theme.tint(for: group.room.title), hero: false)
+                            Text(group.room.title)
+                                .font(.hanken(12).weight(.semibold))
+                                .foregroundStyle(isOpen ? Theme.ink : Theme.inkSoft)
+                                .lineLimit(1)
+                        }
+                        .frame(width: 92)
+                        .padding(.vertical, Theme.s3)
+                        .background(
+                            isOpen ? Theme.accentWeak : Theme.raised.opacity(0.6),
+                            in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
+                                .strokeBorder(isOpen ? Theme.accent : Theme.hairline, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, Theme.s1)
+        }
+        .plainCardRow()
+
+        if let slug = openProjectSlug,
+           let group = store.projects.first(where: {
+               if case .project(let s) = $0.room.kind { return s == slug }
+               return false
+           }) {
+            sectionLabel(group.room.title)
+            let tsByID = Dictionary(store.recent.map { ($0.room.roomID, $0) }, uniquingKeysWith: { a, _ in a })
+            ForEach([group.room] + group.missions, id: \.roomID) { room in
+                let entry = tsByID[room.roomID] ?? RoomStore.RecentRoom(room: room, ts: 0, preview: "")
+                Button { router.open(room) } label: {
+                    RoomRowCard(entry: RoomStore.RecentRoom(room: room, ts: entry.ts, preview: entry.preview), isHero: false)
+                }
+                .buttonStyle(CardButtonStyle())
+                .plainCardRow()
+            }
+        } else {
+            Text("Tap a project to see its rooms.")
+                .font(.hkFootnote)
+                .foregroundStyle(Theme.inkFaint)
+                .padding(.top, Theme.s2)
+                .plainCardRow()
+        }
     }
 
     // MARK: - The agent picker (web chat directory's AGENTS section, per conversation)
@@ -312,19 +439,29 @@ struct RoomListView: View {
 
     @ViewBuilder
     private var recencyRows: some View {
-        if store.recent.isEmpty {
+        let visible = store.recent.filter { !hiddenRoomIDs.contains($0.room.roomID) }
+        if visible.isEmpty {
             if store.isLoading {
                 loadingRow
             } else {
                 emptyRow
             }
         } else {
-            ForEach(Array(store.recent.enumerated()), id: \.element.id) { index, entry in
+            ForEach(Array(visible.enumerated()), id: \.element.id) { index, entry in
                 Button { router.open(entry.room) } label: {
                     RoomRowCard(entry: entry, isHero: index == 0)
                 }
                 .buttonStyle(CardButtonStyle())
                 .plainCardRow()
+                // Patrik's fast feed cleanup: swipe the card to the RIGHT and it
+                // leaves the Recent feed. The room is untouched — still in All,
+                // Projects, and search, and a swipe there brings it back.
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button { setHidden(entry.room, true) } label: {
+                        Label("Hide from Recent", systemImage: "eye.slash")
+                    }
+                    .tint(Theme.inkFaint)
+                }
             }
         }
     }
@@ -783,8 +920,8 @@ struct HomePreviewHarness: View {
                 .padding(.top, Theme.s2)
                 .plainCardRow()
                 HStack(spacing: Theme.s2) {
-                    ForEach(["All 20", "Agents 13", "Projects 7"], id: \.self) { label in
-                        let selected = label.hasPrefix("All")
+                    ForEach(["Recent 7", "All 33", "Agents 13", "Projects 7"], id: \.self) { label in
+                        let selected = label.hasPrefix("Recent")
                         Text(label)
                             .font(.hanken(14).weight(.semibold))
                             .foregroundStyle(selected ? Color.white : Theme.inkSoft)
