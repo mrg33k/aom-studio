@@ -24,7 +24,6 @@ struct RoomListView: View {
     @StateObject private var intake = IntakeRouter()
 
     @State private var query = ""
-    @State private var showAccount = false
 
     var body: some View {
         List {
@@ -47,13 +46,13 @@ struct RoomListView: View {
         .refreshable { await store.load() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { showAccount = true } label: {
+                Button { router.showingSettings = true } label: {
                     Image(systemName: "person.crop.circle")
                 }
                 .accessibilityLabel("Account")
             }
         }
-        .sheet(isPresented: $showAccount) {
+        .sheet(isPresented: $router.showingSettings) {
             AccountView()
                 .environmentObject(api)
                 .environmentObject(PushService.shared)
@@ -590,7 +589,7 @@ struct HomePreviewHarness: View {
             .background(Theme.ground)
             .navigationTitle("Corner")
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
     }
 }
 #endif

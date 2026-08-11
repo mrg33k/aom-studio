@@ -45,6 +45,7 @@ struct CornerApp: App {
     @StateObject private var api = CornerAPI.shared
     @StateObject private var push = PushService.shared
     @StateObject private var router = AppRouter.shared
+    @StateObject private var theme = ThemeManager.shared
 
     init() {
         CornerTypography.install()
@@ -53,15 +54,17 @@ struct CornerApp: App {
     var body: some Scene {
         WindowGroup {
             rootContent
+                // Theme.* members resolve through ThemeManager lazily; re-identifying
+                // the tree on a change is what repaints every screen at once — the
+                // web's "updates the shell and every screen immediately", natively.
+                .id(theme.kind)
                 .environmentObject(api)
                 .environmentObject(push)
                 .environmentObject(router)
                 .tint(Theme.accent)
                 // Unstyled text (button labels, alerts) rides the brand face too.
                 .environment(\.font, .hkBody)
-                // Corner is an ink-ground product; the phone app does not offer a light
-                // mode it has not been designed for.
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(theme.colorScheme)
         }
     }
 
@@ -74,6 +77,12 @@ struct CornerApp: App {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-chatPreview") {
             ChatPreviewHarness()
+        } else if args.contains("-settingsPreview") {
+            // The Settings sheet's own render, no auth: identity rows show their
+            // signed-out placeholders, the workspace list shows its failure row.
+            AccountView()
+                .environmentObject(api)
+                .environmentObject(push)
         } else if args.contains("-composerPreview") {
             HomeComposerPreviewHarness()
         } else if args.contains("-confirmPreview") {

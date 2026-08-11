@@ -65,7 +65,7 @@ struct ChatPreviewHarness: View {
             .navigationTitle("Design")
             .navigationBarTitleDisplayMode(.inline)
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
     }
 
     // A visual replica of ChatView.composer for the proof (the real one needs a room +
@@ -139,7 +139,7 @@ struct HomeComposerPreviewHarness: View {
                 HomeComposerBar(intake: intake, candidates: { [:] }, recentRooms: { [] })
                     .background(Theme.ground)
             }
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(ThemeManager.shared.colorScheme)
     }
 }
 
@@ -166,7 +166,7 @@ struct ConfirmPreviewHarness: View {
                     pendingText: "tighten the composer spacing on mobile"
                 )
             }
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(ThemeManager.shared.colorScheme)
     }
 }
 #endif

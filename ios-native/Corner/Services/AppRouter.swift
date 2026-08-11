@@ -180,6 +180,11 @@ final class AppRouter: ObservableObject {
     /// chat swipe carousel knows its neighbors without a second fetch.
     @Published var recencyOrder: [Room] = []
 
+    /// Settings-sheet presentation lives HERE, not in a view's @State: picking a theme
+    /// re-identifies the whole tree (CornerApp `.id(theme.kind)`), and view state that
+    /// dies in that rebuild would slam the sheet shut mid-choice.
+    @Published var showingSettings = false
+
     /// The swipe carousel (Patrik's R4 gesture spec): the open chat is one card in the
     /// recency stack — swiping toward "more recent" replaces it with the room above it
     /// on home, the other way with the room below. Replacing the top of the path keeps
