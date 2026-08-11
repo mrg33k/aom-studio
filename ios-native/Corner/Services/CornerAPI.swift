@@ -1247,4 +1247,89 @@ final class CornerAPI: ObservableObject {
 
         return room
     }
+
+    // MARK: - Background work
+
+    /// GET /api/dashboard/running-tasks?client=<world>
+    ///
+    /// Returns two arrays matching the web's WorkersShell:
+    ///   tasks    — dispatched jobs actively executing (status building | running)
+    ///   promises — pending come-backs (followups, status pending)
+    ///
+    /// Scoped to the viewer's whole world (no project filter) so the panel answers
+    /// "is anything running anywhere?" — the same promise the web panel makes.
+    func fetchRunningTasks() async throws -> (tasks: [BackgroundTask], promises: [BackgroundPromise]) {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/running-tasks",
+            queryItems: [URLQueryItem(name: "client", value: world)]
+        )
+        let data = try await run(request)
+        guard let envelope = try? JSONDecoder().decode(RunningTasksEnvelope.self, from: data) else {
+            throw APIError.decoding
+        }
+        return (envelope.tasks ?? [], envelope.promises ?? [])
+    }
+
+    /// POST /api/dashboard/dismiss-followup — the user releasing a promise.
+    ///
+    /// Returns true when the server recorded the dismiss (2xx). Does NOT throw on
+    /// a 4xx/5xx — the caller shows an in-row error and un-hides the row instead.
+    func dismissFollowup(id: String) async -> Bool {
+        guard let world = try? requireWorld() else { return false }
+        guard let request = try? await authorizedRequest(
+            path: "/api/dashboard/dismiss-followup",
+            method: "POST",
+            jsonBody: ["id": id, "client": world]
+        ) else { return false }
+        guard let (data, response) = try? await URLSession.shared.data(for: request) else { return false }
+        let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(httpStatus) else { return false }
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           json["error"] != nil { return false }
+        return true
+    }
+
+    /// Send a user message into the room that owns a background promise.
+    ///
+    /// Routing is derived from the promise row exactly as WorkersShell's `roomPayload`
+    /// does: mission + project → corner with mission_slug, project-only → corner with
+    /// project, neither → agent 1:1. Returns true when the POST was accepted.
+    func sendToPromiseRoom(promise: BackgroundPromise, text: String) async -> Bool {
+        guard let world = try? requireWorld() else { return false }
+        var metadata: [String: Any] = ["interaction_mode": "work"]
+        var body: [String: Any] = [
+            "client_id": world,
+            "text": text,
+            "role": "user",
+            "source": Config.messageSource,
+        ]
+        if let mission = promise.mission, !mission.isEmpty,
+           let project = promise.project, !project.isEmpty {
+            body["agent"] = "corner"
+            body["project"] = project
+            metadata["mission_slug"] = mission
+        } else if let project = promise.project, !project.isEmpty {
+            body["agent"] = "corner"
+            body["project"] = project
+        } else {
+            body["agent"] = promise.who ?? "corner"
+        }
+        body["metadata"] = metadata
+        guard let request = try? await authorizedRequest(
+            path: "/api/dashboard/supabase-messages",
+            method: "POST",
+            jsonBody: body
+        ) else { return false }
+        guard let (_, response) = try? await URLSession.shared.data(for: request) else { return false }
+        let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
+        return (200..<300).contains(httpStatus)
+    }
+}
+
+// Decode envelope — same shape as running-tasks.js response.
+// Private so it does not collide with the BackgroundWorkStore's private copy.
+private struct RunningTasksEnvelope: Decodable {
+    let tasks: [BackgroundTask]?
+    let promises: [BackgroundPromise]?
 }

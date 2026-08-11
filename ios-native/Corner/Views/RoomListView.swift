@@ -22,9 +22,12 @@ struct RoomListView: View {
     /// The front-door router: turns a room-less message typed into the pinned composer
     /// into an opened, seeded room, the same way the web front door does.
     @StateObject private var intake = IntakeRouter()
+    /// Background work panel — same data source as web's WorkersShell.
+    @ObservedObject private var bgWork = BackgroundWorkStore.shared
 
     @State private var query = ""
     @State private var showingNewRoom = false
+    @State private var showingBackgroundWork = false
 
     /// The home filters (Patrik 2026-08-11 — the home + directory screens merged on
     /// purpose, "calling a spade a spade"): Recent is the default recency feed, All is
@@ -109,6 +112,25 @@ struct RoomListView: View {
                 }
                 .accessibilityLabel("Theme")
 
+                // Background work — phone equivalent of web's WorkersShell panel.
+                // The pulsing accent dot signals in-flight work without opening the sheet.
+                Button { showingBackgroundWork = true } label: {
+                    Image(systemName: "timer")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.inkSoft)
+                        .overlay(alignment: .topTrailing) {
+                            if bgWork.total > 0 {
+                                Circle()
+                                    .fill(Theme.accent)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 2, y: -2)
+                            }
+                        }
+                }
+                .accessibilityLabel(bgWork.total > 0
+                    ? "Background work — \(bgWork.total) running"
+                    : "Background work")
+
                 Button { router.open(.review) } label: {
                     Image(systemName: "bell")
                         .font(.system(size: 15, weight: .medium))
@@ -156,10 +178,15 @@ struct RoomListView: View {
             }
             .environmentObject(api)
         }
+        .sheet(isPresented: $showingBackgroundWork) {
+            BackgroundWorkView()
+                .environmentObject(ThemeManager.shared)
+        }
         .task {
             intake.onOpen = { router.open($0) }
             if !store.hasLoadedOnce { await store.load() }
             review.startPolling()
+            bgWork.startPolling()
         }
         .onChange(of: api.world) { _, _ in store.refresh() }
     }
