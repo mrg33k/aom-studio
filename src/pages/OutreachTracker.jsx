@@ -299,7 +299,11 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
   const phoneLabel = lead.owner_phone ? lead.owner_phone : lead.phone || 'No phone'
   const phoneNote  = lead.owner_phone ? 'Tap to dial · owner cell' : lead.phone ? 'Tap to dial · office line' : ''
   const domain     = cleanDomain(lead.website)
-  const isDead     = siteState[lead.id] === 'dead'
+  // iframes never fire onError for refused connections, so a dead site renders
+  // as a blank frame — trust the audit text first, iframe events as fallback
+  const auditSaysDead = /refused the connection|not serving a working site|doesn't connect at all|website (?:is )?(?:down|dead|unreachable)|domain (?:doesn't|does not) (?:resolve|load|connect)/i
+    .test(`${lead.site_issue || ''} ${lead.gaps || ''}`)
+  const isDead     = auditSaysDead || siteState[lead.id] === 'dead'
   const leftCount  = leads.length - loggedIds.size
 
   const OUTCOME_BTNS = [
