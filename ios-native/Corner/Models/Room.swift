@@ -153,6 +153,17 @@ struct Room: Identifiable, Hashable {
         }
     }
 
+    /// The room key for the private checklist store — mirrors roomChecklistKey() in
+    /// src/dashboard/cv6next/data/roomKeys.js. Missions carry the canonical
+    /// "<project>:<mission>" slug that is already baked into `kind.mission.slug`.
+    var checklistRoomKey: String {
+        switch kind {
+        case .agent(let slug):   return "agent:\(slug)"
+        case .project(let slug): return "project:\(slug)"
+        case .mission(let slug, _): return "mission:\(slug)"
+        }
+    }
+
     func sendBody(
         text: String,
         interactionMode: String = "work",

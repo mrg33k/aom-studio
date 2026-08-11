@@ -91,6 +91,13 @@ struct ChatView: View {
     @State private var composerCollapsed = false
     @State private var collapseWorkItem: DispatchWorkItem? = nil
 
+    // ── Checklist panel (R11) ────────────────────────────────────────────────
+    // When checklistOpen, the input shell is replaced by RoomChecklistPanelView.
+    // Mirrors web's checklistOpen state in Cv6InputBar: the composer card stays
+    // visible with its action row (model pill, checklist toggle, send) while the
+    // input area swaps to the checklist panel.
+    @State private var checklistOpen = false
+
     /// Computed ONCE per thread render and handed down to every bubble, rather than each
     /// bubble subscribing to the review store itself.
     private var waitingIDs: Set<String> { review.waitingIDs }
@@ -569,13 +576,38 @@ struct ChatView: View {
         scheduleCollapse()
     }
 
+    // MARK: - Checklist helpers
+
+    /// Send a text from the checklist panel without collapsing the composer —
+    /// the user stays in the checklist so they can play more items.
+    private func sendChecklistText(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        model.draft = trimmed
+        model.send()
+        // No scheduleCollapse(): checklist panel stays open after play.
+    }
+
     private var composer: some View {
         VStack(spacing: 10) {
             if let error = model.uploadError { uploadErrorRow(error) }
-            if !model.staged.isEmpty { stagedChips }
-            // Paste chips sit between file chips and the input shell.
-            if !pasteChips.isEmpty { pasteChipBar }
-            inputShell
+            // When the checklist panel is open, the input area is replaced.
+            if checklistOpen {
+                RoomChecklistPanelView(
+                    room: model.room,
+                    onSend: sendChecklistText,
+                    onClose: {
+                        withAnimation(.spring(response: 0.24, dampingFraction: 0.8)) {
+                            checklistOpen = false
+                        }
+                    }
+                )
+            } else {
+                if !model.staged.isEmpty { stagedChips }
+                // Paste chips sit between file chips and the input shell.
+                if !pasteChips.isEmpty { pasteChipBar }
+                inputShell
+            }
             actionRow
         }
         .padding(Theme.s2)
@@ -703,6 +735,29 @@ struct ChatView: View {
                     )
             }
             .accessibilityLabel("Files in this room")
+
+            // ── Checklist toggle (R11) ─────────────────────────────────────────
+            // Tapping swaps the input shell for RoomChecklistPanelView, matching
+            // the web's checklist-toggle button in Cv6InputBar exactly.
+            Button {
+                withAnimation(.spring(response: 0.24, dampingFraction: 0.8)) {
+                    checklistOpen.toggle()
+                }
+            } label: {
+                Image(systemName: "checklist")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(checklistOpen ? Theme.accent : Theme.inkSoft)
+                    .frame(width: 34, height: 30)
+                    .background(
+                        checklistOpen ? Theme.accentWeak : Theme.raised2,
+                        in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .strokeBorder(checklistOpen ? Theme.accent : Theme.hairline, lineWidth: 1)
+                    )
+            }
+            .accessibilityLabel(checklistOpen ? "Close room checklists" : "Open room checklists")
 
             Spacer(minLength: 0)
 

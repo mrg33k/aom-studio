@@ -405,6 +405,43 @@ final class CornerAPI: ObservableObject {
         return true
     }
 
+    // MARK: - Room checklists (R11)
+
+    /// GET /api/dashboard/room-checklists — load this room's private lists.
+    func fetchChecklists(room: Room) async throws -> [ChecklistList] {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/room-checklists",
+            queryItems: [
+                URLQueryItem(name: "world", value: world),
+                URLQueryItem(name: "room", value: room.checklistRoomKey),
+            ]
+        )
+        let data = try await run(request)
+        struct Envelope: Decodable { let lists: [ChecklistList] }
+        return (try? JSONDecoder().decode(Envelope.self, from: data))?.lists ?? []
+    }
+
+    /// POST /api/dashboard/room-checklists — mutate (add/edit/toggle/delete).
+    /// Returns the updated list array. Mirrors useRoomChecklists.mutate() on the web.
+    func mutateChecklist(room: Room, action: String, fields: [String: Any] = [:]) async throws -> [ChecklistList] {
+        let world = try requireWorld()
+        var body: [String: Any] = [
+            "world": world,
+            "room": room.checklistRoomKey,
+            "action": action,
+        ]
+        for (key, value) in fields { body[key] = value }
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/room-checklists",
+            method: "POST",
+            jsonBody: body
+        )
+        let data = try await run(request)
+        struct Envelope: Decodable { let lists: [ChecklistList] }
+        return (try? JSONDecoder().decode(Envelope.self, from: data))?.lists ?? []
+    }
+
     /// GET /api/dashboard/message-steps — the agent's real heartbeats for a turn.
     func fetchSteps(room: Room, limit: Int = 40) async throws -> [MessageStep] {
         var items = [
