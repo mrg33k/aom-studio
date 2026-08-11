@@ -7,13 +7,21 @@
 // says it stopped instead of quietly dropping its spinner.
 
 import SwiftUI
+import PhotosUI
+import UniformTypeIdentifiers
 
 struct ChatView: View {
     @StateObject private var model: ChatViewModel
     @StateObject private var review = ReviewStore.shared
+    @EnvironmentObject private var router: AppRouter
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var showingFiles = false
+    @State private var showingPhotoPicker = false
+    @State private var showingFilePicker = false
+    @State private var pickedPhotos: [PhotosPickerItem] = []
+    @State private var nearBottom = false
+    @FocusState private var composerFocused: Bool
 
     /// Computed ONCE per thread render and handed down to every bubble, rather than each
     /// bubble subscribing to the review store itself.
@@ -24,19 +32,18 @@ struct ChatView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            messageList
-            composer
-        }
-        .background(Theme.ground)
-        .navigationTitle(model.room.title)
-        .navigationBarTitleDisplayMode(.inline)
+        messageList
+            .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+            .background(Theme.ground)
+            .navigationTitle(model.room.title)
+            .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 // This chat's files live one tap from the chat, never in a separate
-                // destination — the crossings ARE this conversation, narrowed.
+                // destination — the crossings ARE this conversation, narrowed. Folder
+                // glyph to match the web chat header's Files button.
                 Button { showingFiles = true } label: {
-                    Image(systemName: "paperclip")
+                    Image(systemName: "folder")
                 }
                 .accessibilityLabel("Files in this chat")
             }
@@ -49,6 +56,7 @@ struct ChatView: View {
             // The waiting set marks files inside the thread too, so it loads with the
             // room rather than only when the review screen is opened.
             Task { await review.load() }
+            Task { await model.loadModelPreference() }
         }
         .onDisappear { model.stop() }
         .onChange(of: scenePhase) { _, phase in
@@ -97,6 +105,12 @@ struct ChatView: View {
                             }
                         }
                         turnIndicator
+                        // Tail sentinel: arms the swipe-up-for-files gesture only when
+                        // the user is actually looking at the end of the thread — the
+                        // same guard the web's overscroll-up uses.
+                        Color.clear.frame(height: 1)
+                            .onAppear { nearBottom = true }
+                            .onDisappear { nearBottom = false }
                     }
                 }
                 .padding(.horizontal, Theme.s4)
@@ -107,6 +121,24 @@ struct ChatView: View {
             .onChange(of: model.thread.count) { _, _ in scrollToEnd(proxy) }
             .onChange(of: model.turn) { _, _ in scrollToEnd(proxy) }
             .refreshable { await model.load() }
+            // Patrik's R4 gesture spec. Swipe UP at the tail → this chat's files.
+            // Horizontal flick → the recency carousel: right toward the more recent
+            // room, left toward the older one. Thresholds are the web's own
+            // (useChatSwipe.js: 56pt distance, 1.67× dominance).
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 40)
+                    .onEnded { value in
+                        let dx = value.translation.width
+                        let dy = value.translation.height
+                        if nearBottom, dy < -58, abs(dy) > abs(dx) * 1.25 {
+                            showingFiles = true
+                            return
+                        }
+                        if abs(dx) >= 56, abs(dx) > abs(dy) * 1.67 {
+                            router.swipeChat(from: model.room, toMoreRecent: dx > 0)
+                        }
+                    }
+            )
         }
     }
 
@@ -177,44 +209,246 @@ struct ChatView: View {
         .padding(.top, Theme.s6)
     }
 
-    // MARK: - Composer
+    // MARK: - Composer (the web's two-row card, .cv6-floating-composer)
+
+    private var canSend: Bool {
+        !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.staged.isEmpty
+    }
 
     private var composer: some View {
-        let canSend = !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return HStack(alignment: .bottom, spacing: Theme.s2) {
+        VStack(spacing: 10) {
+            if let error = model.uploadError { uploadErrorRow(error) }
+            if !model.staged.isEmpty { stagedChips }
+            inputShell
+            actionRow
+        }
+        .padding(Theme.s2)
+        .background(Theme.composer, in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.55), radius: 21, y: 9)
+        .padding(.horizontal, Theme.s3)
+        .padding(.bottom, Theme.s2)
+        .photosPicker(
+            isPresented: $showingPhotoPicker, selection: $pickedPhotos,
+            maxSelectionCount: 5, matching: .images
+        )
+        .onChange(of: pickedPhotos) { _, items in
+            guard !items.isEmpty else { return }
+            pickedPhotos = []
+            Task { await stagePhotos(items) }
+        }
+        .fileImporter(
+            isPresented: $showingFilePicker,
+            allowedContentTypes: [.item], allowsMultipleSelection: true
+        ) { result in
+            guard case .success(let urls) = result else { return }
+            Task { await stageFiles(urls) }
+        }
+    }
+
+    /// Row 1 — the input shell: attach + growing field on the composer-card surface,
+    /// accent border + soft ring while focused, exactly the web's focus behavior.
+    private var inputShell: some View {
+        HStack(alignment: .bottom, spacing: 6) {
+            Menu {
+                Button { showingPhotoPicker = true } label: {
+                    Label("Photo Library", systemImage: "photo.on.rectangle")
+                }
+                Button { showingFilePicker = true } label: {
+                    Label("Choose Files", systemImage: "folder")
+                }
+            } label: {
+                Group {
+                    if model.isUploading {
+                        ProgressView().controlSize(.small).tint(Theme.accent)
+                    } else {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                }
+                .frame(width: 32, height: 32)
+            }
+            .disabled(model.isUploading)
+            .accessibilityLabel("Attach and upload files")
+
             TextField("Message \(model.room.title)…", text: $model.draft, axis: .vertical)
-                .lineLimit(1...6)
-                .padding(.horizontal, Theme.s4)
-                .padding(.vertical, 10)
-                .background(Theme.raised, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .font(.hanken(16))
+                .lineLimit(1...5)
+                .focused($composerFocused)
+                .foregroundStyle(Theme.ink)
+                .padding(.vertical, 7)
+                .padding(.trailing, Theme.s2)
+        }
+        .padding(.leading, Theme.s1)
+        .frame(minHeight: 40)
+        .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous)
+                .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
+        )
+        .background(
+            RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous)
+                .fill(composerFocused ? Theme.accentWeak : Color.clear)
+                .padding(-2)
+        )
+        .animation(.easeOut(duration: 0.2), value: composerFocused)
+    }
+
+    /// Row 2 — the action row: the model choice on the left, send on the right.
+    private var actionRow: some View {
+        HStack(spacing: 6) {
+            Menu {
+                ForEach(ChatView.modelOptions, id: \.id) { option in
+                    Button {
+                        Task { await model.selectModel(option.id) }
+                    } label: {
+                        if option.id == model.modelChoice {
+                            Label(option.label, systemImage: "checkmark")
+                        } else {
+                            Text(option.label)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 13, weight: .medium))
+                    Text(ChatView.shortModelLabel(model.modelChoice))
+                        .font(.hanken(11.5).weight(.bold))
+                }
+                .foregroundStyle(Theme.inkSoft)
+                .padding(.horizontal, 10)
+                .frame(height: 30)
+                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
                         .strokeBorder(Theme.hairline, lineWidth: 1)
                 )
-                .foregroundStyle(Theme.ink)
+            }
+            .accessibilityLabel("Model")
 
-            // The send affordance the web mobile composer uses: a circular button with a
-            // paper-plane, filled with the accent when there is something to send and a
-            // quiet outlined disc when the box is empty.
+            Button { showingFiles = true } label: {
+                Image(systemName: "folder")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(width: 34, height: 30)
+                    .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .strokeBorder(Theme.hairline, lineWidth: 1)
+                    )
+            }
+            .accessibilityLabel("Files in this room")
+
+            Spacer(minLength: 0)
+
             Button(action: model.send) {
                 Image(systemName: "paperplane.fill")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(canSend ? Color.white : Theme.inkFaint)
-                    .frame(width: 36, height: 36)
-                    .background(canSend ? Theme.accent : Theme.raised, in: Circle())
-                    .overlay {
-                        if !canSend {
-                            Circle().strokeBorder(Theme.hairline, lineWidth: 1)
-                        }
-                    }
+                    .frame(width: 34, height: 34)
+                    .background(
+                        canSend ? Theme.accent : Theme.raised2,
+                        in: RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous)
+                    )
+                    .opacity(canSend ? 1 : 0.72)
             }
             .disabled(!canSend)
             .accessibilityLabel("Send")
         }
+    }
+
+    /// Staged files, as removable chips above the shell — the web's pinned-chip row.
+    private var stagedChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(model.staged) { file in
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(file.name)
+                            .font(.hanken(11.5).weight(.semibold))
+                            .lineLimit(1)
+                        Button { model.removeStaged(file) } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .accessibilityLabel("Remove \(file.name)")
+                    }
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(Theme.accentWeak, in: Capsule())
+                }
+            }
+        }
+    }
+
+    private func uploadErrorRow(_ message: String) -> some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11))
+            Text(message).font(.hanken(12))
+            Spacer(minLength: 0)
+            Button("Dismiss") { model.uploadError = nil }
+                .font(.hanken(12).weight(.semibold))
+        }
+        .foregroundStyle(Theme.danger)
         .padding(.horizontal, Theme.s3)
-        .padding(.vertical, Theme.s2)
-        .background(Theme.raised.opacity(0.9))
-        .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
+        .padding(.vertical, 6)
+        .background(Theme.danger.opacity(0.12), in: RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous))
+    }
+
+    // MARK: - Picking + staging
+
+    private func stagePhotos(_ items: [PhotosPickerItem]) async {
+        for item in items {
+            guard let data = try? await item.loadTransferable(type: Data.self) else {
+                model.uploadError = "That photo could not be read."
+                continue
+            }
+            let type = item.supportedContentTypes.first
+            let ext = type?.preferredFilenameExtension ?? "jpg"
+            let mime = type?.preferredMIMEType ?? "image/jpeg"
+            let stamp = Int(Date().timeIntervalSince1970)
+            await model.stageFile(data: data, filename: "photo-\(stamp).\(ext)", mime: mime)
+        }
+    }
+
+    private func stageFiles(_ urls: [URL]) async {
+        for url in urls {
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            guard let data = try? Data(contentsOf: url) else {
+                model.uploadError = "\(url.lastPathComponent) could not be read."
+                continue
+            }
+            let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
+                ?? "application/octet-stream"
+            await model.stageFile(data: data, filename: url.lastPathComponent, mime: mime)
+        }
+    }
+
+    // MARK: - Model options (chatConstants.js MODEL_OPTIONS)
+
+    static let modelOptions: [(id: String, label: String)] = [
+        ("default", "Auto (Claude + fallback)"),
+        ("opus", "Claude Opus"),
+        ("sonnet", "Claude Sonnet"),
+        ("haiku", "Claude Haiku"),
+    ]
+
+    static func shortModelLabel(_ id: String) -> String {
+        switch id {
+        case "default": return "Auto"
+        case "opus": return "Opus"
+        case "sonnet": return "Sonnet"
+        case "haiku": return "Haiku"
+        default: return id
+        }
     }
 }
 

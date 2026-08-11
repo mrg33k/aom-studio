@@ -135,7 +135,30 @@ struct Room: Identifiable, Hashable {
     /// room's digest until the user accepts it. Without it a native auto-route immediately
     /// shapes the room's description, so one misroute teaches the router to repeat itself
     /// ("the rule protects a room exactly once", R10/R11).
-    func sendBody(text: String, interactionMode: String = "work", routed: RouteProvenance? = nil) -> [String: Any] {
+    /// The web's `_bareMissionSlug`: upload scope wants "native-ios", never
+    /// "corner:native-ios" — the rag-server joins project + mission itself.
+    static func bareMissionSlug(_ slug: String, project: String) -> String {
+        slug.hasPrefix(project + ":") ? String(slug.dropFirst(project.count + 1)) : slug
+    }
+
+    /// The key this room's model preference lives under — data/modelPreferences.js
+    /// verbatim: agent rooms use the agent slug; project AND mission rooms share the
+    /// project's key. A mission inherits its project's model on the web, and the
+    /// phone must not invent a second convention.
+    var modelPreferenceKey: String {
+        switch kind {
+        case .agent(let slug): return slug
+        case .project(let slug): return "project:\(slug)"
+        case .mission(_, let project): return "project:\(project)"
+        }
+    }
+
+    func sendBody(
+        text: String,
+        interactionMode: String = "work",
+        routed: RouteProvenance? = nil,
+        attachments: [Attachment] = []
+    ) -> [String: Any] {
         var body: [String: Any] = [
             "client_id": world,
             "text": text,
@@ -143,6 +166,14 @@ struct Room: Identifiable, Hashable {
             "source": Config.messageSource,
         ]
         var metadata: [String: Any] = ["interaction_mode": interactionMode]
+        if !attachments.isEmpty {
+            // metadata.attachments[] — shape 1 of the four Attachment.swift parses,
+            // the structured one every surface (web thread, web Files panel, native
+            // bubbles, native crossings) reads first.
+            metadata["attachments"] = attachments.map {
+                ["url": $0.url, "name": $0.name, "mime": $0.mime, "size": $0.size] as [String: Any]
+            }
+        }
         switch kind {
         case .agent(let slug):
             body["agent"] = slug

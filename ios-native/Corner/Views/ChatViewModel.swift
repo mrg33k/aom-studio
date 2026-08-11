@@ -42,6 +42,9 @@ struct OutboxItem: Identifiable, Equatable {
     let text: String
     var state: State
     let createdAt: Date
+    /// Files staged before this send — kept on the item so a retry re-sends the
+    /// SAME already-uploaded files instead of losing them with the failure.
+    var attachments: [Attachment] = []
 
     var isFailed: Bool {
         if case .failed = state { return true }
@@ -99,7 +102,19 @@ final class ChatViewModel: ObservableObject {
     @Published var catchUpNotice: String?
     @Published var draft = ""
 
+    // R4 composer: staged uploads + the room's model preference.
+    @Published private(set) var staged: [CornerAPI.UploadedFile] = []
+    @Published private(set) var isUploading = false
+    @Published var uploadError: String?
+    /// The composer's live model label — resolveEffectiveRoomModel's precedence:
+    /// this room's own choice, else the workspace "_all", else automatic.
+    @Published private(set) var modelChoice = "default"
+    @Published private(set) var modelSaving = false
+
     private let api: MessageTransport
+    /// Uploads + model prefs are CornerAPI-only concerns (the transport seam is the
+    /// thread's failure contract, and these are not part of it).
+    private var live: CornerAPI { CornerAPI.shared }
     /// Timings are injected rather than read from Config at the point of use, so the
     /// three-minute backstop can be exercised in a test in milliseconds. A timeout that
     /// has never been observed firing is a timeout nobody knows the behavior of.
@@ -388,9 +403,71 @@ final class ChatViewModel: ObservableObject {
 
     func send() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        let files = staged.map(\.asAttachment)
+        guard !text.isEmpty || !files.isEmpty else { return }
         draft = ""
-        enqueue(text: text)
+        staged = []
+        // A file sent without words gets the bridge's own canonical announcement
+        // text, so every reader of the row (dispatcher included) sees what the
+        // watcher itself would have written — and the bubble renders cards only.
+        let finalText = text.isEmpty ? Self.announcement(for: files) : text
+        enqueue(text: finalText, attachments: files)
+    }
+
+    static func announcement(for files: [Attachment]) -> String {
+        if files.count == 1 { return "Attached file: \(files[0].name)" }
+        return "Attached \(files.count) files: " + files.map(\.name).joined(separator: ", ")
+    }
+
+    // MARK: - Staged uploads (R4 composer)
+
+    /// Push one picked file through the web's upload lane and stage it on success.
+    /// Failures surface on `uploadError` — a file that silently fails to stage is a
+    /// file the user believes they sent.
+    func stageFile(data: Data, filename: String, mime: String) async {
+        isUploading = true
+        uploadError = nil
+        defer { isUploading = false }
+        do {
+            let uploaded = try await live.uploadFile(data: data, filename: filename, mime: mime, room: room)
+            if !staged.contains(where: { $0.url == uploaded.url }) {
+                staged.append(uploaded)
+            }
+        } catch {
+            uploadError = "\(filename) did not upload. Try again."
+        }
+    }
+
+    func removeStaged(_ file: CornerAPI.UploadedFile) {
+        staged.removeAll { $0.id == file.id }
+    }
+
+    // MARK: - Model preference (R4 composer)
+
+    /// Pull the workspace's model prefs and resolve this room's effective choice —
+    /// resolveEffectiveRoomModel verbatim: room key > workspace "_all" > automatic.
+    func loadModelPreference() async {
+        guard let models = try? await live.agentModels() else { return }
+        let own = models[room.modelPreferenceKey, default: ""].trimmingCharacters(in: .whitespaces)
+        let workspace = models["_all", default: ""].trimmingCharacters(in: .whitespaces)
+        if !own.isEmpty, own != "default" { modelChoice = own }
+        else if !workspace.isEmpty, workspace != "default" { modelChoice = workspace }
+        else { modelChoice = "default" }
+    }
+
+    /// Save a model pick for this room. Optimistic, reverted on failure — the same
+    /// contract as the web's selectRoomModel.
+    func selectModel(_ id: String) async {
+        guard !modelSaving, id != modelChoice else { return }
+        let previous = modelChoice
+        modelChoice = id
+        modelSaving = true
+        defer { modelSaving = false }
+        do {
+            try await live.setAgentModel(preferenceKey: room.modelPreferenceKey, model: id)
+        } catch {
+            modelChoice = previous
+        }
     }
 
     func retry(_ item: OutboxItem) {
@@ -416,12 +493,13 @@ final class ChatViewModel: ObservableObject {
         if case .stalled = turn { turn = .idle }
     }
 
-    private func enqueue(text: String) {
+    private func enqueue(text: String, attachments: [Attachment] = []) {
         let item = OutboxItem(
             id: "outbox-\(UUID().uuidString)",
             text: text,
             state: .sending,
-            createdAt: Date()
+            createdAt: Date(),
+            attachments: attachments
         )
         outbox.append(item)
         deliver(item)
@@ -431,7 +509,10 @@ final class ChatViewModel: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             do {
-                let created = try await self.api.send(text: item.text, room: self.room, interactionMode: "work")
+                let created = try await self.api.send(
+                    text: item.text, room: self.room,
+                    interactionMode: "work", attachments: item.attachments
+                )
                 if let created {
                     self.beginTurn(
                         parentID: created.id,

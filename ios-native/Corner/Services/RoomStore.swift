@@ -128,6 +128,9 @@ final class RoomStore: ObservableObject {
         groups.sort { $0.room.title.localizedCaseInsensitiveCompare($1.room.title) == .orderedAscending }
         projects = groups
         recent = buildRecent(groups: groups, activity: activity)
+        // The chat swipe carousel navigates this exact order; the router holds it so
+        // ChatView never needs its own copy of the rail.
+        AppRouter.shared.recencyOrder = recent.map(\.room)
     }
 
     /// The home timeline (contract §2): strict recency, descending, no other key.

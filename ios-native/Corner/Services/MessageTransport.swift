@@ -30,6 +30,18 @@ protocol MessageTransport: AnyObject {
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing
 }
 
+extension MessageTransport {
+    /// A send that carries staged files (R4 composer). Defaulted through the plain
+    /// send so the fakes the failure tests run against keep compiling unchanged;
+    /// CornerAPI overrides this with the real metadata.attachments write.
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String, attachments: [Attachment]
+    ) async throws -> MessageRow? {
+        try await send(text: text, room: room, interactionMode: interactionMode)
+    }
+}
+
 extension CornerAPI: MessageTransport {
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing {
         subscribe(room: room, onInsert: onInsert)

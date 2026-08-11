@@ -217,13 +217,127 @@ final class CornerAPI: ObservableObject {
     /// not part of the room-thread seam the failure tests run against.
     @discardableResult
     func send(text: String, room: Room, interactionMode: String, routed: RouteProvenance?) async throws -> MessageRow? {
+        try await send(text: text, room: room, interactionMode: interactionMode, routed: routed, attachments: [])
+    }
+
+    /// The full send: text plus any files the composer staged, one POST, one row —
+    /// exactly how the web's composer rides pendingAttachments into the write path.
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String, attachments: [Attachment]
+    ) async throws -> MessageRow? {
+        try await send(text: text, room: room, interactionMode: interactionMode, routed: nil, attachments: attachments)
+    }
+
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String,
+        routed: RouteProvenance?, attachments: [Attachment]
+    ) async throws -> MessageRow? {
         let request = try await authorizedRequest(
             path: "/api/dashboard/supabase-messages",
             method: "POST",
-            jsonBody: room.sendBody(text: text, interactionMode: interactionMode, routed: routed)
+            jsonBody: room.sendBody(
+                text: text, interactionMode: interactionMode,
+                routed: routed, attachments: attachments
+            )
         )
         let data = try await run(request)
         return (try? JSONDecoder().decode(SendEnvelope.self, from: data))?.message
+    }
+
+    // MARK: - Uploads (corner:native-ios R4 — the web's own tunnel lane)
+
+    /// A file pushed through the upload lane, ready to ride a send.
+    struct UploadedFile: Identifiable, Equatable {
+        let url: String
+        let name: String
+        let mime: String
+        let size: Int
+        var id: String { url }
+
+        var asAttachment: Attachment {
+            Attachment(url: url, name: name, mime: mime, size: size, gateStatus: "")
+        }
+    }
+
+    /// POST {rag}/upload-file-binary — the SAME lane the web composer uses
+    /// (useChatAttachments.uploadViaTunnel): raw bytes, Bearer JWT, per-chat scope
+    /// params so the rag-server lands the file in this chat's own Uploads/ folder.
+    /// The web's base64-through-Vercel fallback is deliberately not ported — it
+    /// predates chat-folder routing and drops files at the legacy flat root, which
+    /// is the "it's in your Files panel but it isn't" class of bug.
+    func uploadFile(data: Data, filename: String, mime: String, room: Room) async throws -> UploadedFile {
+        let token: String
+        do { token = try await client.auth.session.accessToken }
+        catch { throw APIError.notSignedIn }
+        let world = try requireWorld()
+
+        var components = URLComponents(string: "https://rag.aheadofmarket.com/upload-file-binary")!
+        var items = [
+            URLQueryItem(name: "world", value: world),
+            URLQueryItem(name: "filename", value: filename.isEmpty ? "upload.bin" : filename),
+            URLQueryItem(name: "mime", value: mime),
+        ]
+        switch room.kind {
+        case .agent(let slug):
+            items.append(URLQueryItem(name: "agent", value: slug))
+        case .project(let slug):
+            items.append(URLQueryItem(name: "project", value: slug))
+        case .mission(let slug, let project):
+            items.append(URLQueryItem(name: "project", value: project))
+            items.append(URLQueryItem(name: "mission", value: Room.bareMissionSlug(slug, project: project)))
+        }
+        components.queryItems = items
+
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 120
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue(mime, forHTTPHeaderField: "Content-Type")
+        request.httpBody = data
+
+        let payload = try await run(request)
+        guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
+              let rawURL = json["url"] as? String, !rawURL.isEmpty else {
+            throw APIError.decoding
+        }
+        let fullURL = rawURL.hasPrefix("http") ? rawURL : "https://rag.aheadofmarket.com" + rawURL
+        return UploadedFile(
+            url: fullURL,
+            name: filename,
+            mime: (json["mime_type"] as? String) ?? mime,
+            size: (json["size"] as? Int) ?? data.count
+        )
+    }
+
+    // MARK: - Model preference (corner:native-ios R4)
+
+    /// GET /api/dashboard/agent-model — the workspace's per-room model choices, the
+    /// same user_preferences row the web composer reads. Keys per
+    /// Room.modelPreferenceKey; "_all" is the workspace-wide default.
+    func agentModels() async throws -> [String: String] {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/agent-model",
+            queryItems: [URLQueryItem(name: "client", value: world)]
+        )
+        let data = try await run(request)
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw APIError.decoding
+        }
+        return (json["models"] as? [String: String]) ?? [:]
+    }
+
+    /// PATCH /api/dashboard/agent-model — save one room's model choice.
+    func setAgentModel(preferenceKey: String, model: String) async throws {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/agent-model",
+            method: "PATCH",
+            jsonBody: ["slug": preferenceKey, "model": model, "client_id": world]
+        )
+        _ = try await run(request)
     }
 
     /// POST /api/dashboard/intake-route — Corner's routing brain, the SAME endpoint the

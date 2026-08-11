@@ -69,27 +69,59 @@ struct ChatPreviewHarness: View {
     }
 
     // A visual replica of ChatView.composer for the proof (the real one needs a room +
-    // view model). Same tokens, same shape, so the capture is faithful to the shipped bar.
+    // view model). Same tokens, same two-row card, so the capture is faithful.
     private var composerReplica: some View {
-        HStack(alignment: .bottom, spacing: Theme.s2) {
-            Text("Message Design…")
-                .foregroundStyle(Theme.inkFaint)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Theme.s4)
-                .padding(.vertical, 10)
-                .background(Theme.raised, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
-            Image(systemName: "paperplane.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.inkFaint)
-                .frame(width: 36, height: 36)
-                .background(Theme.raised, in: Circle())
-                .overlay(Circle().strokeBorder(Theme.hairline, lineWidth: 1))
+        VStack(spacing: 10) {
+            HStack(alignment: .bottom, spacing: 6) {
+                Image(systemName: "paperclip")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(width: 32, height: 32)
+                Text("Message Design…")
+                    .font(.hanken(16))
+                    .foregroundStyle(Theme.inkFaint)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 7)
+            }
+            .padding(.leading, Theme.s1)
+            .frame(minHeight: 40)
+            .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
+
+            HStack(spacing: 6) {
+                HStack(spacing: 7) {
+                    Image(systemName: "sparkles").font(.system(size: 13, weight: .medium))
+                    Text("Auto").font(.hanken(11.5).weight(.bold))
+                }
+                .foregroundStyle(Theme.inkSoft)
+                .padding(.horizontal, 10)
+                .frame(height: 30)
+                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
+
+                Image(systemName: "folder")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(width: 34, height: 30)
+                    .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "paperplane.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Theme.inkFaint)
+                    .frame(width: 34, height: 34)
+                    .background(Theme.raised2, in: RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous))
+                    .opacity(0.72)
+            }
         }
+        .padding(Theme.s2)
+        .background(Theme.composer, in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
+        .shadow(color: .black.opacity(0.55), radius: 21, y: 9)
         .padding(.horizontal, Theme.s3)
-        .padding(.vertical, Theme.s2)
-        .background(Theme.raised.opacity(0.9))
-        .overlay(alignment: .top) { Rectangle().fill(Theme.hairline).frame(height: 1) }
+        .padding(.bottom, Theme.s2)
     }
 }
 

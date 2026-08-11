@@ -176,6 +176,27 @@ final class AppRouter: ObservableObject {
         return nil
     }
 
+    /// The home timeline's recency order, published by RoomStore on every load so the
+    /// chat swipe carousel knows its neighbors without a second fetch.
+    @Published var recencyOrder: [Room] = []
+
+    /// The swipe carousel (Patrik's R4 gesture spec): the open chat is one card in the
+    /// recency stack — swiping toward "more recent" replaces it with the room above it
+    /// on home, the other way with the room below. Replacing the top of the path keeps
+    /// the stack one-room-deep, exactly like tapping home rows one after another.
+    func swipeChat(from current: Room, toMoreRecent: Bool) {
+        guard case .room = path.last else { return }
+        guard let idx = recencyOrder.firstIndex(where: { $0.roomID == current.roomID }) else {
+            // Not on the recency list (deep-linked agent room): land on the most
+            // recent room rather than doing nothing.
+            if !toMoreRecent, let first = recencyOrder.first { path[path.count - 1] = .room(first) }
+            return
+        }
+        let target = toMoreRecent ? idx - 1 : idx + 1
+        guard recencyOrder.indices.contains(target) else { return }
+        path[path.count - 1] = .room(recencyOrder[target])
+    }
+
     func isShowing(_ link: DeepLink?) -> Bool {
         guard let link, let open = openRoom else { return false }
         return open.roomID == link.roomID
