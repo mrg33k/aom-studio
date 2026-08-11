@@ -443,7 +443,10 @@ final class CornerAPI: ObservableObject {
     }
 
     /// GET /api/dashboard/message-steps — the agent's real heartbeats for a turn.
-    func fetchSteps(room: Room, limit: Int = 40) async throws -> [MessageStep] {
+    /// Default 100, the web's persistence-poll window: the steps feed is shared by
+    /// every room in the world, and 40 let a busy afternoon push a long turn's own
+    /// steps out of the window — which read as the turn losing its heartbeat.
+    func fetchSteps(room: Room, limit: Int = 100) async throws -> [MessageStep] {
         var items = [
             URLQueryItem(name: "client_id", value: room.world),
             URLQueryItem(name: "agent", value: room.stepAgentSlug),

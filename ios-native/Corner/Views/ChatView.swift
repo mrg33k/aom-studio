@@ -109,13 +109,22 @@ struct ChatView: View {
     var body: some View {
         messageList
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                // Collapse: 0-height clear placeholder keeps the thread from
-                // resizing when we swap composer ↔ nothing.
-                if composerCollapsed {
-                    Color.clear.frame(height: 0)
-                } else {
-                    composer
+                VStack(spacing: Theme.s2) {
+                    // The turn's living progress — elapsed clock + step list — sits
+                    // directly above the composer, pinned, so "is anything happening"
+                    // is answerable without scrolling. Hidden while searching.
+                    if !isSearching, model.turn != .idle {
+                        turnIndicator
+                    }
+                    // Collapse: 0-height clear placeholder keeps the thread from
+                    // resizing when we swap composer ↔ nothing.
+                    if composerCollapsed {
+                        Color.clear.frame(height: 0)
+                    } else {
+                        composer
+                    }
                 }
+                .animation(.easeOut(duration: 0.2), value: model.turn)
             }
             // Search bar slides in at the top of the thread when isSearching is true —
             // sits above the message list so it doesn't collide with the nav bar or the
@@ -442,9 +451,6 @@ struct ChatView: View {
                                     .id(pending.id)
                                 }
                             }
-                            if !isSearching {
-                                turnIndicator
-                            }
                         }
                         // Tail sentinel: arms the swipe-up-for-files gesture only when
                         // the user is actually looking at the end of the thread — the
@@ -505,13 +511,9 @@ struct ChatView: View {
     }
 
     private func scrollToEnd(_ proxy: ScrollViewProxy) {
-        let anchor: String? = {
-            switch model.turn {
-            case .idle: return model.thread.last?.id
-            case .working, .stalled: return "turn-indicator"
-            }
-        }()
-        guard let anchor else { return }
+        // The turn indicator lives above the composer now, outside the scroll, so
+        // the newest thread row is always the anchor.
+        guard let anchor = model.thread.last?.id else { return }
         withAnimation(.easeOut(duration: 0.2)) {
             proxy.scrollTo(anchor, anchor: .bottom)
         }
@@ -522,10 +524,13 @@ struct ChatView: View {
     private var turnIndicator: some View {
         TurnIndicatorView(
             turn: model.turn,
+            steps: model.liveSteps,
+            startedAt: model.turnStartedAt,
+            quiet: model.turnIsQuiet,
             resend: { model.resendStalled() },
             dismiss: { model.dismissStalled() }
         )
-        .id("turn-indicator")
+        .padding(.horizontal, Theme.s3)
     }
 
     private func catchUpBanner(_ text: String) -> some View {
@@ -690,55 +695,12 @@ struct ChatView: View {
         .animation(.easeOut(duration: 0.2), value: composerFocused)
     }
 
-    /// Row 2 — the action row: Work/Plan toggle + model choice on the left, send on the right.
+    /// Row 2 — the action row: ONE commands menu on the left (the web popover's
+    /// consolidation: Work/Plan, Model, Files), the checklist toggle, send on the
+    /// right. Attach stays in Row 1; send stays standalone.
     private var actionRow: some View {
         HStack(spacing: 6) {
-            // Work / Plan toggle — always visible so mode is never buried in a menu.
-            // Matches the web's Commands → Work / Plan segmented control.
-            modePicker
-
-            Menu {
-                ForEach(ChatView.modelOptions, id: \.id) { option in
-                    Button {
-                        Task { await model.selectModel(option.id) }
-                    } label: {
-                        if option.id == model.modelChoice {
-                            Label(option.label, systemImage: "checkmark")
-                        } else {
-                            Text(option.label)
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 13, weight: .medium))
-                    Text(ChatView.shortModelLabel(model.modelChoice))
-                        .font(.hanken(11.5).weight(.bold))
-                }
-                .foregroundStyle(Theme.inkSoft)
-                .padding(.horizontal, 10)
-                .frame(height: 30)
-                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(Theme.hairline, lineWidth: 1)
-                )
-            }
-            .accessibilityLabel("Model")
-
-            Button { showingFiles = true } label: {
-                Image(systemName: "folder")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Theme.inkSoft)
-                    .frame(width: 34, height: 30)
-                    .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .strokeBorder(Theme.hairline, lineWidth: 1)
-                    )
-            }
-            .accessibilityLabel("Files in this room")
+            commandsMenu
 
             // ── Checklist toggle (R11) ─────────────────────────────────────────
             // Tapping swaps the input shell for RoomChecklistPanelView, matching
@@ -781,45 +743,65 @@ struct ChatView: View {
         }
     }
 
-    /// Two-button Work / Plan segmented pill.
-    /// Active pill: surface card background + border + full-weight ink.
-    /// Inactive pill: transparent + muted ink. Height matches the model chip (30pt).
-    private var modePicker: some View {
-        HStack(spacing: 0) {
-            ForEach(["work", "plan"], id: \.self) { mode in
-                let active = model.chatMode == mode
-                Button {
-                    model.setMode(mode)
-                } label: {
-                    Text(mode.capitalized)
-                        .font(.hanken(11.5).weight(.bold))
-                        .foregroundStyle(active ? Theme.ink : Theme.inkSoft)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 24)
-                        .background(
-                            active ? Theme.composerCard : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .strokeBorder(
-                                    active ? Theme.hairline : Color.clear,
-                                    lineWidth: 1
-                                )
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(active ? [.isSelected] : [])
-                .animation(.easeOut(duration: 0.12), value: model.chatMode)
+    /// The web's Commands popover, as one native menu behind the sparkles chip:
+    /// the Work/Plan mode toggle, the Model submenu, and "Files in this room".
+    /// The chip's label stays live — model short-name, plus "Plan" whenever the
+    /// non-default mode is armed, so neither choice hides just because its control
+    /// moved into a menu.
+    private var commandsMenu: some View {
+        Menu {
+            // Work / Plan — a Picker renders as inline checkmark rows in a Menu,
+            // the native shape of the web's segmented toggle.
+            Picker("Mode", selection: Binding(
+                get: { model.chatMode },
+                set: { model.setMode($0) }
+            )) {
+                Label("Work", systemImage: "hammer").tag("work")
+                Label("Plan", systemImage: "list.bullet.rectangle").tag("plan")
             }
+
+            // Model submenu — the same options and checkmark the old chip menu had.
+            Menu {
+                ForEach(ChatView.modelOptions, id: \.id) { option in
+                    Button {
+                        Task { await model.selectModel(option.id) }
+                    } label: {
+                        if option.id == model.modelChoice {
+                            Label(option.label, systemImage: "checkmark")
+                        } else {
+                            Text(option.label)
+                        }
+                    }
+                }
+            } label: {
+                Label("Model — \(ChatView.shortModelLabel(model.modelChoice))", systemImage: "cpu")
+            }
+
+            Button { showingFiles = true } label: {
+                Label("Files in this room", systemImage: "folder")
+            }
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .medium))
+                Text(commandsChipLabel)
+                    .font(.hanken(11.5).weight(.bold))
+            }
+            .foregroundStyle(Theme.inkSoft)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 1)
+            )
         }
-        .padding(3)
-        .frame(width: 110, height: 30)
-        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .strokeBorder(Theme.hairline, lineWidth: 1)
-        )
+        .accessibilityLabel("Commands — mode, model, files")
+    }
+
+    private var commandsChipLabel: String {
+        let modelLabel = ChatView.shortModelLabel(model.modelChoice)
+        return model.chatMode == "plan" ? "\(modelLabel) · Plan" : modelLabel
     }
 
     /// Staged files, as removable chips above the shell — the web's pinned-chip row.
@@ -949,42 +931,102 @@ struct ChatView: View {
 
 // MARK: - Turn indicator
 
-/// The honest answer to "is anything happening". Its own view so it can be rendered
-/// with each state on purpose rather than only ever being seen by accident.
+/// The honest answer to "is anything happening" — and a LIVING one. While a turn is
+/// open it shows an animated working mark plus an elapsed clock that visibly counts
+/// ("Working — 2m 10s"), and when the bridge is emitting real steps they render as a
+/// compact progress list: latest line always visible, the full run behind a
+/// disclosure. Zero steps (today's reality for phone turns) means the timer alone —
+/// never an empty list. Only after ten minutes of TOTAL silence does the soft
+/// "still quiet" notice appear, and any reply clears it on the spot: a reply is the
+/// conversation continuing, never a resurrection.
 struct TurnIndicatorView: View {
     let turn: TurnState
+    var steps: [MessageStep] = []
+    var startedAt: Date? = nil
+    var quiet: Bool = false
     var resend: () -> Void = {}
     var dismiss: () -> Void = {}
+
+    @State private var stepsExpanded = false
 
     var body: some View {
         switch turn {
         case .idle:
             EmptyView()
 
-        case .working(let detail):
-            HStack(spacing: Theme.s2) {
-                ProgressView().controlSize(.small)
-                Text(detail ?? "Working…")
-                    .font(.hkFootnote)
-                    .foregroundStyle(Theme.inkSoft)
-                    .lineLimit(2)
+        case .working:
+            VStack(alignment: .leading, spacing: Theme.s2) {
+                HStack(spacing: Theme.s2) {
+                    WorkingMark()
+                    // TimelineView redraws the label every second so the clock
+                    // visibly counts — a frozen "Working…" reads as a hang.
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Text(workingLabel(now: context.date))
+                            .font(.hkFootnote.weight(.medium))
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    Spacer(minLength: 0)
+                    if steps.count > 1 {
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) { stepsExpanded.toggle() }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("\(steps.count) steps")
+                                Image(systemName: stepsExpanded ? "chevron.down" : "chevron.up")
+                                    .imageScale(.small)
+                            }
+                            .font(.hkCaption.weight(.semibold))
+                            .foregroundStyle(Theme.accent)
+                        }
+                        .accessibilityLabel(stepsExpanded ? "Collapse steps" : "Show all steps")
+                    }
+                }
+                if !steps.isEmpty {
+                    if stepsExpanded {
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(steps) { step in
+                                stepRow(step, isLatest: step.id == steps.last?.id)
+                            }
+                        }
+                    } else if let latest = steps.last {
+                        stepRow(latest, isLatest: true)
+                    }
+                }
+                if quiet {
+                    // Steps have gone silent for a few minutes but the turn is NOT
+                    // being called dead — long gaps are normal on real turns.
+                    HStack(spacing: 6) {
+                        Image(systemName: "hourglass")
+                            .font(.system(size: 10))
+                        Text("Nothing new for a few minutes — still checking.")
+                            .font(.hkCaption)
+                    }
+                    .foregroundStyle(Theme.inkFaint)
+                }
             }
             .padding(.horizontal, Theme.s3)
-            .padding(.vertical, Theme.s2)
-            .background(Theme.raised, in: Capsule())
+            .padding(.vertical, Theme.s2 + 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 1)
+            )
             .transition(.opacity)
 
         case .stalled(let sentText):
-            // THE ROW THIS APP EXISTS FOR. Three minutes of complete silence — no step,
-            // no reply. The spinner does NOT just disappear here, because a spinner that
-            // disappears reads as "finished". It says the turn stopped, and offers the
-            // only two things worth offering.
+            // Ten minutes of complete silence — no step, no interim row, no reply.
+            // Softened on purpose: real turns have gone quiet for 18 minutes and
+            // finished fine, so this is a notice with a way out, not a death
+            // certificate. Polling continues underneath and the model clears this
+            // state the instant anything arrives.
             RaisedCard(tint: Theme.warning.opacity(0.4)) {
                 VStack(alignment: .leading, spacing: Theme.s2) {
-                    Label("No reply — this turn stopped", systemImage: "exclamationmark.triangle.fill")
+                    Label("Still quiet after 10 minutes", systemImage: "clock.badge.questionmark")
                         .font(.hkFootnote.weight(.semibold))
                         .foregroundStyle(Theme.warning)
-                    Text("Nothing came back for three minutes. Your message was delivered; the agent never answered it.")
+                    Text("Your message was delivered, but nothing has come back yet. The agent may still be working — this clears itself the moment anything arrives. You can also send the message again.")
                         .font(.hkCaption)
                         .foregroundStyle(Theme.inkSoft)
                     HStack(spacing: Theme.s3) {
@@ -1001,6 +1043,45 @@ struct TurnIndicatorView: View {
                 }
             }
         }
+    }
+
+    /// "Working — 2m 10s", counting from the turn's open. No start date (an older
+    /// API deploy answered without the row) degrades to the plain word.
+    private func workingLabel(now: Date) -> String {
+        guard let startedAt else { return "Working…" }
+        let seconds = max(0, Int(now.timeIntervalSince(startedAt)))
+        if seconds < 60 { return "Working — \(seconds)s" }
+        return "Working — \(seconds / 60)m \(seconds % 60)s"
+    }
+
+    /// One step line: a check for a finished step, the accent dot on the latest.
+    private func stepRow(_ step: MessageStep, isLatest: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Theme.s2) {
+            Image(systemName: isLatest ? "circle.fill" : "checkmark.circle.fill")
+                .font(.system(size: 9))
+                .foregroundStyle(isLatest ? Theme.accent : Theme.inkFaint)
+            Text(step.text ?? "")
+                .font(.hkCaption)
+                .foregroundStyle(isLatest ? Theme.ink : Theme.inkSoft)
+                .lineLimit(isLatest ? 2 : 1)
+        }
+    }
+}
+
+/// The animated working mark: a soft accent pulse. Motion is the message — a static
+/// dot next to a static label is exactly the "is it hung?" ambiguity this replaces.
+private struct WorkingMark: View {
+    @State private var pulsing = false
+
+    var body: some View {
+        Circle()
+            .fill(Theme.accent)
+            .frame(width: 8, height: 8)
+            .scaleEffect(pulsing ? 1.0 : 0.55)
+            .opacity(pulsing ? 1 : 0.45)
+            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulsing)
+            .onAppear { pulsing = true }
+            .accessibilityHidden(true)
     }
 }
 

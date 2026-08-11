@@ -577,11 +577,15 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
           {/* Two-column content */}
           <div className="cm-cols">
 
-            {/* Script — left column (desktop), order:2 on mobile */}
-            <section className="cm-script">
+            {/* Script — left column (desktop), order:2 on mobile.
+                Reps get script FIRST on mobile: mid-call the SAY cards must sit
+                right under the dial button, not below the research panels. */}
+            <section className="cm-script" style={isRep ? { order: 1 } : undefined}>
               {isRep && (() => {
                 // Visual grammar: WHITE CARD WITH QUOTES = words that leave your mouth.
                 // Everything else is coaching and never spoken. Colored IF cards = branches.
+                // Spoken company references drop the legal suffix — nobody says "LLC's" aloud.
+                const spokenCompany = (lead.company || '').replace(/[,.]?\s+(llc|l\.l\.c\.|inc\.?|corp\.?|corporation|co\.?|ltd\.?)$/i, '')
                 const sayCard = { margin: 0, fontFamily: 'Inter,sans-serif', fontSize: 17, lineHeight: 1.62, color: '#17170F', background: '#FFFFFF', border: '1px solid #D3D0C7', borderLeft: '2px solid #B58A38', padding: 16 }
                 const coach   = { margin: 0, marginTop: 8, fontFamily: 'Inter,sans-serif', fontSize: 13, fontStyle: 'italic', color: '#77746A', lineHeight: 1.5 }
                 const stepLbl = { display: 'block', marginBottom: 8, fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }
@@ -610,7 +614,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                         <p style={sayCard}>"Hi, this is {repName} with Ahead of Market, out here in Phoenix — is {firstName || 'the owner'} around?"</p>
                         <div style={{ ...ifCard('#B58A38', '#FBF4E4'), marginTop: 8, marginBottom: 0 }}>
                           <span style={ifLabel('#8A6828')}>"What's this about?"</span>
-                          <p style={ifSay}>"We took a look at {lead.company}'s website and Patrik found something he wanted to run by {firstName || 'the owner'}. It's quick — is {firstName || 'the owner'} around?"</p>
+                          <p style={ifSay}>"We took a look at {spokenCompany}'s website and Patrik found something he wanted to run by {firstName || 'the owner'}. It's quick — is {firstName || 'the owner'} around?"</p>
                           <p style={ifDo}>Not available? Ask when's better, log Left VM or No answer.</p>
                         </div>
                       </div>
@@ -695,8 +699,8 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
               })}
             </section>
 
-            {/* Brief sidebar — right column (desktop), order:1 on mobile */}
-            <aside className="cm-brief">
+            {/* Brief sidebar — right column (desktop), order:1 on mobile (order:2 for reps) */}
+            <aside className="cm-brief" style={isRep ? { order: 2 } : undefined}>
 
               {/* Their site */}
               <div style={{ marginBottom: 24 }}>

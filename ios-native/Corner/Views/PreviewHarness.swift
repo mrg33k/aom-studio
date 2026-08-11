@@ -28,7 +28,24 @@ enum PreviewFixtures {
       {"id":"u1","role":"user","user_name":"Patrik","text":"Good. Show me a link card and a block too.","timestamp":"2026-08-10T18:31:00Z"},
       {"id":"a3","role":"assistant","agent":"director","text":"Here's the live proof page. https://www.aheadofmarket.com/dashboard","timestamp":"2026-08-10T18:31:40Z"},
       {"id":"a4","role":"assistant","agent":"director","text":"","timestamp":"2026-08-10T18:32:10Z","metadata":{"blocks":[{"type":"success","title":"Message-row parity","detail":"Avatar, author, bubble, timestamp — matched."},{"type":"data","title":"Recency window","rows":[1,2,3,4,5,6]}]}},
-      {"id":"a5","role":"assistant","agent":"director","text":"Anything this build can't draw falls through to a labelled card instead of a blank bubble.","timestamp":"2026-08-10T18:32:40Z","metadata":{"blocks":[{"type":"whiteboard","title":"Unknown block kind"}]}}
+      {"id":"f1","role":"user","user_name":"Patrik","text":"[FOLLOWUP TRIGGER — do not repeat this prefix in your reply] The scheduled check-in time has arrived (was: 2026-08-10T18:33:00Z). Report progress on the open work.","timestamp":"2026-08-10T18:33:00Z"},
+      {"id":"a5","role":"assistant","agent":"director","text":"Anything this build can't draw falls through to a labelled card instead of a blank bubble.","timestamp":"2026-08-10T18:33:40Z","metadata":{"blocks":[{"type":"whiteboard","title":"Unknown block kind"}]}}
+    ]
+    """)
+
+    /// Live steps for the progressive turn indicator — the same decoder the real
+    /// steps endpoint feeds, so the card proof exercises MessageStep for real.
+    static func steps(_ json: String) -> [MessageStep] {
+        guard let data = json.data(using: .utf8),
+              let steps = try? JSONDecoder().decode([MessageStep].self, from: data) else { return [] }
+        return steps
+    }
+
+    static let turnSteps: [MessageStep] = steps("""
+    [
+      {"id":"s1","parent_message_id":"u1","step_index":0,"text":"Picking this up"},
+      {"id":"s2","parent_message_id":"u1","step_index":1,"text":"Reading the room's canon"},
+      {"id":"s3","parent_message_id":"u1","step_index":2,"text":"Rendering the mobile thread against the web tokens"}
     ]
     """)
 }
@@ -54,11 +71,23 @@ struct ChatPreviewHarness: View {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
                             MessageBubbleView(row: row, room: nil, showsAuthor: opensGroup(i))
                         }
-                        TurnIndicatorView(turn: .working(detail: "Checking the mobile renderer"))
                     }
                     .padding(.horizontal, Theme.s4)
                     .padding(.vertical, Theme.s3)
                 }
+                // Open at the tail like the real thread, so the capture shows the
+                // newest rows — including the follow-up check-in chip.
+                .defaultScrollAnchor(.bottom)
+                // The progressive working state, pinned above the composer exactly
+                // as ChatView places it: elapsed clock counting from 2m10s ago,
+                // real steps with the latest highlighted.
+                TurnIndicatorView(
+                    turn: .working(detail: PreviewFixtures.turnSteps.last?.text),
+                    steps: PreviewFixtures.turnSteps,
+                    startedAt: Date().addingTimeInterval(-130)
+                )
+                .padding(.horizontal, Theme.s3)
+                .padding(.bottom, Theme.s2)
                 composerReplica
             }
             .background(Theme.ground)
@@ -88,6 +117,8 @@ struct ChatPreviewHarness: View {
             .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
 
+            // The consolidated action row: ONE commands chip (mode + model + files
+            // live behind it), the checklist toggle, send. Matches ChatView.actionRow.
             HStack(spacing: 6) {
                 HStack(spacing: 7) {
                     Image(systemName: "sparkles").font(.system(size: 13, weight: .medium))
@@ -99,7 +130,7 @@ struct ChatPreviewHarness: View {
                 .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
 
-                Image(systemName: "folder")
+                Image(systemName: "checklist")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Theme.inkSoft)
                     .frame(width: 34, height: 30)

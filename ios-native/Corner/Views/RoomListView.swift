@@ -28,6 +28,10 @@ struct RoomListView: View {
     @State private var query = ""
     @State private var showingNewRoom = false
     @State private var showingBackgroundWork = false
+    /// The pinned search field (Patrik 2026-08-11): .searchable's pull-down kept getting
+    /// missed, so the search chip in the top bar toggles a visible field row instead.
+    @State private var searchOpen = false
+    @FocusState private var searchFocused: Bool
 
     /// The home filters (Patrik 2026-08-11 — the home + directory screens merged on
     /// purpose, "calling a spade a spade"): Recent is the default recency feed, All is
@@ -78,81 +82,22 @@ struct RoomListView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Theme.ground)
-        .navigationTitle("Corner")
-        .searchable(text: $query, prompt: "Search rooms")
+        // The system nav bar is hidden on the home — iOS 26's glass toolbar wraps
+        // every item in its own capsule, which shrinks the logo into a chip and
+        // double-chromes the buttons. The web bar is drawn by hand instead.
+        .toolbar(.hidden, for: .navigationBar)
         .refreshable { await store.load() }
-        .toolbar {
-            // "+ New" lives in the leading position to match the web rail's placement.
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    showingNewRoom = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("New")
-                            .font(.hkCaption.weight(.semibold))
-                    }
-                    .foregroundStyle(Theme.accent)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(Theme.accentWeak, in: Capsule())
-                }
-                .accessibilityLabel("New room")
+        // The web mobile home's top bar, one row (Patrik 2026-08-11 — the big title
+        // sat "too low"): logo + wordmark leading, then [+ New] [search] [menu]
+        // trailing. Theme, bell, and avatar fold into the hamburger menu; every item
+        // does its real thing, and the bell's count rides the menu badge dot. The
+        // pinned search field rides directly under the bar while the chip is active.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                topBar
+                if searchOpen { searchFieldRow }
             }
-            // The web mobile home's top bar (TopBar contract, R209): theme chip,
-            // bell with the needs-you dot, gradient avatar. Search stays native
-            // (the pull-down field). Every control does its real thing — the bell
-            // opens the review queue and its dot IS review.waitingCount.
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Button { cycleTheme() } label: {
-                    Image(systemName: themeGlyph)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.inkSoft)
-                }
-                .accessibilityLabel("Theme")
-
-                // Background work — phone equivalent of web's WorkersShell panel.
-                // The pulsing accent dot signals in-flight work without opening the sheet.
-                Button { showingBackgroundWork = true } label: {
-                    Image(systemName: "timer")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.inkSoft)
-                        .overlay(alignment: .topTrailing) {
-                            if bgWork.total > 0 {
-                                Circle()
-                                    .fill(Theme.accent)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 2, y: -2)
-                            }
-                        }
-                }
-                .accessibilityLabel(bgWork.total > 0
-                    ? "Background work — \(bgWork.total) running"
-                    : "Background work")
-
-                Button { router.open(.review) } label: {
-                    Image(systemName: "bell")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.inkSoft)
-                        .overlay(alignment: .topTrailing) {
-                            if review.waitingCount > 0 {
-                                Circle()
-                                    .fill(Theme.warning)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 2, y: -2)
-                            }
-                        }
-                }
-                .accessibilityLabel(review.waitingCount > 0
-                    ? "Review queue — \(review.waitingCount) waiting"
-                    : "Review queue")
-
-                Button { router.showingSettings = true } label: {
-                    AvatarDisc(identity: api.userAvatarIdentity, size: 30)
-                }
-                .accessibilityLabel("Settings")
-            }
+            .background(Theme.ground)
         }
         .sheet(isPresented: $router.showingSettings) {
             AccountView()
@@ -162,7 +107,7 @@ struct RoomListView: View {
         // The front-door composer, pinned above the timeline (and above the keyboard).
         // Hidden while searching — search is a different intent from starting work.
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if api.world != nil && query.isEmpty {
+            if api.world != nil && query.isEmpty && !searchOpen {
                 HomeComposerBar(intake: intake, candidates: intakeCandidates, recentRooms: intakeRecentRooms)
                     .background(Theme.ground)
             }
@@ -189,6 +134,137 @@ struct RoomListView: View {
             bgWork.startPolling()
         }
         .onChange(of: api.world) { _, _ in store.refresh() }
+    }
+
+    // MARK: - The top bar (the web mobile home's logo row, drawn by hand)
+
+    private var topBar: some View {
+        HStack(spacing: Theme.s2) {
+            Image("CornerLogo")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 20)
+                .foregroundStyle(Theme.ink)
+                .accessibilityLabel("Corner")
+
+            Spacer(minLength: Theme.s2)
+
+            Button {
+                showingNewRoom = true
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("New")
+                        .font(.hkCaption.weight(.semibold))
+                }
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 12)
+                .frame(height: 36)
+                .background(Theme.accentWeak, in: Capsule())
+            }
+            .accessibilityLabel("New room")
+
+            // Search chip — toggles the pinned field under the bar. The old
+            // .searchable pull-down kept getting missed; a visible field doesn't.
+            Button {
+                withAnimation(.easeOut(duration: 0.15)) {
+                    searchOpen.toggle()
+                }
+                if !searchOpen {
+                    query = ""
+                    searchFocused = false
+                }
+            } label: {
+                TopBarChip(symbol: "magnifyingglass", active: searchOpen)
+            }
+            .accessibilityLabel(searchOpen ? "Close search" : "Search rooms")
+
+            // The hamburger — real destinations only. Review's waiting count is
+            // the badge dot here and the count line inside.
+            Menu {
+                Button { router.open(.review) } label: {
+                    Label(review.waitingCount > 0
+                        ? "Review queue — \(review.waitingCount) waiting"
+                        : "Review queue", systemImage: "bell")
+                }
+                Button { showingBackgroundWork = true } label: {
+                    Label(bgWork.total > 0
+                        ? "Background work — \(bgWork.total) running"
+                        : "Background work", systemImage: "timer")
+                }
+                Button { router.open(.organize) } label: {
+                    Label("Files", systemImage: "folder")
+                }
+                Button { router.open(.tracker) } label: {
+                    Label("Tracker", systemImage: "checklist")
+                }
+                Divider()
+                Button { cycleTheme() } label: {
+                    Label("Theme: \(themeName)", systemImage: themeGlyph)
+                }
+                Button { router.showingSettings = true } label: {
+                    Label("Settings", systemImage: "person.crop.circle")
+                }
+            } label: {
+                TopBarChip(symbol: "line.3.horizontal", active: false)
+                    .overlay(alignment: .topTrailing) {
+                        if review.waitingCount > 0 {
+                            Circle()
+                                .fill(Theme.warning)
+                                .frame(width: 8, height: 8)
+                                .offset(x: -2, y: 2)
+                        }
+                    }
+            }
+            .accessibilityLabel(review.waitingCount > 0
+                ? "Menu — \(review.waitingCount) waiting for review"
+                : "Menu")
+        }
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
+    }
+
+    // MARK: - The pinned search field (replaces .searchable's pull-down)
+
+    /// A visible field row pinned above the eyebrow while the search chip is active.
+    /// Same filtering as searchRows — typing narrows the list live; the X clears the
+    /// query and closes the row in one tap.
+    private var searchFieldRow: some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "magnifyingglass")
+                .font(.hkFootnote)
+                .foregroundStyle(Theme.inkSoft)
+            TextField("Search rooms", text: $query)
+                .font(.hkBody)
+                .foregroundStyle(Theme.ink)
+                .focused($searchFocused)
+                .submitLabel(.search)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+            Button {
+                query = ""
+                searchFocused = false
+                withAnimation(.easeOut(duration: 0.15)) { searchOpen = false }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.hkFootnote)
+                    .foregroundStyle(Theme.inkSoft)
+            }
+            .accessibilityLabel("Clear and close search")
+        }
+        .padding(.horizontal, Theme.s3)
+        .frame(height: 40)
+        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
+        )
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.ground)
+        .onAppear { searchFocused = true }
     }
 
     // MARK: - Eyebrow + filter chips (the web mobile home's top of list)
@@ -393,6 +469,14 @@ struct RoomListView: View {
         case .dark: return "moon"
         case .light: return "sun.max"
         case .glass: return "sparkle"
+        }
+    }
+
+    private var themeName: String {
+        switch ThemeManager.shared.kind {
+        case .dark: return "Dark"
+        case .light: return "Light"
+        case .glass: return "Glass"
         }
     }
 
@@ -618,6 +702,26 @@ struct RoomListView: View {
             .font(.hkFootnote).foregroundStyle(Theme.warning)
             .padding(.vertical, Theme.s2)
             .plainCardRow()
+    }
+}
+
+// MARK: - Top bar chip
+
+/// One circular top-bar chip — the web mobile top bar's round icon buttons,
+/// sized for the native toolbar. Active state (the search chip while its field
+/// is open) flips to the accent so the toggle reads.
+private struct TopBarChip: View {
+    let symbol: String
+    let active: Bool
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(active ? Theme.accent : Theme.inkSoft)
+            .frame(width: 36, height: 36)
+            .background(active ? Theme.accentWeak : Theme.chipFill, in: Circle())
+            .overlay(Circle().strokeBorder(active ? Theme.accent.opacity(0.35) : Theme.hairline, lineWidth: 1))
+            .contentShape(Circle())
     }
 }
 
@@ -915,6 +1019,9 @@ enum RelTime {
 struct HomePreviewHarness: View {
     private let world = "aom"
     private var now: Double { Date().timeIntervalSince1970 * 1000 }
+    /// `-searchOpen` renders the pinned search field row under the bar so the
+    /// design capture can prove the open-search state without auth.
+    private var searchOpen: Bool { ProcessInfo.processInfo.arguments.contains("-searchOpen") }
 
     private func project(_ slug: String, _ title: String) -> Room {
         Room(world: world, kind: .project(slug: slug), title: title, subtitle: "Project")
@@ -974,23 +1081,64 @@ struct HomePreviewHarness: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Theme.ground)
-            .navigationTitle("Corner")
-            // The same top bar the real home ships (theme / bell / avatar) with
-            // sample state — a waiting dot on the bell, Patrik's initial — so the
-            // design capture proves the bar, not just the list.
-            .toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Image(systemName: "moon")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.inkSoft)
-                    Image(systemName: "bell")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.inkSoft)
-                        .overlay(alignment: .topTrailing) {
-                            Circle().fill(Theme.warning).frame(width: 8, height: 8).offset(x: 2, y: -2)
+            .toolbar(.hidden, for: .navigationBar)
+            // The same top bar the real home ships — logo row leading, then
+            // [+ New] [search] [menu] with a waiting dot on the menu chip — a
+            // static replica so the design capture proves the bar, not just
+            // the list.
+            .safeAreaInset(edge: .top, spacing: 0) {
+                VStack(spacing: 0) {
+                    HStack(spacing: Theme.s2) {
+                        Image("CornerLogo")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 20)
+                            .foregroundStyle(Theme.ink)
+                        Spacer(minLength: Theme.s2)
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("New")
+                                .font(.hkCaption.weight(.semibold))
                         }
-                    AvatarDisc(name: "Patrik", size: 30)
+                        .foregroundStyle(Theme.accent)
+                        .padding(.horizontal, 12)
+                        .frame(height: 36)
+                        .background(Theme.accentWeak, in: Capsule())
+                        TopBarChip(symbol: "magnifyingglass", active: searchOpen)
+                        TopBarChip(symbol: "line.3.horizontal", active: false)
+                            .overlay(alignment: .topTrailing) {
+                                Circle().fill(Theme.warning).frame(width: 8, height: 8).offset(x: -2, y: 2)
+                            }
+                    }
+                    .padding(.horizontal, Theme.s4)
+                    .padding(.vertical, Theme.s2)
+                    if searchOpen {
+                        HStack(spacing: Theme.s2) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.hkFootnote)
+                                .foregroundStyle(Theme.inkSoft)
+                            Text("Search rooms")
+                                .font(.hkBody)
+                                .foregroundStyle(Theme.inkFaint)
+                            Spacer(minLength: 0)
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.hkFootnote)
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                        .padding(.horizontal, Theme.s3)
+                        .frame(height: 40)
+                        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .strokeBorder(Theme.hairline, lineWidth: 1)
+                        )
+                        .padding(.horizontal, Theme.s4)
+                        .padding(.vertical, Theme.s2)
+                    }
                 }
+                .background(Theme.ground)
             }
         }
         .preferredColorScheme(ThemeManager.shared.colorScheme)

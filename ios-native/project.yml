@@ -75,6 +75,12 @@ targets:
           NSAllowsArbitraryLoads: false
         # Export compliance: HTTPS-only use of platform crypto is exempt.
         ITSAppUsesNonExemptEncryption: false
+        # R7 voice dictation — the composer mic (SFSpeechRecognizer + AVAudioEngine).
+        # Honest purpose strings: the mic runs only while the composer button is on,
+        # nothing is recorded to disk, and recognition may go through Apple's speech
+        # service when the locale has no on-device model.
+        NSMicrophoneUsageDescription: Corner listens only while the mic button in the composer is on, to turn your speech into text. No audio is stored.
+        NSSpeechRecognitionUsageDescription: Corner turns your speech into text in the composer. Audio is processed by Apple's speech recognition.
         # The audit (F3) found the Capacitor shell declaring `audio` and
         # `remote-notification` while implementing neither. This app declares
         # NOTHING it does not use: no UIBackgroundModes key at all. Alert pushes

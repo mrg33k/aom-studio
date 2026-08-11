@@ -9,8 +9,11 @@
 // nothing fits, a confirm sheet lets the user place it. Nothing typed is ever lost.
 //
 // It deliberately does NOT reuse the room composer (ChatView's), which needs an open
-// room, its attachment scope, and its outbox/turn machinery. Attachments and voice
-// belong INSIDE a room, after routing — same split the web draws.
+// room, its attachment scope, and its outbox/turn machinery. Attachments belong
+// INSIDE a room, after routing — same split the web draws. Voice dictation, though,
+// lives right here (R7): the web's mobile bar puts a mic on the front door, so the
+// native front door carries one too — SpeechService streams the transcript into this
+// bar's text field and the routed send path stays exactly the same.
 
 import SwiftUI
 
@@ -188,6 +191,16 @@ struct HomeComposerBar: View {
     @AppStorage("cv6.chatMode.intake") private var mode = "work"
     @FocusState private var focused: Bool
 
+    @StateObject private var speech = SpeechService()
+    /// The draft as it stood when the mic was tapped; each partial transcript is
+    /// appended to THIS, so dictation adds to what was typed instead of replacing it.
+    @State private var dictationBase = ""
+
+    /// The web dictation red — `var(--danger, #e5484d)` on the mic and recording chip
+    /// (ChatLifecycle.jsx / Cv6InputBar.jsx). Deliberately not Theme.danger: this is
+    /// the one place CV6 uses the raw fallback value, and the phone matches it.
+    private static let dictationRed = Color(cv6: 0xE5484D)
+
     private var canSend: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !intake.isBusy
     }
@@ -195,7 +208,16 @@ struct HomeComposerBar: View {
 
     var body: some View {
         VStack(spacing: Theme.s2) {
-            TextField("Type a task, a question, or a half-formed idea…", text: $text, axis: .vertical)
+            if speech.isListening {
+                listeningChip
+            } else if speech.guidance != nil {
+                guidanceRow
+            }
+
+            TextField(
+                speech.isListening ? "Listening…" : "Type a task, a question, or a half-formed idea…",
+                text: $text, axis: .vertical
+            )
                 .lineLimit(1...5)
                 .focused($focused)
                 .font(.hkBody)
@@ -236,6 +258,29 @@ struct HomeComposerBar: View {
 
                 Spacer(minLength: 0)
 
+                // The mic, in the web mobile bar's slot (left of send). Only rendered
+                // when a recognizer exists — an unsupported device gets no dead button.
+                if speech.supported {
+                    Button(action: toggleDictation) {
+                        Image(systemName: speech.isListening ? "mic.fill" : "mic")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(speech.isListening ? Color.white : Theme.inkSoft)
+                            .frame(width: 40, height: 40)
+                            .background(speech.isListening ? Self.dictationRed : Theme.raised, in: Circle())
+                            .overlay {
+                                if !speech.isListening { Circle().strokeBorder(Theme.hairline, lineWidth: 1) }
+                            }
+                            .background {
+                                // The web's 4px soft ring: box-shadow 0 0 0 4px rgba(229,72,77,.18).
+                                if speech.isListening {
+                                    Circle().fill(Self.dictationRed.opacity(0.18)).padding(-4)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(speech.isListening ? "Stop dictation" : "Speak your message")
+                }
+
                 Button(action: send) {
                     if intake.isBusy {
                         ProgressView().controlSize(.small).frame(width: 40, height: 40)
@@ -266,16 +311,115 @@ struct HomeComposerBar: View {
         .padding(.horizontal, Theme.s3)
         .padding(.top, Theme.s2)
         .padding(.bottom, Theme.s1)
+        #if DEBUG
+        .onAppear {
+            // Design-proof rig only: the PreviewHarness launches force the recording /
+            // denied visuals so they can be captured without a live mic session.
+            let args = ProcessInfo.processInfo.arguments
+            if args.contains("-composerListeningPreview") { speech.previewForceListening() }
+            if args.contains("-composerDeniedPreview") { speech.previewForceDenied() }
+        }
+        #endif
+    }
+
+    /// The web's recording chip (Cv6InputBar.jsx): pulsing dot + "tap to stop", the
+    /// whole chip a stop button. Sits above the input, where the web pins its chips.
+    private var listeningChip: some View {
+        Button(action: toggleDictation) {
+            HStack(spacing: 7) {
+                PulsingDot(color: Self.dictationRed)
+                Text("Listening… tap to stop")
+                    .font(.hanken(11.5).weight(.semibold))
+            }
+            .foregroundStyle(Self.dictationRed)
+            .padding(.horizontal, 10)
+            .frame(height: 26)
+            .background(Self.dictationRed.opacity(0.14), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityLabel("Stop dictation")
+    }
+
+    /// Permission guidance — a denied mic never turns into a button that does nothing.
+    /// Names what is off, offers the jump to Settings, dismissible with the ✕.
+    private var guidanceRow: some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "mic.slash.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Self.dictationRed)
+            Text(speech.guidance?.text ?? "")
+                .font(.hkCaption)
+                .foregroundStyle(Theme.inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: Theme.s2)
+            if speech.guidance?.needsSettings == true {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Text("Open Settings")
+                        .font(.hkCaption.weight(.bold))
+                        .foregroundStyle(Theme.accent)
+                }
+                .buttonStyle(.plain)
+            }
+            Button { speech.clearGuidance() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Theme.inkFaint)
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Self.dictationRed.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func toggleDictation() {
+        if speech.isListening {
+            speech.stop()
+            return
+        }
+        // Append after whatever is typed; the base is frozen at mic-tap, so each
+        // partial replaces only the dictated tail, never the typed text.
+        dictationBase = SpeechService.dictationBase(for: text)
+        speech.toggle { transcript in
+            text = dictationBase + transcript
+        }
     }
 
     private func send() {
         guard canSend else { return }
+        // Sending while the mic is hot ends the session — the field holds the last
+        // partial the user just read, and a dead mic must not keep streaming into
+        // a box that was just cleared.
+        if speech.isListening { speech.stop() }
         let payload = text
         focused = false
         intake.submit(text: payload, mode: mode, candidates: candidates(), recentRooms: recentRooms())
         // Clear immediately for a responsive feel. If routing needs a confirm, the sheet
         // holds the text (intake.pendingText); nothing is lost by clearing the box.
         text = ""
+    }
+}
+
+/// The web's `statPulse` dot, in SwiftUI: a 7pt disc breathing between full and dim.
+private struct PulsingDot: View {
+    let color: Color
+    @State private var dim = false
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 7, height: 7)
+            .opacity(dim ? 0.3 : 1)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) { dim = true }
+            }
     }
 }
 
