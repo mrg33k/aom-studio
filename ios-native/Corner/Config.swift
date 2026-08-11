@@ -32,10 +32,16 @@ enum Config {
     static let urlScheme = "corner"
 
     /// How long a turn may be completely silent — no new step, no reply — before the
-    /// app stops claiming the agent is working and says so. 180s, the same backstop
-    /// the web's step poll uses. Shorter would lie about long turns; longer leaves a
-    /// dead turn wearing a spinner, which is the failure this app exists to end.
-    static let deadTurnBackstop: TimeInterval = 180
+    /// hard "still quiet" notice appears. Ten minutes, because 180s is provably wrong
+    /// for real turns: live rows show step gaps of 5m55s and 18m30s on turns that
+    /// finished fine, so a three-minute countdown was calling healthy work dead. The
+    /// soft `quietTurnThreshold` below covers the "say something sooner" job.
+    static let deadTurnBackstop: TimeInterval = 600
+
+    /// Step silence before the working indicator adds a soft "nothing new for a few
+    /// minutes" line — the web's recoverable needs-attention notice, not a verdict.
+    /// Polling continues and the line clears itself the moment anything arrives.
+    static let quietTurnThreshold: TimeInterval = 180
 
     /// Reconcile cadence under realtime. Realtime is an accelerator, never the
     /// guarantee — this poll is what makes a dropped socket invisible to the user.

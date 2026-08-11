@@ -10,12 +10,19 @@
 //    marked "Not sent", with Retry and Discard. Nothing the user typed is ever thrown
 //    away by the app on their behalf.
 //
-// 2. A DEAD TURN MUST LOOK DEAD.
+// 2. A LIVE TURN MUST LOOK ALIVE — AND SILENCE MUST NOT BE CALLED DEATH TOO EARLY.
 //    "Working…" is driven by the agent's REAL step heartbeats, and it stops on the
 //    bridge's `settled` sentinel — the agent's own end-of-turn signal, not a guess.
-//    When a turn goes completely silent past the backstop, the spinner does not just
-//    quietly disappear (which reads as "finished"): the row turns into "No reply —
-//    this turn stopped" with a Send again action. Silence gets a name.
+//    But real turns go quiet for long stretches (live rows show 18-minute step gaps
+//    on turns that finished fine), so the ladder is: a living indicator with an
+//    elapsed clock, then a soft "nothing new for a few minutes" line, and only after
+//    ten minutes of TOTAL silence a "still quiet" notice with a way out. Every kind
+//    of activity feeds the clock: a new step, a new step timestamp, ANY new assistant
+//    row (the bridge posts interim "Still working on this" rows mid-turn), and steps
+//    keyed to ANY user row folded into this turn — a follow-up sent mid-turn is
+//    live-steered into the in-flight turn by the bridge, so its steps stay keyed to
+//    the ORIGINAL parent and must still count. A reply arriving always reads as the
+//    conversation continuing, never as a resurrection.
 //
 // 3. COMING BACK FROM THE BACKGROUND MUST NOT LOSE ANYTHING.
 //    iOS suspends the app and the realtime socket dies with it. On foreground the
@@ -65,8 +72,9 @@ enum TurnState: Equatable {
     /// The agent is on it. `detail` is the latest real step, when the bridge is
     /// emitting them; nil means "sent, no heartbeat yet".
     case working(detail: String?)
-    /// Sent, then total silence past the backstop: no step, no reply. This is a turn
-    /// that stopped, and it says so.
+    /// Sent, then total silence past the backstop: no step, no reply, no interim row
+    /// for ten minutes. Not a verdict — polling continues underneath, and the state
+    /// clears itself the moment anything arrives.
     case stalled(sentText: String?)
 }
 
@@ -105,6 +113,16 @@ final class ChatViewModel: ObservableObject {
     /// matching the web's localStorage.cv6.chatMode.<roomKey> pattern.
     @Published var chatMode: String
 
+    /// The turn's renderable steps, oldest first — the progress card's rows. Empty is
+    /// the normal state for phone-originated turns today; the card must render as a
+    /// bare timer then, never as an empty list.
+    @Published private(set) var liveSteps: [MessageStep] = []
+    /// When the current turn opened — drives the "Working — 2m 10s" elapsed clock.
+    @Published private(set) var turnStartedAt: Date?
+    /// Soft flag: steps have been silent past `quietThreshold` but the turn is not
+    /// being called stopped. The indicator adds a gentle line; polling continues.
+    @Published private(set) var turnIsQuiet = false
+
     // R4 composer: staged uploads + the room's model preference.
     @Published private(set) var staged: [CornerAPI.UploadedFile] = []
     @Published private(set) var isUploading = false
@@ -122,6 +140,7 @@ final class ChatViewModel: ObservableObject {
     /// three-minute backstop can be exercised in a test in milliseconds. A timeout that
     /// has never been observed firing is a timeout nobody knows the behavior of.
     private let backstop: TimeInterval
+    private let quietThreshold: TimeInterval
     private let stepInterval: TimeInterval
     private let reconcileInterval: TimeInterval
     private let onFirstReply: @MainActor () async -> Void
@@ -131,14 +150,28 @@ final class ChatViewModel: ObservableObject {
     private var stepTask: Task<Void, Never>?
 
     // Turn tracking — every field here answers a question with a server fact.
-    /// Server id of the user row we are awaiting a reply to. The bridge keys its step
-    /// heartbeats to exactly this id, which is what makes the indicator honest rather
-    /// than a timer.
+    /// Server id of the NEWEST user row in this turn. Displayed facts (the resend
+    /// text) key off this one.
     private var awaitingParentID: String?
+    /// EVERY unsettled user row folded into the current turn. A follow-up sent
+    /// mid-turn is live-steered into the in-flight turn by the bridge, so its steps
+    /// and its settle stay keyed to the ORIGINAL parent — a poll that only watches
+    /// the newest id goes blind the moment a follow-up lands, which was the
+    /// guaranteed false-death path (live proof: row 10de6d7a got one step ever while
+    /// its siblings carried the real 27-step thread).
+    private var awaitingParentIDs: Set<String> = []
     private var awaitingUserEpoch: TimeInterval = 0
     private var awaitingSentText: String?
-    /// Last moment anything happened on this turn: a new step, or a reply.
+    /// Last moment anything happened on this turn: a new step, a fresher step
+    /// timestamp, or ANY new assistant row — the bridge's interim "Still working on
+    /// this" rows count, exactly as this comment always promised.
     private var lastTurnActivity = Date()
+    /// Newest step timestamp seen this turn, so a re-emitted step row with the same
+    /// count but a fresher stamp still reads as life.
+    private var newestSeenStepEpoch: TimeInterval = 0
+    /// Newest assistant-row timestamp already accounted for, so only genuinely new
+    /// replies reset the silence clock.
+    private var newestSeenReplyEpoch: TimeInterval = 0
     /// Once the bridge emits a real step it OWNS the stop signal via its `settled`
     /// sentinel. Agents flush in-progress thoughts as interim reply rows mid-turn;
     /// settling on one of those is the exact "bar stops while it is still working"
@@ -159,6 +192,7 @@ final class ChatViewModel: ObservableObject {
         // and the shared instance is main-actor isolated.
         transport: MessageTransport? = nil,
         backstop: TimeInterval = Config.deadTurnBackstop,
+        quietThreshold: TimeInterval = Config.quietTurnThreshold,
         stepInterval: TimeInterval = Config.stepPollInterval,
         reconcileInterval: TimeInterval = Config.reconcileInterval,
         onFirstReply: @escaping @MainActor () async -> Void = {
@@ -168,6 +202,7 @@ final class ChatViewModel: ObservableObject {
         self.room = room
         self.api = transport ?? CornerAPI.shared
         self.backstop = backstop
+        self.quietThreshold = quietThreshold
         self.stepInterval = stepInterval
         self.reconcileInterval = reconcileInterval
         self.onFirstReply = onFirstReply
@@ -305,6 +340,7 @@ final class ChatViewModel: ObservableObject {
 
         if !didBaseline {
             didBaseline = true
+            newestSeenReplyEpoch = newestReply?.epoch ?? 0
             // Opening a room mid-turn should read as busy whether you sent the message
             // or just walked in. Newest row is a user's, nothing answered it, and it is
             // recent → the agent is on it right now.
@@ -320,41 +356,93 @@ final class ChatViewModel: ObservableObject {
 
         if let newestUser, newestUser.epoch > awaitingUserEpoch {
             // A user row newer than anything tracked — sent from here, or from the web,
-            // or from another device. Either way the agent is now on it.
+            // or from another device. Either way the agent is now on it. Mid-turn this
+            // FOLDS into the in-flight turn rather than replacing it (beginTurn keeps
+            // the earlier parent ids), because that is what the bridge does.
             beginTurn(parentID: newestUser.id, userEpoch: newestUser.epoch, text: newestUser.text)
             return
         }
 
-        guard case .working = turn else { return }
-        guard !sawLiveSteps else { return }
-        if let newestReply, awaitingUserEpoch > 0, newestReply.epoch >= awaitingUserEpoch {
-            settleTurn()
+        // ANY new assistant row is turn activity — the promise the lastTurnActivity
+        // comment makes. The bridge posts interim "Still working on this. N minutes
+        // in" rows mid-turn; those must feed the silence clock, and a reply landing
+        // on a turn already called quiet must clear that call on the spot.
+        let replyEpoch = newestReply?.epoch ?? 0
+        let replyIsNew = replyEpoch > newestSeenReplyEpoch
+        if replyIsNew { newestSeenReplyEpoch = replyEpoch }
+
+        switch turn {
+        case .idle:
+            return
+        case .working:
+            if replyIsNew { lastTurnActivity = Date() }
+            guard !sawLiveSteps else { return }
+            if let newestReply, awaitingUserEpoch > 0, newestReply.epoch >= awaitingUserEpoch {
+                settleTurn()
+            }
+        case .stalled:
+            guard replyIsNew else { return }
+            // A reply arrived after the quiet notice: the conversation continues.
+            // With live steps flowing the sentinel still owns the stop signal, so
+            // this goes back to working; without steps the reply IS the answer.
+            lastTurnActivity = Date()
+            if sawLiveSteps {
+                turn = .working(detail: liveSteps.last?.text)
+            } else if replyEpoch >= awaitingUserEpoch {
+                settleTurn()
+            } else {
+                turn = .working(detail: nil)
+            }
         }
     }
 
     private func beginTurn(parentID: String, userEpoch: TimeInterval, text: String?) {
+        if case .idle = turn {
+            // A fresh turn: reset every server-fact tracker and start the clock.
+            awaitingParentIDs = [parentID]
+            sawLiveSteps = false
+            renderableStepCount = -1
+            newestSeenStepEpoch = 0
+            liveSteps = []
+            turnStartedAt = Date()
+        } else {
+            // Mid-turn follow-up: the bridge live-steers it into the in-flight turn,
+            // so the earlier parents stay tracked — their steps and their settle are
+            // still THIS turn's heartbeats. Dropping them here was the guaranteed
+            // false death.
+            awaitingParentIDs.insert(parentID)
+        }
         awaitingParentID = parentID
         awaitingUserEpoch = userEpoch
         awaitingSentText = text
-        sawLiveSteps = false
-        renderableStepCount = -1
         lastTurnActivity = Date()
-        turn = .working(detail: nil)
+        turnIsQuiet = false
+        turn = .working(detail: liveSteps.last?.text)
         startStepPoll()
     }
 
     private func settleTurn() {
         turn = .idle
-        awaitingParentID = nil
-        awaitingSentText = nil
-        sawLiveSteps = false
-        stepTask?.cancel()
-        stepTask = nil
+        clearTurnTracking()
         Task { await maybeAskForPushPermission() }
     }
 
+    /// Shared teardown for every way a turn ends — settle, dismiss, resend.
+    private func clearTurnTracking() {
+        awaitingParentID = nil
+        awaitingParentIDs = []
+        awaitingSentText = nil
+        sawLiveSteps = false
+        liveSteps = []
+        turnStartedAt = nil
+        turnIsQuiet = false
+        stepTask?.cancel()
+        stepTask = nil
+    }
+
     /// Live steps: the only source that can say "still working" or "stopped" without
-    /// guessing. Runs only while a turn is open.
+    /// guessing. Runs while a turn is open — INCLUDING the stalled state, because
+    /// "still quiet" is a notice, not a verdict: steps resuming must recover it.
     private func startStepPoll() {
         stepTask?.cancel()
         let interval = stepInterval
@@ -367,40 +455,66 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func pollSteps() async {
-        guard case .working = turn else { return }
-        guard let parent = awaitingParentID else { return }
+        if case .idle = turn { return }
+        guard !awaitingParentIDs.isEmpty else { return }
 
-        let steps = (try? await api.fetchSteps(room: room, limit: 40)) ?? []
-        let mine = steps.filter { $0.parentMessageID == parent }
+        // 100, matching the web's persistence poll. The steps feed is shared by every
+        // room in the world; 40 lets a busy afternoon push a long turn's early steps
+        // out of the window, which reads here as the turn losing its heartbeat.
+        let steps = (try? await api.fetchSteps(room: room, limit: 100)) ?? []
+        // Steps keyed to ANY user row folded into this turn count — a follow-up
+        // re-keys the display but the bridge keeps emitting against the original id.
+        let mine = steps.filter { step in
+            guard let parent = step.parentMessageID else { return false }
+            return awaitingParentIDs.contains(parent)
+        }
 
-        // The bridge's `settled` sentinel IS "the agent stopped working". Stopping on
-        // it is knowing; stopping on a countdown is guessing.
+        // The bridge's `settled` sentinel IS "the agent stopped working" — for the
+        // whole folded turn, whichever parent id it lands on. Stopping on it is
+        // knowing; stopping on a countdown is guessing.
         if mine.contains(where: \.isSettledSentinel) {
             settleTurn()
             return
         }
 
-        let renderable = mine.filter(\.isRenderable)
-        if renderable.count > 0 { sawLiveSteps = true }
-        if renderable.count != renderableStepCount {
+        let renderable = mine
+            .filter(\.isRenderable)
+            .sorted { ($0.stepIndex ?? 0) < ($1.stepIndex ?? 0) }
+        if !renderable.isEmpty { sawLiveSteps = true }
+
+        // Liveness is the row count AND the newest stamp: a re-emitted step with a
+        // fresher timestamp is life even when the count holds still.
+        let newestStamp = mine
+            .compactMap { $0.timestamp.flatMap(MessageRow.parseTimestamp)?.timeIntervalSince1970 }
+            .max() ?? 0
+        if renderable.count != renderableStepCount || newestStamp > newestSeenStepEpoch {
             renderableStepCount = renderable.count
+            newestSeenStepEpoch = max(newestSeenStepEpoch, newestStamp)
             lastTurnActivity = Date()
         }
-        let latest = renderable
-            .sorted { ($0.stepIndex ?? 0) < ($1.stepIndex ?? 0) }
-            .last?.text
+        if liveSteps != renderable { liveSteps = renderable }
+        let latest = renderable.last?.text
 
-        // Nothing at all for the backstop window. Not "probably done" — stopped, and
-        // the user is told so with a way out.
-        if Date().timeIntervalSince(lastTurnActivity) > backstop {
-            turn = .stalled(sentText: awaitingSentText)
-            stepTask?.cancel()
-            stepTask = nil
+        let silence = Date().timeIntervalSince(lastTurnActivity)
+        turnIsQuiet = silence > quietThreshold
+
+        // Total silence past the backstop: say so, softly, and KEEP POLLING — the
+        // notice clears itself the moment a step or a reply arrives.
+        if silence > backstop {
+            if case .working = turn {
+                turn = .stalled(sentText: awaitingSentText)
+            }
             return
         }
 
-        if case .working(let existing) = turn, existing != latest {
+        switch turn {
+        case .stalled:
+            // Activity resumed after the quiet notice — the turn was never dead.
             turn = .working(detail: latest)
+        case .working(let existing):
+            if existing != latest { turn = .working(detail: latest) }
+        case .idle:
+            break
         }
     }
 
@@ -491,7 +605,10 @@ final class ChatViewModel: ObservableObject {
 
     func discard(_ item: OutboxItem) {
         outbox.removeAll { $0.id == item.id }
-        if outbox.isEmpty, case .stalled = turn { turn = .idle }
+        if outbox.isEmpty, case .stalled = turn {
+            turn = .idle
+            clearTurnTracking()
+        }
     }
 
     /// Re-send the message a stalled turn was for. The thread already holds the user
@@ -499,11 +616,15 @@ final class ChatViewModel: ObservableObject {
     func resendStalled() {
         guard case .stalled(let text) = turn, let text, !text.isEmpty else { return }
         turn = .idle
+        clearTurnTracking()
         enqueue(text: text)
     }
 
     func dismissStalled() {
-        if case .stalled = turn { turn = .idle }
+        if case .stalled = turn {
+            turn = .idle
+            clearTurnTracking()
+        }
     }
 
     private func enqueue(text: String, attachments: [Attachment] = []) {
@@ -542,6 +663,7 @@ final class ChatViewModel: ObservableObject {
                     // silently matches nothing and the indicator never settles.
                     self.turn = .working(detail: nil)
                     self.lastTurnActivity = Date()
+                    if self.turnStartedAt == nil { self.turnStartedAt = Date() }
                 }
                 await self.load()
             } catch {
@@ -550,7 +672,10 @@ final class ChatViewModel: ObservableObject {
                 let message = (error as? CornerAPI.APIError)?.errorDescription
                     ?? "Could not reach Corner."
                 self.outbox[index].state = .failed(message)
-                if case .working = self.turn { self.turn = .idle }
+                if case .working = self.turn {
+                    self.turn = .idle
+                    self.clearTurnTracking()
+                }
             }
         }
     }

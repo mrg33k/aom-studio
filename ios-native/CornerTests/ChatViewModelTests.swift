@@ -220,6 +220,141 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(vm.turn, .idle)
     }
 
+    // MARK: - 2b. The false-death fixes (R7)
+
+    /// THE GUARANTEED FALSE-DEATH PATH, closed. A follow-up sent mid-turn is folded
+    /// into the in-flight turn by the bridge, so its steps stay keyed to the ORIGINAL
+    /// parent id. A poll that re-keys to the newest user row and forgets the original
+    /// goes blind — every mid-turn follow-up then dies at the backstop.
+    func testFollowUpMidTurnKeepsCountingTheOriginalParentsSteps() async {
+        let transport = FakeTransport()
+        let vm = model(transport)
+        vm.draft = "first ask"
+        vm.send()
+        await settleRunLoop(2)
+        transport.steps = [.fake(id: "s1", parent: "server-1", index: 0, text: "Working the first ask")]
+        await settleRunLoop()
+        XCTAssertEqual(vm.turn, .working(detail: "Working the first ask"))
+
+        // Follow-up mid-turn — the display re-keys to server-2, but the bridge keeps
+        // stepping against server-1.
+        vm.draft = "also do this"
+        vm.send()
+        await settleRunLoop(2)
+        transport.steps.append(.fake(id: "s2", parent: "server-1", index: 1, text: "Folding in the follow-up"))
+        await settleRunLoop()
+
+        XCTAssertEqual(vm.turn, .working(detail: "Folding in the follow-up"),
+                       "steps on the original parent must still count after a follow-up re-keys the turn")
+    }
+
+    /// The settle sentinel can land on ANY parent folded into the turn — the folded
+    /// follow-up row may never get its own sentinel (live proof: 10de6d7a).
+    func testSettleOnTheOriginalParentSettlesAFoldedTurn() async {
+        let transport = FakeTransport()
+        let vm = model(transport)
+        vm.draft = "first"
+        vm.send()
+        await settleRunLoop(2)
+        transport.steps = [.fake(id: "s1", parent: "server-1", index: 0, text: "Going")]
+        await settleRunLoop()
+
+        vm.draft = "second"
+        vm.send()
+        await settleRunLoop(2)
+
+        transport.steps.append(.fake(id: "s9", parent: "server-1", index: 9999, text: "settled"))
+        await settleRunLoop()
+        XCTAssertEqual(vm.turn, .idle, "the sentinel on the original parent ends the whole folded turn")
+    }
+
+    /// The bridge posts interim "Still working on this. N minutes in" assistant rows
+    /// mid-turn. Those must reset the silence clock — the lastTurnActivity comment
+    /// always promised "a new step, or a reply", and this is the reply half.
+    func testInterimAssistantRowResetsTheSilenceClock() async {
+        let transport = FakeTransport()
+        let vm = model(transport, backstop: 0.3)
+        vm.draft = "long job"
+        vm.send()
+        await settleRunLoop(2)
+        transport.steps = [.fake(id: "s1", parent: "server-1", index: 0, text: "Deep in it")]
+        await settleRunLoop(2)
+
+        // Steps go quiet for most of the backstop…
+        try? await Task.sleep(for: .milliseconds(200))
+        // …then an interim row lands, which must buy the turn a fresh window.
+        transport.rows.append(.fake(id: "interim", role: "assistant", text: "Still working on this. 6 minutes in.", epoch: Date().timeIntervalSince1970))
+        await vm.load()
+        try? await Task.sleep(for: .milliseconds(200))
+
+        guard case .working = vm.turn else {
+            return XCTFail("an interim assistant row must reset the silence clock, got \(vm.turn)")
+        }
+    }
+
+    /// A reply landing on a turn already called quiet clears the notice on the spot —
+    /// the conversation continues; it never reads as a resurrection.
+    func testStalledAutoClearsTheInstantAReplyLands() async {
+        let transport = FakeTransport()
+        let vm = model(transport, backstop: 0.05)
+        vm.draft = "went quiet"
+        vm.send()
+        await settleRunLoop(12)
+        guard case .stalled = vm.turn else { return XCTFail("expected .stalled first") }
+
+        transport.rows.append(.fake(id: "late", role: "assistant", text: "here it is", epoch: Date().timeIntervalSince1970))
+        await vm.load()
+        XCTAssertEqual(vm.turn, .idle, "a reply must clear the quiet notice immediately")
+    }
+
+    /// Steps resuming after the notice recover the turn — quiet is a notice, not a
+    /// verdict, so the poll keeps running underneath it.
+    func testStepsResumingWhileStalledRecoverTheTurn() async {
+        let transport = FakeTransport()
+        let vm = model(transport, backstop: 0.2)
+        vm.draft = "slow burner"
+        vm.send()
+        await settleRunLoop(20)
+        guard case .stalled = vm.turn else { return XCTFail("expected .stalled first") }
+
+        transport.steps = [.fake(id: "s1", parent: "server-1", index: 0, text: "Back at it")]
+        await settleRunLoop(4)
+        XCTAssertEqual(vm.turn, .working(detail: "Back at it"),
+                       "steps resuming must pull the turn out of the quiet state")
+    }
+
+    /// The steps feed is shared by every room in the world; 40 was provably losable.
+    func testStepPollAsksForTheWebsWindowOf100() async {
+        let transport = FakeTransport()
+        let vm = model(transport)
+        vm.draft = "go"
+        vm.send()
+        await settleRunLoop(2)
+        XCTAssertEqual(transport.stepLimits.first, 100)
+    }
+
+    /// The progress card's data: renderable steps publish oldest-first, and the
+    /// elapsed clock has a start the moment the turn opens.
+    func testLiveStepsPublishForTheProgressCard() async {
+        let transport = FakeTransport()
+        let vm = model(transport)
+        vm.draft = "show steps"
+        vm.send()
+        await settleRunLoop(2)
+        XCTAssertNotNil(vm.turnStartedAt, "the elapsed clock needs the turn's open time")
+        transport.steps = [
+            .fake(id: "s2", parent: "server-1", index: 1, text: "Second"),
+            .fake(id: "s1", parent: "server-1", index: 0, text: "First"),
+        ]
+        await settleRunLoop()
+        XCTAssertEqual(vm.liveSteps.map(\.text), ["First", "Second"])
+
+        transport.steps.append(.fake(id: "s9", parent: "server-1", index: 9999, text: "settled"))
+        await settleRunLoop()
+        XCTAssertTrue(vm.liveSteps.isEmpty, "a settled turn leaves no progress card behind")
+        XCTAssertNil(vm.turnStartedAt)
+    }
+
     /// Walking into a room mid-turn should read as busy — consistent whether you sent
     /// the message or just arrived.
     func testOpeningARoomMidTurnShowsWorkingImmediately() async {
@@ -364,5 +499,18 @@ final class ChatViewModelTests: XCTestCase {
         vm.draftOption("Ship it")
         XCTAssertEqual(vm.draft, "Ship it")
         XCTAssertTrue(transport.sentTexts.isEmpty, "a chip must never send on its own")
+    }
+
+    // MARK: - Follow-up trigger rows (R7)
+
+    /// The scheduler's self-check-in rows render as a quiet chip in the thread and
+    /// must NEVER surface as a home preview line.
+    func testFollowupTriggerRowsAreDetectedAndBannedFromPreviews() {
+        let trigger = "[FOLLOWUP TRIGGER — do not repeat this prefix in your reply] The scheduled check-in time has arrived (was: 2026-08-11T14:00:00Z)."
+        XCTAssertTrue(RoomPreview.isFollowupTrigger(trigger))
+        XCTAssertTrue(RoomPreview.isMachine(trigger), "a trigger row is machine text, not a preview")
+        XCTAssertEqual(RoomPreview.clean(trigger), "", "the preview line must collapse, never substitute")
+        XCTAssertFalse(RoomPreview.isFollowupTrigger("Follow up with the client tomorrow"),
+                       "ordinary prose about follow-ups is not a trigger")
     }
 }

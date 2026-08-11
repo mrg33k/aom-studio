@@ -33,6 +33,7 @@ final class FakeTransport: MessageTransport {
 
     private(set) var sentTexts: [String] = []
     private(set) var fetchLimits: [Int] = []
+    private(set) var stepLimits: [Int] = []
     private(set) var subscriptions: [FakeSubscription] = []
 
     func fetchMessages(room: Room, limit: Int) async throws -> [MessageRow] {
@@ -57,7 +58,8 @@ final class FakeTransport: MessageTransport {
     }
 
     func fetchSteps(room: Room, limit: Int) async throws -> [MessageStep] {
-        steps
+        stepLimits.append(limit)
+        return steps
     }
 
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing {

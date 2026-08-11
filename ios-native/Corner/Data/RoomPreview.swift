@@ -13,6 +13,16 @@ import Foundation
 
 enum RoomPreview {
 
+    /// The scheduler's self-check-in prefix, verbatim from the live rows: a user-role
+    /// row the machine wrote for the agent, never something Patrik typed. The thread
+    /// renders these as a quiet "Checked in" chip; previews drop them entirely.
+    static let followupTriggerPrefix = "[FOLLOWUP TRIGGER"
+
+    /// True for the scheduler's "[FOLLOWUP TRIGGER — …]" check-in rows.
+    static func isFollowupTrigger(_ text: String) -> Bool {
+        text.trimmingCharacters(in: .whitespaces).hasPrefix(followupTriggerPrefix)
+    }
+
     /// The clean, human preview for a room's last-activity text.
     ///
     /// The source here is `/api/dashboard/room-activity`'s `last_message_text`, which is
@@ -35,7 +45,10 @@ enum RoomPreview {
         guard !t.isEmpty else { return true }
         let lower = t.lowercased()
 
-        // 1. Structured payloads — text starting `{` or `[`.
+        // 1. Structured payloads — text starting `{` or `[`. This also catches the
+        //    scheduler's "[FOLLOWUP TRIGGER — …]" check-in rows, named explicitly so
+        //    the ban survives if the leading-bracket rule is ever narrowed.
+        if isFollowupTrigger(t) { return true }
         if t.hasPrefix("{") || t.hasPrefix("[") { return true }
 
         // 2. Ops alerts — the "…alert:" text prefixes (row-level drops happen upstream).

@@ -49,10 +49,19 @@ struct MessageBubbleView: View {
         return !c.prose.isEmpty && RoomPreview.isMachine(c.prose)
     }
 
+    /// The scheduler's self-check-in rows ("[FOLLOWUP TRIGGER — …]"). Visible on
+    /// purpose — Patrik wants to SEE the agent checking in on itself — but as a
+    /// small centered chip, not a full user bubble shouting machine text.
+    private var isFollowupTrigger: Bool {
+        row.isUser && RoomPreview.isFollowupTrigger(row.text ?? "")
+    }
+
     var body: some View {
         let content = self.content
         Group {
-            if isSystemNoise {
+            if isFollowupTrigger {
+                followupChip
+            } else if isSystemNoise {
                 Text(content.prose)
                     .font(.hkCaption2)
                     .foregroundStyle(Theme.inkFaint)
@@ -99,6 +108,26 @@ struct MessageBubbleView: View {
                 )
             )
         }
+    }
+
+    /// The self-check-in, rendered the size it deserves: one small centered chip —
+    /// glyph + "Checked in · time" — no bubble, no avatar, no machine text. A run of
+    /// consecutive triggers naturally stacks as a quiet column of chips.
+    private var followupChip: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.system(size: 10, weight: .medium))
+            Text(timeLabel.map { "Checked in · \($0)" } ?? "Checked in")
+                .font(.hkCaption2.weight(.medium))
+        }
+        .foregroundStyle(Theme.inkFaint)
+        .padding(.horizontal, 10)
+        .frame(height: 22)
+        .background(Theme.chipFill, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 2)
+        .accessibilityLabel("The agent checked in on schedule")
     }
 
     /// The bubble (or the "cannot display" fallback) plus every renderable payload the
