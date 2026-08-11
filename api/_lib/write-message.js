@@ -436,6 +436,25 @@ export async function writeMessageRow({
       }
     : null
 
+  // --- 2b. Client-send idempotency -----------------------------------------
+  // A phone can receive the durable 200 after its radio drops the HTTP response.
+  // Retrying that outbox item must recover the existing row, not create a second
+  // user turn. The opaque id lives in metadata so no schema migration is required;
+  // tenant + role scope prevents a token from crossing rooms/worlds.
+  const clientMessageId = mergedMeta && String(mergedMeta.client_message_id || '').trim()
+  if (role === 'user' && /^[a-zA-Z0-9_-]{16,128}$/.test(clientMessageId)) {
+    const existingRes = await fetch(
+      `${supabaseUrl}/rest/v1/messages?client_id=eq.${encodeURIComponent(clientId)}&role=eq.user&metadata->>client_message_id=eq.${encodeURIComponent(clientMessageId)}&select=*&limit=1`,
+      { headers },
+    )
+    if (existingRes.ok) {
+      const existing = await existingRes.json().catch(() => [])
+      if (Array.isArray(existing) && existing[0]) {
+        return { ok: true, status: 200, row: existing[0], error: null, idempotent: true }
+      }
+    }
+  }
+
   // --- 3. Build + insert the row ---
   const payload = {
     id: id || crypto.randomUUID(),
@@ -478,33 +497,24 @@ export async function writeMessageRow({
   const inserted = await sbRes.json().catch(() => null)
   const insertedRow = (Array.isArray(inserted) ? inserted[0] : inserted) || payload
 
-  // --- 4. APNs fan-out (corner:native-ios Stage 0) — FIRE AND FORGET ---------
+  // --- 4. APNs fan-out (corner:native-ios R16) — AWAITED, FAILURE-ISOLATED ---
   //
-  // THE ONE RULE HERE: this must never be able to fail, slow, or reject the
-  // message write. A phone that is unreachable, a device_tokens lookup that
-  // 500s, an APNs key that was never created — every one of those has to end as
-  // a log line and nothing else. So: no await, and notifyDevicesForMessageRow
-  // resolves (never rejects) on all of its own error paths, with a .catch here
-  // as the second belt in case a future edit breaks that promise.
+  // THE ONE RULE HERE: push failure must never reject the durable message write.
+  // But the promise MUST be awaited: Vercel may freeze a function as soon as its
+  // response returns. The old fire-and-forget call therefore died most often on
+  // direct 1:1 replies (no cross-post awaited after it), which made a configured
+  // APNs lane look randomly broken. notifyDevicesForMessageRow has bounded network
+  // timeouts and resolves on every expected failure; this catch is the second belt.
   //
   // Assistant rows only. A user's own message must not buzz their own phone, and
   // the exclusion set inside (embeds, ops-alerts, THOUGHT logs) is the same one
   // the green dot and Web Push already use.
   //
-  // WHY IT IS STARTED HERE rather than after the crosspost await: a serverless
-  // function can be frozen once its response is sent, so an unawaited promise is
-  // racing the freeze. Kicking it off BEFORE the crosspost round trip hands it
-  // that round trip as free wall-clock — in practice the push has landed before
-  // the handler returns, without a single millisecond of the chat write being
-  // spent waiting on Apple. If APNs delivery ever needs a hard guarantee, the
-  // answer is the Supabase database webhook (the lane api/push/notify.js already
-  // rides), not an await on this line.
   if (role === 'assistant') {
     try {
-      notifyDevicesForMessageRow({ supabaseUrl, headers, row: insertedRow })
-        .catch((e) => console.warn('[write-message] apns fan-out failed (ignored):', e?.message || e))
+      await notifyDevicesForMessageRow({ supabaseUrl, headers, row: insertedRow })
     } catch (e) {
-      console.warn('[write-message] apns fan-out could not start (ignored):', e?.message || e)
+      console.warn('[write-message] apns fan-out failed (ignored):', e?.message || e)
     }
   }
 
@@ -518,5 +528,5 @@ export async function writeMessageRow({
     })
   }
 
-  return { ok: true, status: 200, row: insertedRow, error: null }
+  return { ok: true, status: 200, row: insertedRow, error: null, idempotent: false }
 }

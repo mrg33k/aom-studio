@@ -34,6 +34,7 @@ struct RootView: View {
                             case .review:         ReviewQueueView()
                             case .organize:       OrganizeView()
                             case .tracker:        TrackerView()
+                            case .email:          EmailView()
                             }
                         }
                 }
@@ -41,7 +42,7 @@ struct RootView: View {
                 SignInView()
             }
         }
-        .background(Theme.ground)
+        .groundBackground()
         .onChange(of: api.session?.user.id) { _, newValue in
             if newValue == nil {
                 router.closeAll()
@@ -82,7 +83,16 @@ struct RootView: View {
             router.handle(url: url)
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { push.clearBadge() }
+            if phase == .active {
+                push.clearBadge()
+                // A user who enables notifications in Settings returns to an app
+                // that was already running. Refreshing only at cold launch left that
+                // phone with permission granted but no APNs token row until restart.
+                Task {
+                    await push.refreshAuthorizationAndRegisterIfAllowed()
+                    await push.registerCurrentTokenIfAny()
+                }
+            }
         }
         .alert(
             "That link could not be opened",

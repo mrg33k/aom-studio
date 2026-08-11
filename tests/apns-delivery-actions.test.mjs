@@ -13,6 +13,7 @@
 // Run: node tests/apns-delivery-actions.test.mjs
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { deliveryForRow, previewForRow, isPushableAssistantRow } from '../api/_lib/apns.js';
 
 // A share-file hand-off that carries BOTH a written finding and one file.
@@ -100,5 +101,17 @@ assert.ok(previewForRow(singleHandoff).startsWith('Disk count finished'));
 // And nothing about ordinary replies changed.
 assert.equal(previewForRow(ordinaryReply), 'Pushed to main, deploy is green.');
 assert.equal(isPushableAssistantRow(ordinaryReply), true);
+
+// Serverless reliability contract: the write path must keep the invocation alive
+// until APNs finishes, while still swallowing delivery errors after the row exists.
+const writeMessageSource = readFileSync(new URL('../api/_lib/write-message.js', import.meta.url), 'utf8');
+assert.match(writeMessageSource, /await notifyDevicesForMessageRow\(/);
+assert.doesNotMatch(writeMessageSource, /notifyDevicesForMessageRow\([^\n]+\)\s*\n\s*\.catch/);
+
+// Returning from iOS Settings after granting permission must register without a
+// cold launch; this was the missing path behind an empty device_tokens table.
+const rootViewSource = readFileSync(new URL('../ios-native/Corner/Views/RootView.swift', import.meta.url), 'utf8');
+assert.match(rootViewSource, /phase == \.active[\s\S]*refreshAuthorizationAndRegisterIfAllowed\(\)/);
+assert.match(rootViewSource, /phase == \.active[\s\S]*registerCurrentTokenIfAny\(\)/);
 
 console.log('apns-delivery-actions: all assertions passed');

@@ -68,6 +68,8 @@ final class ChatViewModelTests: XCTestCase {
         await settleRunLoop()
 
         XCTAssertEqual(transport.sentTexts, ["hello"])
+        XCTAssertEqual(transport.clientMessageIDs.count, 2)
+        XCTAssertEqual(Set(transport.clientMessageIDs).count, 1, "retry must reuse the original idempotency key")
         XCTAssertTrue(vm.outbox.isEmpty, "once the real row lands the echo must be reconciled away")
         XCTAssertEqual(vm.rows.last?.text, "hello")
     }
@@ -88,6 +90,29 @@ final class ChatViewModelTests: XCTestCase {
 
         XCTAssertEqual(vm.outbox.count, 1)
         XCTAssertTrue(vm.outbox.first?.isFailed == true)
+    }
+
+    func testAnOlderIdenticalMessageDoesNotEraseANewPendingSend() async {
+        let transport = FakeTransport()
+        transport.rows = [
+            .fake(
+                id: "old-yes", role: "user", text: "yes",
+                epoch: Date().timeIntervalSince1970 - 120
+            )
+        ]
+        // Model an older deploy that accepted POST but returned no created row, and
+        // a delayed history replica that has not exposed the new row yet.
+        transport.sendReturnsRow = false
+        transport.sendLandsInThread = false
+        let vm = model(transport)
+
+        vm.draft = "yes"
+        vm.send()
+        await settleRunLoop()
+
+        XCTAssertEqual(vm.outbox.count, 1)
+        XCTAssertEqual(vm.outbox.first?.text, "yes")
+        XCTAssertFalse(vm.outbox.first?.isFailed == true)
     }
 
     func testDiscardRemovesIt() async {

@@ -183,7 +183,8 @@ struct Room: Identifiable, Hashable {
         interactionMode: String = "work",
         routed: RouteProvenance? = nil,
         attachments: [Attachment] = [],
-        roomAgent: String? = nil
+        roomAgent: String? = nil,
+        clientMessageID: String? = nil
     ) -> [String: Any] {
         var body: [String: Any] = [
             "client_id": world,
@@ -192,6 +193,7 @@ struct Room: Identifiable, Hashable {
             "source": Config.messageSource,
         ]
         var metadata: [String: Any] = ["interaction_mode": interactionMode]
+        if let clientMessageID { metadata["client_message_id"] = clientMessageID }
         if !attachments.isEmpty {
             // metadata.attachments[] — shape 1 of the four Attachment.swift parses,
             // the structured one every surface (web thread, web Files panel, native

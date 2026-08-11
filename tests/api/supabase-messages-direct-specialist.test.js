@@ -16,6 +16,12 @@ test('a direct specialist request stays one direct message and creates no projec
     if (value.includes('/rest/v1/user_preferences')) {
       return { ok: true, json: async () => ([]) }
     }
+    // Auto routing now checks for a recently online local runner before falling
+    // back to the central bridge. No paired device means the original direct
+    // specialist path, not a lookup failure.
+    if (value.includes('/rest/v1/corner_runner_devices')) {
+      return { ok: true, json: async () => ([]) }
+    }
     if (value.includes('/rest/v1/messages') && options.method === 'POST') {
       const body = JSON.parse(options.body)
       writes.push({ url: value, body })

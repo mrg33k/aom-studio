@@ -9,6 +9,7 @@
 import SwiftUI
 import PhotosUI
 import UniformTypeIdentifiers
+import UIKit
 
 // MARK: - Paste chip model
 // Mirrors the web's shouldChipPaste threshold: > 1000 chars OR > 15 lines.
@@ -64,7 +65,6 @@ struct ChatView: View {
     @State private var showingPhotoPicker = false
     @State private var showingFilePicker = false
     @State private var pickedPhotos: [PhotosPickerItem] = []
-    @State private var nearBottom = false
     @FocusState private var composerFocused: Bool
 
     // R5 chat-header parity
@@ -72,6 +72,7 @@ struct ChatView: View {
     @State private var searchQuery = ""
     @FocusState private var searchFocused: Bool
     @State private var showingSettings = false
+    @State private var showingImageGenerator = false
 
     // ── Paste chips (composer extras R6) ─────────────────────────────────────
     // Long pastes (>1000 chars or >15 lines) collapse into removable chips above
@@ -150,7 +151,7 @@ struct ChatView: View {
                 }
             }
             .animation(.spring(response: 0.28, dampingFraction: 0.72), value: composerCollapsed)
-            .background(Theme.ground)
+            .groundBackground()
             // Custom title: avatar + room name + live status.
             // Empty string keeps the back-button chevron but clears the default label.
             .navigationTitle("")
@@ -208,6 +209,11 @@ struct ChatView: View {
                 )
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showingImageGenerator) {
+                ImageGeneratorSheet(model: model)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
             }
             // Paste chip preview sheet — full scrollable pre of the pasted text.
             .sheet(item: $previewingChip) { chip in
@@ -488,12 +494,7 @@ struct ChatView: View {
                                 }
                             }
                         }
-                        // Tail sentinel: arms the swipe-up-for-files gesture only when
-                        // the user is actually looking at the end of the thread — the
-                        // same guard the web's overscroll-up uses.
                         Color.clear.frame(height: 1)
-                            .onAppear { nearBottom = true }
-                            .onDisappear { nearBottom = false }
                     }
                 }
                 .padding(.horizontal, Theme.s4)
@@ -522,19 +523,14 @@ struct ChatView: View {
                 if !isSearching { scrollToEnd(proxy) }
             }
             .refreshable { await model.load() }
-            // Patrik's R4 gesture spec. Swipe UP at the tail → this chat's files.
             // Horizontal flick → the recency carousel: right toward the more recent
-            // room, left toward the older one. Thresholds are the web's own
-            // (useChatSwipe.js: 56pt distance, 1.67× dominance).
+            // room, left toward the older one. Files deliberately does NOT live on
+            // this scroll view: an upward thread scroll must never open a sheet.
             .simultaneousGesture(
                 DragGesture(minimumDistance: 40)
                     .onEnded { value in
                         let dx = value.translation.width
                         let dy = value.translation.height
-                        if nearBottom, dy < -58, abs(dy) > abs(dx) * 1.25 {
-                            showingFiles = true
-                            return
-                        }
                         if abs(dx) >= 56, abs(dx) > abs(dy) * 1.67 {
                             router.swipeChat(from: model.room, toMoreRecent: dx > 0)
                         }
@@ -670,7 +666,13 @@ struct ChatView: View {
             actionRow
         }
         .padding(Theme.s2)
-        .background(Theme.composer, in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
+        .background {
+            Theme.frostedSurface(
+                fallback: Theme.composer,
+                tint: Color(cv6: 0x111820, opacity: 0.30),
+                in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
+            )
+        }
         .overlay(
             RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
                 .strokeBorder(Theme.hairline, lineWidth: 1)
@@ -678,6 +680,19 @@ struct ChatView: View {
         .shadow(color: .black.opacity(0.55), radius: 21, y: 9)
         .padding(.horizontal, Theme.s3)
         .padding(.bottom, Theme.s2)
+        // Patrik's R16 correction: Files opens only from a deliberate upward
+        // gesture that STARTS on the composer card. Keeping the recognizer here
+        // makes ordinary conversation scrolling incapable of triggering it.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 52, coordinateSpace: .local)
+                .onEnded { value in
+                    let dx = value.translation.width
+                    let dy = value.translation.height
+                    if dy <= -72, abs(dy) > abs(dx) * 1.5 {
+                        showingFiles = true
+                    }
+                }
+        )
         .photosPicker(
             isPresented: $showingPhotoPicker, selection: $pickedPhotos,
             maxSelectionCount: 5, matching: .images
@@ -857,6 +872,10 @@ struct ChatView: View {
             Button { showingFiles = true } label: {
                 Label("Files in this room", systemImage: "folder")
             }
+
+            Button { showingImageGenerator = true } label: {
+                Label("Generate an image", systemImage: "photo.badge.plus")
+            }
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: "sparkles")
@@ -873,7 +892,7 @@ struct ChatView: View {
                     .strokeBorder(Theme.hairline, lineWidth: 1)
             )
         }
-        .accessibilityLabel("Commands — specialist, mode, model, files")
+        .accessibilityLabel("Commands — specialist, mode, model, files, image generation")
     }
 
     private var commandsChipLabel: String {
@@ -1220,6 +1239,133 @@ struct OutboxBubbleView: View {
                         .foregroundStyle(Theme.inkFaint)
                 }
             }
+        }
+    }
+}
+
+// MARK: - Image generation
+
+/// Native image generation uses the same authenticated server router as desktop.
+/// A successful result is uploaded and staged before this sheet says it is ready,
+/// so dismissing the sheet can never strand an expiring provider URL.
+fileprivate struct ImageGeneratorSheet: View {
+    @ObservedObject var model: ChatViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var prompt = ""
+    @State private var tool = "openai"
+    @State private var generatedData: Data?
+    @State private var shareURL: URL?
+    @State private var saved = false
+
+    private let tools = [
+        ("openai", "OpenAI"),
+        ("gemini", "Gemini"),
+        ("ideogram", "Ideogram"),
+    ]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.s4) {
+                    Text("Describe the image you want. Corner will add the finished PNG to this message so you can send it with context.")
+                        .font(.hkBody)
+                        .foregroundStyle(Theme.inkSoft)
+
+                    Picker("Generator", selection: $tool) {
+                        ForEach(tools, id: \.0) { value, label in Text(label).tag(value) }
+                    }
+                    .pickerStyle(.segmented)
+
+                    TextField("A quiet editorial workspace at dawn…", text: $prompt, axis: .vertical)
+                        .font(.hkBody)
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(4...9)
+                        .padding(Theme.s3)
+                        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous).strokeBorder(Theme.hairline))
+
+                    Button {
+                        Task {
+                            guard let image = await model.generateAndStageImage(tool: tool, prompt: prompt.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
+                            generatedData = image.data
+                            shareURL = makeShareURL(image.data)
+                            saved = false
+                        }
+                    } label: {
+                        HStack {
+                            if model.isGeneratingImage { ProgressView().tint(.white) }
+                            Text(model.isGeneratingImage ? "Generating and adding…" : "Generate image")
+                        }
+                        .font(.hkBody.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .foregroundStyle(Color.white)
+                        .background(Theme.accent, in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
+                    }
+                    .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.isGeneratingImage)
+                    .opacity(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.55 : 1)
+
+                    if let error = model.imageGenerationError {
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .font(.hkFootnote)
+                            .foregroundStyle(Theme.danger)
+                            .accessibilityLabel("Image generation failed: \(error)")
+                    }
+
+                    if let data = generatedData, let image = UIImage(data: data) {
+                        VStack(alignment: .leading, spacing: Theme.s3) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                                .accessibilityLabel("Generated image preview")
+                            Label("Added to your message", systemImage: "checkmark.circle.fill")
+                                .font(.hkFootnote.weight(.semibold))
+                                .foregroundStyle(Theme.success)
+                            HStack(spacing: Theme.s2) {
+                                Button {
+                                    UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                                    saved = true
+                                } label: {
+                                    Label(saved ? "Saved" : "Save Image", systemImage: saved ? "checkmark" : "square.and.arrow.down")
+                                }
+                                .buttonStyle(.bordered)
+                                if let shareURL {
+                                    ShareLink(item: shareURL) {
+                                        Label("Share", systemImage: "square.and.arrow.up")
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                            }
+                        }
+                        .padding(Theme.s3)
+                        .background {
+                            Theme.frostedSurface(
+                                fallback: Theme.raised,
+                                tint: Color(cv6: 0x161A21, opacity: 0.28),
+                                in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                            )
+                        }
+                    }
+                }
+                .padding(Theme.s4)
+            }
+            .groundBackground()
+            .navigationTitle("Generate Image")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
+            }
+        }
+    }
+
+    private func makeShareURL(_ data: Data) -> URL? {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("corner-generated-\(UUID().uuidString).png")
+        do {
+            try data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
         }
     }
 }

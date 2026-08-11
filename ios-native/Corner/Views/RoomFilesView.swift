@@ -40,7 +40,7 @@ struct RoomFilesView: View {
                     list
                 }
             }
-            .background(Theme.ground)
+            .groundBackground()
             .navigationTitle("Files")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

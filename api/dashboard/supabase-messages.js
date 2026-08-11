@@ -433,6 +433,11 @@ export default async function handler(req, res) {
     if (!result.ok) {
       return res.status(result.status || 500).json({ error: result.error || 'write failed' })
     }
+    // A retry after a lost HTTP response recovered the already-durable row. Do
+    // not queue a second local Runner job or mint another turn receipt.
+    if (result.idempotent) {
+      return res.status(200).json({ ok: true, message: result.row, idempotent: true })
+    }
     if (runnerRoute.local) {
       try {
         const job = await enqueueRunnerJob({

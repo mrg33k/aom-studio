@@ -19,6 +19,7 @@ struct RoomListView: View {
     @StateObject private var store = RoomStore()
 
     @StateObject private var review = ReviewStore.shared
+    @StateObject private var email = EmailStore()
     /// The front-door router: turns a room-less message typed into the pinned composer
     /// into an opened, seeded room, the same way the web front door does.
     @StateObject private var intake = IntakeRouter()
@@ -29,6 +30,7 @@ struct RoomListView: View {
     @State private var showingNewRoom = false
     @State private var showingBackgroundWork = false
     @State private var showingNotifications = false
+    @State private var showingVoice = false
     /// The pinned search field (Patrik 2026-08-11): .searchable's pull-down kept getting
     /// missed, so the search chip in the top bar toggles a visible field row instead.
     @State private var searchOpen = false
@@ -66,6 +68,7 @@ struct RoomListView: View {
                 filterChips
                 switch filter {
                 case .all:
+                    if api.isEmailOwner { emailRow }
                     recencyRows
                     toolsRows
                     if let error = store.railError { railErrorRow(error) }
@@ -80,7 +83,7 @@ struct RoomListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Theme.ground)
+        .groundBackground()
         // The system nav bar is hidden on the home — iOS 26's glass toolbar wraps
         // every item in its own capsule, which shrinks the logo into a chip and
         // double-chromes the buttons. The web bar is drawn by hand instead.
@@ -129,6 +132,7 @@ struct RoomListView: View {
             NotificationsView(recent: store.recent)
                 .environmentObject(router)
         }
+        .sheet(isPresented: $showingVoice) { AirPodsVoiceView() }
         .sheet(isPresented: $showingBackgroundWork) {
             BackgroundWorkView()
                 .environmentObject(ThemeManager.shared)
@@ -138,6 +142,7 @@ struct RoomListView: View {
             if !store.hasLoadedOnce { await store.load() }
             review.startPolling()
             bgWork.startPolling()
+            if api.isEmailOwner { await email.load() }
         }
         .onChange(of: api.world) { _, _ in store.refresh() }
     }
@@ -156,16 +161,15 @@ struct RoomListView: View {
 
             Spacer(minLength: Theme.s2)
 
-            // Voice chip — the web top bar's headphones slot. Today it starts
-            // dictation in the home composer (the real voice feature the phone
-            // has); the AirPods call mode stays its own scoped mission.
+            // Voice chip — native full-duplex Corner conversation, routed through
+            // the current iOS audio output (AirPods when connected).
             Button {
                 withAnimation(.easeOut(duration: 0.15)) { searchOpen = false }
-                voiceTrigger += 1
+                showingVoice = true
             } label: {
                 TopBarChip(symbol: "headphones", active: false)
             }
-            .accessibilityLabel("Voice — dictate into the composer")
+            .accessibilityLabel("Start Corner Voice conversation")
 
             // Search chip — toggles the pinned field under the bar. The old
             // .searchable pull-down kept getting missed; a visible field doesn't.
@@ -556,6 +560,36 @@ struct RoomListView: View {
 
     // MARK: - Files / Tracker (surfaces, not rooms)
 
+    private var emailRow: some View {
+        Button { router.open(.email) } label: {
+            HStack(spacing: Theme.s3) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Theme.accentWeak).frame(width: 40, height: 40)
+                    Image(systemName: "envelope.fill").font(.hkFootnote).foregroundStyle(Theme.accent)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Email").font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
+                    Text(email.needsYou.isEmpty ? "You're all caught up" : "\(email.needsYou.count) need\(email.needsYou.count == 1 ? "s" : "") you")
+                        .font(.hkCaption).foregroundStyle(Theme.inkSoft)
+                }
+                Spacer(minLength: 0)
+                if !email.needsYou.isEmpty {
+                    Text("\(email.needsYou.count)")
+                        .font(.hkCaption.weight(.bold).monospacedDigit()).foregroundStyle(Color.white)
+                        .padding(.horizontal, 8).padding(.vertical, 3).background(Theme.accent, in: Capsule())
+                }
+                Image(systemName: "chevron.right").font(.hkCaption).foregroundStyle(Theme.inkFaint)
+            }
+            .padding(Theme.s3)
+            .cardSurface(fill: Theme.raised, border: Theme.hairline, edge: Theme.accent)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(CardButtonStyle())
+        .plainCardRow()
+        .accessibilityLabel("Email, \(email.needsYou.count) need you")
+    }
+
     @ViewBuilder
     private var toolsRows: some View {
         sectionLabel("Tools")
@@ -934,7 +968,7 @@ struct CardButtonStyle: ButtonStyle {
     }
 }
 
-private extension View {
+extension View {
     /// A rounded card surface with a 3px tinted left edge, clipped to the corner radius.
     /// Home rows ride the web's --radius-tile (18) — the mobile home's pill-ish cards.
     func cardSurface(fill: Color, border: Color, edge: Color) -> some View {
@@ -1068,7 +1102,7 @@ struct HomePreviewHarness: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Theme.ground)
+            .groundBackground()
             .toolbar(.hidden, for: .navigationBar)
             // The same top bar the real home ships — logo row leading, then
             // [+ New] [search] [menu] with a waiting dot on the menu chip — a

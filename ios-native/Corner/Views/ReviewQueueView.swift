@@ -29,7 +29,7 @@ struct ReviewQueueView: View {
                 if review.items.isEmpty { emptyState } else { list }
             }
         }
-        .background(Theme.ground)
+        .groundBackground()
         .navigationTitle("Waiting on you")
         .navigationBarTitleDisplayMode(.inline)
         .task { await review.load() }

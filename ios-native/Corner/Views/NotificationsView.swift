@@ -10,9 +10,11 @@
 // can never disagree with the surfaces it links to.
 
 import SwiftUI
+import UIKit
 
 struct NotificationsView: View {
     @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var push: PushService
     @ObservedObject private var review = ReviewStore.shared
     /// The home's recency entries, handed in so the two surfaces share one fetch.
     let recent: [RoomStore.RecentRoom]
@@ -27,6 +29,42 @@ struct NotificationsView: View {
     var body: some View {
         NavigationStack {
             List {
+                if push.authorizationStatus == .denied {
+                    Section("Alerts") {
+                        Label("Notifications are off", systemImage: "bell.slash")
+                            .foregroundStyle(Theme.warning)
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            Link("Open iOS Settings", destination: url)
+                        }
+                    }
+                } else if push.authorizationStatus == .notDetermined {
+                    Section("Alerts") {
+                        Button {
+                            Task { _ = await push.requestAuthorizationExplicitly() }
+                        } label: {
+                            Label("Turn on notifications", systemImage: "bell.badge")
+                        }
+                    }
+                } else if let error = push.registrationError {
+                    Section("Alerts") {
+                        Label("This phone is not registered", systemImage: "bell.badge.slash")
+                            .foregroundStyle(Theme.warning)
+                        Text(error)
+                            .font(.hkCaption)
+                            .foregroundStyle(Theme.inkSoft)
+                        Button("Try registration again") {
+                            Task { await push.registerCurrentTokenIfAny() }
+                        }
+                    }
+                } else if push.deviceToken == nil {
+                    Section("Alerts") {
+                        HStack {
+                            ProgressView().controlSize(.small)
+                            Text("Registering this phone…")
+                        }
+                    }
+                }
+
                 if review.items.isEmpty && messageEntries.isEmpty {
                     Text("You're all caught up.")
                         .font(.hkFootnote)
@@ -61,7 +99,7 @@ struct NotificationsView: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .background(Theme.ground)
+            .groundBackground()
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -82,7 +120,11 @@ struct NotificationsView: View {
                 )
             }
         }
-        .task { await review.load() }
+        .task {
+            await review.load()
+            await push.refreshAuthorizationAndRegisterIfAllowed()
+            await push.registerCurrentTokenIfAny()
+        }
     }
 
     private func fileRow(_ item: ReviewItem) -> some View {

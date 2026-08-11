@@ -155,10 +155,18 @@ struct MessageBubbleView: View {
                     .frame(maxHeight: isCollapsed ? MessageBubbleView.clampThreshold : .infinity,
                            alignment: .topLeading)
                     .clipped()
-                    .background(
-                        row.isUser ? Theme.userBubble : Theme.agentBubble,
-                        in: MessageBubbleView.bubbleShape(user: row.isUser)
-                    )
+                    .background {
+                        if row.isUser {
+                            MessageBubbleView.bubbleShape(user: true)
+                                .fill(Theme.userBubble)
+                        } else {
+                            Theme.frostedSurface(
+                                fallback: Theme.agentBubble,
+                                tint: Color.white.opacity(0.035),
+                                in: MessageBubbleView.bubbleShape(user: false)
+                            )
+                        }
+                    }
                     .overlay {
                         if !row.isUser {
                             MessageBubbleView.bubbleShape(user: false)

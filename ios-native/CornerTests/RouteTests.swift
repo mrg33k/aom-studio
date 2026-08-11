@@ -15,6 +15,7 @@ final class RouteTests: XCTestCase {
         XCTAssertEqual(DeepLinkTarget(url: try XCTUnwrap(URL(string: "corner://review"))), .route(.review))
         XCTAssertEqual(DeepLinkTarget(url: try XCTUnwrap(URL(string: "corner://organize"))), .route(.organize))
         XCTAssertEqual(DeepLinkTarget(url: try XCTUnwrap(URL(string: "corner://tracker"))), .route(.tracker))
+        XCTAssertEqual(DeepLinkTarget(url: try XCTUnwrap(URL(string: "corner://email"))), .route(.email))
     }
 
     /// The surface is called Files on screen and `organize` in the web's `?view=` params.
@@ -39,14 +40,14 @@ final class RouteTests: XCTestCase {
     /// exactly how a push starts silently doing nothing.
     func testRouteURLsRoundTrip() throws {
         let room = Room(world: "aom", kind: .mission(slug: "corner:native-ios", project: "corner"), title: "Native iOS", subtitle: "Corner")
-        let routes: [Route] = [.review, .organize, .tracker, .room(room)]
+        let routes: [Route] = [.review, .organize, .tracker, .email, .room(room)]
         for route in routes {
             let url = try XCTUnwrap(route.url, "\(route) has no URL — nothing can target it")
             let parsed = try XCTUnwrap(DeepLinkTarget(url: url), "\(url) did not parse back")
             switch (route, parsed) {
             case (.room(let expected), .room(let link)):
                 XCTAssertEqual(link.roomID, expected.roomID)
-            case (.review, .route(.review)), (.organize, .route(.organize)), (.tracker, .route(.tracker)):
+            case (.review, .route(.review)), (.organize, .route(.organize)), (.tracker, .route(.tracker)), (.email, .route(.email)):
                 break
             default:
                 XCTFail("\(url) resolved to \(parsed), not \(route)")

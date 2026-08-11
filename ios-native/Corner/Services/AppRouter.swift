@@ -93,6 +93,7 @@ enum Route: Hashable {
     case review
     case organize
     case tracker
+    case email
 
     var roomID: String? {
         if case .room(let room) = self { return room.roomID }
@@ -109,6 +110,7 @@ enum Route: Hashable {
         case .review:   return URL(string: "\(Config.urlScheme)://review")
         case .organize: return URL(string: "\(Config.urlScheme)://organize")
         case .tracker:  return URL(string: "\(Config.urlScheme)://tracker")
+        case .email:    return URL(string: "\(Config.urlScheme)://email")
         }
     }
 }
@@ -130,6 +132,7 @@ enum DeepLinkTarget: Equatable {
         case "review":   self = .route(.review)
         case "organize", "files": self = .route(.organize)
         case "tracker":  self = .route(.tracker)
+        case "email":    self = .route(.email)
         case "rooms":    self = .rail
         default: return nil
         }

@@ -107,6 +107,14 @@ final class CornerAPI: ObservableObject {
 
     var userEmail: String? { session?.user.email }
 
+    /// Email is AOM's private operations desk, not a tenant feature. The server
+    /// still enforces the support tenant; this gate prevents the surface from
+    /// appearing for client/review accounts in the first place.
+    var isEmailOwner: Bool {
+        guard world == "aom", let email = userEmail?.lowercased() else { return false }
+        return email.hasSuffix("@aom-inhouse.com") || email == "patrikmatheson@gmail.com"
+    }
+
     var userDisplayName: String? {
         guard let meta = session?.user.userMetadata else { return nil }
         for key in ["name", "full_name", "user_name"] {
@@ -243,6 +251,18 @@ final class CornerAPI: ObservableObject {
     @discardableResult
     func send(
         text: String, room: Room, interactionMode: String,
+        attachments: [Attachment], roomAgent: String?, clientMessageID: String
+    ) async throws -> MessageRow? {
+        try await send(
+            text: text, room: room, interactionMode: interactionMode,
+            routed: nil, attachments: attachments, roomAgent: roomAgent,
+            clientMessageID: clientMessageID
+        )
+    }
+
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String,
         routed: RouteProvenance?, attachments: [Attachment]
     ) async throws -> MessageRow? {
         try await send(
@@ -254,14 +274,16 @@ final class CornerAPI: ObservableObject {
     @discardableResult
     func send(
         text: String, room: Room, interactionMode: String,
-        routed: RouteProvenance?, attachments: [Attachment], roomAgent: String?
+        routed: RouteProvenance?, attachments: [Attachment], roomAgent: String?,
+        clientMessageID: String? = nil
     ) async throws -> MessageRow? {
         let request = try await authorizedRequest(
             path: "/api/dashboard/supabase-messages",
             method: "POST",
             jsonBody: room.sendBody(
                 text: text, interactionMode: interactionMode,
-                routed: routed, attachments: attachments, roomAgent: roomAgent
+                routed: routed, attachments: attachments, roomAgent: roomAgent,
+                clientMessageID: clientMessageID
             )
         )
         let data = try await run(request)
@@ -331,6 +353,192 @@ final class CornerAPI: ObservableObject {
             mime: (json["mime_type"] as? String) ?? mime,
             size: (json["size"] as? Int) ?? data.count
         )
+    }
+
+    // MARK: - Image generation (corner:native-ios R16)
+
+    struct GeneratedImage: Equatable {
+        let data: Data
+        let mime: String
+        let tool: String
+        let prompt: String
+    }
+
+    /// Generate through Corner's authenticated provider router, then resolve the
+    /// provider response into bytes immediately. Provider URLs can expire; callers
+    /// upload these bytes into the room before presenting success.
+    func generateImage(tool: String, prompt: String) async throws -> GeneratedImage {
+        let world = try requireWorld()
+        var request = try await authorizedRequest(
+            path: "/api/dashboard/image-gen",
+            method: "POST",
+            jsonBody: ["tool": tool, "prompt": prompt, "client_id": world]
+        )
+        request.timeoutInterval = 180
+        let payload = try await run(request)
+        guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any] else {
+            throw APIError.decoding
+        }
+
+        let bytes: Data
+        if let b64 = json["b64"] as? String, let decoded = Data(base64Encoded: b64) {
+            bytes = decoded
+        } else if let rawURL = json["url"] as? String, let url = URL(string: rawURL) {
+            var download = URLRequest(url: url)
+            download.timeoutInterval = 120
+            let (data, response) = try await URLSession.shared.data(for: download)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            guard (200..<300).contains(status), !data.isEmpty else {
+                throw APIError.badResponse(status: status, message: "Generated image could not be downloaded")
+            }
+            bytes = data
+        } else {
+            throw APIError.decoding
+        }
+        return GeneratedImage(data: bytes, mime: "image/png", tool: tool, prompt: prompt)
+    }
+
+    // MARK: - Owner Email desk (corner:native-ios R16 E1/E2)
+
+    func fetchEmailWishes() async throws -> [EmailWish] {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/support/wishes",
+            queryItems: [URLQueryItem(name: "world", value: world)]
+        )
+        let data = try await run(request)
+        struct Envelope: Decodable { let wishes: [EmailWish] }
+        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: data) else { throw APIError.decoding }
+        return envelope.wishes
+    }
+
+    func fetchEmailMailboxes(days: Int = 7) async throws -> [EmailMailbox] {
+        let request = try await authorizedRequest(
+            path: "/api/support/inbox",
+            method: "POST",
+            jsonBody: ["email": userEmail ?? "", "days": max(1, min(days, 14))]
+        )
+        let data = try await run(request)
+        struct Envelope: Decodable { let mailboxes: [EmailMailbox] }
+        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: data) else { throw APIError.decoding }
+        return envelope.mailboxes
+    }
+
+    func fetchEmailSuggestion(wishID: String) async throws -> EmailSuggestion {
+        let request = try await authorizedRequest(
+            path: "/api/support/suggest",
+            queryItems: [URLQueryItem(name: "wish_id", value: wishID)]
+        )
+        let data = try await run(request)
+        guard let result = try? JSONDecoder().decode(EmailSuggestion.self, from: data) else { throw APIError.decoding }
+        return result
+    }
+
+    func fetchEmailThread(item: EmailItem) async throws -> [EmailThreadMessage] {
+        let query: [URLQueryItem]
+        switch item.source {
+        case .wish(let wish):
+            query = [URLQueryItem(name: "wish_id", value: wish.id)]
+        case .mailbox(let threadID, let account):
+            query = [URLQueryItem(name: "thread_id", value: threadID), URLQueryItem(name: "account", value: account)]
+        }
+        let request = try await authorizedRequest(path: "/api/support/thread", queryItems: query)
+        let data = try await run(request)
+        struct Envelope: Decodable { let thread: [EmailThreadMessage] }
+        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: data) else { throw APIError.decoding }
+        return envelope.thread
+    }
+
+    func sendStagedEmail(wishID: String, draftID: String, connectionID: String) async throws {
+        let request = try await authorizedRequest(
+            path: "/api/support/send-staged", method: "POST",
+            jsonBody: ["action": "send", "wish_id": wishID, "draft_id": draftID, "connection_id": connectionID]
+        )
+        _ = try await run(request)
+    }
+
+    func replyToEmail(wishID: String, text: String) async throws {
+        let request = try await authorizedRequest(
+            path: "/api/support/reply", method: "POST",
+            jsonBody: ["wish_id": wishID, "text": text]
+        )
+        _ = try await run(request)
+    }
+
+    func resolveEmail(wishID: String) async throws {
+        let request = try await authorizedRequest(
+            path: "/api/support/wishes",
+            queryItems: [URLQueryItem(name: "id", value: wishID)],
+            method: "PATCH", jsonBody: ["status": "resolved"]
+        )
+        _ = try await run(request)
+    }
+
+    func fetchAutoReplyStatus() async throws -> AutoReplyStatus {
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/support-autoreply",
+            queryItems: [URLQueryItem(name: "world", value: "aom")]
+        )
+        let data = try await run(request)
+        guard let status = try? JSONDecoder().decode(AutoReplyStatus.self, from: data) else { throw APIError.decoding }
+        return status
+    }
+
+    func setAutoReply(action: String) async throws -> AutoReplyStatus {
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/support-autoreply", method: "POST",
+            jsonBody: ["action": action, "world": "aom"]
+        )
+        let data = try await run(request)
+        guard let status = try? JSONDecoder().decode(AutoReplyStatus.self, from: data) else { throw APIError.decoding }
+        return status
+    }
+
+    // MARK: - Native AirPods conversation (corner:airpods-mode R16)
+
+    struct VoiceSessionConfig {
+        let webSocketURL: URL
+        let setupMessage: [String: Any]
+    }
+
+    func createVoiceSession(sessionID: String) async throws -> VoiceSessionConfig {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/voice-session", method: "POST",
+            jsonBody: [
+                "agent": "corner", "client_id": world, "voice": "Kore",
+                "temperature": 0.85, "mode": "airpods", "session_id": sessionID,
+            ]
+        )
+        let data = try await run(request)
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let rawURL = json["wsUrl"] as? String, let url = URL(string: rawURL),
+              let setup = json["setupMessage"] as? [String: Any]
+        else { throw APIError.decoding }
+        return VoiceSessionConfig(webSocketURL: url, setupMessage: setup)
+    }
+
+    func runVoiceAction(sessionID: String, action: String, arguments: [String: Any]) async throws -> [String: Any] {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/airpods-action", method: "POST",
+            jsonBody: ["client_id": world, "session_id": sessionID, "action": action, "arguments": arguments]
+        )
+        let data = try await run(request)
+        return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? ["ok": true]
+    }
+
+    func handoffVoiceSession(sessionID: String, duration: Int, transcript: [[String: Any]]) async throws {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/airpods-handoff", method: "POST",
+            jsonBody: [
+                "client_id": world, "session_id": sessionID,
+                "duration_secs": duration, "transcript": transcript,
+                "active_context": ["view": "native"],
+            ]
+        )
+        _ = try await run(request)
     }
 
     // MARK: - Model preference (corner:native-ios R4)

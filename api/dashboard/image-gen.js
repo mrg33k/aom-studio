@@ -14,6 +14,8 @@
 //   GEMINI_API_KEY    — Imagen via Google Generative Language API
 //   IDEOGRAM_API_KEY  — Ideogram 3.0
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const IDEOGRAM_API_KEY = process.env.IDEOGRAM_API_KEY;
@@ -82,6 +84,19 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // Image generation spends provider credits. CORS and an outbound provider
+  // bearer token are not caller authorization; require the same verified tenant
+  // session as every other dashboard action before validating or executing a job.
+  try {
+    await verifyTenant(req.body?.client_id || 'aom', req);
+  } catch (err) {
+    if (err instanceof TenantAuthError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    return res.status(401).json({ error: 'authentication required' });
+  }
+
   const { tool, prompt } = req.body || {};
   if (!tool || !prompt) {
     return res.status(400).json({ error: 'tool and prompt are required' });

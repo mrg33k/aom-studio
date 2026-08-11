@@ -90,7 +90,7 @@ struct ChatPreviewHarness: View {
                 .padding(.bottom, Theme.s2)
                 composerReplica
             }
-            .background(Theme.ground)
+            .groundBackground()
             .navigationTitle("Design")
             .navigationBarTitleDisplayMode(.inline)
         }

@@ -49,6 +49,10 @@ struct OutboxItem: Identifiable, Equatable {
     let text: String
     var state: State
     let createdAt: Date
+    /// The durable row returned by POST. Reconciliation keys on this whenever
+    /// available; text is not identity because two legitimate sends may both say
+    /// "yes" or "go".
+    var serverMessageID: String? = nil
     /// Files staged before this send — kept on the item so a retry re-sends the
     /// SAME already-uploaded files instead of losing them with the failure.
     var attachments: [Attachment] = []
@@ -125,6 +129,8 @@ final class ChatViewModel: ObservableObject {
 
     // R4 composer: staged uploads + the room's model preference.
     @Published private(set) var staged: [CornerAPI.UploadedFile] = []
+    @Published private(set) var isGeneratingImage = false
+    @Published var imageGenerationError: String?
     @Published private(set) var isUploading = false
     @Published var uploadError: String?
     /// The composer's live model label — resolveEffectiveRoomModel's precedence:
@@ -326,11 +332,27 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func apply(_ fetched: [MessageRow]) {
-        // Reconcile the outbox: an item whose text now exists as a real user row has
-        // landed. Only `sending` items reconcile — a FAILED item must survive a reload,
-        // because the whole point is that the user still has what they typed.
-        let realUserTexts = Set(fetched.filter(\.isUser).compactMap(\.text))
-        outbox.removeAll { !$0.isFailed && realUserTexts.contains($0.text) }
+        // Reconcile one optimistic item to one durable user row. Server id wins.
+        // Older API deployments did not return the row, so those items get a narrow
+        // text+time fallback that consumes each matching row once. The previous Set
+        // of texts swept every pending "yes" as soon as one "yes" existed anywhere
+        // in history — a quiet message-loss bug on repeated short replies.
+        let realUserIDs = Set(fetched.filter(\.isUser).map(\.id))
+        var unmatchedRows = fetched.filter(\.isUser)
+        outbox = outbox.filter { item in
+            guard !item.isFailed else { return true }
+            if let serverID = item.serverMessageID {
+                return !realUserIDs.contains(serverID)
+            }
+            let earliest = item.createdAt.timeIntervalSince1970 - 5
+            if let index = unmatchedRows.firstIndex(where: {
+                $0.text == item.text && $0.epoch >= earliest
+            }) {
+                unmatchedRows.remove(at: index)
+                return false
+            }
+            return true
+        }
 
         rows = fetched
         newestKnownID = fetched.last?.id
@@ -574,6 +596,31 @@ final class ChatViewModel: ObservableObject {
         staged.removeAll { $0.id == file.id }
     }
 
+    /// Generate, then durably upload into this room before exposing the result in
+    /// the composer. The generated asset therefore behaves exactly like a photo the
+    /// user attached: previewable, retry-safe, and discoverable in Files after send.
+    func generateAndStageImage(tool: String, prompt: String) async -> CornerAPI.GeneratedImage? {
+        guard !isGeneratingImage else { return nil }
+        isGeneratingImage = true
+        imageGenerationError = nil
+        defer { isGeneratingImage = false }
+        do {
+            let image = try await CornerAPI.shared.generateImage(tool: tool, prompt: prompt)
+            let stamp = Int(Date().timeIntervalSince1970)
+            let uploaded = try await CornerAPI.shared.uploadFile(
+                data: image.data,
+                filename: "corner-image-\(stamp).png",
+                mime: image.mime,
+                room: room
+            )
+            staged.append(uploaded)
+            return image
+        } catch {
+            imageGenerationError = error.localizedDescription
+            return nil
+        }
+    }
+
     // MARK: - Model preference (R4 composer)
 
     /// Pull the workspace's model prefs and resolve this room's effective choice —
@@ -687,9 +734,13 @@ final class ChatViewModel: ObservableObject {
                 let created = try await self.api.send(
                     text: item.text, room: self.room,
                     interactionMode: mode, attachments: item.attachments,
-                    roomAgent: self.roomAgentChoice
+                    roomAgent: self.roomAgentChoice,
+                    clientMessageID: item.id
                 )
                 if let created {
+                    if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
+                        self.outbox[index].serverMessageID = created.id
+                    }
                     self.beginTurn(
                         parentID: created.id,
                         userEpoch: created.epoch > 0 ? created.epoch : Date().timeIntervalSince1970,

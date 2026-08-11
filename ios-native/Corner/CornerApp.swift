@@ -49,6 +49,13 @@ struct CornerApp: App {
 
     init() {
         CornerTypography.install()
+        #if DEBUG
+        // Deterministic visual-proof mode. `simctl defaults write` can race the
+        // process preferences cache, so captures opt into Glass explicitly.
+        if ProcessInfo.processInfo.arguments.contains("-glassPreview") {
+            ThemeManager.shared.kind = .glass
+        }
+        #endif
     }
 
     var body: some Scene {

@@ -26,6 +26,12 @@ protocol MessageTransport: AnyObject {
     func fetchMessages(room: Room, limit: Int) async throws -> [MessageRow]
     @discardableResult
     func send(text: String, room: Room, interactionMode: String) async throws -> MessageRow?
+    @discardableResult
+    func send(text: String, room: Room, interactionMode: String, attachments: [Attachment]) async throws -> MessageRow?
+    @discardableResult
+    func send(text: String, room: Room, interactionMode: String, attachments: [Attachment], roomAgent: String?) async throws -> MessageRow?
+    @discardableResult
+    func send(text: String, room: Room, interactionMode: String, attachments: [Attachment], roomAgent: String?, clientMessageID: String) async throws -> MessageRow?
     func fetchSteps(room: Room, limit: Int) async throws -> [MessageStep]
     func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep]
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing
@@ -50,6 +56,14 @@ extension MessageTransport {
         attachments: [Attachment], roomAgent: String?
     ) async throws -> MessageRow? {
         try await send(text: text, room: room, interactionMode: interactionMode, attachments: attachments)
+    }
+
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String,
+        attachments: [Attachment], roomAgent: String?, clientMessageID: String
+    ) async throws -> MessageRow? {
+        try await send(text: text, room: room, interactionMode: interactionMode, attachments: attachments, roomAgent: roomAgent)
     }
 
     func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep] {

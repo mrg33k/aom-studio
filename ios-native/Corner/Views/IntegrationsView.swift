@@ -168,7 +168,7 @@ struct IntegrationsView: View {
         .searchable(text: $searchText, prompt: "Search integrations")
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .background(Theme.ground)
+        .groundBackground()
     }
 
     // MARK: Computed

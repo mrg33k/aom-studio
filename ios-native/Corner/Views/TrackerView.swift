@@ -37,7 +37,7 @@ struct TrackerView: View {
                 content
             }
         }
-        .background(Theme.ground)
+        .groundBackground()
         .navigationTitle("Tracker")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

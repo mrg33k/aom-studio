@@ -11,9 +11,8 @@
 // the app root; the phone mirrors it. `Theme`'s members kept their names — every
 // call site still says `Theme.ink` — but resolve through ThemeManager's current
 // palette, and the root view re-identifies itself on a change so the whole tree
-// repaints at once. Glass's layered-radial wallpaper has no flat-Color equivalent;
-// it ships as its deep blue base with the web's translucent surfaces over it —
-// stated here so nobody mistakes the approximation for the finished wallpaper.
+// repaints at once. `Theme.ground` remains a flat semantic fill for small shapes;
+// full-screen roots use `.groundBackground()` to paint the real CV6 glass field.
 
 import SwiftUI
 
@@ -254,10 +253,93 @@ struct RaisedCard<Content: View>: View {
         content
             .padding(Theme.s3)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+            .background {
+                Theme.frostedSurface(
+                    fallback: Theme.raised,
+                    tint: Color(cv6: 0x161A21, opacity: 0.32),
+                    in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                )
+            }
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                     .strokeBorder(tint, lineWidth: 1)
             )
+    }
+}
+
+// MARK: - Glass wallpaper and surfaces
+
+/// CV6 glass `--ground`: steel, bronze, and ocean glows over a near-black
+/// vertical gradient. Each screen paints the same frame-relative field because a
+/// pushed NavigationStack destination cannot see through to the root wallpaper.
+struct GlassWallpaper: View {
+    var body: some View {
+        GeometryReader { geometry in
+            let radius = max(geometry.size.width, geometry.size.height)
+            ZStack {
+                LinearGradient(
+                    stops: [
+                        .init(color: Color(cv6: 0x0C1218), location: 0),
+                        .init(color: Color(cv6: 0x080B10), location: 0.55),
+                        .init(color: Color(cv6: 0x05080B), location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                RadialGradient(
+                    colors: [Color(cv6: 0x4A7494, opacity: 0.48), .clear],
+                    center: UnitPoint(x: 0.12, y: 0.03),
+                    startRadius: 0,
+                    endRadius: radius * 0.62
+                )
+                RadialGradient(
+                    colors: [Color(cv6: 0xCE9446, opacity: 0.28), .clear],
+                    center: UnitPoint(x: 0.96, y: 0.13),
+                    startRadius: 0,
+                    endRadius: radius * 0.52
+                )
+                RadialGradient(
+                    colors: [Color(cv6: 0x2E6080, opacity: 0.42), .clear],
+                    center: UnitPoint(x: 0.78, y: 0.96),
+                    startRadius: 0,
+                    endRadius: radius * 0.58
+                )
+            }
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
+    }
+}
+
+struct GroundBackground: ViewModifier {
+    @ObservedObject private var theme = ThemeManager.shared
+
+    func body(content: Content) -> some View {
+        content.background {
+            if theme.kind == .glass {
+                GlassWallpaper()
+            } else {
+                theme.palette.ground
+            }
+        }
+    }
+}
+
+extension View {
+    /// Full-screen background only. Small foreground/fill sites keep Theme.ground.
+    func groundBackground() -> some View { modifier(GroundBackground()) }
+}
+
+extension Theme {
+    /// Glass gets real blur plus a restrained CV6 tint; dark/light keep their
+    /// explicit opaque palette. Material must never leak into those themes.
+    @MainActor @ViewBuilder
+    static func frostedSurface<S: Shape>(fallback: Color, tint: Color, in shape: S) -> some View {
+        if ThemeManager.shared.kind == .glass {
+            shape.fill(.ultraThinMaterial)
+                .overlay(shape.fill(tint))
+        } else {
+            shape.fill(fallback)
+        }
     }
 }

@@ -41,7 +41,7 @@ struct OrganizeView: View {
                 folder
             }
         }
-        .background(Theme.ground)
+        .groundBackground()
         .navigationTitle(store.openProject?.name ?? "Files")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -32,6 +32,7 @@ final class FakeTransport: MessageTransport {
     var sendLandsInThread = true
 
     private(set) var sentTexts: [String] = []
+    private(set) var clientMessageIDs: [String] = []
     private(set) var fetchLimits: [Int] = []
     private(set) var stepLimits: [Int] = []
     private(set) var subscriptions: [FakeSubscription] = []
@@ -55,6 +56,15 @@ final class FakeTransport: MessageTransport {
         let row = MessageRow.fake(id: "server-\(sentTexts.count)", role: "user", text: text, epoch: Date().timeIntervalSince1970)
         if sendLandsInThread { rows.append(row) }
         return sendReturnsRow ? row : nil
+    }
+
+    @discardableResult
+    func send(
+        text: String, room: Room, interactionMode: String,
+        attachments: [Attachment], roomAgent: String?, clientMessageID: String
+    ) async throws -> MessageRow? {
+        clientMessageIDs.append(clientMessageID)
+        return try await send(text: text, room: room, interactionMode: interactionMode)
     }
 
     func fetchSteps(room: Room, limit: Int) async throws -> [MessageStep] {
