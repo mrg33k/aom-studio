@@ -3,7 +3,7 @@
 // Backend: Supabase outreach_leads + outreach_touchpoints
 // Brand: obsidian #060606 / ivory #F6F6F4 / gold #C4A46A / Bricolage Grotesque + Inter
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -142,6 +142,561 @@ function buildMapsURL(leads) {
   const origin = encodeURIComponent(MAPS_ORIGIN)
   // Use slash-path form: /dir/origin/stop1/stop2/.../dest
   return `https://www.google.com/maps/dir/${origin}/${addrs.join('/')}`
+}
+
+// ─── Call Mode — Outcome to status mapping ──────────────────────────────────
+const CM_OUTCOME_STATUS = {
+  'No answer': 'Called (no answer)',
+  'Left VM':   'Left VM',
+  'Spoke':     'Spoke',
+  'Booked':    'Meeting booked',
+  'Not a fit': 'Lost / Not a fit',
+}
+
+// ─── Call Mode ────────────────────────────────────────────────────────────────
+function CallMode({ leads, updateLead }) {
+  const [idx, setIdx]             = useState(0)
+  const [noteInput, setNoteInput] = useState('')
+  const [toastText, setToastText] = useState('')
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [queueOpen, setQueueOpen] = useState(false)
+  const [loggedIds, setLoggedIds] = useState(() => new Set())
+  const [siteState, setSiteState] = useState({}) // {leadId: 'loading'|'loaded'|'dead'}
+  const toastTimer   = useRef(null)
+  const logRef       = useRef(null)
+
+  const lead = leads[Math.min(idx, leads.length - 1)]
+
+  // Keep logRef in sync so the keyboard handler always has the latest closure
+  const logOutcome = async (outcome) => {
+    if (!lead) return
+    const isSkip = outcome === 'Skip'
+    if (!isSkip) {
+      const today = todayStr()
+      const statusVal = CM_OUTCOME_STATUS[outcome] || outcome
+      await updateLead(lead.id, 'status', statusVal)
+      await updateLead(lead.id, 'last_touch', today)
+      if (noteInput.trim()) {
+        const existing = lead.notes || ''
+        const appended = existing
+          ? `${existing}\n${today} — ${noteInput.trim()}`
+          : `${today} — ${noteInput.trim()}`
+        await updateLead(lead.id, 'notes', appended)
+      }
+      await sb.from('outreach_touchpoints').insert([{
+        lead_id: lead.id,
+        date: today,
+        channel: 'call',
+        note: noteInput.trim() || outcome,
+      }])
+      clearTimeout(toastTimer.current)
+      setToastText(`${lead.company} → ${outcome}${noteInput.trim() ? ' · note saved' : ''}`)
+      toastTimer.current = setTimeout(() => setToastText(''), 2200)
+    }
+    const newLogged = new Set(loggedIds)
+    if (!isSkip) newLogged.add(lead.id)
+    setLoggedIds(newLogged)
+    setNoteInput('')
+    setSheetOpen(false)
+    // Advance: next unlogged forward, then wrap
+    const nextFwd = leads.findIndex((l, n) => n > idx && !newLogged.has(l.id))
+    const nextAny = leads.findIndex((l) => !newLogged.has(l.id))
+    const nextIdx = nextFwd !== -1 ? nextFwd : (nextAny !== -1 ? nextAny : idx)
+    setIdx(nextIdx)
+    setTimeout(() => window.scrollTo({ top: 0 }), 0)
+  }
+  logRef.current = logOutcome
+
+  // Keyboard shortcuts — 1-5 for outcomes, space/enter for next
+  useEffect(() => {
+    const OUTCOMES = ['No answer', 'Left VM', 'Spoke', 'Booked', 'Not a fit']
+    const handler = (e) => {
+      const tag = e.target.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key >= '1' && e.key <= '5') {
+        e.preventDefault()
+        logRef.current && logRef.current(OUTCOMES[parseInt(e.key) - 1])
+      }
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault()
+        logRef.current && logRef.current('Skip')
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  // Reset site state when lead changes
+  useEffect(() => {
+    if (!lead) return
+    if (!siteState[lead.id]) {
+      setSiteState(prev => ({ ...prev, [lead.id]: 'loading' }))
+    }
+  }, [lead && lead.id])
+
+  if (!leads.length) {
+    return (
+      <div style={{ padding: '3rem 1.5rem', color: '#77746A', textAlign: 'center', background: '#F7F6F3', minHeight: '60vh', fontFamily: 'Inter,sans-serif' }}>
+        No leads match the current filters. Adjust filters above and try Call Mode again.
+      </div>
+    )
+  }
+  if (!lead) return null
+
+  const phone      = lead.owner_phone || lead.phone || ''
+  const telHref    = phone ? `tel:${phone.replace(/\D/g, '')}` : null
+  const phoneLabel = lead.owner_phone ? lead.owner_phone : lead.phone || 'No phone'
+  const phoneNote  = lead.owner_phone ? 'Tap to dial · owner cell' : lead.phone ? 'Tap to dial · office line' : ''
+  const domain     = cleanDomain(lead.website)
+  const isDead     = siteState[lead.id] === 'dead'
+  const leftCount  = leads.length - loggedIds.size
+
+  const OUTCOME_BTNS = [
+    { label: 'No answer', win: false },
+    { label: 'Left VM',   win: false },
+    { label: 'Spoke',     win: false },
+    { label: 'Booked',    win: true  },
+    { label: 'Not a fit', win: false },
+  ]
+
+  const scriptSteps = [
+    { num: 1, label: 'Front desk — first words',         text: lead.intro_line,   bullets: false, highlight: false },
+    { num: 2, label: 'When the owner picks up',          text: lead.hook,         bullets: false, highlight: false },
+    { num: 3, label: 'Why we\'re calling',               text: lead.why_calling,  bullets: false, highlight: false },
+    { num: 4, label: 'Questions to ask',                 text: lead.questions,    bullets: true,  highlight: false },
+    { num: 5, label: 'The ask — permission to stop by',  text: lead.meeting_ask,  bullets: false, highlight: true  },
+  ]
+
+  const linkBtnStyle = {
+    fontFamily: 'Inter,sans-serif',
+    fontSize: 13,
+    color: '#43423A',
+    textDecoration: 'none',
+    border: '1px solid #D3D0C7',
+    padding: '8px 12px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    minHeight: 44,
+    boxSizing: 'border-box',
+  }
+
+  return (
+    <div style={{ fontFamily: 'Inter,sans-serif', background: '#F7F6F3', color: '#17170F' }}>
+
+      {/* ── Responsive CSS ─────────────────────────────────────────────────── */}
+      <style>{`
+        .cm-top {
+          position: sticky; top: 0; z-index: 20; height: 56px;
+          display: flex; align-items: center; gap: 24px;
+          padding: 0 24px; background: #FFFFFF;
+          border-bottom: 1px solid #E4E2DB;
+        }
+        .cm-shell {
+          display: grid;
+          grid-template-columns: 264px minmax(0,1fr);
+          min-height: calc(100vh - 56px);
+        }
+        .cm-rail {
+          border-right: 1px solid #E4E2DB;
+          background: #F1EFEA;
+          padding: 24px 0 64px;
+          position: sticky;
+          top: 56px;
+          height: calc(100vh - 56px);
+          overflow-y: auto;
+          box-sizing: border-box;
+        }
+        .cm-sheet { padding: 32px 48px 140px; max-width: 1180px; }
+        .cm-idbar { display: flex; align-items: flex-start; gap: 24px; margin-bottom: 24px; }
+        .cm-cols {
+          display: grid;
+          grid-template-columns: minmax(0,1.35fr) minmax(0,1fr);
+          column-gap: 48px;
+          row-gap: 24px;
+        }
+        .cm-script  { grid-column: 1; grid-row: 1 / span 2; }
+        .cm-brief   { grid-column: 2; grid-row: 1 / span 2; border-left: 1px solid #E4E2DB; padding-left: 32px; }
+        .cm-outcome {
+          position: fixed; left: 264px; right: 0; bottom: 0; z-index: 30;
+          background: #FFFFFF; border-top: 1px solid #D3D0C7;
+          padding: 12px 48px;
+          display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+          box-shadow: 0 -4px 24px rgba(23,23,15,.05);
+        }
+        .cm-mbar   { display: none; }
+        .cm-qbtn   { display: none; }
+        .cm-scrim  { display: none; }
+        @media (max-width: 760px) {
+          .cm-shell { display: block; }
+          .cm-rail {
+            position: fixed;
+            inset: 56px 0 0 0;
+            height: auto;
+            width: 100%;
+            z-index: 25;
+            border-right: none;
+            transform: translateX(-100%);
+            transition: transform .2s ease;
+            padding-bottom: 80px;
+            top: 56px;
+          }
+          .cm-rail.cm-open { transform: none; }
+          .cm-scrim { display: block; position: fixed; inset: 0; background: rgba(23,23,15,.4); z-index: 24; }
+          .cm-sheet { padding: 16px 16px 140px; max-width: none; }
+          .cm-idbar { display: block; }
+          .cm-cols  { display: flex; flex-direction: column; gap: 24px; }
+          .cm-script  { order: 2; }
+          .cm-brief   { order: 1; border-left: none; padding-left: 0; }
+          .cm-outcome {
+            left: 0; padding: 16px;
+            padding-bottom: calc(env(safe-area-inset-bottom,0px) + 16px);
+            flex-wrap: wrap;
+            transform: translateY(100%);
+            transition: transform .2s ease;
+          }
+          .cm-outcome.cm-open { transform: none; }
+          .cm-outcome-oc { flex: 1 1 46%; min-height: 48px; }
+          .cm-outcome-note { flex: 1 1 100%; min-height: 48px; }
+          .cm-outcome-next { flex: 1 1 100%; min-height: 48px; }
+          .cm-mbar {
+            display: flex;
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 31;
+            gap: 8px; padding: 12px 16px;
+            padding-bottom: calc(env(safe-area-inset-bottom,0px) + 12px);
+            background: #FFFFFF; border-top: 1px solid #D3D0C7;
+          }
+          .cm-qbtn { display: inline-flex; }
+          .cm-dial { text-align: center !important; min-height: 64px !important; font-size: 30px !important; }
+          .cm-callbtn { margin-left: 0 !important; align-items: stretch !important; margin-top: 16px !important; }
+        }
+      `}</style>
+
+      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
+      <div className="cm-top">
+        <div style={{ fontFamily: "'Bricolage Grotesque','Inter',sans-serif", fontWeight: 800, fontSize: 15, letterSpacing: '-.01em' }}>
+          AOM. <span style={{ color: '#8A6828' }}>Call Mode</span>
+        </div>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <b style={{ fontFamily: "'Bricolage Grotesque','Inter',sans-serif", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{leftCount}</b>
+          <span style={{ fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }}>left</span>
+        </div>
+        <button
+          className="cm-qbtn"
+          onClick={() => setQueueOpen(q => !q)}
+          style={{ fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', color: '#43423A', background: 'transparent', border: '1px solid #D3D0C7', padding: '8px 12px', cursor: 'pointer', lineHeight: 1 }}
+        >
+          Queue
+        </button>
+      </div>
+
+      {/* ── Shell ───────────────────────────────────────────────────────────── */}
+      <div className="cm-shell">
+
+        {/* Queue rail */}
+        <aside className={`cm-rail${queueOpen ? ' cm-open' : ''}`}>
+          <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }}>Today's queue</span>
+            <span style={{ fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }}>{leftCount} left</span>
+          </div>
+          <button
+            onClick={() => setQueueOpen(false)}
+            style={{ display: 'block', margin: '0 16px 8px', width: 'calc(100% - 32px)', fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', color: '#43423A', background: 'transparent', border: '1px solid #D3D0C7', padding: '8px 12px', cursor: 'pointer' }}
+          >
+            Close
+          </button>
+          <div>
+            {leads.map((l, n) => {
+              const isActive  = n === idx
+              const isLogged  = loggedIds.has(l.id)
+              return (
+                <button
+                  key={l.id}
+                  aria-current={isActive ? 'true' : undefined}
+                  onClick={() => { setIdx(n); setQueueOpen(false) }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
+                    background: isActive ? '#FFFFFF' : 'transparent',
+                    border: 'none',
+                    borderLeft: `2px solid ${isActive ? '#B58A38' : 'transparent'}`,
+                    padding: '12px 16px',
+                    fontFamily: 'Inter,sans-serif',
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isLogged ? '#A5A29A' : '#17170F', display: 'block', lineHeight: 1.35, textDecoration: isLogged ? 'line-through' : 'none' }}>
+                    {l.company}
+                  </span>
+                  <span style={{ fontSize: 11, color: '#77746A', display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: isLogged ? '#A5A29A' : '#B58A38', display: 'inline-block', flexShrink: 0 }} />
+                    {l.city || ''}{l.day_route ? ` · Day ${l.day_route}` : ''}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </aside>
+
+        {/* Queue overlay scrim (mobile) */}
+        {queueOpen && <div className="cm-scrim" onClick={() => setQueueOpen(false)} />}
+
+        {/* Main sheet */}
+        <main className="cm-sheet">
+
+          {/* ID bar */}
+          <div className="cm-idbar">
+            <div>
+              <h1 style={{ fontFamily: "'Bricolage Grotesque','Inter',sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: '-.025em', lineHeight: 1.02, margin: 0 }}>
+                {lead.company}
+              </h1>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 12, color: '#77746A', fontFamily: 'Inter,sans-serif', fontSize: 13 }}>
+                {lead.need_score && (
+                  <span style={{ fontWeight: 700, fontSize: 11, lineHeight: 1, letterSpacing: '.1em', textTransform: 'uppercase', padding: '4px 8px', color: '#fff', background: needScoreColor(lead.need_score), fontFamily: 'Inter,sans-serif' }}>
+                    Need {lead.need_score}
+                  </span>
+                )}
+                {lead.trade && <span>{lead.trade}</span>}
+                {lead.trade && lead.city && <span>·</span>}
+                {lead.city && <span>{lead.city}</span>}
+                {lead.day_route && <span>· Day {lead.day_route}</span>}
+              </div>
+              {lead.contact_name && (
+                <div style={{ marginTop: 8, fontFamily: 'Inter,sans-serif', fontSize: 13, color: '#43423A', fontWeight: 600 }}>
+                  {lead.contact_name}{lead.title ? `, ${lead.title}` : ''}
+                </div>
+              )}
+            </div>
+
+            {/* Dial button */}
+            <div className="cm-callbtn" style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+              {telHref ? (
+                <a href={telHref} className="cm-dial" style={{ display: 'block', background: '#B58A38', color: '#17170F', textDecoration: 'none', fontFamily: "'Bricolage Grotesque','Inter',sans-serif", fontWeight: 800, fontSize: 30, letterSpacing: '-.015em', padding: '12px 24px', lineHeight: 1.1, whiteSpace: 'nowrap' }}>
+                  {phoneLabel}
+                </a>
+              ) : (
+                <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 13, color: '#A5A29A', fontStyle: 'italic' }}>No phone on record</div>
+              )}
+              {phoneNote && (
+                <small style={{ fontSize: 11, color: '#77746A', letterSpacing: '.1em', textTransform: 'uppercase' }}>{phoneNote}</small>
+              )}
+            </div>
+          </div>
+
+          {/* Two-column content */}
+          <div className="cm-cols">
+
+            {/* Script — left column (desktop), order:2 on mobile */}
+            <section className="cm-script">
+              {scriptSteps.map(({ num, label, text, bullets, highlight }) => {
+                if (!text) return null
+                return (
+                  <div key={num} style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,1fr)', gap: 16, marginBottom: 24 }}>
+                    <div style={{ fontFamily: "'Bricolage Grotesque','Inter',sans-serif", fontWeight: 800, fontSize: 17, color: '#8A6828', lineHeight: 1.3 }}>
+                      {num}
+                    </div>
+                    <div>
+                      <span style={{ display: 'block', marginBottom: 8, fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }}>
+                        {label}
+                      </span>
+                      {bullets ? (
+                        <ul style={{ margin: 0, paddingLeft: 16 }}>
+                          {text.split('\n').filter(Boolean).map((line, i) => (
+                            <li key={i} style={{ fontFamily: 'Inter,sans-serif', fontSize: 15, lineHeight: 1.6, color: '#43423A', marginBottom: 8 }}>
+                              {line.replace(/^[-•*]\s*/, '')}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p style={{ margin: 0, fontFamily: 'Inter,sans-serif', fontSize: 17, lineHeight: 1.62, color: '#17170F', ...(highlight ? { background: '#FBF4E4', borderLeft: '2px solid #B58A38', padding: 16 } : {}) }}>
+                          {text}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </section>
+
+            {/* Brief sidebar — right column (desktop), order:1 on mobile */}
+            <aside className="cm-brief">
+
+              {/* Their site */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, marginBottom: 8 }}>
+                  Their site right now
+                </div>
+                {!lead.website ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 128, border: '1px solid #D3D0C7', background: '#F1EFEA', color: '#77746A', fontFamily: 'Inter,sans-serif', fontSize: 13, fontStyle: 'italic', padding: '0 16px', textAlign: 'center', boxSizing: 'border-box' }}>
+                    No website on record. That is the call.
+                  </div>
+                ) : isDead ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 128, border: '1px solid #D3D0C7', background: '#F1EFEA', color: '#B03A3A', fontFamily: 'Inter,sans-serif', fontSize: 13, fontWeight: 600, padding: '0 16px', textAlign: 'center', boxSizing: 'border-box' }}>
+                    {domain} does not load at all. That is the pitch.
+                  </div>
+                ) : (
+                  <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{ display: 'block', border: '1px solid #D3D0C7', overflow: 'hidden', position: 'relative', height: 240 }}>
+                    <iframe
+                      key={lead.id}
+                      src={lead.website}
+                      title={`${lead.company} website`}
+                      style={{ width: '200%', height: 480, border: 'none', transform: 'scale(0.5)', transformOrigin: '0 0', pointerEvents: 'none', display: 'block' }}
+                      sandbox="allow-scripts allow-same-origin"
+                      onError={() => setSiteState(p => ({ ...p, [lead.id]: 'dead' }))}
+                      onLoad={() => setSiteState(p => ({ ...p, [lead.id]: 'loaded' }))}
+                      loading="lazy"
+                    />
+                  </a>
+                )}
+                {lead.website && (
+                  isDead ? (
+                    <span style={{ display: 'block', marginTop: 8, textAlign: 'center', border: '1px solid #D3D0C7', background: '#F1EFEA', color: '#77746A', fontFamily: 'Inter,sans-serif', fontWeight: 400, fontSize: 13, padding: '10px 12px', minHeight: 44, lineHeight: '20px', boxSizing: 'border-box' }}>
+                      Nothing to open. That is the call.
+                    </span>
+                  ) : (
+                    <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: 8, textAlign: 'center', border: '1px solid #B58A38', color: '#8A6828', background: '#FBF4E4', fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: 13, padding: '10px 12px', minHeight: 44, lineHeight: '20px', textDecoration: 'none', boxSizing: 'border-box' }}>
+                      Open {domain} ↗
+                    </a>
+                  )
+                )}
+              </div>
+
+              {/* Alive evidence */}
+              {lead.alive_evidence && (
+                <div style={{ background: '#F0F4EE', borderLeft: '2px solid #4A6B4A', padding: '12px 16px', marginBottom: 24 }}>
+                  <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#4A6B4A', fontWeight: 600, marginBottom: 4 }}>
+                    Proof they're open
+                  </div>
+                  <p style={{ margin: 0, fontFamily: 'Inter,sans-serif', fontSize: 13, lineHeight: 1.6, color: '#43423A' }}>
+                    {lead.alive_evidence}
+                  </p>
+                </div>
+              )}
+
+              {/* Site issue */}
+              {lead.site_issue && (
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, marginBottom: 8 }}>
+                    The gap we found
+                  </div>
+                  <p style={{ margin: 0, fontFamily: 'Inter,sans-serif', fontSize: 13, lineHeight: 1.6, color: '#43423A' }}>
+                    {lead.site_issue}
+                  </p>
+                </div>
+              )}
+
+              {/* Proof points */}
+              {lead.proof_points && (
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, marginBottom: 8 }}>
+                    If they push back
+                  </div>
+                  {lead.proof_points.split('\n').filter(Boolean).map((pt, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, fontFamily: 'Inter,sans-serif', fontSize: 13, lineHeight: 1.55, color: '#43423A', marginBottom: 4 }}>
+                      <span style={{ color: '#B58A38', flexShrink: 0 }}>•</span>
+                      <span>{pt.replace(/^[-•*]\s*/, '')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Open before you dial */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, marginBottom: 8 }}>
+                  Open before you dial
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <a href={hasRealLinkedIn(lead) ? lead.linkedin : buildLinkedInURL(lead)} target="_blank" rel="noopener noreferrer" style={linkBtnStyle}>
+                    {hasRealLinkedIn(lead) ? 'LinkedIn ↗' : 'Find on LinkedIn ↗'}
+                  </a>
+                  {lead.street_address && lead.city && (
+                    <a href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(MAPS_ORIGIN)}&destination=${encodeURIComponent(`${lead.street_address}, ${lead.city}, AZ`)}&travelmode=driving`} target="_blank" rel="noopener noreferrer" style={linkBtnStyle}>
+                      Directions ↗
+                    </a>
+                  )}
+                  {(lead.email || lead.owner_email) && (
+                    <a href={`mailto:${lead.email || lead.owner_email}`} style={linkBtnStyle}>
+                      Email {(lead.contact_name || '').split(' ')[0] || 'them'}
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Last touch */}
+              <div>
+                <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, marginBottom: 8 }}>
+                  Last touch
+                </div>
+                <dl style={{ margin: 0 }}>
+                  {[
+                    ['Status', loggedIds.has(lead.id) ? '✓ Logged this session' : (lead.status || 'Not contacted')],
+                    ['Assigned to', lead.assigned_to || '—'],
+                    ['Last touch', lead.last_touch || 'Never'],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderBottom: '1px solid #E4E2DB', fontFamily: 'Inter,sans-serif', fontSize: 13 }}>
+                      <dt style={{ color: '#77746A', margin: 0 }}>{k}</dt>
+                      <dd style={{ margin: 0, color: '#17170F', textAlign: 'right', fontWeight: loggedIds.has(lead.id) && k === 'Status' ? 600 : 400 }}>{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+            </aside>
+          </div>
+        </main>
+      </div>
+
+      {/* ── Outcome bar (desktop pinned, mobile bottom sheet) ──────────────── */}
+      <div className={`cm-outcome${sheetOpen ? ' cm-open' : ''}`}>
+        <span style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, flexShrink: 0, marginRight: 8, width: '100%' }}>
+          How did it go
+        </span>
+        {OUTCOME_BTNS.map(({ label, win }, ki) => (
+          <button
+            key={label}
+            className="cm-outcome-oc"
+            onClick={() => logOutcome(label)}
+            title={`${label} (key: ${ki + 1})`}
+            style={{ fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: 13, lineHeight: 1, letterSpacing: '.04em', padding: '12px 16px', cursor: 'pointer', background: win ? '#4A6B4A' : '#FFFFFF', border: win ? '1px solid #4A6B4A' : '1px solid #D3D0C7', color: win ? '#fff' : '#43423A', whiteSpace: 'nowrap', minHeight: 44 }}
+          >
+            {ki + 1}. {label}
+          </button>
+        ))}
+        <input
+          className="cm-outcome-note"
+          placeholder="One line of notes (optional)"
+          value={noteInput}
+          onChange={e => setNoteInput(e.target.value)}
+          style={{ flex: 1, minWidth: 120, background: '#F1EFEA', border: '1px solid #E4E2DB', padding: '12px', fontFamily: 'Inter,sans-serif', fontWeight: 400, fontSize: 13, color: '#17170F', outline: 'none', minHeight: 44 }}
+        />
+        <button
+          className="cm-outcome-next"
+          onClick={() => logOutcome('Skip')}
+          style={{ background: '#17170F', color: '#F7F6F3', border: '1px solid #17170F', fontFamily: 'Inter,sans-serif', fontWeight: 700, fontSize: 13, lineHeight: 1, letterSpacing: '.08em', textTransform: 'uppercase', padding: '12px 24px', cursor: 'pointer', whiteSpace: 'nowrap', minHeight: 44 }}
+        >
+          Next lead → <span style={{ fontWeight: 400, letterSpacing: 0, textTransform: 'none', fontSize: 11 }}>Space</span>
+        </button>
+      </div>
+
+      {/* ── Mobile thumb bar ────────────────────────────────────────────────── */}
+      <div className="cm-mbar">
+        <button onClick={() => setSheetOpen(true)} style={{ flex: 1, background: '#B58A38', border: '1px solid #B58A38', color: '#17170F', fontFamily: 'Inter,sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '.04em', padding: 0, minHeight: 48, cursor: 'pointer' }}>
+          Log this call
+        </button>
+        <button onClick={() => logOutcome('Skip')} style={{ flex: '0 0 34%', background: '#FFFFFF', border: '1px solid #D3D0C7', color: '#43423A', fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: 14, padding: 0, minHeight: 48, cursor: 'pointer' }}>
+          Next →
+        </button>
+      </div>
+
+      {/* Mobile outcome sheet scrim */}
+      {sheetOpen && <div onClick={() => setSheetOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(23,23,15,.4)', zIndex: 29 }} />}
+
+      {/* Toast */}
+      {toastText && (
+        <div style={{ position: 'fixed', bottom: 88, left: '50%', transform: 'translateX(-50%)', background: '#17170F', color: '#F7F6F3', padding: '12px 24px', fontFamily: 'Inter,sans-serif', fontSize: 13, zIndex: 40, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+          {toastText}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── Password Gate ────────────────────────────────────────────────────────────
@@ -1930,7 +2485,7 @@ export default function OutreachTracker() {
         borderBottom: '1px solid #131313',
         background: '#050505',
       }}>
-        {['table', 'cards'].map(v => (
+        {['table', 'cards', 'call'].map(v => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -1947,7 +2502,7 @@ export default function OutreachTracker() {
               fontWeight: view === v ? 700 : 400,
             }}
           >
-            {v === 'table' ? 'Spreadsheet' : 'Cards'}
+            {v === 'table' ? 'Spreadsheet' : v === 'cards' ? 'Cards' : '📞 Call Mode'}
           </button>
         ))}
       </div>
@@ -2076,6 +2631,13 @@ export default function OutreachTracker() {
           )}
         </div>
       ))}
+
+      {!loading && !error && view === 'call' && (
+        <CallMode
+          leads={filtered}
+          updateLead={updateLead}
+        />
+      )}
 
       {/* Import note at bottom */}
       {!loading && !error && (
