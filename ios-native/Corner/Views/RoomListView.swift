@@ -469,9 +469,11 @@ private struct RoomRowCard: View {
     /// Hero is "active" only when the room genuinely moved in the last hour — otherwise the
     /// status word + progress bar would be a lie, so we show its timestamp instead.
     private var heroActive: Bool { isHero && entry.hasActivity && (Date().timeIntervalSince1970 * 1000 - entry.ts) < 3_600_000 }
-    // Unread is "an agent message newer than the viewer's last message" (contract §7).
-    // Native has no per-room read feed yet, so this is honestly never set (see mission blocker).
-    private var unread: Bool { false }
+    // Unread (contract §7): the room has activity (ts > 0) and its last message
+    // is newer than when this device last opened it. ReadStateStore persists a
+    // per-room epoch-ms in UserDefaults; ChatView.onAppear stamps it each visit.
+    @ObservedObject private var readStore = ReadStateStore.shared
+    private var unread: Bool { entry.ts > 0 && entry.ts > readStore.lastRead(for: room.roomID) }
 
     var body: some View {
         Group { if isHero { hero } else { quiet } }

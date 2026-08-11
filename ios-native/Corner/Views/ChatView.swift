@@ -211,8 +211,21 @@ struct ChatView: View {
                 // room rather than only when the review screen is opened.
                 Task { await review.load() }
                 Task { await model.loadModelPreference() }
+                // Stamp the per-room read time so the home dot clears immediately.
+                ReadStateStore.shared.markRead(
+                    roomID: model.room.roomID,
+                    ts: Date().timeIntervalSince1970 * 1000
+                )
             }
             .onDisappear { model.stop() }
+            // Re-stamp when new messages arrive while the room is open — keeps the dot
+            // clear if a push notification arrived while the user was already in here.
+            .onChange(of: model.rows.count) { _, _ in
+                ReadStateStore.shared.markRead(
+                    roomID: model.room.roomID,
+                    ts: Date().timeIntervalSince1970 * 1000
+                )
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { model.handleForeground() }
             }

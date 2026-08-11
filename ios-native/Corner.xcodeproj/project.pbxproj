@@ -36,6 +36,7 @@
 		64C84398FCE2AEEB0B12C3C2 /* RenderGalleryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 602A96887BE24D9CBBF02832 /* RenderGalleryTests.swift */; };
 		6F95B95DBC7CD27B3132F7D7 /* ASCIIBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE25EB01A73281103C7D018 /* ASCIIBackground.swift */; };
 		6F9C32B58252C90AD5D3FB12 /* OrganizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBDCCA9EDDA20D17DD9F490 /* OrganizeTests.swift */; };
+		6FC0392BBA570C347E45317C /* ReadStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3BE3F5BD4EDB230E204F21 /* ReadStateStore.swift */; };
 		74493D719E1C7DFEEB61A489 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3984DE7AC39AFF032327719 /* AppRouter.swift */; };
 		7924B8A0025880C33F1527B8 /* HankenGrotesk-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */; };
 		7FDC7B1CC07EF4CD49D61305 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 93F4B6205055988397D45943 /* PrivacyInfo.xcprivacy */; };
@@ -125,6 +126,7 @@
 		9DBDCCA9EDDA20D17DD9F490 /* OrganizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizeTests.swift; sourceTree = "<group>"; };
 		A5CFBB6863CA0F004E7A1BF1 /* BlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockView.swift; sourceTree = "<group>"; };
 		A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "HankenGrotesk-VF.ttf"; sourceTree = "<group>"; };
+		AA3BE3F5BD4EDB230E204F21 /* ReadStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadStateStore.swift; sourceTree = "<group>"; };
 		ACE25EB01A73281103C7D018 /* ASCIIBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASCIIBackground.swift; sourceTree = "<group>"; };
 		ADE9EA2C183A1DE148D6AC9D /* Attachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Attachment.swift; sourceTree = "<group>"; };
 		B367859B24AAEF52EBFEE774 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
@@ -226,6 +228,7 @@
 				0DFC308C0F588971B5149FAA /* MessageTransport.swift */,
 				05A3070E25A550ED51EC0D6C /* OrganizeStore.swift */,
 				131E1F3ED0F460574DE878C8 /* PushService.swift */,
+				AA3BE3F5BD4EDB230E204F21 /* ReadStateStore.swift */,
 				5A37CB7AFC65227A32353A1D /* ReviewStore.swift */,
 				C5AB4FE9FD2CF215F36AD149 /* RoomFilesStore.swift */,
 				81D8FE03F68E468709423ABF /* RoomStore.swift */,
@@ -438,6 +441,7 @@
 				F42C78E0F08A0C382DEED0EC /* OrganizeView.swift in Sources */,
 				B04855D1AA8063F92F8C5720 /* PreviewHarness.swift in Sources */,
 				A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */,
+				6FC0392BBA570C347E45317C /* ReadStateStore.swift in Sources */,
 				D1FFF5E4326042FDCC1D1C95 /* ReviewDecisionSheet.swift in Sources */,
 				2C1245D09A52FF6A8D76D6D8 /* ReviewItem.swift in Sources */,
 				8DAE8E6F61F28E73BEA4063D /* ReviewQueueView.swift in Sources */,
