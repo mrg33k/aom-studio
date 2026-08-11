@@ -230,8 +230,23 @@ const CSS = `
 `;
 
 export default function S1Hero({ onOpenBrief }) {
+  void onOpenBrief; // the hero button is not the contact button — see below
+
+  // v2 (2026-08-11). The hero button reads SEE WHAT A MONTH LOOKS LIKE and used to open the
+  // contact form, which is a bait: it asks for the reader's name before showing him anything.
+  // It now scrolls to the month, which as of v2 actually shows a month. The contact button
+  // lives in the nav and under the offer, where someone who has decided can find it.
   const openBrief = () => {
-    if (typeof onOpenBrief === 'function') onOpenBrief();
+    const el = typeof document !== 'undefined' && document.getElementById('how-it-runs');
+    if (!el) {
+      if (typeof onOpenBrief === 'function') onOpenBrief();
+      return;
+    }
+    el.scrollIntoView({
+      behavior: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'auto' : 'smooth',
+      block: 'start',
+    });
   };
 
   return (

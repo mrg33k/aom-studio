@@ -45,9 +45,13 @@ const S7_CSS = `
    container's CONTENT box, so padding on the row would leave a gap above and below every
    border-left and the bronze verticals would render as a ladder of ticks instead of the
    reference's two continuous rules. Padding on the cell makes the rule span the whole row. */
+/* v2: a FOURTH column, WHO DOES IT HERE. The left column names five people you would have to
+   hire, which provokes "so who is my marketing manager?" — and v1 never answered it. Reading
+   US seven times straight down the right edge assembles the department the table already made
+   the reader imagine. The repetition IS the argument, so it is set as a stamp, not a sentence. */
 .s7-row {
   display: grid;
-  grid-template-columns: 1fr 23% 20.5%;
+  grid-template-columns: 1fr 17% 17% 16%;
   align-items: stretch;
   border-bottom: 1px solid ${C.bronze};
 }
@@ -70,6 +74,21 @@ const S7_CSS = `
   margin-right: calc(-1 * ${FIG_TRACK});
 }
 
+/* The stamp column. Left-aligned so the repeated word forms a clean vertical edge the eye
+   runs down; right-aligning it would ragged-edge on "OURS, BOUGHT". */
+.s7-c4 {
+  border-left: 1px solid ${C.bronze};
+  padding-left: ${SP[5]}px;
+  padding-right: ${SP[2]}px;
+  color: ${C.bronze};
+  font-weight: 700;
+  font-size: ${T.lbl};
+  letter-spacing: ${LS.label};
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+}
+
 .s7-hdr .s7-cell {
   font-size: ${T.lbl};
   letter-spacing: ${LS.label};
@@ -82,7 +101,10 @@ const S7_CSS = `
   color: ${C.bronze};
   margin-right: calc(-1 * ${LS.label});
 }
+.s7-hdr .s7-c4 { border-left: none; align-items: flex-start; }
 
+/* The totals rows carry no stamp, so the fourth column's rule would box an empty cell. */
+.s7-tot .s7-c4 { border-left: none; }
 .s7-lastrow { border-bottom: none; }
 .s7-thick { height: 2px; background: ${C.onBone}; }
 
@@ -137,8 +159,10 @@ const S7_CSS = `
   .s7-table { margin-top: ${SP[6]}px; }
   /* No vertical rules on the phone, so the padding goes back on the row — otherwise the
      two-line stack would be padded twice, once per grid row. */
+  /* Three columns on the phone: the two figures stay together on one line and the stamp
+     rides the right edge of that same line, so no cell ever orphans from its label. */
   .s7-row {
-    grid-template-columns: 1.3fr 1fr;
+    grid-template-columns: 1fr 1fr 0.85fr;
     row-gap: ${SP[1]}px;
     padding-top: ${SP[3]}px;
     padding-bottom: ${SP[2]}px;
@@ -164,8 +188,18 @@ const S7_CSS = `
     line-height: ${LH.head};
     letter-spacing: ${LS.body};
   }
+  .s7-c4 {
+    border-left: none;
+    padding-left: 0;
+    padding-right: 0;
+    justify-content: flex-end;
+    text-align: right;
+  }
   .s7-hdr { border-bottom: none; padding-bottom: ${SP[3]}px; }
   .s7-hdr .s7-c2, .s7-hdr .s7-c3 { font-size: ${T.lbl}; letter-spacing: ${LS.label}; margin-right: 0; }
+  /* The header's fourth label is long; on the phone the stamps read on their own. */
+  .s7-hdr .s7-c4 { display: none; }
+  .s7-tot .s7-c4, .s7-ours .s7-c4 { display: none; }
   .s7-thick { background: ${C.bronze}; }
   .s7-tot .s7-c2, .s7-tot .s7-c3 {
     font-family: ${F.mono};
@@ -190,7 +224,7 @@ const S7_CSS = `
 export default function S7Math({ onOpenBrief }) {
   void onOpenBrief; // this section carries no call to action — the ledger is the argument.
 
-  const [headItem, headMonth, headYear] = S7_MATH.head;
+  const [headItem, headMonth, headYear, headWho] = S7_MATH.head;
   const [theirsLabel, theirsMonth, theirsYear] = S7_MATH.totalTheirs;
   const [oursLabel, oursMonth, oursYear] = S7_MATH.totalOurs;
   const lastIndex = S7_MATH.rows.length - 1;
@@ -224,13 +258,15 @@ export default function S7Math({ onOpenBrief }) {
             <div className="s7-cell s7-c1">{headItem}</div>
             <div className="s7-cell s7-c2">{headMonth}</div>
             <div className="s7-cell s7-c3">{headYear}</div>
+            <div className="s7-cell s7-c4">{headWho}</div>
           </div>
 
-          {S7_MATH.rows.map(([item, month, year], i) => (
+          {S7_MATH.rows.map(([item, month, year, who], i) => (
             <div className={i === lastIndex ? 's7-row s7-lastrow' : 's7-row'} key={item}>
               <div className="s7-cell s7-c1">{item}</div>
               <div className="s7-cell s7-c2">{month}</div>
               <div className="s7-cell s7-c3">{year}</div>
+              <div className="s7-cell s7-c4">{who}</div>
             </div>
           ))}
         </Stagger>
@@ -241,6 +277,7 @@ export default function S7Math({ onOpenBrief }) {
             <div className="s7-cell s7-c1">{theirsLabel}</div>
             <div className="s7-cell s7-c2">{theirsMonth}</div>
             <div className="s7-cell s7-c3">{theirsYear}</div>
+            <div className="s7-cell s7-c4" aria-hidden="true" />
           </div>
         </Reveal>
 
@@ -249,6 +286,7 @@ export default function S7Math({ onOpenBrief }) {
             <div className="s7-cell s7-c1">{oursLabel}</div>
             <div className="s7-cell s7-c2">{oursMonth}</div>
             <div className="s7-cell s7-c3">{oursYear}</div>
+            <div className="s7-cell s7-c4" aria-hidden="true" />
           </div>
         </Reveal>
       </div>

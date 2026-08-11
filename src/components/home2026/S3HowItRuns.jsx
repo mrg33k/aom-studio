@@ -1,36 +1,45 @@
-// S3 — THE FIVE-STATION SPINE. Bone paper.
-// Desktop: five stations on one horizontal bronze spine that begins and ends with the
-// content measure, three evidence photos clipped in above it.
-// Mobile: the spine rotates vertical, runs the full height of the section from above the
-// eyebrow to below station 05, and the reader descends it.
+// S3 — THE MONTH. Bone paper.
 //
-// MOTION — the story move of the page. The spine DRAWS itself (DrawLine, axis x on desktop,
-// axis y on the phone) and each station lights as the line reaches it: number, then title,
-// then body. Station 01 has resolved before station 05 starts. The line is the month passing.
+// v2 (2026-08-11). This section used to be five milestones under a headline promising thirty
+// days, which left days 2-29 blank and made the whole page read as a production schedule
+// rather than a service. It is now the month itself: four weeks by three rows.
+//
+// The third row, YOU DO, is why the section exists. A contractor's real fear about hiring
+// anyone is not the money, it is how much of his own time it eats — and "Nothing." printed
+// twice down that row is the strongest sentence on this page.
+//
+// Desktop: a matrix. A left rail carries the three row labels ONCE (twelve repeated labels
+// would be noise), four week columns hang off it, and hairlines run the full width so the
+// rows read across. The spine draws above it.
+// Mobile: the spine rotates vertical and the reader descends it week by week, each week
+// carrying its own three labelled lines.
+//
+// MOTION — unchanged in kind. The spine DRAWS itself (the line IS the month) and each week
+// lights as the line reaches it. Nothing else moves. See motion.jsx for the rule.
 import React, { useState, useEffect } from 'react';
 import {
   C, F, SP, T, LS, LH, BP,
-  Section, Eyebrow, Display, Body,
+  Section, Eyebrow, Display, Body, Rule,
 } from './tokens';
 import { S3_HOW } from './copy';
 import { DrawLine, Reveal, DUR } from './motion';
 
-// Evidence photographs clip into the spine above stations 01, 02 and 04.
+// Evidence photographs clip into the spine above weeks one, two and four.
 const EVIDENCE = {
   0: '/home2026/evidence-01.jpg',
   1: '/home2026/evidence-02.jpg',
   3: '/home2026/evidence-03.jpg',
 };
-// The one photograph that survives the portrait re-composition, full bleed after station 02.
-const MOBILE_EVIDENCE_STATION = 1;
+// The one photograph that survives the portrait re-composition, full bleed after week two.
+const MOBILE_EVIDENCE_WEEK = 1;
 
-// Timing. The desktop spine draws in DUR.draw (1400ms) and the five stations ride it, one
-// fifth of the draw apart, so 01 has fully resolved (0 + 2*PART_STEP + DUR.quick = 560ms)
-// long before 05 begins (1120ms). On the phone the reader supplies the travel by scrolling,
-// so the per-station gap is short — a stall would be worse than no cascade at all.
-const STATION_STEP = DUR.draw / 5;   // 280ms
-const MOBILE_STATION_STEP = 120;
-const PART_STEP = 90;                // number -> title -> body inside one station
+// Timing. The desktop spine draws in DUR.draw (1400ms) and the four weeks ride it, a quarter
+// of the draw apart, so week one has fully resolved before week four begins. On the phone the
+// reader supplies the travel by scrolling, so the per-week gap is short — a stall would be
+// worse than no cascade at all.
+const WEEK_STEP = DUR.draw / 4;      // 350ms
+const MOBILE_WEEK_STEP = 120;
+const PART_STEP = 90;                // label -> we -> get -> you inside one week
 
 // The headline is ONE frozen string. Desktop sets it on one line, exactly as the reference
 // does. Portrait breaks it after the first sentence — a HAND-PLACED break, not the browser's.
@@ -40,6 +49,8 @@ const H2_CLAUSES = S3_HOW.h2.split('. ');
 const H2_LINES = H2_CLAUSES.map((clause, i) => (
   i < H2_CLAUSES.length - 1 ? `${clause}. ` : clause
 ));
+
+const ROW_KEYS = ['we', 'get', 'you'];
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -66,8 +77,45 @@ const SCOPED_CSS = `
 .s3-corner-tr { top: -${SP[2]}px; right: -${SP[2]}px; border-top-width: 2px; border-right-width: 2px; }
 .s3-corner-bl { bottom: -${SP[2]}px; left: -${SP[2]}px; border-bottom-width: 2px; border-left-width: 2px; }
 .s3-corner-br { bottom: -${SP[2]}px; right: -${SP[2]}px; border-bottom-width: 2px; border-right-width: 2px; }
-.s3-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: ${SP[6]}px; }
-@media (max-width: 1080px) { .s3-grid { gap: ${SP[4]}px; } }
+
+/* The rail column is fixed so the three row labels never reflow; the four weeks share the
+   rest equally. Both grids below use the SAME template, which is what keeps the evidence
+   photographs sitting over their own week. */
+.s3-grid { display: grid; grid-template-columns: 148px repeat(4, 1fr); gap: ${SP[6]}px; }
+@media (max-width: 1080px) { .s3-grid { grid-template-columns: 116px repeat(4, 1fr); gap: ${SP[4]}px; } }
+
+.s3-rowlabel {
+  font-family: ${F.mono};
+  font-size: ${T.lbl};
+  letter-spacing: ${LS.label};
+  text-transform: uppercase;
+  color: ${C.bronze};
+  padding-top: ${SP[4]}px;
+}
+.s3-cell { padding-top: ${SP[4]}px; padding-bottom: ${SP[5]}px; }
+
+/* YOU DO is the answer to the reader's real question, so it is set in the display face at
+   sub-display size rather than as another paragraph. "Nothing." has to land. */
+.s3-youdo {
+  font-family: ${F.display};
+  font-weight: 400;
+  /* Held just under T.d4. At d4 the week-four line ran to three deep lines and outweighed the
+     two NOTHINGs, which inverts the whole point of the row. */
+  font-size: clamp(18px, 1.7vw, 25px);
+  line-height: ${LH.head};
+  letter-spacing: ${LS.display};
+  text-transform: uppercase;
+  color: ${C.onBone};
+  margin: 0;
+}
+.s3-standing {
+  font-family: ${F.mono};
+  font-size: ${T.lbl};
+  letter-spacing: ${LS.label};
+  text-transform: uppercase;
+  color: ${C.bronze};
+  margin: 0;
+}
 `;
 
 function EvidenceFrame({ src, alt }) {
@@ -89,15 +137,16 @@ function EvidenceFrame({ src, alt }) {
   );
 }
 
-function StationNumber({ children, size }) {
+function WeekLabel({ children, size = T.d4 }) {
   return (
     <div
       style={{
         fontFamily: F.display,
         fontWeight: 400,
         fontSize: size,
-        lineHeight: LH.display,
+        lineHeight: LH.head,
         letterSpacing: LS.display,
+        textTransform: 'uppercase',
         color: C.bronze,
       }}
     >
@@ -108,7 +157,7 @@ function StationNumber({ children, size }) {
 
 function SectionHead({ split }) {
   return (
-    <div style={{ paddingLeft: split ? SP[4] : 0 }}>
+    <div>
       <Eyebrow tone="bone">{S3_HOW.eyebrow}</Eyebrow>
       <Display as="h2" size={T.d2} style={{ color: C.onBone, lineHeight: LH.display }}>
         {split
@@ -121,8 +170,10 @@ function SectionHead({ split }) {
   );
 }
 
+// The spine plus the three evidence photographs. Shares the matrix template so a photograph
+// always sits over the week it belongs to.
 function DesktopSpine() {
-  const { stations } = S3_HOW;
+  const { weeks } = S3_HOW;
   return (
     <div style={{ position: 'relative', marginTop: SP[8] }}>
       {/* THE SPINE. It begins and ends with the content measure — never the viewport. */}
@@ -159,8 +210,9 @@ function DesktopSpine() {
       </div>
 
       <div className="s3-grid" style={{ alignItems: 'stretch' }}>
-        {stations.map((st, i) => (
-          <div key={st.n} style={{ display: 'flex' }}>
+        <div />
+        {weeks.map((wk, i) => (
+          <div key={wk.n} style={{ display: 'flex' }}>
             {EVIDENCE[i] ? (
               <div
                 style={{
@@ -171,10 +223,10 @@ function DesktopSpine() {
                   maxWidth: 184,
                 }}
               >
-                <EvidenceFrame src={EVIDENCE[i]} alt={st.title} />
-                {/* the drop connector belongs to the station, so it lights with it */}
+                <EvidenceFrame src={EVIDENCE[i]} alt={wk.n} />
+                {/* the drop connector belongs to the week, so it lights with it */}
                 <Reveal
-                  delay={i * STATION_STEP}
+                  delay={i * WEEK_STEP}
                   y={0}
                   duration={DUR.base}
                   threshold={0.05}
@@ -212,44 +264,79 @@ function DesktopSpine() {
   );
 }
 
-function DesktopStations() {
-  const { stations } = S3_HOW;
+// The matrix. Rendered ROW BY ROW into one grid so a hairline can run the full measure and
+// the three rows read across all four weeks. Rendering week-by-week would put each week in
+// its own column stack and the rows would drift out of line the moment one cell wrapped.
+function DesktopMatrix() {
+  const { weeks, rowLabels } = S3_HOW;
   return (
-    <div className="s3-grid" style={{ marginTop: SP[6] }}>
-      {stations.map((st, i) => {
-        const base = i * STATION_STEP;
-        return (
-          <div key={st.n}>
-            <Reveal delay={base} y={10} duration={DUR.quick} threshold={0.05}>
-              <StationNumber size={T.d3}>{st.n}</StationNumber>
-            </Reveal>
-            <Reveal
-              delay={base + PART_STEP}
-              y={10}
-              duration={DUR.quick}
-              threshold={0.05}
-              style={{ marginTop: SP[4] }}
-            >
-              <Display as="h3" size={T.d4} style={{ color: C.onBone }}>{st.title}</Display>
-            </Reveal>
-            <Reveal
-              delay={base + PART_STEP * 2}
-              y={10}
-              duration={DUR.quick}
-              threshold={0.05}
-              style={{ marginTop: SP[5] }}
-            >
-              <Body tone="bone">{st.body}</Body>
-            </Reveal>
+    <div style={{ marginTop: SP[6] }}>
+      {/* week header row */}
+      <div className="s3-grid">
+        <div />
+        {weeks.map((wk, i) => (
+          <Reveal key={wk.n} delay={i * WEEK_STEP} y={10} duration={DUR.quick} threshold={0.05}>
+            <WeekLabel>{wk.n}</WeekLabel>
+          </Reveal>
+        ))}
+      </div>
+
+      {ROW_KEYS.map((key, r) => (
+        <React.Fragment key={key}>
+          <Rule tone="bone" style={{ marginTop: SP[4] }} />
+          <div className="s3-grid">
+            <div className="s3-rowlabel">{rowLabels[key]}</div>
+            {weeks.map((wk, i) => (
+              <Reveal
+                key={wk.n}
+                delay={i * WEEK_STEP + (r + 1) * PART_STEP}
+                y={10}
+                duration={DUR.quick}
+                threshold={0.05}
+                className="s3-cell"
+              >
+                {key === 'you'
+                  ? <p className="s3-youdo">{wk[key]}</p>
+                  : <Body tone="bone">{wk[key]}</Body>}
+              </Reveal>
+            ))}
           </div>
-        );
-      })}
+        </React.Fragment>
+      ))}
+
+      <Rule tone="bone" />
+      <div className="s3-grid" style={{ marginTop: SP[5] }}>
+        <div />
+        <p className="s3-standing" style={{ gridColumn: '2 / -1' }}>{S3_HOW.standing}</p>
+      </div>
     </div>
   );
 }
 
+// The closer. This sentence used to be question six of six at the bottom of the page — the
+// warmest line we own, wasted. It belongs here, under the month it describes.
+function Closer({ isMobile }) {
+  return (
+    // SP[7] not SP[9]: at 72 the standing line and the closer were separated by a dead cream
+    // band, which is the same empty-band note this page has already been pulled up on twice.
+    <Reveal delay={120} threshold={0.2} style={{ marginTop: isMobile ? SP[6] : SP[7] }}>
+      <div style={{ borderTop: `1px solid ${C.bronze}`, paddingTop: isMobile ? SP[5] : SP[6] }}>
+        {/* Subordinate to the section headline on purpose. At T.d3 it read as a second h2 and
+            the two display blocks fought; the closer is a reassurance, not an argument. */}
+        <Display
+          as="p"
+          size={isMobile ? T.b1 : T.d4}
+          style={{ color: C.onBone, maxWidth: isMobile ? '100%' : '62%' }}
+        >
+          {S3_HOW.closer}
+        </Display>
+      </div>
+    </Reveal>
+  );
+}
+
 function MobileFlow() {
-  const { stations } = S3_HOW;
+  const { weeks, rowLabels } = S3_HOW;
   return (
     <div style={{ position: 'relative' }}>
       {/* the spine, rotated vertical — it starts above the eyebrow and descends the section */}
@@ -279,12 +366,14 @@ function MobileFlow() {
         }}
       />
 
-      <SectionHead split />
+      <div style={{ paddingLeft: SP[7] }}>
+        <SectionHead split />
+      </div>
 
-      {stations.map((st, i) => {
-        const base = i * MOBILE_STATION_STEP;
+      {weeks.map((wk, i) => {
+        const base = i * MOBILE_WEEK_STEP;
         return (
-          <React.Fragment key={st.n}>
+          <React.Fragment key={wk.n}>
             <div
               style={{
                 position: 'relative',
@@ -293,6 +382,7 @@ function MobileFlow() {
                 zIndex: 2,
               }}
             >
+              {/* the node and its tick on the spine */}
               <Reveal
                 delay={base}
                 y={0}
@@ -322,32 +412,31 @@ function MobileFlow() {
                   background: C.bronze,
                 }}
               />
+
               <Reveal delay={base} y={10} duration={DUR.quick} threshold={0.05}>
-                <StationNumber size={T.d4}>{st.n}</StationNumber>
+                <WeekLabel size={T.d3}>{wk.n}</WeekLabel>
               </Reveal>
-              <Reveal
-                delay={base + PART_STEP}
-                y={10}
-                duration={DUR.quick}
-                threshold={0.05}
-                style={{ marginTop: SP[1] }}
-              >
-                <Display as="h3" size={T.d3} style={{ color: C.onBone, lineHeight: LH.display }}>
-                  {st.title}
-                </Display>
-              </Reveal>
-              <Reveal
-                delay={base + PART_STEP * 2}
-                y={10}
-                duration={DUR.quick}
-                threshold={0.05}
-                style={{ marginTop: SP[2] }}
-              >
-                <Body tone="bone">{st.body}</Body>
-              </Reveal>
+
+              {ROW_KEYS.map((key, r) => (
+                <Reveal
+                  key={key}
+                  delay={base + (r + 1) * PART_STEP}
+                  y={10}
+                  duration={DUR.quick}
+                  threshold={0.05}
+                  style={{ marginTop: r === 0 ? SP[4] : SP[4] }}
+                >
+                  <div className="s3-rowlabel" style={{ paddingTop: 0, marginBottom: SP[1] }}>
+                    {rowLabels[key]}
+                  </div>
+                  {key === 'you'
+                    ? <p className="s3-youdo">{wk[key]}</p>
+                    : <Body tone="bone">{wk[key]}</Body>}
+                </Reveal>
+              ))}
             </div>
 
-            {i === MOBILE_EVIDENCE_STATION ? (
+            {i === MOBILE_EVIDENCE_WEEK ? (
               <div
                 style={{
                   position: 'relative',
@@ -355,24 +444,31 @@ function MobileFlow() {
                   transform: 'translateX(-50%)',
                   width: '100vw',
                   aspectRatio: '16 / 5',
-                  marginTop: SP[4],
+                  marginTop: SP[5],
                   background: C.boneSoft,
                   zIndex: 1,
                 }}
               >
-                <img className="s3-img" src={EVIDENCE[i]} alt={st.title} />
+                <img className="s3-img" src={EVIDENCE[i]} alt={wk.n} />
               </div>
             ) : null}
           </React.Fragment>
         );
       })}
+
+      <div style={{ paddingLeft: SP[7] }}>
+        <Reveal delay={80} threshold={0.2} style={{ marginTop: SP[6] }}>
+          <p className="s3-standing">{S3_HOW.standing}</p>
+        </Reveal>
+        <Closer isMobile />
+      </div>
     </div>
   );
 }
 
 export default function S3HowItRuns({ onOpenBrief }) {
   const isMobile = useIsMobile();
-  void onOpenBrief; // this section carries no call to action
+  void onOpenBrief; // this section carries no call to action — the month is the argument
 
   return (
     <Section
@@ -394,7 +490,8 @@ export default function S3HowItRuns({ onOpenBrief }) {
           <React.Fragment>
             <SectionHead />
             <DesktopSpine />
-            <DesktopStations />
+            <DesktopMatrix />
+            <Closer isMobile={false} />
           </React.Fragment>
         )}
       </div>

@@ -18,7 +18,9 @@ const H2_DESKTOP = 'clamp(38px, 5.1vw, 73px)';
 // Hand-placed line breaks. The reference breaks every desktop answer to exactly two lines, which
 // is also what makes the hairlines align across the two columns. Indices are word counts, not
 // strings — every visible character still comes from copy.js verbatim.
-const ANSWER_BREAK = [7, 10, 10, 10, 10, 9];
+// Index 5 is the v2 replacement answer ("How much of my time does this take?"), which is
+// longer than the line it replaced — hence 12 rather than 9.
+const ANSWER_BREAK = [7, 10, 10, 10, 10, 12];
 const H2_BREAK_MOBILE = 5;
 
 // Insert a newline after `wordIndex` words. Rendered with white-space: pre-line, so the text
