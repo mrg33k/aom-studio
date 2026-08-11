@@ -39,6 +39,8 @@
 		A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131E1F3ED0F460574DE878C8 /* PushService.swift */; };
 		A37A798B47F30125C1DF2AC4 /* FilesAndReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0DB974AD71B1EFB7D9FEB9E /* FilesAndReviewTests.swift */; };
 		A8CE144E7B95956A1649A091 /* OrganizeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A3070E25A550ED51EC0D6C /* OrganizeStore.swift */; };
+		B04855D1AA8063F92F8C5720 /* PreviewHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 277963E40CC1BA7254A5AFEB /* PreviewHarness.swift */; };
+		B7F9AD93ABD4175DC6DC664F /* HomeComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11760F0F11D5F27C6574C07D /* HomeComposerView.swift */; };
 		BD31F80A925155A28D8A320E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 96A237306D88F4D86B1338FF /* Assets.xcassets */; };
 		BE9E2949C5B83F127ADC3D1B /* MessageContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4951296375FEC3116AC43157 /* MessageContentTests.swift */; };
 		BEF506F513C87AD019F8CB36 /* Room.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DA0369243BECC948ABC6C34 /* Room.swift */; };
@@ -75,11 +77,13 @@
 		05A3070E25A550ED51EC0D6C /* OrganizeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizeStore.swift; sourceTree = "<group>"; };
 		07EAECF062E7FAA88D07CFCA /* MessageBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleView.swift; sourceTree = "<group>"; };
 		0DFC308C0F588971B5149FAA /* MessageTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageTransport.swift; sourceTree = "<group>"; };
+		11760F0F11D5F27C6574C07D /* HomeComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComposerView.swift; sourceTree = "<group>"; };
 		131E1F3ED0F460574DE878C8 /* PushService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushService.swift; sourceTree = "<group>"; };
 		23F37A7F1A6A27F7C1FFFBEC /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
 		24F1365EAA4F96E30C9F1974 /* MessageContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageContent.swift; sourceTree = "<group>"; };
 		26170D6B1CAAE06391DEEC4A /* CornerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerApp.swift; sourceTree = "<group>"; };
 		2668E5F1D641717C4F6D22D1 /* RoomFilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomFilesView.swift; sourceTree = "<group>"; };
+		277963E40CC1BA7254A5AFEB /* PreviewHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHarness.swift; sourceTree = "<group>"; };
 		2A92F26E1C6D5083CFB19872 /* AssignSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssignSheet.swift; sourceTree = "<group>"; };
 		30D577DF665C37F7C6CDC690 /* TrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerView.swift; sourceTree = "<group>"; };
 		3DA0369243BECC948ABC6C34 /* Room.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Room.swift; sourceTree = "<group>"; };
@@ -148,8 +152,10 @@
 				9230C3027553EA9247E87A7B /* ChatView.swift */,
 				8899E5EB7B22DB9ECBE0F3AD /* ChatViewModel.swift */,
 				903AFF4D43CCE9D4B8913D59 /* FilePreviewView.swift */,
+				11760F0F11D5F27C6574C07D /* HomeComposerView.swift */,
 				07EAECF062E7FAA88D07CFCA /* MessageBubbleView.swift */,
 				DA762654D7DF58269E50F794 /* OrganizeView.swift */,
+				277963E40CC1BA7254A5AFEB /* PreviewHarness.swift */,
 				D8CA935ACABC0C1E275A24EE /* ReviewDecisionSheet.swift */,
 				C582794E4358BAFB4A87FB79 /* ReviewQueueView.swift */,
 				2668E5F1D641717C4F6D22D1 /* RoomFilesView.swift */,
@@ -384,6 +390,7 @@
 				8D12035D67DD5AF1CABB60A3 /* CornerApp.swift in Sources */,
 				5439CC4459706B0FAD7EEB0A /* FilePreviewView.swift in Sources */,
 				EC1499CF15C0D29AEF56EA2B /* FileStore.swift in Sources */,
+				B7F9AD93ABD4175DC6DC664F /* HomeComposerView.swift in Sources */,
 				C94D434781585E076EC0AFFB /* JSONValue.swift in Sources */,
 				F2ECFB887F2E992960E10A3A /* MessageBubbleView.swift in Sources */,
 				F5F670A1A6362533E6104243 /* MessageContent.swift in Sources */,
@@ -392,6 +399,7 @@
 				D5AC8F72E32D152ADD09E7E2 /* OrganizeFile.swift in Sources */,
 				A8CE144E7B95956A1649A091 /* OrganizeStore.swift in Sources */,
 				F42C78E0F08A0C382DEED0EC /* OrganizeView.swift in Sources */,
+				B04855D1AA8063F92F8C5720 /* PreviewHarness.swift in Sources */,
 				A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */,
 				D1FFF5E4326042FDCC1D1C95 /* ReviewDecisionSheet.swift in Sources */,
 				2C1245D09A52FF6A8D76D6D8 /* ReviewItem.swift in Sources */,

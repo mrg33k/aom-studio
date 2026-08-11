@@ -200,6 +200,42 @@ final class CornerAPI: ObservableObject {
         return (try? JSONDecoder().decode(SendEnvelope.self, from: data))?.message
     }
 
+    /// POST /api/dashboard/intake-route — Corner's routing brain, the SAME endpoint the
+    /// web front door uses. Given the room-less message the user typed at the home
+    /// composer plus the rooms they can see, it returns where the message belongs (an
+    /// existing room to open, or that nothing fit). PURE classification: it creates and
+    /// writes NOTHING. The caller seeds the chosen room through the one write path
+    /// (`send`) once the destination is settled, exactly like useIntakeRoute.
+    ///
+    /// The endpoint always answers 200 with a valid contract object, so a network throw
+    /// is the only failure — the caller falls to the confirm sheet and never loses the
+    /// text.
+    func routeIntake(
+        message: String,
+        interactionMode: String,
+        candidates: [String: Any],
+        recentRooms: [[String: Any]]
+    ) async throws -> IntakeDecision {
+        let world = try requireWorld()
+        let body: [String: Any] = [
+            "client_id": world,
+            "message": message,
+            "interaction_mode": interactionMode,
+            "candidates": candidates,
+            "recent_rooms": recentRooms,
+        ]
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/intake-route",
+            method: "POST",
+            jsonBody: body
+        )
+        let data = try await run(request)
+        guard let decision = try? JSONDecoder().decode(IntakeDecision.self, from: data) else {
+            throw APIError.decoding
+        }
+        return decision
+    }
+
     /// GET /api/dashboard/message-steps — the agent's real heartbeats for a turn.
     func fetchSteps(room: Room, limit: Int = 40) async throws -> [MessageStep] {
         var items = [

@@ -22,6 +22,11 @@ struct MessageBubbleView: View {
     /// in the app and it has no reason to redraw because a file in another room was
     /// approved. ChatView observes once and hands the answer down.
     var waitingIDs: Set<String> = []
+    /// Whether this row opens a new sender group. When false (the previous row is
+    /// from the SAME author) the avatar and the author name are suppressed and the
+    /// avatar column collapses to a clear spacer, so a run of one agent's replies
+    /// reads as one voice — the web mobile thread's per-sender grouping, matched.
+    var showsAuthor: Bool = true
 
     @State private var previewing: Attachment?
 
@@ -29,60 +34,35 @@ struct MessageBubbleView: View {
 
     var body: some View {
         let content = self.content
-        HStack {
-            if row.isUser { Spacer(minLength: 44) }
-
-            VStack(alignment: row.isUser ? .trailing : .leading, spacing: Theme.s2) {
-                if !content.prose.isEmpty {
-                    Text(MessageBubbleView.attributed(content.prose))
-                        .font(.body)
-                        .foregroundStyle(Theme.ink)
-                        .padding(.horizontal, Theme.s3)
-                        .padding(.vertical, 10)
-                        .background(
-                            row.isUser ? Theme.userBubble : Theme.agentBubble,
-                            in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous)
-                        )
-                        .textSelection(.enabled)
-                } else if content.isEmpty {
-                    // A row with no text and no renderable payload is not blank by
-                    // intent — it is something this build cannot show. Say that rather
-                    // than render an empty bubble the user reads as a bug.
-                    Text("Nothing this version can display")
-                        .font(.footnote)
-                        .foregroundStyle(Theme.inkFaint)
-                        .padding(.horizontal, Theme.s3)
-                        .padding(.vertical, Theme.s2)
-                        .background(Theme.agentBubble, in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous))
-                }
-
-                // Files in the thread. An image renders as the image — a photo the
-                // agent sent arriving as a grey "photo.png" row is the single most
-                // common way a delivered picture reads as a broken delivery.
-                ForEach(content.attachments) { attachment in
-                    AttachmentCardView(
-                        attachment: attachment,
-                        isWaiting: !row.isUser && waitingIDs.contains(attachment.url)
-                    ) {
-                        previewing = attachment
+        Group {
+            if row.isUser {
+                // The user's own turn: right-aligned, no avatar (it is them), time
+                // below the bubble. Matches the web mobile user turn.
+                HStack(spacing: 0) {
+                    Spacer(minLength: 44)
+                    VStack(alignment: .trailing, spacing: Theme.s2) {
+                        payload(content, alignment: .trailing)
+                        timeBelow(alignment: .trailing)
                     }
-                    .frame(maxWidth: 280)
                 }
-
-                ForEach(content.links) { card in
-                    LinkCardView(card: card)
-                        .frame(maxWidth: 320)
+            } else {
+                // An agent turn: left 2-letter monogram avatar, the author name above
+                // the bubble (once per group), then the bubble and its files/blocks,
+                // then the time. Matches the web mobile agent turn anatomy.
+                HStack(alignment: .top, spacing: Theme.s2) {
+                    TurnAvatar(name: row.displayName, visible: showsAuthor)
+                    VStack(alignment: .leading, spacing: Theme.s2) {
+                        if showsAuthor {
+                            Text(row.displayName)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
+                        }
+                        payload(content, alignment: .leading)
+                        timeBelow(alignment: .leading)
+                    }
+                    Spacer(minLength: Theme.s3)
                 }
-
-                ForEach(content.blocks) { block in
-                    BlockView(block: block, onOption: onOption) { previewing = $0 }
-                        .frame(maxWidth: 340)
-                }
-
-                metaLine
             }
-
-            if !row.isUser { Spacer(minLength: 44) }
         }
         .sheet(item: $previewing) { attachment in
             FilePreviewView(
@@ -96,16 +76,67 @@ struct MessageBubbleView: View {
         }
     }
 
-    private var metaLine: some View {
-        HStack(spacing: Theme.s1 + 2) {
-            Text(row.displayName)
-            if let time = timeLabel {
-                Text("·")
-                Text(time)
+    /// The bubble (or the "cannot display" fallback) plus every renderable payload the
+    /// row carries — files, link cards, blocks — in the shared order.
+    @ViewBuilder
+    private func payload(_ content: MessageContent, alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment, spacing: Theme.s2) {
+            if !content.prose.isEmpty {
+                Text(MessageBubbleView.attributed(content.prose))
+                    .font(.body)
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, Theme.s3)
+                    .padding(.vertical, 10)
+                    .background(
+                        row.isUser ? Theme.userBubble : Theme.agentBubble,
+                        in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous)
+                    )
+                    .textSelection(.enabled)
+            } else if content.isEmpty {
+                // A row with no text and no renderable payload is not blank by
+                // intent — it is something this build cannot show. Say that rather
+                // than render an empty bubble the user reads as a bug.
+                Text("Nothing this version can display")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.inkFaint)
+                    .padding(.horizontal, Theme.s3)
+                    .padding(.vertical, Theme.s2)
+                    .background(Theme.agentBubble, in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous))
+            }
+
+            // Files in the thread. An image renders as the image — a photo the
+            // agent sent arriving as a grey "photo.png" row is the single most
+            // common way a delivered picture reads as a broken delivery.
+            ForEach(content.attachments) { attachment in
+                AttachmentCardView(
+                    attachment: attachment,
+                    isWaiting: !row.isUser && waitingIDs.contains(attachment.url)
+                ) {
+                    previewing = attachment
+                }
+                .frame(maxWidth: 280)
+            }
+
+            ForEach(content.links) { card in
+                LinkCardView(card: card)
+                    .frame(maxWidth: 320)
+            }
+
+            ForEach(content.blocks) { block in
+                BlockView(block: block, onOption: onOption) { previewing = $0 }
+                    .frame(maxWidth: 340)
             }
         }
-        .font(.caption2)
-        .foregroundStyle(Theme.inkFaint)
+    }
+
+    @ViewBuilder
+    private func timeBelow(alignment: HorizontalAlignment) -> some View {
+        if let time = timeLabel {
+            Text(time)
+                .font(.caption2.monospaced())
+                .foregroundStyle(Theme.inkFaint)
+                .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
+        }
     }
 
     /// Phoenix time for everyone, like the web (America/Phoenix, no DST). A message's
@@ -136,6 +167,42 @@ struct MessageBubbleView: View {
             return parsed
         }
         return AttributedString(raw)
+    }
+}
+
+// MARK: - Turn avatar
+
+/// The 2-letter monogram beside an agent turn (room-row-contract §1 part 2: two
+/// letters, uppercased, never a face). Tinted from the author name with the same
+/// stable-hash palette the home timeline uses, so one agent keeps one colour across
+/// both surfaces. `visible: false` collapses it to a clear 30pt spacer that keeps
+/// grouped replies aligned under the first one's bubble.
+private struct TurnAvatar: View {
+    let name: String
+    var visible: Bool = true
+
+    private var glyph: String {
+        let words = name.split(separator: " ")
+        if words.count >= 2 { return String(words[0].prefix(1) + words[1].prefix(1)).uppercased() }
+        return String(name.prefix(2)).uppercased()
+    }
+
+    var body: some View {
+        Text(visible ? glyph : "")
+            .font(.caption.weight(.bold))
+            .foregroundStyle(Theme.tint(for: name))
+            .frame(width: 30, height: 30)
+            .background(
+                visible ? Theme.raised : Color.clear,
+                in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+            )
+            .overlay {
+                if visible {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(Theme.hairline, lineWidth: 1)
+                }
+            }
+            .accessibilityHidden(true)
     }
 }
 

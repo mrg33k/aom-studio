@@ -19,6 +19,9 @@ struct RoomListView: View {
     @StateObject private var store = RoomStore()
 
     @StateObject private var review = ReviewStore.shared
+    /// The front-door router: turns a room-less message typed into the pinned composer
+    /// into an opened, seeded room, the same way the web front door does.
+    @StateObject private var intake = IntakeRouter()
 
     @State private var query = ""
     @State private var showAccount = false
@@ -55,11 +58,82 @@ struct RoomListView: View {
                 .environmentObject(api)
                 .environmentObject(PushService.shared)
         }
+        // The front-door composer, pinned above the timeline (and above the keyboard).
+        // Hidden while searching — search is a different intent from starting work.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if api.world != nil && query.isEmpty {
+                HomeComposerBar(intake: intake, candidates: intakeCandidates, recentRooms: intakeRecentRooms)
+                    .background(Theme.ground)
+            }
+        }
+        .sheet(isPresented: $intake.showConfirm) {
+            IntakeConfirmSheet(intake: intake, allRooms: store.allRooms)
+        }
         .task {
+            intake.onOpen = { router.open($0) }
             if !store.hasLoadedOnce { await store.load() }
             review.startPolling()
         }
         .onChange(of: api.world) { _, _ in store.refresh() }
+    }
+
+    // MARK: - Intake payloads (candidates the routing brain ranks against)
+
+    /// The rooms the router chooses among, straight from the rail's own lists — the
+    /// native equivalent of assembleCandidates() in useIntakeRoute.js. Rooms that have
+    /// recent activity carry their timestamp and a one-line hint so the router's recency
+    /// cut and subject-matter matching are real; dormant rooms arrive bare (the endpoint
+    /// tolerates it). Rebuilt on send, never on every list poll.
+    private func intakeCandidates() -> [String: Any] {
+        let recentByID = Dictionary(store.recent.map { ($0.room.roomID, $0) }, uniquingKeysWith: { a, _ in a })
+        func hintFields(_ room: Room) -> [String: Any] {
+            guard let entry = recentByID[room.roomID] else { return [:] }
+            var out: [String: Any] = [:]
+            if entry.ts > 0 { out["last_message_at"] = RoomListView.isoFromMillis(entry.ts) }
+            if !entry.preview.isEmpty { out["hint"] = entry.preview }
+            return out
+        }
+        var projects: [[String: Any]] = []
+        var missions: [[String: Any]] = []
+        for group in store.projects {
+            if case .project(let slug) = group.room.kind {
+                let base: [String: Any] = ["slug": slug, "name": group.room.title]
+                projects.append(base.merging(hintFields(group.room)) { a, _ in a })
+            }
+            for mission in group.missions {
+                if case .mission(let canonical, let project) = mission.kind {
+                    let bare = canonical.split(separator: ":").last.map(String.init) ?? canonical
+                    let base: [String: Any] = ["slug": bare, "project_slug": project, "name": mission.title]
+                    missions.append(base.merging(hintFields(mission)) { a, _ in a })
+                }
+            }
+        }
+        let agents: [[String: Any]] = AgentRoster.all.map { ["slug": $0.slug, "name": $0.title] }
+        return ["projects": projects, "missions": missions, "agents": agents]
+    }
+
+    /// The recent-rooms list the router biases "continue" toward — the top of the home
+    /// timeline, in the shape recent_rooms expects.
+    private func intakeRecentRooms() -> [[String: Any]] {
+        store.recent.prefix(6).map { entry in
+            let room = entry.room
+            switch room.kind {
+            case .mission(let canonical, let project):
+                let bare = canonical.split(separator: ":").last.map(String.init) ?? canonical
+                return ["id": bare, "name": room.title, "isMission": true, "isProject": false, "missionSlug": canonical, "projectSlug": project]
+            case .project(let slug):
+                return ["id": slug, "name": room.title, "isMission": false, "isProject": true, "missionSlug": "", "projectSlug": ""]
+            case .agent(let slug):
+                return ["id": slug, "name": room.title, "isMission": false, "isProject": false, "missionSlug": "", "projectSlug": ""]
+            }
+        }
+    }
+
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime]; return f
+    }()
+    static func isoFromMillis(_ ms: Double) -> String {
+        isoFormatter.string(from: Date(timeIntervalSince1970: ms / 1000))
     }
 
     // MARK: - The timeline

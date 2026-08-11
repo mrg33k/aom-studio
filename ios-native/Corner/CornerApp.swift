@@ -62,10 +62,17 @@ struct CornerApp: App {
     @ViewBuilder
     private var rootContent: some View {
         #if DEBUG
-        // A no-network, no-auth render of the home timeline with synthetic sample rooms,
-        // used only by the design-proof capture (`simctl launch … -homePreview`). It
-        // touches no production data and ships in Debug builds alone.
-        if ProcessInfo.processInfo.arguments.contains("-homePreview") {
+        // No-network, no-auth design proofs, used only by the simctl design captures
+        // (`-homePreview`, `-chatPreview`, `-composerPreview`). Synthetic data, Debug
+        // builds only, no production data touched.
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-chatPreview") {
+            ChatPreviewHarness()
+        } else if args.contains("-composerPreview") {
+            HomeComposerPreviewHarness()
+        } else if args.contains("-confirmPreview") {
+            ConfirmPreviewHarness()
+        } else if args.contains("-homePreview") {
             HomePreviewHarness()
         } else {
             RootView()

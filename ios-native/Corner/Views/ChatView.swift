@@ -75,14 +75,16 @@ struct ChatView: View {
                         if let notice = model.catchUpNotice {
                             catchUpBanner(notice)
                         }
-                        ForEach(model.thread) { item in
+                        let thread = model.thread
+                        ForEach(Array(thread.enumerated()), id: \.element.id) { index, item in
                             switch item {
                             case .message(let row):
                                 MessageBubbleView(
                                     row: row,
                                     onOption: { model.draftOption($0) },
                                     room: model.room,
-                                    waitingIDs: waitingIDs
+                                    waitingIDs: waitingIDs,
+                                    showsAuthor: opensGroup(at: index, in: thread)
                                 )
                                 .id(row.id)
                             case .outbox(let pending):
@@ -106,6 +108,23 @@ struct ChatView: View {
             .onChange(of: model.turn) { _, _ in scrollToEnd(proxy) }
             .refreshable { await model.load() }
         }
+    }
+
+    /// The author a thread item belongs to, for sender grouping. Every outbox item and
+    /// every user row is "you"; an agent row is keyed by its display title so a run of
+    /// one specialist's replies groups under a single avatar + name.
+    private func authorKey(_ item: ThreadItem) -> String {
+        switch item {
+        case .message(let row): return row.isUser ? "__you" : row.displayName
+        case .outbox: return "__you"
+        }
+    }
+
+    /// True when this row starts a new sender group (first row, or a different author
+    /// than the one above it) — the signal that drives the avatar + name header.
+    private func opensGroup(at index: Int, in thread: [ThreadItem]) -> Bool {
+        guard index > 0 else { return true }
+        return authorKey(thread[index - 1]) != authorKey(thread[index])
     }
 
     private func scrollToEnd(_ proxy: ScrollViewProxy) {
@@ -161,24 +180,35 @@ struct ChatView: View {
     // MARK: - Composer
 
     private var composer: some View {
-        HStack(alignment: .bottom, spacing: Theme.s2) {
+        let canSend = !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return HStack(alignment: .bottom, spacing: Theme.s2) {
             TextField("Message \(model.room.title)…", text: $model.draft, axis: .vertical)
                 .lineLimit(1...6)
                 .padding(.horizontal, Theme.s4)
                 .padding(.vertical, 10)
-                .background(Theme.raised, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .background(Theme.raised, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .strokeBorder(Theme.hairline, lineWidth: 1)
                 )
                 .foregroundStyle(Theme.ink)
 
+            // The send affordance the web mobile composer uses: a circular button with a
+            // paper-plane, filled with the accent when there is something to send and a
+            // quiet outlined disc when the box is empty.
             Button(action: model.send) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 32))
-                    .symbolRenderingMode(.hierarchical)
+                Image(systemName: "paperplane.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(canSend ? Color.white : Theme.inkFaint)
+                    .frame(width: 36, height: 36)
+                    .background(canSend ? Theme.accent : Theme.raised, in: Circle())
+                    .overlay {
+                        if !canSend {
+                            Circle().strokeBorder(Theme.hairline, lineWidth: 1)
+                        }
+                    }
             }
-            .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(!canSend)
             .accessibilityLabel("Send")
         }
         .padding(.horizontal, Theme.s3)
