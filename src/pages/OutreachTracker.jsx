@@ -341,7 +341,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
     { num: 5, label: 'The ask — permission to stop by',  text: lead.meeting_ask,  bullets: false, highlight: true  },
   ]
   const setterSteps = [
-    { num: 1, label: 'The whole call — one breath', text: `"Hi, is this ${firstName || 'the owner'}? This is ${repName} with Ahead of Market. ${hookLine} Patrik took a look at your company and we think there might be something there — he'd like 15 minutes to walk you through what we found and see if we can help. Would Tuesday or Thursday work?"`, bullets: false, highlight: false },
+    { num: 1, label: 'The whole call — one breath', text: `"Hi, is this ${firstName || 'the owner'}? This is ${repName} with Ahead of Market. ${hookLine} We don't want to assume, but we think there might be something there — Patrik would like 15 minutes to walk you through what we found and see if we can help. Would Tuesday or Thursday work?"`, bullets: false, highlight: false },
     { num: 2, label: 'They ask anything — price, what we do, who', text: `"Honestly, that's Patrik's side, I just book his time. Tuesday or Thursday?"`, bullets: false, highlight: false },
     { num: 3, label: '"Send me an email"', text: `"Will do, it'll be from me within the hour. If it looks right I'll check back Thursday. Fair?" Copy the email from the panel on the right, send it, log Sent email.`, bullets: false, highlight: true },
     { num: 4, label: 'A no, or they\'re short with you', text: `"No problem, I'll leave you be. Good luck out there." And you're out — next lead.`, bullets: false, highlight: false },
