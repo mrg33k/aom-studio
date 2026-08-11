@@ -593,15 +593,33 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                 const ifDo    = { margin: 0, marginTop: 8, fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }
                 return (
                   <div>
-                    <div style={{ background: '#FBF4E4', borderLeft: '2px solid #B58A38', padding: 16, marginBottom: 24, fontFamily: 'Inter,sans-serif', fontSize: 15, lineHeight: 1.6, color: '#17170F' }}>
-                      Your whole job: get Patrik 15 minutes. Every no costs you
-                      nothing — there are {leftCount} more in the queue.
+                    <div style={{ background: '#FBF4E4', borderLeft: '2px solid #B58A38', padding: 16, marginBottom: 24 }}>
+                      <span style={{ ...stepLbl, color: '#8A6828', marginBottom: 4 }}>You're asking for</span>
+                      <p style={{ margin: 0, fontFamily: 'Inter,sans-serif', fontSize: 17, fontWeight: 600, color: '#17170F', lineHeight: 1.4 }}>
+                        {lead.contact_name || 'The owner'}{lead.title ? ` — ${lead.title}` : ''}
+                      </p>
+                      <p style={{ margin: 0, marginTop: 8, fontFamily: 'Inter,sans-serif', fontSize: 15, lineHeight: 1.6, color: '#17170F' }}>
+                        Your whole job: get Patrik 15 minutes with {firstName || 'them'}. Every no
+                        costs you nothing — there are {leftCount} more in the queue.
+                      </p>
                     </div>
                     <div style={row}>
                       <div style={numeral}>1</div>
                       <div>
-                        <span style={stepLbl}>Break the ice — they talk first</span>
-                        <p style={sayCard}>"Hi, is this {firstName || 'the owner'}? This is {repName} with Ahead of Market, out here in Phoenix."</p>
+                        <span style={stepLbl}>Ask for {firstName || 'the owner'}</span>
+                        <p style={sayCard}>"Hi, this is {repName} with Ahead of Market, out here in Phoenix — is {firstName || 'the owner'} around?"</p>
+                        <div style={{ ...ifCard('#B58A38', '#FBF4E4'), marginTop: 8, marginBottom: 0 }}>
+                          <span style={ifLabel('#8A6828')}>"What's this about?"</span>
+                          <p style={ifSay}>"We took a look at {lead.company}'s website and Patrik found something he wanted to run by {firstName || 'the owner'}. It's quick — is {firstName || 'the owner'} around?"</p>
+                          <p style={ifDo}>Not available? Ask when's better, log Left VM or No answer.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={numeral}>2</div>
+                      <div>
+                        <span style={stepLbl}>They're on — break the ice, they talk first</span>
+                        <p style={sayCard}>"{firstName ? `${firstName}!` : 'Hey!'} {repName} with Ahead of Market."</p>
                         <span style={{ ...stepLbl, marginTop: 16 }}>Then pick one — make it yours</span>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                           <p style={{ ...sayCard, fontSize: 15, flex: '1 1 240px' }}>"Hope it's finally cooling down out your way?"</p>
@@ -611,7 +629,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                       </div>
                     </div>
                     <div style={row}>
-                      <div style={numeral}>2</div>
+                      <div style={numeral}>3</div>
                       <div>
                         <span style={stepLbl}>The reason — one fact, one ask</span>
                         <p style={sayCard}>"{hookLine}"</p>
@@ -619,7 +637,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                       </div>
                     </div>
                     <div style={row}>
-                      <div style={numeral}>3</div>
+                      <div style={numeral}>4</div>
                       <div>
                         <span style={stepLbl}>Then — whatever they say next</span>
                         <div style={ifCard('#4A6B4A', '#F0F4EE')}>
