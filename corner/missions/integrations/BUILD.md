@@ -155,6 +155,8 @@ Planned checks:
   by both desktop and mobile waiting indicators.
 - Make both bridge implementations yield only when a matching verified runner
   job exists for the message, device, user, and tenant.
+- Latch a successful Auto fallback to `Codex on this computer` for that room;
+  subsequent messages bypass Claude until the user changes the model in Settings.
 - Verify focused tests, production build, canonical deployment, and a live
   tool-using turn with exactly one assistant reply.
 
