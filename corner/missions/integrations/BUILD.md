@@ -160,4 +160,19 @@ Planned checks:
 - Verify focused tests, production build, canonical deployment, and a live
   tool-using turn with exactly one assistant reply.
 
-**Status:** in progress.
+Release verification:
+
+- Dashboard/API commit `3363db1b` and documentation commit `b3bab658`
+  shipped through Vercel production `dpl_H4TzdxqTqczy4M1D8adpeT6FKNYn`;
+  the canonical runner download contains the progress stream implementation.
+- Bridge commits `5dbf5bcf6` and `d1b8141b2` are on `master`; the room bridge
+  restarted on the new code and a live `/chat` ownership probe returned
+  `localRunner: true` without creating a second hosted turn.
+- The Wolfpack preference is now `project:wolfpack = codex-local`. New room
+  messages bypass Claude until Settings changes that model back.
+- Live runner job `15c7dcd0` emitted claim, working, completed, and settled
+  events from `corner-runner`, then wrote its final `local_codex: true` reply.
+- 12 focused Node tests, 25 bridge tests, JavaScript/Python syntax checks, and
+  the production Vite build pass.
+
+**Status:** shipped and verified on canonical production.
