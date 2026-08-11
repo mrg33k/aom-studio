@@ -75,8 +75,8 @@ struct Room: Identifiable, Hashable {
     }
 
     /// The key this room is bumped under in `/api/dashboard/room-activity`:
-    /// a project by its slug, a mission by "<project>:<bare mission slug>" (the same
-    /// shape room-activity emits). Agent 1:1 threads are absent from that feed, so nil.
+    /// a project by its slug, a mission by "<project>:<bare mission slug>",
+    /// an agent 1:1 by its agent slug. All three are now present in the feed (R9).
     var activityKey: (bucket: TypeTag, key: String)? {
         switch kind {
         case .project(let slug):
@@ -84,8 +84,8 @@ struct Room: Identifiable, Hashable {
         case .mission(let slug, let project):
             let bare = slug.split(separator: ":").last.map(String.init) ?? slug
             return (.mission, "\(project):\(bare)")
-        case .agent:
-            return nil
+        case .agent(let slug):
+            return (.agent, slug)
         }
     }
 

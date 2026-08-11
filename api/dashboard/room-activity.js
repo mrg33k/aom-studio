@@ -193,13 +193,15 @@ export default async function handler(req, res) {
 
   const projects = {};
   const missions = {};
+  const agents   = {};
   try {
     for (let offset = 0; offset < WINDOW_ROWS; offset += PAGE) {
       // eslint-disable-next-line no-await-in-loop -- pages must be sequential; PostgREST has no cursor here.
       const rows = await supabaseGet(
         // `role` is here for the quarantine walk: it needs to tell the user's turns from
         // the agent's to know where a pending exchange ends.
-        `client_id=eq.${encodeURIComponent(clientId)}&select=project,metadata,text,timestamp,role`
+        // `agent` is added so 1:1 agent threads (no project, no mission) can be keyed.
+        `client_id=eq.${encodeURIComponent(clientId)}&select=project,agent,metadata,text,timestamp,role`
         + `&order=timestamp.desc&limit=${PAGE}&offset=${offset}`
       );
       if (!Array.isArray(rows) || !rows.length) break;
@@ -208,13 +210,27 @@ export default async function handler(req, res) {
         if (!ts) continue;
         const missionSlug = m?.metadata?.mission_slug || '';
         const project = m?.project || '';
+        const agentSlug = m?.agent || '';
         // One message belongs to exactly ONE room, in deriveRoomId's precedence
-        // (mission > project). A mission reply must not also restamp its parent project,
-        // or the parent inherits recency it never earned and outranks rooms the user
-        // actually opened.
-        const key = missionSlug ? `${project}:${bareSlug(missionSlug)}` : project;
+        // (mission > project > agent 1:1). A mission reply must not also restamp its
+        // parent project, or the parent inherits recency it never earned and outranks
+        // rooms the user actually opened.
+        let key, bucket;
+        if (missionSlug) {
+          key = `${project}:${bareSlug(missionSlug)}`;
+          bucket = missions;
+        } else if (project) {
+          key = project;
+          bucket = projects;
+        } else if (agentSlug) {
+          // Direct 1:1 agent thread. Key is just the agent slug; the native home
+          // maps this back to the room via activityKey(.agent(slug:)).
+          key = agentSlug;
+          bucket = agents;
+        } else {
+          continue;
+        }
         if (!key) continue;
-        const bucket = missionSlug ? missions : projects;
         // Rows arrive newest-first, so the first sighting of a room is its last activity;
         // the next few supply the material the hint is distilled from.
         // Buffer more rows than the hint will use. The quarantine drops whole exchanges, so
@@ -225,7 +241,7 @@ export default async function handler(req, res) {
       }
       if (rows.length < PAGE) break;
     }
-    for (const bucket of [projects, missions]) {
+    for (const bucket of [projects, missions, agents]) {
       for (const key of Object.keys(bucket)) {
         const b = bucket[key];
         // `last_message_at` is deliberately NOT filtered — a pending message still counts as
@@ -240,7 +256,7 @@ export default async function handler(req, res) {
     // Never fail the caller: the composer must still be able to send. An empty map means
     // the router ranks as it did before, which is degraded but not broken.
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ projects: {}, missions: {}, degraded: true, error: String(err?.message || err).slice(0, 160) });
+    return res.status(200).json({ projects: {}, missions: {}, agents: {}, degraded: true, error: String(err?.message || err).slice(0, 160) });
   }
 
   // Edge-cached: "which rooms were active lately" tolerates minutes of staleness, and this
@@ -261,6 +277,7 @@ export default async function handler(req, res) {
   return res.status(200).json({
     projects,
     missions,
-    counts: { projects: Object.keys(projects).length, missions: Object.keys(missions).length },
+    agents,
+    counts: { projects: Object.keys(projects).length, missions: Object.keys(missions).length, agents: Object.keys(agents).length },
   });
 }

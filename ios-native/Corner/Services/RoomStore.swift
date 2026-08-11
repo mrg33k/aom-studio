@@ -138,8 +138,7 @@ final class RoomStore: ObservableObject {
     /// Recency + preview come from `/api/dashboard/room-activity` — the same wide window
     /// the web home reads. Only rooms that actually appear in that feed are on the
     /// timeline; a dormant room is absent, which is the correct ranking rather than a lie
-    /// about it. Direct 1:1 agent threads are NOT in room-activity (see the mission
-    /// blocker), so they do not enter the home list here — they stay reachable via search.
+    /// about it. R9: agent 1:1 threads are now included via the `agents` bucket.
     private func buildRecent(groups: [ProjectGroup], activity: CornerAPI.RoomActivity?) -> [RecentRoom] {
         guard let activity else { return [] }
         var rows: [RecentRoom] = []
@@ -151,7 +150,7 @@ final class RoomStore: ObservableObject {
             switch ref.bucket {
             case .project: entry = activity.projects?[ref.key]
             case .mission: entry = activity.missions?[ref.key]
-            case .agent:   entry = nil
+            case .agent:   entry = activity.agents?[ref.key]
             }
             guard let entry, let ts = RoomStore.epochMillis(entry.last_message_at), ts > 0 else { return }
             rows.append(RecentRoom(room: room, ts: ts, preview: RoomPreview.clean(entry.last_message_text ?? "")))
@@ -162,6 +161,9 @@ final class RoomStore: ObservableObject {
             consider(group.room)
             for mission in group.missions { consider(mission) }
         }
+        // Agent 1:1 rooms — walk the roster; only agents with real activity in the feed
+        // (keyed by slug in activity.agents) land on the timeline.
+        for agentRoom in agents { consider(agentRoom) }
 
         // Strict recency, descending. Ties (same ms) fall back to discovery order so the
         // sort is deterministic — that is a tie-break, not a competing sort key.

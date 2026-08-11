@@ -491,6 +491,8 @@ final class CornerAPI: ObservableObject {
         let projects: [String: Entry]?
         /// keyed by "<project>:<bare mission slug>"
         let missions: [String: Entry]?
+        /// keyed by agent slug (e.g. "bobby", "rex") — the agents bucket added in R9
+        let agents: [String: Entry]?
     }
 
     /// GET /api/dashboard/room-activity?client=<world>.
