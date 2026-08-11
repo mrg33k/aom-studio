@@ -10,6 +10,50 @@ import SwiftUI
 import PhotosUI
 import UniformTypeIdentifiers
 
+// MARK: - Paste chip model
+// Mirrors the web's shouldChipPaste threshold: > 1000 chars OR > 15 lines.
+// The chip collapses a long paste into a dismissible token above the composer,
+// exactly matching Cv6InputBar + PasteChip.jsx.
+
+fileprivate struct PasteChip: Identifiable, Equatable {
+    let id: UUID
+    let text: String
+    let lineCount: Int
+
+    static func make(from text: String) -> PasteChip {
+        PasteChip(id: UUID(), text: text, lineCount: text.components(separatedBy: "\n").count)
+    }
+
+    /// Web threshold: > 1000 chars OR > 15 lines.
+    static func shouldChip(_ text: String) -> Bool {
+        text.count > 1000 || text.components(separatedBy: "\n").count > 15
+    }
+}
+
+/// Extract the text inserted between `old` and `new` using longest-common-prefix/suffix.
+/// Returns nil when no clear insertion is found (e.g. deletion).
+fileprivate func extractInserted(old: String, new: String) -> String? {
+    guard new.count > old.count else { return nil }
+    var prefixEnd = old.startIndex
+    var newPrefixEnd = new.startIndex
+    while prefixEnd < old.endIndex, newPrefixEnd < new.endIndex,
+          old[prefixEnd] == new[newPrefixEnd] {
+        prefixEnd = old.index(after: prefixEnd)
+        newPrefixEnd = new.index(after: newPrefixEnd)
+    }
+    var oldSufEnd = old.endIndex
+    var newSufEnd = new.endIndex
+    while oldSufEnd > prefixEnd, newSufEnd > newPrefixEnd {
+        let oPrev = old.index(before: oldSufEnd)
+        let nPrev = new.index(before: newSufEnd)
+        guard old[oPrev] == new[nPrev] else { break }
+        oldSufEnd = oPrev
+        newSufEnd = nPrev
+    }
+    let inserted = String(new[newPrefixEnd..<newSufEnd])
+    return inserted.isEmpty ? nil : inserted
+}
+
 struct ChatView: View {
     @StateObject private var model: ChatViewModel
     @StateObject private var review = ReviewStore.shared
@@ -29,6 +73,24 @@ struct ChatView: View {
     @FocusState private var searchFocused: Bool
     @State private var showingSettings = false
 
+    // ── Paste chips (composer extras R6) ─────────────────────────────────────
+    // Long pastes (>1000 chars or >15 lines) collapse into removable chips above
+    // the input shell. Their text is appended to the message body on send, matching
+    // Cv6InputBar + PasteChip.jsx exactly.
+    @State private var pasteChips: [PasteChip] = []
+    @State private var previewingChip: PasteChip? = nil
+
+    // ── /clear confirm (composer extras R6) ──────────────────────────────────
+    @State private var showingClearConfirm = false
+    @State private var clearBusy = false
+    @State private var clearFailed = false
+
+    // ── Composer collapse → FAB (composer extras R6) ──────────────────────────
+    // Composer starts open; collapses 120ms after a successful send.
+    // FAB (pencil icon) taps to re-expand and focus. Resets on room navigation.
+    @State private var composerCollapsed = false
+    @State private var collapseWorkItem: DispatchWorkItem? = nil
+
     /// Computed ONCE per thread render and handed down to every bubble, rather than each
     /// bubble subscribing to the review store itself.
     private var waitingIDs: Set<String> { review.waitingIDs }
@@ -39,13 +101,39 @@ struct ChatView: View {
 
     var body: some View {
         messageList
-            .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                // Collapse: 0-height clear placeholder keeps the thread from
+                // resizing when we swap composer ↔ nothing.
+                if composerCollapsed {
+                    Color.clear.frame(height: 0)
+                } else {
+                    composer
+                }
+            }
             // Search bar slides in at the top of the thread when isSearching is true —
             // sits above the message list so it doesn't collide with the nav bar or the
             // keyboard. Dismissed by the X button or by emptying the query.
             .safeAreaInset(edge: .top, spacing: 0) {
                 if isSearching { searchBar }
             }
+            // ── FAB — appears when the composer is collapsed ─────────────────
+            .overlay(alignment: .bottomTrailing) {
+                if composerCollapsed {
+                    Button {
+                        expandComposer()
+                    } label: {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 52))
+                            .foregroundStyle(Theme.accent)
+                            .shadow(color: .black.opacity(0.45), radius: 10, y: 5)
+                    }
+                    .padding(.trailing, Theme.s4)
+                    .safeAreaPadding(.bottom, Theme.s4)
+                    .accessibilityLabel("Open composer — type a message")
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.28, dampingFraction: 0.72), value: composerCollapsed)
             .background(Theme.ground)
             // Custom title: avatar + room name + live status.
             // Empty string keeps the back-button chevron but clears the default label.
@@ -101,6 +189,22 @@ struct ChatView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
+            // Paste chip preview sheet — full scrollable pre of the pasted text.
+            .sheet(item: $previewingChip) { chip in
+                PastePreviewSheet(chip: chip, onRemove: {
+                    pasteChips.removeAll { $0.id == chip.id }
+                    previewingChip = nil
+                })
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+            // ── /clear confirmation ──────────────────────────────────────────
+            .alert("Start \(model.room.title) fresh?", isPresented: $showingClearConfirm) {
+                Button("Cancel", role: .cancel) { clearFailed = false }
+                Button("Clear chat", role: .destructive) { runClear() }
+            } message: {
+                Text("Nothing is deleted — messages stay in History. The agent will receive a scoped reset.")
+            }
             .onAppear {
                 model.start()
                 // The waiting set marks files inside the thread too, so it loads with the
@@ -112,6 +216,54 @@ struct ChatView: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { model.handleForeground() }
             }
+            // ── Paste chip detection ─────────────────────────────────────────
+            // When the draft grows by more than the chip threshold in a single change
+            // (i.e. a paste rather than typing), extract the inserted text and convert
+            // it to a chip rather than filling the field with a wall of text.
+            .onChange(of: model.draft) { old, new in
+                guard new.count - old.count > 50 else { return } // cheap early exit
+                guard let inserted = extractInserted(old: old, new: new) else { return }
+                guard PasteChip.shouldChip(inserted) else { return }
+                // Revert the draft to its pre-paste state and create a chip.
+                let chip = PasteChip.make(from: inserted)
+                pasteChips.append(chip)
+                model.draft = old
+            }
+    }
+
+    // MARK: - Composer collapse helpers
+
+    private func expandComposer() {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
+            composerCollapsed = false
+        }
+        // Focus after the spring animation completes so the keyboard opens cleanly.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+            composerFocused = true
+        }
+    }
+
+    private func scheduleCollapse() {
+        collapseWorkItem?.cancel()
+        let item = DispatchWorkItem {
+            withAnimation(.easeOut(duration: 0.2)) {
+                composerCollapsed = true
+            }
+        }
+        collapseWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: item)
+    }
+
+    // MARK: - /clear helpers
+
+    private func runClear() {
+        guard !clearBusy else { return }
+        clearBusy = true
+        Task { @MainActor in
+            let ok = await model.clearRoom()
+            clearBusy = false
+            clearFailed = !ok
+        }
     }
 
     // MARK: - Custom nav title (R5 chat-header parity)
@@ -381,13 +533,35 @@ struct ChatView: View {
     // MARK: - Composer (the web's two-row card, .cv6-floating-composer)
 
     private var canSend: Bool {
-        !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.staged.isEmpty
+        let trimmed = model.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty || !model.staged.isEmpty || !pasteChips.isEmpty
+    }
+
+    /// Wrapped send: appends paste chip text then fires model.send(), then collapses.
+    private func sendWithChips() {
+        let trimmed = model.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        // /clear detection — arm the confirm bar instead of sending.
+        if trimmed == "/clear" && pasteChips.isEmpty && model.staged.isEmpty {
+            model.draft = ""
+            showingClearConfirm = true
+            return
+        }
+        // Append any paste chips to the draft before handing off to the view model.
+        if !pasteChips.isEmpty {
+            let suffix = "\n\n" + pasteChips.map(\.text).joined(separator: "\n\n")
+            model.draft += suffix
+            pasteChips = []
+        }
+        model.send()
+        scheduleCollapse()
     }
 
     private var composer: some View {
         VStack(spacing: 10) {
             if let error = model.uploadError { uploadErrorRow(error) }
             if !model.staged.isEmpty { stagedChips }
+            // Paste chips sit between file chips and the input shell.
+            if !pasteChips.isEmpty { pasteChipBar }
             inputShell
             actionRow
         }
@@ -519,7 +693,7 @@ struct ChatView: View {
 
             Spacer(minLength: 0)
 
-            Button(action: model.send) {
+            Button(action: sendWithChips) {
                 Image(systemName: "paperplane.fill")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(canSend ? Color.white : Theme.inkFaint)
@@ -592,6 +766,41 @@ struct ChatView: View {
                                 .font(.system(size: 9, weight: .bold))
                         }
                         .accessibilityLabel("Remove \(file.name)")
+                    }
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(Theme.accentWeak, in: Capsule())
+                }
+            }
+        }
+    }
+
+    /// Paste chips — long pastes collapsed into dismissible tokens.
+    /// Mirrors PasteChip.jsx: clipboard icon, "Pasted text · N lines", X.
+    /// Tapping the label opens the full-text preview sheet.
+    private var pasteChipBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(pasteChips) { chip in
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.on.clipboard")
+                            .font(.system(size: 10, weight: .semibold))
+                        Button {
+                            previewingChip = chip
+                        } label: {
+                            Text("Pasted text · \(chip.lineCount) lines")
+                                .font(.hanken(11.5).weight(.semibold))
+                                .lineLimit(1)
+                        }
+                        .buttonStyle(.plain)
+                        Button {
+                            pasteChips.removeAll { $0.id == chip.id }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .accessibilityLabel("Remove pasted text")
                     }
                     .foregroundStyle(Theme.accent)
                     .padding(.horizontal, 10)
@@ -777,6 +986,58 @@ struct OutboxBubbleView: View {
                     Text("Sending…")
                         .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Paste preview sheet
+
+/// Full-text view of a paste chip. Mirrors PasteChip.jsx's modal: monospace pre,
+/// scrollable, with a header showing line count + char count.
+fileprivate struct PastePreviewSheet: View {
+    let chip: PasteChip
+    let onRemove: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                Text(chip.text)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(Theme.s4)
+                    .textSelection(.enabled)
+            }
+            .background(Theme.ground)
+            .navigationTitle("Pasted Text")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 2) {
+                        Text("Pasted Text")
+                            .font(.hanken(14).weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Text("\(chip.lineCount) lines · \(chip.text.count.formatted()) chars")
+                            .font(.hanken(11))
+                            .foregroundStyle(Theme.accent)
+                    }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Done") { dismiss() }
+                        .font(.hanken(14).weight(.medium))
+                        .foregroundStyle(Theme.accent)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .destructive) {
+                        onRemove()
+                    } label: {
+                        Text("Remove")
+                            .font(.hanken(14).weight(.medium))
+                            .foregroundStyle(Theme.danger)
+                    }
                 }
             }
         }

@@ -555,6 +555,20 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Room reset (/clear)
+
+    /// POST /api/dashboard/room-reset and reload.
+    /// Returns true on success, false on failure.
+    func clearRoom() async -> Bool {
+        do {
+            try await live.clearRoom(room: room)
+            await load()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     // MARK: - Composer helpers
 
     /// A block option tapped: put the label in the composer rather than firing it.

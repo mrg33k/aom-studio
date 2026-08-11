@@ -376,6 +376,35 @@ final class CornerAPI: ObservableObject {
         return decision
     }
 
+    // MARK: - Room reset (/clear)
+
+    /// POST /api/dashboard/room-reset — archives the current thread.
+    /// Mirrors useRoomThread.clearRoom() in Cv6FullComposer exactly:
+    /// mission payload → { client_id, agent:"corner", project, mission_slug (bare) }
+    /// project payload → { client_id, agent:"corner", project }
+    /// agent payload   → { client_id, agent }
+    @discardableResult
+    func clearRoom(room: Room) async throws -> Bool {
+        let worldId = try requireWorld()
+        let payload: [String: Any]
+        switch room.kind {
+        case .mission(let slug, let project):
+            let bare = Room.bareMissionSlug(slug, project: project)
+            payload = ["client_id": worldId, "agent": "corner", "project": project, "mission_slug": bare]
+        case .project(let slug):
+            payload = ["client_id": worldId, "agent": "corner", "project": slug]
+        case .agent(let slug):
+            payload = ["client_id": worldId, "agent": slug]
+        }
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/room-reset",
+            method: "POST",
+            jsonBody: payload
+        )
+        try await run(request)
+        return true
+    }
+
     /// GET /api/dashboard/message-steps — the agent's real heartbeats for a turn.
     func fetchSteps(room: Room, limit: Int = 40) async throws -> [MessageStep] {
         var items = [
