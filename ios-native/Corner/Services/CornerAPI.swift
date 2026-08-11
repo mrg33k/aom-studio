@@ -944,4 +944,164 @@ final class CornerAPI: ObservableObject {
     func subscribe(room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscription {
         RoomSubscription(client: client, room: room, onInsert: onInsert)
     }
+
+    // MARK: - Room creation (corner:native-ios — "+ New" from phone)
+
+    /// Port of cv6next/data/useHomeData.js `slugify()`:
+    /// lower → strip non-alphanumeric → trim hyphens → ensure letter start → cap at 48 chars.
+    static func slugify(_ s: String) -> String {
+        var v = s.lowercased().trimmingCharacters(in: .whitespaces)
+        // Replace runs of non-alphanumeric chars with a single hyphen.
+        let clean = v.unicodeScalars.map { c -> Character in
+            let ch = Character(c)
+            return ch.isLetter || ch.isNumber ? ch : "-"
+        }
+        v = String(clean)
+        // Collapse multiple hyphens to one, trim ends.
+        while v.contains("--") { v = v.replacingOccurrences(of: "--", with: "-") }
+        while v.hasPrefix("-") { v = String(v.dropFirst()) }
+        while v.hasSuffix("-") { v = String(v.dropLast()) }
+        // Must start with a letter (same guard as the JS).
+        if v.isEmpty || !(v.first?.isLetter ?? false) { v = "m-" + v }
+        return String(v.prefix(48))
+    }
+
+    /// Response from POST /api/dashboard/create-mission-from-drawer
+    private struct CreateMissionResponse: Decodable {
+        let ok: Bool?
+        let parent_slug: String?
+        let mission_slug: String?
+        let name: String?
+        let agent: String?
+    }
+
+    /// Response from POST /api/dashboard/create-project-from-chat
+    private struct CreateProjectResponse: Decodable {
+        let ok: Bool?
+        let slug: String?
+        let name: String?
+    }
+
+    /// Create a mission inside a project, mirroring cv6next/data/useHomeData.js
+    /// `createMissionInProject`. Returns the newly created Room on success.
+    ///
+    /// 1. POST /api/dashboard/create-mission-from-drawer (scaffolds stubs + kickoff)
+    /// 2. POST /api/dashboard/supabase-messages with the opening note (goal, agent,
+    ///    priority, when) — the same "nothing typed is lost" guarantee the web has.
+    @discardableResult
+    func createMission(
+        projectSlug: String,
+        title: String,
+        goal: String,
+        agentName: String,
+        priority: String,
+        when: String
+    ) async throws -> Room {
+        let worldId = try requireWorld()
+        let missionSlug = CornerAPI.slugify(title.isEmpty ? goal : title)
+        guard !missionSlug.isEmpty else {
+            throw APIError.badResponse(status: 400, message: "Could not derive a slug from the name or goal.")
+        }
+
+        // Step 1 — scaffold the mission room.
+        let createRequest = try await authorizedRequest(
+            path: "/api/dashboard/create-mission-from-drawer",
+            method: "POST",
+            jsonBody: [
+                "parent_slug": projectSlug,
+                "mission_slug": missionSlug,
+                "name": title.isEmpty ? goal.split(separator: "\n").first.map(String.init) ?? goal : title,
+                "client_id": worldId,
+            ]
+        )
+        let createData = try await run(createRequest)
+        guard let resp = try? JSONDecoder().decode(CreateMissionResponse.self, from: createData),
+              resp.ok == true else {
+            throw APIError.badResponse(status: 500, message: "Could not start the mission.")
+        }
+
+        let displayName = resp.name ?? title
+        let canonicalSlug = "\(projectSlug):\(missionSlug)"
+        let room = Room(
+            world: worldId,
+            kind: .mission(slug: canonicalSlug, project: projectSlug),
+            title: displayName,
+            subtitle: Room.prettify(projectSlug)
+        )
+
+        // Step 2 — fold the goal/agent/priority/when into an opening note, exactly
+        // as the web does in createMissionInProject (nothing the user typed is lost).
+        let parts = [
+            goal.isEmpty ? nil : "Goal: \(goal)",
+            agentName.isEmpty ? nil : "Assigned: \(agentName)",
+            priority.isEmpty ? nil : "Priority: \(priority)",
+            when.isEmpty ? nil : "When: \(when)",
+        ].compactMap { $0 }
+        if !parts.isEmpty {
+            let note = parts.joined(separator: " · ")
+            _ = try? await send(text: note, room: room)
+        }
+
+        return room
+    }
+
+    /// Create a new project, mirroring cv6next/data/useHomeData.js
+    /// `createProjectFromHome`. Returns the newly created Room on success.
+    ///
+    /// 1. POST /api/dashboard/create-project-from-chat (scaffolds + kickoff + forward link)
+    /// 2. POST /api/dashboard/supabase-messages with the about text if the user gave one.
+    @discardableResult
+    func createProject(name: String, about: String) async throws -> Room {
+        let worldId = try requireWorld()
+        let slug = CornerAPI.slugify(name)
+        guard !slug.isEmpty else {
+            throw APIError.badResponse(status: 400, message: "Could not derive a slug from the name.")
+        }
+
+        // Step 1 — create the project row + scaffold stubs + kickoff greeting.
+        let createRequest = try await authorizedRequest(
+            path: "/api/dashboard/create-project-from-chat",
+            method: "POST",
+            jsonBody: [
+                "slug": slug,
+                "name": name,
+                "client_id": worldId,
+                "agent_slug": "ea",
+            ]
+        )
+        let createData = try await run(createRequest)
+        guard let resp = try? JSONDecoder().decode(CreateProjectResponse.self, from: createData),
+              resp.ok == true else {
+            // Handle 409 duplicate specially — the project already exists; just open it.
+            if let json = try? JSONSerialization.jsonObject(with: createData) as? [String: Any],
+               let existingSlug = (json["existing"] as? [String: Any])?["slug"] as? String ?? json["slug"] as? String,
+               !existingSlug.isEmpty {
+                return Room(
+                    world: worldId,
+                    kind: .project(slug: existingSlug),
+                    title: name,
+                    subtitle: "Project"
+                )
+            }
+            throw APIError.badResponse(status: 500, message: "Could not create the project.")
+        }
+
+        let displayName = resp.name ?? name
+        let finalSlug = resp.slug ?? slug
+        let room = Room(
+            world: worldId,
+            kind: .project(slug: finalSlug),
+            title: displayName,
+            subtitle: "Project"
+        )
+
+        // Step 2 — post the about text into the new project room (the web does this
+        // via a second supabase-messages call so the agent self-builds around it).
+        let trimmedAbout = about.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedAbout.isEmpty {
+            _ = try? await send(text: trimmedAbout, room: room)
+        }
+
+        return room
+    }
 }

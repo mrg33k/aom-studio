@@ -24,6 +24,7 @@ struct RoomListView: View {
     @StateObject private var intake = IntakeRouter()
 
     @State private var query = ""
+    @State private var showingNewRoom = false
 
     var body: some View {
         List {
@@ -45,6 +46,24 @@ struct RoomListView: View {
         .searchable(text: $query, prompt: "Search rooms")
         .refreshable { await store.load() }
         .toolbar {
+            // "+ New" lives in the leading position to match the web rail's placement.
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showingNewRoom = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("New")
+                            .font(.hkCaption.weight(.semibold))
+                    }
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Theme.accentWeak, in: Capsule())
+                }
+                .accessibilityLabel("New room")
+            }
             // The web mobile home's top bar (TopBar contract, R209): theme chip,
             // bell with the needs-you dot, gradient avatar. Search stays native
             // (the pull-down field). Every control does its real thing — the bell
@@ -95,6 +114,14 @@ struct RoomListView: View {
         }
         .sheet(isPresented: $intake.showConfirm) {
             IntakeConfirmSheet(intake: intake, allRooms: store.allRooms)
+        }
+        .sheet(isPresented: $showingNewRoom) {
+            NewRoomSheet { newRoom in
+                // Reload the rail to surface the new room, then open it.
+                store.refresh()
+                router.open(newRoom)
+            }
+            .environmentObject(api)
         }
         .task {
             intake.onOpen = { router.open($0) }
