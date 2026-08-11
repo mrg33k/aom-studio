@@ -9,6 +9,7 @@
 // malformed asterisk can never cost a message its content.
 
 import SwiftUI
+import UIKit
 
 struct MessageBubbleView: View {
     let row: MessageRow
@@ -44,6 +45,13 @@ struct MessageBubbleView: View {
                             in: RoundedRectangle(cornerRadius: Theme.bubbleRadius, style: .continuous)
                         )
                         .textSelection(.enabled)
+                        .contextMenu {
+                            Button {
+                                UIPasteboard.general.string = content.prose
+                            } label: {
+                                Label("Copy", systemImage: "doc.on.doc")
+                            }
+                        }
                 } else if content.isEmpty {
                     // A row with no text and no renderable payload is not blank by
                     // intent — it is something this build cannot show. Say that rather
