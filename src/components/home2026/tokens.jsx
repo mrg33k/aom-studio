@@ -42,7 +42,10 @@ export const T = {
 };
 
 export const LS = { display: '-0.02em', label: '0.22em', body: '0' };
-export const LH = { display: 0.86, head: 0.94, body: 1.55 };
+// Anton has tall caps and almost no internal leading, so anything under ~0.92 makes the
+// ascenders of a wrapped line crash into the descenders above it. 0.86 shipped and collided
+// on the hero at both widths. Do not tighten these without looking at a wrapped line.
+export const LH = { display: 0.94, head: 0.98, body: 1.55 };
 
 export const MAXW = 1320;      // page measure
 export const GUTTER = 'clamp(20px, 4vw, 72px)';

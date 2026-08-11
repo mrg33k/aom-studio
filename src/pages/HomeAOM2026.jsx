@@ -81,10 +81,10 @@ function Header({ onOpenBrief }) {
     >
       <style>{`
         .aomh-nav{display:flex;gap:${SP[7]}px;align-items:center}
-        .aomh-burger{display:none}
+        .aomh-burger{display:none !important}
         @media (max-width:900px){
           .aomh-nav{display:${'none'}}
-          .aomh-burger{display:inline-block}
+          .aomh-burger{display:inline-block !important}
           .aomh-nav.open{display:flex;position:fixed;inset:0;background:${C.ink};
             flex-direction:column;justify-content:center;align-items:center;gap:${SP[7]}px;z-index:70}
         }
