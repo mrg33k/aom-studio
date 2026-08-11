@@ -23,6 +23,12 @@ struct ChatView: View {
     @State private var nearBottom = false
     @FocusState private var composerFocused: Bool
 
+    // R5 chat-header parity
+    @State private var isSearching = false
+    @State private var searchQuery = ""
+    @FocusState private var searchFocused: Bool
+    @State private var showingSettings = false
+
     /// Computed ONCE per thread render and handed down to every bubble, rather than each
     /// bubble subscribing to the review store itself.
     private var waitingIDs: Set<String> { review.waitingIDs }
@@ -34,37 +40,189 @@ struct ChatView: View {
     var body: some View {
         messageList
             .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+            // Search bar slides in at the top of the thread when isSearching is true —
+            // sits above the message list so it doesn't collide with the nav bar or the
+            // keyboard. Dismissed by the X button or by emptying the query.
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if isSearching { searchBar }
+            }
             .background(Theme.ground)
-            .navigationTitle(model.room.title)
+            // Custom title: avatar + room name + live status.
+            // Empty string keeps the back-button chevron but clears the default label.
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                // This chat's files live one tap from the chat, never in a separate
-                // destination — the crossings ARE this conversation, narrowed. Folder
-                // glyph to match the web chat header's Files button.
-                Button { showingFiles = true } label: {
-                    Image(systemName: "folder")
+            .toolbar {
+                // ── Principal: avatar + room name + live status ──────────────
+                ToolbarItem(placement: .principal) {
+                    headerTitle
                 }
-                .accessibilityLabel("Files in this chat")
+                // ── Trailing: search + more (⋯) ─────────────────────────────
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    // Search toggle
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isSearching.toggle()
+                            searchQuery = ""
+                            if isSearching { searchFocused = true }
+                        }
+                    } label: {
+                        Image(systemName: isSearching ? "magnifyingglass.circle.fill" : "magnifyingglass")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(isSearching ? Theme.accent : Theme.inkSoft)
+                    }
+                    .accessibilityLabel(isSearching ? "Cancel search" : "Search conversation")
+
+                    // More menu (⋯) — files, settings
+                    Menu {
+                        Button { showingFiles = true } label: {
+                            Label("Files", systemImage: "folder")
+                        }
+                        Button { showingSettings = true } label: {
+                            Label("Room settings", systemImage: "gearshape")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    .accessibilityLabel("More options")
+                }
+            }
+            .sheet(isPresented: $showingFiles) {
+                RoomFilesView(room: model.room)
+            }
+            .sheet(isPresented: $showingSettings) {
+                RoomSettingsView(
+                    room: model.room,
+                    modelChoice: model.modelChoice,
+                    onSelectModel: { id in await model.selectModel(id) },
+                    onOpenFiles: { showingSettings = false; showingFiles = true }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+            .onAppear {
+                model.start()
+                // The waiting set marks files inside the thread too, so it loads with the
+                // room rather than only when the review screen is opened.
+                Task { await review.load() }
+                Task { await model.loadModelPreference() }
+            }
+            .onDisappear { model.stop() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { model.handleForeground() }
+            }
+    }
+
+    // MARK: - Custom nav title (R5 chat-header parity)
+
+    /// Avatar + room name + live status — the web's desktop-room-header, compressed
+    /// for the phone's nav bar. Tapping it opens room settings.
+    private var headerTitle: some View {
+        Button {
+            showingSettings = true
+        } label: {
+            HStack(spacing: 8) {
+                RoomAvatarView(room: model.room, size: 30, isActive: model.isAwaiting)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(model.room.title)
+                        .font(.hanken(15).weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    // Status line: "active" with a live dot when a turn is running,
+                    // else the room's subtitle (specialist / project / mission).
+                    HStack(spacing: 4) {
+                        if model.isAwaiting {
+                            Circle()
+                                .fill(Theme.live)
+                                .frame(width: 6, height: 6)
+                            Text("active")
+                                .font(.hanken(10.5).weight(.medium))
+                                .foregroundStyle(Theme.live)
+                        } else {
+                            let sub = model.room.subtitle.isEmpty
+                                ? model.room.typeLabel.lowercased()
+                                : model.room.subtitle
+                            Text(sub)
+                                .font(.hanken(10.5).weight(.medium))
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                    }
+                    .animation(.easeOut(duration: 0.2), value: model.isAwaiting)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Room settings for \(model.room.title)")
+    }
+
+    // MARK: - Search bar (R5)
+
+    /// An inline search field that appears at the top of the message list.
+    /// Mirrors the web's "Search conversation" from the more menu.
+    private var searchBar: some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 14))
+                .foregroundStyle(Theme.inkSoft)
+
+            TextField("Search messages…", text: $searchQuery)
+                .font(.hanken(14))
+                .foregroundStyle(Theme.ink)
+                .focused($searchFocused)
+                .autocorrectionDisabled()
+                .onSubmit { } // keep keyboard visible while typing
+
+            if !searchQuery.isEmpty {
+                Button {
+                    searchQuery = ""
+                    searchFocused = true
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                .accessibilityLabel("Clear search")
+            }
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isSearching = false
+                    searchQuery = ""
+                }
+            } label: {
+                Text("Cancel")
+                    .font(.hanken(13).weight(.medium))
+                    .foregroundStyle(Theme.accent)
             }
         }
-        .sheet(isPresented: $showingFiles) {
-            RoomFilesView(room: model.room)
-        }
-        .onAppear {
-            model.start()
-            // The waiting set marks files inside the thread too, so it loads with the
-            // room rather than only when the review screen is opened.
-            Task { await review.load() }
-            Task { await model.loadModelPreference() }
-        }
-        .onDisappear { model.stop() }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active { model.handleForeground() }
-        }
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised)
+        .overlay(
+            Divider(), alignment: .bottom
+        )
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 
     // MARK: - Thread
+
+    /// The active thread, filtered by `searchQuery` when search is open.
+    /// Outbox items are excluded from search results — they haven't landed yet.
+    private var visibleThread: [ThreadItem] {
+        let full = model.thread
+        guard isSearching, !searchQuery.isEmpty else { return full }
+        let q = searchQuery.lowercased()
+        return full.filter { item in
+            switch item {
+            case .message(let row):
+                return (row.text ?? "").lowercased().contains(q)
+            case .outbox(let pending):
+                return pending.text.lowercased().contains(q)
+            }
+        }
+    }
 
     private var messageList: some View {
         ScrollViewReader { proxy in
@@ -83,28 +241,35 @@ struct ChatView: View {
                         if let notice = model.catchUpNotice {
                             catchUpBanner(notice)
                         }
-                        let thread = model.thread
-                        ForEach(Array(thread.enumerated()), id: \.element.id) { index, item in
-                            switch item {
-                            case .message(let row):
-                                MessageBubbleView(
-                                    row: row,
-                                    onOption: { model.draftOption($0) },
-                                    room: model.room,
-                                    waitingIDs: waitingIDs,
-                                    showsAuthor: opensGroup(at: index, in: thread)
-                                )
-                                .id(row.id)
-                            case .outbox(let pending):
-                                OutboxBubbleView(
-                                    item: pending,
-                                    retry: { model.retry(pending) },
-                                    discard: { model.discard(pending) }
-                                )
-                                .id(pending.id)
+                        let thread = visibleThread
+                        // Search empty state
+                        if isSearching, !searchQuery.isEmpty, thread.isEmpty {
+                            centeredNotice("No messages match \"\(searchQuery)\"", systemImage: "magnifyingglass")
+                        } else {
+                            ForEach(Array(thread.enumerated()), id: \.element.id) { index, item in
+                                switch item {
+                                case .message(let row):
+                                    MessageBubbleView(
+                                        row: row,
+                                        onOption: { model.draftOption($0) },
+                                        room: model.room,
+                                        waitingIDs: waitingIDs,
+                                        showsAuthor: opensGroup(at: index, in: thread)
+                                    )
+                                    .id(row.id)
+                                case .outbox(let pending):
+                                    OutboxBubbleView(
+                                        item: pending,
+                                        retry: { model.retry(pending) },
+                                        discard: { model.discard(pending) }
+                                    )
+                                    .id(pending.id)
+                                }
+                            }
+                            if !isSearching {
+                                turnIndicator
                             }
                         }
-                        turnIndicator
                         // Tail sentinel: arms the swipe-up-for-files gesture only when
                         // the user is actually looking at the end of the thread — the
                         // same guard the web's overscroll-up uses.
@@ -118,8 +283,12 @@ struct ChatView: View {
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: model.thread.count) { _, _ in scrollToEnd(proxy) }
-            .onChange(of: model.turn) { _, _ in scrollToEnd(proxy) }
+            .onChange(of: model.thread.count) { _, _ in
+                if !isSearching { scrollToEnd(proxy) }
+            }
+            .onChange(of: model.turn) { _, _ in
+                if !isSearching { scrollToEnd(proxy) }
+            }
             .refreshable { await model.load() }
             // Patrik's R4 gesture spec. Swipe UP at the tail → this chat's files.
             // Horizontal flick → the recency carousel: right toward the more recent
