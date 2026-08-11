@@ -342,14 +342,9 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
     { num: 4, label: 'Questions to ask',                 text: lead.questions,    bullets: true,  highlight: false },
     { num: 5, label: 'The ask — permission to stop by',  text: lead.meeting_ask,  bullets: false, highlight: true  },
   ]
-  const setterSteps = [
-    { num: 1, label: 'The icebreaker — local, human, they talk first', text: `"Hi, is this ${firstName || 'the owner'}? This is ${repName} with Ahead of Market, out here in Phoenix." Then one light, human, local beat — "Hope it's finally cooling down out your way?" · "You out on a job in this heat?" — say it like a person, not a line. Then STOP and listen. They talk first; now it's a conversation, not a pitch.`, bullets: false, highlight: false },
-    { num: 2, label: 'The reason — one fact, one ask', text: `"${hookLine} We don't want to assume, but we think there might be something there — Patrik would like 15 minutes to walk you through it and see if we can help. Would Tuesday or Thursday work?"`, bullets: false, highlight: false },
-    { num: 3, label: 'They ask anything — price, what we do, who', text: `"Honestly, that's Patrik's side, I just book his time. Tuesday or Thursday?"`, bullets: false, highlight: false },
-    { num: 4, label: '"Send me an email"', text: `"Will do, it'll be from me within the hour. If it looks right I'll check back Thursday. Fair?" Copy the email from the panel on the right, send it, log Sent email.`, bullets: false, highlight: true },
-    { num: 5, label: 'A no, or they\'re short with you', text: `"No problem, I'll leave you be. Good luck out there." And you're out — next lead.`, bullets: false, highlight: false },
-  ]
-  const scriptSteps = isRep ? setterSteps : fullSteps
+  // Rep view renders the visual setter flow (SAY cards + IF branches) inline below;
+  // the generic steps array is the admin script only.
+  const scriptSteps = fullSteps
 
   const emailTo      = lead.owner_email || lead.email || ''
   const emailSubject = lead.company || ''
@@ -574,7 +569,71 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
 
             {/* Script — left column (desktop), order:2 on mobile */}
             <section className="cm-script">
-              {scriptSteps.map(({ num, label, text, bullets, highlight }) => {
+              {isRep && (() => {
+                // Visual grammar: WHITE CARD WITH QUOTES = words that leave your mouth.
+                // Everything else is coaching and never spoken. Colored IF cards = branches.
+                const sayCard = { margin: 0, fontFamily: 'Inter,sans-serif', fontSize: 17, lineHeight: 1.62, color: '#17170F', background: '#FFFFFF', border: '1px solid #D3D0C7', borderLeft: '2px solid #B58A38', padding: 16 }
+                const coach   = { margin: 0, marginTop: 8, fontFamily: 'Inter,sans-serif', fontSize: 13, fontStyle: 'italic', color: '#77746A', lineHeight: 1.5 }
+                const stepLbl = { display: 'block', marginBottom: 8, fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }
+                const numeral = { fontFamily: "'Bricolage Grotesque','Inter',sans-serif", fontWeight: 800, fontSize: 17, color: '#8A6828', lineHeight: 1.3 }
+                const row     = { display: 'grid', gridTemplateColumns: '28px minmax(0,1fr)', gap: 16, marginBottom: 24 }
+                const ifCard  = (rail, bg) => ({ borderLeft: `2px solid ${rail}`, background: bg, padding: 16, marginBottom: 8 })
+                const ifLabel = (color) => ({ display: 'block', marginBottom: 8, fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color, fontWeight: 600 })
+                const ifSay   = { margin: 0, fontFamily: 'Inter,sans-serif', fontSize: 15, lineHeight: 1.6, color: '#17170F' }
+                const ifDo    = { margin: 0, marginTop: 8, fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600 }
+                return (
+                  <div>
+                    <div style={row}>
+                      <div style={numeral}>1</div>
+                      <div>
+                        <span style={stepLbl}>Break the ice — they talk first</span>
+                        <p style={sayCard}>"Hi, is this {firstName || 'the owner'}? This is {repName} with Ahead of Market, out here in Phoenix."</p>
+                        <span style={{ ...stepLbl, marginTop: 16 }}>Then pick one — make it yours</span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          <p style={{ ...sayCard, fontSize: 15, flex: '1 1 240px' }}>"Hope it's finally cooling down out your way?"</p>
+                          <p style={{ ...sayCard, fontSize: 15, flex: '1 1 240px' }}>"You out on a job in this heat?"</p>
+                        </div>
+                        <p style={coach}>Then STOP and listen. They talk first — now it's a conversation, not a pitch.</p>
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={numeral}>2</div>
+                      <div>
+                        <span style={stepLbl}>The reason — one fact, one ask</span>
+                        <p style={sayCard}>"{hookLine}"</p>
+                        <p style={{ ...sayCard, marginTop: 8 }}>"We don't want to assume, but we think there might be something there — Patrik would like 15 minutes to walk you through it and see if we can help. Would Tuesday or Thursday work?"</p>
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={numeral}>3</div>
+                      <div>
+                        <span style={stepLbl}>Then — whatever they say next</span>
+                        <div style={ifCard('#4A6B4A', '#F0F4EE')}>
+                          <span style={ifLabel('#4A6B4A')}>They pick a day</span>
+                          <p style={ifSay}>"Perfect. Patrik will call you then — what's the best number for him?"</p>
+                          <p style={ifDo}>Log Booked. That's the whole job.</p>
+                        </div>
+                        <div style={ifCard('#B58A38', '#FBF4E4')}>
+                          <span style={ifLabel('#8A6828')}>They ask anything — price, what, who</span>
+                          <p style={ifSay}>"Honestly, that's Patrik's side, I just book his time. Tuesday or Thursday?"</p>
+                          <p style={ifDo}>Every question gets this same answer.</p>
+                        </div>
+                        <div style={ifCard('#B58A38', '#FBF4E4')}>
+                          <span style={ifLabel('#8A6828')}>"Send me an email"</span>
+                          <p style={ifSay}>"Will do, it'll be from me within the hour. Fair?"</p>
+                          <p style={ifDo}>Copy the email from the panel, send it, log Sent email.</p>
+                        </div>
+                        <div style={ifCard('#D3D0C7', '#F1EFEA')}>
+                          <span style={ifLabel('#77746A')}>A no, or they're short with you</span>
+                          <p style={ifSay}>"No problem, I'll leave you be. Good luck out there."</p>
+                          <p style={ifDo}>Log it, next lead. No defending, no convincing.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+              {!isRep && scriptSteps.map(({ num, label, text, bullets, highlight }) => {
                 if (!text) return null
                 return (
                   <div key={num} style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,1fr)', gap: 16, marginBottom: 24 }}>
