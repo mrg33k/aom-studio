@@ -14,6 +14,7 @@ const {
 } = await import('../api/_lib/runnerAuth.js')
 const {
   LOCAL_CODEX_MODEL,
+  runnerDeviceOnline,
   resolveRunnerRoute,
   resolveRunnerPreference,
   runnerRoomPreferenceKey,
@@ -56,6 +57,30 @@ test('runner routing fails closed when the saved model cannot be verified', asyn
   }
 })
 
+test('Auto stamps only a recently online runner as its Codex fallback', async () => {
+  const previousFetch = globalThis.fetch
+  const recent = new Date(Date.now() - 5_000).toISOString()
+  let call = 0
+  globalThis.fetch = async () => {
+    call += 1
+    if (call === 1) return { ok: true, json: async () => [{ value: JSON.stringify({ bobby: 'default' }) }] }
+    return { ok: true, json: async () => [{ id: 'device-1', name: 'Studio Mac', status: 'online', last_seen_at: recent }] }
+  }
+  try {
+    const route = await resolveRunnerRoute({ clientId: 'aom', userId: 'user-1', agent: 'bobby' })
+    assert.equal(route.local, false)
+    assert.equal(route.fallbackDevice?.id, 'device-1')
+  } finally {
+    globalThis.fetch = previousFetch
+  }
+})
+
+test('Auto does not promise an offline runner as a fallback', () => {
+  assert.equal(runnerDeviceOnline({ id: 'd', status: 'online', last_seen_at: new Date(Date.now() - 80_000).toISOString() }), false)
+  assert.equal(runnerDeviceOnline({ id: 'd', status: 'offline', last_seen_at: new Date().toISOString() }), false)
+  assert.equal(runnerDeviceOnline({ id: 'd', status: 'working', last_seen_at: new Date().toISOString() }), true)
+})
+
 test('model picker describes local Codex as user-owned rather than hosted', () => {
   assert.deepEqual(MODEL_OPTIONS.find(({ id }) => id === LOCAL_CODEX_MODEL), {
     id: 'codex-local',
@@ -79,6 +104,7 @@ test('runner prompt carries room context and treats transcript as untrusted', ()
 })
 
 test('runner permits HTTPS and localhost HTTP but refuses cleartext remote servers', () => {
+  assert.equal(normalizeServer(), 'https://www.aheadofmarket.com')
   assert.equal(normalizeServer('https://aheadofmarket.com/path'), 'https://aheadofmarket.com')
   assert.equal(normalizeServer('http://127.0.0.1:5173'), 'http://127.0.0.1:5173')
   assert.throws(() => normalizeServer('http://example.com'), /refuses non-local HTTP/)
@@ -87,6 +113,8 @@ test('runner permits HTTPS and localhost HTTP but refuses cleartext remote serve
 test('dashboard write path strips client runner markers and stamps only verified devices', () => {
   const api = readFileSync(new URL('../api/dashboard/supabase-messages.js', import.meta.url), 'utf8')
   assert.match(api, /delete sanitizedMetadata\.runner_route/)
+  assert.match(api, /delete sanitizedMetadata\.runner_fallback/)
   assert.match(api, /runner_device_id: runnerRoute\.device\.id/)
+  assert.match(api, /runner_fallback_device_id: runnerRoute\.fallbackDevice\.id/)
   assert.match(api, /enqueueRunnerJob/)
 })

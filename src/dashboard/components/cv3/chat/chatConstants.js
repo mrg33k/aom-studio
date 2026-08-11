@@ -50,7 +50,7 @@ export const VOICE_OPTIONS = [
 // tool lane, explicit Claude models, and an AOM-managed hosted OpenAI lane.
 // /cvg still owns its Gemini picker separately (localStorage 'cvgModel').
 export const MODEL_OPTIONS = [
-  { id: 'default',          label: 'Auto (Claude + fallback)', desc: 'Sonnet first; switches on limits' },
+  { id: 'default',          label: 'Auto (Claude → Codex)', desc: 'Codex fallback when Corner Runner is online' },
   { id: 'opus',             label: 'Claude Opus',          desc: 'Deepest reasoning' },
   { id: 'sonnet',           label: 'Claude Sonnet',        desc: 'Fast + capable' },
   { id: 'haiku',            label: 'Claude Haiku',         desc: 'Fastest, light' },

@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url'
 import { randomUUID } from 'node:crypto'
 
 const VERSION = '0.1.0'
-const DEFAULT_SERVER = 'https://aheadofmarket.com'
+const DEFAULT_SERVER = 'https://www.aheadofmarket.com'
 const POLL_MS = 2_500
 const HEARTBEAT_MS = 20_000
 const MAX_JOB_MS = 30 * 60 * 1000

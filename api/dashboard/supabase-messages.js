@@ -365,6 +365,9 @@ export default async function handler(req, res) {
     delete sanitizedMetadata.runner_route
     delete sanitizedMetadata.runner_device_id
     delete sanitizedMetadata.runner_device_name
+    delete sanitizedMetadata.runner_fallback
+    delete sanitizedMetadata.runner_fallback_device_id
+    delete sanitizedMetadata.runner_fallback_device_name
     const trustedMetadata = runnerRoute.local
       ? {
           ...sanitizedMetadata,
@@ -372,7 +375,14 @@ export default async function handler(req, res) {
           runner_device_id: runnerRoute.device.id,
           runner_device_name: runnerRoute.device.name,
         }
-      : sanitizedMetadata
+      : runnerRoute.fallbackDevice
+        ? {
+            ...sanitizedMetadata,
+            runner_fallback: 'codex-local',
+            runner_fallback_device_id: runnerRoute.fallbackDevice.id,
+            runner_fallback_device_name: runnerRoute.fallbackDevice.name,
+          }
+        : sanitizedMetadata
 
     // ---- Project SCOPE authorization (r4 root fix, 2026-07-27) -------------
     // The tenant gate above answers "may this caller act inside this ROOM". It

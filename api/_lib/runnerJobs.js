@@ -1,6 +1,7 @@
 import { runnerServiceHeaders, runnerSupabaseUrl } from './runnerAuth.js'
 
 const LOCAL_CODEX_MODEL = 'codex-local'
+const RUNNER_ONLINE_MS = 75_000
 
 function parsePreferenceValue(raw) {
   if (!raw) return {}
@@ -20,6 +21,17 @@ export function resolveRunnerPreference(models, key) {
   return 'default'
 }
 
+export function runnerDeviceOnline(device, now = Date.now()) {
+  const lastSeen = device?.last_seen_at ? Date.parse(device.last_seen_at) : 0
+  return Boolean(
+    device?.id
+    && ['online', 'working'].includes(String(device.status || '').toLowerCase())
+    && Number.isFinite(lastSeen)
+    && lastSeen > 0
+    && now - lastSeen < RUNNER_ONLINE_MS
+  )
+}
+
 export async function resolveRunnerRoute({ clientId, userId, agent, project }) {
   if (!clientId || !userId) return { local: false, device: null }
   const prefResponse = await fetch(
@@ -33,7 +45,8 @@ export async function resolveRunnerRoute({ clientId, userId, agent, project }) {
   const prefRows = await prefResponse.json()
   const models = parsePreferenceValue(prefRows?.[0]?.value)
   const key = runnerRoomPreferenceKey({ agent, project })
-  if (resolveRunnerPreference(models, key) !== LOCAL_CODEX_MODEL) {
+  const preference = resolveRunnerPreference(models, key)
+  if (![LOCAL_CODEX_MODEL, 'default'].includes(preference)) {
     return { local: false, device: null }
   }
 
@@ -45,9 +58,19 @@ export async function resolveRunnerRoute({ clientId, userId, agent, project }) {
     ),
     { headers: runnerServiceHeaders() },
   )
-  if (!deviceResponse.ok) return { local: true, device: null, error: 'device_lookup_failed' }
+  if (!deviceResponse.ok) {
+    return preference === LOCAL_CODEX_MODEL
+      ? { local: true, device: null, error: 'device_lookup_failed' }
+      : { local: false, device: null, fallbackDevice: null, fallbackError: 'device_lookup_failed' }
+  }
   const devices = await deviceResponse.json()
-  return { local: true, device: Array.isArray(devices) ? devices[0] || null : null }
+  const device = Array.isArray(devices) ? devices[0] || null : null
+  if (preference === LOCAL_CODEX_MODEL) return { local: true, device }
+  return {
+    local: false,
+    device: null,
+    fallbackDevice: runnerDeviceOnline(device) ? device : null,
+  }
 }
 
 export async function enqueueRunnerJob({ device, userId, clientId, message }) {

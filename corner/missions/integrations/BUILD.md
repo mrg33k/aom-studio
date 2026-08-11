@@ -111,3 +111,21 @@ Release verification:
 - Bridge commit `6b56db4ad` was pushed to `master`; `com.aom-ea.bridge-daemon` restarted from PID 27432 to 1763, passed startup/backfill, and resumed inbox polling with exit code 0.
 
 **Status:** shipped and verified on canonical production; an authenticated paired-computer turn is the next user-level acceptance check.
+
+### R4 — Auto fallback from Claude to the sender's Corner Runner
+
+When Auto encounters a Claude subscription pause or usage cap, hand the existing
+authenticated user turn to that sender's paired Corner Runner before trying hosted
+fallback providers. Preserve tenant/user/device ownership, enqueue the original
+message only once, and keep the existing non-Codex fallback path when no usable
+runner is paired.
+
+Implementation and release checks:
+
+- Auto messages receive a server-owned Codex fallback marker only while the sender's paired runner is online; browser-supplied markers are stripped.
+- The room bridge detects subscription-disabled, paused, suspended, and usage-limit failures, queues the original turn idempotently to that exact verified device, and only then falls through to existing hosted providers.
+- `AOM Studio Mac` is paired to `/Users/aom-inhouse/aom-studio-transfer/AOM-EA`, installed as a persistent LaunchAgent, and heartbeat-verified online.
+- The runner's canonical server was corrected to `https://www.aheadofmarket.com`; the former apex redirect stripped its authorization header.
+- 16 focused Node tests, 22 bridge honesty tests, Python compilation, and the Vite production build pass.
+
+**Status:** verified and ready for production release.

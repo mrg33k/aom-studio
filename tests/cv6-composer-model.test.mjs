@@ -34,6 +34,14 @@ test('OpenAI is a deliberate room model, not an automatic fallback', () => {
   )
 })
 
+test('automatic mode names Codex as the online-runner fallback', () => {
+  assert.deepEqual(MODEL_OPTIONS.find(({ id }) => id === 'default'), {
+    id: 'default',
+    label: 'Auto (Claude → Codex)',
+    desc: 'Codex fallback when Corner Runner is online',
+  })
+})
+
 test('local Codex is an explicit per-room option backed by Corner Runner', () => {
   assert.deepEqual(MODEL_OPTIONS.find(({ id }) => id === 'codex-local'), {
     id: 'codex-local',
