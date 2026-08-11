@@ -577,8 +577,10 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
           {/* Two-column content */}
           <div className="cm-cols">
 
-            {/* Script — left column (desktop), order:2 on mobile */}
-            <section className="cm-script">
+            {/* Script — left column (desktop), order:2 on mobile.
+                Reps get script FIRST on mobile: mid-call the SAY cards must sit
+                right under the dial button, not below the research panels. */}
+            <section className="cm-script" style={isRep ? { order: 1 } : undefined}>
               {isRep && (() => {
                 // Visual grammar: WHITE CARD WITH QUOTES = words that leave your mouth.
                 // Everything else is coaching and never spoken. Colored IF cards = branches.
@@ -695,8 +697,8 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
               })}
             </section>
 
-            {/* Brief sidebar — right column (desktop), order:1 on mobile */}
-            <aside className="cm-brief">
+            {/* Brief sidebar — right column (desktop), order:1 on mobile (order:2 for reps) */}
+            <aside className="cm-brief" style={isRep ? { order: 2 } : undefined}>
 
               {/* Their site */}
               <div style={{ marginBottom: 24 }}>
