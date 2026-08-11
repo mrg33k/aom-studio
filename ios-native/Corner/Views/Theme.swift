@@ -27,6 +27,20 @@ extension Color {
             opacity: opacity
         )
     }
+
+    /// Parse a six-digit CSS hex string ("#RRGGBB") into a Color.
+    /// Returns nil when the string does not match that pattern.
+    /// Only six-digit form is supported — the Avatar API always stores "#RRGGBB".
+    init?(hexString: String) {
+        var hex = hexString.trimmingCharacters(in: .whitespaces)
+        guard hex.hasPrefix("#") else { return nil }
+        hex.removeFirst()
+        guard hex.count == 6 else { return nil }
+        var value: UInt64 = 0
+        let ok = Scanner(string: hex).scanHexInt64(&value)
+        guard ok else { return nil }
+        self.init(cv6: UInt32(value & 0xFFFFFF))
+    }
 }
 
 // MARK: - The three palettes

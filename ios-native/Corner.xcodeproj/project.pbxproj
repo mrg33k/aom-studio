@@ -20,6 +20,7 @@
 		30BDC1F8818270D2D032B74D /* RoomFilesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AB4FE9FD2CF215F36AD149 /* RoomFilesStore.swift */; };
 		312766B6F9DA582A0B9299E4 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF3E52AD81A2EC95CEED4E8 /* AccountView.swift */; };
 		360A15234F8A1B6C6AEB4460 /* AttachmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80716889B1EAF64D5F4D475E /* AttachmentTests.swift */; };
+		37A297149FAE56CA5A8B49CD /* AvatarEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7AF275C1A50596A51C2BE7 /* AvatarEditSheet.swift */; };
 		37E264721226C44D2B8330E5 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4CB548873FD74F1BFC766C33 /* OFL.txt */; };
 		3CFC9CA3C44161F52E03C317 /* TrackerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC120F7C6D2DBDEE3EED7C41 /* TrackerStore.swift */; };
 		3E19C3887D4D24B99A3923AD /* AssignSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A92F26E1C6D5083CFB19872 /* AssignSheet.swift */; };
@@ -94,6 +95,7 @@
 		2668E5F1D641717C4F6D22D1 /* RoomFilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomFilesView.swift; sourceTree = "<group>"; };
 		277963E40CC1BA7254A5AFEB /* PreviewHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHarness.swift; sourceTree = "<group>"; };
 		2A92F26E1C6D5083CFB19872 /* AssignSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssignSheet.swift; sourceTree = "<group>"; };
+		2B7AF275C1A50596A51C2BE7 /* AvatarEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarEditSheet.swift; sourceTree = "<group>"; };
 		30D577DF665C37F7C6CDC690 /* TrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerView.swift; sourceTree = "<group>"; };
 		3DA0369243BECC948ABC6C34 /* Room.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Room.swift; sourceTree = "<group>"; };
 		414FBC6E316F126CBB060672 /* TrackerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerModels.swift; sourceTree = "<group>"; };
@@ -167,6 +169,7 @@
 				DCF3E52AD81A2EC95CEED4E8 /* AccountView.swift */,
 				ACE25EB01A73281103C7D018 /* ASCIIBackground.swift */,
 				2A92F26E1C6D5083CFB19872 /* AssignSheet.swift */,
+				2B7AF275C1A50596A51C2BE7 /* AvatarEditSheet.swift */,
 				A5CFBB6863CA0F004E7A1BF1 /* BlockView.swift */,
 				9230C3027553EA9247E87A7B /* ChatView.swift */,
 				8899E5EB7B22DB9ECBE0F3AD /* ChatViewModel.swift */,
@@ -420,6 +423,7 @@
 				74493D719E1C7DFEEB61A489 /* AppRouter.swift in Sources */,
 				3E19C3887D4D24B99A3923AD /* AssignSheet.swift in Sources */,
 				E088321A5DD334011E79ED97 /* Attachment.swift in Sources */,
+				37A297149FAE56CA5A8B49CD /* AvatarEditSheet.swift in Sources */,
 				E8E73FFFDA7DF9FA8064EF47 /* BlockView.swift in Sources */,
 				C469971FD6BD6D5B756266ED /* ChatView.swift in Sources */,
 				2AC0BF1ADB5977E4643C2A9B /* ChatViewModel.swift in Sources */,

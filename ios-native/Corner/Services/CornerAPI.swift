@@ -947,6 +947,110 @@ final class CornerAPI: ObservableObject {
         RoomSubscription(client: client, room: room, onInsert: onInsert)
     }
 
+    // MARK: - Avatar identity (corner:native-ios — tap to edit photo/initials/color)
+
+    /// The three visual identity fields the user can edit. Mirrors the web's
+    /// `{ initials, color, image }` draft object in AvatarIdentityDialog.jsx.
+    struct AvatarIdentity: Equatable {
+        var initials: String
+        var hexColor: String   // "#RRGGBB"
+        var imageURL: String?  // nil → show initials
+    }
+
+    /// Derive initials from a display name (fallback when no saved initials exist).
+    private static func defaultInitials(from name: String) -> String {
+        let words = name.trimmingCharacters(in: .whitespaces)
+            .components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        if words.count >= 2 {
+            return (String(words[0].prefix(1)) + String(words[1].prefix(1))).uppercased()
+        }
+        return String(name.prefix(2)).uppercased()
+    }
+
+    /// The signed-in user's current avatar identity, read from session metadata.
+    /// Falls back to name-derived initials + the web's default blue when nothing is saved.
+    var userAvatarIdentity: AvatarIdentity {
+        let meta = session?.user.userMetadata ?? [:]
+        let displayName = userDisplayName
+            ?? userEmail?.split(separator: "@").first.map(String.init)
+            ?? "U"
+        let savedInitials = meta["avatar_initials"]?.stringValue
+        let savedColor   = meta["avatar_color"]?.stringValue
+        let savedURL     = meta["avatar_url"]?.stringValue
+
+        let initials: String
+        if let si = savedInitials, !si.isEmpty { initials = si }
+        else { initials = CornerAPI.defaultInitials(from: displayName) }
+
+        let hexColor: String
+        if let sc = savedColor,
+           sc.hasPrefix("#"), sc.count == 7 { hexColor = sc }
+        else { hexColor = "#2563EB" }
+
+        let imageURL: String?
+        if let url = savedURL, !url.isEmpty { imageURL = url } else { imageURL = nil }
+
+        return AvatarIdentity(initials: initials, hexColor: hexColor, imageURL: imageURL)
+    }
+
+    // MARK: - Save avatar identity
+
+    private struct AvatarSaveResult: Decodable {
+        let ok: Bool?
+        let avatar_url: String?
+        let initials: String?
+        let color: String?
+    }
+
+    /// POST /api/dashboard/avatar — the web's `saveProfileIdentity` path ported
+    /// to native. Accepts initials + color + optional image bytes (JPEG by default),
+    /// or a `removeImage` flag that clears the photo and falls back to initials.
+    ///
+    /// After a successful save the Supabase session is refreshed so that
+    /// `userAvatarIdentity` returns the updated values without a sign-out/in cycle.
+    @discardableResult
+    func saveAvatarIdentity(
+        initials: String,
+        hexColor: String,
+        imageData: Data? = nil,
+        mimeType: String = "image/jpeg",
+        removeImage: Bool = false
+    ) async throws -> AvatarIdentity {
+        var body: [String: Any] = [
+            "initials": initials,
+            "color": hexColor,
+        ]
+        if let imageData {
+            body["image_base64"] = imageData.base64EncodedString()
+            body["mime_type"] = mimeType
+        } else if removeImage {
+            body["remove_image"] = true
+        }
+        let req = try await authorizedRequest(
+            path: "/api/dashboard/avatar",
+            method: "POST",
+            jsonBody: body
+        )
+        let data = try await run(req)
+        guard let resp = try? JSONDecoder().decode(AvatarSaveResult.self, from: data),
+              resp.ok == true else {
+            let msg = CornerAPI.serverMessage(from: data)
+            throw APIError.badResponse(
+                status: 500,
+                message: msg.isEmpty ? "Profile could not be updated." : msg
+            )
+        }
+        // Refresh the session so userAvatarIdentity picks up the new metadata. The
+        // authStateChanges stream delivers the refreshed session into `session`.
+        try? await client.auth.refreshSession()
+        let url = resp.avatar_url
+        return AvatarIdentity(
+            initials: resp.initials ?? initials,
+            hexColor: resp.color ?? hexColor,
+            imageURL: url?.isEmpty == false ? url : nil
+        )
+    }
+
     // MARK: - Room creation (corner:native-ios — "+ New" from phone)
 
     /// Port of cv6next/data/useHomeData.js `slugify()`:

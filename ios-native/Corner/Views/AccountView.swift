@@ -22,6 +22,7 @@
 import SwiftUI
 import UIKit
 import UserNotifications
+import PhotosUI
 
 struct AccountView: View {
     @EnvironmentObject private var api: CornerAPI
@@ -30,6 +31,7 @@ struct AccountView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showDeleteFlow = false
+    @State private var showingAvatarEdit = false
     @State private var workspaceRooms: [CornerAPI.ProjectRow] = []
     @State private var workspaceFailed = false
 
@@ -83,6 +85,17 @@ struct AccountView: View {
             .sheet(isPresented: $showDeleteFlow) {
                 DeleteAccountView()
                     .environmentObject(api)
+            }
+            .sheet(isPresented: $showingAvatarEdit) {
+                AvatarEditSheet(identity: api.userAvatarIdentity) { draft, imageData, removeImage in
+                    try await api.saveAvatarIdentity(
+                        initials: draft.initials,
+                        hexColor: draft.hexColor,
+                        imageData: imageData,
+                        removeImage: removeImage
+                    )
+                }
+                .environmentObject(api)
             }
         }
         .task {
@@ -173,17 +186,35 @@ struct AccountView: View {
 
     private var accountSection: some View {
         Section("Account") {
-            HStack(spacing: Theme.s3) {
-                AvatarDisc(name: api.userDisplayName ?? api.userEmail ?? "?")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(api.userDisplayName ?? "—")
-                        .font(.hanken(14.5).weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                    Text(api.userEmail ?? "—")
-                        .font(.hanken(12.5))
-                        .foregroundStyle(Theme.inkSoft)
+            // Tappable row — opens the avatar editor. The edit icon on the disc
+            // mirrors the web's `.cv6-room-avatar-edit` pencil overlay.
+            Button {
+                showingAvatarEdit = true
+            } label: {
+                HStack(spacing: Theme.s3) {
+                    AvatarDisc(identity: api.userAvatarIdentity)
+                        .overlay(alignment: .bottomTrailing) {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(Theme.accent)
+                                .background(Theme.ground, in: Circle())
+                                .offset(x: 2, y: 2)
+                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(api.userDisplayName ?? "—")
+                            .font(.hanken(14.5).weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Text(api.userEmail ?? "—")
+                            .font(.hanken(12.5))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.inkFaint)
                 }
             }
+            .buttonStyle(.plain)
             .padding(.vertical, Theme.s1)
             LabeledContent("Workspace", value: api.world ?? "Not set")
         }
@@ -325,31 +356,89 @@ private struct ThemeSwatch: View {
     }
 }
 
-/// The web's gradient avatar disc (--avatar: 135deg accent → blue-700) with the
-/// account's initials. Display-only; photo/initials editing stays on the web.
-/// Shared: the Settings account card and the home top bar both wear it.
+/// The user's avatar disc. Supports three rendering modes:
+///   1. Remote photo   — `AsyncImage` loaded from `imageURL`
+///   2. Local preview  — `Image(uiImage:)` from a locally-picked `UIImage`
+///   3. Initials       — two-letter monogram on a solid `hexColor` background
+///
+/// The web equivalent is the `.cv6-user-profile-avatar` button + the CSS
+/// `--avatar` gradient and avatar-url background-image rules in cv6.css.
+///
+/// Shared: the Settings account card, the home top-bar button, and the edit
+/// sheet preview all wear this view.
 struct AvatarDisc: View {
-    let name: String
-    var size: CGFloat = 44
+    private let _initials: String
+    private let _hexColor: String
+    private let _imageURL: String?
+    /// A locally-picked image shown instead of the remote URL during editing.
+    var localImage: UIImage? = nil
+    let size: CGFloat
 
-    private var initials: String {
-        let words = name.split(separator: " ")
-        if words.count >= 2 { return String(words[0].prefix(1) + words[1].prefix(1)).uppercased() }
-        return String(name.prefix(2)).uppercased()
+    // MARK: Initialisers
+
+    /// Name-derived init (backward-compat; used by rail header + previews).
+    /// Uses the web's default blue (#3B82F6) when no saved color exists.
+    init(name: String, size: CGFloat = 44) {
+        let words = name.trimmingCharacters(in: .whitespaces)
+            .components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        if words.count >= 2 {
+            _initials = (String(words[0].prefix(1)) + String(words[1].prefix(1))).uppercased()
+        } else {
+            _initials = String(name.prefix(2)).uppercased()
+        }
+        _hexColor = "#3B82F6"
+        _imageURL = nil
+        self.size = size
     }
 
+    /// Full identity init — used by the Settings card and the edit sheet preview.
+    init(identity: CornerAPI.AvatarIdentity, size: CGFloat = 44) {
+        _initials = identity.initials
+        _hexColor = identity.hexColor
+        _imageURL = identity.imageURL
+        self.size = size
+    }
+
+    // MARK: Body
+
     var body: some View {
-        Text(initials)
+        Group {
+            if let local = localImage {
+                // Locally-picked photo (before upload) — shown during editing.
+                Image(uiImage: local)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            } else if let urlStr = _imageURL, let url = URL(string: urlStr) {
+                // Remote photo (Supabase Storage CDN URL).
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                            .frame(width: size, height: size)
+                            .clipShape(Circle())
+                    default:
+                        // Placeholder while loading / on error.
+                        initialsDisc
+                    }
+                }
+            } else {
+                initialsDisc
+            }
+        }
+    }
+
+    // MARK: Initials fallback
+
+    private var bgColor: Color { Color(hexString: _hexColor) ?? Color(cv6: 0x3B82F6) }
+
+    private var initialsDisc: some View {
+        Text(_initials)
             .font(.hanken(size * 0.34).weight(.bold))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
-            .background(
-                LinearGradient(
-                    colors: [Color(cv6: 0x3B82F6), Color(cv6: 0x1D4ED8)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ),
-                in: Circle()
-            )
+            .background(bgColor, in: Circle())
     }
 }
 

@@ -110,7 +110,7 @@ struct RoomListView: View {
                     : "Review queue")
 
                 Button { router.showingSettings = true } label: {
-                    AvatarDisc(name: api.userDisplayName ?? api.userEmail ?? "?", size: 30)
+                    AvatarDisc(identity: api.userAvatarIdentity, size: 30)
                 }
                 .accessibilityLabel("Settings")
             }
