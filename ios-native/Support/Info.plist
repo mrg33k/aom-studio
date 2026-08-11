@@ -42,6 +42,10 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Corner listens only while the mic button in the composer is on, to turn your speech into text. No audio is stored.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Corner turns your speech into text in the composer. Audio is processed by Apple's speech recognition.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>HankenGrotesk-VF.ttf</string>
