@@ -91,7 +91,18 @@ final class CornerAPI: ObservableObject {
         // Drop this device's push registration BEFORE the token is gone, or the row
         // keeps pointing a stranger's phone at this world's room names.
         await PushService.shared.unregisterCurrentDevice()
-        try? await client.auth.signOut()
+        // `.local` clears the Keychain-persisted session with NO network round-trip. The
+        // default `.global` scope calls /logout and throws on any non-2xx (expired token,
+        // offline, a 403) BEFORE removing the local session — and `try?` swallowed that
+        // throw, leaving the Keychain session intact so the app came back on Home still
+        // signed in. Local cannot fail that way: it removes the session, period.
+        try? await client.auth.signOut(scope: .local)
+        // Do not wait on the authStateChanges stream to flip the gate. Drive the published
+        // state to signed-out this runloop so RootView returns to the login screen the
+        // instant the Account sheet dismisses. The stream's own .signedOut lands after and
+        // sets these to nil again — idempotent.
+        session = nil
+        world = nil
     }
 
     var userEmail: String? { session?.user.email }
