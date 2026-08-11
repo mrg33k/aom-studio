@@ -26,15 +26,31 @@ struct RoomListView: View {
     @State private var query = ""
     @State private var showingNewRoom = false
 
+    /// The web chat directory's filter chips (All / Agents / Projects). Agents IS the
+    /// per-conversation agent picker: every specialist as their own conversation row.
+    private enum HomeFilter: String, CaseIterable {
+        case all = "All", agents = "Agents", projects = "Projects"
+    }
+    @State private var filter: HomeFilter = .all
+
     var body: some View {
         List {
             if api.world == nil {
                 noWorldNotice
             } else if query.isEmpty {
-                if review.waitingCount > 0 { waitingRow }
-                recencyRows
-                toolsRows
-                if let error = store.railError { railErrorRow(error) }
+                eyebrowRow
+                filterChips
+                switch filter {
+                case .all:
+                    if review.waitingCount > 0 { waitingRow }
+                    recencyRows
+                    toolsRows
+                    if let error = store.railError { railErrorRow(error) }
+                case .agents:
+                    agentRows
+                case .projects:
+                    projectRows
+                }
             } else {
                 searchRows
             }
@@ -129,6 +145,91 @@ struct RoomListView: View {
             review.startPolling()
         }
         .onChange(of: api.world) { _, _ in store.refresh() }
+    }
+
+    // MARK: - Eyebrow + filter chips (the web mobile home's top of list)
+
+    private var eyebrowRow: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("ALL ROOMS")
+                .font(.hanken(12).weight(.semibold))
+                .tracking(1.2)
+                .foregroundStyle(Theme.inkSoft)
+            Text("Projects and specialists")
+                .font(.hkFootnote)
+                .foregroundStyle(Theme.inkFaint)
+        }
+        .padding(.top, Theme.s2)
+        .plainCardRow()
+    }
+
+    private var chipCount: [HomeFilter: Int] {
+        let agents = AgentRoster.all.count
+        let projects = store.projects.count
+        return [.all: agents + projects, .agents: agents, .projects: projects]
+    }
+
+    private var filterChips: some View {
+        HStack(spacing: Theme.s2) {
+            ForEach(HomeFilter.allCases, id: \.self) { f in
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) { filter = f }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(f.rawValue)
+                            .font(.hanken(14).weight(.semibold))
+                        if let n = chipCount[f], n > 0 {
+                            Text("\(n)")
+                                .font(.hanken(12).weight(.semibold).monospacedDigit())
+                                .opacity(0.75)
+                        }
+                    }
+                    .foregroundStyle(filter == f ? Color.white : Theme.inkSoft)
+                    .padding(.horizontal, 14)
+                    .frame(height: 38)
+                    .background(filter == f ? Theme.accent : Theme.raised2, in: Capsule())
+                    .overlay(Capsule().strokeBorder(filter == f ? Color.clear : Theme.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(filter == f ? [.isSelected] : [])
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, Theme.s1)
+        .plainCardRow()
+    }
+
+    // MARK: - The agent picker (web chat directory's AGENTS section, per conversation)
+
+    @ViewBuilder
+    private var agentRows: some View {
+        sectionLabel("Agents")
+        ForEach(AgentRoster.all, id: \.slug) { entry in
+            Button {
+                if let world = api.world {
+                    router.open(Room(world: world, kind: .agent(slug: entry.slug), title: entry.title, subtitle: entry.subtitle))
+                }
+            } label: {
+                AgentPickerRow(entry: entry)
+            }
+            .buttonStyle(CardButtonStyle())
+            .plainCardRow()
+        }
+    }
+
+    @ViewBuilder
+    private var projectRows: some View {
+        sectionLabel("Projects")
+        ForEach(store.projects, id: \.room.id) { group in
+            Button { router.open(group.room) } label: {
+                RoomRowCard(
+                    entry: RoomStore.RecentRoom(room: group.room, ts: 0, preview: group.room.subtitle),
+                    isHero: false
+                )
+            }
+            .buttonStyle(CardButtonStyle())
+            .plainCardRow()
+        }
     }
 
     // MARK: - Theme cycle (SharedNav's ThemeCycle: Light → Dark → Glass)
@@ -379,16 +480,14 @@ private struct RoomRowCard: View {
             .accessibilityAddTraits(.isButton)
     }
 
-    // The hero: accent-weak fill, accent edge, larger monogram + title, status word, bar.
+    // The hero, per the LIVE web mobile home (webview-mobile-home.png): solid accent
+    // disc + single letter, no type chip, soft fill, blue edge, status word + track.
     private var hero: some View {
         VStack(alignment: .leading, spacing: Theme.s3) {
             HStack(alignment: .top, spacing: Theme.s3) {
                 Monogram(title: room.title, tint: tint, hero: true)
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: Theme.s2) {
-                        Text(room.title).font(.hkTitle2.weight(.bold)).foregroundStyle(Theme.ink).lineLimit(1)
-                        TypeChip(room: room)
-                    }
+                    Text(room.title).font(.hkTitle2.weight(.bold)).foregroundStyle(Theme.ink).lineLimit(1)
                     if heroActive {
                         HStack(spacing: 6) {
                             Circle().fill(Theme.live).frame(width: 8, height: 8)
@@ -404,18 +503,16 @@ private struct RoomRowCard: View {
             if heroActive { IndeterminateBar() }
         }
         .padding(Theme.s4)
-        .cardSurface(fill: Theme.accentWeak, border: Theme.accent.opacity(0.55), edge: Theme.accent)
+        .cardSurface(fill: Theme.accentWeak, border: Theme.accent.opacity(0.35), edge: Theme.accent)
     }
 
-    // A quiet row: edge, avatar, title + chip, preview, trailing time + dot.
+    // A quiet row, per the live web mobile home: edge, single-letter avatar, title,
+    // preview, trailing time + dot. No type chip — the web home dropped them.
     private var quiet: some View {
         HStack(spacing: Theme.s3) {
             Monogram(title: room.title, tint: tint, hero: false)
             VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: Theme.s2) {
-                    Text(room.title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
-                    TypeChip(room: room)
-                }
+                Text(room.title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 if !entry.preview.isEmpty {
                     Text(entry.preview).font(.hkCaption).foregroundStyle(Theme.inkSoft).lineLimit(1)
                 }
@@ -435,26 +532,53 @@ private struct RoomRowCard: View {
     }
 }
 
-/// The required PROJECT / MISSION / AGENT chip — CV6 `.tag-pill` metrics verbatim
-/// (10px / 700 / .06em / uppercase / 3px 8px / 6px radius) with the contract's tones.
-private struct TypeChip: View {
-    let room: Room
-    private var fg: Color {
-        switch room.typeTag { case .project: Theme.violet; case .mission: Theme.teal; case .agent: Theme.accent }
-    }
-    private var bg: Color {
-        switch room.typeTag { case .project: Theme.violetWeak; case .mission: Theme.tealWeak; case .agent: Theme.accentWeak }
-    }
+/// One agent conversation in the picker — the web chat directory's AGENTS row:
+/// gradient disc + single letter, the agent's TITLE (never a persona name), the
+/// READY state chip, the specialist's one-line domain.
+private struct AgentPickerRow: View {
+    let entry: AgentRoster.Entry
+
     var body: some View {
-        Text(room.typeLabel)
-            .font(.hanken(10).weight(.bold))
-            .tracking(0.6)
-            .foregroundStyle(fg)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(bg, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        HStack(spacing: Theme.s3) {
+            Text(String(entry.title.prefix(1)).uppercased())
+                .font(.hanken(17).weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(
+                    LinearGradient(
+                        colors: [Color(cv6: 0x3B82F6), Color(cv6: 0x1D4ED8)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ),
+                    in: Circle()
+                )
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: Theme.s2) {
+                    Text(entry.title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
+                    HStack(spacing: 5) {
+                        Circle().fill(Theme.inkFaint).frame(width: 6, height: 6)
+                        Text("READY")
+                            .font(.hanken(10).weight(.bold))
+                            .tracking(0.8)
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Theme.chipFill, in: Capsule())
+                }
+                Text(entry.subtitle).font(.hkCaption).foregroundStyle(Theme.inkSoft)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.hkCaption.weight(.semibold)).foregroundStyle(Theme.inkFaint)
+        }
+        .padding(.vertical, Theme.s3)
+        .padding(.horizontal, Theme.s3)
+        .cardSurface(fill: Theme.raised.opacity(0.6), border: Theme.hairline, edge: Theme.accent)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
+
 
 /// The monogram avatar (contract §1 part 2): two letters on every row including the hero,
 /// uppercased. Never a face. Hero fills with the tint; quiet is an outlined disc.
@@ -554,18 +678,19 @@ struct CardButtonStyle: ButtonStyle {
 
 private extension View {
     /// A rounded card surface with a 3px tinted left edge, clipped to the corner radius.
+    /// Home rows ride the web's --radius-tile (18) — the mobile home's pill-ish cards.
     func cardSurface(fill: Color, border: Color, edge: Color) -> some View {
         self
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous).fill(fill)
+                    RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous).fill(fill)
                     Rectangle().fill(edge).frame(width: 3)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                     .strokeBorder(border, lineWidth: 1)
             )
     }
@@ -647,9 +772,33 @@ struct HomePreviewHarness: View {
     var body: some View {
         NavigationStack {
             List {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("ALL ROOMS")
+                        .font(.hanken(12).weight(.semibold)).tracking(1.2).foregroundStyle(Theme.inkSoft)
+                    Text("Projects and specialists")
+                        .font(.hkFootnote).foregroundStyle(Theme.inkFaint)
+                }
+                .padding(.top, Theme.s2)
+                .plainCardRow()
+                HStack(spacing: Theme.s2) {
+                    ForEach(["All 20", "Agents 13", "Projects 7"], id: \.self) { label in
+                        let selected = label.hasPrefix("All")
+                        Text(label)
+                            .font(.hanken(14).weight(.semibold))
+                            .foregroundStyle(selected ? Color.white : Theme.inkSoft)
+                            .padding(.horizontal, 14)
+                            .frame(height: 38)
+                            .background(selected ? Theme.accent : Theme.raised2, in: Capsule())
+                            .overlay(Capsule().strokeBorder(selected ? Color.clear : Theme.hairline, lineWidth: 1))
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, Theme.s1)
+                .plainCardRow()
                 ForEach(Array(samples.enumerated()), id: \.element.id) { index, entry in
                     RoomRowCard(entry: entry, isHero: index == 0).plainCardRow()
                 }
+                AgentPickerRow(entry: AgentRoster.all[0]).plainCardRow()
                 Text("TOOLS")
                     .font(.hkCaption2.weight(.semibold)).tracking(0.8).foregroundStyle(Theme.inkFaint)
                     .padding(.top, Theme.s3).padding(.bottom, Theme.s1).plainCardRow()

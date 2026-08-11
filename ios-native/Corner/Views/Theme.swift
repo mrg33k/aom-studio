@@ -224,6 +224,7 @@ enum Theme {
     static let bubbleRadius: CGFloat = 18
     static let bubbleTail: CGFloat = 4
     static let cardRadius: CGFloat = 16
+    static let tileRadius: CGFloat = 18
     static let buttonRadius: CGFloat = 13
     static let controlRadius: CGFloat = 11
     static let shellRadius: CGFloat = 8
