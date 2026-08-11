@@ -2960,13 +2960,13 @@ function AdminTeamView({ leads }) {
         {reps.map(rep => {
           const batchIds = assignments[rep.username] || []
           const batchLeads = batchIds.map(id => leads.find(l => l.id === id)).filter(Boolean)
-          const called = batchLeads.filter(l => l.status && l.status !== 'new').length
+          const called = batchLeads.filter(l => l.status && l.status !== 'Not contacted').length
           const total = batchIds.length
 
           // Count outcomes across leads in this batch
           const outcomes = {}
           for (const l of batchLeads) {
-            const s = l.status || 'new'
+            const s = l.status || 'Not contacted'
             outcomes[s] = (outcomes[s] || 0) + 1
           }
 
