@@ -318,10 +318,13 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
 
   // One sentence the rep reads verbatim — the only content in the setter call.
   // The call's whole job is booking discovery; anything more is a reason to say no.
+  // Source is why_calling, NOT hook: hook holds the old script's greeting line
+  // ("Hi Charles, this is a cold call...") which double-greets when inlined here;
+  // why_calling is written in caller voice and leads with the company fact.
   const hookLine = isDead && domain
     ? `Your website at ${domain} isn't loading at all right now.`
     : (() => {
-        const src = (lead.hook || lead.site_issue || '').trim()
+        const src = (lead.why_calling || '').trim()
         if (!src) return 'We took a look at how your company shows up online.'
         const first = src.split(/\.\s+/)[0]
         return first.endsWith('.') ? first : `${first}.`
