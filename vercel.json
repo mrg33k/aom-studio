@@ -63,6 +63,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/r7",
+      "destination": "/index.html"
+    },
+    {
       "source": "/services/:path*",
       "destination": "/index.html"
     },

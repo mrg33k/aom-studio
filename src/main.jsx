@@ -147,6 +147,7 @@ const VGearTurn = lazy(() => import('./pages/versions/VGearTurn.jsx'))
 const VDensity = lazy(() => import('./pages/versions/VDensity.jsx'))
 const VCinematicGlass = lazy(() => import('./pages/versions/VCinematicGlass.jsx'))
 const HomeR6Baby = lazy(() => import('./pages/HomeR6Baby.jsx'))
+const HomeAOM2026 = lazy(() => import('./pages/HomeAOM2026.jsx'))
 const ServiceBrandFilm = lazy(() => import('./pages/ServiceBrandFilm.jsx'))
 const ServiceWebBuild = lazy(() => import('./pages/ServiceWebBuild.jsx'))
 const ServiceStrategy = lazy(() => import('./pages/ServiceStrategy.jsx'))
@@ -497,7 +498,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <SystemToastProvider>
       <Suspense fallback={<FullscreenLoading label="Preparing your workspace" />}>
         <Routes>
-          <Route path="/" element={<HomeR6Baby />} />
+          <Route path="/" element={<HomeAOM2026 />} />
+          <Route path="/r7" element={<HomeAOM2026 />} />
           <Route path="/home-v1" element={<App />} />
           <Route path="/about" element={<App />} />
           <Route path="/home-v2" element={<V2Home />} />
