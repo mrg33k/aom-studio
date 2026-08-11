@@ -16,6 +16,27 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 const PASSWORD = 'AOM2026'
 const REPS = ['Courtney', 'Patrik', 'Ash', 'James']
+
+// ─── Rep Portal: session storage helpers ────────────────────────────────────
+const STORAGE_REP_SESSION    = 'outreach_rep_session'
+const STORAGE_REP_ONBOARDING = 'outreach_rep_onboarding_'
+
+function getRepSession() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_REP_SESSION)) } catch { return null }
+}
+function saveRepSession(data) {
+  localStorage.setItem(STORAGE_REP_SESSION, JSON.stringify(data))
+}
+function clearRepSession() {
+  localStorage.removeItem(STORAGE_REP_SESSION)
+  localStorage.removeItem('outreach_unlocked')
+}
+function repOnboardingDone(username) {
+  return localStorage.getItem(STORAGE_REP_ONBOARDING + username) === '1'
+}
+function markOnboardingDone(username) {
+  localStorage.setItem(STORAGE_REP_ONBOARDING + username, '1')
+}
 const STATUSES = [
   'Not contacted',
   'Called (no answer)',
@@ -158,7 +179,7 @@ const CM_OUTCOME_STATUS = {
 }
 
 // ─── Call Mode ────────────────────────────────────────────────────────────────
-function CallMode({ leads, updateLead }) {
+function CallMode({ leads, updateLead, repSession, onCallLogged }) {
   const [idx, setIdx]             = useState(0)
   const [noteInput, setNoteInput] = useState('')
   const [toastText, setToastText] = useState('')
@@ -192,7 +213,9 @@ function CallMode({ leads, updateLead }) {
         date: today,
         channel: 'call',
         note: noteInput.trim() || outcome,
+        ...(repSession ? { rep_username: repSession.username } : {}),
       }])
+      onCallLogged?.()
       clearTimeout(toastTimer.current)
       setToastText(`${lead.company} → ${outcome}${noteInput.trim() ? ' · note saved' : ''}`)
       toastTimer.current = setTimeout(() => setToastText(''), 2200)
@@ -699,6 +722,268 @@ function CallMode({ leads, updateLead }) {
           {toastText}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Rep Login ───────────────────────────────────────────────────────────────
+// Handles both rep login (via outreach_reps table) and admin fallback (AOM2026 password).
+// Security note: uses the anon Supabase client — consistent with the rest of this app's
+// client-side model. No server route is introduced, so the known service-key footgun
+// (open endpoint with no caller check) is not repeated here.
+function RepLogin({ onLogin }) {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [err, setErr]           = useState(false)
+  const [loading, setLoading]   = useState(false)
+
+  const S = {
+    wrap: { minHeight: '100dvh', background: '#F7F6F3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter,sans-serif', padding: 24 },
+    card: { background: '#FFFFFF', border: '1px solid #E4E2DB', padding: '40px 36px', maxWidth: 380, width: '100%' },
+    wordmark: { fontFamily: 'Bricolage Grotesque,sans-serif', fontWeight: 700, fontSize: 18, color: '#17170F', letterSpacing: '-0.02em', marginBottom: 32 },
+    heading: { fontFamily: 'Bricolage Grotesque,sans-serif', fontWeight: 700, fontSize: 22, color: '#17170F', letterSpacing: '-0.02em', marginBottom: 6 },
+    sub: { fontSize: 13, color: '#77746A', marginBottom: 28, lineHeight: 1.5 },
+    label: { fontSize: 12, fontWeight: 600, color: '#43423A', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, display: 'block' },
+    input: { width: '100%', boxSizing: 'border-box', border: '1px solid #D3D0C7', padding: '10px 12px', fontSize: 14, color: '#17170F', background: '#F7F6F3', outline: 'none', fontFamily: 'Inter,sans-serif', marginBottom: 16 },
+    btn: { width: '100%', background: '#B58A38', color: '#FFFFFF', border: 'none', padding: '12px 0', fontSize: 14, fontWeight: 600, fontFamily: 'Inter,sans-serif', cursor: 'pointer', letterSpacing: '0.02em', marginTop: 8 },
+    err: { fontSize: 12, color: '#B04030', marginBottom: 12 },
+  }
+
+  async function submit(e) {
+    e.preventDefault()
+    setErr(false)
+    setLoading(true)
+
+    // 1. Try outreach_reps table first (rep or admin in the table)
+    if (username.trim()) {
+      const { data } = await sb
+        .from('outreach_reps')
+        .select('username, display_name, role, trusted')
+        .eq('username', username.trim().toLowerCase())
+        .eq('password', password)
+        .maybeSingle()
+
+      if (data) {
+        const session = { username: data.username, display_name: data.display_name, role: data.role, trusted: data.trusted }
+        saveRepSession(session)
+        setLoading(false)
+        onLogin(session)
+        return
+      }
+    }
+
+    // 2. Fallback: original AOM2026 password — sets the old unlock flag so existing
+    //    admins continue to see the full view exactly as before
+    if (password === PASSWORD) {
+      localStorage.setItem('outreach_unlocked', '1')
+      setLoading(false)
+      onLogin({ username: username.trim() || 'admin', display_name: 'Admin', role: 'admin', trusted: true, legacyAdmin: true })
+      return
+    }
+
+    setErr(true)
+    setLoading(false)
+  }
+
+  return (
+    <div style={S.wrap}>
+      <div style={S.card}>
+        <div style={S.wordmark}>AOM</div>
+        <div style={S.heading}>Sales Portal</div>
+        <div style={S.sub}>Log in to access the outreach tool.</div>
+
+        <form onSubmit={submit} autoComplete="off">
+          <label style={S.label}>Username</label>
+          <input
+            style={S.input}
+            type="text"
+            value={username}
+            onChange={e => { setUsername(e.target.value); setErr(false) }}
+            placeholder="your username"
+            autoFocus
+          />
+          <label style={S.label}>Password</label>
+          <input
+            style={S.input}
+            type="password"
+            value={password}
+            onChange={e => { setPassword(e.target.value); setErr(false) }}
+            placeholder="••••••••"
+          />
+          {err && <div style={S.err}>Incorrect username or password.</div>}
+          <button style={S.btn} type="submit" disabled={loading}>
+            {loading ? 'Checking…' : 'Sign in'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Rep Onboarding Walkthrough ───────────────────────────────────────────────
+// Typeform-style slide sequence shown on first login. Skip always visible.
+const ONBOARDING_SLIDES = [
+  {
+    step: '01 / 05',
+    title: 'Welcome to AOM.',
+    body: 'AOM is the marketing department for construction companies that don\'t have one. We rebuild their site, run ads, produce video, and grow their presence everywhere buyers look. One team. One retainer.',
+    script: null,
+    howTo: null,
+  },
+  {
+    step: '02 / 05',
+    title: 'What we\'re selling.',
+    body: 'Most contractors are invisible online and losing jobs because of it. We fix that. $3,000/mo gets them a full marketing department — what it would cost $10k+ to staff on their own. The entry point is a $1,500 Foundation Sprint that puts the first month toward the retainer.',
+    script: null,
+    howTo: null,
+  },
+  {
+    step: '03 / 05',
+    title: 'Why we\'re calling.',
+    body: 'We\'re not pitching ads. We\'re calling to offer a real solution to a real problem these business owners have. The goal of the call is not a sale — it\'s booking a 20-minute walk-through with the owner. That\'s it.',
+    script: null,
+    howTo: null,
+  },
+  {
+    step: '04 / 05',
+    title: 'The 5-part call script.',
+    body: 'Every lead card shows the full script broken into 5 numbered blocks. Here\'s how to read them:',
+    script: [
+      { num: '1', label: 'Front desk opener', desc: 'When a receptionist answers. Get through to the owner. Short, sounds like you belong.' },
+      { num: '2', label: 'Hook — owner picks up', desc: 'Why you\'re calling, delivered in 10 seconds. Mention something real about their business.' },
+      { num: '3', label: 'Why we\'re calling', desc: 'Frame the problem: they\'re losing jobs to contractors who show up online. You noticed theirs.' },
+      { num: '4', label: 'Questions', desc: 'Get them talking. How they get clients. What\'s working. You\'re listening, not pitching.' },
+      { num: '5', label: 'The ask', desc: 'Book a 20-minute walk-through. That\'s the whole call. Not a sale — just a meeting.' },
+    ],
+    howTo: null,
+  },
+  {
+    step: '05 / 05',
+    title: 'Using Call Mode.',
+    body: null,
+    script: null,
+    howTo: [
+      { icon: '📞', label: 'Tap the number', desc: 'The gold button at the top dials on mobile. On desktop, it copies the number.' },
+      { icon: '📋', label: 'Read the script', desc: 'The 5 blocks load for each lead. Scroll down to read and take notes.' },
+      { icon: '✓', label: 'Log the outcome', desc: 'After each call: No answer / Left VM / Spoke / Booked / Not a fit. Saves automatically.' },
+      { icon: '→', label: 'Next lead', desc: 'The queue advances. You can always revisit a lead you\'ve already started.' },
+    ],
+    isFinal: true,
+  },
+]
+
+function RepOnboarding({ repSession, onDone }) {
+  const [slide, setSlide] = useState(0)
+  const s = ONBOARDING_SLIDES[slide]
+  const isLast = slide === ONBOARDING_SLIDES.length - 1
+
+  function advance() {
+    if (isLast) {
+      markOnboardingDone(repSession.username)
+      onDone()
+    } else {
+      setSlide(slide + 1)
+    }
+  }
+
+  function skip() {
+    markOnboardingDone(repSession.username)
+    onDone()
+  }
+
+  const S = {
+    wrap: { minHeight: '100dvh', background: '#F7F6F3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter,sans-serif', padding: '24px 24px env(safe-area-inset-bottom,24px)' },
+    card: { background: '#FFFFFF', border: '1px solid #E4E2DB', padding: '40px 36px', maxWidth: 520, width: '100%', position: 'relative' },
+    step: { fontSize: 11, fontWeight: 600, color: '#B58A38', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 },
+    title: { fontFamily: 'Bricolage Grotesque,sans-serif', fontWeight: 700, fontSize: 26, color: '#17170F', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 16 },
+    body: { fontSize: 15, color: '#43423A', lineHeight: 1.65, marginBottom: 28 },
+    scriptRow: { display: 'flex', gap: 14, marginBottom: 14, alignItems: 'flex-start' },
+    scriptNum: { width: 24, height: 24, minWidth: 24, background: '#B58A38', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, marginTop: 1 },
+    scriptLabel: { fontSize: 13, fontWeight: 600, color: '#17170F', marginBottom: 3 },
+    scriptDesc: { fontSize: 13, color: '#77746A', lineHeight: 1.5 },
+    howRow: { display: 'flex', gap: 14, marginBottom: 16, alignItems: 'flex-start' },
+    howIcon: { fontSize: 20, width: 28, textAlign: 'center', marginTop: 1 },
+    howLabel: { fontSize: 13, fontWeight: 600, color: '#17170F', marginBottom: 3 },
+    howDesc: { fontSize: 13, color: '#77746A', lineHeight: 1.5 },
+    actions: { display: 'flex', gap: 12, marginTop: 8 },
+    btn: { flex: 1, background: '#B58A38', color: '#FFFFFF', border: 'none', padding: '13px 0', fontSize: 14, fontWeight: 600, fontFamily: 'Inter,sans-serif', cursor: 'pointer', letterSpacing: '0.02em' },
+    skip: { background: 'none', border: '1px solid #D3D0C7', padding: '13px 20px', fontSize: 14, color: '#77746A', fontFamily: 'Inter,sans-serif', cursor: 'pointer' },
+    dots: { display: 'flex', gap: 6, justifyContent: 'center', marginTop: 24 },
+    dot: (active) => ({ width: 6, height: 6, borderRadius: '50%', background: active ? '#B58A38' : '#D3D0C7' }),
+  }
+
+  return (
+    <div style={S.wrap}>
+      <div style={S.card}>
+        <div style={S.step}>{s.step}</div>
+        <div style={S.title}>{s.title}</div>
+        {s.body && <div style={S.body}>{s.body}</div>}
+
+        {s.script && (
+          <div style={{ marginBottom: 28 }}>
+            {s.script.map(b => (
+              <div key={b.num} style={S.scriptRow}>
+                <div style={S.scriptNum}>{b.num}</div>
+                <div>
+                  <div style={S.scriptLabel}>{b.label}</div>
+                  <div style={S.scriptDesc}>{b.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {s.howTo && (
+          <div style={{ marginBottom: 28 }}>
+            {s.howTo.map(h => (
+              <div key={h.label} style={S.howRow}>
+                <div style={S.howIcon}>{h.icon}</div>
+                <div>
+                  <div style={S.howLabel}>{h.label}</div>
+                  <div style={S.howDesc}>{h.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={S.actions}>
+          <button style={S.skip} onClick={skip}>Skip</button>
+          <button style={S.btn} onClick={advance}>
+            {isLast ? 'Start calling' : 'Next'}
+          </button>
+        </div>
+
+        <div style={S.dots}>
+          {ONBOARDING_SLIDES.map((_, i) => (
+            <div key={i} style={S.dot(i === slide)} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Rep Dashboard Header (simplified, reps-only) ────────────────────────────
+function RepDashboardHeader({ repSession, todayCallCount, onSignOut, onRestartOnboarding }) {
+  const S = {
+    bar: { background: '#FFFFFF', borderBottom: '1px solid #E4E2DB', padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'Inter,sans-serif', position: 'sticky', top: 0, zIndex: 20 },
+    wordmark: { fontFamily: 'Bricolage Grotesque,sans-serif', fontWeight: 700, fontSize: 17, color: '#17170F', letterSpacing: '-0.02em' },
+    right: { display: 'flex', alignItems: 'center', gap: 20 },
+    name: { fontSize: 13, color: '#43423A', fontWeight: 500 },
+    count: { fontSize: 13, color: '#B58A38', fontWeight: 600 },
+    btn: { fontSize: 12, color: '#77746A', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter,sans-serif', padding: 0 },
+  }
+
+  return (
+    <div style={S.bar}>
+      <div style={S.wordmark}>AOM Outreach</div>
+      <div style={S.right}>
+        <span style={S.count}>{todayCallCount} calls today</span>
+        <span style={S.name}>{repSession.display_name}</span>
+        <button style={S.btn} onClick={onRestartOnboarding} title="Restart walkthrough">Guide</button>
+        <button style={S.btn} onClick={onSignOut}>Sign out</button>
+      </div>
     </div>
   )
 }
@@ -2375,9 +2660,16 @@ function FilterBar({ filterDay, setFilterDay, filterStatus, setFilterStatus, fil
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function OutreachTracker() {
+  // Auth: legacy admin flag OR rep session from outreach_reps table
   const [unlocked, setUnlocked] = useState(() =>
     localStorage.getItem('outreach_unlocked') === '1'
   )
+  const [repSession, setRepSession] = useState(() => getRepSession())
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  // Today's call tracking: lead_ids called by OTHER reps today, and this rep's own count
+  const [calledTodayByOthers, setCalledTodayByOthers] = useState(() => new Set())
+  const [todayRepCallCount, setTodayRepCallCount] = useState(0)
+
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -2407,9 +2699,42 @@ export default function OutreachTracker() {
     setLoading(false)
   }, [])
 
+  // Load today's rep touchpoints so we can enforce the no-same-day-double-call rule.
+  // Pure client-side: uses the anon key, consistent with the rest of this app's model.
+  const loadTodayTouchpoints = useCallback(async (session) => {
+    if (!session) return
+    const today = todayStr()
+    const { data } = await sb
+      .from('outreach_touchpoints')
+      .select('lead_id, rep_username')
+      .eq('date', today)
+      .eq('channel', 'call')
+      .not('rep_username', 'is', null)
+    if (!data) return
+    const byOthers = new Set()
+    let myCount = 0
+    for (const row of data) {
+      if (row.rep_username !== session.username) {
+        byOthers.add(row.lead_id)
+      } else {
+        myCount++
+      }
+    }
+    setCalledTodayByOthers(byOthers)
+    setTodayRepCallCount(myCount)
+  }, [])
+
   useEffect(() => {
-    if (unlocked) loadLeads()
-  }, [unlocked, loadLeads])
+    const isAuthed = unlocked || repSession
+    if (isAuthed) loadLeads()
+    if (repSession) {
+      loadTodayTouchpoints(repSession)
+      // Show onboarding walkthrough on first login (unless already seen or skipped)
+      if (repSession.role === 'rep' && !repOnboardingDone(repSession.username)) {
+        setShowOnboarding(true)
+      }
+    }
+  }, [unlocked, repSession, loadLeads, loadTodayTouchpoints])
 
   const updateLead = useCallback(async (id, field, value) => {
     const { error: err } = await sb
@@ -2421,7 +2746,7 @@ export default function OutreachTracker() {
     }
   }, [])
 
-  // Filter + group
+  // ── Admin filter + group (full view) ────────────────────────────────────────
   const filtered = leads.filter(l => {
     if (filterDay !== 'all' && String(l.day_route) !== filterDay) return false
     if (filterStatus !== 'all' && l.status !== filterStatus) return false
@@ -2444,10 +2769,91 @@ export default function OutreachTracker() {
     leads: filtered.filter(l => l.day_route === day),
   }))
 
-  if (!unlocked) {
-    return <PasswordGate onUnlock={() => setUnlocked(true)} />
+  // ── Rep filter (restricted queue) ────────────────────────────────────────────
+  // S-tier gate: exclude need_score >= 7 for non-trusted reps.
+  // No same-day double-call: exclude any lead another rep has already called today.
+  // Exception: leads the current rep has already touched remain in their queue.
+  const repFiltered = repSession ? leads.filter(l => {
+    if (!repSession.trusted && (l.need_score || 0) >= 7) return false
+    if (calledTodayByOthers.has(l.id)) return false
+    return true
+  }) : []
+
+  // ── Auth gate ────────────────────────────────────────────────────────────────
+  // Order: rep session > legacy admin unlock > login screen
+  const isRepSession  = repSession !== null
+  const isAdminUnlock = unlocked
+
+  function handleLogin(session) {
+    if (session.legacyAdmin) {
+      // Old AOM2026 path: sets outreach_unlocked, shows full admin view
+      setUnlocked(true)
+    } else {
+      setRepSession(session)
+      // Onboarding check happens in useEffect via the repSession change
+    }
   }
 
+  function handleSignOut() {
+    clearRepSession()
+    setRepSession(null)
+    setUnlocked(false)
+    setShowOnboarding(false)
+    setCalledTodayByOthers(new Set())
+    setTodayRepCallCount(0)
+  }
+
+  if (!isAdminUnlock && !isRepSession) {
+    return <RepLogin onLogin={handleLogin} />
+  }
+
+  // Onboarding shown after rep login, before they reach Call Mode
+  if (isRepSession && repSession.role === 'rep' && showOnboarding) {
+    return (
+      <RepOnboarding
+        repSession={repSession}
+        onDone={() => setShowOnboarding(false)}
+      />
+    )
+  }
+
+  // ── Rep-restricted view ──────────────────────────────────────────────────────
+  // Role=rep sees only Call Mode. No spreadsheet, no cards, no export, no filters.
+  if (isRepSession && repSession.role === 'rep') {
+    return (
+      <div style={{ minHeight: '100dvh', background: '#F7F6F3', color: '#17170F', fontFamily: "'Inter', sans-serif" }}>
+        <RepDashboardHeader
+          repSession={repSession}
+          todayCallCount={todayRepCallCount}
+          onSignOut={handleSignOut}
+          onRestartOnboarding={() => setShowOnboarding(true)}
+        />
+
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', fontSize: '0.85rem', color: '#A5A29A' }}>
+            Loading leads...
+          </div>
+        )}
+        {error && (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#B03A3A', fontSize: '0.85rem' }}>
+            Error: {error}
+          </div>
+        )}
+        {!loading && !error && (
+          <CallMode
+            leads={repFiltered}
+            updateLead={updateLead}
+            repSession={repSession}
+            onCallLogged={() => setTodayRepCallCount(c => c + 1)}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // ── Full admin view ───────────────────────────────────────────────────────────
+  // Shown when: legacy outreach_unlocked flag OR rep with role=admin.
+  // Exactly what existed before — no behavior change for existing admin users.
   return (
     <div style={{
       minHeight: '100dvh',
@@ -2459,8 +2865,7 @@ export default function OutreachTracker() {
       <DashboardHeader
         leads={leads}
         onLock={() => {
-          localStorage.removeItem('outreach_unlocked')
-          setUnlocked(false)
+          handleSignOut()
         }}
       />
 
@@ -2644,6 +3049,7 @@ export default function OutreachTracker() {
         <CallMode
           leads={filtered}
           updateLead={updateLead}
+          repSession={repSession}
         />
       )}
 
