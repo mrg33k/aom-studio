@@ -115,3 +115,9 @@ Outlook OAuth start route reaches its expected unauthenticated gate rather than
 a missing-credentials failure, and Supabase redirects Azure authorization to
 Microsoft `common` with the correct Corner client and callback. Build and syntax
 checks pass.
+
+Before handoff, the client secret was rotated once more because the Entra portal
+had rendered the initial value during setup verification. Supabase and Vercel
+were updated with the fresh value, the superseded credential was revoked, the
+temporary transfer file was destroyed, and production was redeployed. Only the
+rotated credential remains active; its expiry is still 2028-08-11.

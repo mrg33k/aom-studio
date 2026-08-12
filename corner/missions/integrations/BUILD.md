@@ -278,6 +278,10 @@ Release verification:
 - Supabase Azure authorization returns 302 to Microsoft's `common` endpoint
   with the new Corner client ID and the registered Supabase callback.
 - Production build and JavaScript syntax checks pass.
+- Rotated the initial portal-rendered client secret before handoff, updated both
+  Supabase and Vercel, revoked the superseded credential, and redeployed so the
+  live functions use only the fresh secret. The active secret still rotates on
+  2028-08-11.
 
 **Status:** Microsoft technical activation shipped and verified; public external consent remains blocked on Microsoft publisher verification.
 
