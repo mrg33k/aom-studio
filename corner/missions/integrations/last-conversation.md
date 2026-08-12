@@ -92,3 +92,19 @@ claimed. The fix queries `worlds.slug`, redeployed as production
 `dpl_BTyJZjF9nHHr6xABPpz7SVKpnc9k`, and the clean account then reached
 `YOUR CORNER IS READY`. The temporary user was deleted. The release branch was
 pushed as `codex/corner-full-pass-r16`.
+## 2026-08-12 — Microsoft identity and Outlook consent configured
+
+After Patrik created and signed into the Microsoft account, the `Corner` Entra
+application was registered for both organizational and personal Microsoft
+accounts. Its web redirects are the Supabase Auth callback and Corner's canonical
+production integration callback. Delegated Graph permissions are `User.Read`,
+`Mail.Read`, `Mail.ReadWrite`, and `Mail.Send`, covering search/read, drafts, and
+send as the consenting user without adding background/application access.
+
+The client secret rotates on 2028-08-11. It was transferred directly into
+production Supabase and encrypted Vercel environment variables and was not
+stored in the repository. Supabase Azure auth is enabled against the Microsoft
+`common` tenant. Microsoft explicitly reports that newly registered multitenant
+apps cannot receive external end-user consent until their publisher is verified
+with an MPN/Partner Center ID; that organizational verification is the remaining
+public Microsoft consent blocker.

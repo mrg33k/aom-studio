@@ -61,7 +61,7 @@ async function refresh(refreshToken) {
     // same permission set. Without this, incremental consent may downgrade scopes
     // on quiet re-auths. Includes .Shared variants so existing connections gain
     // shared-mailbox access automatically on the next token refresh.
-    scope: 'openid email profile offline_access User.Read Mail.Read Mail.ReadWrite Mail.Read.Shared Mail.ReadWrite.Shared',
+    scope: 'openid email profile offline_access User.Read Mail.Read Mail.ReadWrite Mail.Send Mail.Read.Shared Mail.ReadWrite.Shared',
   })
   const r = await fetch(TOKEN_URL, {
     method: 'POST',

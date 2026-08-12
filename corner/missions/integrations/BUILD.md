@@ -246,6 +246,29 @@ Progress 2026-08-11:
 
 **Status:** production web and clean-account acceptance complete; Google mail verification, Microsoft credentials/consent, and Apple developer credentials remain externally blocked.
 
+Microsoft activation resumed after Patrik created the Microsoft account. Create
+the multitenant/personal-account Entra registration, configure Supabase account
+auth and Corner's separate Outlook Mail.Read consent callback, then store the
+new credentials in production and verify both initiation paths.
+
+Progress 2026-08-12:
+
+- Registered the `Corner` Entra application for organizational and personal
+  Microsoft accounts with the Supabase Auth callback and canonical production
+  Outlook callback.
+- Added delegated `User.Read`, `Mail.Read`, `Mail.ReadWrite`, and `Mail.Send`.
+  This supports mailbox search, draft creation/editing, and user-authorized send;
+  no application/background mail permission or tenant-wide consent was added.
+- Created the production client secret (rotation due 2028-08-11), enabled Azure
+  auth in production Supabase, and stored the Outlook client ID/secret as
+  encrypted production Vercel environment variables.
+- Microsoft now blocks external user consent for newly registered multitenant
+  apps until the publisher is verified with a Microsoft Partner Network ID.
+  Technical configuration can ship, but public Microsoft consent remains gated
+  on Partner Center enrollment/publisher verification.
+
+**Status:** Microsoft technical activation configured; production deploy and initiation checks in progress, public external consent blocked on verified publisher.
+
 ### R5 — Live Codex progress and single-owner room routing
 
 Stream safe, user-facing progress from the local Codex runner into the existing

@@ -120,7 +120,9 @@ export const OAUTH_PROVIDERS = {
     tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
     // offline_access is how Microsoft issues refresh tokens (no separate access_type param).
     // User.Read is needed to fetch the profile after connect (account email, display name).
-    // Mail.Read + Mail.ReadWrite covers inbox read + organize (flag, move, mark-read).
+    // Mail.Read + Mail.ReadWrite covers inbox read, drafts, and organization
+    // (flag, move, mark-read). Mail.Send is deliberately separate: it lets
+    // Corner send a message only as the signed-in user after delegated consent.
     // Mail.Read.Shared + Mail.ReadWrite.Shared are required to access shared mailboxes
     // (e.g. bids@ambitionac.com, ap@ambitionac.com) that a tenant admin has delegated
     // Full Access on. Without these two scopes, Graph returns 403 on /users/{shared}/...
@@ -136,6 +138,7 @@ export const OAUTH_PROVIDERS = {
       'User.Read',
       'Mail.Read',
       'Mail.ReadWrite',
+      'Mail.Send',
       'Mail.Read.Shared',
       'Mail.ReadWrite.Shared',
     ],
