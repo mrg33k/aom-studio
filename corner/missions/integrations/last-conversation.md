@@ -108,3 +108,10 @@ stored in the repository. Supabase Azure auth is enabled against the Microsoft
 apps cannot receive external end-user consent until their publisher is verified
 with an MPN/Partner Center ID; that organizational verification is the remaining
 public Microsoft consent blocker.
+
+Commit `419cb7a1` deployed as production
+`dpl_Bdhy3YTP7mrnRg8tBz3jf7jSWUNG`. The canonical dashboard returns 200, the
+Outlook OAuth start route reaches its expected unauthenticated gate rather than
+a missing-credentials failure, and Supabase redirects Azure authorization to
+Microsoft `common` with the correct Corner client and callback. Build and syntax
+checks pass.

@@ -267,7 +267,19 @@ Progress 2026-08-12:
   Technical configuration can ship, but public Microsoft consent remains gated
   on Partner Center enrollment/publisher verification.
 
-**Status:** Microsoft technical activation configured; production deploy and initiation checks in progress, public external consent blocked on verified publisher.
+Release verification:
+
+- Commit `419cb7a1` is pushed on `codex/corner-full-pass-r16`; production
+  deployment `dpl_Bdhy3YTP7mrnRg8tBz3jf7jSWUNG` is Ready and carries both
+  canonical `aheadofmarket.com` aliases.
+- The canonical dashboard returns 200. The Outlook connection endpoint now
+  reaches its authentication gate (401 when called without a Corner session,
+  rather than missing-credential 503), proving the production credentials load.
+- Supabase Azure authorization returns 302 to Microsoft's `common` endpoint
+  with the new Corner client ID and the registered Supabase callback.
+- Production build and JavaScript syntax checks pass.
+
+**Status:** Microsoft technical activation shipped and verified; public external consent remains blocked on Microsoft publisher verification.
 
 ### R5 — Live Codex progress and single-owner room routing
 
