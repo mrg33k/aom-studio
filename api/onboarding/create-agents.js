@@ -89,7 +89,12 @@ export default async function handler(req, res) {
     let claimed = false
     try {
       const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/worlds?or=(slug.eq.${encodeURIComponent(targetWorld)},client_id.eq.${encodeURIComponent(targetWorld)})&select=slug&limit=1`,
+        // worlds.client_id is the owning user's UUID, while targetWorld is a
+        // human-readable workspace slug. Comparing the two makes PostgREST
+        // reject every new slug as invalid UUID; the fail-closed branch below
+        // then reports every public signup as "already exists". Workspace
+        // namespace ownership is defined by worlds.slug, so query that column.
+        `${SUPABASE_URL}/rest/v1/worlds?slug=eq.${encodeURIComponent(targetWorld)}&select=slug&limit=1`,
         { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
       )
       if (r.ok) {

@@ -31,3 +31,9 @@ test('native app gates new accounts through onboarding', () => {
   assert.match(screen, /searchableMailOAuthURL/)
   assert.match(screen, /Connect read-only/)
 })
+
+test('new workspace collision check compares the slug, not UUID owner column', () => {
+  const create = read('api/onboarding/create-agents.js')
+  assert.match(create, /worlds\?slug=eq\./)
+  assert.doesNotMatch(create, /or=\(slug\.eq\.[^`]+client_id\.eq/)
+})
