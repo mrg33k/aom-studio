@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { signInWithPassword, getCurrentUser } from '../dashboard/lib/auth.js'
+import { signInWithPassword, signInWithProvider, signUp, getCurrentUser } from '../dashboard/lib/auth.js'
 import { useThemeMode } from '../dashboard/hooks/useThemeMode.js'
 
 const DARK = {
@@ -164,6 +164,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [creatingAccount, setCreatingAccount] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
   const [mounted, setMounted] = useState(false)
@@ -205,9 +206,17 @@ export default function Login() {
     if (!password) { setError('Password is required.'); return }
     setLoading(true)
     try {
-      const { error: authError } = await signInWithPassword(email.trim(), password)
+      const authResult = creatingAccount
+        ? await signUp(email.trim(), password, '/onboarding')
+        : await signInWithPassword(email.trim(), password)
+      const { error: authError, user: authUser } = authResult
       if (authError) {
-        setError(authError.message || 'Invalid email or password.')
+        setError(authError.message || (creatingAccount ? 'Could not create that account.' : 'Invalid email or password.'))
+        setLoading(false)
+        return
+      }
+      if (creatingAccount && !authUser) {
+        setError('Check your email to confirm your account, then come back to sign in.')
         setLoading(false)
         return
       }
@@ -216,6 +225,18 @@ export default function Login() {
       setTimeout(() => navigate('/dashboard', { replace: true }), 1200)
     } catch {
       setError('Something went wrong. Try again.')
+      setLoading(false)
+    }
+  }
+
+  const handleProvider = async (provider) => {
+    if (loading) return
+    setError('')
+    setLoading(true)
+    const { error: authError } = await signInWithProvider(provider, '/onboarding')
+    if (authError) {
+      const label = provider === 'azure' ? 'Microsoft' : provider === 'apple' ? 'Apple' : 'Google'
+      setError(`${label} sign-in is not available yet. ${authError.message || ''}`.trim())
       setLoading(false)
     }
   }
@@ -318,6 +339,27 @@ export default function Login() {
           </div>
         )}
 
+        <div style={{ display: 'grid', gap: 9, marginBottom: 22 }}>
+          <button type="button" onClick={() => handleProvider('google')} disabled={loading} style={providerButton(palette)}>
+            <span style={{ fontWeight: 800, color: '#4285F4' }}>G</span>
+            Continue with Google
+          </button>
+          <button type="button" onClick={() => handleProvider('azure')} disabled={loading} style={providerButton(palette)}>
+            <span style={{ display: 'grid', gridTemplateColumns: 'repeat(2,5px)', gap: 1 }} aria-hidden="true">
+              <i style={{ width: 5, height: 5, background: '#F25022' }} /><i style={{ width: 5, height: 5, background: '#7FBA00' }} />
+              <i style={{ width: 5, height: 5, background: '#00A4EF' }} /><i style={{ width: 5, height: 5, background: '#FFB900' }} />
+            </span>
+            Continue with Microsoft
+          </button>
+          <button type="button" onClick={() => handleProvider('apple')} disabled={loading} style={providerButton(palette)}>
+            <span style={{ fontSize: 16 }} aria-hidden="true">●</span>
+            Continue with Apple
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: palette.textDim, fontSize: 9, letterSpacing: '.12em' }}>
+            <span style={{ flex: 1, height: 1, background: palette.divider }} />OR USE EMAIL<span style={{ flex: 1, height: 1, background: palette.divider }} />
+          </div>
+        </div>
+
         <form onSubmit={handleSignIn} noValidate>
           <div style={{ marginBottom: 20 }}>
             <label style={{
@@ -354,7 +396,7 @@ export default function Login() {
               value={password}
               onChange={e => { setPassword(e.target.value); setError('') }}
               placeholder="••••••••"
-              autoComplete="current-password"
+              autoComplete={creatingAccount ? 'new-password' : 'current-password'}
               style={inputStyle(passFocused)}
               onFocus={() => setPassFocused(true)}
               onBlur={() => setPassFocused(false)}
@@ -382,11 +424,18 @@ export default function Login() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }}>
                   <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                 </svg>
-                Signing in
+                {creatingAccount ? 'Creating account' : 'Signing in'}
               </span>
-            ) : 'Sign in'}
+            ) : creatingAccount ? 'Create free account' : 'Sign in'}
           </button>
         </form>
+
+        <button type="button" disabled={loading} onClick={() => { setCreatingAccount(v => !v); setError('') }} style={{
+          display: 'block', margin: '15px auto 0', border: 0, background: 'transparent',
+          color: palette.textMuted, font: "600 11px 'Inter', sans-serif", cursor: 'pointer',
+        }}>
+          {creatingAccount ? 'Already have an account? Sign in' : 'New to Corner? Create a free account'}
+        </button>
 
         <div style={{
           marginTop: 22, textAlign: 'center',
@@ -404,12 +453,21 @@ export default function Login() {
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
           }}>
-            Invite only
+            Your work, organized
           </span>
         </div>
       </div>
     </div>
   )
+}
+
+function providerButton(palette) {
+  return {
+    width: '100%', minHeight: 42, borderRadius: 10,
+    border: `1px solid ${palette.fieldLine}`, background: 'rgba(255,255,255,.035)',
+    color: palette.text, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+    font: "600 12px 'Inter', sans-serif", cursor: 'pointer',
+  }
 }
 
 function CornerMarks({ color }) {

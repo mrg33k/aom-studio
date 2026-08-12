@@ -39,3 +39,29 @@ Patrik reported that Wolfpack showed neither the normal progress bar nor current
 R5 converts only safe Codex lifecycle events into the existing `message_step` contract: the device claim, generic project-reading/checking/editing labels, and a settled sentinel. Raw commands, paths, reasoning, and credentials never enter the event stream. Progress writes require the authenticated device plus an active matching job and derive tenant, room, agent, project, and parent message from the original server-owned row. Because CV6 desktop and mobile already consume this same endpoint, both now receive the indicator without separate UI forks. The shadow bridge independently re-verifies the stored local marker and matching user/tenant/device job before yielding.
 
 Patrik then clarified that fallback mode should remain on Codex instead of probing Claude on every turn. A successful Auto fallback now writes `codex-local` into the room's existing Settings preference; choosing Auto/Claude in Settings is the explicit switch back. Wolfpack was set to `project:wolfpack = codex-local` immediately. Dashboard/API commit `3363db1b` and docs commit `b3bab658` deployed as production `dpl_H4TzdxqTqczy4M1D8adpeT6FKNYn`; bridge commits `5dbf5bcf6` and `d1b8141b2` are on `master`. Live runner job `15c7dcd0` emitted visible Corner Runner steps and settled before writing a `local_codex: true` reply, and the restarted shadow bridge returned `localRunner: true` for a verified ownership probe.
+
+## 2026-08-11 — Public newcomer onboarding full pass
+
+Patrik defined the public first-run experience: people should be able to begin
+free with notes and a Corner brain, choose their preferred future AI connection,
+bring files, optionally make Gmail or Outlook searchable, and arrive at a useful
+set of projects without understanding Corner's internal project/mission/agent
+taxonomy. This must work on web and native iOS and remain available later from
+Settings.
+
+R6 replaces the old questionnaire with a guided welcome/brain/sources/work/review
+flow and gates incomplete accounts into it. Email account creation and Apple,
+Google, and Microsoft entry are now present. Mail permission is requested later
+and separately with Gmail readonly or Microsoft Mail.Read scopes. The flow stages
+files, creates a workspace plus starting project rows and a Corner guide, records
+the selected brain, then completes account metadata. The native implementation
+mirrors those decisions, launches mail OAuth with the signed-in JWT, picks files
+natively, and establishes the new tenant before guarded uploads.
+
+Eight focused tests pass, the Vite production build passes, an iPhone 17 simulator
+build succeeds, and browser QA reached the complete review screen at 390×844 with
+no horizontal overflow. This code is not deployed. Provider credentials/consent
+publishing, production callback allowlists, real clean-account acceptance, iOS
+signing/archive, and App Store metadata remain. Claude/ChatGPT/Gemini preferences
+are collected honestly, but consumer subscription connectors still depend on
+their separate provider/MCP approval or the existing local Corner Runner.

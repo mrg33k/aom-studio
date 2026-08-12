@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		03633E17DD9097F16B3FC0E4 /* EmailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6485AD7BDCDB6B83FF83ABDC /* EmailStore.swift */; };
 		0488714B0ACA56A6F88863C2 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4E330537A94F6BCADAAAD4 /* SignInView.swift */; };
+		019FF28288AE7AF2B66ED9EE /* NativeOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 019FF28288AE7AF2B66ED9EF /* NativeOnboardingView.swift */; };
 		09C9ADE896667C4859CA462C /* RoomSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE3EAACFEA3E82CAEC19854 /* RoomSettingsView.swift */; };
 		10C8D99B63F181C712335A3B /* RoomFilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2668E5F1D641717C4F6D22D1 /* RoomFilesView.swift */; };
 		11441CDD8CD68584FE437B4D /* RoomListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDD31795F9B656F625EAD892 /* RoomListView.swift */; };
@@ -173,6 +174,7 @@
 		DA58C64409596C25343E0CE7 /* RoomChecklistStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomChecklistStore.swift; sourceTree = "<group>"; };
 		DA762654D7DF58269E50F794 /* OrganizeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizeView.swift; sourceTree = "<group>"; };
 		DC4E330537A94F6BCADAAAD4 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		019FF28288AE7AF2B66ED9EF /* NativeOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeOnboardingView.swift; sourceTree = "<group>"; };
 		DCF3E52AD81A2EC95CEED4E8 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		E0DB974AD71B1EFB7D9FEB9E /* FilesAndReviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesAndReviewTests.swift; sourceTree = "<group>"; };
 		E3984DE7AC39AFF032327719 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
@@ -213,6 +215,7 @@
 				7CF99DF9192383E26F1255FB /* IntegrationsView.swift */,
 				07EAECF062E7FAA88D07CFCA /* MessageBubbleView.swift */,
 				4F453FA5B1DE0CAE3D48719C /* NewRoomSheet.swift */,
+				019FF28288AE7AF2B66ED9EF /* NativeOnboardingView.swift */,
 				78195C7CEC61A8E2A7C22582 /* NotificationsView.swift */,
 				DA762654D7DF58269E50F794 /* OrganizeView.swift */,
 				277963E40CC1BA7254A5AFEB /* PreviewHarness.swift */,
@@ -499,6 +502,7 @@
 				D9FFF59D4BF03630C15A0404 /* MessageRow.swift in Sources */,
 				E40FFC19D015526252E7DA4C /* MessageTransport.swift in Sources */,
 				E575CF7FB137D70F8DC7CFB2 /* NewRoomSheet.swift in Sources */,
+				019FF28288AE7AF2B66ED9EE /* NativeOnboardingView.swift in Sources */,
 				DA1EB5D4B866DFE79EF1D58D /* NotificationsView.swift in Sources */,
 				D5AC8F72E32D152ADD09E7E2 /* OrganizeFile.swift in Sources */,
 				A8CE144E7B95956A1649A091 /* OrganizeStore.swift in Sources */,

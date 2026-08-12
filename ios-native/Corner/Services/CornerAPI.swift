@@ -30,6 +30,7 @@ final class CornerAPI: ObservableObject {
     @Published private(set) var session: Session?
     /// The signed-in user's world/tenant, or nil if their account carries none.
     @Published private(set) var world: String?
+    @Published private(set) var onboardingInProgress = false
 
     private init() {
         client = SupabaseClient(
@@ -85,6 +86,102 @@ final class CornerAPI: ObservableObject {
 
     func signIn(email: String, password: String) async throws {
         try await client.auth.signIn(email: email, password: password)
+    }
+
+    func signUp(email: String, password: String) async throws -> Bool {
+        let response = try await client.auth.signUp(
+            email: email,
+            password: password,
+            redirectTo: URL(string: "corner://auth-callback")!
+        )
+        return response.session != nil
+    }
+
+    func signIn(provider: Provider) async throws {
+        let callback = URL(string: "corner://auth-callback")!
+        try await client.auth.signInWithOAuth(provider: provider, redirectTo: callback)
+    }
+
+    var needsOnboarding: Bool {
+        if onboardingInProgress { return true }
+        guard let meta = session?.user.userMetadata else { return true }
+        if meta["has_completed_onboarding"]?.boolValue == true { return false }
+        if meta["onboarded"]?.boolValue == true { return false }
+        return world == nil
+    }
+
+    func searchableMailOAuthURL(provider slug: String) async throws -> URL {
+        let request = try await authorizedRequest(
+            path: "/api/integrations/oauth/start",
+            queryItems: [
+                URLQueryItem(name: "slug", value: slug),
+                URLQueryItem(name: "access", value: "search"),
+                URLQueryItem(name: "return_to", value: "/onboarding?step=2"),
+            ]
+        )
+        let data = try await run(request)
+        guard let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let raw = payload["authUrl"] as? String,
+              let url = URL(string: raw) else { throw APIError.decoding }
+        return url
+    }
+
+    func completeOnboarding(workspace: String, brain: String, projects: [String], files: [URL]) async throws {
+        onboardingInProgress = true
+        defer { onboardingInProgress = false }
+        guard let userID = session?.user.id.uuidString.lowercased() else { throw APIError.notSignedIn }
+        let base = workspace.lowercased()
+            .replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        let worldID = "\(base.isEmpty ? "my-corner" : base)-\(userID.prefix(6))"
+        let names = projects.isEmpty ? ["Inbox"] : Array(projects.prefix(12))
+        let projectRows: [[String: Any]] = names.map { name in
+            let slug = name.lowercased()
+                .replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+            return ["name": name, "slug": slug.isEmpty ? "inbox" : slug, "description": "Added during Corner setup."]
+        }
+        let plan: [String: Any] = [
+            "user_profile": ["name": userDisplayName ?? userEmail ?? "Corner member", "business": workspace, "brain": brain],
+            "projects": projectRows,
+            "agents": [["name": "Corner", "slug": "corner", "role": "Workspace guide and project organizer", "project": projectRows[0]["slug"] as? String ?? "inbox"]],
+        ]
+        let createRequest = try await authorizedRequest(
+            path: "/api/onboarding/create-agents", method: "POST",
+            jsonBody: ["clientId": worldID, "plan": plan]
+        )
+        _ = try await run(createRequest)
+
+        // Establish tenant identity before file-upload runs its tenant guard.
+        let workspaceAttributes = UserAttributes(data: [
+            "world": .string(worldID),
+            "workspace_name": .string(workspace),
+            "preferred_brain": .string(brain),
+        ])
+        try await client.auth.update(user: workspaceAttributes)
+
+        for url in files.prefix(20) {
+            let allowed = url.startAccessingSecurityScopedResource()
+            defer { if allowed { url.stopAccessingSecurityScopedResource() } }
+            guard let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
+                  (values.fileSize ?? 0) <= 20 * 1024 * 1024,
+                  let data = try? Data(contentsOf: url) else { continue }
+            let upload = try await authorizedRequest(
+                path: "/api/dashboard/file-upload", method: "POST",
+                jsonBody: ["world": worldID, "filename": url.lastPathComponent, "mime_type": "application/octet-stream", "data_base64": data.base64EncodedString()]
+            )
+            _ = try? await run(upload)
+        }
+
+        let completedAttributes = UserAttributes(data: [
+            "world": .string(worldID),
+            "workspace_name": .string(workspace),
+            "preferred_brain": .string(brain),
+            "onboarded": .bool(true),
+            "has_completed_onboarding": .bool(true),
+        ])
+        try await client.auth.update(user: completedAttributes)
+
     }
 
     func signOut() async {

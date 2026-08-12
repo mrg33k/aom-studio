@@ -11,8 +11,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 // hidden from the rail so the user gets the Connect prompt again. The same
 // list is enforced in api/integrations/oauth/callback.js — keep in sync.
 const GMAIL_REQUIRED_SCOPES = [
-  'https://www.googleapis.com/auth/gmail.modify',
-  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.readonly',
 ]
 
 // R1 (2026-08-06) — required Outlook/Graph scopes. User.Read identifies the
@@ -34,6 +33,14 @@ function hasAllScopes(grantedScopes, required) {
   if (!Array.isArray(grantedScopes)) return false
   const set = new Set(grantedScopes)
   return required.every(s => set.has(s))
+}
+
+function hasUsableMailScopes(slug, grantedScopes) {
+  if (slug !== 'gmail') return hasAllScopes(grantedScopes, OUTLOOK_REQUIRED_SCOPES)
+  // Existing full-access connections remain valid; new public onboarding uses
+  // the materially narrower readonly grant.
+  return hasAllScopes(grantedScopes, GMAIL_REQUIRED_SCOPES)
+    || grantedScopes?.includes('https://www.googleapis.com/auth/gmail.modify')
 }
 
 function requiredScopesFor(slug) {
@@ -73,7 +80,7 @@ export async function listConnectionsForUser(userId) {
   // the connection actually functional. Per-slug scope requirements differ.
   // Rows from before R12 have no config.granted_scopes → treated as insufficient.
   return rows
-    .filter(row => hasAllScopes(row.config?.granted_scopes, requiredScopesFor(row.integration_slug)))
+    .filter(row => hasUsableMailScopes(row.integration_slug, row.config?.granted_scopes))
     .map(row => {
       const isOutlook = row.integration_slug === 'outlook'
       const ownEmail = row.config?.account_email || null

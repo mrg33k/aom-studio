@@ -281,7 +281,7 @@ function AuthGuard({ children }) {
             sessionStorage.getItem('corner-qa-completed') !== 'true') {
           setChecked(true)
           setAuthed(true)
-          navigate('/onboarding/voice', { replace: true })
+          navigate('/onboarding', { replace: true })
           return
         }
 
@@ -315,10 +315,10 @@ function AuthGuard({ children }) {
         }
 
         if (!isOnboarded) {
-          // First-time user -- send to voice onboarding before dashboard
+          // First-time user -- send to the complete public setup flow.
           setChecked(true)
           setAuthed(false)
-          navigate('/onboarding/voice', { replace: true })
+          navigate('/onboarding', { replace: true })
         } else {
           setAuthed(true)
           setChecked(true)
@@ -648,7 +648,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/onboarding/voice" element={<OnboardingVoice />} />
+          <Route path="/onboarding/voice" element={<Navigate to="/onboarding" replace />} />
           <Route path="/accept-invite" element={<AcceptInvite />} />
           {/* R7.21 CUTOVER: /dashboard now renders CV4. /cv3 keeps CornerV3
               available as an escape hatch — visit /cv3 (or /cv3/project/:id)

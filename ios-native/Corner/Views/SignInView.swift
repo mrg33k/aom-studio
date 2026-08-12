@@ -8,12 +8,12 @@
 // button, and the pulsing INVITE ONLY footer. The login deliberately keeps the
 // web's own emerald accent — the login is its own brand moment on every surface.
 //
-// Auth stays first-party on purpose. Guideline 4.8 requires Sign in with Apple only
-// when a THIRD-PARTY or social login sets up the primary account, and exempts apps
-// that "exclusively use your company's own account setup and sign-in systems". The
-// moment a Google button appears anywhere in this app, that exemption is gone.
+// Google and Microsoft are account-entry choices only. Mail search is a later,
+// explicit permission in onboarding. Because third-party auth is now present,
+// Sign in with Apple must be included before App Store submission.
 
 import SwiftUI
+import Supabase
 
 struct SignInView: View {
     @EnvironmentObject private var api: CornerAPI
@@ -21,6 +21,7 @@ struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var busy = false
+    @State private var creatingAccount = false
     @State private var errorMessage: String?
     @FocusState private var focus: Field?
 
@@ -69,6 +70,18 @@ struct SignInView: View {
                             .padding(.top, Theme.s5)
                     }
 
+                    providerButton("Continue with Google", provider: .google, symbol: "G")
+                        .padding(.top, Theme.s5)
+                    providerButton("Continue with Microsoft", provider: .azure, symbol: "M")
+                        .padding(.top, Theme.s2)
+                    providerButton("Continue with Apple", provider: .apple, symbol: "●")
+                        .padding(.top, Theme.s2)
+
+                    HStack { Rectangle().frame(height: 1); Text("OR USE EMAIL"); Rectangle().frame(height: 1) }
+                        .font(.hanken(9).weight(.bold)).tracking(1.2)
+                        .foregroundStyle(Self.textMuted)
+                        .padding(.top, Theme.s5)
+
                     labelled("EMAIL", focused: focus == .email) {
                         TextField("", text: $email, prompt: prompt("you@company.com"))
                             .textContentType(.emailAddress)
@@ -92,6 +105,12 @@ struct SignInView: View {
 
                     signInButton
                         .padding(.top, Theme.s5 + Theme.s1)
+
+                    Button(creatingAccount ? "Already have an account? Sign in" : "New to Corner? Create a free account") {
+                        creatingAccount.toggle(); errorMessage = nil
+                    }
+                    .font(.hanken(11).weight(.semibold)).foregroundStyle(Self.textMuted)
+                    .frame(maxWidth: .infinity).padding(.top, Theme.s3)
                 }
                 .frame(maxWidth: 320)
 
@@ -166,7 +185,7 @@ struct SignInView: View {
             Group {
                 if busy { ProgressView().tint(.white) }
                 else {
-                    Text("Sign in")
+                    Text(creatingAccount ? "Create free account" : "Sign in")
                         .font(.hanken(15).weight(.semibold))
                         .foregroundStyle(.white.opacity(canSubmit ? 1 : 0.55))
                 }
@@ -189,10 +208,31 @@ struct SignInView: View {
         .disabled(!canSubmit)
     }
 
+    private func providerButton(_ title: String, provider: Provider, symbol: String) -> some View {
+        Button {
+            guard !busy else { return }
+            busy = true; errorMessage = nil
+            Task {
+                defer { busy = false }
+                do { try await api.signIn(provider: provider) }
+                catch { errorMessage = "\(title.replacingOccurrences(of: "Continue with ", with: "")) sign-in is not available yet." }
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Text(symbol).font(.hanken(14).weight(.bold)).foregroundStyle(Self.emerald2)
+                Text(title).font(.hanken(14).weight(.semibold)).foregroundStyle(Self.text)
+            }
+            .frame(maxWidth: .infinity).padding(.vertical, 12)
+            .background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Self.fieldLine))
+        }
+        .disabled(busy)
+    }
+
     private var inviteOnly: some View {
         HStack(spacing: Theme.s2) {
             PulsingDot(color: Self.emerald2)
-            Text("INVITE ONLY")
+            Text("YOUR WORK, ORGANIZED")
                 .font(.hanken(9).weight(.semibold))
                 .tracking(1.8)
                 .foregroundStyle(Self.textMuted)
@@ -207,13 +247,22 @@ struct SignInView: View {
         Task {
             defer { busy = false }
             do {
-                try await api.signIn(email: email.trimmingCharacters(in: .whitespaces), password: password)
+                if creatingAccount {
+                    let signedIn = try await api.signUp(email: email.trimmingCharacters(in: .whitespaces), password: password)
+                    if !signedIn {
+                        errorMessage = "Check your email to confirm your account, then come back to sign in."
+                    }
+                } else {
+                    try await api.signIn(email: email.trimmingCharacters(in: .whitespaces), password: password)
+                }
                 password = ""
             } catch {
                 // Deliberately not echoing the auth server's wording: it distinguishes
                 // "no such user" from "wrong password", which is an account-enumeration
                 // oracle for anyone typing addresses into a login screen.
-                errorMessage = "That email and password did not match an account."
+                errorMessage = creatingAccount
+                    ? "That account could not be created. Check the email and password, then try again."
+                    : "That email and password did not match an account."
             }
         }
     }

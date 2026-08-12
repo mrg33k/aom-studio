@@ -137,6 +137,91 @@ Production proof:
 
 **Status:** shipped and verified on canonical production.
 
+### R6 — Public newcomer onboarding and searchable sources
+
+Build one first-run contract across web and native iOS that takes a person from
+account creation to a useful Corner without requiring them to understand the
+project/mission/agent model first. The flow introduces Corner, offers a default
+brain, lets the user bring files and connect Gmail or Outlook as explicitly
+read-only searchable sources, gathers enough context to propose a starting
+workspace, and ends with a concrete first project. Every optional connection
+remains available later from Settings.
+
+Scope and release checks:
+
+- Add Google and Microsoft account entry alongside email without conflating
+  account authentication with permission to search mail.
+- Replace the premature three-question completion path with a resumable,
+  accessible first-run flow on desktop and mobile web.
+- Reuse the existing Gmail and Outlook OAuth integrations, returning users to
+  the exact onboarding step after consent.
+- Add honest local-file import staging and clear read-only email permission
+  language; no send, delete, archive, or mailbox mutation in onboarding.
+- Add the same welcome/source/brain decisions to native iOS and keep source
+  management reachable from Settings.
+- Persist onboarding progress and completion server-side where available, with
+  a local recovery path that cannot strand a signed-in user.
+- Verify focused auth/onboarding tests, the production web build, native iOS
+  compilation/tests, and responsive visual behavior.
+
+Implemented 2026-08-11:
+
+- Replaced the old first-login questionnaire with one resumable five-step web
+  path: introduction, default/paid brain choice, files and searchable mail,
+  starting work, review, and creation. New users are gated into this path.
+- Made account entry public through email signup plus Google, Microsoft, and
+  Apple OAuth. Account authentication remains separate from Gmail/Outlook data
+  permission.
+- Added Gmail and Outlook onboarding consent with materially narrower read-only
+  scopes (`gmail.readonly` and `Mail.Read`), exact-step OAuth return, connection
+  status, and explicit no-send/delete/archive/move language.
+- Added local file staging (20 files, 20 MB each), workspace/project creation,
+  one Corner guide, metadata completion, and upload after tenant identity is
+  established.
+- Added a native SwiftUI first-run flow with the same brain/source/workspace
+  decisions, native file picking, authenticated mailbox OAuth launch, and
+  account creation/provider sign-in parity.
+- Responsive browser QA reached the review screen at 390×844 with a 390 px
+  document width (no horizontal overflow). Eight focused API/contract tests,
+  the Vite production build, project-file validation, and an iPhone 17 simulator
+  build pass.
+
+Launch activation still required:
+
+- Enable/configure Apple, Google, and Azure providers in Supabase and add the
+  approved web/native callback URLs. The buttons fail honestly until enabled.
+- Confirm Gmail and Microsoft OAuth app credentials, consent-screen publishing,
+  and production redirect URI. Google verification timing is external.
+- The Claude/ChatGPT/Gemini rows record the preferred brain and point users to
+  later connection; consumer account connectors still require their separate
+  provider/MCP approval or the shipped local Corner Runner.
+- Run a real clean-account acceptance pass against production, archive/sign the
+  iOS build, and complete App Store privacy/submission metadata. This round has
+  not been deployed.
+
+**Status:** implementation and local verification complete; provider activation and production release pending.
+
+### R7 — Activate public auth, mail consent, and production onboarding
+
+Configure the production Supabase auth providers and Google/Microsoft mail OAuth
+applications, deploy the locally verified R6 onboarding release to the canonical
+`aom-studio` production project, and complete one clean-account acceptance pass
+through account creation and first-run setup.
+
+Activation checklist:
+
+- Verify production project identity before changing Supabase or Vercel state.
+- Enable Apple, Google, and Azure account providers with the required production
+  and `corner://auth-callback` redirects.
+- Confirm Gmail readonly and Microsoft Mail.Read consent apps are published and
+  use the canonical production callback endpoint.
+- Deploy a clean committed release to `aom-studio`, verify canonical served
+  assets, then run a fresh-account onboarding acceptance test.
+- Record any provider review, MFA, DNS, legal metadata, or App Store dependency
+  as an external blocker without weakening scopes or using a test-only bypass.
+
+**Status:** in progress.
+
 ### R5 — Live Codex progress and single-owner room routing
 
 Stream safe, user-facing progress from the local Codex runner into the existing

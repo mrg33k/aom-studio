@@ -90,7 +90,16 @@ export default async function handler(req, res) {
     }
     workspaceId = requested
   }
-  const state = signState({ userId, slug, ts: Date.now(), nonce, returnTo, workspaceId })
+  // Onboarding asks only for search access. Keep that consent materially
+  // narrower than the full mail-management connection available in Settings.
+  const requestedAccess = req.query?.access === 'search' ? 'search' : 'full'
+  const state = signState({ userId, slug, ts: Date.now(), nonce, returnTo, workspaceId, requestedAccess })
+
+  const scopes = requestedAccess === 'search' && slug === 'gmail'
+    ? ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/gmail.readonly']
+    : requestedAccess === 'search' && slug === 'outlook'
+      ? ['openid', 'email', 'profile', 'offline_access', 'User.Read', 'Mail.Read']
+      : provider.scopes
 
   const params = new URLSearchParams({
     client_id: creds.clientId,
@@ -98,8 +107,8 @@ export default async function handler(req, res) {
     response_type: 'code',
     state,
   })
-  if (provider.scopes && provider.scopes.length) {
-    params.set('scope', provider.scopes.join(' '))
+  if (scopes && scopes.length) {
+    params.set('scope', scopes.join(' '))
   }
   if (provider.extraAuthParams) {
     Object.entries(provider.extraAuthParams).forEach(([k, v]) => params.set(k, String(v)))

@@ -286,10 +286,18 @@ export default async function handler(req, res) {
     return failRedirect(res, 'invalid-state', null)
   }
 
-  const { userId, slug, returnTo, workspaceId } = verified
+  const { userId, slug, returnTo, workspaceId, requestedAccess } = verified
   console.log('[oauth/callback] verified', { userId, slug, hasReturnTo: !!returnTo })
   await logEvent('oauth_state_verified', { userId, slug, hasReturnTo: !!returnTo })
-  const provider = getProvider(slug)
+  const baseProvider = getProvider(slug)
+  // Match validation to the exact consent requested by onboarding. A
+  // search-only Gmail token is useful without gmail.modify/gmail.send and must
+  // not be discarded as a partial full-access grant.
+  const provider = requestedAccess === 'search' && slug === 'gmail'
+    ? { ...baseProvider, requiredScopes: ['https://www.googleapis.com/auth/gmail.readonly'] }
+    : requestedAccess === 'search' && slug === 'outlook'
+      ? { ...baseProvider, requiredScopes: ['User.Read', 'Mail.Read'] }
+      : baseProvider
   if (!provider) {
     console.warn('[oauth/callback] unknown slug', slug)
     await logEvent('oauth_unknown_slug', { slug })

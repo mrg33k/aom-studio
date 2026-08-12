@@ -4,6 +4,9 @@ import assert from 'node:assert/strict'
 
 const calls = []
 const gmailRequiredScopes = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+]
+const gmailFullScopes = [
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/gmail.send',
 ]
@@ -20,7 +23,7 @@ globalThis.fetch = async (url, init) => {
         { id: 'c-personal', user_id: 'user-1', workspace_id: null, integration_slug: 'gmail',
           status: 'connected', connected_at: '2026-05-10', config: { account_email: 'p@x.com', connector_user_id: 'user-1', granted_scopes: gmailRequiredScopes } },
         { id: 'c-team-aom', user_id: null, workspace_id: 'aom', integration_slug: 'gmail',
-          status: 'connected', connected_at: '2026-05-12', config: { account_email: 'hello@aom-inhouse.com', connector_user_id: 'user-1', granted_scopes: gmailRequiredScopes } },
+          status: 'connected', connected_at: '2026-05-12', config: { account_email: 'hello@aom-inhouse.com', connector_user_id: 'user-1', granted_scopes: gmailFullScopes } },
       ],
     }
   }
@@ -52,7 +55,7 @@ test('listConnectionsForUser hides a Gmail row missing required OAuth scopes', a
         ok: true,
         json: async () => [
           { id: 'c-under-scoped', user_id: 'user-1', workspace_id: null, integration_slug: 'gmail',
-            status: 'connected', connected_at: '2026-05-10', config: { granted_scopes: [gmailRequiredScopes[0]] } },
+            status: 'connected', connected_at: '2026-05-10', config: { granted_scopes: ['openid', 'email'] } },
         ],
       }
     }

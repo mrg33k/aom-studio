@@ -24,12 +24,35 @@ export async function signInWithPassword(email, password) {
 }
 
 /**
+ * Sign in or create an account with a trusted identity provider. Account auth
+ * is deliberately separate from connecting Gmail/Outlook as searchable data.
+ */
+export async function signInWithProvider(provider, redirectTo = '/onboarding') {
+  if (!supabase) return { error: new Error('Supabase not configured') }
+  const target = typeof window !== 'undefined'
+    ? `${window.location.origin}${redirectTo}`
+    : redirectTo
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: target },
+  })
+  return { data, error }
+}
+
+/**
  * Sign up a new user with email + password.
  * Returns { user, error }.
  */
-export async function signUp(email, password) {
+export async function signUp(email, password, redirectTo = '/onboarding') {
   if (!supabase) return { user: null, error: new Error('Supabase not configured') }
-  const { data, error } = await supabase.auth.signUp({ email, password })
+  const target = typeof window !== 'undefined'
+    ? `${window.location.origin}${redirectTo}`
+    : redirectTo
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: target },
+  })
   return { user: data?.user || null, error }
 }
 
