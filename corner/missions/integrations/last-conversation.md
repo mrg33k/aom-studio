@@ -65,3 +65,30 @@ publishing, production callback allowlists, real clean-account acceptance, iOS
 signing/archive, and App Store metadata remain. Claude/ChatGPT/Gemini preferences
 are collected honestly, but consumer subscription connectors still depend on
 their separate provider/MCP approval or the existing local Corner Runner.
+
+## 2026-08-11 — R7 production auth activation and acceptance
+
+Patrik asked to activate Apple/Google/Microsoft in Supabase, publish Gmail and
+Microsoft consent, deploy the web release, and exercise one entirely new account
+on production. The audit found the linked Supabase project still used
+`http://sourcing.directory` as its Auth site and had no redirect allowlist or
+enabled social providers. Google mail credentials already existed, while
+Microsoft mail and Apple web-auth credentials did not.
+
+Supabase Auth now uses `https://www.aheadofmarket.com`, accepts both AOM web
+origins and `corner://auth-callback`, and has Google enabled with the existing
+`corner-integrations` OAuth client. That client now includes the Supabase
+callback. Google shows External / In production. Gmail API is enabled and
+`gmail.readonly` is registered, but Google marks it restricted and requires a
+written use case plus a YouTube demo before verification can be submitted.
+Microsoft console access stopped at login, and Apple still needs its Developer
+Services ID/key and rotating web secret.
+
+Commits `236a2ecf` and `f7d43fcc` deployed to canonical production. A brand-new
+email account entered onboarding. The first finalization exposed that
+`create-agents` compared a workspace slug against `worlds.client_id` UUID;
+PostgREST rejected it and the fail-closed branch mislabeled every workspace as
+claimed. The fix queries `worlds.slug`, redeployed as production
+`dpl_BTyJZjF9nHHr6xABPpz7SVKpnc9k`, and the clean account then reached
+`YOUR CORNER IS READY`. The temporary user was deleted. The release branch was
+pushed as `codex/corner-full-pass-r16`.

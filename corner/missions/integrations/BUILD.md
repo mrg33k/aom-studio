@@ -220,7 +220,31 @@ Activation checklist:
 - Record any provider review, MFA, DNS, legal metadata, or App Store dependency
   as an external blocker without weakening scopes or using a test-only bypass.
 
-**Status:** in progress.
+Progress 2026-08-11:
+
+- Corrected production Supabase Auth from the stale `sourcing.directory` site
+  URL to `https://www.aheadofmarket.com`, added both canonical web origins plus
+  `corner://auth-callback`, and enabled Google using the existing production
+  `corner-integrations` client.
+- Added the Supabase callback URI to that Google client. The Google audience is
+  External / In production. Gmail API is enabled, and `gmail.readonly` is now
+  registered as the only onboarding mail scope.
+- Google classifies `gmail.readonly` as restricted. Its verification form now
+  requires Corner's use-case declaration and a YouTube demo of the deployed
+  connection flow; approval cannot be claimed until those artifacts are
+  supplied and Google completes review.
+- Microsoft/Entra activation is blocked on Microsoft console authentication;
+  production has no `OUTLOOK_OAUTH_CLIENT_ID` or secret yet. Apple activation
+  is blocked on creating/confirming the Apple Services ID and six-month client
+  secret in the Apple Developer account.
+- Production deployment `dpl_BTyJZjF9nHHr6xABPpz7SVKpnc9k` is Ready on the
+  verified `aom-studio` project and carries all canonical AOM aliases.
+- A clean production email account successfully reached onboarding. Its first
+  workspace creation uncovered an invalid UUID comparison in the collision
+  check; commit `f7d43fcc` fixed and redeployed it. The same clean account then
+  reached `YOUR CORNER IS READY`. The temporary acceptance user was deleted.
+
+**Status:** production web and clean-account acceptance complete; Google mail verification, Microsoft credentials/consent, and Apple developer credentials remain externally blocked.
 
 ### R5 — Live Codex progress and single-owner room routing
 
