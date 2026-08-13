@@ -25,7 +25,7 @@
   --font-mono:    'JetBrains Mono', 'Space Mono', ui-monospace, monospace;
 
   /* Type scale — matching tokens.jsx T convention */
-  --t-d1:  clamp(56px, 9.2vw, 148px);   /* hero H1 */
+  --t-d1:  clamp(56px, 7.8vw, 118px);   /* hero H1 — longest hand-placed line fills the 1296px measure at 1440 */
   --t-d2:  clamp(38px, 5.4vw, 84px);    /* section H2 */
   --t-d3:  clamp(28px, 3.4vw, 52px);    /* module titles / band H3 */
   --t-d4:  clamp(20px, 2.1vw, 30px);    /* sub-display */
@@ -252,7 +252,8 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: var(--ls-display);
   text-transform: uppercase;
   color: var(--carbon);
-  max-width: 1000px;
+  /* Full measure — breaks are hand-placed in the markup; a width cap here
+     re-introduces auto-wrap stubs and a dead right rail. */
   margin-bottom: var(--sp-7);
 }
 .hero__sub {
