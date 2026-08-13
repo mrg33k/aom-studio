@@ -230,6 +230,87 @@ struct TurnStatesPreviewHarness: View {
     }
 }
 
+// MARK: - Stop + recovery proof (R18 N2)
+
+/// The stop control's two faces on the real card, the honesty strip, and the three
+/// recovery notices — one frame, real components.
+struct StopRecoveryPreviewHarness: View {
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.s3) {
+                    caption("WORKING — STOP READY")
+                    TurnIndicatorView(
+                        turn: .working(detail: PreviewFixtures.turnSteps.last?.text),
+                        steps: PreviewFixtures.turnSteps,
+                        startedAt: Date().addingTimeInterval(-95),
+                        stopControl: .ready
+                    )
+
+                    caption("STOP ASKED — STOPPING")
+                    TurnIndicatorView(
+                        turn: .working(detail: PreviewFixtures.turnSteps.last?.text),
+                        steps: PreviewFixtures.turnSteps,
+                        startedAt: Date().addingTimeInterval(-101),
+                        stopControl: .stopping
+                    )
+
+                    caption("UNCONFIRMED — THE HONESTY STRIP")
+                    HStack(spacing: Theme.s2) {
+                        Image(systemName: "exclamationmark.circle").font(.system(size: 12))
+                        Text("Couldn't confirm the stop — the turn may still be running.")
+                            .font(.hkCaption)
+                        Spacer(minLength: 0)
+                        Text("Dismiss").font(.hkCaption.weight(.semibold))
+                    }
+                    .foregroundStyle(Theme.warning)
+                    .padding(.horizontal, Theme.s3)
+                    .padding(.vertical, Theme.s2)
+                    .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                            .strokeBorder(Theme.warning.opacity(0.35), lineWidth: 1)
+                    )
+
+                    caption("STUCK — RESTARTABLE CAUSE")
+                    RoomRecoveryNoticeView(
+                        health: RoomHealth(state: "needs_attention", cause: "runner_failed", repaired: false)
+                    )
+
+                    caption("NEEDS YOU — AGENT SILENT")
+                    RoomRecoveryNoticeView(
+                        health: RoomHealth(state: "needs_attention", cause: "agent_silent", repaired: false),
+                        canResend: true
+                    )
+
+                    caption("REPAIR GAVE UP — START FRESH OFFERED")
+                    RoomRecoveryNoticeView(
+                        health: RoomHealth(state: "needs_attention", cause: "settled_without_reply",
+                                           repaired: false, repairCount: 3, suggestedAction: "room_reset")
+                    )
+                }
+                .padding(Theme.s4)
+            }
+            // `-tail` flips the capture to the bottom of the sheet so the cards
+            // below the first fold get their own judged frame.
+            .defaultScrollAnchor(
+                ProcessInfo.processInfo.arguments.contains("-tail") ? .bottom : .top
+            )
+            .groundBackground()
+            .navigationTitle("Stop + recovery")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+
+    private func caption(_ text: String) -> some View {
+        Text(text)
+            .font(.hanken(11).weight(.bold))
+            .foregroundStyle(Theme.inkFaint)
+            .padding(.top, Theme.s2)
+    }
+}
+
 // MARK: - Home composer proof
 
 /// The home timeline (reusing HomePreviewHarness's look) with the real HomeComposerBar

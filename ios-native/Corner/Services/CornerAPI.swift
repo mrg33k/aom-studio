@@ -771,6 +771,22 @@ final class CornerAPI: ObservableObject {
         return try? JSONDecoder().decode(RoomHealth.self, from: data)
     }
 
+    /// POST /api/dashboard/chat-bridge {action:'stop', message_id} — ask the bridge
+    /// to stop the running turn. The proxy answers 200 with a StopResult either
+    /// way; feature_off means the bridge flag is off (or the bridge is out of
+    /// reach) and the control should hide for the rest of the session.
+    func stopTurn(room: Room, messageID: String) async throws -> StopResult {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/chat-bridge",
+            method: "POST",
+            jsonBody: ["action": "stop", "message_id": messageID, "client_id": world]
+        )
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(StopResult.self, from: data))
+            ?? StopResult(stopped: false, reason: "bad_response")
+    }
+
     // MARK: - Rail
 
     struct ProjectRow: Decodable, Identifiable, Hashable {

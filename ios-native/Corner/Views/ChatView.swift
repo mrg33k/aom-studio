@@ -117,6 +117,13 @@ struct ChatView: View {
                     if !isSearching, model.turn != .idle {
                         turnIndicator
                     }
+                    // The steward's verdict, with its actions in the same surface.
+                    if !isSearching {
+                        recoveryNotice
+                    }
+                    if !isSearching, let notice = model.stopNotice {
+                        stopNoticeStrip(notice)
+                    }
                     // Collapse: 0-height clear placeholder keeps the thread from
                     // resizing when we swap composer ↔ nothing.
                     if composerCollapsed {
@@ -577,8 +584,52 @@ struct ChatView: View {
             startedAt: model.turnStartedAt,
             quiet: model.turnIsQuiet,
             healthState: model.turnHealth?.state,
+            stopControl: model.stopControl,
+            onStop: { Task { await model.stopTurn() } },
             resend: { model.resendStalled() },
             dismiss: { model.dismissStalled() }
+        )
+        .padding(.horizontal, Theme.s3)
+    }
+
+    /// The recovery notice (R18 N2): the steward said needs_attention or
+    /// recovering, and the room says WHY, with the action in the same surface —
+    /// Restart on the allowlisted causes, resend/status-ask on agent_silent,
+    /// Start fresh when repair has given up.
+    @ViewBuilder
+    private var recoveryNotice: some View {
+        if let health = model.turnHealth,
+           health.state == "needs_attention" || health.state == "recovering" {
+            RoomRecoveryNoticeView(
+                health: health,
+                canResend: model.turn == .idle,
+                onRestart: { Task { await model.repairTurn() } },
+                onResend: { model.resendAfterRecovery() },
+                onAskStatus: { model.askForStatus() },
+                onStartFresh: { Task { _ = await model.clearRoom(); model.dismissRecovery() } },
+                onDismiss: { model.dismissRecovery() }
+            )
+            .padding(.horizontal, Theme.s3)
+        }
+    }
+
+    /// The stop honesty strip: a stop was accepted but nothing confirmed it.
+    private func stopNoticeStrip(_ text: String) -> some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 12))
+            Text(text).font(.hkCaption)
+            Spacer(minLength: 0)
+            Button("Dismiss") { model.dismissRecovery() }
+                .font(.hkCaption.weight(.semibold))
+        }
+        .foregroundStyle(Theme.warning)
+        .padding(.horizontal, Theme.s3)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                .strokeBorder(Theme.warning.opacity(0.35), lineWidth: 1)
         )
         .padding(.horizontal, Theme.s3)
     }
@@ -1048,6 +1099,10 @@ struct TurnIndicatorView: View {
     var quiet: Bool = false
     /// The steward's current state word — the waking line keys off "accepted".
     var healthState: String? = nil
+    /// The Stop control (R18 N2) — lives ON the card, right-aligned, because the
+    /// action belongs in the same surface as the state it acts on.
+    var stopControl: ChatViewModel.StopControl = .hidden
+    var onStop: () -> Void = {}
     var resend: () -> Void = {}
     var dismiss: () -> Void = {}
 
@@ -1084,6 +1139,23 @@ struct TurnIndicatorView: View {
                             .foregroundStyle(Theme.accent)
                         }
                         .accessibilityLabel(stepsExpanded ? "Collapse steps" : "Show all steps")
+                    }
+                    if stopControl != .hidden {
+                        // Ghost stop, the web's card-header treatment: 1px border,
+                        // quiet ink, disabled + "Stopping…" while the ask is live.
+                        Button(action: onStop) {
+                            Text(stopControl == .stopping ? "Stopping…" : "Stop")
+                                .font(.hanken(11).weight(.semibold))
+                                .foregroundStyle(stopControl == .stopping ? Theme.inkFaint : Theme.inkSoft)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 3)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .strokeBorder(Theme.hairline, lineWidth: 1)
+                                )
+                        }
+                        .disabled(stopControl == .stopping)
+                        .accessibilityLabel(stopControl == .stopping ? "Stopping this turn" : "Stop this turn")
                     }
                 }
                 if !steps.isEmpty {
@@ -1181,6 +1253,80 @@ struct TurnIndicatorView: View {
                 .font(.hkCaption)
                 .foregroundStyle(isLatest ? Theme.ink : Theme.inkSoft)
                 .lineLimit(isLatest ? 2 : 1)
+        }
+    }
+}
+
+/// The steward's verdict as a card (R18 N2 — RoomRecoveryNotice port). Cause-keyed
+/// plain words, and every state carries its ACTION in the same surface: Restart on
+/// the allowlisted causes, Send again / Ask for a status on agent_silent, Start
+/// fresh when repair has given up (suggested_action room_reset).
+struct RoomRecoveryNoticeView: View {
+    let health: RoomHealth
+    var canResend: Bool = false
+    var onRestart: () -> Void = {}
+    var onResend: () -> Void = {}
+    var onAskStatus: () -> Void = {}
+    var onStartFresh: () -> Void = {}
+    var onDismiss: () -> Void = {}
+
+    private var isRecovering: Bool { health.state == "recovering" }
+
+    var body: some View {
+        RaisedCard(tint: (isRecovering ? Theme.accent : Theme.warning).opacity(0.4)) {
+            VStack(alignment: .leading, spacing: Theme.s2) {
+                HStack(spacing: Theme.s2) {
+                    Label(
+                        RoomRecovery.header(state: health.state),
+                        systemImage: isRecovering ? "arrow.triangle.2.circlepath" : "exclamationmark.triangle"
+                    )
+                    .font(.hkFootnote.weight(.semibold))
+                    .foregroundStyle(isRecovering ? Theme.accent : Theme.warning)
+                    Spacer(minLength: 0)
+                    // Dismiss lives on the header line so the action row keeps its
+                    // buttons on ONE line — a wrapped two-line pill next to
+                    // single-line siblings reads as a layout accident.
+                    if !isRecovering {
+                        Button(action: onDismiss) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Theme.inkFaint)
+                        }
+                        .accessibilityLabel("Dismiss this notice")
+                    }
+                }
+
+                Text(RoomRecovery.message(cause: health.cause))
+                    .font(.hkCaption)
+                    .foregroundStyle(Theme.inkSoft)
+
+                if !isRecovering {
+                    HStack(spacing: Theme.s3) {
+                        if RoomRecovery.showsRestart(cause: health.cause) {
+                            Button("Restart this turn", action: onRestart)
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                        }
+                        if health.cause == "agent_silent" {
+                            if canResend {
+                                Button("Send it again", action: onResend)
+                                    .buttonStyle(.borderedProminent)
+                                    .controlSize(.small)
+                            }
+                            Button("Ask for a status", action: onAskStatus)
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                .lineLimit(1)
+                        }
+                        if health.suggestedAction == "room_reset" {
+                            Button("Start fresh", action: onStartFresh)
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                        }
+                    }
+                    .padding(.top, Theme.s1)
+                }
+            }
         }
     }
 }

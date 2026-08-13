@@ -85,6 +85,17 @@ final class FakeTransport: MessageTransport {
         return healthDefault
     }
 
+    /// Stop verdicts (R18 N2). Defaults to feature-off — the honest no-lane answer.
+    var stopResult = StopResult(stopped: false, reason: "disabled", featureOff: true)
+    var stopError: Error?
+    private(set) var stopRequests: [String] = []
+
+    func stopTurn(room: Room, messageID: String) async throws -> StopResult {
+        stopRequests.append(messageID)
+        if let stopError { throw stopError }
+        return stopResult
+    }
+
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing {
         let sub = FakeSubscription()
         subscriptions.append(sub)

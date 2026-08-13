@@ -69,6 +69,41 @@ struct RoomHealth: Decodable, Equatable {
     }
 }
 
+// MARK: - Stop result (POST /api/dashboard/chat-bridge {action:'stop'})
+
+/// The proxy always answers HTTP 200 with this shape. `featureOff` covers both
+/// the bridge flag being off (upstream 404) and the bridge being unreachable —
+/// either way, Stop is not a thing this session can offer.
+struct StopResult: Decodable, Equatable {
+    var stopped: Bool?
+    var reason: String?     // no_active_turn | compacting | turn_finishing |
+                            // interrupt_not_taken | disabled | bridge_unreachable
+    var already: Bool?
+    var preSend: Bool?
+    var featureOff: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case stopped, reason, already
+        case preSend = "pre_send"
+        case featureOff = "feature_off"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        stopped = try? c.decodeIfPresent(Bool.self, forKey: .stopped)
+        reason = try? c.decodeIfPresent(String.self, forKey: .reason)
+        already = try? c.decodeIfPresent(Bool.self, forKey: .already)
+        preSend = try? c.decodeIfPresent(Bool.self, forKey: .preSend)
+        featureOff = try? c.decodeIfPresent(Bool.self, forKey: .featureOff)
+    }
+
+    init(stopped: Bool? = nil, reason: String? = nil, already: Bool? = nil,
+         preSend: Bool? = nil, featureOff: Bool? = nil) {
+        self.stopped = stopped; self.reason = reason; self.already = already
+        self.preSend = preSend; self.featureOff = featureOff
+    }
+}
+
 // MARK: - The vocabulary
 
 enum RoomStatus: String, CaseIterable, Equatable {
@@ -125,6 +160,49 @@ enum RoomStatus: String, CaseIterable, Equatable {
         case .thinking, .working, .streaming, .stopping: return .live
         case .needsYou, .stuck: return .blocked
         case .idle: return .none
+        }
+    }
+}
+
+// MARK: - Recovery rules (RoomRecoveryNotice port, R18 N2)
+
+/// The cause-keyed recovery vocabulary. Pure data: the view renders it, the tests
+/// pin it. Copy is plain words in the user's world — no runner ids, no endpoints.
+enum RoomRecovery {
+    /// "Restart this turn" shows ONLY for these — the causes where a repair
+    /// actually re-runs something. Offering restart on the rest would be a button
+    /// that does nothing.
+    static let restartCauses: Set<String> = [
+        "runner_failed", "unclaimed", "settled_without_reply", "message_missing",
+    ]
+
+    /// agent_silent gets its own pair of actions instead: resend, or ask for a status.
+    static func showsRestart(cause: String?) -> Bool {
+        restartCauses.contains(cause ?? "")
+    }
+
+    static func header(state: String?) -> String {
+        state == "recovering" ? "Self-repairing" : "Needs a look"
+    }
+
+    static func message(cause: String?) -> String {
+        switch cause ?? "" {
+        case "runner_failed":
+            return "The worker running this turn failed to start. Restarting usually fixes it."
+        case "unclaimed":
+            return "Nothing picked this message up. A restart hands it to a worker again."
+        case "message_missing":
+            return "The message never reached the agent's queue. Restarting re-delivers it."
+        case "reply_room_mismatch":
+            return "The reply landed in the wrong room. Nothing is lost — but this turn needs a restart to bring it here."
+        case "settled_without_reply":
+            return "The turn ended without a reply. Your message is saved — restart to try again."
+        case "write_failed":
+            return "The reply was written but could not be saved. This usually clears on its own."
+        case "agent_silent":
+            return "The agent went quiet — no activity and no reply. Your message is saved."
+        default:
+            return "This turn needs a look."
         }
     }
 }

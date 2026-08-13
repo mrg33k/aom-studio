@@ -132,6 +132,12 @@ final class ChatViewModel: ObservableObject {
     /// "working" would be a guess wearing a status chip. Clears on the next
     /// successful fetch.
     @Published private(set) var feedStale = false
+    /// One honest feature_off hides Stop for the rest of the session (R18 N2) —
+    /// showing a control the bridge will 404 is a button that lies.
+    @Published private(set) var stopUnavailable = false
+    /// The stop honesty strip: set when a stop was accepted but nothing confirmed
+    /// it within the timeout. Cleared by the next send or the turn settling.
+    @Published private(set) var stopNotice: String?
     /// When the current turn opened — drives the "Working — 2m 10s" elapsed clock.
     @Published private(set) var turnStartedAt: Date?
     /// Soft flag: steps have been silent past `quietThreshold` but the turn is not
@@ -173,6 +179,8 @@ final class ChatViewModel: ObservableObject {
     private var pollTask: Task<Void, Never>?
     private var stepTask: Task<Void, Never>?
     private var stewardTask: Task<Void, Never>?
+    private var stopTimeoutTask: Task<Void, Never>?
+    private let stopTimeout: TimeInterval
     /// The one repair ask per turn (the web's contract: GET until 45s, then ONE
     /// POST). Repair is not a retry loop.
     private var repairAskedThisTurn = false
@@ -225,6 +233,7 @@ final class ChatViewModel: ObservableObject {
         reconcileInterval: TimeInterval = Config.reconcileInterval,
         stewardInterval: TimeInterval = Config.stewardPollInterval,
         repairAfter: TimeInterval = Config.stewardRepairAfter,
+        stopTimeout: TimeInterval = Config.stopConfirmTimeout,
         onFirstReply: @escaping @MainActor () async -> Void = {
             await PushService.shared.requestAuthorizationAfterFirstReply()
         }
@@ -237,6 +246,7 @@ final class ChatViewModel: ObservableObject {
         self.reconcileInterval = reconcileInterval
         self.stewardInterval = stewardInterval
         self.repairAfter = repairAfter
+        self.stopTimeout = stopTimeout
         self.onFirstReply = onFirstReply
         // Restore per-room mode, defaulting to work — mirrors web's localStorage.cv6.chatMode.<key>
         let saved = UserDefaults.standard.string(forKey: "chatMode.\(room.id)")
@@ -293,6 +303,7 @@ final class ChatViewModel: ObservableObject {
         pollTask?.cancel(); pollTask = nil
         stepTask?.cancel(); stepTask = nil
         stewardTask?.cancel(); stewardTask = nil
+        stopTimeoutTask?.cancel(); stopTimeoutTask = nil
         subscription?.stop(); subscription = nil
     }
 
@@ -493,6 +504,7 @@ final class ChatViewModel: ObservableObject {
             // off it, and the steward's first real read replaces it within 10s.
             turnHealth = RoomHealth(state: "accepted")
             repairAskedThisTurn = false
+            stopNotice = nil
         } else {
             // Mid-turn follow-up: the bridge live-steers it into the in-flight turn,
             // so the earlier parents stay tracked — their steps and their settle are
@@ -529,7 +541,10 @@ final class ChatViewModel: ObservableObject {
         stepTask = nil
         stewardTask?.cancel()
         stewardTask = nil
+        stopTimeoutTask?.cancel()
+        stopTimeoutTask = nil
         turnHealth = nil
+        stopNotice = nil
         repairAskedThisTurn = false
     }
 
@@ -641,6 +656,13 @@ final class ChatViewModel: ObservableObject {
         guard let health = result ?? nil, health.found != false else { return }
         // The poll may outlive the turn it asked about.
         guard turnIsOpen else { return }
+        // A client-set `stopping` outranks routine steward reads: the user's stop
+        // is in flight, and "active" arriving 10s later must not un-say it. Only
+        // an END verdict (settled / needs_attention) may replace it.
+        if turnHealth?.state == "stopping",
+           health.state != "settled", health.state != "needs_attention" {
+            return
+        }
 
         turnHealth = health
         switch health.state {
@@ -670,6 +692,125 @@ final class ChatViewModel: ObservableObject {
         turnHealth = keepHealth
         awaitingParentID = keepParent
         awaitingSentText = keepText
+    }
+
+    // MARK: - Stop (R18 N2)
+
+    enum StopControl: Equatable { case hidden, ready, stopping }
+
+    /// What the Stop control should render. Hidden after one honest feature_off —
+    /// a control the bridge will refuse is a lie in button form.
+    var stopControl: StopControl {
+        guard turnIsOpen, !stopUnavailable, awaitingParentID != nil else { return .hidden }
+        if turnHealth?.state == "stopping" { return .stopping }
+        return .ready
+    }
+
+    /// Ask the bridge to stop the running turn. NEVER fakes a settled turn: the
+    /// optimistic state is `stopping`, and the turn only ends when the durable
+    /// stopped row or the settled sentinel arrives through the normal feed. A stop
+    /// the bridge accepted but never confirmed reverts after `stopTimeout` with an
+    /// honest notice — the web's own decision record names the missing timeout as
+    /// the defect to fix in any port.
+    @discardableResult
+    func stopTurn() async -> Bool {
+        guard turnIsOpen, let parentID = awaitingParentID, !stopUnavailable else { return false }
+        guard turnHealth?.state != "stopping" else { return false } // already stopping
+        let previous = turnHealth
+        turnHealth = RoomHealth(state: "stopping")
+        stopNotice = nil
+        startStopTimeout()
+        do {
+            let result = try await api.stopTurn(room: room, messageID: parentID)
+            if result.stopped == true {
+                // Accepted. The stopping state STANDS until the stopped row or
+                // sentinel lands; the timeout covers a watcher that never confirms.
+                await load()
+                return true
+            }
+            if result.featureOff == true { stopUnavailable = true }
+            cancelStopTimeout()
+            if turnHealth?.state == "stopping" { turnHealth = previous }
+            return false
+        } catch {
+            cancelStopTimeout()
+            if turnHealth?.state == "stopping" { turnHealth = previous }
+            return false
+        }
+    }
+
+    private func startStopTimeout() {
+        stopTimeoutTask?.cancel()
+        let timeout = stopTimeout
+        stopTimeoutTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(timeout))
+            if Task.isCancelled { return }
+            await self?.stopTimeoutFired()
+        }
+    }
+
+    private func cancelStopTimeout() {
+        stopTimeoutTask?.cancel()
+        stopTimeoutTask = nil
+    }
+
+    private func stopTimeoutFired() {
+        guard turnIsOpen, turnHealth?.state == "stopping" else { return }
+        turnHealth = nil
+        stopNotice = "Couldn't confirm the stop — the turn may still be running."
+    }
+
+    // MARK: - Recovery actions (R18 N2)
+
+    /// One human repair ask — the same endpoint the steward's 45s auto-ask uses.
+    /// On success the turn resumes as `recovering`; polling picks it back up.
+    @discardableResult
+    func repairTurn() async -> Bool {
+        guard let parentID = awaitingParentID else { return false }
+        let result = try? await api.roomHealth(room: room, messageID: parentID, repair: true)
+        await load()
+        guard let health = result ?? nil else { return false }
+        turnHealth = health
+        if health.repaired == true {
+            // The repair re-ran something: the turn is live again. Re-open the
+            // tracking so steps and the steward keep watching it.
+            if case .idle = turn {
+                lastTurnActivity = Date()
+                turnIsQuiet = false
+                if turnStartedAt == nil { turnStartedAt = Date() }
+                awaitingParentIDs.insert(parentID)
+                turn = .working(detail: liveSteps.last?.text)
+                startStepPoll()
+                startStewardPoll()
+            }
+            turnHealth = RoomHealth(state: "recovering", cause: health.cause)
+            return true
+        }
+        return false
+    }
+
+    /// Dismiss the recovery notice. The verdict is acknowledged, not erased from
+    /// the server — the steward will speak again if it recurs on a future turn.
+    func dismissRecovery() {
+        if turnHealth?.state == "needs_attention" || turnHealth?.state == "recovering" {
+            turnHealth = nil
+        }
+        stopNotice = nil
+    }
+
+    /// agent_silent's way out: send the same words as a genuinely new turn.
+    func resendAfterRecovery() {
+        guard let text = awaitingSentText, !text.isEmpty else { return }
+        turn = .idle
+        clearTurnTracking()
+        enqueue(text: text)
+    }
+
+    /// agent_silent's lighter way out — the web's literal status ask.
+    func askForStatus() {
+        turn = .idle
+        clearTurnTracking()
+        enqueue(text: "Are you still on this? Give me a quick status on my last message.")
     }
 
     /// Ask for notifications the first time an agent actually answers — the one moment

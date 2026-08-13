@@ -64,6 +64,13 @@ enum Config {
     /// indicator should say that instead of cycling thinking phrases over dead air.
     static let wakingThreshold: TimeInterval = 8
 
+    /// How long "Stopping…" may stand unconfirmed before the app says so. The
+    /// bridge's watcher owns the durable stopped row and can take ~10s; past this
+    /// the control reverts with an honest "couldn't confirm" line instead of a
+    /// button that sits disabled forever (the web shipped without this timeout —
+    /// its own decision record names it as the defect to fix in any port).
+    static let stopConfirmTimeout: TimeInterval = 15
+
     /// Short marketing version + build, read from the bundle for the device row.
     static var appVersion: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"

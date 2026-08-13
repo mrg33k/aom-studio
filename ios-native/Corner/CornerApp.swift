@@ -103,6 +103,9 @@ struct CornerApp: App {
         } else if args.contains("-turnStatesPreview") {
             // R18 N1: the status vocabulary + waking/opener/working indicator faces.
             TurnStatesPreviewHarness()
+        } else if args.contains("-stopRecoveryPreview") {
+            // R18 N2: stop control, honesty strip, recovery notices.
+            StopRecoveryPreviewHarness()
         } else if args.contains("-settingsPreview") {
             // The Settings sheet's own render, no auth: identity rows show their
             // signed-out placeholders, the workspace list shows its failure row.

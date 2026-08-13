@@ -35,6 +35,7 @@ protocol MessageTransport: AnyObject {
     func fetchSteps(room: Room, limit: Int) async throws -> [MessageStep]
     func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep]
     func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth?
+    func stopTurn(room: Room, messageID: String) async throws -> StopResult
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing
 }
 
@@ -76,6 +77,12 @@ extension MessageTransport {
     /// failure tests script verdicts through FakeTransport.
     func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth? {
         nil
+    }
+
+    /// R18 N2 stop seam. Defaulted to feature-off — the honest answer for a
+    /// transport that has no stop lane.
+    func stopTurn(room: Room, messageID: String) async throws -> StopResult {
+        StopResult(stopped: false, reason: "disabled", featureOff: true)
     }
 }
 
