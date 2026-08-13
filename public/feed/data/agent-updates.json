@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-12",
+ "generated": "2026-08-13",
  "roster": [
   {
    "slug": "bobby",
@@ -7,7 +7,29 @@
    "title": "Web Dev Agent",
    "summary": "Ships pixel-faithful frontend code. Done means pushed, deployed, screenshot-verified on desktop and mobile. Steffen specifies, Bobby implements — no freestyle, no interpretation.",
    "bar": "Lighthouse gates, screenshot verification, root-cause documentation on every fix.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "The 80% guard",
+     "body": "Before deploying any change, Bobby now audits whether the symbol he changed is used by other consumers. If a single edit touches more than 20% of pages, the change escalates before shipping. Cross-cutting mutations no longer land silently.",
+     "tag": "New method"
+    },
+    {
+     "headline": "Evidence standard for completion",
+     "body": "\"I verified\" is no longer accepted without an artifact. Completion means proof: a screenshot, a test exit code, a DOM query result. Every claimed verification must produce a file that a future session can check. Assertion without evidence is assertion without value.",
+     "tag": "New standard"
+    },
+    {
+     "headline": "Adversarial review subagent",
+     "body": "Any change touching three or more files now triggers a mandatory adversarial review sub-agent whose sole job is to break the change. The reviewer runs in a separate context with no access to Bobby's reasoning — it sees only the diff and tries to find what fails.",
+     "tag": "New capability"
+    },
+    {
+     "headline": "Context reset over compaction",
+     "body": "Bobby now prefers a full /clear with a tape note over /compact. Compaction preserves stale assumptions in compressed form where they compound silently. A clean reset with a written handoff forces re-reading fresh state and prevents the drift that caused three consecutive wrong-file edits in one session.",
+     "tag": "Process change"
+    }
+   ]
   },
   {
    "slug": "cleo",
@@ -15,7 +37,29 @@
    "title": "Video Editor and Motion Director",
    "summary": "Turns raw footage into finished platform-ready work. Pulls source from Dropbox and Google Drive, grades everything before it enters a cut, delivers master plus proxy simultaneously.",
    "bar": "Every clip graded, every reel rendered deterministically, master to Drive and proxy to the room.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "Integrity before taste",
+     "body": "Structural correctness — sync, continuity, clean cuts — now outranks creative choices in the editing hierarchy. A beautifully graded clip that drifts two frames out of sync is worse than a flat clip that hits its mark. This came from studying the Descript and Anthropic editing workflows where precision failures killed otherwise strong work.",
+     "tag": "New principle"
+    },
+    {
+     "headline": "Short-form Rule of Six",
+     "body": "Walter Murch's six editing priorities — emotion, story, rhythm, eye trace, 2D plane, 3D space — adapted for 15-60 second social video. The hierarchy stays the same but the tolerances collapse: in a 20-second reel, a single misplaced cut costs 5% of the viewer's attention budget. Every cut earns its place or gets removed.",
+     "tag": "New method"
+    },
+    {
+     "headline": "Multicam matching workflow",
+     "body": "A new CST-Group-Scope method for matching clips across camera angles. Clips are grouped by Color-Space-Tempo similarity, then matched within groups. Eliminates the jarring angle switches that happen when two cameras with different white balance land next to each other in the timeline.",
+     "tag": "New capability"
+    },
+    {
+     "headline": "Caption choreography",
+     "body": "Captions are now timed word-by-word to syllable boundaries, not at uniform intervals. Each word appears exactly when spoken, with kinetic entrance timing that matches the speaker's natural rhythm. No more captions arriving a half-beat early or lingering a beat late.",
+     "tag": "New technique"
+    }
+   ]
   },
   {
    "slug": "elon",
@@ -23,7 +67,24 @@
    "title": "Systems and Infrastructure Brain",
    "summary": "Platform brain for Corner. Contributing conditions, not band-aids. Owns the bridge, routine daemon, watcher, and deploy pipeline. Thinking partner for systems work.",
    "bar": "Root-cause fixes that prevent the class of bug, not just the instance.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "Agent-decision layer: the MAST taxonomy",
+     "body": "When infrastructure is green but the agent still misbehaved, the failure lives in one of four categories: Misunderstanding (wrong reading of the brief), Architecture (wrong decomposition), Strategy (wrong priority), or Tooling (wrong tool for the job). Naming the category before fixing prevents the most common diagnostic error: treating every agent failure as an infra problem.",
+     "tag": "New framework"
+    },
+    {
+     "headline": "USE method and Golden Signals",
+     "body": "Two complementary diagnostic methods now run on every outage. USE (Utilization, Saturation, Errors) examines each resource. Golden Signals (latency, traffic, errors, saturation) examines each service. Together they catch the failures that one method alone misses — a saturated disk with zero errors, or a high-latency endpoint with normal resource utilization.",
+     "tag": "New method"
+    },
+    {
+     "headline": "Five-layer diagnostic ladder",
+     "body": "Bridge, daemons, task lock, Supabase, relay — in that order, bottom-up. Every triage starts at the bridge and works upward. Skipping layers is how a task-lock issue masquerades as a Supabase outage for two hours. The ladder is the law.",
+     "tag": "New standard"
+    }
+   ]
   },
   {
    "slug": "gary",
@@ -31,7 +92,24 @@
    "title": "Operations Lead",
    "summary": "AOM's COO. The north star is visible, nothing stalls silently. Runs pipeline, deliverables, client status, and daily ops cadence across every active project.",
    "bar": "Every project has a visible owner, timeline, and next step. Stalls surface within 24 hours.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "Kanban flow review",
+     "body": "Gary now walks the board right-to-left every morning — David J. Anderson's Kanban discipline. Read from the finished end first, not the backlog. Clear what is already in flight before pulling anything new. The WIP ceiling is a pull system, not a to-do list. No new work enters a full pipe.",
+     "tag": "New cadence"
+    },
+    {
+     "headline": "WSJF economic sequencing",
+     "body": "When three things are all late and all Standard priority, which one first? Cost of Delay divided by Duration — the economically optimal answer. Gary estimates Cost of Delay on a 1/3/5/8 scale across four inputs: client value, time criticality, risk reduction, and opportunity enablement. A high-value 3-day item can be outranked by two 1-day items that clear more delay cost.",
+     "tag": "New method"
+    },
+    {
+     "headline": "Orchestration-era oversight",
+     "body": "Gary runs up to 5 items across 6 specialists. He cannot deep-review every pixel. Oversight now scales through systems — completion contracts, gate scripts, audit trails — not manual review. Gary's own eyes are triaged to the highest Cost of Delay item and anything a gate flagged. Systematized verification is the only kind that survives six parallel specialists.",
+     "tag": "New principle"
+    }
+   ]
   },
   {
    "slug": "jacob",
@@ -39,7 +117,29 @@
    "title": "Outreach Agent",
    "summary": "Finds construction leads, writes cold emails in Patrik's voice, files Gmail drafts. Runs the cold-outreach motion end-to-end from lead discovery to draft delivery.",
    "bar": "Emails in Patrik's voice, real prospect research behind every draft, numbers tracked daily.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "Four-lane research decomposition",
+     "body": "Prospect research is no longer one broad search. Four sequential lanes, each with one job: website (how they position themselves), reviews/social (what clients say vs. what the company claims), LinkedIn (the decision-maker's name and role), signal (hiring, site changes, permits). No draft begins until all four lanes deliver.",
+     "tag": "New method"
+    },
+    {
+     "headline": "Phone-only protocol",
+     "body": "Many Phoenix contractors have no findable email. These are now classified as phone-only in the CRM with a 3-sentence calling script in Patrik's voice instead of a forced cold email to a catch-all address. Phone is 3-5x more effective for these prospects. A calling script Patrik can use beats a Gmail draft nobody reads.",
+     "tag": "New channel"
+    },
+    {
+     "headline": "The 12-word rule",
+     "body": "Reply rate is decided in the first 12 words. Three patterns rotate: situational fact (a real data point about their business), named signal (a specific hiring post or site change you found), or lead with their pain (an industry problem, not a compliment). Never open with \"I came across your company.\"",
+     "tag": "New standard"
+    },
+    {
+     "headline": "AI-tell ban list",
+     "body": "Seven phrases that spam filters and human readers classify as AI-generated within two seconds — banned from every draft. \"I hope this email finds you well,\" \"I came across your company,\" any generic superlative. If a sentence works equally well for any contractor in Phoenix, it is a ban-list fail.",
+     "tag": "New gate"
+    }
+   ]
   },
   {
    "slug": "rex",
@@ -47,7 +147,24 @@
    "title": "Chief of Staff, Parallel Executor",
    "summary": "Same scope as Gary but built for concurrency. Handles high-throughput dispatch, multi-round builds, and cross-project coordination at speed.",
    "bar": "Every dispatched task completes or escalates. Throughput over one more meeting.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "Single-threaded is the default",
+     "body": "Parallel execution is the exception, not the norm. Cognition, OpenAI, and Anthropic independently converged on the same rule: writes stay single-threaded, additional agents contribute intelligence rather than actions. Rex's posture is now \"does this actually need more than one worker?\" not \"how do I parallelize this.\"",
+     "tag": "New principle"
+    },
+    {
+     "headline": "Read vs. write axis",
+     "body": "Before decomposing any work, classify every candidate track as READ or WRITE. Read tracks (research, scans, verification, screenshots) touch no shared surface and parallelize freely — this is the safe, high-concurrency zone. Write tracks to the same surface must serialize. Two writers on one repo is not concurrency, it is a pile-up.",
+     "tag": "New framework"
+    },
+    {
+     "headline": "Integrate on decisions, not outputs",
+     "body": "Five workers returning five payloads is not a result. Rex now checks that the implicit decisions underneath cohere — not just that the outputs don't literally contradict. Two workers choosing different naming conventions, data shapes, or edge-case rules produce the Flappy Bird failure: each internally fine, the product incoherent.",
+     "tag": "New method"
+    }
+   ]
   },
   {
    "slug": "steffen",
@@ -55,7 +172,29 @@
    "title": "Design Lead",
    "summary": "Genuinely elite designer for any brief, client, or industry. Function-first, references-first. Hands implementation-ready specs to Bobby, Cleo, and Tony.",
    "bar": "Every design passes the spacing check, the screen check, and the gauntlet. No pixel without a brief.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "Independent-judge gauntlet",
+     "body": "Every deliverable now faces a fresh-context judge who blind-A/Bs the artifact against the brief's reference. The judge picks one without knowing which is which. If the reference wins, the design ships only with a signed decision record naming the gap. No more self-graded passes.",
+     "tag": "New gate"
+    },
+    {
+     "headline": "OKLCH color authoring",
+     "body": "Colors are now authored in OKLCH — perceptually uniform lightness, predictable chroma steps, P3-gamut ready. No more hex guessing where a 10% lightness bump in one hue produces a visually different step than in another. The palette is mathematically even, not just visually close enough.",
+     "tag": "New standard"
+    },
+    {
+     "headline": "Fluid clamp() typography",
+     "body": "Every type size now uses CSS clamp() with a fluid middle value between defined breakpoint floors and ceilings. No more media-query jumps where text snaps from 32px to 48px at 768px. Type scales smoothly with the viewport, and the minimum is always readable.",
+     "tag": "New technique"
+    },
+    {
+     "headline": "WCAG 2.2 target-size and focus-visible",
+     "body": "Interactive elements now enforce a 24x24px minimum target size and visible focus indicators on every interactive element. Touch targets that passed old guidelines but failed real-thumb testing are now caught by an automated check before handoff.",
+     "tag": "New standard"
+    }
+   ]
   },
   {
    "slug": "steve",
@@ -63,7 +202,24 @@
    "title": "AI Advisory Lead and Quality Gate",
    "summary": "The honest voice. Runs ops health checks, status reports, model-stack reasoning, and quality gates on agent outputs. No fake 10/10s — a failure gets called.",
    "bar": "Every claim verified, every score earned. Silence on a problem is the same as a lie.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "The grader hierarchy",
+     "body": "Steve is now a judge of last resort, not first resort. The fixed order: deterministic check first (git log, test exit code, pixel measurement — fast, cheap, unhackable by persuasion), LLM-judge second (only for genuinely subjective residue like design quality or copy tone), human last (calibration, not routine grading). A dimension graded by eye that a code check could have settled is a process FAIL.",
+     "tag": "New framework"
+    },
+    {
+     "headline": "Claim-level groundedness",
+     "body": "Reports are no longer graded as a blob. Steve decomposes every output into atomic claims — one fact per claim — and verifies each against its source across three layers: structural (is a source given?), resolvability (does the source exist?), semantic (does the source actually contain this claim?). The illusion of groundedness — a report that reads accurate with one fabricated number buried in it — is now caught.",
+     "tag": "New method"
+    },
+    {
+     "headline": "Trajectory grading",
+     "body": "A correct outcome from a wrong path is a FAIL. Steve now reads the transcript before signing off: did the worker edit the check, hardcode the answer, delete the failing test, or retry eight times until one run went green? Pass-by-luck is not a pass. The trajectory is graded for cheats and brittleness, never for following a specific step sequence.",
+     "tag": "New standard"
+    }
+   ]
   },
   {
    "slug": "studio",
@@ -71,7 +227,24 @@
    "title": "Thinking Partner",
    "summary": "Patrik's second main terminal. Persistent thinking partner for AOM Studio work. Conversation-led, not code-led. Dispatches workers, shapes strategy, runs the tape.",
    "bar": "The conversation advances the work. Every dispatch brief survives a blind read.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "Outside-view step",
+     "body": "Before steelmanning a specific case, Studio now puts a base rate on the table. Name the reference class this decision belongs to — \"redesigns that promised a conversion lift,\" \"features we were sure users wanted\" — and estimate how often things in that class actually work out. The inside view adjusts the base rate, not the other way around. From Tetlock's Good Judgment Project: the single most validated forecasting discipline.",
+     "tag": "New method"
+    },
+    {
+     "headline": "The delegation contract",
+     "body": "Every dispatch now carries four explicit fields: objective (the mission context plus the locked decision), output format (what \"done\" looks like — deployed and verified, not pushed), tools and sources (which files and scripts to reach for), and boundaries (what this worker must not touch). The boundary field is the one most often dropped, and it is exactly the one whose absence makes two lanes redo each other's work.",
+     "tag": "New standard"
+    },
+    {
+     "headline": "The boot problem",
+     "body": "A persistent terminal is a long-running agent where each session starts cold. Studio now boots by reading the tape, the room canon, and the git log — structured progress state — then picks the one highest-priority open thread. Never re-derive state by re-reading a transcript. Never start a session without knowing where the last one stopped.",
+     "tag": "New protocol"
+    }
+   ]
   },
   {
    "slug": "tony",
@@ -79,7 +252,24 @@
    "title": "Social Media Agent",
    "summary": "Platform-native captions, post schedules, competitor scans across Instagram, TikTok, and LinkedIn. Knows each platform's grammar and pacing.",
    "bar": "Every caption platform-native, every post scheduled with purpose, competitor moves tracked weekly.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "Source atomization",
+     "body": "When Cleo delivers a source asset, Tony no longer treats it as one post. Atomization extracts 8-15 distinct atoms (a hook, a mistake, a step, a quote, a contrast, a data point) and turns each into a self-contained platform-native post. A major asset produces 2-4 weeks of calendar. This is not repurposing — it is decomposition.",
+     "tag": "New method"
+    },
+    {
+     "headline": "Five TikTok hook formulas",
+     "body": "Every TikTok hook uses one of five named formulas — Contrarian Claim, Identity Callout, Curiosity Gap, High-Stakes Claim, or Pattern Interrupt — and never repeats the same formula twice in a row. The first 3 seconds and 10-14 words decide everything. Videos that fail to land relevance in the opening moment lose 45% of viewers before the 3-second mark.",
+     "tag": "New playbook"
+    },
+    {
+     "headline": "Sends-per-reach as the primary metric",
+     "body": "Adam Mosseri confirmed it: sends per reach is Instagram's most important ranking signal. Sends carry 3-5x the weight of likes for Explore and non-follower distribution. Before finalizing any IG caption, Tony now answers: \"Who does the viewer DM this to, and why right now?\" A post without a clear send trigger is redesigned.",
+     "tag": "New standard"
+    }
+   ]
   },
   {
    "slug": "alex",
@@ -87,7 +277,24 @@
    "title": "Deal Architect",
    "summary": "Business strategist who architects offers that close. ROI calculations, pitch decks, positioning work, and deal structures for retainer sales.",
    "bar": "Every offer has a number the prospect can check. No vague value props.",
-   "last_updated": "2026-08-12"
+   "last_updated": "2026-08-12",
+   "updates": [
+    {
+     "headline": "The JOLT method for stalled deals",
+     "body": "40-60% of lost deals are lost to no-decision — customer indecision — not to a competitor. Alex now diagnoses whether a stall is status-quo preference (responds to pain amplification) or fear of failure (gets worse under pressure, needs risk removal). Pushing urgency on a fear-driven buyer backfires 84% of the time. The distinction changes the entire response.",
+     "tag": "New framework"
+    },
+    {
+     "headline": "Buyer enablement: the six buying jobs",
+     "body": "A proposal that only does supplier selection leaves the deal stuck on the job the buyer is actually on. Gartner's six buying jobs — problem identification, solution exploration, requirements, supplier selection, validation, consensus — run in loops, not a line. Alex now diagnoses which job the prospect is stuck on and builds the artifact that unblocks that specific job.",
+     "tag": "New method"
+    },
+    {
+     "headline": "Golden-set pricing",
+     "body": "Price and position from real closed-deal patterns, not first principles. One closed deal is anecdote; three in the same vertical is a pattern. Every offer is now graded against a golden set of actual closed deals — and a first-principles guess is allowed only when flagged as unproven.",
+     "tag": "New standard"
+    }
+   ]
   }
  ]
 }
