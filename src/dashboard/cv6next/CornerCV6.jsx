@@ -512,6 +512,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const homeWrapRef = useRef(null);
   const homeProjectsRef = useRef([]);
   const missionsByProjectRef = useRef({});
+  // DEF-FIX-2: freeze recent-list ORDER while the pointer is over the rooms rail
+  // so a data-pipe reorder cannot swap the DOM row under the user's finger mid-reach.
+  const railPointerRef = useRef(false);
+  const stableRecentRef = useRef(null);
   const [treeSettings, setTreeSettings] = useState(null);
   const resolveHomeHit = useCallback((rowEl) => {
     const id = rowEl.getAttribute('data-cv6-arg') || '';
@@ -1455,7 +1459,12 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // This must be initialized before recentList: the authenticated missions tree
   // resolves after first paint, then recent mission labels enter this branch.
   const missionLabelClean = (n) => { const s = String(n || ''); return (s.includes(':') ? s.slice(s.lastIndexOf(':') + 1).trim() : s) || s; };
-  const recentList = (data.recent || []).map((recent) => {
+  // DEF-FIX-2: only adopt a new sort order from data.recent when the pointer is NOT
+  // over the rail. While the user's finger is hovering, stableRecentRef holds the last
+  // committed order so the row under the cursor is never swapped for a reordered one.
+  if (!railPointerRef.current) stableRecentRef.current = data.recent || [];
+  const recentSource = stableRecentRef.current || data.recent || [];
+  const recentList = recentSource.map((recent) => {
     if (recent.kind === 'project') {
       const project = allProjects.find((item) => item.slug === recent.project || item.id === recent.project);
       return project?.name ? { ...recent, name: project.name } : recent;
@@ -1467,7 +1476,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     const found = findMissionNode(missionsByProject[projectSlug], treeId, leaf);
     return found?.node?.name ? { ...recent, name: missionLabelClean(found.node.name) } : recent;
   });
-  recentList.count = data.recent?.count ?? recentList.length;
+  recentList.count = (recentSource?.count ?? data.recent?.count) ?? recentList.length;
   const agentsList = agentsOpen ? (data.agents || []) : [];
   const HOME_MISSION_CAP = 8;
   // Corner's top-level rooms mirror the top nav exactly: the live tools in nav order
@@ -1658,7 +1667,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       onCreated={() => setMissionReload((k) => k + 1)} />
   ) : null;
   return (
-    <div ref={homeWrapRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div ref={homeWrapRef}
+      onPointerEnter={() => { railPointerRef.current = true; }}
+      onPointerLeave={() => { railPointerRef.current = false; }}
+      style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
         aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
       {treeCtxOverlay}
