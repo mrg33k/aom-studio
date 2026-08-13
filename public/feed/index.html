@@ -105,7 +105,8 @@ a{color:inherit}
   font-size:clamp(32px,8.6vw,48px);text-wrap:balance;overflow-wrap:break-word}
 @media (min-width:700px){.headline{font-size:44px}}
 .subtitle{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
-.body{font-size:16px;line-height:1.5;color:var(--ink-300);max-width:52ch}
+.body{font-size:16px;line-height:1.5;color:var(--ink-300);max-width:52ch;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
 .act{display:flex;gap:12px;align-items:flex-start;max-width:52ch}
 .act .sq{width:8px;height:8px;background:var(--gold);flex:none;margin-top:8px}
 .act p{font-size:16px;line-height:1.5;font-weight:600}
