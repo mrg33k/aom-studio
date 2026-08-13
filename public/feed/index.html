@@ -3,17 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>AOM — Feed</title>
-<meta name="description" content="Ahead of Market — the feed. Production reels and client work, one frame at a time.">
-<meta property="og:title" content="AOM — Feed">
-<meta property="og:description" content="Production reels and client work, one frame at a time.">
+<title>AOM — Research Feed</title>
+<meta name="description" content="Ahead of Market — the research feed. Fresh findings every morning: AI animation, agent platforms, and the studios we compete with.">
+<meta property="og:title" content="AOM — Research Feed">
+<meta property="og:description" content="Fresh research every morning, one finding per swipe.">
 <style>
 /* ============================================================
-   AOM /feed — TikTok-grammar vertical feed, AOM editorial chrome.
-   Patterns vendored from MIT react-tiktok-style-video-scroller
-   (snap + windowed mounting + autoplay-policy mute handling) and
-   toptop-clone's most-visible-plays observer; re-expressed vanilla.
-   Brand: obsidian #0B0B0B / ivory #F6F6F4 / bronze #B58A38 only.
+   AOM /feed — daily research briefing in TikTok feed grammar.
+   One finding per full-screen card; vertical snap scroll.
+   Data: /feed/data/findings.json, appended each morning by the
+   daily-research routine. Brand: obsidian/ivory + bronze accent,
+   flat surfaces + hairlines by brand law, chrome type = tracked
+   Schibsted (Druk stays above its 104px floor, so none here).
    ============================================================ */
 @font-face{font-family:'Schibsted Grotesk';src:url('/feed/assets/fonts/SchibstedGrotesk-var.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 
@@ -32,6 +33,7 @@
 html,body{height:100%;background:var(--obsidian);color:var(--ivory);overflow:hidden}
 body{font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
+a{color:inherit}
 
 /* ---- masthead ---- */
 .mast{position:fixed;top:0;left:0;right:0;height:var(--mast-h);z-index:30;
@@ -53,42 +55,58 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 .feed::-webkit-scrollbar{display:none}
 .item{height:100%;scroll-snap-align:start;scroll-snap-stop:always;
   position:relative;display:flex;align-items:center;justify-content:center}
-.stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.stage video{width:100%;height:100%;object-fit:contain;display:block;background:var(--obsidian)}
 
-/* desktop: constrain to a 9/16 card on the obsidian ground */
+/* the card: full-bleed on phone, 9/16 frame on desktop (feed identity) */
+.stage{position:relative;width:100%;height:100%;display:flex;flex-direction:column;
+  justify-content:space-between;overflow:hidden;
+  padding:24px 20px calc(24px + var(--safe-b));background:var(--obsidian)}
 @media (min-width:700px){
-  .stage{width:auto;aspect-ratio:9/16;height:min(100%,92vh);border:1px solid var(--ink-700)}
+  .stage{width:auto;aspect-ratio:9/16;height:min(100%,92vh);border:1px solid var(--ink-700);
+    padding:32px 32px 32px}
 }
 
-/* ---- per-item overlay (anchored to the stage, so it rides the card on desktop) ---- */
-.meta{position:absolute;left:16px;right:88px;bottom:calc(18px + var(--safe-b));z-index:5;
-  display:flex;flex-direction:column;gap:0;align-items:flex-start;pointer-events:none}
-@media (min-width:700px){.meta{right:16px;bottom:18px}}
+/* card header: lane plate + date + lane mark */
+.head{display:flex;align-items:flex-start;gap:8px}
+.lane{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--obsidian);background:var(--gold);padding:4px 8px}
+.date{font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-300);border:1px solid var(--ink-700);padding:4px 8px}
+.lanemark{margin-left:auto;width:36px;height:36px;color:var(--ink-300);flex:none}
+.lanemark svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:1.5}
+
+/* card body */
+.core{display:flex;flex-direction:column;gap:16px;margin:16px 0}
+.headline{font-weight:700;line-height:1.04;letter-spacing:-0.01em;
+  font-size:clamp(32px,8.6vw,48px);text-wrap:balance;overflow-wrap:break-word}
+@media (min-width:700px){.headline{font-size:44px}}
+.body{font-size:16px;line-height:1.5;color:var(--ink-300);max-width:52ch}
+.act{display:flex;gap:12px;align-items:flex-start;max-width:52ch}
+.act .sq{width:8px;height:8px;background:var(--gold);flex:none;margin-top:8px}
+.act p{font-size:16px;line-height:1.5;font-weight:600}
+
+/* card foot: index + source */
+.foot{display:flex;align-items:center;gap:8px}
 .idx{font-size:12px;font-weight:700;letter-spacing:.14em;
   color:var(--obsidian);background:var(--gold);padding:4px 8px;font-variant-numeric:tabular-nums}
-.label{font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--ivory);
-  background:var(--obsidian);padding:8px 12px}
-.progress{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--ink-700);z-index:6}
-.progress i{display:block;height:100%;width:0;background:var(--gold)}
-.paused-flag{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;
-  width:14px;height:14px;background:var(--ivory);opacity:0;transition:opacity 140ms linear;pointer-events:none}
-.item.is-paused .paused-flag{opacity:.9}
+.src{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-300);text-decoration:none;border-bottom:1px solid var(--ink-700);
+  padding-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.src:hover{color:var(--ivory);border-color:var(--gold)}
 
-/* ---- fixed action rail (acts on the active item) ---- */
+/* ---- fixed action rail (acts on the active card) ---- */
 .rail{position:fixed;right:16px;bottom:calc(24px + var(--safe-b));z-index:31;
   display:flex;flex-direction:column;gap:8px}
 .rail button{width:46px;height:46px;border:1px solid var(--ink-700);background:var(--obsidian);
   display:flex;align-items:center;justify-content:center;color:var(--ivory)}
 .rail button:active{background:var(--ink-800)}
 .rail svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.6}
-.rail button.on{color:var(--obsidian);background:var(--gold);border-color:var(--gold)}
-.rail button.on svg{fill:currentColor}
-@media (min-width:700px){.rail{right:calc(50% - min(50vh*9/16,46vw) - 62px)}}
+.rail .on{color:var(--obsidian);background:var(--gold);border-color:var(--gold)}
+.rail .on svg{fill:currentColor}
+@media (min-width:700px){.rail{right:calc(50% - min(46vh*9/16,46vw) - 78px)}}
 
 /* keyboard hint, desktop only */
 .hint{position:fixed;left:20px;bottom:calc(18px + var(--safe-b));z-index:31;
-  font-size:10px;letter-spacing:.18em;color:var(--ink-500);text-transform:uppercase;display:none}
+  font-size:11px;letter-spacing:.18em;color:var(--ink-500);text-transform:uppercase;display:none}
 @media (min-width:700px){.hint{display:block}}
 </style>
 </head>
@@ -104,19 +122,17 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 <path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20&#xA;-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715&#xA;516 -90 41 -123 48 -123 25z"></path>
 <path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149&#xA;22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10&#xA;-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153&#xA;-152 122z"></path>
 <path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8&#xA;-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15&#xA;258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292&#xA;112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12 -396 5&#xA;-408 5 -425 -14z"></path>
-</g></mask>
+</g>
+</mask>
 <rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
 </svg></a>
   <div class="wordmark">Feed<span class="period" aria-hidden="true"></span></div>
-  <div class="count"><b id="pos">01</b>&nbsp;/&nbsp;<span id="total">00</span></div>
+  <div class="count"><b id="pos">01</b>&nbsp;/&nbsp;<span id="total">--</span></div>
 </header>
 
-<main class="feed" id="feed" aria-label="AOM video feed"></main>
+<main class="feed" id="feed" aria-label="AOM daily research feed"></main>
 
-<nav class="rail" aria-label="Actions for current video">
-  <button id="muteBtn" aria-label="Unmute" aria-pressed="false">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><line id="muteSlash" x1="19" y1="5" x2="15" y2="19"/></svg>
-  </button>
+<nav class="rail" aria-label="Actions for current finding">
   <button id="likeBtn" aria-label="Like" aria-pressed="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20l-7-7a4.2 4.2 0 010-6 4.2 4.2 0 016 0l1 1 1-1a4.2 4.2 0 016 0 4.2 4.2 0 010 6l-7 7z"/></svg>
   </button>
@@ -125,141 +141,84 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
   </button>
 </nav>
 
-<p class="hint">Scroll · J / K · Space</p>
+<p class="hint">Scroll · J / K</p>
 
 <script>
-/* ---- the set: real files, real names, nothing invented ---- */
-const ITEMS = (() => {
-  const named = [
-    ['/paired/day-3-reel.mp4',        'AOM Social — Day 3'],
-    ['/videos/ambition-vertical.mp4', 'Ambition Mechanical'],
-    ['/videos/isa-brand.mp4',         'ISA Energy'],
-    ['/videos/ih-life.mp4',           'Included Health'],
-    ['/videos/spacerising-event.mp4', 'Space Rising'],
-    ['/videos/isa-demo.mp4',          'ISA Energy'],
-    ['/videos/collage-01.mp4',        'AOM — Production Collage'],
-    ['/videos/ih-culture.mp4',        'Included Health'],
-    ['/videos/isa-validation.mp4',    'ISA Energy'],
-    ['/videos/collage-02.mp4',        'AOM — Production Collage'],
-    ['/videos/collage-03.mp4',        'AOM — Production Collage'],
-  ];
-  const reels = Array.from({length:26},(_,i)=>{
-    const n = String(i+1).padStart(2,'0');
-    return [`/videos/reel-${n}.mp4`, `AOM — Production Reel ${n}`];
-  });
-  // interleave: a named piece every third slot while both pools last
-  const out=[]; let a=0,b=0;
-  while(a<named.length||b<reels.length){
-    if(a<named.length) out.push(named[a++]);
-    if(b<reels.length) out.push(reels[b++]);
-    if(b<reels.length) out.push(reels[b++]);
-  }
-  return out.map(([src,label],i)=>({src,label,id:src.split('/').pop().replace('.mp4','')}));
-})();
+/* lane definitions: display name + constructed hairline mark (real graphic
+   anchor per card — encodes the lane, not decoration) */
+const LANES = {
+  'claude-animation': {tag:'Claude Animation', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M4 26 Q12 8 18 18 T32 12"/><path d="M4 31 Q12 13 18 23 T32 17" opacity=".45"/></svg>'},
+  'vs-corner': {tag:'Agent Platforms', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M6 14 V6 h8"/><path d="M30 22 v8 h-8"/><rect x="13" y="13" width="10" height="10"/></svg>'},
+  'vs-aom': {tag:'Studio Market', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M6 30 L18 6 30 30"/><path d="M11 21 h14"/></svg>'},
+};
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad = n => String(n+1).padStart(2,'0');
 
-const WINDOW = 2;                      // mounted video sources: active ± 2
-const feed   = document.getElementById('feed');
-const posEl  = document.getElementById('pos');
-const pad    = n => String(n+1).padStart(2,'0');
-document.getElementById('total').textContent = String(ITEMS.length).padStart(2,'0');
-
-/* ---- build shells (cheap divs; <video> src is windowed) ---- */
-ITEMS.forEach((it,i)=>{
-  const s = document.createElement('section');
-  s.className='item'; s.dataset.i=i; s.id=it.id;
-  s.innerHTML =
-    `<div class="stage">
-       <video playsinline loop muted preload="none" aria-label="${it.label}"></video>
-       <span class="paused-flag" aria-hidden="true"></span>
-       <div class="progress" aria-hidden="true"><i></i></div>
-       <div class="meta">
-         <span class="idx">${pad(i)}</span>
-         <span class="label">${it.label}</span>
-       </div>
-     </div>`;
-  feed.appendChild(s);
-});
-const shells = [...feed.children];
-
-/* ---- state ---- */
-let active = -1;
-let userUnmuted = false;               // persists the explicit unmute across items
+const feed  = document.getElementById('feed');
+const posEl = document.getElementById('pos');
+let ITEMS = [], shells = [], active = -1;
 const likes = new Set(JSON.parse(localStorage.getItem('aom-feed-likes')||'[]'));
 
-/* ---- windowed source mounting (decoder budget) ---- */
-function syncWindow(center){
-  shells.forEach((el,i)=>{
-    const v = el.querySelector('video');
-    if(Math.abs(i-center)<=WINDOW){
-      if(!v.src){ v.src = ITEMS[i].src; v.preload='metadata'; }
-    }else if(v.src){
-      v.pause(); v.removeAttribute('src'); v.load();
-    }
-  });
+function cardHTML(it, i){
+  const lane = LANES[it.lane] || {tag: it.lane, mark: ''};
+  const d = new Date(it.date + 'T12:00:00');
+  const dateTxt = MONTHS[d.getMonth()] + ' ' + String(d.getDate()).padStart(2,'0');
+  let host = it.source_name || '';
+  try{ host = host || new URL(it.source_url).hostname.replace('www.',''); }catch(_){}
+  return `<div class="stage">
+    <div class="head">
+      <span class="lane">${esc(lane.tag)}</span>
+      <span class="date">${dateTxt}</span>
+      <span class="lanemark" aria-hidden="true">${lane.mark}</span>
+    </div>
+    <div class="core">
+      <h2 class="headline">${esc(it.headline)}</h2>
+      <p class="body">${esc(it.body)}</p>
+      <div class="act"><span class="sq" aria-hidden="true"></span><p>${esc(it.action)}</p></div>
+    </div>
+    <div class="foot">
+      <span class="idx">${pad(i)}</span>
+      <a class="src" href="${esc(it.source_url)}" target="_blank" rel="noopener">${esc(host)} &#8599;</a>
+    </div>
+  </div>`;
 }
 
-/* ---- most-visible-plays observer ---- */
-const ratios = new Map();
-const io = new IntersectionObserver(entries=>{
-  entries.forEach(e=>ratios.set(+e.target.dataset.i, e.intersectionRatio));
-  let best=-1, bestR=0;
-  ratios.forEach((r,i)=>{ if(r>bestR){bestR=r;best=i;} });
-  if(best>=0 && best!==active && bestR>=.5) setActive(best);
-},{root:feed,threshold:[0,.25,.5,.75,1]});
-shells.forEach(el=>io.observe(el));
+function build(items){
+  ITEMS = items;
+  document.getElementById('total').textContent = String(items.length).padStart(2,'0');
+  feed.innerHTML = '';
+  items.forEach((it,i)=>{
+    const s = document.createElement('section');
+    s.className='item'; s.dataset.i=i; s.id=it.id;
+    s.innerHTML = cardHTML(it,i);
+    feed.appendChild(s);
+  });
+  shells = [...feed.children];
+  const ratios = new Map();
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(e=>ratios.set(+e.target.dataset.i, e.intersectionRatio));
+    let best=-1, bestR=0;
+    ratios.forEach((r,i)=>{ if(r>bestR){bestR=r;best=i;} });
+    if(best>=0 && best!==active && bestR>=.5) setActive(best);
+  },{root:feed,threshold:[0,.25,.5,.75,1]});
+  shells.forEach(el=>io.observe(el));
+  const start = items.findIndex(it=>'#'+it.id===decodeURIComponent(location.hash));
+  if(start>0) shells[start].scrollIntoView();
+}
 
 function setActive(i){
-  if(active>=0){
-    const prev = shells[active].querySelector('video');
-    prev.pause(); prev.currentTime=0;
-    shells[active].classList.remove('is-paused');
-  }
   active=i;
-  syncWindow(i);
-  const v = shells[i].querySelector('video');
-  v.muted = !userUnmuted;
-  v.play().catch(()=>{ v.muted=true; muteUI(); v.play().catch(()=>{}); });
   posEl.textContent = pad(i);
-  likeUI(); muteUI();
+  likeUI();
   history.replaceState(null,'','#'+ITEMS[i].id);
 }
 
-/* ---- progress ---- */
-setInterval(()=>{
-  if(active<0) return;
-  const v = shells[active].querySelector('video');
-  const bar = shells[active].querySelector('.progress i');
-  if(v.duration) bar.style.width = (v.currentTime/v.duration*100)+'%';
-},120);
-
-/* ---- tap to pause ---- */
-feed.addEventListener('click',e=>{
-  const item = e.target.closest('.item');
-  if(!item || +item.dataset.i!==active) return;
-  const v = item.querySelector('video');
-  if(v.paused){ v.play().catch(()=>{}); item.classList.remove('is-paused'); }
-  else{ v.pause(); item.classList.add('is-paused'); }
-});
-
-/* ---- rail ---- */
-const muteBtn=document.getElementById('muteBtn'),
-      likeBtn=document.getElementById('likeBtn'),
-      shareBtn=document.getElementById('shareBtn'),
-      slash=document.getElementById('muteSlash');
-function muteUI(){
-  const muted = active<0 || shells[active].querySelector('video').muted;
-  slash.style.display = muted?'':'none';
-  muteBtn.classList.toggle('on',!muted);
-  muteBtn.setAttribute('aria-pressed',String(!muted));
-  muteBtn.setAttribute('aria-label',muted?'Unmute':'Mute');
-}
-muteBtn.addEventListener('click',()=>{
-  if(active<0) return;
-  const v = shells[active].querySelector('video');
-  v.muted = !v.muted;
-  userUnmuted = !v.muted;
-  muteUI();
-});
+/* rail */
+const likeBtn=document.getElementById('likeBtn'), shareBtn=document.getElementById('shareBtn');
 function likeUI(){
   const on = active>=0 && likes.has(ITEMS[active].id);
   likeBtn.classList.toggle('on',on);
@@ -273,33 +232,41 @@ likeBtn.addEventListener('click',()=>{
   likeUI();
 });
 shareBtn.addEventListener('click',async()=>{
-  const url = location.origin+'/feed#'+(active>=0?ITEMS[active].id:'');
+  const url = location.origin+'/feed'+(active>=0?'#'+ITEMS[active].id:'');
   try{
-    if(navigator.share) await navigator.share({title:'AOM — Feed',url});
+    if(navigator.share) await navigator.share({title:'AOM — Research Feed',url});
     else{ await navigator.clipboard.writeText(url);
       shareBtn.classList.add('on'); setTimeout(()=>shareBtn.classList.remove('on'),700); }
   }catch(_){}
 });
 
-/* ---- keyboard ---- */
+/* keyboard */
 function jump(d){
   const t=Math.min(ITEMS.length-1,Math.max(0,(active<0?0:active)+d));
-  shells[t].scrollIntoView({behavior:'smooth'});
+  if(shells[t]) shells[t].scrollIntoView({behavior:'smooth'});
 }
 addEventListener('keydown',e=>{
   if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();jump(1);}
   else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();jump(-1);}
-  else if(e.key===' '){e.preventDefault();
-    const item=shells[active]; if(!item) return;
-    const v=item.querySelector('video');
-    if(v.paused){v.play().catch(()=>{});item.classList.remove('is-paused');}
-    else{v.pause();item.classList.add('is-paused');}}
 });
 
-/* ---- deep link ---- */
-const start = ITEMS.findIndex(it=>'#'+it.id===location.hash);
-if(start>0) shells[start].scrollIntoView();
-syncWindow(Math.max(start,0));
+/* data: newest day first, file order within a day */
+fetch('/feed/data/findings.json',{cache:'no-store'})
+  .then(r=>r.json())
+  .then(data=>{
+    const items=[];
+    data.days.sort((a,b)=>b.date.localeCompare(a.date)).forEach(day=>{
+      day.items.forEach((it,j)=>items.push({...it, date:day.date, id:day.date+'-'+(j+1)}));
+    });
+    build(items);
+  })
+  .catch(()=>{
+    build([{lane:'vs-aom', date:new Date().toISOString().slice(0,10), id:'boot',
+      headline:'The first briefing lands tomorrow at 5:04 AM.',
+      body:'This feed carries AOM\'s daily research: AI animation techniques, agent platforms, and the studios we compete with. One finding per swipe, sourced.',
+      action:'Come back after the morning run.',
+      source_name:'aheadofmarket.com', source_url:'https://www.aheadofmarket.com'}]);
+  });
 </script>
 </body>
 </html>
