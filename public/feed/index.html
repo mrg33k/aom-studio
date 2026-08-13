@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AOM — Feed</title>
+<meta name="description" content="Ahead of Market — the feed. Production reels and client work, one frame at a time.">
+<meta property="og:title" content="AOM — Feed">
+<meta property="og:description" content="Production reels and client work, one frame at a time.">
+<style>
+/* ============================================================
+   AOM /feed — TikTok-grammar vertical feed, AOM editorial chrome.
+   Patterns vendored from MIT react-tiktok-style-video-scroller
+   (snap + windowed mounting + autoplay-policy mute handling) and
+   toptop-clone's most-visible-plays observer; re-expressed vanilla.
+   Brand: obsidian #0B0B0B / ivory #F6F6F4 / bronze #B58A38 only.
+   ============================================================ */
+@font-face{font-family:'Druk Cond';src:url('/feed/assets/fonts/DrukCond-Super-Trial.otf') format('opentype');font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:'Schibsted Grotesk';src:url('/feed/assets/fonts/SchibstedGrotesk-var.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+
+:root{
+  --obsidian:#0B0B0B;
+  --ink-800:#161615;
+  --ink-700:#2A2A28;
+  --ink-500:#6E6E66;
+  --ink-300:#B6B2AB;
+  --ivory:#F6F6F4;
+  --gold:#B58A38;
+  --mast-h:56px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--obsidian);color:var(--ivory);overflow:hidden}
+body{font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
+
+/* ---- masthead ---- */
+.mast{position:fixed;top:0;left:0;right:0;height:var(--mast-h);z-index:30;
+  display:flex;align-items:center;gap:14px;padding:0 20px;
+  background:var(--obsidian);border-bottom:1px solid var(--ink-700)}
+.mast .mark{width:26px;height:26px;display:block;color:var(--ivory);flex:none}
+.mast .mark svg{width:100%;height:100%;display:block}
+.wordmark{font-family:'Druk Cond',sans-serif;font-size:26px;line-height:1;
+  letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:baseline;gap:2px}
+.wordmark .period{width:7px;height:7px;background:var(--gold);display:inline-block;flex:none}
+.mast .count{margin-left:auto;font-size:11px;letter-spacing:.18em;color:var(--ink-300);
+  border:1px solid var(--ink-700);padding:5px 10px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mast .count b{color:var(--ivory);font-weight:500}
+
+/* ---- feed ---- */
+.feed{position:fixed;inset:0;top:var(--mast-h);
+  overflow-y:scroll;scroll-snap-type:y mandatory;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.feed::-webkit-scrollbar{display:none}
+.item{height:100%;scroll-snap-align:start;scroll-snap-stop:always;
+  position:relative;display:flex;align-items:center;justify-content:center}
+.stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.stage video{width:100%;height:100%;object-fit:contain;display:block;background:var(--obsidian)}
+
+/* desktop: constrain to a 9/16 card on the obsidian ground */
+@media (min-width:700px){
+  .stage{width:auto;aspect-ratio:9/16;height:min(100%,92vh);border:1px solid var(--ink-700)}
+}
+
+/* ---- per-item overlay (anchored to the stage, so it rides the card on desktop) ---- */
+.meta{position:absolute;left:16px;right:88px;bottom:calc(18px + var(--safe-b));z-index:5;
+  display:flex;flex-direction:column;gap:0;align-items:flex-start;pointer-events:none}
+@media (min-width:700px){.meta{right:16px;bottom:18px}}
+.idx{font-family:'Druk Cond',sans-serif;font-size:15px;letter-spacing:.08em;
+  color:var(--obsidian);background:var(--gold);padding:3px 8px 2px;font-variant-numeric:tabular-nums}
+.label{font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--ivory);
+  background:var(--obsidian);padding:6px 10px}
+.progress{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--ink-700);z-index:6}
+.progress i{display:block;height:100%;width:0;background:var(--gold)}
+.paused-flag{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;
+  width:14px;height:14px;background:var(--ivory);opacity:0;transition:opacity 140ms linear;pointer-events:none}
+.item.is-paused .paused-flag{opacity:.9}
+
+/* ---- fixed action rail (acts on the active item) ---- */
+.rail{position:fixed;right:14px;bottom:calc(24px + var(--safe-b));z-index:31;
+  display:flex;flex-direction:column;gap:10px}
+.rail button{width:46px;height:46px;border:1px solid var(--ink-700);background:var(--obsidian);
+  display:flex;align-items:center;justify-content:center;color:var(--ivory)}
+.rail button:active{background:var(--ink-800)}
+.rail svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.6}
+.rail button.on{color:var(--obsidian);background:var(--gold);border-color:var(--gold)}
+.rail button.on svg{fill:currentColor}
+@media (min-width:700px){.rail{right:calc(50% - min(50vh*9/16,46vw) - 62px)}}
+
+/* keyboard hint, desktop only */
+.hint{position:fixed;left:20px;bottom:calc(18px + var(--safe-b));z-index:31;
+  font-size:10px;letter-spacing:.18em;color:var(--ink-500);text-transform:uppercase;display:none}
+@media (min-width:700px){.hint{display:block}}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <a class="mark" href="/" aria-label="Ahead of Market home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor">
+<mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect>
+<g transform="translate(0.000000,1328.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0&#xA;-6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30&#xA;-82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59&#xA;-155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41&#xA;-110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575&#xA;47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350&#xA;39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295&#xA;-555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13&#xA;-7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357&#xA;156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124&#xA;335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0&#xA;-1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52&#xA;-41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59&#xA;-161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66&#xA;-12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15&#xA;61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52&#xA;52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64&#xA;175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186&#xA;199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57&#xA;153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151&#xA;462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98&#xA;9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235&#xA;563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31&#xA;-125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464&#xA;-500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31&#xA;81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278&#xA;130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97&#xA;-111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1&#xA;30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9&#xA;123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32&#xA;104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18&#xA;121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325&#xA;-14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66&#xA;-8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1&#xA;-219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128&#xA;-89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38&#xA;471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134&#xA;-62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path>
+<path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25&#xA;-57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129&#xA;-350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81&#xA;-215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39&#xA;-112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66&#xA;-32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145&#xA;-26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415&#xA;-40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360&#xA;-30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17&#xA;-35 -3z"></path>
+<path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25&#xA;-18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6&#xA;-16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path>
+<path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20&#xA;-50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715&#xA;516 -90 41 -123 48 -123 25z"></path>
+<path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149&#xA;22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10&#xA;-12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153&#xA;-152 122z"></path>
+<path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8&#xA;-30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15&#xA;258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292&#xA;112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12 -396 5&#xA;-408 5 -425 -14z"></path>
+</g></mask>
+<rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
+</svg></a>
+  <div class="wordmark">Feed<span class="period" aria-hidden="true"></span></div>
+  <div class="count"><b id="pos">01</b>&nbsp;/&nbsp;<span id="total">00</span></div>
+</header>
+
+<main class="feed" id="feed" aria-label="AOM video feed"></main>
+
+<nav class="rail" aria-label="Actions for current video">
+  <button id="muteBtn" aria-label="Unmute" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><line id="muteSlash" x1="19" y1="5" x2="15" y2="19"/></svg>
+  </button>
+  <button id="likeBtn" aria-label="Like" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20l-7-7a4.2 4.2 0 010-6 4.2 4.2 0 016 0l1 1 1-1a4.2 4.2 0 016 0 4.2 4.2 0 010 6l-7 7z"/></svg>
+  </button>
+  <button id="shareBtn" aria-label="Share">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>
+  </button>
+</nav>
+
+<p class="hint">Scroll · J / K · Space</p>
+
+<script>
+/* ---- the set: real files, real names, nothing invented ---- */
+const ITEMS = (() => {
+  const named = [
+    ['/paired/day-3-reel.mp4',        'AOM Social — Day 3'],
+    ['/videos/ambition-vertical.mp4', 'Ambition Mechanical'],
+    ['/videos/isa-brand.mp4',         'ISA Energy'],
+    ['/videos/ih-life.mp4',           'Included Health'],
+    ['/videos/spacerising-event.mp4', 'Space Rising'],
+    ['/videos/isa-demo.mp4',          'ISA Energy'],
+    ['/videos/collage-01.mp4',        'AOM — Production Collage'],
+    ['/videos/ih-culture.mp4',        'Included Health'],
+    ['/videos/isa-validation.mp4',    'ISA Energy'],
+    ['/videos/collage-02.mp4',        'AOM — Production Collage'],
+    ['/videos/collage-03.mp4',        'AOM — Production Collage'],
+  ];
+  const reels = Array.from({length:26},(_,i)=>{
+    const n = String(i+1).padStart(2,'0');
+    return [`/videos/reel-${n}.mp4`, `AOM — Production Reel ${n}`];
+  });
+  // interleave: a named piece every third slot while both pools last
+  const out=[]; let a=0,b=0;
+  while(a<named.length||b<reels.length){
+    if(a<named.length) out.push(named[a++]);
+    if(b<reels.length) out.push(reels[b++]);
+    if(b<reels.length) out.push(reels[b++]);
+  }
+  return out.map(([src,label],i)=>({src,label,id:src.split('/').pop().replace('.mp4','')}));
+})();
+
+const WINDOW = 2;                      // mounted video sources: active ± 2
+const feed   = document.getElementById('feed');
+const posEl  = document.getElementById('pos');
+const pad    = n => String(n+1).padStart(2,'0');
+document.getElementById('total').textContent = String(ITEMS.length).padStart(2,'0');
+
+/* ---- build shells (cheap divs; <video> src is windowed) ---- */
+ITEMS.forEach((it,i)=>{
+  const s = document.createElement('section');
+  s.className='item'; s.dataset.i=i; s.id=it.id;
+  s.innerHTML =
+    `<div class="stage">
+       <video playsinline loop muted preload="none" aria-label="${it.label}"></video>
+       <span class="paused-flag" aria-hidden="true"></span>
+       <div class="progress" aria-hidden="true"><i></i></div>
+       <div class="meta">
+         <span class="idx">${pad(i)}</span>
+         <span class="label">${it.label}</span>
+       </div>
+     </div>`;
+  feed.appendChild(s);
+});
+const shells = [...feed.children];
+
+/* ---- state ---- */
+let active = -1;
+let userUnmuted = false;               // persists the explicit unmute across items
+const likes = new Set(JSON.parse(localStorage.getItem('aom-feed-likes')||'[]'));
+
+/* ---- windowed source mounting (decoder budget) ---- */
+function syncWindow(center){
+  shells.forEach((el,i)=>{
+    const v = el.querySelector('video');
+    if(Math.abs(i-center)<=WINDOW){
+      if(!v.src){ v.src = ITEMS[i].src; v.preload='metadata'; }
+    }else if(v.src){
+      v.pause(); v.removeAttribute('src'); v.load();
+    }
+  });
+}
+
+/* ---- most-visible-plays observer ---- */
+const ratios = new Map();
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>ratios.set(+e.target.dataset.i, e.intersectionRatio));
+  let best=-1, bestR=0;
+  ratios.forEach((r,i)=>{ if(r>bestR){bestR=r;best=i;} });
+  if(best>=0 && best!==active && bestR>=.5) setActive(best);
+},{root:feed,threshold:[0,.25,.5,.75,1]});
+shells.forEach(el=>io.observe(el));
+
+function setActive(i){
+  if(active>=0){
+    const prev = shells[active].querySelector('video');
+    prev.pause(); prev.currentTime=0;
+    shells[active].classList.remove('is-paused');
+  }
+  active=i;
+  syncWindow(i);
+  const v = shells[i].querySelector('video');
+  v.muted = !userUnmuted;
+  v.play().catch(()=>{ v.muted=true; muteUI(); v.play().catch(()=>{}); });
+  posEl.textContent = pad(i);
+  likeUI(); muteUI();
+  history.replaceState(null,'','#'+ITEMS[i].id);
+}
+
+/* ---- progress ---- */
+setInterval(()=>{
+  if(active<0) return;
+  const v = shells[active].querySelector('video');
+  const bar = shells[active].querySelector('.progress i');
+  if(v.duration) bar.style.width = (v.currentTime/v.duration*100)+'%';
+},120);
+
+/* ---- tap to pause ---- */
+feed.addEventListener('click',e=>{
+  const item = e.target.closest('.item');
+  if(!item || +item.dataset.i!==active) return;
+  const v = item.querySelector('video');
+  if(v.paused){ v.play().catch(()=>{}); item.classList.remove('is-paused'); }
+  else{ v.pause(); item.classList.add('is-paused'); }
+});
+
+/* ---- rail ---- */
+const muteBtn=document.getElementById('muteBtn'),
+      likeBtn=document.getElementById('likeBtn'),
+      shareBtn=document.getElementById('shareBtn'),
+      slash=document.getElementById('muteSlash');
+function muteUI(){
+  const muted = active<0 || shells[active].querySelector('video').muted;
+  slash.style.display = muted?'':'none';
+  muteBtn.classList.toggle('on',!muted);
+  muteBtn.setAttribute('aria-pressed',String(!muted));
+  muteBtn.setAttribute('aria-label',muted?'Unmute':'Mute');
+}
+muteBtn.addEventListener('click',()=>{
+  if(active<0) return;
+  const v = shells[active].querySelector('video');
+  v.muted = !v.muted;
+  userUnmuted = !v.muted;
+  muteUI();
+});
+function likeUI(){
+  const on = active>=0 && likes.has(ITEMS[active].id);
+  likeBtn.classList.toggle('on',on);
+  likeBtn.setAttribute('aria-pressed',String(on));
+}
+likeBtn.addEventListener('click',()=>{
+  if(active<0) return;
+  const id=ITEMS[active].id;
+  likes.has(id)?likes.delete(id):likes.add(id);
+  localStorage.setItem('aom-feed-likes',JSON.stringify([...likes]));
+  likeUI();
+});
+shareBtn.addEventListener('click',async()=>{
+  const url = location.origin+'/feed#'+(active>=0?ITEMS[active].id:'');
+  try{
+    if(navigator.share) await navigator.share({title:'AOM — Feed',url});
+    else{ await navigator.clipboard.writeText(url);
+      shareBtn.classList.add('on'); setTimeout(()=>shareBtn.classList.remove('on'),700); }
+  }catch(_){}
+});
+
+/* ---- keyboard ---- */
+function jump(d){
+  const t=Math.min(ITEMS.length-1,Math.max(0,(active<0?0:active)+d));
+  shells[t].scrollIntoView({behavior:'smooth'});
+}
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();jump(1);}
+  else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();jump(-1);}
+  else if(e.key===' '){e.preventDefault();
+    const item=shells[active]; if(!item) return;
+    const v=item.querySelector('video');
+    if(v.paused){v.play().catch(()=>{});item.classList.remove('is-paused');}
+    else{v.pause();item.classList.add('is-paused');}}
+});
+
+/* ---- deep link ---- */
+const start = ITEMS.findIndex(it=>'#'+it.id===location.hash);
+if(start>0) shells[start].scrollIntoView();
+syncWindow(Math.max(start,0));
+</script>
+</body>
+</html>

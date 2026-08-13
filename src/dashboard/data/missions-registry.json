@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T00:31:09.979Z",
+  "generated_at": "2026-08-13T01:08:38.974Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -2382,6 +2382,20 @@
       "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/valor-to-victory/missions/hero"
     },
     {
+      "slug": "aheadofmarket.com:feed",
+      "raw_slug": "feed",
+      "folder_name": "feed",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aheadofmarket.com",
+      "workstream": null,
+      "name": "Feed",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/feed"
+    },
+    {
       "slug": "aheadofmarket.com:home",
       "raw_slug": "home",
       "folder_name": "home",
@@ -4160,6 +4174,20 @@
       "path": "corner/users/aom/missions/command-deck"
     },
     {
+      "slug": "aom:daily-research",
+      "raw_slug": "daily-research",
+      "folder_name": "daily-research",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Daily Research",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/daily-research"
+    },
+    {
       "slug": "aom:deck-vibe-overhaul",
       "raw_slug": "deck-vibe-overhaul",
       "folder_name": "deck-vibe-overhaul",
@@ -4242,6 +4270,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/missions/investor-pot"
+    },
+    {
+      "slug": "aom:lab-live-stream",
+      "raw_slug": "lab-live-stream",
+      "folder_name": "lab-live-stream",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Lab Live Stream",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/lab-live-stream"
     },
     {
       "slug": "aom:label-this-mission-as-an-aerospace-event-i-want-",
@@ -4553,8 +4595,8 @@
     },
     {
       "slug": "aheadofmarket.com",
-      "total": 57,
-      "in_flight": 57,
+      "total": 58,
+      "in_flight": 58,
       "done": 0
     },
     {
@@ -4739,8 +4781,8 @@
     },
     {
       "slug": "aom",
-      "total": 42,
-      "in_flight": 42,
+      "total": 44,
+      "in_flight": 44,
       "done": 0
     }
   ]
