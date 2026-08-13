@@ -21,6 +21,7 @@ const ALLOWED_MODELS = new Set([
   'opus',
   'sonnet',
   'haiku',
+  'muse-spark',
   'openai-gpt-5.6',
   'codex-local',
 ]);

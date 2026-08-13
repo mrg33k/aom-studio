@@ -54,6 +54,7 @@ export const MODEL_OPTIONS = [
   { id: 'opus',             label: 'Claude Opus',          desc: 'Deepest reasoning' },
   { id: 'sonnet',           label: 'Claude Sonnet',        desc: 'Fast + capable' },
   { id: 'haiku',            label: 'Claude Haiku',         desc: 'Fastest, light' },
+  { id: 'muse-spark',       label: 'Muse Spark',          desc: 'Muse Code · Meta' },
   { id: 'openai-gpt-5.6',   label: 'OpenAI GPT-5.6',       desc: 'Hosted reasoning · AOM managed' },
   { id: 'codex-local',       label: 'Codex on this computer', desc: 'Your ChatGPT subscription · local runner' },
 ]

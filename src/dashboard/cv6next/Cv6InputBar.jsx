@@ -77,6 +77,7 @@ function shortModelLabel(id) {
 }
 
 function modelRouteDetail(id, sourceLabel) {
+  if (id === 'muse-spark') return `${sourceLabel} · hosted Muse`;
   if (id === 'openai-gpt-5.6') return `${sourceLabel} · hosted OpenAI`;
   if (id === 'codex-local') return `${sourceLabel} · your computer`;
   return `${sourceLabel} · fallback on limits`;
