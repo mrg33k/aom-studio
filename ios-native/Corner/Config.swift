@@ -71,6 +71,16 @@ enum Config {
     /// its own decision record names it as the defect to fix in any port).
     static let stopConfirmTimeout: TimeInterval = 15
 
+    /// Streaming reveal cadence (R18 N3). Network chunks arrive in bursts; the
+    /// visible text drains from a buffer at a steady tick instead — the steady
+    /// cadence IS the smoothness (per-chunk repaints are the stutter). ~30Hz with
+    /// ~7 chars per tick ≈ 200 chars/s, the industry default; when the backlog
+    /// tops `streamCatchupThreshold` the drain accelerates so the reveal never
+    /// falls more than about half a second behind the wire.
+    static let streamRevealInterval: TimeInterval = 1.0 / 30.0
+    static let streamRevealChars = 7
+    static let streamCatchupThreshold = 400
+
     /// Short marketing version + build, read from the bundle for the device row.
     static var appVersion: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"

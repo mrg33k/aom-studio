@@ -94,6 +94,16 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         return AgentRoster.title(for: agent ?? "corner")
     }
 
+    /// The bridge's mid-turn interim rows ("Still working on this…") carry
+    /// metadata.interim / metadata.kind == "progress". They feed the silence
+    /// clock but are NOT the turn's answer — the streaming draft must survive
+    /// them (the web's known draft-flicker defect, decided and fixed here).
+    var isInterimProgress: Bool {
+        if metadata?["interim"]?.boolValue == true { return true }
+        if metadata?["kind"]?.stringValue == "progress" { return true }
+        return false
+    }
+
     /// PostgREST timestamps carry microseconds; ISO8601DateFormatter only reliably
     /// handles up to milliseconds, so try fractional, then plain, then trim.
     static func parseTimestamp(_ s: String) -> Date? {

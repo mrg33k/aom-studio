@@ -36,6 +36,7 @@ protocol MessageTransport: AnyObject {
     func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep]
     func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth?
     func stopTurn(room: Room, messageID: String) async throws -> StopResult
+    func turnStream(room: Room, messageID: String) -> AsyncStream<TurnStreamEvent>?
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing
 }
 
@@ -83,6 +84,13 @@ extension MessageTransport {
     /// transport that has no stop lane.
     func stopTurn(room: Room, messageID: String) async throws -> StopResult {
         StopResult(stopped: false, reason: "disabled", featureOff: true)
+    }
+
+    /// R18 N3 stream seam. nil = this transport has no live-reply lane; the
+    /// engine behaves exactly as before streaming existed (steps drive status,
+    /// the durable row is the reply). CornerAPI overrides with the real SSE read.
+    func turnStream(room: Room, messageID: String) -> AsyncStream<TurnStreamEvent>? {
+        nil
     }
 }
 

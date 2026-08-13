@@ -504,6 +504,17 @@ struct ChatView: View {
                                 }
                             }
                         }
+                        // The live partial reply rides the thread tail — above
+                        // the pinned work card by construction (the card is
+                        // outside the scroll). Gated on the open turn; the real
+                        // row replaces it in the same engine pass it lands.
+                        if !isSearching, let draftText = model.liveDraft {
+                            StreamingDraftBubble(
+                                authorTitle: model.room.title,
+                                text: draftText
+                            )
+                            .id("stream-draft")
+                        }
                         Color.clear.frame(height: 1)
                     }
                 }
@@ -531,6 +542,13 @@ struct ChatView: View {
             }
             .onChange(of: model.turn) { _, _ in
                 if !isSearching { scrollToEnd(proxy) }
+            }
+            // Draft growth changes height without changing the count; keep the
+            // tail in view while it writes. (N4 replaces these blunt follows
+            // with the one stick-to-bottom brain.)
+            .onChange(of: model.liveDraft) { _, value in
+                guard !isSearching, value != nil else { return }
+                proxy.scrollTo("stream-draft", anchor: .bottom)
             }
             .refreshable { await model.load() }
             // Horizontal flick → the recency carousel: right toward the more recent
@@ -1328,6 +1346,50 @@ struct RoomRecoveryNoticeView: View {
                 }
             }
         }
+    }
+}
+
+/// The live partial reply (R18 N3) — the same anatomy as an agent turn (monogram,
+/// author line, agent-bubble surface) plus a blinking caret. It renders the draft
+/// as PLAIN text on purpose: re-parsing markdown on every reveal tick is the jank
+/// the research warned about, and the durable row that replaces this bubble
+/// arrives fully rendered. Never a message; never persisted.
+struct StreamingDraftBubble: View {
+    let authorTitle: String
+    let text: String
+    var showsAuthor: Bool = true
+
+    @State private var caretOn = true
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Theme.s2) {
+            TurnAvatar(name: authorTitle, visible: showsAuthor)
+            VStack(alignment: .leading, spacing: Theme.s2) {
+                if showsAuthor {
+                    Text(authorTitle)
+                        .font(.hkSubheadline.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                }
+                (Text(text) + Text(" \u{258D}")
+                    .foregroundStyle(Theme.accent.opacity(caretOn ? 1 : 0.15)))
+                    .font(.hkBody)
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, Theme.s4)
+                    .padding(.vertical, 10)
+                    .background(Theme.agentBubble, in: MessageBubbleView.bubbleShape(user: false))
+                    .overlay(
+                        MessageBubbleView.bubbleShape(user: false)
+                            .strokeBorder(Theme.hairline, lineWidth: 1)
+                    )
+            }
+            Spacer(minLength: Theme.s3)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true)) {
+                caretOn = false
+            }
+        }
+        .accessibilityLabel("\(authorTitle) is writing a reply")
     }
 }
 

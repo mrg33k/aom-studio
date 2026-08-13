@@ -135,6 +135,12 @@ final class ChatViewModel: ObservableObject {
     /// One honest feature_off hides Stop for the rest of the session (R18 N2) —
     /// showing a control the bridge will 404 is a button that lies.
     @Published private(set) var stopUnavailable = false
+    /// The live partial reply, revealed at a steady cadence (R18 N3). NEVER
+    /// persisted, never a message: the durable row is the only thing that ever
+    /// renders as one. Internal state — render through `draft`, which gates on
+    /// the turn being open (the web's snapshot-gating kill, kill #2 of the
+    /// no-duplicate contract).
+    @Published private(set) var streamDraft: String?
     /// The stop honesty strip: set when a stop was accepted but nothing confirmed
     /// it within the timeout. Cleared by the next send or the turn settling.
     @Published private(set) var stopNotice: String?
@@ -181,6 +187,14 @@ final class ChatViewModel: ObservableObject {
     private var stewardTask: Task<Void, Never>?
     private var stopTimeoutTask: Task<Void, Never>?
     private let stopTimeout: TimeInterval
+    // Streaming (R18 N3): one reader per turn, keyed on the durable parent id.
+    private var streamTask: Task<Void, Never>?
+    private var revealTask: Task<Void, Never>?
+    private var streamKey: String?
+    /// Chunks land here raw; the reveal loop drains into `streamDraft` at a
+    /// steady tick — the cadence, not the network, owns the paint rate.
+    private var streamBuffer = ""
+    private let revealInterval: TimeInterval
     /// The one repair ask per turn (the web's contract: GET until 45s, then ONE
     /// POST). Repair is not a retry loop.
     private var repairAskedThisTurn = false
@@ -234,6 +248,7 @@ final class ChatViewModel: ObservableObject {
         stewardInterval: TimeInterval = Config.stewardPollInterval,
         repairAfter: TimeInterval = Config.stewardRepairAfter,
         stopTimeout: TimeInterval = Config.stopConfirmTimeout,
+        revealInterval: TimeInterval = Config.streamRevealInterval,
         onFirstReply: @escaping @MainActor () async -> Void = {
             await PushService.shared.requestAuthorizationAfterFirstReply()
         }
@@ -247,6 +262,7 @@ final class ChatViewModel: ObservableObject {
         self.stewardInterval = stewardInterval
         self.repairAfter = repairAfter
         self.stopTimeout = stopTimeout
+        self.revealInterval = revealInterval
         self.onFirstReply = onFirstReply
         // Restore per-room mode, defaulting to work — mirrors web's localStorage.cv6.chatMode.<key>
         let saved = UserDefaults.standard.string(forKey: "chatMode.\(room.id)")
@@ -277,6 +293,14 @@ final class ChatViewModel: ObservableObject {
         return true
     }
 
+    /// The renderable STREAM draft (named to never collide with the composer's
+    /// `draft` — the web hit this exact collision): kill #2 of the no-duplicate
+    /// contract. The instant the turn settles this is nil regardless of state.
+    var liveDraft: String? {
+        guard turnIsOpen, let text = streamDraft, !text.isEmpty else { return nil }
+        return text
+    }
+
     /// THE one status word for this room, derived by the ported roomStatus rules.
     /// Every surface reads this — the header pill, and anything N2+ adds — so the
     /// room can never say two different things about the same turn.
@@ -284,7 +308,7 @@ final class ChatViewModel: ObservableObject {
         RoomStatus.derive(
             awaiting: turnIsOpen,
             liveStepCount: liveSteps.count,
-            draftStreaming: false, // N3 wires the live draft; dormant until then.
+            draftStreaming: liveDraft != nil,
             healthState: turnHealth?.state,
             healthCause: turnHealth?.cause,
             feedStale: feedStale
@@ -304,6 +328,7 @@ final class ChatViewModel: ObservableObject {
         stepTask?.cancel(); stepTask = nil
         stewardTask?.cancel(); stewardTask = nil
         stopTimeoutTask?.cancel(); stopTimeoutTask = nil
+        closeTurnStream()
         subscription?.stop(); subscription = nil
     }
 
@@ -415,6 +440,18 @@ final class ChatViewModel: ObservableObject {
             return true
         }
 
+        // Kill #1 of the no-duplicate contract: the draft dies in the SAME
+        // mutation pass that renders the real row — rows and the cleared draft
+        // commit together, so the reply can never paint twice, not even for a
+        // frame. The bridge's interim progress rows are NOT the answer and do
+        // not clear it (the web's known draft-flicker defect, decided here:
+        // suppressed).
+        if streamDraft != nil,
+           awaitingUserEpoch > 0,
+           fetched.contains(where: { !$0.isUser && !$0.isInterimProgress && $0.epoch >= awaitingUserEpoch }) {
+            closeTurnStream()
+        }
+
         rows = fetched
         newestKnownID = fetched.last?.id
         updateTurn(with: fetched)
@@ -472,18 +509,23 @@ final class ChatViewModel: ObservableObject {
         case .working:
             if replyIsNew { lastTurnActivity = Date() }
             guard !sawLiveSteps else { return }
-            if let newestReply, awaitingUserEpoch > 0, newestReply.epoch >= awaitingUserEpoch {
+            // The bridge's interim "Still working on this" rows feed the clock
+            // above but are NOT the answer — settling on one is calling a turn
+            // done while it is still working (R18 N3).
+            if let newestReply, !newestReply.isInterimProgress,
+               awaitingUserEpoch > 0, newestReply.epoch >= awaitingUserEpoch {
                 settleTurn()
             }
         case .stalled:
             guard replyIsNew else { return }
             // A reply arrived after the quiet notice: the conversation continues.
             // With live steps flowing the sentinel still owns the stop signal, so
-            // this goes back to working; without steps the reply IS the answer.
+            // this goes back to working; without steps the reply IS the answer —
+            // unless it is an interim progress row, which only proves life.
             lastTurnActivity = Date()
             if sawLiveSteps {
                 turn = .working(detail: liveSteps.last?.text)
-            } else if replyEpoch >= awaitingUserEpoch {
+            } else if newestReply?.isInterimProgress == false, replyEpoch >= awaitingUserEpoch {
                 settleTurn()
             } else {
                 turn = .working(detail: nil)
@@ -520,6 +562,12 @@ final class ChatViewModel: ObservableObject {
         turn = .working(detail: liveSteps.last?.text)
         startStepPoll()
         startStewardPoll()
+        // One stream per TURN, keyed to its first parent — the bridge live-steers
+        // a mid-turn follow-up into the in-flight turn, so the original stream is
+        // the one that keeps narrating. Re-entry with the same key is a no-op.
+        if awaitingParentIDs.count == 1 {
+            openTurnStream(parentID: parentID)
+        }
     }
 
     private func settleTurn() {
@@ -543,9 +591,107 @@ final class ChatViewModel: ObservableObject {
         stewardTask = nil
         stopTimeoutTask?.cancel()
         stopTimeoutTask = nil
+        closeTurnStream()
         turnHealth = nil
         stopNotice = nil
         repairAskedThisTurn = false
+    }
+
+    // MARK: - Live reply stream (R18 N3)
+
+    /// One reader per live turn, keyed by the durable parent id. Re-entry with
+    /// the same id is a no-op; a superseded reader can never write into a new
+    /// turn (the key guard below). nil from the transport = no stream lane —
+    /// the engine behaves exactly as before streaming existed.
+    private func openTurnStream(parentID: String) {
+        guard streamKey != parentID else { return }
+        closeTurnStream()
+        guard let events = api.turnStream(room: room, messageID: parentID) else { return }
+        streamKey = parentID
+        streamTask = Task { [weak self] in
+            for await event in events {
+                guard let self, !Task.isCancelled else { return }
+                guard self.streamKey == parentID else { return }
+                self.applyStreamEvent(event)
+            }
+        }
+    }
+
+    private func applyStreamEvent(_ event: TurnStreamEvent) {
+        switch event {
+        case .typing:
+            break
+        case .chunk(let delta):
+            streamBuffer += delta
+            // Live text is life — it feeds the same silence clock steps do.
+            lastTurnActivity = Date()
+            ensureRevealLoop()
+        case .done, .superseded:
+            // The durable row is the only renderable reply. Reveal what was
+            // buffered, reload, and let apply() clear the draft in the same
+            // pass the row renders. done.text is deliberately ignored.
+            flushRevealBuffer()
+            Task { await load() }
+        case .error:
+            // Silent no-op: the step poll is the fallback and keeps running.
+            flushRevealBuffer()
+        }
+    }
+
+    /// The reveal loop: network chunks arrive in bursts, the visible draft
+    /// drains at a steady tick — the cadence owns the paint rate, which is what
+    /// reads as smooth. A zero interval (tests) reveals synchronously.
+    private func ensureRevealLoop() {
+        if revealInterval <= 0 {
+            streamDraft = (streamDraft ?? "") + streamBuffer
+            streamBuffer = ""
+            return
+        }
+        guard revealTask == nil else { return }
+        let interval = revealInterval
+        revealTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(interval))
+                if Task.isCancelled { break }
+                guard let self else { return }
+                if self.drainRevealTick() { break }
+            }
+            self?.revealTask = nil
+        }
+    }
+
+    /// One tick. Returns true when the buffer is empty and the loop may rest —
+    /// a later chunk restarts it.
+    private func drainRevealTick() -> Bool {
+        guard !streamBuffer.isEmpty else { return true }
+        let backlog = streamBuffer.count
+        let take = backlog > Config.streamCatchupThreshold
+            ? max(Config.streamRevealChars, backlog / 15)
+            : Config.streamRevealChars
+        let cut = streamBuffer.index(streamBuffer.startIndex, offsetBy: min(take, backlog))
+        streamDraft = (streamDraft ?? "") + String(streamBuffer[..<cut])
+        streamBuffer = String(streamBuffer[cut...])
+        return streamBuffer.isEmpty
+    }
+
+    /// The stream ended — no reason to keep dripping. Reveal the rest now.
+    private func flushRevealBuffer() {
+        if !streamBuffer.isEmpty {
+            streamDraft = (streamDraft ?? "") + streamBuffer
+            streamBuffer = ""
+        }
+        revealTask?.cancel()
+        revealTask = nil
+    }
+
+    private func closeTurnStream() {
+        streamTask?.cancel()
+        streamTask = nil
+        revealTask?.cancel()
+        revealTask = nil
+        streamKey = nil
+        streamBuffer = ""
+        streamDraft = nil
     }
 
     /// Live steps: the only source that can say "still working" or "stopped" without

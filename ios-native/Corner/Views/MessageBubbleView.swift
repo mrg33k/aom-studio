@@ -340,7 +340,7 @@ struct MessageBubbleView: View {
 /// stable-hash palette the home timeline uses, so one agent keeps one colour across
 /// both surfaces. `visible: false` collapses it to a clear 30pt spacer that keeps
 /// grouped replies aligned under the first one's bubble.
-private struct TurnAvatar: View {
+struct TurnAvatar: View {
     let name: String
     var visible: Bool = true
 

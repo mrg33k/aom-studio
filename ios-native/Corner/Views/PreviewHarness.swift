@@ -311,6 +311,57 @@ struct StopRecoveryPreviewHarness: View {
     }
 }
 
+// MARK: - Streaming draft proof (R18 N3)
+
+/// The live partial reply as the user sees it mid-write: the last exchange, the
+/// draft bubble with its caret, and the work card pinned under it with the Stop
+/// control — the whole "the agent is writing" moment in one frame.
+struct StreamingPreviewHarness: View {
+    private let rows: [MessageRow] = PreviewFixtures.rows("""
+    [
+      {"id":"u0","role":"user","user_name":"Patrik","text":"Walk me through what the smoothness pass changes on the phone.","timestamp":"2026-08-12T20:41:00Z"}
+    ]
+    """)
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: Theme.s3) {
+                        ForEach(rows) { row in
+                            MessageBubbleView(row: row, room: nil, showsAuthor: true)
+                        }
+                        StreamingDraftBubble(
+                            authorTitle: "Assistant",
+                            text: "Three things change the feel: replies now stream in as they are written instead of landing whole, the room always says one honest word about what it is doing, and a running turn can be stopped from the card below. The text you are reading is the draft bubble doing exactly"
+                        )
+                    }
+                    .padding(.horizontal, Theme.s4)
+                    .padding(.vertical, Theme.s3)
+                }
+                .defaultScrollAnchor(.bottom)
+                TurnIndicatorView(
+                    turn: .working(detail: "Writing the reply"),
+                    steps: PreviewFixtures.steps("""
+                    [
+                      {"id":"s1","parent_message_id":"u0","step_index":0,"text":"Picking this up","phase":"thinking"},
+                      {"id":"s2","parent_message_id":"u0","step_index":1,"text":"Writing the reply","phase":"streaming"}
+                    ]
+                    """),
+                    startedAt: Date().addingTimeInterval(-41),
+                    stopControl: .ready
+                )
+                .padding(.horizontal, Theme.s3)
+                .padding(.bottom, Theme.s2)
+            }
+            .groundBackground()
+            .navigationTitle("Writing")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+}
+
 // MARK: - Home composer proof
 
 /// The home timeline (reusing HomePreviewHarness's look) with the real HomeComposerBar
