@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ahead of Market — Marketing Department</title>
+  <link rel="stylesheet" href="kit.css">
+  <style>
+    /* ── HOME PAGE SPECIFIC ── */
+    .page-wrap { width: 1440px; }
+
+    /* HERO */
+    .hero {
+      padding: 160px 72px 128px;
+      position: relative;
+    }
+    .hero__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+    }
+
+    /* DEPARTMENT INTRO */
+    .dept-intro {
+      padding: 96px 72px 0;
+    }
+    .dept-intro__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+    .dept-intro__open {
+      font-family: var(--font-body);
+      font-size: var(--t-b1);
+      line-height: var(--lh-body);
+      color: var(--carbon);
+      font-weight: 500;
+      max-width: 640px;
+    }
+    .dept-intro__para {
+      font-family: var(--font-body);
+      font-size: var(--t-b2);
+      line-height: var(--lh-body);
+      color: var(--carbon-mute);
+      max-width: 640px;
+    }
+
+    /* MODULES (desktop 5-col, in dept section) */
+    .modules-wrap {
+      padding: 56px 72px 128px;
+    }
+    .modules-wrap__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+    }
+
+    /* MODULE DETAIL (below grid: expanded copy per module) */
+    .module-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      border-top: 1px solid var(--hairline);
+      margin-top: 0;
+    }
+    .module-detail-col {
+      padding: 40px 24px 40px;
+      border-right: 1px solid var(--hairline);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .module-detail-col:last-child { border-right: none; }
+    .module-detail-col__tag {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .module-detail-col__heading {
+      font-family: var(--font-display);
+      font-size: var(--t-d4);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-head);
+      color: var(--carbon);
+    }
+    .module-detail-col__copy {
+      font-family: var(--font-body);
+      font-size: var(--t-b2);
+      line-height: var(--lh-body);
+      color: var(--carbon-mute);
+    }
+
+    /* BAND COMMON */
+    .band-wrap {
+      padding: 96px 72px;
+      position: relative;
+    }
+    .band-wrap__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+
+    /* FIRST 90 DAYS + A MONTH */
+    .timeline-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 96px;
+    }
+    .timeline-section {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .timeline-section__tag {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .timeline-section__heading {
+      font-family: var(--font-display);
+      font-size: var(--t-d3);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-head);
+      color: var(--carbon);
+    }
+    .timeline-section__copy {
+      font-family: var(--font-body);
+      font-size: var(--t-b2);
+      line-height: var(--lh-body);
+      color: var(--carbon-mute);
+      max-width: 480px;
+    }
+
+    /* WORK BAND */
+    .work-band {
+      padding: 96px 72px;
+      background: var(--paper-soft);
+    }
+    .work-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+    .work-band__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .work-band__subline {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--carbon-mute);
+      margin-top: 8px;
+    }
+    .work-band__closing {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--carbon-mute);
+      border-top: 1px solid var(--hairline);
+      padding-top: 24px;
+    }
+    .photo-placeholder {
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #C8C3BB;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8A847C;
+    }
+
+    /* ONE CLIENT, ONE YEAR */
+    .proof-band {
+      padding: 128px 72px;
+    }
+    .proof-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      gap: 128px;
+      align-items: flex-start;
+    }
+    .proof-band__label-col {
+      flex: 0 0 240px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .proof-band__tag {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .proof-band__heading {
+      font-family: var(--font-display);
+      font-size: var(--t-d3);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-head);
+      color: var(--carbon);
+    }
+    .proof-band__stats {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+      margin-top: 8px;
+    }
+    .proof-band__content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    /* MATH BAND */
+    .math-band {
+      padding: 128px 72px;
+      background: var(--paper-soft);
+    }
+    .math-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 128px;
+      align-items: start;
+    }
+    .math-band__copy-col {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .math-band__tag {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .math-band__heading {
+      font-family: var(--font-display);
+      font-size: var(--t-d3);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-head);
+      color: var(--carbon);
+    }
+    .math-band__copy {
+      font-family: var(--font-body);
+      font-size: var(--t-b1);
+      line-height: var(--lh-body);
+      color: var(--carbon);
+    }
+
+    /* FAQ */
+    .faq-band {
+      padding: 96px 72px;
+    }
+    .faq-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+
+    /* CLOSING */
+    .closing-band {
+      padding: 160px 72px;
+      background: var(--paper-soft);
+    }
+    .closing-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 56px;
+      text-align: center;
+    }
+    .closing-band__headline {
+      font-family: var(--font-display);
+      font-size: var(--t-d1);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-display);
+      color: var(--carbon);
+      max-width: 800px;
+    }
+    .closing-band__footnote {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--carbon-mute);
+      max-width: 560px;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav__logo">AHEAD OF MARKET</div>
+    <ul class="nav__links">
+      <li><a href="#">Work</a></li>
+      <li><a href="#">About</a></li>
+      <li><a href="shoot.html">Shoot</a></li>
+    </ul>
+    <button class="nav__cta">TELL US WHAT YOU NEED</button>
+  </nav>
+
+  <!-- ── S1 HERO ──────────────────────────────────────────────────────────── -->
+  <section class="hero band">
+    <div class="hero__inner">
+      <div class="hero__eyebrow">PHOENIX, ARIZONA — ONE DEPARTMENT, ONE FEE</div>
+      <h1 class="hero__h1">We're the marketing department for companies that don't have one.</h1>
+      <p class="hero__sub">Plan, film, build, run, answer — month after month, out of Phoenix.</p>
+      <button class="cta-btn">TELL US WHAT YOU NEED</button>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── S2 THE DEPARTMENT ─────────────────────────────────────────────────── -->
+  <section class="band dept-intro">
+    <div class="dept-intro__inner">
+      <p class="dept-intro__open">You've got a company to run. We handle the marketing.</p>
+      <p class="dept-intro__para">We plan it, we film it, we build it, and we run it. We're out on your jobs through the month, we keep the website current, we run the ads, and we answer the reviews. At the end of the month you see all of it on one page.</p>
+    </div>
+  </section>
+
+  <!-- MODULE GRID -->
+  <div class="modules-wrap">
+    <div class="modules-wrap__inner">
+      <div class="module-grid">
+        <div class="module-col">
+          <div class="module-col__icon">&#9633;</div>
+          <div class="module-col__label">THE PLAN</div>
+          <div class="module-col__desc">Every 90 days we write out where this is going.</div>
+        </div>
+        <div class="module-col">
+          <div class="module-col__icon">&#9654;</div>
+          <div class="module-col__label">THE FILMING</div>
+          <div class="module-col__desc">Shot on your jobs. Never stock.</div>
+        </div>
+        <div class="module-col">
+          <div class="module-col__icon">&#9670;</div>
+          <div class="module-col__label">THE WEBSITE</div>
+          <div class="module-col__desc">Yours — your domain, your name.</div>
+        </div>
+        <div class="module-col">
+          <div class="module-col__icon">&#9651;</div>
+          <div class="module-col__label">THE ADS</div>
+          <div class="module-col__desc">Paid at cost, in your account.</div>
+        </div>
+        <div class="module-col">
+          <div class="module-col__icon">&#9711;</div>
+          <div class="module-col__label">THE REVIEWS</div>
+          <div class="module-col__desc">Reviews answered, in your voice.</div>
+        </div>
+      </div>
+
+      <!-- MODULE DETAIL COPY -->
+      <div class="module-detail-grid">
+        <div class="module-detail-col">
+          <div class="module-detail-col__tag">THE PLAN</div>
+          <div class="module-detail-col__heading">Strategy</div>
+          <p class="module-detail-col__copy">Every 90 days we write out where this is going, on paper you can read. Then we meet every week or every other week — whatever works for you.</p>
+        </div>
+        <div class="module-detail-col">
+          <div class="module-detail-col__tag">THE FILMING</div>
+          <div class="module-detail-col__heading">Video + Photo</div>
+          <p class="module-detail-col__copy">We come film your jobs — photos, drone, and a plan for a good video. Whatever hour the work happens.</p>
+        </div>
+        <div class="module-detail-col">
+          <div class="module-detail-col__tag">THE WEBSITE</div>
+          <div class="module-detail-col__heading">Web</div>
+          <p class="module-detail-col__copy">We build it and keep it current, and you can be as much a part of the process as you want.</p>
+        </div>
+        <div class="module-detail-col">
+          <div class="module-detail-col__tag">THE ADS</div>
+          <div class="module-detail-col__heading">Paid Media</div>
+          <p class="module-detail-col__copy">We set them up and run them week by week. The account is yours and you pay Google directly.</p>
+        </div>
+        <div class="module-detail-col">
+          <div class="module-detail-col__tag">THE REVIEWS</div>
+          <div class="module-detail-col__heading">Reputation</div>
+          <p class="module-detail-col__copy">When one comes in, we write back the way you would.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── S3 A MONTH, ON PAPER ──────────────────────────────────────────────── -->
+  <section class="band band-wrap">
+    <div class="band-wrap__inner">
+      <div class="timeline-pair">
+        <div class="timeline-section">
+          <div class="timeline-section__tag">THE FIRST 90 DAYS</div>
+          <h2 class="timeline-section__heading">How it starts.</h2>
+          <p class="timeline-section__copy">The first few weeks, we're setting things up and making everything look right. By the end of the first month, you start hearing about it — from customers, from the office, from people around town. From there, it's all wheels rolling and we get tactical.</p>
+        </div>
+        <div class="timeline-section">
+          <div class="timeline-section__tag">A MONTH WITH US</div>
+          <h2 class="timeline-section__heading">How it runs.</h2>
+          <p class="timeline-section__copy">Week one, we plan it out. Then we're on your jobs — filming, photos, drone. Everything goes live as it's ready, and at the end of the month you get one page with the numbers on it. Then we do it again.</p>
+        </div>
+      </div>
+
+      <div class="week-strip">
+        <div class="week-cell">
+          <div class="week-cell__num">WEEK 1</div>
+          <div class="week-cell__label">PLAN.</div>
+        </div>
+        <div class="week-cell">
+          <div class="week-cell__num">WEEK 2</div>
+          <div class="week-cell__label">SHOOT.</div>
+        </div>
+        <div class="week-cell">
+          <div class="week-cell__num">WEEK 3</div>
+          <div class="week-cell__label">BUILD AND LAUNCH.</div>
+        </div>
+        <div class="week-cell">
+          <div class="week-cell__num">WEEK 4</div>
+          <div class="week-cell__label">RUN AND REPORT.</div>
+        </div>
+      </div>
+
+      <div style="font-family:var(--font-body);font-size:var(--t-b2);line-height:var(--lh-body);color:var(--carbon-mute);max-width:480px;">Then again. That's what a department is.</div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── A-LA-CARTE BAND (mid-page) ─────────────────────────────────────────── -->
+  <section class="band" style="background:var(--paper-soft);">
+    <div class="alacarte-band" style="width:100%;">
+      <div class="alacarte-band__text">
+        <div class="alacarte-band__headline">Just need one thing?</div>
+        <p class="alacarte-band__body">Not everybody needs the whole department. If you want a crew for a day, a website, or somebody to run your ads — we do that too.</p>
+      </div>
+      <a href="shoot.html" class="alacarte-band__link">See what that looks like</a>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── S4 THE WORK. BY INDUSTRY. ────────────────────────────────────────── -->
+  <section class="work-band">
+    <div class="work-band__inner">
+      <div class="work-band__header">
+        <div>
+          <h2 style="font-family:var(--font-display);font-size:var(--t-d2);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:var(--lh-head);color:var(--carbon);">The Work. By Industry.</h2>
+          <div class="work-band__subline">EVERY INDUSTRY. A SOFT SPOT FOR CONSTRUCTION.</div>
+        </div>
+      </div>
+
+      <div class="work-industry-tabs">
+        <div class="industry-tab industry-tab--active">MECHANICAL</div>
+        <div class="industry-tab">PLUMBING</div>
+        <div class="industry-tab">CONSTRUCTION</div>
+        <div class="industry-tab">HOSPITALITY</div>
+        <div class="industry-tab">WELLNESS</div>
+        <div class="industry-tab">ARTS + MUSIC</div>
+        <div class="industry-tab">NONPROFIT</div>
+        <div class="industry-tab">FILM</div>
+      </div>
+
+      <div class="work-grid">
+        <!-- Real photo: Ambition Mechanical -->
+        <div class="work-tile">
+          <div class="photo-placeholder">AMBITION MECHANICAL</div>
+          <div class="work-tile__caption">AMBITION MECHANICAL — PHOENIX</div>
+        </div>
+        <div class="work-tile">
+          <div class="photo-placeholder">JOB SITE</div>
+          <div class="work-tile__caption">ON SITE — SCOTTSDALE</div>
+        </div>
+        <div class="work-tile">
+          <div class="photo-placeholder">MECHANICAL</div>
+          <div class="work-tile__caption">HVAC INSTALL — PHOENIX</div>
+        </div>
+        <div class="work-tile">
+          <div class="photo-placeholder">AMBITION</div>
+          <div class="work-tile__caption">AMBITION MECHANICAL — 2026</div>
+        </div>
+        <div class="work-tile">
+          <div class="photo-placeholder">CREW</div>
+          <div class="work-tile__caption">JOB SITE — CHANDLER</div>
+        </div>
+        <div class="work-tile">
+          <div class="photo-placeholder">AERIAL</div>
+          <div class="work-tile__caption">DRONE — BANNER HEALTH ROOFTOP</div>
+        </div>
+        <div class="work-tile">
+          <div class="photo-placeholder">INSTALL</div>
+          <div class="work-tile__caption">4:50 AM — ROOFTOP UNIT</div>
+        </div>
+        <div class="work-tile">
+          <div class="photo-placeholder">MECHANICAL</div>
+          <div class="work-tile__caption">EQUIPMENT — PHOENIX</div>
+        </div>
+      </div>
+
+      <div class="work-band__closing">All of it shot by us, on our clients' jobs.</div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── S5 ONE CLIENT, ONE YEAR ──────────────────────────────────────────── -->
+  <section class="proof-band band">
+    <div class="proof-band__inner">
+      <div class="proof-band__label-col">
+        <div class="proof-band__tag">ONE CLIENT, ONE YEAR.</div>
+        <h2 class="proof-band__heading">The proof.</h2>
+        <div class="proof-band__stats">46 shoots. 399 photos.</div>
+      </div>
+      <div class="proof-band__content">
+        <div class="proof-block">
+          <div class="proof-block__client">AMBITION MECHANICAL — PHOENIX</div>
+          <p class="proof-block__quote">Ambition Mechanical in Phoenix has been with us a year. 46 shoots, 399 photos — and after a few months, the phone started ringing. You're welcome to ask them.</p>
+          <div class="proof-block__phone">You can call the same person you started with, any time. They'll answer, or they'll call you back.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── S6 THE MATH, IN THE OPEN ─────────────────────────────────────────── -->
+  <section class="math-band">
+    <div class="math-band__inner">
+      <div class="math-band__copy-col">
+        <div class="math-band__tag">THE MATH, IN THE OPEN.</div>
+        <h2 class="math-band__heading">What it would cost you to do this yourself.</h2>
+        <p class="math-band__copy">If you hired all of this yourself — a videographer, someone on the website, someone running the ads — it comes out around $12,000 a month. We're $3,000. There's no contract, and everything we make is yours to keep: the plan, the photos, the site, the ad account.</p>
+      </div>
+      <div>
+        <table class="math-table">
+          <tr><td>A videographer</td><td>$4,000 / mo</td></tr>
+          <tr><td>Someone on the website</td><td>$3,500 / mo</td></tr>
+          <tr><td>Someone running the ads</td><td>$2,500 / mo</td></tr>
+          <tr><td>Strategy + reporting</td><td>$2,000 / mo</td></tr>
+          <tr><td style="color:var(--carbon);">In-house total</td><td style="color:var(--carbon);">~$12,000 / mo</td></tr>
+          <tr><td>AHEAD OF MARKET — ALL OF IT</td><td>$3,000 / mo</td></tr>
+        </table>
+        <div class="math-punch">ONE MONTH IN-HOUSE BUYS FOUR MONTHS OF US.</div>
+        <div class="math-terms">NO CONTRACT. YOU KEEP THE PLAN, THE PHOTOS, THE SITE AND THE AD ACCOUNT.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── S7 QUESTIONS ──────────────────────────────────────────────────────── -->
+  <section class="faq-band band">
+    <div class="faq-band__inner">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:16px;">QUESTIONS</div>
+        <h2 style="font-family:var(--font-display);font-size:var(--t-d2);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:var(--lh-head);color:var(--carbon);">The ones we hear most.</h2>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-item__q">How long does it take to get started?</div>
+          <p class="faq-item__a">Usually about a week. We put together a plan, get access to your accounts, and schedule the first shoot. By the end of the first month, things are running.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-item__q">Do I have to sign a contract?</div>
+          <p class="faq-item__a">No contract. Month to month. Everything we make is yours — the plan, the photos, the website, the ad account. You could leave tomorrow and keep all of it.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-item__q">What if I only need one thing?</div>
+          <p class="faq-item__a">We do that too. A crew for a day, a website rebuild, or just somebody running your ads. You can start with one thing and add from there, or keep it to the one thing.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-item__q">Who will I be working with?</div>
+          <p class="faq-item__a">The same person. You'll have one contact from the first call onward. They'll know your business, your preferences, your jobs. You're not starting over with someone new every few months.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-item__q">How do you handle the filming?</div>
+          <p class="faq-item__a">We come to you. Wherever the work is happening — job site, office, warehouse, rooftop at 4:50 AM — we show up with a crew. Photos, drone, and video. We work around your schedule.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-item__q">What industries do you work with?</div>
+          <p class="faq-item__a">Construction, trades, and mechanical are where we have the most depth. We also work with hospitality, wellness, nonprofits, and a few others. If the work happens in the field, we're comfortable there.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── S8 CLOSING ────────────────────────────────────────────────────────── -->
+  <section class="closing-band">
+    <div class="closing-band__inner">
+      <h2 class="closing-band__headline">Ready when you are.</h2>
+      <button class="cta-btn">TELL US WHAT YOU NEED</button>
+      <p class="closing-band__footnote">LOOKING FOR A VIDEO CREW RATHER THAN A MARKETING DEPARTMENT? SAY SO AND START THE BRIEF.</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer__logo">AHEAD OF MARKET</div>
+    <div class="footer__copy">© 2026 AHEAD OF MARKET. PHOENIX, ARIZONA.</div>
+  </footer>
+
+</div>
+</body>
+</html>

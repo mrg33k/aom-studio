@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AOM Kit — Tokens</title>
+  <link rel="stylesheet" href="kit.css">
+  <style>
+    .tokens-page { width: 1440px; margin: 0 auto; padding: 96px 72px; display: flex; flex-direction: column; gap: 96px; }
+    .tokens-section { display: flex; flex-direction: column; gap: 40px; }
+    .tokens-section__heading {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    /* COLOR SWATCHES */
+    .color-swatches {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 16px;
+    }
+    .swatch-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .swatch-card__block {
+      width: 100%;
+      height: 120px;
+      border: 1px solid var(--hairline);
+    }
+    .swatch-card__name {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--carbon);
+      line-height: 1.5;
+    }
+    .swatch-card__hex {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.04em;
+      color: var(--carbon-mute);
+    }
+    .swatch-card__usage {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.04em;
+      color: var(--carbon-mute);
+      line-height: 1.6;
+    }
+
+    /* TYPE LADDER */
+    .type-ladder {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .type-rung {
+      display: flex;
+      align-items: baseline;
+      gap: 40px;
+      padding: 24px 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .type-rung__meta {
+      flex: 0 0 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .type-rung__tag {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .type-rung__info {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.04em;
+      color: var(--carbon-mute);
+    }
+    .type-rung__specimen {
+      color: var(--carbon);
+    }
+    .type-rung--d1 .type-rung__specimen { font-family: var(--font-display); font-size: var(--t-d1); text-transform: uppercase; letter-spacing: var(--ls-display); line-height: var(--lh-display); }
+    .type-rung--d2 .type-rung__specimen { font-family: var(--font-display); font-size: var(--t-d2); text-transform: uppercase; letter-spacing: var(--ls-display); line-height: var(--lh-head); }
+    .type-rung--d3 .type-rung__specimen { font-family: var(--font-display); font-size: var(--t-d3); text-transform: uppercase; letter-spacing: var(--ls-display); line-height: var(--lh-head); }
+    .type-rung--d4 .type-rung__specimen { font-family: var(--font-display); font-size: var(--t-d4); text-transform: uppercase; letter-spacing: var(--ls-display); line-height: var(--lh-head); }
+    .type-rung--b1 .type-rung__specimen { font-family: var(--font-body); font-size: var(--t-b1); line-height: var(--lh-body); }
+    .type-rung--b2 .type-rung__specimen { font-family: var(--font-body); font-size: var(--t-b2); line-height: var(--lh-body); }
+    .type-rung--lbl .type-rung__specimen { font-family: var(--font-mono); font-size: var(--t-lbl); letter-spacing: var(--ls-label); text-transform: uppercase; }
+
+    /* SPACING SCALE */
+    .spacing-scale {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .spacing-rung {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .spacing-rung__tag {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+      width: 56px;
+      flex-shrink: 0;
+    }
+    .spacing-rung__px {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.04em;
+      color: var(--carbon-mute);
+      width: 60px;
+      flex-shrink: 0;
+    }
+    .spacing-rung__bar-wrap {
+      flex: 1;
+      height: 16px;
+      display: flex;
+      align-items: center;
+    }
+    .spacing-rung__bar {
+      height: 8px;
+      background: var(--orange);
+      flex-shrink: 0;
+    }
+
+    /* HAIRLINE */
+    .hairline-demo {
+      width: 100%;
+      height: 1px;
+      background: var(--hairline);
+      position: relative;
+    }
+    .hairline-label {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--carbon-mute);
+      margin-top: 8px;
+    }
+
+    /* GRID DEMO */
+    .grid-demo {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 8px;
+    }
+    .grid-col-demo {
+      height: 48px;
+      background: rgba(240, 68, 4, 0.1);
+      border: 1px solid rgba(240, 68, 4, 0.2);
+    }
+  </style>
+</head>
+<body>
+<div class="tokens-page">
+
+  <!-- PAGE HEADER -->
+  <div>
+    <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:16px;">AOM Figma Kit v1 — Tokens</div>
+    <h1 style="font-family:var(--font-display);font-size:var(--t-d2);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:var(--lh-head);color:var(--carbon);">Design Tokens</h1>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- COLOR TOKENS -->
+  <div class="tokens-section">
+    <div class="tokens-section__heading">Color Tokens</div>
+    <div class="color-swatches">
+
+      <div class="swatch-card">
+        <div class="swatch-card__block" style="background:#F5F3EE;"></div>
+        <div class="swatch-card__name">--paper</div>
+        <div class="swatch-card__hex">#F5F3EE</div>
+        <div class="swatch-card__usage">Page ground. All band backgrounds.</div>
+      </div>
+
+      <div class="swatch-card">
+        <div class="swatch-card__block" style="background:#EDE9E1;"></div>
+        <div class="swatch-card__name">--paper-soft</div>
+        <div class="swatch-card__hex">#EDE9E1</div>
+        <div class="swatch-card__usage">Alt band wells: a-la-carte, closing.</div>
+      </div>
+
+      <div class="swatch-card">
+        <div class="swatch-card__block" style="background:#0A0A08;"></div>
+        <div class="swatch-card__name">--carbon</div>
+        <div class="swatch-card__hex">#0A0A08</div>
+        <div class="swatch-card__usage">All display + heading type. Near-black ink.</div>
+      </div>
+
+      <div class="swatch-card">
+        <div class="swatch-card__block" style="background:rgba(10,10,8,0.55);border:1px solid rgba(10,10,8,0.22);"></div>
+        <div class="swatch-card__name">--carbon-mute</div>
+        <div class="swatch-card__hex">rgba(10,10,8,0.55)</div>
+        <div class="swatch-card__usage">Body copy. Secondary labels.</div>
+      </div>
+
+      <div class="swatch-card">
+        <div class="swatch-card__block" style="background:#F04404;"></div>
+        <div class="swatch-card__name">--orange</div>
+        <div class="swatch-card__hex">#F04404</div>
+        <div class="swatch-card__usage">Large display + CTA only. 3.42:1 on paper — AA for large text.</div>
+      </div>
+
+      <div class="swatch-card">
+        <div class="swatch-card__block" style="background:#C43800;"></div>
+        <div class="swatch-card__name">--orange-label</div>
+        <div class="swatch-card__hex">#C43800</div>
+        <div class="swatch-card__usage">Small labels + eyebrows. 4.84:1 on paper — AA pass.</div>
+      </div>
+
+      <div class="swatch-card">
+        <div class="swatch-card__block" style="background:rgba(10,10,8,0.13);border:1px solid rgba(10,10,8,0.22);"></div>
+        <div class="swatch-card__name">--hairline</div>
+        <div class="swatch-card__hex">rgba(10,10,8,0.13)</div>
+        <div class="swatch-card__usage">1px rules. Module dividers. Band boundaries.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- TYPE LADDER -->
+  <div class="tokens-section">
+    <div class="tokens-section__heading">Type Ladder — 7 steps, 3 faces</div>
+    <div class="type-ladder">
+
+      <div class="type-rung type-rung--d1">
+        <div class="type-rung__meta">
+          <div class="type-rung__tag">T-D1</div>
+          <div class="type-rung__info">Anton · 56–148px</div>
+          <div class="type-rung__info">LH 0.94 · LS -0.02em</div>
+          <div class="type-rung__info">Hero H1 only</div>
+        </div>
+        <div class="type-rung__specimen">Department</div>
+      </div>
+
+      <div class="type-rung type-rung--d2">
+        <div class="type-rung__meta">
+          <div class="type-rung__tag">T-D2</div>
+          <div class="type-rung__info">Anton · 38–84px</div>
+          <div class="type-rung__info">LH 0.98 · LS -0.02em</div>
+          <div class="type-rung__info">Section H2</div>
+        </div>
+        <div class="type-rung__specimen">The Work</div>
+      </div>
+
+      <div class="type-rung type-rung--d3">
+        <div class="type-rung__meta">
+          <div class="type-rung__tag">T-D3</div>
+          <div class="type-rung__info">Anton · 28–52px</div>
+          <div class="type-rung__info">LH 0.98 · LS -0.02em</div>
+          <div class="type-rung__info">Band H3 / Module title</div>
+        </div>
+        <div class="type-rung__specimen">The Math</div>
+      </div>
+
+      <div class="type-rung type-rung--d4">
+        <div class="type-rung__meta">
+          <div class="type-rung__tag">T-D4</div>
+          <div class="type-rung__info">Anton · 20–30px</div>
+          <div class="type-rung__info">LH 0.98 · LS -0.02em</div>
+          <div class="type-rung__info">Sub-display / FAQ Q</div>
+        </div>
+        <div class="type-rung__specimen">Strategy</div>
+      </div>
+
+      <div class="type-rung type-rung--b1">
+        <div class="type-rung__meta">
+          <div class="type-rung__tag">T-B1</div>
+          <div class="type-rung__info">Hanken Grotesk · 17–21px</div>
+          <div class="type-rung__info">LH 1.55</div>
+          <div class="type-rung__info">Lead body / hero sub</div>
+        </div>
+        <div class="type-rung__specimen">We run the marketing for companies that don't have a marketing department.</div>
+      </div>
+
+      <div class="type-rung type-rung--b2">
+        <div class="type-rung__meta">
+          <div class="type-rung__tag">T-B2</div>
+          <div class="type-rung__info">Hanken Grotesk · 15–17px</div>
+          <div class="type-rung__info">LH 1.55</div>
+          <div class="type-rung__info">Body copy</div>
+        </div>
+        <div class="type-rung__specimen">We plan it, we film it, we build it, and we run it. At the end of the month you see all of it on one page.</div>
+      </div>
+
+      <div class="type-rung type-rung--lbl">
+        <div class="type-rung__meta">
+          <div class="type-rung__tag">T-LBL</div>
+          <div class="type-rung__info">JetBrains Mono · 10–12px</div>
+          <div class="type-rung__info">LS 0.22em · UPPERCASE</div>
+          <div class="type-rung__info">Eyebrows / labels / CTA</div>
+        </div>
+        <div class="type-rung__specimen" style="color:var(--orange-label);">PHOENIX, ARIZONA — ONE DEPARTMENT, ONE FEE</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- SPACING SCALE -->
+  <div class="tokens-section">
+    <div class="tokens-section__heading">Spacing Scale — SP, 8px base</div>
+    <div class="spacing-scale">
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-1</div><div class="spacing-rung__px">4px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:4px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-2</div><div class="spacing-rung__px">8px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:8px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-4</div><div class="spacing-rung__px">16px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:16px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-5</div><div class="spacing-rung__px">24px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:24px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-6</div><div class="spacing-rung__px">32px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:32px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-7</div><div class="spacing-rung__px">40px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:40px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-8</div><div class="spacing-rung__px">56px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:56px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-9</div><div class="spacing-rung__px">72px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:72px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-10</div><div class="spacing-rung__px">96px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:96px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-11</div><div class="spacing-rung__px">128px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:128px;"></div></div></div>
+      <div class="spacing-rung"><div class="spacing-rung__tag">SP-12</div><div class="spacing-rung__px">160px</div><div class="spacing-rung__bar-wrap"><div class="spacing-rung__bar" style="width:160px;"></div></div></div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- HAIRLINE RULE DEMO -->
+  <div class="tokens-section">
+    <div class="tokens-section__heading">Hairline Rules + Corner Ticks</div>
+    <div style="padding: 32px 0;">
+      <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+      <div style="height:48px;"></div>
+      <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+    </div>
+    <div class="hairline-label">1px hairline rule rgba(10,10,8,0.13) · corner ticks in --orange-label #C43800 · band boundary only — never decorative</div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- FONT STACK DEMO -->
+  <div class="tokens-section">
+    <div class="tokens-section__heading">Font Stack — 3 faces</div>
+    <div style="display:flex;flex-direction:column;gap:24px;">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:8px;">Anton — Display</div>
+        <div style="font-family:var(--font-display);font-size:var(--t-d2);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:0.94;color:var(--carbon);">A B C D E F G H I J K L M N O P Q R S T U V W X Y Z</div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:8px;">Hanken Grotesk — Body</div>
+        <div style="font-family:var(--font-body);font-size:var(--t-b1);line-height:1.55;color:var(--carbon);">We plan it, we film it, we build it, and we run it. Month after month, out of Phoenix. — 0123456789</div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:8px;">JetBrains Mono — Labels / Eyebrows</div>
+        <div style="font-family:var(--font-mono);font-size:16px;letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);">PHOENIX, ARIZONA — ONE DEPARTMENT, ONE FEE</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding-bottom:96px;font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:0.1em;text-transform:uppercase;color:var(--carbon-mute);">
+    AOM Figma Kit v1 · Tokens · R38-KIT
+  </div>
+
+</div>
+</body>
+</html>

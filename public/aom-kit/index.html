@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AOM Figma Kit v1</title>
+  <link rel="stylesheet" href="kit.css">
+  <style>
+    .kit-cover {
+      width: 1440px;
+      margin: 0 auto;
+      padding: 96px 72px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+    .kit-cover__eyebrow {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .kit-cover__title {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 8vw, 120px);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: 0.92;
+      color: var(--carbon);
+      max-width: 900px;
+    }
+    .kit-cover__intro {
+      font-family: var(--font-body);
+      font-size: var(--t-b1);
+      line-height: var(--lh-body);
+      color: var(--carbon-mute);
+      max-width: 640px;
+    }
+    .tick-rule { margin: 0; }
+    .import-block {
+      background: var(--paper-soft);
+      border: 1px solid var(--hairline);
+      padding: 40px 56px;
+      max-width: 800px;
+    }
+    .import-block__heading {
+      font-family: var(--font-display);
+      font-size: var(--t-d3);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      color: var(--carbon);
+      margin-bottom: 24px;
+    }
+    .import-block__steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      list-style: none;
+    }
+    .import-block__steps li {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--carbon);
+      line-height: 1.7;
+      display: flex;
+      gap: 16px;
+    }
+    .import-block__steps li span.step-num {
+      color: var(--orange-label);
+      flex-shrink: 0;
+    }
+    .import-block__urls {
+      margin-top: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .import-block__url-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-top: 1px solid var(--hairline);
+      padding: 16px 0;
+    }
+    .import-block__url-row:first-child { border-top: none; }
+    .import-url-label {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+      width: 160px;
+      flex-shrink: 0;
+    }
+    .import-url-val {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.04em;
+      color: var(--carbon);
+    }
+    .kit-nav {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .kit-nav a {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+      border-bottom: 1px solid var(--orange-label);
+    }
+    .token-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .token-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .token-swatch {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--hairline);
+      flex-shrink: 0;
+    }
+    .token-name {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--carbon);
+      width: 180px;
+    }
+    .token-hex {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.06em;
+      color: var(--carbon-mute);
+    }
+    .token-usage {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.04em;
+      color: var(--carbon-mute);
+    }
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--carbon-mute);
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+<div class="kit-cover">
+
+  <div>
+    <div class="kit-cover__eyebrow">AHEAD OF MARKET — FIGMA KIT V1 — 2026-08-13</div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <h1 class="kit-cover__title">AOM Department Console</h1>
+
+  <p class="kit-cover__intro">
+    Precision HTML built for the html.to.design Figma plugin. Import each page URL and
+    every section becomes an editable Figma frame — real text, real tokens, real layers.
+    Tweak components, copy the patterns, and build from the brand lock.
+  </p>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <div class="import-block">
+    <div class="import-block__heading">How to Import</div>
+    <ol class="import-block__steps">
+      <li><span class="step-num">01.</span><span>Open Figma. Install the html.to.design plugin from the Figma Community if you haven't already.</span></li>
+      <li><span class="step-num">02.</span><span>Run the plugin. Choose "Import from URL" (not paste HTML).</span></li>
+      <li><span class="step-num">03.</span><span>Paste each URL below, one at a time. Each page becomes its own Figma page.</span></li>
+      <li><span class="step-num">04.</span><span>Import order: tokens.html first (the reference), then components.html, then home.html, then shoot.html. This keeps the layer hierarchy clean.</span></li>
+      <li><span class="step-num">05.</span><span>Class names are Figma layer names. "hero", "module-col", "math-table" — the DOM is already named like layers.</span></li>
+    </ol>
+
+    <div class="import-block__urls">
+      <div class="import-block__url-row">
+        <span class="import-url-label">Tokens</span>
+        <span class="import-url-val">https://www.aheadofmarket.com/aom-kit/tokens.html</span>
+      </div>
+      <div class="import-block__url-row">
+        <span class="import-url-label">Components</span>
+        <span class="import-url-val">https://www.aheadofmarket.com/aom-kit/components.html</span>
+      </div>
+      <div class="import-block__url-row">
+        <span class="import-url-label">Homepage</span>
+        <span class="import-url-val">https://www.aheadofmarket.com/aom-kit/home.html</span>
+      </div>
+      <div class="import-block__url-row">
+        <span class="import-url-label">Shoot Page</span>
+        <span class="import-url-val">https://www.aheadofmarket.com/aom-kit/shoot.html</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <div>
+    <div class="section-label">Kit Pages</div>
+    <div class="kit-nav">
+      <a href="tokens.html">Tokens</a>
+      <a href="components.html">Components</a>
+      <a href="home.html">Homepage</a>
+      <a href="shoot.html">Shoot Page</a>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <div>
+    <div class="section-label">Color Tokens</div>
+    <div class="token-summary">
+      <div class="token-row">
+        <div class="token-swatch" style="background:#F5F3EE;"></div>
+        <span class="token-name">--paper</span>
+        <span class="token-hex">#F5F3EE</span>
+        <span class="token-usage">warm off-white ground — all page backgrounds</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:#EDE9E1;border:1px solid #D0CBC3;"></div>
+        <span class="token-name">--paper-soft</span>
+        <span class="token-hex">#EDE9E1</span>
+        <span class="token-usage">alt band wells (a-la-carte, closing)</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:#0A0A08;"></div>
+        <span class="token-name">--carbon</span>
+        <span class="token-hex">#0A0A08</span>
+        <span class="token-usage">all display type, carbon ink</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:rgba(10,10,8,0.55);"></div>
+        <span class="token-name">--carbon-mute</span>
+        <span class="token-hex">rgba(10,10,8,0.55)</span>
+        <span class="token-usage">body copy, secondary labels</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:#F04404;"></div>
+        <span class="token-name">--orange</span>
+        <span class="token-hex">#F04404</span>
+        <span class="token-usage">safety orange — large display + CTA ONLY (3.42:1 on paper)</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:#C43800;"></div>
+        <span class="token-name">--orange-label</span>
+        <span class="token-hex">#C43800</span>
+        <span class="token-usage">small labels + eyebrows — 4.84:1 contrast on paper (AA pass)</span>
+      </div>
+      <div class="token-row">
+        <div class="token-swatch" style="background:rgba(10,10,8,0.13);border:1px solid rgba(10,10,8,0.22);"></div>
+        <span class="token-name">--hairline</span>
+        <span class="token-hex">rgba(10,10,8,0.13)</span>
+        <span class="token-usage">1px rule lines + module dividers</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:0.1em;text-transform:uppercase;color:var(--carbon-mute);">
+    R38-KIT · aom-studio/public/aom-kit/ · main branch · Vercel
+  </div>
+
+</div>
+</body>
+</html>

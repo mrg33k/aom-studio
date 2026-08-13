@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ahead of Market — Crew for a Day</title>
+  <link rel="stylesheet" href="kit.css">
+  <style>
+    /* ── SHOOT PAGE SPECIFIC ── */
+    .page-wrap { width: 1440px; }
+
+    /* SHOOT HERO */
+    .shoot-hero {
+      padding: 128px 72px 96px;
+    }
+    .shoot-hero__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 96px;
+      align-items: end;
+    }
+    .shoot-hero__left {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .shoot-hero__right {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* WHAT YOU GET */
+    .deliverables-band {
+      padding: 96px 72px;
+      background: var(--paper-soft);
+    }
+    .deliverables-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+    .deliverables-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--hairline);
+    }
+    .deliverable-col {
+      padding: 40px 24px 56px;
+      border-right: 1px solid var(--hairline);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .deliverable-col:last-child { border-right: none; }
+    .deliverable-col__num {
+      font-family: var(--font-display);
+      font-size: var(--t-d1);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-display);
+      color: var(--carbon);
+    }
+    .deliverable-col__label {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .deliverable-col__copy {
+      font-family: var(--font-body);
+      font-size: var(--t-b2);
+      line-height: var(--lh-body);
+      color: var(--carbon-mute);
+    }
+
+    /* HOW IT WORKS */
+    .how-band {
+      padding: 96px 72px;
+    }
+    .how-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+    .how-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .how-step {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 56px;
+      padding: 32px 0;
+      border-top: 1px solid var(--hairline);
+      align-items: start;
+    }
+    .how-step__num {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .how-step__content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .how-step__heading {
+      font-family: var(--font-display);
+      font-size: var(--t-d3);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-head);
+      color: var(--carbon);
+    }
+    .how-step__copy {
+      font-family: var(--font-body);
+      font-size: var(--t-b2);
+      line-height: var(--lh-body);
+      color: var(--carbon-mute);
+      max-width: 560px;
+    }
+
+    /* PHOTO STRIP */
+    .photo-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+    .photo-strip__item {
+      aspect-ratio: 4/3;
+      background: #C0BAB1;
+      display: flex;
+      align-items: flex-end;
+      padding: 16px;
+    }
+    .photo-strip__item:nth-child(2) { background: #B8B2A9; }
+    .photo-strip__item:nth-child(3) { background: #C8C3BB; }
+    .photo-strip__caption {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* TURNAROUND */
+    .turnaround-band {
+      padding: 96px 72px;
+      background: var(--paper-soft);
+    }
+    .turnaround-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 128px;
+      align-items: center;
+    }
+    .turnaround-band__stat {
+      font-family: var(--font-display);
+      font-size: var(--t-d1);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: 0.88;
+      color: var(--carbon);
+    }
+    .turnaround-band__stat span {
+      color: var(--orange);
+    }
+    .turnaround-band__copy {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* PROOF ON SHOOT PAGE */
+    .shoot-proof {
+      padding: 96px 72px;
+    }
+    .shoot-proof__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+
+    /* PRICING */
+    .pricing-band {
+      padding: 96px 72px;
+      background: var(--paper-soft);
+    }
+    .pricing-band__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 128px;
+      align-items: start;
+    }
+    .pricing-band__left {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .pricing-band__tag {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+    }
+    .pricing-band__heading {
+      font-family: var(--font-display);
+      font-size: var(--t-d2);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-head);
+      color: var(--carbon);
+    }
+    .pricing-band__copy {
+      font-family: var(--font-body);
+      font-size: var(--t-b2);
+      line-height: var(--lh-body);
+      color: var(--carbon-mute);
+    }
+
+    /* CLOSING — SHOOT */
+    .shoot-closing {
+      padding: 160px 72px;
+    }
+    .shoot-closing__inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 56px;
+      text-align: center;
+    }
+    .shoot-closing__headline {
+      font-family: var(--font-display);
+      font-size: var(--t-d1);
+      text-transform: uppercase;
+      letter-spacing: var(--ls-display);
+      line-height: var(--lh-display);
+      color: var(--carbon);
+      max-width: 900px;
+    }
+    .shoot-closing__sub {
+      font-family: var(--font-body);
+      font-size: var(--t-b1);
+      line-height: var(--lh-body);
+      color: var(--carbon-mute);
+      max-width: 540px;
+    }
+    .shoot-closing__dept-link {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--carbon-mute);
+      border-bottom: 1px solid var(--hairline);
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav__logo">AHEAD OF MARKET</div>
+    <ul class="nav__links">
+      <li><a href="home.html">Work</a></li>
+      <li><a href="home.html">About</a></li>
+      <li><a href="shoot.html">Shoot</a></li>
+    </ul>
+    <button class="nav__cta">TELL US WHAT YOU NEED</button>
+  </nav>
+
+  <!-- ── SHOOT HERO ──────────────────────────────────────────────────────── -->
+  <section class="shoot-hero band">
+    <div class="shoot-hero__inner">
+      <div class="shoot-hero__left">
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);">CREW FOR A DAY</div>
+        <h1 style="font-family:var(--font-display);font-size:var(--t-d1);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:var(--lh-display);color:var(--carbon);">Need a crew for a day?</h1>
+      </div>
+      <div class="shoot-hero__right">
+        <p style="font-family:var(--font-body);font-size:var(--t-b1);line-height:var(--lh-body);color:var(--carbon);">We'll come film your job, take photos, throw the drone up, and have it all edited and back to you in two days — with a page you can send to anyone.</p>
+        <button class="cta-btn">TELL US WHAT YOU NEED</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── WHAT YOU GET ──────────────────────────────────────────────────── -->
+  <section class="deliverables-band">
+    <div class="deliverables-band__inner">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:16px;">WHAT YOU GET</div>
+        <h2 style="font-family:var(--font-display);font-size:var(--t-d2);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:var(--lh-head);color:var(--carbon);">One day on site. Everything edited.</h2>
+      </div>
+      <div class="deliverables-grid">
+        <div class="deliverable-col">
+          <div class="deliverable-col__num">01</div>
+          <div class="deliverable-col__label">VIDEO</div>
+          <p class="deliverable-col__copy">A finished video — short-form for social or long-form for the site. Edited, colored, and captioned. Ready to post.</p>
+        </div>
+        <div class="deliverable-col">
+          <div class="deliverable-col__num">02</div>
+          <div class="deliverable-col__label">PHOTOS</div>
+          <p class="deliverable-col__copy">Job-site photos. Your crew, your equipment, your work. Edited and organized. All of it yours.</p>
+        </div>
+        <div class="deliverable-col">
+          <div class="deliverable-col__num">03</div>
+          <div class="deliverable-col__label">AERIAL</div>
+          <p class="deliverable-col__copy">Drone footage and stills where the site and airspace allow. Useful for rooftops, large installs, commercial sites.</p>
+        </div>
+        <div class="deliverable-col">
+          <div class="deliverable-col__num">04</div>
+          <div class="deliverable-col__label">THE PAGE</div>
+          <p class="deliverable-col__copy">A single web page built around the shoot — with the video, photos, your info, and a contact button. You can send it to anyone.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHOTO STRIP -->
+  <div class="photo-strip">
+    <div class="photo-strip__item">
+      <div class="photo-strip__caption">ON SITE — PHOENIX</div>
+    </div>
+    <div class="photo-strip__item">
+      <div class="photo-strip__caption">AMBITION MECHANICAL — SCOTTSDALE</div>
+    </div>
+    <div class="photo-strip__item">
+      <div class="photo-strip__caption">BANNER HEALTH ROOFTOP — 4:50 AM</div>
+    </div>
+  </div>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── HOW IT WORKS ──────────────────────────────────────────────────── -->
+  <section class="how-band band">
+    <div class="how-band__inner">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:16px;">HOW IT WORKS</div>
+        <h2 style="font-family:var(--font-display);font-size:var(--t-d2);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:var(--lh-head);color:var(--carbon);">Tell us the job. We show up.</h2>
+      </div>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-step__num">01</div>
+          <div class="how-step__content">
+            <div class="how-step__heading">Tell us about the job</div>
+            <p class="how-step__copy">What's the work, where is it, what time. If you want something specific on camera — say so. We'll ask a few questions and confirm the call time the day before.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step__num">02</div>
+          <div class="how-step__content">
+            <div class="how-step__heading">We show up</div>
+            <p class="how-step__copy">We're there when the work is. Cameras, drone, all of it. We stay out of the way and film your crew doing the job.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step__num">03</div>
+          <div class="how-step__content">
+            <div class="how-step__heading">Everything back in two days</div>
+            <p class="how-step__copy">Edited video, organized photos, aerial cuts if we flew. The page goes live the same day everything is done. We send you the link.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step__num">04</div>
+          <div class="how-step__content">
+            <div class="how-step__heading">You own all of it</div>
+            <p class="how-step__copy">The video, the photos, the page. All yours. Post it, send it, use it in your ads. No licensing, no restrictions.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── TURNAROUND ────────────────────────────────────────────────────── -->
+  <section class="turnaround-band">
+    <div class="turnaround-band__inner">
+      <div class="turnaround-band__stat"><span>2</span> DAYS BACK TO YOU</div>
+      <div class="turnaround-band__copy">
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:16px;">TURNAROUND</div>
+        <p style="font-family:var(--font-body);font-size:var(--t-b1);line-height:var(--lh-body);color:var(--carbon);">Video, photos, and the page — edited and delivered within two days of the shoot. Not a week. Two days.</p>
+        <p style="font-family:var(--font-body);font-size:var(--t-b2);line-height:var(--lh-body);color:var(--carbon-mute);margin-top:16px;">If you need it faster for a specific deadline, tell us when you book. We'll work with it if we can.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── PROOF ─────────────────────────────────────────────────────────── -->
+  <section class="shoot-proof band">
+    <div class="shoot-proof__inner">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:16px;">WHO WE'VE SHOT FOR</div>
+        <h2 style="font-family:var(--font-display);font-size:var(--t-d2);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:var(--lh-head);color:var(--carbon);">46 shoots in a year.</h2>
+      </div>
+      <div class="proof-block">
+        <div class="proof-block__client">AMBITION MECHANICAL — PHOENIX</div>
+        <p class="proof-block__quote">Ambition Mechanical in Phoenix has been with us a year. 46 shoots, 399 photos — and after a few months, the phone started ringing. You're welcome to ask them.</p>
+        <div class="proof-block__phone">You can call the same person you started with, any time. They'll answer, or they'll call you back.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── PRICING ────────────────────────────────────────────────────────── -->
+  <section class="pricing-band">
+    <div class="pricing-band__inner">
+      <div class="pricing-band__left">
+        <div class="pricing-band__tag">WHAT IT COSTS</div>
+        <h2 class="pricing-band__heading">Flat rate. One day.</h2>
+        <p class="pricing-band__copy">One day of filming — video, photos, drone, editing, and the page. One number, no overages, no usage fees on the content.</p>
+        <p class="pricing-band__copy">If you need multiple days or multiple locations, we'll put a number together for the scope.</p>
+      </div>
+      <div>
+        <table class="math-table">
+          <tr><td>One-day shoot + editing</td><td>Tell us what you need</td></tr>
+          <tr><td>Video edit (short-form)</td><td>Included</td></tr>
+          <tr><td>Photo edit + delivery</td><td>Included</td></tr>
+          <tr><td>Drone (where available)</td><td>Included</td></tr>
+          <tr><td>The page</td><td>Included</td></tr>
+          <tr><td style="color:var(--carbon);">Licensing + usage rights</td><td style="color:var(--carbon);">Yours. Forever.</td></tr>
+        </table>
+        <button class="cta-btn" style="margin-top:32px;">TELL US WHAT YOU NEED</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="tick-rule" style="margin:0 72px;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── CLOSING ────────────────────────────────────────────────────────── -->
+  <section class="shoot-closing band">
+    <div class="shoot-closing__inner">
+      <h2 class="shoot-closing__headline">Ready when you are.</h2>
+      <p class="shoot-closing__sub">Tell us the job and the date. We'll handle the rest and have it back to you in two days.</p>
+      <button class="cta-btn">TELL US WHAT YOU NEED</button>
+      <a href="home.html" class="shoot-closing__dept-link">NEED THE WHOLE DEPARTMENT? START HERE.</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer__logo">AHEAD OF MARKET</div>
+    <div class="footer__copy">© 2026 AHEAD OF MARKET. PHOENIX, ARIZONA.</div>
+  </footer>
+
+</div>
+</body>
+</html>

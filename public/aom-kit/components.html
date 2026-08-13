@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AOM Kit — Components</title>
+  <link rel="stylesheet" href="kit.css">
+  <style>
+    .comp-page { width: 1440px; margin: 0 auto; padding: 96px 72px; display: flex; flex-direction: column; gap: 96px; }
+    .comp-section { display: flex; flex-direction: column; gap: 40px; }
+    .comp-section__heading {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--orange-label);
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .comp-label {
+      font-family: var(--font-mono);
+      font-size: var(--t-lbl);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--carbon-mute);
+      margin-bottom: 16px;
+    }
+    .comp-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      align-items: flex-start;
+    }
+    /* SPECIMEN WELL — light outline to show bounds */
+    .specimen {
+      border: 1px solid var(--hairline);
+      padding: 32px;
+      background: var(--paper);
+      display: inline-flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .specimen--full { width: 100%; }
+    .specimen--wide { width: calc(50% - 16px); }
+  </style>
+</head>
+<body>
+<div class="comp-page">
+
+  <!-- PAGE HEADER -->
+  <div>
+    <div style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);margin-bottom:16px;">AOM Figma Kit v1 — Components</div>
+    <h1 style="font-family:var(--font-display);font-size:var(--t-d2);text-transform:uppercase;letter-spacing:var(--ls-display);line-height:var(--lh-head);color:var(--carbon);">Component Library</h1>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- BUTTONS -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Buttons</div>
+    <div class="comp-row">
+      <div>
+        <div class="comp-label">CTA Button — Primary (solid orange, --orange background, --paper text)</div>
+        <button class="cta-btn">TELL US WHAT YOU NEED</button>
+      </div>
+      <div>
+        <div class="comp-label">Text Link — Mono underline (--orange-label, AA contrast)</div>
+        <a href="#" style="font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--orange-label);border-bottom:1px solid var(--orange-label);">See what that looks like</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- EYEBROW / MONO LABEL -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Eyebrow — Mono Label</div>
+    <div class="comp-row">
+      <div>
+        <div class="comp-label">Eyebrow — orange-label color, LS 0.22em, uppercase, 10-12px</div>
+        <div class="mono mono--orange">PHOENIX, ARIZONA — ONE DEPARTMENT, ONE FEE</div>
+      </div>
+      <div>
+        <div class="comp-label">Mono label — carbon-mute, inline data</div>
+        <div class="mono" style="color:var(--carbon-mute);">AMBITION MECHANICAL — PHOENIX</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- TICK RULE -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Tick Rule — Band Boundary</div>
+    <div class="comp-label">1px hairline + "+" marks at corners. Used at top of every new band. NOT decorative mid-section.</div>
+    <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- NAV -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Navigation Bar</div>
+    <div class="comp-label">nav — 64px tall, border-bottom hairline, logo left, links center, CTA right</div>
+    <div class="nav" style="width:100%;border:1px solid var(--hairline);">
+      <div class="nav__logo">AHEAD OF MARKET</div>
+      <ul class="nav__links">
+        <li><a href="#">Work</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Shoot</a></li>
+      </ul>
+      <button class="nav__cta">TELL US WHAT YOU NEED</button>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- SECTION HEADER -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Section Header</div>
+    <div class="comp-label">section-header — eyebrow mono label above display H2</div>
+    <div class="specimen specimen--wide">
+      <div class="section-header">
+        <div class="section-header__eyebrow">THE DEPARTMENT</div>
+        <h2 class="section-header__h2">We run the marketing.</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- MODULE TREATMENTS — DESKTOP 5-COL -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Module Grid — Desktop 5-column</div>
+    <div class="comp-label">module-grid — 5 equal columns, hairline dividers, orange stroke icon, Anton label, mono desc</div>
+    <div class="module-grid">
+      <div class="module-col">
+        <div class="module-col__icon">&#9633;</div>
+        <div class="module-col__label">THE PLAN</div>
+        <div class="module-col__desc">Every 90 days we write out where this is going, on paper you can read.</div>
+      </div>
+      <div class="module-col">
+        <div class="module-col__icon">&#9654;</div>
+        <div class="module-col__label">THE FILMING</div>
+        <div class="module-col__desc">We come film your jobs — photos, drone, and a plan for a good video. Whatever hour the work happens.</div>
+      </div>
+      <div class="module-col">
+        <div class="module-col__icon">&#9670;</div>
+        <div class="module-col__label">THE WEBSITE</div>
+        <div class="module-col__desc">We build it and keep it current, and you can be as much a part of the process as you want.</div>
+      </div>
+      <div class="module-col">
+        <div class="module-col__icon">&#9651;</div>
+        <div class="module-col__label">THE ADS</div>
+        <div class="module-col__desc">We set them up and run them week by week. The account is yours and you pay Google directly.</div>
+      </div>
+      <div class="module-col">
+        <div class="module-col__icon">&#9711;</div>
+        <div class="module-col__label">THE REVIEWS</div>
+        <div class="module-col__desc">When one comes in, we write back the way you would.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- WEEK STRIP -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Week Strip — A Month, On Paper</div>
+    <div class="comp-label">week-strip — 4 equal columns, week number in orange-label, label in Anton display</div>
+    <div class="week-strip">
+      <div class="week-cell">
+        <div class="week-cell__num">WEEK 1</div>
+        <div class="week-cell__label">PLAN.</div>
+      </div>
+      <div class="week-cell">
+        <div class="week-cell__num">WEEK 2</div>
+        <div class="week-cell__label">SHOOT.</div>
+      </div>
+      <div class="week-cell">
+        <div class="week-cell__num">WEEK 3</div>
+        <div class="week-cell__label">BUILD AND LAUNCH.</div>
+      </div>
+      <div class="week-cell">
+        <div class="week-cell__num">WEEK 4</div>
+        <div class="week-cell__label">RUN AND REPORT.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- WORK GRID TILE -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Work Grid Tile — with Caption Slot</div>
+    <div class="comp-label">work-tile — photo placeholder + mono caption slot. Caption class: work-tile__caption</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+      <div class="work-tile">
+        <div class="work-tile__img" style="background:#C8C3BB;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8A847C;">PHOTO</div>
+        <div class="work-tile__caption">ON SITE AT 4:50 AM — BANNER HEALTH ROOFTOP</div>
+      </div>
+      <div class="work-tile">
+        <div class="work-tile__img" style="background:#C8C3BB;"></div>
+        <div class="work-tile__caption">AMBITION MECHANICAL — PHOENIX</div>
+      </div>
+      <div class="work-tile">
+        <div class="work-tile__img" style="background:#C8C3BB;"></div>
+        <div class="work-tile__caption">JOB SITE — SCOTTSDALE</div>
+      </div>
+      <div class="work-tile">
+        <div class="work-tile__img" style="background:#C8C3BB;"></div>
+        <div class="work-tile__caption"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- INDUSTRY COLUMN HEADER -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Industry Column Header</div>
+    <div class="comp-label">industry-tab — mono label, active state = orange-label color + orange underline</div>
+    <div class="work-industry-tabs">
+      <div class="industry-tab industry-tab--active">MECHANICAL</div>
+      <div class="industry-tab">PLUMBING</div>
+      <div class="industry-tab">CONSTRUCTION</div>
+      <div class="industry-tab">HOSPITALITY</div>
+      <div class="industry-tab">WELLNESS</div>
+      <div class="industry-tab">ARTS</div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- MATH / LEDGER TABLE -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Ledger / Math Table</div>
+    <div class="comp-label">math-table — mono rows, hairline dividers, final row in orange-label</div>
+    <div class="specimen specimen--wide">
+      <table class="math-table">
+        <tr><td>A videographer</td><td>$4,000 / mo</td></tr>
+        <tr><td>Someone on the website</td><td>$3,500 / mo</td></tr>
+        <tr><td>Someone running the ads</td><td>$2,500 / mo</td></tr>
+        <tr><td>Strategy + reporting</td><td>$2,000 / mo</td></tr>
+        <tr><td style="color:var(--carbon);">In-house total</td><td style="color:var(--carbon);">~$12,000 / mo</td></tr>
+        <tr><td>AHEAD OF MARKET — ALL OF IT</td><td>$3,000 / mo</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- PROOF BLOCK -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Proof Block</div>
+    <div class="comp-label">proof-block — client label + quote body + phone line separated by hairline</div>
+    <div class="specimen">
+      <div class="proof-block">
+        <div class="proof-block__client">AMBITION MECHANICAL — PHOENIX</div>
+        <p class="proof-block__quote">Ambition Mechanical in Phoenix has been with us a year. 46 shoots, 399 photos — and after a few months, the phone started ringing. You're welcome to ask them.</p>
+        <div class="proof-block__phone">You can call the same person you started with, any time. They'll answer, or they'll call you back.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- A-LA-CARTE BAND -->
+  <div class="comp-section">
+    <div class="comp-section__heading">A-La-Carte Band — Mid-page</div>
+    <div class="comp-label">alacarte-band — paper-soft background, headline left + text link right</div>
+    <div class="alacarte-band" style="width:100%;">
+      <div class="alacarte-band__text">
+        <div class="alacarte-band__headline">Just need one thing?</div>
+        <p class="alacarte-band__body">Not everybody needs the whole department. If you want a crew for a day, a website, or somebody to run your ads — we do that too.</p>
+      </div>
+      <a href="#" class="alacarte-band__link">See what that looks like</a>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- FAQ ROW -->
+  <div class="comp-section">
+    <div class="comp-section__heading">FAQ Item</div>
+    <div class="comp-label">faq-item — 2-col grid, Anton Q left, Hanken A right, hairline top border</div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-item__q">How long does it take to get started?</div>
+        <p class="faq-item__a">Usually about a week. We put together a plan, get access to your accounts, and schedule the first shoot. By the end of the first month, things are running.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-item__q">Do I have to sign a contract?</div>
+        <p class="faq-item__a">No contract. Month to month. Everything we make is yours — the plan, the photos, the website, the ad account.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- FOOTER -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Footer</div>
+    <div class="comp-label">footer — hairline top, logo left, copyright right</div>
+    <div class="footer" style="width:100%;border:1px solid var(--hairline);">
+      <div class="footer__logo">AHEAD OF MARKET</div>
+      <div class="footer__copy">© 2026 AHEAD OF MARKET. PHOENIX, ARIZONA.</div>
+    </div>
+  </div>
+
+  <div class="tick-rule"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+  <!-- ── 390px MOBILE SECTION ─────────────────────────────────────────────── -->
+  <div class="comp-section">
+    <div class="comp-section__heading">Mobile Patterns — 390px Viewport</div>
+    <div class="comp-label">mobile-frame — 390px bounded container showing mobile hero + module list rows</div>
+
+    <div class="mobile-frame">
+      <!-- Mobile hero stack -->
+      <div class="tick-rule" style="margin:0;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+      <div class="mobile-hero__eyebrow">PHOENIX, ARIZONA — ONE DEPARTMENT, ONE FEE</div>
+      <h1 class="mobile-hero__h1">We're the marketing department for companies that don't have one.</h1>
+      <p class="mobile-hero__sub">Plan, film, build, run, answer — month after month, out of Phoenix.</p>
+      <button class="cta-btn">TELL US WHAT YOU NEED</button>
+      <div class="tick-rule" style="margin:0;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+
+      <!-- Mobile module list rows -->
+      <div class="module-list-row">
+        <div class="module-list-row__icon">&#9633;</div>
+        <div class="module-list-row__label">THE PLAN</div>
+        <div class="module-list-row__pipe">|</div>
+        <div class="module-list-row__desc">Every 90 days we write out where this is going, on paper you can read.</div>
+      </div>
+      <div class="module-list-row">
+        <div class="module-list-row__icon">&#9654;</div>
+        <div class="module-list-row__label">THE FILMING</div>
+        <div class="module-list-row__pipe">|</div>
+        <div class="module-list-row__desc">We come film your jobs — photos, drone, good video. Whatever hour the work happens.</div>
+      </div>
+      <div class="module-list-row">
+        <div class="module-list-row__icon">&#9670;</div>
+        <div class="module-list-row__label">THE WEBSITE</div>
+        <div class="module-list-row__pipe">|</div>
+        <div class="module-list-row__desc">We build it and keep it current.</div>
+      </div>
+      <div class="module-list-row">
+        <div class="module-list-row__icon">&#9651;</div>
+        <div class="module-list-row__label">THE ADS</div>
+        <div class="module-list-row__pipe">|</div>
+        <div class="module-list-row__desc">We set them up and run them week by week. Your account, your Google login.</div>
+      </div>
+      <div class="module-list-row">
+        <div class="module-list-row__icon">&#9711;</div>
+        <div class="module-list-row__label">THE REVIEWS</div>
+        <div class="module-list-row__pipe">|</div>
+        <div class="module-list-row__desc">When one comes in, we write back the way you would.</div>
+      </div>
+      <div class="tick-rule" style="margin:0;"><span class="tick-left">+</span><span class="tick-right">+</span></div>
+      <div style="height:40px;"></div>
+    </div>
+
+  </div>
+
+  <div style="padding-bottom:96px;font-family:var(--font-mono);font-size:var(--t-lbl);letter-spacing:0.1em;text-transform:uppercase;color:var(--carbon-mute);">
+    AOM Figma Kit v1 · Components · R38-KIT
+  </div>
+
+</div>
+</body>
+</html>
