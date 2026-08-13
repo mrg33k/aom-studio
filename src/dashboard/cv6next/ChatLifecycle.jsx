@@ -8,7 +8,7 @@
 // emitting a live Goal Thread, ChatGoalThread renders that instead. Honest with real
 // data: we fold by DAY (which we have), not by past "goals" (never stored).
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks, StreamingDraft } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
 import { useDictation } from './data/useDictation.js';
@@ -1174,7 +1174,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, turnHealth, connection, onRetryTurn, onNudgeTurn, onReloadThread, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, draft: streamDraft, turnHealth, connection, onRetryTurn, onNudgeTurn, onReloadThread, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -1501,7 +1501,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           {/* One live surface at the conversation tail in every room state. It replaces
               the old accumulating WorkingTurn steps; bridge steps now animate through
               this fixed-height card and the same projection names the Activity dropdown. */}
-          <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
+          <StreamingDraft room={fullRoom || room} draft={streamDraft} />
+          <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} turnHealth={turnHealth} currentAsk={currentAskTitle} />
           <RoomRecoveryNotice health={turnHealth} onRetry={onRetryTurn} onNudge={onNudgeTurn} />
           {/* The full-thread error above already says the connection dropped;
               don't stack a second strip under it saying the same thing. */}

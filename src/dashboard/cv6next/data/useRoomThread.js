@@ -293,6 +293,7 @@ class RoomThreadEngine {
       lastSentId: '',
       liveSteps: [],
       stepsByParent: {},
+      draft: null,          // { text, streaming: true } — live partial reply, never persisted
       turnHealth: null,
       // ── Connection health (corner:bridge frontend-visibility, 2026-08-09) ────
       //   online   — the browser's own network state
@@ -317,6 +318,12 @@ class RoomThreadEngine {
     this.stepsTimer = null;
     this.stepsCadence = 0;
     this.stewardTimer = null;
+    // Live draft stream (R-SMOOTHNESS Round D): one SSE reader per live turn,
+    // engine-owned like every other poll. Feeds state.draft only — never
+    // messages/awaiting/liveSteps. SSE unavailable = silent no-op; the 1500ms
+    // step poll is the fallback AND keeps running regardless.
+    this.streamAbort = null;
+    this.streamKey = '';
     this.turnPollKey = 'off';
     this.stepLastActivity = 0;
     this.stepLastCount = -1;
@@ -430,6 +437,9 @@ class RoomThreadEngine {
       awaiting: s.awaiting,
       awaitingSince: s.awaiting ? this.lastSentTs : null,
       liveSteps: s.liveSteps,
+      // Draft renders only while the turn is live; project() clears it in the
+      // same synchronous pass that renders the real row (no duplicate flash).
+      draft: s.awaiting ? s.draft : null,
       turnHealth: s.turnHealth,
       connection: s.connection,
     };
@@ -670,6 +680,12 @@ class RoomThreadEngine {
       this.silentTurn = false;
       this.commit({ turnHealth: null });
     }
+    // Draft vs real row (Round D): the moment any reply row for this turn is in the
+    // projected thread, the draft dies in the same synchronous pass — the row is the
+    // truth, the draft was only its preview. (React batches the paired emits.)
+    if (this.state.draft && newestReply && this.lastSentTs && tms(newestReply) >= this.lastSentTs) {
+      this.commit({ draft: null });
+    }
     if (!this.didBaseline) {
       // First load for this room: remember where the thread is.
       this.didBaseline = true;
@@ -682,7 +698,7 @@ class RoomThreadEngine {
         // offer the same Retry as sending it yourself.
         this.lastSentText = newestUser.text || this.lastSentText;
         this.sawLiveSteps = false;
-        this.commit({ lastSentId: String(newestUser.id), awaiting: true, liveSteps: [] });
+        this.commit({ lastSentId: String(newestUser.id), awaiting: true, liveSteps: [], draft: null });
       }
     } else if (newestUser && tms(newestUser) > this.lastSentTs) {
       // A newer user message than anything we've tracked → the agent is now on it.
@@ -690,7 +706,7 @@ class RoomThreadEngine {
       this.lastSentText = newestUser.text || this.lastSentText;
       this.silentTurn = false;
       this.sawLiveSteps = false;
-      this.commit({ lastSentId: String(newestUser.id), awaiting: true, liveSteps: [] });
+      this.commit({ lastSentId: String(newestUser.id), awaiting: true, liveSteps: [], draft: null });
     } else if (!this.sawLiveSteps && newestReply && tms(newestReply) >= this.lastSentTs && this.lastSentTs) {
       // A reply at/after our last user message → settle — but ONLY when the bridge is
       // NOT streaming live steps for this turn. Once steps are flowing, the agent
@@ -883,7 +899,59 @@ class RoomThreadEngine {
   stopTurnPolls() {
     if (this.stepTimer) { clearInterval(this.stepTimer); this.stepTimer = null; }
     if (this.stewardTimer) { clearInterval(this.stewardTimer); this.stewardTimer = null; }
+    this.stopTurnStream();
     this.turnPollKey = '';
+  }
+
+  stopTurnStream() {
+    if (this.streamAbort) { try { this.streamAbort.abort(); } catch { /* already dead */ } }
+    this.streamAbort = null;
+    this.streamKey = '';
+  }
+
+  // Live draft stream (R-SMOOTHNESS Round D). Reads the bridge's SSE mirror via
+  // the chat-bridge proxy and feeds state.draft with the growing partial reply.
+  // Contract: NEVER touches messages/awaiting/liveSteps; every failure shape is
+  // a silent no-op (the step poll is the fallback and runs regardless); the
+  // real row's arrival clears the draft in project().
+  startTurnStream(messageId) {
+    if (!messageId || this.streamKey === messageId) return;
+    this.stopTurnStream();
+    this.streamKey = messageId;
+    const controller = new AbortController();
+    this.streamAbort = controller;
+    let fullText = '';
+    authFetch(`/api/dashboard/chat-bridge?stream=${encodeURIComponent(messageId)}`, {
+      signal: controller.signal,
+    }).then(async (res) => {
+      if (!res.ok || !res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let event;
+          try { event = JSON.parse(line.slice(6)); } catch { continue; }
+          if (!this.alive || this.streamKey !== messageId) return;
+          if (event.type === 'chunk' && event.text) {
+            fullText += event.text;
+            this.commit({ draft: { text: fullText, streaming: true } });
+          } else if (event.type === 'done' || event.type === 'fallback'
+            || event.type === 'superseded' || event.type === 'error') {
+            // The durable row arrives via realtime/reconcile; pull it now so
+            // the draft-to-row swap is immediate rather than next-poll.
+            this.load({ full: false });
+            return;
+          }
+        }
+      }
+    }).catch(() => { /* silent — the step poll carries the turn */ });
   }
 
   // The turn-scoped polls used to be effects keyed on [awaiting, lastSentId]. Same key,
@@ -896,7 +964,10 @@ class RoomThreadEngine {
       this.turnPollKey = key;
       if (this.state.awaiting) {
         this.startLiveStepPoll();
-        if (this.state.lastSentId) this.startStewardPoll();
+        if (this.state.lastSentId) {
+          this.startStewardPoll();
+          this.startTurnStream(this.state.lastSentId);
+        }
       }
     }
     // While a turn is live, refresh the persisted steps a touch faster.
@@ -969,7 +1040,7 @@ class RoomThreadEngine {
     this.lastSentText = body;
     this.lastSentOptions = { interactionMode, agent: roomAgent };
     this.silentTurn = false;
-    this.commit({ awaiting: true, turnHealth: { state: 'accepted', cause: null, repaired: false }, liveSteps: [] });
+    this.commit({ awaiting: true, turnHealth: { state: 'accepted', cause: null, repaired: false }, liveSteps: [], draft: null });
     // A failed send KEEPS its bubble (corner:bridge frontend-visibility D3). Deleting it
     // was the single most alarming failure on the surface: your words flashed into the
     // thread and then vanished with no reason given and nothing to tap. Now the bubble

@@ -116,6 +116,27 @@ export function WorkingTurn({ room, liveSteps, steps, goal }) {
   );
 }
 
+// Live draft bubble (R-SMOOTHNESS Round D): the agent's partial reply as it is
+// being written, streamed from the bridge mirror via the engine's draft state.
+// Ephemeral by contract — useRoomThread clears the draft in the same pass that
+// renders the real persisted row, so the swap is one paint with no duplicate.
+// Renders through the same markdown path as a real agent bubble.
+export function StreamingDraft({ room, draft }) {
+  if (!draft || !draft.text) return null;
+  return (
+    <div data-cv6-draft="" className="cv6-live-work" style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'flex-start' }}>
+      <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{room?.initials || '·'}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {room?.name ? <div className="gname" style={{ marginBottom: 6 }}>{room.name}</div> : null}
+        <div className="gsnote" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)', wordBreak: 'break-word' }}>
+          <ChatMessageRenderer content={draft.text} className="cv6-agent-prose" />
+          <span className="cv6-draft-cursor" aria-hidden="true" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // data block -> generic cells + per-row chart pct (first numeric column, relative to max).
 function normalizeData(b) {
   const columns = Array.isArray(b.columns) ? b.columns : [];

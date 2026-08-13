@@ -14,7 +14,7 @@ import { useRoomThread, useGoalThread, rowAttachments } from './data/useRoomThre
 import { titleForAgent } from './data/agentTitles.js';
 import { buildChecklistRoomOptions } from './data/roomKeys.js';
 
-import { SendCtx, ReviewCtx } from './ChatGoalThread.jsx';
+import { SendCtx, ReviewCtx, StreamingDraft } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
@@ -643,7 +643,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav, windowMode]);
 
-  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, turnHealth, status: threadStatus, connection, retryTurn, nudgeTurn, reload: reloadThread } = useRoomThread(worldId, selected);
+  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, draft, turnHealth, status: threadStatus, connection, retryTurn, nudgeTurn, reload: reloadThread } = useRoomThread(worldId, selected);
   // The room agent's own steps — the half of "background work" the old card could not see.
   const roomGoal = useGoalThread(worldId, selected);
   // Per-room running tasks — used by the work-indicator icon to know if anything is active.
@@ -1121,7 +1121,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         dispatched sub-agent jobs. This lists both kinds, per room, short, with a
                         live counter on each. The Background work window still exists for the
                         world-wide view. */}
-                    <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} currentAsk={currentAskTitle} />
+                    <StreamingDraft room={selected} draft={draft} />
+                    <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} turnHealth={turnHealth} currentAsk={currentAskTitle} />
                     <RoomRecoveryNotice health={turnHealth} onRetry={retryTurn} onNudge={nudgeTurn} />
                     {/* The full-thread error above already says the connection dropped;
                         don't stack a second strip under it saying the same thing. */}

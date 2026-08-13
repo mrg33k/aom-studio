@@ -130,7 +130,7 @@ const STEP_CARD_OPENERS = ['Reading your message', 'Thinking it through', 'Worki
 // §5 compliance:
 //   - If goal.checklist has real steps: progress = activeStepIndex/totalSteps (genuine N/M).
 //   - Else (only synthetic awaiting or agent tasks with no count): indeterminate, no % or fill.
-function StepCard({ roomSteps, agentItems, awaiting, liveSteps, currentAsk }) {
+function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, turnHealth, currentAsk }) {
   // --- data ---
   const totalSteps = roomSteps.length;
   const activeStepIdx = roomSteps.findIndex((s) => s.state === 'active');  // 0-based in checklist
@@ -158,8 +158,16 @@ function StepCard({ roomSteps, agentItems, awaiting, liveSteps, currentAsk }) {
   // Previous done step label for the ghost cross-fade line.
   const prevLabel = previousLiveLabel || prevStep?.label || '';
 
+  // Cold-spawn honesty (R-SMOOTHNESS Round D4): the turn is accepted but no
+  // worker has produced a step after 8s — a quiet room is waking up, which can
+  // take a minute. Say that, instead of cycling thinking phrases over dead air.
+  const waking = awaiting && !liveLabel && !activeStep
+    && turnHealth?.state === 'accepted'
+    && awaitingSince && (Date.now() - awaitingSince > 8000);
   // Cycle LIVE_OPENERS by wall-clock so the card title feels alive.
-  const stateTitle = STEP_CARD_OPENERS[Math.floor(Date.now() / 2500) % STEP_CARD_OPENERS.length];
+  const stateTitle = waking
+    ? 'Waking the room'
+    : STEP_CARD_OPENERS[Math.floor(Date.now() / 2500) % STEP_CARD_OPENERS.length];
 
   // Cross-fade: track previous active label so the ghost line renders on step change.
   // When activeLabel changes → save old to prevDisplayed (renders fading out) → clear after 500ms.
@@ -213,7 +221,7 @@ function StepCard({ roomSteps, agentItems, awaiting, liveSteps, currentAsk }) {
 }
 
 // expandable — when true (dropdown mode) "+N more" is a button that expands the list.
-export default function RoomWorkList({ room, goal, awaiting, awaitingSince, liveSteps, currentAsk, expandable = false }) {
+export default function RoomWorkList({ room, goal, awaiting, awaitingSince, liveSteps, turnHealth, currentAsk, expandable = false }) {
   const { tasks, promises } = useRunningTasks(room);
   const [now, setNow] = useState(() => Date.now());
   const [localExpanded, setLocalExpanded] = useState(false);
@@ -295,7 +303,9 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, live
           roomSteps={roomSteps}
           agentItems={agentItems}
           awaiting={awaiting}
+          awaitingSince={awaitingSince}
           liveSteps={liveSteps}
+          turnHealth={turnHealth}
           currentAsk={currentAsk}
         />
       </>

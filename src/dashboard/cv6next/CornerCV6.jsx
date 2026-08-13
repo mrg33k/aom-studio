@@ -2110,6 +2110,7 @@ function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose, exp
       fullRoom={isDemo ? null : activeRoom} worldId={worldId} projectId={parentProject?.databaseId || activeRoom?.databaseId || ''}
       roomOptions={checklistRoomOptions}
       messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
+      draft={isDemo ? null : rt.draft}
       turnHealth={isDemo ? null : rt.turnHealth}
       connection={isDemo ? null : rt.connection}
       onRetryTurn={isDemo ? null : rt.retryTurn} onNudgeTurn={isDemo ? null : rt.nudgeTurn}
