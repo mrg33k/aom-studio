@@ -71,8 +71,9 @@ a{color:inherit}
 
 /* the card: full-bleed on phone, 9/16 frame on desktop */
 .stage{position:relative;width:100%;height:100%;display:flex;flex-direction:column;
-  justify-content:space-between;overflow:hidden;
+  justify-content:flex-start;overflow:hidden;
   padding:24px 20px calc(24px + var(--safe-b));background:var(--obsidian)}
+.foot{margin-top:auto}
 @media (min-width:700px){
   .stage{width:auto;aspect-ratio:9/16;height:min(100%,92vh);border:1px solid var(--ink-700);
     padding:32px 32px 32px}
