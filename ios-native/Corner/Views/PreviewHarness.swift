@@ -362,6 +362,39 @@ struct StreamingPreviewHarness: View {
     }
 }
 
+// MARK: - Scroll brain proof (R18 N4)
+
+/// The reading-history moment: the thread scrolled up (top-anchored here), the
+/// REAL JumpToLatestPill riding the scroll container's bottom edge — the state
+/// rule 3 exists for. No live turn in frame: the pill never shows during one.
+struct ScrollPreviewHarness: View {
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: Theme.s3) {
+                    ForEach(Array(PreviewFixtures.chatRows.enumerated()), id: \.element.id) { i, row in
+                        MessageBubbleView(row: row, room: nil, showsAuthor: i == 0 || PreviewFixtures.chatRows[i - 1].isUser != row.isUser)
+                    }
+                }
+                .padding(.horizontal, Theme.s4)
+                .padding(.vertical, Theme.s3)
+            }
+            .defaultScrollAnchor(.top)
+            .overlay(alignment: .bottom) {
+                JumpToLatestPill()
+                    // The real view floats the pill above the composer band; the
+                    // harness has no composer, so reserve its height to keep the
+                    // proof faithful to the shipped offset.
+                    .padding(.bottom, Theme.s3 + 58)
+            }
+            .groundBackground()
+            .navigationTitle("Reading history")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+}
+
 // MARK: - Home composer proof
 
 /// The home timeline (reusing HomePreviewHarness's look) with the real HomeComposerBar

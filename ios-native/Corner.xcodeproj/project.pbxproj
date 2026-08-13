@@ -28,6 +28,7 @@
 		37A297149FAE56CA5A8B49CD /* AvatarEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7AF275C1A50596A51C2BE7 /* AvatarEditSheet.swift */; };
 		37E264721226C44D2B8330E5 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4CB548873FD74F1BFC766C33 /* OFL.txt */; };
 		3A2AC8BE4E432BFA44EF958D /* EmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C433E0BF6B480BF2498620 /* EmailView.swift */; };
+		3C89263F03DC8214C8FC69B0 /* ScrollBrainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6827290BB3EFB1945CC8003 /* ScrollBrainTests.swift */; };
 		3CFC9CA3C44161F52E03C317 /* TrackerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC120F7C6D2DBDEE3EED7C41 /* TrackerStore.swift */; };
 		3E19C3887D4D24B99A3923AD /* AssignSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A92F26E1C6D5083CFB19872 /* AssignSheet.swift */; };
 		3F70D184D0A19193AA25F473 /* RoomStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AF65AAEC8B2AFEB4B0762CE /* RoomStatus.swift */; };
@@ -73,6 +74,7 @@
 		C94D434781585E076EC0AFFB /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23F37A7F1A6A27F7C1FFFBEC /* JSONValue.swift */; };
 		D17AC373E2D97B9925C032F8 /* RoomRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85B84B4FDE537A6A0F8AFC4 /* RoomRoutingTests.swift */; };
 		D1FFF5E4326042FDCC1D1C95 /* ReviewDecisionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8CA935ACABC0C1E275A24EE /* ReviewDecisionSheet.swift */; };
+		D3994FF4F8135E0708B1A9EB /* ScrollBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AE09620DF2207D00FDA5FA /* ScrollBrain.swift */; };
 		D5AC8F72E32D152ADD09E7E2 /* OrganizeFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3B3D011843BAF1D207471C /* OrganizeFile.swift */; };
 		D9FFF59D4BF03630C15A0404 /* MessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC55DE9AD33D944A1172351 /* MessageRow.swift */; };
 		DA1EB5D4B866DFE79EF1D58D /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78195C7CEC61A8E2A7C22582 /* NotificationsView.swift */; };
@@ -125,6 +127,7 @@
 		2B7AF275C1A50596A51C2BE7 /* AvatarEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarEditSheet.swift; sourceTree = "<group>"; };
 		30D577DF665C37F7C6CDC690 /* TrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerView.swift; sourceTree = "<group>"; };
 		3DA0369243BECC948ABC6C34 /* Room.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Room.swift; sourceTree = "<group>"; };
+		40AE09620DF2207D00FDA5FA /* ScrollBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollBrain.swift; sourceTree = "<group>"; };
 		414FBC6E316F126CBB060672 /* TrackerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerModels.swift; sourceTree = "<group>"; };
 		41EB3D2C357667840C871590 /* RoomAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomAvatarView.swift; sourceTree = "<group>"; };
 		4951296375FEC3116AC43157 /* MessageContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageContentTests.swift; sourceTree = "<group>"; };
@@ -191,6 +194,7 @@
 		EBC55DE9AD33D944A1172351 /* MessageRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageRow.swift; sourceTree = "<group>"; };
 		EC120F7C6D2DBDEE3EED7C41 /* TrackerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerStore.swift; sourceTree = "<group>"; };
 		F369BDA68010DC01F327B636 /* RoomFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomFile.swift; sourceTree = "<group>"; };
+		F6827290BB3EFB1945CC8003 /* ScrollBrainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollBrainTests.swift; sourceTree = "<group>"; };
 		F699E1C9894B7F4CA90C266B /* StreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamTests.swift; sourceTree = "<group>"; };
 		FC666C376DEDBBB91CD4B4A5 /* ReviewItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewItem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -311,6 +315,7 @@
 				E85B84B4FDE537A6A0F8AFC4 /* RoomRoutingTests.swift */,
 				D108379E9EA1B083B564C0BA /* RoomStatusTests.swift */,
 				4D1F48718CC857618DDD22AC /* RouteTests.swift */,
+				F6827290BB3EFB1945CC8003 /* ScrollBrainTests.swift */,
 				61F1982A7FB4CC833E7B9019 /* StewardTests.swift */,
 				C5A28224A37CA4FF1FEAB137 /* StopTests.swift */,
 				F699E1C9894B7F4CA90C266B /* StreamTests.swift */,
@@ -341,6 +346,7 @@
 				DA58C64409596C25343E0CE7 /* RoomChecklistStore.swift */,
 				99BE7756A7FF16D575F011F2 /* RoomPreview.swift */,
 				9AF65AAEC8B2AFEB4B0762CE /* RoomStatus.swift */,
+				40AE09620DF2207D00FDA5FA /* ScrollBrain.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -479,6 +485,7 @@
 				D17AC373E2D97B9925C032F8 /* RoomRoutingTests.swift in Sources */,
 				C1939BFDB4B926C8661BC1FB /* RoomStatusTests.swift in Sources */,
 				2F199EAD897C7389B93ED371 /* RouteTests.swift in Sources */,
+				3C89263F03DC8214C8FC69B0 /* ScrollBrainTests.swift in Sources */,
 				0FBF4F77E469127A232146DA /* StewardTests.swift in Sources */,
 				BF6717E93F7830302CD2B2D5 /* StopTests.swift in Sources */,
 				EADFCDD97E5E982685045F28 /* StreamTests.swift in Sources */,
@@ -545,6 +552,7 @@
 				3F70D184D0A19193AA25F473 /* RoomStatus.swift in Sources */,
 				DA5EDE403E83544994CC49AF /* RoomStore.swift in Sources */,
 				2B98AAF3B36FDA0762FFCB64 /* RootView.swift in Sources */,
+				D3994FF4F8135E0708B1A9EB /* ScrollBrain.swift in Sources */,
 				E8B80F143EFA78E8DDC4C953 /* SessionHistoryView.swift in Sources */,
 				0488714B0ACA56A6F88863C2 /* SignInView.swift in Sources */,
 				E81089AB818B6D912CEA6C57 /* SpeechService.swift in Sources */,

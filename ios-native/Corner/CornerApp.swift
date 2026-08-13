@@ -109,6 +109,9 @@ struct CornerApp: App {
         } else if args.contains("-streamingPreview") {
             // R18 N3: the live draft bubble mid-write with the work card under it.
             StreamingPreviewHarness()
+        } else if args.contains("-scrollPreview") {
+            // R18 N4: the reading-history state with the jump-to-latest pill.
+            ScrollPreviewHarness()
         } else if args.contains("-settingsPreview") {
             // The Settings sheet's own render, no auth: identity rows show their
             // signed-out placeholders, the workspace list shows its failure row.

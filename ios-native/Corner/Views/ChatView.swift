@@ -99,6 +99,14 @@ struct ChatView: View {
     // input area swaps to the checklist panel.
     @State private var checklistOpen = false
 
+    // ── The one scroll brain (R18 N4) ────────────────────────────────────────
+    // All scroll decisions run through ScrollBrain; the view only measures and
+    // performs. distanceFromBottom is fed by the thread's geometry preference.
+    @State private var scrollBrain = ScrollBrain()
+    @State private var distanceFromBottom: CGFloat = 0
+    @State private var scrollViewportHeight: CGFloat = 0
+    @State private var showJump = false
+
     /// Computed ONCE per thread render and handed down to every bubble, rather than each
     /// bubble subscribing to the review store itself.
     private var waitingIDs: Set<String> { review.waitingIDs }
@@ -445,6 +453,70 @@ struct ChatView: View {
 
     // MARK: - Thread
 
+    /// Scroll metrics for the one scroll brain (R18 N4): the thread content's
+    /// height and its offset inside the scroll viewport, measured continuously.
+    private struct ThreadMetrics: Equatable {
+        var contentHeight: CGFloat = 0
+        var minY: CGFloat = 0
+    }
+
+    private struct ThreadMetricsKey: PreferenceKey {
+        static let defaultValue = ThreadMetrics()
+        static func reduce(value: inout ThreadMetrics, nextValue: () -> ThreadMetrics) {
+            value = nextValue()
+        }
+    }
+
+    /// The id the tail actions scroll to: the draft while one is writing, else
+    /// the newest thread row. (The old "turn-indicator" anchor was a silent
+    /// no-op — the indicator left the scroll for the pinned inset long ago.)
+    private var tailAnchorID: String? {
+        if model.liveDraft != nil { return "stream-draft" }
+        return model.thread.last?.id
+    }
+
+    /// Height-growth signature: live steps + draft length change the thread's
+    /// height WITHOUT changing its count — the exact case the len-guard alone
+    /// would strand the reader on (the web's liveKey + contentKey, joined).
+    private var growthKey: Int {
+        var hasher = Hasher()
+        for step in model.liveSteps {
+            hasher.combine(step.id)
+            hasher.combine(step.text)
+            hasher.combine(step.timestamp)
+        }
+        hasher.combine(model.liveDraft?.count ?? 0)
+        return hasher.finalize()
+    }
+
+    private func performScroll(_ action: ScrollBrain.Action, proxy: ScrollViewProxy) {
+        guard let anchor = tailAnchorID else { return }
+        switch action {
+        case .none:
+            break
+        case .snapInstant:
+            // After layout (the web's requestAnimationFrame) — snapping before
+            // the new height lands scrolls to the OLD bottom.
+            DispatchQueue.main.async {
+                proxy.scrollTo(anchor, anchor: .bottom)
+            }
+        case .followSmooth:
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo(anchor, anchor: .bottom)
+            }
+        }
+    }
+
+    private func updateJumpPill() {
+        let show = scrollBrain.showJump(
+            awaiting: model.turnIsOpen,
+            distanceFromBottom: distanceFromBottom
+        )
+        if show != showJump {
+            withAnimation(.easeOut(duration: 0.18)) { showJump = show }
+        }
+    }
+
     /// The active thread, filtered by `searchQuery` when search is open.
     /// Outbox items are excluded from search results — they haven't landed yet.
     private var visibleThread: [ThreadItem] {
@@ -524,31 +596,95 @@ struct ChatView: View {
                 // loader) and the composer card — it sat flush under it (Patrik
                 // 2026-08-11).
                 .padding(.bottom, Theme.s3 + 10)
+                // Continuous measurement for the scroll brain: content height +
+                // offset in the scroll's coordinate space.
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: ThreadMetricsKey.self,
+                            value: ThreadMetrics(
+                                contentHeight: geo.size.height,
+                                minY: geo.frame(in: .named("chatThread")).minY
+                            )
+                        )
+                    }
+                )
+            }
+            .coordinateSpace(name: "chatThread")
+            .background(
+                GeometryReader { geo in
+                    Color.clear
+                        .onAppear { scrollViewportHeight = geo.size.height }
+                        .onChange(of: geo.size.height) { _, h in scrollViewportHeight = h }
+                }
+            )
+            .onPreferenceChange(ThreadMetricsKey.self) { metrics in
+                let distance = max(0, metrics.contentHeight + metrics.minY - scrollViewportHeight)
+                distanceFromBottom = distance
+                updateJumpPill()
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
             // Landing in a room means landing at the BOTTOM — the anchor alone can
             // settle a hair short once images and cards size in, so the first ready
-            // render pins the tail explicitly.
+            // render pins the tail explicitly. (The old "turn-indicator" anchor was
+            // a silent no-op; the tail anchor is real.)
             .onChange(of: model.loadState) { _, state in
                 if case .ready = state {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        proxy.scrollTo("turn-indicator", anchor: .bottom)
+                        if let anchor = tailAnchorID {
+                            proxy.scrollTo(anchor, anchor: .bottom)
+                        }
                     }
                 }
             }
-            .onChange(of: model.thread.count) { _, _ in
-                if !isSearching { scrollToEnd(proxy) }
+            // Rule 1 — count changes go through the brain: identical counts never
+            // move, live turns follow, idle follows only near the tail. The old
+            // yank-on-every-change is dead.
+            .onChange(of: model.thread.count) { _, count in
+                guard !isSearching else { return }
+                performScroll(
+                    scrollBrain.onCountChange(
+                        count: count,
+                        awaiting: model.turnIsOpen,
+                        distanceFromBottom: distanceFromBottom
+                    ),
+                    proxy: proxy
+                )
+                updateJumpPill()
+            }
+            // Rule 2 — steps and the draft grow height without a count change;
+            // re-pin the follower at the tail, after layout.
+            .onChange(of: growthKey) { _, _ in
+                guard !isSearching else { return }
+                performScroll(
+                    scrollBrain.onContentGrowth(
+                        awaiting: model.turnIsOpen,
+                        distanceFromBottom: distanceFromBottom
+                    ),
+                    proxy: proxy
+                )
             }
             .onChange(of: model.turn) { _, _ in
-                if !isSearching { scrollToEnd(proxy) }
+                updateJumpPill()
             }
-            // Draft growth changes height without changing the count; keep the
-            // tail in view while it writes. (N4 replaces these blunt follows
-            // with the one stick-to-bottom brain.)
-            .onChange(of: model.liveDraft) { _, value in
-                guard !isSearching, value != nil else { return }
-                proxy.scrollTo("stream-draft", anchor: .bottom)
+            // Rule 3 — the jump pill, anchored to the scroll container (never the
+            // window): idle + far from the tail, one tap re-pins.
+            .overlay(alignment: .bottom) {
+                if showJump, !isSearching {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            if let anchor = tailAnchorID {
+                                proxy.scrollTo(anchor, anchor: .bottom)
+                            }
+                        }
+                    } label: {
+                        JumpToLatestPill()
+                    }
+                    .padding(.bottom, Theme.s3)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .accessibilityLabel("Jump to the latest message")
+                }
             }
             .refreshable { await model.load() }
             // Horizontal flick → the recency carousel: right toward the more recent
@@ -584,14 +720,6 @@ struct ChatView: View {
         return authorKey(thread[index - 1]) != authorKey(thread[index])
     }
 
-    private func scrollToEnd(_ proxy: ScrollViewProxy) {
-        // The turn indicator lives above the composer now, outside the scroll, so
-        // the newest thread row is always the anchor.
-        guard let anchor = model.thread.last?.id else { return }
-        withAnimation(.easeOut(duration: 0.2)) {
-            proxy.scrollTo(anchor, anchor: .bottom)
-        }
-    }
 
     // MARK: - Turn indicator
 
@@ -1346,6 +1474,25 @@ struct RoomRecoveryNoticeView: View {
                 }
             }
         }
+    }
+}
+
+/// The jump-to-latest pill (R18 N4) — the web's `.jumplive` capsule: accent
+/// ground, white 12.5/600 label, down arrow. Anchored by its caller to the
+/// SCROLL CONTAINER, never the window (the decision record's own doubt #3).
+struct JumpToLatestPill: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "arrow.down")
+                .font(.system(size: 12, weight: .semibold))
+            Text("Jump to latest")
+                .font(.hanken(12.5).weight(.semibold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 14)
+        .frame(height: 34)
+        .background(Theme.accent, in: Capsule())
+        .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
     }
 }
 
