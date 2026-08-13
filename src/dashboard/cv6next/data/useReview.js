@@ -253,11 +253,16 @@ export async function buildDeliverableBody(item) {
 // Only genuinely visual types get a thumbnail; everything else keeps its type glyph.
 // `hasThumb` ('yes'|'no') drives the template's data-switch between <img> and glyph.
 function thumbFor(path, type) {
-  const visual = type === 'image' || type === 'photo' || type === 'siteshot';
+  const visual = type === 'image' || type === 'photo' || type === 'siteshot' || type === 'video';
   if (!visual || !path) return { thumb: '', hasThumb: 'no' };
   const isAbs = /^https?:\/\//i.test(path);
-  const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${encodeURIComponent(path)}`;
-  return { thumb: src, hasThumb: 'yes' };
+  // Add ?w=120 so the browser loads a 120px thumbnail, not the full asset. The RAG
+  // file endpoint supports ?w= for downscale on both /project-file-raw and /files/.
+  if (isAbs) {
+    const sep = path.includes('?') ? '&' : '?';
+    return { thumb: `${path}${sep}w=120`, hasThumb: 'yes' };
+  }
+  return { thumb: `https://rag.aheadofmarket.com/project-file-raw?path=${encodeURIComponent(path)}&w=120`, hasThumb: 'yes' };
 }
 
 // Collapse a run of sequential same-project frames (render-0118 … render-0139) into
