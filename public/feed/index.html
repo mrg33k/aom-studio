@@ -81,7 +81,7 @@ a{color:inherit}
 
 /* card image hero (optional) */
 .card-img{width:100%;height:36%;flex:none;overflow:hidden;border-bottom:1px solid var(--ink-700)}
-.card-img img{width:100%;height:100%;object-fit:cover;display:block}
+.card-img img,.card-img video{width:100%;height:100%;object-fit:cover;display:block}
 .has-img .core{flex:initial;justify-content:flex-start;padding:8px 0;gap:12px}
 .has-img .headline{font-size:clamp(24px,6vw,36px)}
 @media (min-width:700px){.has-img .headline{font-size:36px}}
@@ -228,10 +228,12 @@ function cardHTML(it, i){
   let host = it.source_name || '';
   try{ host = host || new URL(it.source_url).hostname.replace('www.',''); }catch(_){}
 
-  const hasImg = it.image ? ' has-img' : '';
-  const imgBlock = it.image
-    ? `<div class="card-img"><img src="${esc(it.image)}" alt="" loading="lazy"></div>`
-    : '';
+  const hasMedia = (it.image || it.video) ? ' has-img' : '';
+  const mediaBlock = it.video
+    ? `<div class="card-img"><video src="${esc(it.video)}" autoplay loop muted playsinline></video></div>`
+    : it.image
+      ? `<div class="card-img"><img src="${esc(it.image)}" alt="" loading="lazy"></div>`
+      : '';
   const subBlock = it.subtitle
     ? `<p class="subtitle">${esc(it.subtitle)}</p>`
     : '';
@@ -245,7 +247,7 @@ function cardHTML(it, i){
     : '';
 
   return `<div class="stage">
-    ${imgBlock}
+    ${mediaBlock}
     <div class="head">
       <span class="lane">${esc(lane.tag)}</span>
       <span class="date">${dateTxt}</span>
@@ -276,7 +278,7 @@ function buildFeed(feedEl, items, key){
     const sec = document.createElement('section');
     sec.className='item'; sec.dataset.i=i; sec.id=it.id;
     sec.innerHTML = cardHTML(it,i);
-    if(it.image) sec.classList.add('has-img');
+    if(it.image || it.video) sec.classList.add('has-img');
     if(it._update) sec.classList.add('agent-update');
     feedEl.appendChild(sec);
   });
@@ -290,6 +292,13 @@ function buildFeed(feedEl, items, key){
     if(best>=0 && best!==s.active && bestR>=.5){
       s.active=best;
       if(key===state.tab) updateCounter();
+      /* play/pause videos based on visibility */
+      s.shells.forEach((el,j)=>{
+        const v=el.querySelector('video');
+        if(!v) return;
+        if(j===best) v.play().catch(()=>{});
+        else v.pause();
+      });
     }
   },{root:feedEl,threshold:[0,.25,.5,.75,1]});
   s.shells.forEach(el=>s.observer.observe(el));

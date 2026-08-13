@@ -5,51 +5,303 @@
    "items": [
     {
      "lane": "claude-animation",
-     "headline": "New community skill pack: GSAP/SVG/Lottie web-animation skills for Claude Code",
-     "body": "iart-ai/web-animation-skills is a separate 9-skill pack (gsap-web, 60fps-animation, page-transition-animation, accessible-animation, micro-interaction, glassmorphism, svg-animation, lottie-animation, ascii-animation) distinct from the already-covered motion-skills 51-pack — this one targets code-driven DOM/SVG web motion rather than full video production. Useful for CV6/dashboard UI polish, not just reels.",
-     "action": "Trial gsap-web + accessible-animation skills on one CV6 UI polish task and compare to impeccable's current motion guidance.",
-     "source_name": "GitHub — iart-ai/web-animation-skills",
-     "source_url": "https://github.com/iart-ai/web-animation-skills"
+     "headline": "MiniMax H3 Ships Open Weights: #1 AI Video Editor Goes Local",
+     "body": "MiniMax released H3 (Hailuo 3.0) open weights on August 3 -- a 33B-parameter omni-modal model generating 2K video with native stereo audio in 4-15 second clips. It ranks #1 in video editing and top-3 in text-to-video on Artificial Analysis. Accepts up to 9 reference images, 3 video clips, and 3 audio clips as input, making it the most flexible multi-reference video model available.",
+     "action": "Test H3 via the Hailuo API at $0.13/sec for client video edits and compare output quality against Seedance 2.0 for AOM social content.",
+     "source_name": "Hugging Face",
+     "source_url": "https://huggingface.co/blog/ResterChed/minimax-h3-hailuo-3-0",
+     "image": "https://cdn.hailuoai.video/open-hailuo-video-web/public_assets/8b252368-605f-4917-a4f5-1ed324f9f0f3.png",
+     "video": null
     },
     {
      "lane": "claude-animation",
-     "headline": "Independent Remotion skill for Claude adds automatic frame-inspection QA before delivery",
-     "body": "haidrrrry/claude-remotion-skill is a community (MIT) alternative to remotion-dev/skills: it encodes 10 motion-design rules, 17 reusable motion patterns, and an automatic render-then-inspect-frames QA step before handing back a clip. That QA pattern maps directly onto how AOM's social-reels pipeline captures and verifies MP4 output.",
-     "action": "Read the QA/frame-inspection pattern in this skill and consider porting it into social-reels' capture-and-verify step.",
-     "source_name": "GitHub — haidrrrry/claude-remotion-skill",
-     "source_url": "https://github.com/haidrrrry/claude-remotion-skill"
+     "headline": "Kling 3.0 Elements: Upload 4 References, Lock Characters",
+     "body": "Kling VIDEO 3.0 Omni's Elements 3.0 feature lets you upload up to 4 reference images or videos per element and maintain visual consistency across every generated scene. The model analyzes 3D structure and motion from video references, tracks up to 3 people independently, and generates native 4K at 60fps with multilingual lip-sync and voice cloning from a 3-second sample.",
+     "action": "Wire Kling 3.0 Omni into the AOM video pipeline for multi-shot client content where character consistency matters.",
+     "source_name": "Picsart / Kling AI",
+     "source_url": "https://picsart.com/ai-models/kling-3-0/",
+     "image": "https://cdn-cms-uploads.picsart.com/cms-uploads/1d9e87da-cba5-4748-9f29-c9e2ad834448.webp",
+     "video": null
+    },
+    {
+     "lane": "claude-animation",
+     "headline": "Seedance 2.5: 30-Second Native Clips, No Stitching",
+     "body": "ByteDance announced Seedance 2.5 at the Volcano Engine FORCE conference. It generates full 30-second 4K clips in a single pass with no stitching, accepts up to 50 omni-modal reference inputs, and uses a unified audio-video architecture that holds character appearance, lighting, and motion style across the entire duration.",
+     "action": "Monitor the enterprise beta for API access -- 30-second single-shot generation eliminates the biggest friction in AI video production.",
+     "source_name": "TechTimes",
+     "source_url": "https://www.techtimes.com/articles/318975/20260624/bytedance-seedance-25-native-30-second-ai-video-no-stitching-required.htm",
+     "image": "https://files.bestcrm4startups.com/uploader/blog/seedance2/covers/47ee0f6b-938c-4994-9073-2f7095e8f670.png",
+     "video": null
+    },
+    {
+     "lane": "claude-animation",
+     "headline": "Claude Remotion Skill: Prompt-to-MP4 Motion Graphics",
+     "body": "An open-source Claude Code skill turns natural language prompts into professional motion graphics via Remotion. It handles animated logos, kinetic typography, brand intros, vertical-format social content, and product explainers with professional easing and staggered choreography -- then auto-renders to MP4 with frame-by-frame verification.",
+     "action": "Install this skill and route all templated social motion work through it instead of After Effects.",
+     "source_name": "GitHub",
+     "source_url": "https://github.com/haidrrrry/claude-remotion-skill",
+     "image": "https://github.com/haidrrrry/claude-remotion-skill/raw/main/demo.gif",
+     "video": "https://github.com/haidrrrry/claude-remotion-skill/raw/main/demo.mp4"
+    },
+    {
+     "lane": "claude-animation",
+     "headline": "LottieFiles MCP Server: AI Agents Create Animations Live",
+     "body": "LottieFiles released an official MCP server that lets Claude Code and 40+ other AI agents create and edit production-ready Lottie animations through natural language. Full layer and shape management, keyframe animation with custom easing, gradient fills, trim paths, multi-scene workflows, and exports to Lottie JSON and dotLottie.",
+     "action": "Connect the Lottie Creator MCP to AOM's Claude Code setup for on-demand UI animations and micro-interactions.",
+     "source_name": "LottieFiles",
+     "source_url": "https://docs.lottiefiles.com/en/creator/13_ai-tools/lottie-creator-mcp",
+     "image": "https://camo.githubusercontent.com/e2f9ad09619e9fb3f396ef35caa1b1dd554beaac796dc4b999b1026fdbd8420b/68747470733a2f2f6c6f747469652e686f73742f63646235653734392d663339332d343333332d616432332d3832303066313231653864332f5a3473495339784b44432e7376673f763d31",
+     "video": null
     },
     {
      "lane": "vs-corner",
-     "headline": "Devin Desktop ships Spaces + Subagents: shared-context containers for multi-agent work",
-     "body": "Cognition's Devin Desktop added \"Spaces\" (July 29) that group agent sessions, PRs, files and context into one task-level container so multiple agents — Devin, Claude Agent, Codex, OpenCode — share the same working understanding via the open Agent Client Protocol. Aug 10 added a full Subagents management panel, flat agents/<name>.md subagent definitions, and org-level permission composition where an explicit deny always wins.",
-     "action": "Prototype a Space-style container for Corner rooms bundling a task's chat, files, and worker sessions, and audit permission composition against theirs.",
-     "source_name": "Devin Docs Changelog",
-     "source_url": "https://docs.devin.ai/desktop/changelog"
+     "headline": "Grok Bot Ships: Persistent AI Agents That Sign Into Your Apps",
+     "body": "SpaceXAI launched Grok Bot in early beta on August 11. Each bot gets its own persistent cloud VM, signs into your actual tools with real credentials, and keeps working after you close your laptop. Bots coordinate through shared context, learn by watching you work, and remember across sessions. Available at $120/mo on premium tiers.",
+     "action": "Explore adding persistent tool auth as a differentiator over chat-only orchestration.",
+     "source_name": "Trending Topics EU",
+     "source_url": "https://www.trendingtopics.eu/grok-bot-spacexai/",
+     "image": "https://www.trendingtopics.eu/wp-content/uploads/2026/08/Grok_Bot-780x439.png",
+     "video": null
     },
     {
      "lane": "vs-corner",
-     "headline": "MCP 2026-07-28 spec goes stateless and formalizes a Tasks lifecycle for long-running work",
-     "body": "The Model Context Protocol's July 28 release moved from a stateful, session-based model to stateless request/response (serverless/edge-deployable) and graduated MCP Tasks to an official extension: tool calls return a task handle that clients poll via tasks/get, tasks/update, tasks/cancel. MCP Apps also graduated, letting servers render interactive UI inline in a conversation.",
-     "action": "Map Corner's dispatched-task/worker pattern onto the MCP Tasks handle model so external tools could poll a Corner worker without a custom integration.",
-     "source_name": "Claude by Anthropic",
-     "source_url": "https://claude.com/blog/bringing-mcp-2026-07-28-to-claude"
+     "headline": "Meta Drops Muse Code: Sub-Agents Fan Out in Parallel",
+     "body": "Meta launched Muse Code on August 5, a terminal-based coding agent powered by the new Muse Spark 1.2 model. Its standout feature is automatic fan-out: when a job is big enough, it spawns sub-agents working simultaneously in isolated worktrees. A demo showed six game features built at once without conflicts.",
+     "action": "Surface agent parallelism visually in the dashboard the way Devin does with its Command Center.",
+     "source_name": "Forbes",
+     "source_url": "https://www.forbes.com/sites/jonmarkman/2026/08/06/meta-launches-muse-code-a-new-ai-coding-agent-powered-by-spark-12/",
+     "image": "https://imageio.forbes.com/specials-images/imageserve/6a748c5f13d55c9938effbe9/Photo-Illustrations--Meta-Launches-Muse-Image/0x0.jpg?width=960",
+     "video": null
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "Devin Desktop Ships Agent Command Center",
+     "body": "Devin Desktop shipped its Agent Command Center as the default view: a Kanban board showing every local and cloud agent by status. August updates added automation queueing with configurable concurrency, GitLab triggers, and Spaces for sharing context between agents. Word-level diff highlighting and Figma live embeds round out the release.",
+     "action": "Steal the visual language: status badges, concurrency indicators, and the /handoff command pattern.",
+     "source_name": "Devin Docs",
+     "source_url": "https://docs.devin.ai/desktop/agent-command-center",
+     "image": "https://devin.ai/images/blog/devin-desktop/ide-showcase.png",
+     "video": "https://exafunction.github.io/public/images/blog/windsurf-2-0/agent-editor-open.mp4"
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "Claude Cowork Goes Cloud: Tasks Run Without Any Device",
+     "body": "Anthropic expanded Claude Cowork from desktop-only to web and mobile, with cloud sessions that keep running when every device is offline. Max subscribers can start a task on desktop, monitor on mobile, and pick up results on the web. The platform now supports parallel task queuing and scheduled tasks.",
+     "action": "Double down on the team-of-agents story and make mobile monitoring a priority.",
+     "source_name": "Fingerlakes1",
+     "source_url": "https://www.fingerlakes1.com/2026/07/09/claude-cowork-ai-agent-launches-as-anthropic-expands-ai-assistant-to-cloud-and-mobile/",
+     "image": "https://www.fingerlakes1.com/wp-content/uploads/2026/07/Claude-Cowork-AI-Agent.jpg",
+     "video": null
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "AWS Bedrock AgentCore: 14-Day Persistent Multi-Agent Sessions",
+     "body": "AWS shipped runtime instances for Bedrock AgentCore giving production AI agents managed EC2 infrastructure with sessions that persist up to 14 days. Multiple agents share a host, collaborate through a common file system, and get GPU acceleration for heavy tasks. Supports CrewAI, LangGraph, LlamaIndex, and Strands frameworks.",
+     "action": "Evaluate AgentCore as the backend for Corner's persistent sessions when scaling beyond single-machine.",
+     "source_name": "AWS News Blog",
+     "source_url": "https://aws.amazon.com/blogs/aws/runtime-instances-persistent-compute-for-production-ai-agents-on-amazon-bedrock-agentcore/",
+     "image": "https://d2908q01vomqb2.cloudfront.net/da4b9237bacccdf19c0760cab7aec4a8359010b0/2026/08/05/agentcore-runtime-instances-header.png",
+     "video": null
     },
     {
      "lane": "vs-aom",
-     "headline": "Klaviyo acquires AI agent startup Agency, absorbing 25-person team into its marketing/support agents",
-     "body": "Klaviyo announced Aug 5, 2026 it's acquiring Agency, the AI-native customer-engagement startup founded by Elias Torres ($32M raised from Sequoia, Menlo, Felicis), who becomes Klaviyo's Chief Product Officer. The deal folds Agency's proactive AI agents into Klaviyo's Composer (AI campaign builder) and Customer Agent products, using Klaviyo's claimed 9 billion consumer profiles as the data layer — a template for how big martech platforms are buying AI-agency capability outright instead of building it.",
-     "action": "Position AOM's pitch around judgment and brand-specific creative direction that platform-bundled AI agents can't replicate.",
-     "source_name": "Klaviyo Newsroom",
-     "source_url": "https://www.klaviyo.com/newsroom/agency-elias-torres"
+     "headline": "AI Digital Buys Agency, Cuts 12-Week Production to 1",
+     "body": "Miami-based AI Digital acquired a Barcelona creative agency to scale its AI Creative Studio. The studio compresses 8-12 week creative production cycles into roughly one week by embedding generative AI directly into media workflows -- cinematic video, UGC adaptation, HTML5 ads, CTV formats -- with human art direction on top.",
+     "action": "Study their positioning and sharpen AOM's differentiator: vertical specialization in construction.",
+     "source_name": "PPC Land",
+     "source_url": "https://ppc.land/ai-digital-buys-barcelona-agency-to-feed-a-studio-that-cuts-12-weeks-to-one/",
+     "image": "https://cdn.sanity.io/images/k0dlbavy/production/7ca29b913ed150d2a1287cb616600d5802078d10-1920x1468.jpg",
+     "video": null
     },
     {
      "lane": "vs-aom",
-     "headline": "Meta Business Agent starts charging per-token (~$2/M tokens) from Aug 1, 2026 after 1M-business pilot",
-     "body": "Meta's AI agent for WhatsApp/Instagram/Messenger — which fields customer inquiries, books appointments, vets leads, and completes transactions — moved from free pilot to metered paid usage on Aug 1, 2026, following a rollout that hit over 1 million businesses in pilot markets before its June global launch. Meta is now directly monetizing the AI-front-desk function small businesses previously paid agencies or dedicated tools to handle.",
-     "action": "Check whether any AOM construction-client retainer line item overlaps with Meta Business Agent's paid features, and reprice around what a platform-native agent can't do.",
+     "headline": "Superside Ships Brand Brain: AI That Learns Your Brand",
+     "body": "Superside launched Superspace with Brand Brain -- an intelligence layer that captures every brand decision, asset, and feedback loop, then applies that context across all future projects. It includes an AI Briefing Agent that auto-completes briefs and an AI Insights Agent that surfaces campaign patterns.",
+     "action": "Build AOM's equivalent: a per-client brand memory that compounds over the retainer at $2k/mo.",
+     "source_name": "Superside",
+     "source_url": "https://www.superside.com/brandbrain",
+     "image": "https://cdn.sanity.io/images/k0dlbavy/production/861ba16f88b3f8ad6f52595f18ec6a9659af4064-3840x1772.png?q=95&auto=format&fit=min",
+     "video": null
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "Arcads Hits $13M ARR Generating 100K AI Videos a Month",
+     "body": "French startup Arcads.ai raised $16M seed from Eurazeo and Sequoia Scout, already profitable with 6,000+ clients generating over 100,000 AI video ads per month. Their platform creates UGC-style AI actor videos, product demos, and unboxing content in 35+ languages in minutes.",
+     "action": "Position AOM's video work as strategy-led creative direction, not just production. Use Arcads-class tools internally.",
+     "source_name": "Arcads",
+     "source_url": "https://www.arcads.ai/blog/arcads-raises-16m-seed",
+     "image": "https://cdn.prod.website-files.com/685001cf708232477ed43d3f/68da563ea5e493b26164233f_89390cabe8513c0347edea93f13c221e_videoframe_0.webp",
+     "video": null
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "Klaviyo Acquires AI Agent Startup, Bakes Agents Into CRM",
+     "body": "Klaviyo acquired Agency (Elias Torres's AI-native startup, $32M raised from Sequoia/Menlo/Felicis) making Torres their new CPO. The deal folds Agency's proactive AI agents into Klaviyo's Composer and Customer Agent products. When the CRM itself can compose campaigns, the agency's value shifts to creative and strategy.",
+     "action": "Watch for Klaviyo adding AI creative generation. AOM's defense: contractor-specific creative taste.",
      "source_name": "TechCrunch",
-     "source_url": "https://techcrunch.com/2026/06/03/metas-ai-agent-for-whatsapp-business-is-now-available-globally/"
+     "source_url": "https://techcrunch.com/2026/08/05/klaviyo-acquires-elias-torres-agency-in-full-circle-reunion-for-tech-founders/",
+     "image": "https://techcrunch.com/wp-content/uploads/2026/08/Screenshot-2026-08-05-at-8.53.41-PM.png?w=1024",
+     "video": null
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "Handoff.ai Raises $5.8M to Be the AI OS for Contractors",
+     "body": "Handoff.ai raised $5.8M from Nemetschek and Masco to build an AI-powered platform for residential contractors -- instant estimates from blueprints, project management, CRM, invoicing. They have 10,000+ monthly active users managing $6B+ in annualized projects, now signaling expansion toward marketing.",
+     "action": "Partner or preempt: AOM should be the creative engine these platforms plug into, not compete with their ops tools.",
+     "source_name": "Handoff.ai",
+     "source_url": "https://www.handoff.ai/blog/handoff-raises-5-8m-for-residential-construction",
+     "image": "https://cdn.sanity.io/images/j8uzpe76/production/80c3f532df4e45a6d949c715e444703a812556b4-4800x2512.png?w=1200&q=85&fit=max&auto=format",
+     "video": null
+    },
+    {
+     "lane": "construction-intel",
+     "headline": "Data Center Construction Hits $81.5B YTD, Past All of 2025",
+     "body": "Year-to-date construction starts through June 2026 reached $81.5 billion across 116 new projects, already surpassing 2025's full-year total of $72.5 billion. Average facility size has more than doubled since 2022 to nearly 700,000 sq ft, and costs have surged to $570/sq ft median.",
+     "action": "Position AOM as the branding partner for contractors chasing data center work.",
+     "source_name": "ConstructConnect",
+     "source_url": "https://news.constructconnect.com/august-2026-data-center-report-construction-starts-total-22.3-billion-second-highest-on-record",
+     "image": "https://news.constructconnect.com/hs-fs/hubfs/2026-08%20--%20ytd%20spending%20chart.jpg",
+     "video": null
+    },
+    {
+     "lane": "construction-intel",
+     "headline": "Contractor Robotics Adoption Jumps 29% to 79% in One Year",
+     "body": "A BuiltWorlds survey shows 79% of general and specialty contractors now use jobsite robotics, up from 29% in 2025. Accuracy improvements (75%) beat labor reduction (63%) as the top cited benefit. Boston Dynamics leads adoption while FieldAI won the 2026 Contractor's Choice Award.",
+     "action": "Build a case study template for contractors adopting robotics -- 'we use the latest tech' is a hiring magnet.",
+     "source_name": "Contractor Magazine",
+     "source_url": "https://www.contractormag.com/technology/news/55395720/contractor-adoption-of-jobsite-robotics-more-than-doubles-in-2026",
+     "image": "https://img.contractormag.com/files/base/ebm/contractormag/image/2026/08/6a7247af05aa7d9bd1574d5e-roboticsgraphbuiltworlds.png",
+     "video": null
+    },
+    {
+     "lane": "construction-intel",
+     "headline": "TikTok Is Now the Growth Engine for Construction Marketing",
+     "body": "Social media has become the backbone of construction company marketing in 2026, with TikTok driving the most inquiry volume through short-form build videos and transformations. Social presence now directly impacts local SEO rankings and AI-generated search results.",
+     "action": "Use this as sales ammunition: contractors not on TikTok/IG are leaving leads on the table.",
+     "source_name": "Drive Traffic Media",
+     "source_url": "https://www.drivetrafficmedia.com/why-social-media-is-now-the-backbone-of-construction-company-marketing-in-2026/",
+     "image": "https://www.drivetrafficmedia.com/wp-content/uploads/2026/05/Why-Social-Media-Is-Now-the-Backbone-of-Construction-Company-Marketing-in-2026-WEBSITE-1.jpg",
+     "video": null
+    },
+    {
+     "lane": "construction-intel",
+     "headline": "Construction M&A Wave: Procore, Trimble, Autodesk Buying AI",
+     "body": "Procore acquired AI agent firm Datagrid, Autodesk bought Rhumbix, Trimble picked up Document Crunch, and Nemetschek acquired HCSS. AI is now table stakes in construction, and every major platform is racing to integrate it.",
+     "action": "Create a feed post breaking down what these acquisitions mean for the average contractor.",
+     "source_name": "Construction Dive",
+     "source_url": "https://www.constructiondive.com/news/merger-acquistion-roundup-construction-tech-autodesk-trimble/818155/",
+     "image": "https://imgproxy.divecdn.com/jAKD-anBWRluwQ9qa3CgmW0konP7PtyH7tEJgqbJeSE/g:ce/rs:fill:1200:675:1/Z3M6Ly9kaXZlc2l0ZS1zdG9yYWdlL2RpdmVpbWFnZS9HZXR0eUltYWdlcy0xMzIxODkxMTAzLmpwZw==.webp",
+     "video": null
+    },
+    {
+     "lane": "construction-intel",
+     "headline": "Autodesk University Hits Vegas Sept 15-17: 10,000+ AEC Pros",
+     "body": "AU 2026 returns to the Venetian in Las Vegas with 10,000+ professionals from construction, architecture, and engineering. Focus areas include digital twins, AI-driven design simulation, and sustainable building practices.",
+     "action": "Prospect contractors attending AU 2026 for post-event content packages.",
+     "source_name": "Autodesk",
+     "source_url": "https://conferences.autodesk.com/flow/autodesk/au2026/web/page/faq",
+     "image": "https://neilsoft.com/images/banners/banner-AU-2026-internal-page-V2.jpg",
+     "video": null
+    },
+    {
+     "lane": "ai-packaging",
+     "headline": "HubSpot Cuts AI Agent Price to $0.50/Resolution",
+     "body": "HubSpot shifted its Breeze Customer Agent from $1.00 per conversation to $0.50 per resolved conversation. Unresolved conversations cost nothing. Across 8,000+ activated customers, the agent resolves 65% of conversations and cuts resolution time by 39%. Outcome-based pricing is replacing usage-based pricing.",
+     "action": "Model AOM retainers with an outcome-based component: fixed base plus per-deliverable fee.",
+     "source_name": "HubSpot",
+     "source_url": "https://www.hubspot.com/company-news/hubspots-customer-agent-and-prospecting-agent-now-you-pay-when-the-task-is-complete",
+     "image": "https://www.hubspot.com/hubfs/Untitled%20design%20%281%29-Mar-31-2026-04-59-16-3850-PM.png",
+     "video": null
+    },
+    {
+     "lane": "ai-packaging",
+     "headline": "AI-Native Agencies Raise $100M+ Selling Outcomes, Not Software",
+     "body": "Crosby (AI law firm) closed a $60M Series B charging flat-fee contract reviews at ~$400/doc. WithCoverage raised $42M and Auctor pulled $20M from Sequoia. The pattern: sell the finished work product at a fixed price, not a software license. These firms compete against labor budgets, which are 6x larger than software budgets.",
+     "action": "Position AOM packages as finished creative deliverables at fixed prices, pitching against the client's existing labor spend.",
+     "source_name": "Forbes",
+     "source_url": "https://www.forbes.com/sites/josipamajic/2026/04/21/ai-native-agencies-sell-outcomes-not-software-and-investors-are-paying-attention/",
+     "image": "https://imageio.forbes.com/specials-images/imageserve/69d6304a01ca6b3e892b77da/CHINA-TECHNOLOGY-AI-MANUS/0x0.jpg?width=960",
+     "video": null
+    },
+    {
+     "lane": "ai-packaging",
+     "headline": "Agencies Treating AI Efficiency as Margin, Not Discount",
+     "body": "Winning agencies in 2026 capture AI speed gains as healthier margins rather than passing savings to clients as lower prices. WPP has shifted a substantial share of net sales to performance-based terms. Hourly billing is fading fastest; productized per-deliverable packages see the widest margin expansion.",
+     "action": "Never discount because AI made the work faster. Price on output value and let AI-driven speed flow to margin.",
+     "source_name": "Kampaign Lab",
+     "source_url": "https://www.kampaignlab.com/agency-freelance/how-agencies-are-pricing-ai-assisted-work-in-2026",
+     "image": "https://www.kampaignlab.com/storage/blogs/how-agencies-are-pricing-ai-assisted-work-in-2026-featured.webp?v=1786637366",
+     "video": null
+    },
+    {
+     "lane": "ai-packaging",
+     "headline": "Lightbringer Hits 200 Clients With Full-Stack AI Service",
+     "body": "Swedish AI-native patent firm Lightbringer reported 200+ clients across 17 countries and 300% YoY revenue growth. The company employs both AI and patent attorneys in-house, delivering filings in days at roughly 50% the cost of traditional firms. Owning both the AI and the professional under one roof beats selling software.",
+     "action": "Study Lightbringer's full-stack model as a template: AOM already owns the AI and creative talent.",
+     "source_name": "Forbes",
+     "source_url": "https://www.forbes.com/sites/guneyyildiz/2026/07/27/how-ai-native-service-firms-change-professional-work/",
+     "image": "https://imageio.forbes.com/specials-images/imageserve/6a67c4a68ce39845cc105ca3/concept-of--AI-and-computer-technology/0x0.jpg?width=960",
+     "video": null
+    },
+    {
+     "lane": "ai-packaging",
+     "headline": "White-Label AI Agents Now a $1M ARR Line for Agencies",
+     "body": "Agencies reselling white-label AI voice and chat agents are reporting $50K-$150K in new recurring revenue, with top performers hitting $1M ARR from 30-50 clients. Platforms like Synthflow and GoHighLevel offer turnkey infrastructure while agencies charge clients $500-$1,500/month at 70-80% gross margins.",
+     "action": "Evaluate adding a branded AI receptionist or lead qualifier at $500-1K/month as a sticky add-on to creative retainers.",
+     "source_name": "Pickaxe",
+     "source_url": "https://pickaxe.co/post/white-label-ai-tools-for-agencies",
+     "image": "https://pickaxe.co/assets/images/blog/white-label-ai-tools-for-agencies/hero.webp",
+     "video": null
+    },
+    {
+     "lane": "tool-releases",
+     "headline": "DeepSeek V4 Pro Ships: 1.6T Params at $0.44/M Input",
+     "body": "DeepSeek's flagship V4 Pro left preview on August 13. It is a mixture-of-experts model with 1.6 trillion total parameters (49B active per token), a 1M-token context window, and 384K max output. API pricing lands at $0.435/M input and $0.87/M output, making it one of the cheapest frontier-class models available.",
+     "action": "Test DeepSeek V4 Pro as a cost-efficient worker model for high-volume agent tasks like research and lead enrichment.",
+     "source_name": "Unite.AI",
+     "source_url": "https://www.unite.ai/deepseek-ships-v4-pro-as-its-flagship-model-leaves-preview/",
+     "image": "https://www.unite.ai/wp-content/uploads/2026/08/deepseek-ships-v4-pro-flagship-leaves-preview.jpg",
+     "video": null
+    },
+    {
+     "lane": "tool-releases",
+     "headline": "Cloudflare Agents Week: Full Infra Stack for AI Agents",
+     "body": "Cloudflare shipped a comprehensive agent infrastructure suite: sandboxed compute environments with shell and filesystem, Git-compatible Artifacts storage, Cloudflare Mesh for private agent networking, Email Service in public beta, and Browser Run with Live View and 4x concurrency.",
+     "action": "Evaluate Cloudflare Sandboxes and Browser Run as the runtime layer for AOM's dispatched agents.",
+     "source_name": "Cloudflare Blog",
+     "source_url": "https://blog.cloudflare.com/agents-week-in-review/",
+     "image": "https://blog.cloudflare.com/_emdash/api/media/file/01KW451DWTNKYEGKYGBH7PBR3E.png",
+     "video": null
+    },
+    {
+     "lane": "tool-releases",
+     "headline": "MCP Goes Stateless: The Biggest Protocol Shift Yet",
+     "body": "The MCP 2026-07-28 spec dropped the bidirectional stateful protocol for request/response where every request is self-describing and independent. Servers can now deploy on serverless and edge infrastructure. The spec also brings OAuth 2.0/OIDC authorization hardening and a formal extensions framework for MCP Apps and Tasks.",
+     "action": "Audit AOM's MCP server configs for compatibility with the stateless spec.",
+     "source_name": "Anthropic",
+     "source_url": "https://claude.com/blog/bringing-mcp-2026-07-28-to-claude",
+     "image": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6903d229b7f170bab528846d_0df729ce74e4c9dd62c3342c9549ce6c7cef1202-1000x1000.svg",
+     "video": null
+    },
+    {
+     "lane": "tool-releases",
+     "headline": "Seedance 2.5: 30-Second AI Video With 50 References",
+     "body": "ByteDance's Seedance 2.5 doubles clip length to 30 seconds in a single pass and accepts up to 50 multimodal references per generation. It supports region-level redraw editing, native sound, and up to 4K output. Available on Dreamina and fal.ai with no waitlist.",
+     "action": "Run a side-by-side comparison of Seedance 2.5 vs current pipeline on an upcoming client social reel.",
+     "source_name": "Dreamina / CapCut",
+     "source_url": "https://dreamina.capcut.com/seedance/seedance-2-5",
+     "image": "https://i.mscdn.ai/70cbb1ad-08d7-4fdc-ab31-e343780966a6/generated-images/d111f9d2-2c08-4692-b8db-8e0b72d349a5.png?fm=auto&w=1200&fit=cover",
+     "video": null
+    },
+    {
+     "lane": "tool-releases",
+     "headline": "Claude Code 2.1.229: Server Hooks and Plugin Marketplace",
+     "body": "The August 12 Claude Code release adds server-supplied hook support for self-hosted runner sessions, a plugin marketplace with dynamic command sources, and SSE keepalive pings during long thinking pauses. It also fixes MCP OAuth sign-in and adds Remote Control session resume via --continue.",
+     "action": "Update Claude Code to 2.1.231 across all AOM terminals and test the plugin marketplace.",
+     "source_name": "Claude Code Docs",
+     "source_url": "https://code.claude.com/docs/en/changelog",
+     "image": "https://www-cdn.anthropic.com/images/4zrzovbb/website/9890d1bb39c15c41772af22d2282eb612469051c-2880x1620.jpg",
+     "video": null
     }
    ]
   },
@@ -58,11 +310,73 @@
    "items": [
     {
      "lane": "claude-animation",
+     "headline": "New community skill pack: GSAP/SVG/Lottie web-animation skills for Claude Code",
+     "body": "iart-ai/web-animation-skills is a separate 9-skill pack (gsap-web, 60fps-animation, page-transition-animation, accessible-animation, micro-interaction, glassmorphism, svg-animation, lottie-animation, ascii-animation) distinct from the already-covered motion-skills 51-pack \u2014 this one targets code-driven DOM/SVG web motion rather than full video production. Useful for CV6/dashboard UI polish, not just reels.",
+     "action": "Trial gsap-web + accessible-animation skills on one CV6 UI polish task and compare to impeccable's current motion guidance.",
+     "source_name": "GitHub \u2014 iart-ai/web-animation-skills",
+     "source_url": "https://github.com/iart-ai/web-animation-skills",
+     "image": "https://opengraph.githubassets.com/1830fed1a2297a9684395613c8467599b1fe21543cb324d16496ec62099dc7d2/iart-ai/web-animation-skills",
+     "video": null
+    },
+    {
+     "lane": "claude-animation",
+     "headline": "Independent Remotion skill for Claude adds automatic frame-inspection QA before delivery",
+     "body": "haidrrrry/claude-remotion-skill is a community (MIT) alternative to remotion-dev/skills: it encodes 10 motion-design rules, 17 reusable motion patterns, and an automatic render-then-inspect-frames QA step before handing back a clip. That QA pattern maps directly onto how AOM's social-reels pipeline captures and verifies MP4 output.",
+     "action": "Read the QA/frame-inspection pattern in this skill and consider porting it into social-reels' capture-and-verify step.",
+     "source_name": "GitHub \u2014 haidrrrry/claude-remotion-skill",
+     "source_url": "https://github.com/haidrrrry/claude-remotion-skill",
+     "image": "https://opengraph.githubassets.com/31048b1d434727ab0cbd2411ea051835b946b8dd460424623f85c6b29ae828a6/haidrrrry/claude-remotion-skill",
+     "video": null
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "Devin Desktop ships Spaces + Subagents: shared-context containers for multi-agent work",
+     "body": "Cognition's Devin Desktop added \"Spaces\" (July 29) that group agent sessions, PRs, files and context into one task-level container so multiple agents \u2014 Devin, Claude Agent, Codex, OpenCode \u2014 share the same working understanding via the open Agent Client Protocol. Aug 10 added a full Subagents management panel, flat agents/<name>.md subagent definitions, and org-level permission composition where an explicit deny always wins.",
+     "action": "Prototype a Space-style container for Corner rooms bundling a task's chat, files, and worker sessions, and audit permission composition against theirs.",
+     "source_name": "Devin Docs Changelog",
+     "source_url": "https://docs.devin.ai/desktop/changelog",
+     "image": "https://devin.ai/images/blog/devin-desktop/ide-showcase.png",
+     "video": null
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "MCP 2026-07-28 spec goes stateless and formalizes a Tasks lifecycle for long-running work",
+     "body": "The Model Context Protocol's July 28 release moved from a stateful, session-based model to stateless request/response (serverless/edge-deployable) and graduated MCP Tasks to an official extension: tool calls return a task handle that clients poll via tasks/get, tasks/update, tasks/cancel. MCP Apps also graduated, letting servers render interactive UI inline in a conversation.",
+     "action": "Map Corner's dispatched-task/worker pattern onto the MCP Tasks handle model so external tools could poll a Corner worker without a custom integration.",
+     "source_name": "Claude by Anthropic",
+     "source_url": "https://claude.com/blog/bringing-mcp-2026-07-28-to-claude",
+     "image": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6905137f403a1564673d63ca_og_claude-code-remote-mcp.jpg",
+     "video": null
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "Klaviyo acquires AI agent startup Agency, absorbing 25-person team into its marketing/support agents",
+     "body": "Klaviyo announced Aug 5, 2026 it's acquiring Agency, the AI-native customer-engagement startup founded by Elias Torres ($32M raised from Sequoia, Menlo, Felicis), who becomes Klaviyo's Chief Product Officer. The deal folds Agency's proactive AI agents into Klaviyo's Composer (AI campaign builder) and Customer Agent products, using Klaviyo's claimed 9 billion consumer profiles as the data layer \u2014 a template for how big martech platforms are buying AI-agency capability outright instead of building it.",
+     "action": "Position AOM's pitch around judgment and brand-specific creative direction that platform-bundled AI agents can't replicate.",
+     "source_name": "Klaviyo Newsroom",
+     "source_url": "https://www.klaviyo.com/newsroom/agency-elias-torres",
+     "image": "https://www.klaviyo.com/static/klaviyo-social-share-image.jpg",
+     "video": null
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "Meta Business Agent starts charging per-token (~$2/M tokens) from Aug 1, 2026 after 1M-business pilot",
+     "body": "Meta's AI agent for WhatsApp/Instagram/Messenger \u2014 which fields customer inquiries, books appointments, vets leads, and completes transactions \u2014 moved from free pilot to metered paid usage on Aug 1, 2026, following a rollout that hit over 1 million businesses in pilot markets before its June global launch. Meta is now directly monetizing the AI-front-desk function small businesses previously paid agencies or dedicated tools to handle.",
+     "action": "Check whether any AOM construction-client retainer line item overlaps with Meta Business Agent's paid features, and reprice around what a platform-native agent can't do.",
+     "source_name": "TechCrunch",
+     "source_url": "https://techcrunch.com/2026/06/03/metas-ai-agent-for-whatsapp-business-is-now-available-globally/",
+     "image": "https://techcrunch.com/wp-content/uploads/2026/02/whatsapp-iphone-icon.jpg?resize=1200,800",
+     "video": null
+    },
+    {
+     "lane": "claude-animation",
      "headline": "OpenMontage turns a Claude Code agent into a full video production studio",
      "body": "OpenMontage (47.8k stars, AGPL) is an agentic video system: 12 pipelines from Animated Explainer to Documentary Montage, 100+ tools, 15 video-gen providers, all driven from a CLAUDE.md so the agent runs research, script, assets, edit and composition end to end. It is a superset of a hand-built HTML/CSS reel pipeline.",
      "action": "Clone it, run the Animated Explainer pipeline on one AOM reel brief, A/B against our pipeline.",
-     "source_name": "GitHub — OpenMontage",
-     "source_url": "https://github.com/calesthio/OpenMontage"
+     "source_name": "GitHub \u2014 OpenMontage",
+     "source_url": "https://github.com/calesthio/OpenMontage",
+     "image": "https://repository-images.githubusercontent.com/1195360525/645f0bc1-450d-4791-99b8-6102b4bb9f3d",
+     "video": null
     },
     {
      "lane": "vs-corner",
@@ -70,71 +384,89 @@
      "body": "ChatGPT Work agents carry shared team knowledge, run multi-hour workflows unsupervised, and output finished sheets, slides and hosted apps rather than chat replies. The unit of value is the completed artifact; agents are team infrastructure by default, not per-user threads.",
      "action": "Make every Corner room deliverable-first: agents ship files to the Files panel by default, chat is the log.",
      "source_name": "OpenAI",
-     "source_url": "https://openai.com/index/introducing-workspace-agents-in-chatgpt/"
+     "source_url": "https://openai.com/index/introducing-workspace-agents-in-chatgpt/",
+     "image": null,
+     "video": null
     },
     {
      "lane": "vs-aom",
-     "headline": "Superside now refunds AI-saved credits — efficiency is the product, not the margin",
+     "headline": "Superside now refunds AI-saved credits \u2014 efficiency is the product, not the margin",
      "body": "The biggest creative-subscription player went AI-first: Brand Brain agents carry each client's brand context through production, and when AI finishes a 10-credit project in 6, the 4 saved credits go back to the customer. AI efficiency became a visible, contractual client benefit.",
      "action": "Show clients per-project AI-savings receipts and build a reusable per-client brand brain.",
      "source_name": "Superside",
-     "source_url": "https://www.superside.com/ai-creative"
+     "source_url": "https://www.superside.com/ai-creative",
+     "image": "https://cdn.sanity.io/images/k0dlbavy/production/e774f89c559b8cdc7752455e7f563c1f0be1f74b-1190x625.png?rect=0,2,1190,623&w=1200&h=628&q=95&auto=format",
+     "video": null
     },
     {
      "lane": "claude-animation",
      "headline": "51 motion-graphics skills for coding agents just went open source, kinetic type included",
-     "body": "iart.ai's motion-skills packages 51 skills in 14 packs — kinetic typography, TikTok/Reels, data-viz, WebGL, Manim — that auto-discover in Claude Code and activate when the work matches. It injects motion-design craft directly into the agent authoring reels, without changing the render stack.",
+     "body": "iart.ai's motion-skills packages 51 skills in 14 packs \u2014 kinetic typography, TikTok/Reels, data-viz, WebGL, Manim \u2014 that auto-discover in Claude Code and activate when the work matches. It injects motion-design craft directly into the agent authoring reels, without changing the render stack.",
      "action": "Install the kinetic-typography and Reels packs into the social-reels build agent this week.",
-     "source_name": "GitHub — iart-ai/motion-skills",
-     "source_url": "https://github.com/iart-ai/motion-skills"
+     "source_name": "GitHub \u2014 iart-ai/motion-skills",
+     "source_url": "https://github.com/iart-ai/motion-skills",
+     "image": "https://opengraph.githubassets.com/3d2ec9ee00c21305134a4ae1725895fec0fc74086e73eba63aabc20f5aafde38/iart-ai/motion-skills",
+     "video": null
     },
     {
      "lane": "vs-corner",
      "headline": "Claude Cowork went cloud: agent work survives every device going offline",
-     "body": "Cowork expanded from desktop to web and mobile; sessions run on Anthropic servers, so a task started on a laptop keeps running and scheduled jobs fire with the machine asleep, approvable from a phone. Corner's rooms ride a local Mac bridge — this is exactly the failure mode we have.",
+     "body": "Cowork expanded from desktop to web and mobile; sessions run on Anthropic servers, so a task started on a laptop keeps running and scheduled jobs fire with the machine asleep, approvable from a phone. Corner's rooms ride a local Mac bridge \u2014 this is exactly the failure mode we have.",
      "action": "Make rooms cloud-resumable with a mobile progress-and-approve view.",
      "source_name": "Anthropic",
-     "source_url": "https://claude.com/blog/cowork-web-mobile"
+     "source_url": "https://claude.com/blog/cowork-web-mobile",
+     "image": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a4d224da8363d1eb2751fe3_og_cowork-web-mobile.jpg",
+     "video": null
     },
     {
      "lane": "vs-aom",
      "headline": "YC is now funding AOM-shaped businesses as venture-scale software",
-     "body": "Y Combinator's Request for Startups explicitly calls for AI-native agencies — firms using AI to deliver finished work at 65-80% software-like margins instead of the headcount-scaled agency trap. A wave of funded competitors is coming into service verticals with our exact operating model.",
+     "body": "Y Combinator's Request for Startups explicitly calls for AI-native agencies \u2014 firms using AI to deliver finished work at 65-80% software-like margins instead of the headcount-scaled agency trap. A wave of funded competitors is coming into service verticals with our exact operating model.",
      "action": "Run AOM on software metrics and deepen the construction-niche moat before funded generalists arrive.",
      "source_name": "Y Combinator",
-     "source_url": "https://x.com/ycombinator/status/2018414131720958094"
+     "source_url": "https://x.com/ycombinator/status/2018414131720958094",
+     "image": "https://pbs.twimg.com/amplify_video_thumb/2018410325486587904/img/w7WKpip575KqKjVZ.jpg",
+     "video": null
     },
     {
      "lane": "claude-animation",
      "headline": "Remotion's official skills turn Claude into a deterministic prompt-to-MP4 renderer",
-     "body": "remotion-dev/skills ships 13 official skills so Claude writes correct Remotion React from a prompt, updated as of today. Remotion renders frame-accurately server-side — replacing browser capture of HTML storyboards: no capture flakiness, exact timing, parametrized batch renders.",
+     "body": "remotion-dev/skills ships 13 official skills so Claude writes correct Remotion React from a prompt, updated as of today. Remotion renders frame-accurately server-side \u2014 replacing browser capture of HTML storyboards: no capture flakiness, exact timing, parametrized batch renders.",
      "action": "Rebuild one shipped reel as a Remotion comp and compare frame fidelity against browser capture.",
-     "source_name": "GitHub — remotion-dev/skills",
-     "source_url": "https://github.com/remotion-dev/skills"
+     "source_name": "GitHub \u2014 remotion-dev/skills",
+     "source_url": "https://github.com/remotion-dev/skills",
+     "image": "https://opengraph.githubassets.com/bea07cbbe6af64e95798e4413bd11ea349e36965fa6b9e96cd85e5aed8f70b76/remotion-dev/skills",
+     "video": null
     },
     {
      "lane": "vs-corner",
      "headline": "Dust turned rooms into governed agent spaces with write-once shared skills",
-     "body": "Dust shipped per-Pod instruction files auto-injected into prompts, default agents and skills per Pod, scheduled triggers, and admin governance. It is Corner's room concept but multiplayer — and one skill written once upgrades every agent in the workspace at the same time.",
+     "body": "Dust shipped per-Pod instruction files auto-injected into prompts, default agents and skills per Pod, scheduled triggers, and admin governance. It is Corner's room concept but multiplayer \u2014 and one skill written once upgrades every agent in the workspace at the same time.",
      "action": "Ship shared skills across Corner agents plus a per-room instructions file and default agent.",
      "source_name": "Dust.tt",
-     "source_url": "https://docs.dust.tt/docs/changelog"
+     "source_url": "https://docs.dust.tt/docs/changelog",
+     "image": null,
+     "video": null
     },
     {
      "lane": "vs-aom",
      "headline": "Palette sells the workflow, not the deliverable: brand-locked media on repeat",
-     "body": "Palette (YC, launched two weeks ago by MIT multimodal researchers) unifies creative tools into one engine where teams produce brand-consistent video and ads in one conversation — then save the process as a repeatable, controllable workflow. Workflow-as-asset beats one-off pieces from ad-hoc pipelines.",
-     "action": "Package AOM's pipelines as named per-client workflows — footage in, branded set out — and sell the system.",
-     "source_name": "YC Launches — Palette",
-     "source_url": "https://www.ycombinator.com/launches/SDV-palette-an-ai-native-media-platform"
+     "body": "Palette (YC, launched two weeks ago by MIT multimodal researchers) unifies creative tools into one engine where teams produce brand-consistent video and ads in one conversation \u2014 then save the process as a repeatable, controllable workflow. Workflow-as-asset beats one-off pieces from ad-hoc pipelines.",
+     "action": "Package AOM's pipelines as named per-client workflows \u2014 footage in, branded set out \u2014 and sell the system.",
+     "source_name": "YC Launches \u2014 Palette",
+     "source_url": "https://www.ycombinator.com/launches/SDV-palette-an-ai-native-media-platform",
+     "image": "https://bookface-static.ycombinator.com/assets/ycdc/yc-og-image-c440a0ad1dacfb86eeeb343717479cc54d256614449b4ef719977a0a451f8bc8.png",
+     "video": null
     },
     {
      "lane": "claude-animation",
      "headline": "Seedance 2.0 renders designed kinetic typography with native audio at ~$0.30/sec",
-     "body": "ByteDance's Seedance 2.0 takes image plus text and outputs 4-15s clips up to 1080p with native music and SFX, multi-shot edits and director-level camera control — handling titles, lower thirds and lyric lines with beat-aware pacing. A generative lane for hero motion shots code rendering cannot produce.",
+     "body": "ByteDance's Seedance 2.0 takes image plus text and outputs 4-15s clips up to 1080p with native music and SFX, multi-shot edits and director-level camera control \u2014 handling titles, lower thirds and lyric lines with beat-aware pacing. A generative lane for hero motion shots code rendering cannot produce.",
      "action": "Generate 3 AOM title-card beats via Seedance and blind-judge against code-rendered versions.",
-     "source_name": "fal.ai — Seedance 2.0",
-     "source_url": "https://fal.ai/models/bytedance/seedance-2.0/image-to-video"
+     "source_name": "fal.ai \u2014 Seedance 2.0",
+     "source_url": "https://fal.ai/models/bytedance/seedance-2.0/image-to-video",
+     "image": "https://fal.ai/api/models/thumbnail/bytedance/seedance-2.0/image-to-video",
+     "video": null
     },
     {
      "lane": "vs-corner",
@@ -142,15 +474,19 @@
      "body": "Workforce evaluations score entire multi-agent runs including sub-agent and tool calls, with per-check cost breakdowns and live concurrency dashboards. Agent quality and spend are measured product surfaces, while a rooms dashboard still judges output by eye.",
      "action": "Add an ops layer: per-room run cost plus a lightweight eval scoring each delivered task against its brief.",
      "source_name": "Relevance AI",
-     "source_url": "https://relevanceai.com/docs/changelog"
+     "source_url": "https://relevanceai.com/docs/changelog",
+     "image": null,
+     "video": null
     },
     {
      "lane": "vs-aom",
      "headline": "Arcads: 7 people, profitable, 100,000 AI ad assets a month for 6,000 clients",
-     "body": "Arcads generates UGC-style video ads with AI actors in 35+ languages and raised a $16M seed while already profitable with seven people. Paid-social video volume no longer requires shoots or editors — both a threat and a tool for a retainer studio's ad output.",
+     "body": "Arcads generates UGC-style video ads with AI actors in 35+ languages and raised a $16M seed while already profitable with seven people. Paid-social video volume no longer requires shoots or editors \u2014 both a threat and a tool for a retainer studio's ad output.",
      "action": "Add AI-actor UGC testimonial spots as a contractor retainer line item instead of scheduling shoots.",
      "source_name": "Arcads",
-     "source_url": "https://www.arcads.ai/blog/arcads-raises-16m-seed"
+     "source_url": "https://www.arcads.ai/blog/arcads-raises-16m-seed",
+     "image": "https://cdn.prod.website-files.com/685001cf708232477ed43d3f/690d3cf1d1d846c515a2c5fd_OG.png",
+     "video": null
     }
    ]
   }
