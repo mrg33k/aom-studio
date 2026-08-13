@@ -34,6 +34,9 @@ protocol MessageTransport: AnyObject {
     func send(text: String, room: Room, interactionMode: String, attachments: [Attachment], roomAgent: String?, clientMessageID: String) async throws -> MessageRow?
     func fetchSteps(room: Room, limit: Int) async throws -> [MessageStep]
     func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep]
+    func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth?
+    func stopTurn(room: Room, messageID: String) async throws -> StopResult
+    func turnStream(room: Room, messageID: String) -> AsyncStream<TurnStreamEvent>?
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing
 }
 
@@ -68,6 +71,26 @@ extension MessageTransport {
 
     func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep] {
         try await fetchSteps(room: room, limit: limit)
+    }
+
+    /// R18 N1 steward seam. Defaulted to "no verdict" so existing fakes keep
+    /// compiling; CornerAPI overrides with the real room-health call, and the
+    /// failure tests script verdicts through FakeTransport.
+    func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth? {
+        nil
+    }
+
+    /// R18 N2 stop seam. Defaulted to feature-off — the honest answer for a
+    /// transport that has no stop lane.
+    func stopTurn(room: Room, messageID: String) async throws -> StopResult {
+        StopResult(stopped: false, reason: "disabled", featureOff: true)
+    }
+
+    /// R18 N3 stream seam. nil = this transport has no live-reply lane; the
+    /// engine behaves exactly as before streaming existed (steps drive status,
+    /// the durable row is the reply). CornerAPI overrides with the real SSE read.
+    func turnStream(room: Room, messageID: String) -> AsyncStream<TurnStreamEvent>? {
+        nil
     }
 }
 

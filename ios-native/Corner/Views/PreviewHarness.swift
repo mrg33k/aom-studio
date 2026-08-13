@@ -156,6 +156,285 @@ struct ChatPreviewHarness: View {
     }
 }
 
+// MARK: - Turn states proof (R18 N1)
+
+/// Every word the room can say, and the three faces of the pre-step indicator —
+/// one frame, so the status vocabulary ships with its visual proof. The pill rows
+/// replicate the chat header's status line exactly (6pt dot + 10.5 medium label,
+/// live vs blocked tone); the cards are the REAL TurnIndicatorView.
+struct TurnStatesPreviewHarness: View {
+    private let statuses: [RoomStatus] = [.thinking, .working, .streaming, .stopping, .needsYou, .stuck]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.s3) {
+                    Text("THE ONE STATUS VOCABULARY")
+                        .font(.hanken(11).weight(.bold))
+                        .foregroundStyle(Theme.inkFaint)
+                    ForEach(statuses, id: \.self) { status in
+                        HStack(spacing: Theme.s3) {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(status.tone == .blocked ? Theme.warning : Theme.live)
+                                    .frame(width: 6, height: 6)
+                                Text(status.label)
+                                    .font(.hanken(10.5).weight(.medium))
+                                    .foregroundStyle(status.tone == .blocked ? Theme.warning : Theme.live)
+                            }
+                            Spacer()
+                            Text(status.rawValue)
+                                .font(.hanken(10))
+                                .foregroundStyle(Theme.inkFaint)
+                        }
+                        .padding(.horizontal, Theme.s3)
+                        .padding(.vertical, 6)
+                        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+
+                    Text("OPENERS — FIRST 8 SECONDS")
+                        .font(.hanken(11).weight(.bold))
+                        .foregroundStyle(Theme.inkFaint)
+                        .padding(.top, Theme.s3)
+                    TurnIndicatorView(
+                        turn: .working(detail: nil), steps: [],
+                        startedAt: Date().addingTimeInterval(-4), healthState: "accepted"
+                    )
+
+                    Text("WAKING — ACCEPTED, NO STEP AFTER 8s")
+                        .font(.hanken(11).weight(.bold))
+                        .foregroundStyle(Theme.inkFaint)
+                        .padding(.top, Theme.s3)
+                    TurnIndicatorView(
+                        turn: .working(detail: nil), steps: [],
+                        startedAt: Date().addingTimeInterval(-23), healthState: "accepted"
+                    )
+
+                    Text("WORKING — REAL STEPS")
+                        .font(.hanken(11).weight(.bold))
+                        .foregroundStyle(Theme.inkFaint)
+                        .padding(.top, Theme.s3)
+                    TurnIndicatorView(
+                        turn: .working(detail: PreviewFixtures.turnSteps.last?.text),
+                        steps: PreviewFixtures.turnSteps,
+                        startedAt: Date().addingTimeInterval(-130)
+                    )
+                }
+                .padding(Theme.s4)
+            }
+            .groundBackground()
+            .navigationTitle("Turn states")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+}
+
+// MARK: - Stop + recovery proof (R18 N2)
+
+/// The stop control's two faces on the real card, the honesty strip, and the three
+/// recovery notices — one frame, real components.
+struct StopRecoveryPreviewHarness: View {
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.s3) {
+                    caption("WORKING — STOP READY")
+                    TurnIndicatorView(
+                        turn: .working(detail: PreviewFixtures.turnSteps.last?.text),
+                        steps: PreviewFixtures.turnSteps,
+                        startedAt: Date().addingTimeInterval(-95),
+                        stopControl: .ready
+                    )
+
+                    caption("STOP ASKED — STOPPING")
+                    TurnIndicatorView(
+                        turn: .working(detail: PreviewFixtures.turnSteps.last?.text),
+                        steps: PreviewFixtures.turnSteps,
+                        startedAt: Date().addingTimeInterval(-101),
+                        stopControl: .stopping
+                    )
+
+                    caption("UNCONFIRMED — THE HONESTY STRIP")
+                    HStack(spacing: Theme.s2) {
+                        Image(systemName: "exclamationmark.circle").font(.system(size: 12))
+                        Text("Couldn't confirm the stop — the turn may still be running.")
+                            .font(.hkCaption)
+                        Spacer(minLength: 0)
+                        Text("Dismiss").font(.hkCaption.weight(.semibold))
+                    }
+                    .foregroundStyle(Theme.warning)
+                    .padding(.horizontal, Theme.s3)
+                    .padding(.vertical, Theme.s2)
+                    .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                            .strokeBorder(Theme.warning.opacity(0.35), lineWidth: 1)
+                    )
+
+                    caption("STUCK — RESTARTABLE CAUSE")
+                    RoomRecoveryNoticeView(
+                        health: RoomHealth(state: "needs_attention", cause: "runner_failed", repaired: false)
+                    )
+
+                    caption("NEEDS YOU — AGENT SILENT")
+                    RoomRecoveryNoticeView(
+                        health: RoomHealth(state: "needs_attention", cause: "agent_silent", repaired: false),
+                        canResend: true
+                    )
+
+                    caption("REPAIR GAVE UP — START FRESH OFFERED")
+                    RoomRecoveryNoticeView(
+                        health: RoomHealth(state: "needs_attention", cause: "settled_without_reply",
+                                           repaired: false, repairCount: 3, suggestedAction: "room_reset")
+                    )
+                }
+                .padding(Theme.s4)
+            }
+            // `-tail` flips the capture to the bottom of the sheet so the cards
+            // below the first fold get their own judged frame.
+            .defaultScrollAnchor(
+                ProcessInfo.processInfo.arguments.contains("-tail") ? .bottom : .top
+            )
+            .groundBackground()
+            .navigationTitle("Stop + recovery")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+
+    private func caption(_ text: String) -> some View {
+        Text(text)
+            .font(.hanken(11).weight(.bold))
+            .foregroundStyle(Theme.inkFaint)
+            .padding(.top, Theme.s2)
+    }
+}
+
+// MARK: - Streaming draft proof (R18 N3)
+
+/// The live partial reply as the user sees it mid-write: the last exchange, the
+/// draft bubble with its caret, and the work card pinned under it with the Stop
+/// control — the whole "the agent is writing" moment in one frame.
+struct StreamingPreviewHarness: View {
+    private let rows: [MessageRow] = PreviewFixtures.rows("""
+    [
+      {"id":"u0","role":"user","user_name":"Patrik","text":"Walk me through what the smoothness pass changes on the phone.","timestamp":"2026-08-12T20:41:00Z"}
+    ]
+    """)
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: Theme.s3) {
+                        ForEach(rows) { row in
+                            MessageBubbleView(row: row, room: nil, showsAuthor: true)
+                        }
+                        StreamingDraftBubble(
+                            authorTitle: "Assistant",
+                            text: "Three things change the feel: replies now stream in as they are written instead of landing whole, the room always says one honest word about what it is doing, and a running turn can be stopped from the card below. The text you are reading is the draft bubble doing exactly"
+                        )
+                    }
+                    .padding(.horizontal, Theme.s4)
+                    .padding(.vertical, Theme.s3)
+                }
+                .defaultScrollAnchor(.bottom)
+                TurnIndicatorView(
+                    turn: .working(detail: "Writing the reply"),
+                    steps: PreviewFixtures.steps("""
+                    [
+                      {"id":"s1","parent_message_id":"u0","step_index":0,"text":"Picking this up","phase":"thinking"},
+                      {"id":"s2","parent_message_id":"u0","step_index":1,"text":"Writing the reply","phase":"streaming"}
+                    ]
+                    """),
+                    startedAt: Date().addingTimeInterval(-41),
+                    stopControl: .ready
+                )
+                .padding(.horizontal, Theme.s3)
+                .padding(.bottom, Theme.s2)
+            }
+            .groundBackground()
+            .navigationTitle("Writing")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+}
+
+// MARK: - Scroll brain proof (R18 N4)
+
+/// The reading-history moment: the thread scrolled up (top-anchored here), the
+/// REAL JumpToLatestPill riding the scroll container's bottom edge — the state
+/// rule 3 exists for. No live turn in frame: the pill never shows during one.
+struct ScrollPreviewHarness: View {
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: Theme.s3) {
+                    ForEach(Array(PreviewFixtures.chatRows.enumerated()), id: \.element.id) { i, row in
+                        MessageBubbleView(row: row, room: nil, showsAuthor: i == 0 || PreviewFixtures.chatRows[i - 1].isUser != row.isUser)
+                    }
+                }
+                .padding(.horizontal, Theme.s4)
+                .padding(.vertical, Theme.s3)
+            }
+            .defaultScrollAnchor(.top)
+            .overlay(alignment: .bottom) {
+                JumpToLatestPill()
+                    // The real view floats the pill above the composer band; the
+                    // harness has no composer, so reserve its height to keep the
+                    // proof faithful to the shipped offset.
+                    .padding(.bottom, Theme.s3 + 58)
+            }
+            .groundBackground()
+            .navigationTitle("Reading history")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+}
+
+// MARK: - Live Activity proof (R18 N7)
+
+/// Starts a FIXTURE running-turn Live Activity on launch so the capture can
+/// background the app and photograph the Dynamic Island / lock screen banner.
+/// Fixture data only; no network, no auth.
+struct LiveActivityPreviewHarness: View {
+    @State private var started = false
+
+    var body: some View {
+        VStack(spacing: Theme.s4) {
+            Image(systemName: started ? "checkmark.circle" : "hourglass")
+                .font(.system(size: 40))
+                .foregroundStyle(started ? Theme.live : Theme.inkSoft)
+            Text(started
+                 ? "Live Activity started — background the app and look at the Dynamic Island."
+                 : "Starting the fixture Live Activity…")
+                .font(.hkFootnote)
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Theme.s6)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .groundBackground()
+        .task {
+            TurnActivityService.shared.turnBegan(
+                roomTitle: "Native iOS",
+                ask: "Ship the smoothness pass"
+            )
+            try? await Task.sleep(for: .seconds(1))
+            TurnActivityService.shared.update(
+                statusWord: "Working",
+                stepLabel: "Rendering the mobile thread against the web tokens",
+                startedAt: Date().addingTimeInterval(-127)
+            )
+            started = true
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+}
+
 // MARK: - Home composer proof
 
 /// The home timeline (reusing HomePreviewHarness's look) with the real HomeComposerBar

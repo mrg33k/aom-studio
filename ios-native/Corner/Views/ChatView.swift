@@ -99,6 +99,14 @@ struct ChatView: View {
     // input area swaps to the checklist panel.
     @State private var checklistOpen = false
 
+    // ── The one scroll brain (R18 N4) ────────────────────────────────────────
+    // All scroll decisions run through ScrollBrain; the view only measures and
+    // performs. distanceFromBottom is fed by the thread's geometry preference.
+    @State private var scrollBrain = ScrollBrain()
+    @State private var distanceFromBottom: CGFloat = 0
+    @State private var scrollViewportHeight: CGFloat = 0
+    @State private var showJump = false
+
     /// Computed ONCE per thread render and handed down to every bubble, rather than each
     /// bubble subscribing to the review store itself.
     private var waitingIDs: Set<String> { review.waitingIDs }
@@ -117,6 +125,13 @@ struct ChatView: View {
                     if !isSearching, model.turn != .idle {
                         turnIndicator
                     }
+                    // The steward's verdict, with its actions in the same surface.
+                    if !isSearching {
+                        recoveryNotice
+                    }
+                    if !isSearching, let notice = model.stopNotice {
+                        stopNoticeStrip(notice)
+                    }
                     // Collapse: 0-height clear placeholder keeps the thread from
                     // resizing when we swap composer ↔ nothing.
                     if composerCollapsed {
@@ -125,7 +140,23 @@ struct ChatView: View {
                         composer
                     }
                 }
-                .animation(.easeOut(duration: 0.2), value: model.turn)
+                // Interruptible spring (iOS 17 model): the card can retarget
+                // mid-flight when a turn ends the moment another begins.
+                .animation(.spring(duration: 0.35, bounce: 0.15), value: model.turn)
+            }
+            // ONE haptic per state change, never during streaming (chunk arrivals
+            // change no state here — the buzz-while-generating anti-pattern is
+            // structurally impossible). Reply landed = success; the agent needs
+            // you = warning; stuck = error; a turn opening = a light tap.
+            .sensoryFeedback(trigger: model.roomStatus) { old, new in
+                switch new {
+                case .needsYou: return .warning
+                case .stuck: return .error
+                case .idle: return old == .idle ? nil : .success
+                case .thinking, .working, .streaming:
+                    return old == .idle ? .impact(weight: .light) : nil
+                case .stopping: return .impact(weight: .medium)
+                }
             }
             // Search bar slides in at the top of the thread when isSearching is true —
             // sits above the message list so it doesn't collide with the nav bar or the
@@ -356,16 +387,19 @@ struct ChatView: View {
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(Theme.inkSoft)
                     }
-                    // Status line: "active" with a live dot when a turn is running,
-                    // else the room's subtitle (specialist / project / mission).
+                    // Status line: THE one vocabulary word while the room has
+                    // something to say — Thinking / Working / Writing / Stopping… /
+                    // Needs you / Stuck — else the room's subtitle. Same derivation
+                    // every surface uses; the header can never disagree with the card.
                     HStack(spacing: 4) {
-                        if model.isAwaiting {
+                        let status = model.roomStatus
+                        if status != .idle {
                             Circle()
-                                .fill(Theme.live)
+                                .fill(status.tone == .blocked ? Theme.warning : Theme.live)
                                 .frame(width: 6, height: 6)
-                            Text("active")
+                            Text(status.label)
                                 .font(.hanken(10.5).weight(.medium))
-                                .foregroundStyle(Theme.live)
+                                .foregroundStyle(status.tone == .blocked ? Theme.warning : Theme.live)
                         } else {
                             let sub = model.room.subtitle.isEmpty
                                 ? model.room.typeLabel.lowercased()
@@ -375,7 +409,7 @@ struct ChatView: View {
                                 .foregroundStyle(Theme.inkSoft)
                         }
                     }
-                    .animation(.easeOut(duration: 0.2), value: model.isAwaiting)
+                    .animation(.easeOut(duration: 0.2), value: model.roomStatus)
                 }
             }
             .contentShape(Rectangle())
@@ -434,6 +468,70 @@ struct ChatView: View {
     }
 
     // MARK: - Thread
+
+    /// Scroll metrics for the one scroll brain (R18 N4): the thread content's
+    /// height and its offset inside the scroll viewport, measured continuously.
+    private struct ThreadMetrics: Equatable {
+        var contentHeight: CGFloat = 0
+        var minY: CGFloat = 0
+    }
+
+    private struct ThreadMetricsKey: PreferenceKey {
+        static let defaultValue = ThreadMetrics()
+        static func reduce(value: inout ThreadMetrics, nextValue: () -> ThreadMetrics) {
+            value = nextValue()
+        }
+    }
+
+    /// The id the tail actions scroll to: the draft while one is writing, else
+    /// the newest thread row. (The old "turn-indicator" anchor was a silent
+    /// no-op — the indicator left the scroll for the pinned inset long ago.)
+    private var tailAnchorID: String? {
+        if model.liveDraft != nil { return "stream-draft" }
+        return model.thread.last?.id
+    }
+
+    /// Height-growth signature: live steps + draft length change the thread's
+    /// height WITHOUT changing its count — the exact case the len-guard alone
+    /// would strand the reader on (the web's liveKey + contentKey, joined).
+    private var growthKey: Int {
+        var hasher = Hasher()
+        for step in model.liveSteps {
+            hasher.combine(step.id)
+            hasher.combine(step.text)
+            hasher.combine(step.timestamp)
+        }
+        hasher.combine(model.liveDraft?.count ?? 0)
+        return hasher.finalize()
+    }
+
+    private func performScroll(_ action: ScrollBrain.Action, proxy: ScrollViewProxy) {
+        guard let anchor = tailAnchorID else { return }
+        switch action {
+        case .none:
+            break
+        case .snapInstant:
+            // After layout (the web's requestAnimationFrame) — snapping before
+            // the new height lands scrolls to the OLD bottom.
+            DispatchQueue.main.async {
+                proxy.scrollTo(anchor, anchor: .bottom)
+            }
+        case .followSmooth:
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo(anchor, anchor: .bottom)
+            }
+        }
+    }
+
+    private func updateJumpPill() {
+        let show = scrollBrain.showJump(
+            awaiting: model.turnIsOpen,
+            distanceFromBottom: distanceFromBottom
+        )
+        if show != showJump {
+            withAnimation(.spring(duration: 0.3, bounce: 0.2)) { showJump = show }
+        }
+    }
 
     /// The active thread, filtered by `searchQuery` when search is open.
     /// Outbox items are excluded from search results — they haven't landed yet.
@@ -494,6 +592,17 @@ struct ChatView: View {
                                 }
                             }
                         }
+                        // The live partial reply rides the thread tail — above
+                        // the pinned work card by construction (the card is
+                        // outside the scroll). Gated on the open turn; the real
+                        // row replaces it in the same engine pass it lands.
+                        if !isSearching, let draftText = model.liveDraft {
+                            StreamingDraftBubble(
+                                authorTitle: model.room.title,
+                                text: draftText
+                            )
+                            .id("stream-draft")
+                        }
                         Color.clear.frame(height: 1)
                     }
                 }
@@ -503,24 +612,95 @@ struct ChatView: View {
                 // loader) and the composer card — it sat flush under it (Patrik
                 // 2026-08-11).
                 .padding(.bottom, Theme.s3 + 10)
+                // Continuous measurement for the scroll brain: content height +
+                // offset in the scroll's coordinate space.
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: ThreadMetricsKey.self,
+                            value: ThreadMetrics(
+                                contentHeight: geo.size.height,
+                                minY: geo.frame(in: .named("chatThread")).minY
+                            )
+                        )
+                    }
+                )
+            }
+            .coordinateSpace(name: "chatThread")
+            .background(
+                GeometryReader { geo in
+                    Color.clear
+                        .onAppear { scrollViewportHeight = geo.size.height }
+                        .onChange(of: geo.size.height) { _, h in scrollViewportHeight = h }
+                }
+            )
+            .onPreferenceChange(ThreadMetricsKey.self) { metrics in
+                let distance = max(0, metrics.contentHeight + metrics.minY - scrollViewportHeight)
+                distanceFromBottom = distance
+                updateJumpPill()
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
             // Landing in a room means landing at the BOTTOM — the anchor alone can
             // settle a hair short once images and cards size in, so the first ready
-            // render pins the tail explicitly.
+            // render pins the tail explicitly. (The old "turn-indicator" anchor was
+            // a silent no-op; the tail anchor is real.)
             .onChange(of: model.loadState) { _, state in
                 if case .ready = state {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        proxy.scrollTo("turn-indicator", anchor: .bottom)
+                        if let anchor = tailAnchorID {
+                            proxy.scrollTo(anchor, anchor: .bottom)
+                        }
                     }
                 }
             }
-            .onChange(of: model.thread.count) { _, _ in
-                if !isSearching { scrollToEnd(proxy) }
+            // Rule 1 — count changes go through the brain: identical counts never
+            // move, live turns follow, idle follows only near the tail. The old
+            // yank-on-every-change is dead.
+            .onChange(of: model.thread.count) { _, count in
+                guard !isSearching else { return }
+                performScroll(
+                    scrollBrain.onCountChange(
+                        count: count,
+                        awaiting: model.turnIsOpen,
+                        distanceFromBottom: distanceFromBottom
+                    ),
+                    proxy: proxy
+                )
+                updateJumpPill()
+            }
+            // Rule 2 — steps and the draft grow height without a count change;
+            // re-pin the follower at the tail, after layout.
+            .onChange(of: growthKey) { _, _ in
+                guard !isSearching else { return }
+                performScroll(
+                    scrollBrain.onContentGrowth(
+                        awaiting: model.turnIsOpen,
+                        distanceFromBottom: distanceFromBottom
+                    ),
+                    proxy: proxy
+                )
             }
             .onChange(of: model.turn) { _, _ in
-                if !isSearching { scrollToEnd(proxy) }
+                updateJumpPill()
+            }
+            // Rule 3 — the jump pill, anchored to the scroll container (never the
+            // window): idle + far from the tail, one tap re-pins.
+            .overlay(alignment: .bottom) {
+                if showJump, !isSearching {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            if let anchor = tailAnchorID {
+                                proxy.scrollTo(anchor, anchor: .bottom)
+                            }
+                        }
+                    } label: {
+                        JumpToLatestPill()
+                    }
+                    .padding(.bottom, Theme.s3)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .accessibilityLabel("Jump to the latest message")
+                }
             }
             .refreshable { await model.load() }
             // Horizontal flick → the recency carousel: right toward the more recent
@@ -556,14 +736,6 @@ struct ChatView: View {
         return authorKey(thread[index - 1]) != authorKey(thread[index])
     }
 
-    private func scrollToEnd(_ proxy: ScrollViewProxy) {
-        // The turn indicator lives above the composer now, outside the scroll, so
-        // the newest thread row is always the anchor.
-        guard let anchor = model.thread.last?.id else { return }
-        withAnimation(.easeOut(duration: 0.2)) {
-            proxy.scrollTo(anchor, anchor: .bottom)
-        }
-    }
 
     // MARK: - Turn indicator
 
@@ -573,8 +745,53 @@ struct ChatView: View {
             steps: model.liveSteps,
             startedAt: model.turnStartedAt,
             quiet: model.turnIsQuiet,
+            healthState: model.turnHealth?.state,
+            stopControl: model.stopControl,
+            onStop: { Task { await model.stopTurn() } },
             resend: { model.resendStalled() },
             dismiss: { model.dismissStalled() }
+        )
+        .padding(.horizontal, Theme.s3)
+    }
+
+    /// The recovery notice (R18 N2): the steward said needs_attention or
+    /// recovering, and the room says WHY, with the action in the same surface —
+    /// Restart on the allowlisted causes, resend/status-ask on agent_silent,
+    /// Start fresh when repair has given up.
+    @ViewBuilder
+    private var recoveryNotice: some View {
+        if let health = model.turnHealth,
+           health.state == "needs_attention" || health.state == "recovering" {
+            RoomRecoveryNoticeView(
+                health: health,
+                canResend: model.turn == .idle,
+                onRestart: { Task { await model.repairTurn() } },
+                onResend: { model.resendAfterRecovery() },
+                onAskStatus: { model.askForStatus() },
+                onStartFresh: { Task { _ = await model.clearRoom(); model.dismissRecovery() } },
+                onDismiss: { model.dismissRecovery() }
+            )
+            .padding(.horizontal, Theme.s3)
+        }
+    }
+
+    /// The stop honesty strip: a stop was accepted but nothing confirmed it.
+    private func stopNoticeStrip(_ text: String) -> some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 12))
+            Text(text).font(.hkCaption)
+            Spacer(minLength: 0)
+            Button("Dismiss") { model.dismissRecovery() }
+                .font(.hkCaption.weight(.semibold))
+        }
+        .foregroundStyle(Theme.warning)
+        .padding(.horizontal, Theme.s3)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                .strokeBorder(Theme.warning.opacity(0.35), lineWidth: 1)
         )
         .padding(.horizontal, Theme.s3)
     }
@@ -1042,10 +1259,20 @@ struct TurnIndicatorView: View {
     var steps: [MessageStep] = []
     var startedAt: Date? = nil
     var quiet: Bool = false
+    /// The steward's current state word — the waking line keys off "accepted".
+    var healthState: String? = nil
+    /// The Stop control (R18 N2) — lives ON the card, right-aligned, because the
+    /// action belongs in the same surface as the state it acts on.
+    var stopControl: ChatViewModel.StopControl = .hidden
+    var onStop: () -> Void = {}
     var resend: () -> Void = {}
     var dismiss: () -> Void = {}
 
     @State private var stepsExpanded = false
+
+    /// The deduped, collapsed, ordered projection — the ONLY step list this
+    /// card renders (raw steps re-emit and repeat; see WorkProjection).
+    private var projectedSteps: [MessageStep] { WorkProjection.projected(steps) }
 
     var body: some View {
         switch turn {
@@ -1065,12 +1292,12 @@ struct TurnIndicatorView: View {
                             .foregroundStyle(Theme.inkSoft)
                     }
                     Spacer(minLength: 0)
-                    if steps.count > 1 {
+                    if projectedSteps.count > 1 {
                         Button {
                             withAnimation(.easeOut(duration: 0.2)) { stepsExpanded.toggle() }
                         } label: {
                             HStack(spacing: 4) {
-                                Text("\(steps.count) steps")
+                                Text("\(projectedSteps.count) steps")
                                 Image(systemName: stepsExpanded ? "chevron.down" : "chevron.up")
                                     .imageScale(.small)
                             }
@@ -1079,16 +1306,51 @@ struct TurnIndicatorView: View {
                         }
                         .accessibilityLabel(stepsExpanded ? "Collapse steps" : "Show all steps")
                     }
+                    if stopControl != .hidden {
+                        // Ghost stop, the web's card-header treatment: 1px border,
+                        // quiet ink, disabled + "Stopping…" while the ask is live.
+                        Button(action: onStop) {
+                            Text(stopControl == .stopping ? "Stopping…" : "Stop")
+                                .font(.hanken(11).weight(.semibold))
+                                .foregroundStyle(stopControl == .stopping ? Theme.inkFaint : Theme.inkSoft)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 3)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .strokeBorder(Theme.hairline, lineWidth: 1)
+                                )
+                        }
+                        .disabled(stopControl == .stopping)
+                        .accessibilityLabel(stopControl == .stopping ? "Stopping this turn" : "Stop this turn")
+                    }
                 }
-                if !steps.isEmpty {
+                let projected = projectedSteps
+                if !projected.isEmpty {
                     if stepsExpanded {
                         VStack(alignment: .leading, spacing: 6) {
-                            ForEach(steps) { step in
-                                stepRow(step, isLatest: step.id == steps.last?.id)
+                            ForEach(projected) { step in
+                                stepRow(step, isLatest: step.id == projected.last?.id)
                             }
                         }
-                    } else if let latest = steps.last {
-                        stepRow(latest, isLatest: true)
+                    } else if let latest = projected.last {
+                        // The current line: action glyph + label, cross-fading
+                        // 500ms on change (the web card's ghost swap) inside a
+                        // stable-height slot so the card never jitters.
+                        ZStack(alignment: .topLeading) {
+                            currentLine(latest)
+                                .id(latest.text ?? "")
+                                .transition(.opacity)
+                        }
+                        .animation(.easeInOut(duration: 0.5), value: latest.text)
+                        .frame(minHeight: 18, alignment: .topLeading)
+                    }
+                    // Honest progress: a bar ONLY when the latest label carries a
+                    // real N-of-M count. No count, no bar — an invented fraction
+                    // is fake UI (the pulsing mark already says "alive").
+                    if let fraction = WorkProjection.checklistProgress(in: projected.last?.text ?? "") {
+                        ProgressView(value: fraction)
+                            .tint(fraction >= 1.0 ? Theme.live : Theme.accent)
+                            .animation(.easeOut(duration: 0.4), value: fraction)
                     }
                 }
                 if quiet {
@@ -1145,24 +1407,190 @@ struct TurnIndicatorView: View {
 
     /// "Working — 2m 10s", counting from the turn's open. No start date (an older
     /// API deploy answered without the row) degrades to the plain word.
+    ///
+    /// Before the first step arrives the word rotates through the web's openers on
+    /// a 2.5s wall clock — and after 8 seconds of an ACCEPTED turn with no step it
+    /// says the honest thing instead: a quiet room is waking up, which can take a
+    /// minute. Cycling thinking phrases over dead air is the lie this replaces.
     private func workingLabel(now: Date) -> String {
         guard let startedAt else { return "Working…" }
         let seconds = max(0, Int(now.timeIntervalSince(startedAt)))
-        if seconds < 60 { return "Working — \(seconds)s" }
-        return "Working — \(seconds / 60)m \(seconds % 60)s"
+        let clock = seconds < 60 ? "\(seconds)s" : "\(seconds / 60)m \(seconds % 60)s"
+        if steps.isEmpty {
+            if healthState == "accepted", TimeInterval(seconds) > Config.wakingThreshold {
+                return "Waking the room — \(clock)"
+            }
+            let openers = ["Reading your message", "Thinking it through", "Working out the approach"]
+            let index = Int(now.timeIntervalSince1970 / 2.5) % openers.count
+            return "\(openers[index]) — \(clock)"
+        }
+        return "Working — \(clock)"
     }
 
-    /// One step line: a check for a finished step, the accent dot on the latest.
+    /// The collapsed card's current line: the label's action glyph + the label.
+    private func currentLine(_ step: MessageStep) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Theme.s2) {
+            Image(systemName: WorkProjection.glyph(for: step.text ?? ""))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Theme.accent)
+            Text(step.text ?? "")
+                .font(.hkCaption)
+                .foregroundStyle(Theme.ink)
+                .lineLimit(2)
+        }
+    }
+
+    /// One step line in the expanded run: a check for a finished step, the
+    /// action glyph on the latest.
     private func stepRow(_ step: MessageStep, isLatest: Bool) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Theme.s2) {
-            Image(systemName: isLatest ? "circle.fill" : "checkmark.circle.fill")
-                .font(.system(size: 9))
+            Image(systemName: isLatest
+                ? WorkProjection.glyph(for: step.text ?? "")
+                : "checkmark.circle.fill")
+                .font(.system(size: isLatest ? 11 : 9, weight: .medium))
                 .foregroundStyle(isLatest ? Theme.accent : Theme.inkFaint)
             Text(step.text ?? "")
                 .font(.hkCaption)
                 .foregroundStyle(isLatest ? Theme.ink : Theme.inkSoft)
                 .lineLimit(isLatest ? 2 : 1)
         }
+    }
+}
+
+/// The steward's verdict as a card (R18 N2 — RoomRecoveryNotice port). Cause-keyed
+/// plain words, and every state carries its ACTION in the same surface: Restart on
+/// the allowlisted causes, Send again / Ask for a status on agent_silent, Start
+/// fresh when repair has given up (suggested_action room_reset).
+struct RoomRecoveryNoticeView: View {
+    let health: RoomHealth
+    var canResend: Bool = false
+    var onRestart: () -> Void = {}
+    var onResend: () -> Void = {}
+    var onAskStatus: () -> Void = {}
+    var onStartFresh: () -> Void = {}
+    var onDismiss: () -> Void = {}
+
+    private var isRecovering: Bool { health.state == "recovering" }
+
+    var body: some View {
+        RaisedCard(tint: (isRecovering ? Theme.accent : Theme.warning).opacity(0.4)) {
+            VStack(alignment: .leading, spacing: Theme.s2) {
+                HStack(spacing: Theme.s2) {
+                    Label(
+                        RoomRecovery.header(state: health.state),
+                        systemImage: isRecovering ? "arrow.triangle.2.circlepath" : "exclamationmark.triangle"
+                    )
+                    .font(.hkFootnote.weight(.semibold))
+                    .foregroundStyle(isRecovering ? Theme.accent : Theme.warning)
+                    Spacer(minLength: 0)
+                    // Dismiss lives on the header line so the action row keeps its
+                    // buttons on ONE line — a wrapped two-line pill next to
+                    // single-line siblings reads as a layout accident.
+                    if !isRecovering {
+                        Button(action: onDismiss) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Theme.inkFaint)
+                        }
+                        .accessibilityLabel("Dismiss this notice")
+                    }
+                }
+
+                Text(RoomRecovery.message(cause: health.cause))
+                    .font(.hkCaption)
+                    .foregroundStyle(Theme.inkSoft)
+
+                if !isRecovering {
+                    HStack(spacing: Theme.s3) {
+                        if RoomRecovery.showsRestart(cause: health.cause) {
+                            Button("Restart this turn", action: onRestart)
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                        }
+                        if health.cause == "agent_silent" {
+                            if canResend {
+                                Button("Send it again", action: onResend)
+                                    .buttonStyle(.borderedProminent)
+                                    .controlSize(.small)
+                            }
+                            Button("Ask for a status", action: onAskStatus)
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                .lineLimit(1)
+                        }
+                        if health.suggestedAction == "room_reset" {
+                            Button("Start fresh", action: onStartFresh)
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                        }
+                    }
+                    .padding(.top, Theme.s1)
+                }
+            }
+        }
+    }
+}
+
+/// The jump-to-latest pill (R18 N4) — the web's `.jumplive` capsule: accent
+/// ground, white 12.5/600 label, down arrow. Anchored by its caller to the
+/// SCROLL CONTAINER, never the window (the decision record's own doubt #3).
+struct JumpToLatestPill: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "arrow.down")
+                .font(.system(size: 12, weight: .semibold))
+            Text("Jump to latest")
+                .font(.hanken(12.5).weight(.semibold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 14)
+        .frame(height: 34)
+        .background(Theme.accent, in: Capsule())
+        .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
+    }
+}
+
+/// The live partial reply (R18 N3) — the same anatomy as an agent turn (monogram,
+/// author line, agent-bubble surface) plus a blinking caret. It renders the draft
+/// as PLAIN text on purpose: re-parsing markdown on every reveal tick is the jank
+/// the research warned about, and the durable row that replaces this bubble
+/// arrives fully rendered. Never a message; never persisted.
+struct StreamingDraftBubble: View {
+    let authorTitle: String
+    let text: String
+    var showsAuthor: Bool = true
+
+    @State private var caretOn = true
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Theme.s2) {
+            TurnAvatar(name: authorTitle, visible: showsAuthor)
+            VStack(alignment: .leading, spacing: Theme.s2) {
+                if showsAuthor {
+                    Text(authorTitle)
+                        .font(.hkSubheadline.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                }
+                (Text(text) + Text(" \u{258D}")
+                    .foregroundStyle(Theme.accent.opacity(caretOn ? 1 : 0.15)))
+                    .font(.hkBody)
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, Theme.s4)
+                    .padding(.vertical, 10)
+                    .background(Theme.agentBubble, in: MessageBubbleView.bubbleShape(user: false))
+                    .overlay(
+                        MessageBubbleView.bubbleShape(user: false)
+                            .strokeBorder(Theme.hairline, lineWidth: 1)
+                    )
+            }
+            Spacer(minLength: Theme.s3)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true)) {
+                caretOn = false
+            }
+        }
+        .accessibilityLabel("\(authorTitle) is writing a reply")
     }
 }
 

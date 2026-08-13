@@ -94,6 +94,16 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         return AgentRoster.title(for: agent ?? "corner")
     }
 
+    /// The bridge's mid-turn interim rows ("Still working on this…") carry
+    /// metadata.interim / metadata.kind == "progress". They feed the silence
+    /// clock but are NOT the turn's answer — the streaming draft must survive
+    /// them (the web's known draft-flicker defect, decided and fixed here).
+    var isInterimProgress: Bool {
+        if metadata?["interim"]?.boolValue == true { return true }
+        if metadata?["kind"]?.stringValue == "progress" { return true }
+        return false
+    }
+
     /// PostgREST timestamps carry microseconds; ISO8601DateFormatter only reliably
     /// handles up to milliseconds, so try fractional, then plain, then trim.
     static func parseTimestamp(_ s: String) -> Date? {
@@ -135,9 +145,14 @@ struct MessageStep: Decodable, Identifiable, Equatable {
     let text: String?
     let status: String?
     let timestamp: String?
+    /// R-SMOOTHNESS Round B: the bridge stamps a turn-phase on every step —
+    /// thinking | working | streaming on live steps; done | waiting | stopped ride
+    /// ONLY on the 9999 settled sentinel. Meaningful on the freshest step only.
+    let phase: String?
+    let project: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, agent, text, status, timestamp
+        case id, agent, text, status, timestamp, phase, project
         case parentMessageID = "parent_message_id"
         case stepIndex = "step_index"
     }
@@ -153,6 +168,8 @@ struct MessageStep: Decodable, Identifiable, Equatable {
         text = try? c.decodeIfPresent(String.self, forKey: .text)
         status = try? c.decodeIfPresent(String.self, forKey: .status)
         timestamp = try? c.decodeIfPresent(String.self, forKey: .timestamp)
+        phase = try? c.decodeIfPresent(String.self, forKey: .phase)
+        project = try? c.decodeIfPresent(String.self, forKey: .project)
     }
 
     /// The bridge stamps step_index 9999 / text "settled" when a turn ENDS. That

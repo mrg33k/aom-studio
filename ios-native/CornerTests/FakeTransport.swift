@@ -72,6 +72,42 @@ final class FakeTransport: MessageTransport {
         return steps
     }
 
+    /// Steward verdicts (R18 N1). `healthScript` entries are consumed one per poll;
+    /// when the script is empty `healthDefault` repeats. nil = the steward has no
+    /// verdict, which must change nothing.
+    var healthScript: [RoomHealth] = []
+    var healthDefault: RoomHealth?
+    private(set) var healthRequests: [(messageID: String, repair: Bool)] = []
+
+    func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth? {
+        healthRequests.append((messageID, repair))
+        if !healthScript.isEmpty { return healthScript.removeFirst() }
+        return healthDefault
+    }
+
+    /// Stop verdicts (R18 N2). Defaults to feature-off — the honest no-lane answer.
+    var stopResult = StopResult(stopped: false, reason: "disabled", featureOff: true)
+    var stopError: Error?
+    private(set) var stopRequests: [String] = []
+
+    func stopTurn(room: Room, messageID: String) async throws -> StopResult {
+        stopRequests.append(messageID)
+        if let stopError { throw stopError }
+        return stopResult
+    }
+
+    /// Live-reply stream (R18 N3). Tests drive events through `streamContinuation`;
+    /// `provideStream = false` models a transport with no stream lane at all.
+    var provideStream = true
+    var streamContinuation: AsyncStream<TurnStreamEvent>.Continuation?
+    private(set) var streamOpens: [String] = []
+
+    func turnStream(room: Room, messageID: String) -> AsyncStream<TurnStreamEvent>? {
+        streamOpens.append(messageID)
+        guard provideStream else { return nil }
+        return AsyncStream { c in self.streamContinuation = c }
+    }
+
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing {
         let sub = FakeSubscription()
         subscriptions.append(sub)
@@ -90,7 +126,8 @@ extension MessageRow {
         role: String,
         text: String,
         epoch: TimeInterval,
-        agent: String? = nil
+        agent: String? = nil,
+        metadata: [String: Any]? = nil
     ) -> MessageRow {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -101,19 +138,22 @@ extension MessageRow {
             "timestamp": iso.string(from: Date(timeIntervalSince1970: epoch)),
         ]
         if let agent { dict["agent"] = agent }
+        if let metadata { dict["metadata"] = metadata }
         let data = try! JSONSerialization.data(withJSONObject: dict)
         return try! JSONDecoder().decode(MessageRow.self, from: data)
     }
 }
 
 extension MessageStep {
-    static func fake(id: String, parent: String, index: Int, text: String) -> MessageStep {
-        let data = try! JSONSerialization.data(withJSONObject: [
+    static func fake(id: String, parent: String, index: Int, text: String, phase: String? = nil) -> MessageStep {
+        var dict: [String: Any] = [
             "id": id,
             "parent_message_id": parent,
             "step_index": index,
             "text": text,
-        ])
+        ]
+        if let phase { dict["phase"] = phase }
+        let data = try! JSONSerialization.data(withJSONObject: dict)
         return try! JSONDecoder().decode(MessageStep.self, from: data)
     }
 }

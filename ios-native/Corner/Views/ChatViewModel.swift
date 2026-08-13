@@ -121,6 +121,29 @@ final class ChatViewModel: ObservableObject {
     /// the normal state for phone-originated turns today; the card must render as a
     /// bare timer then, never as an empty list.
     @Published private(set) var liveSteps: [MessageStep] = []
+    /// The steward's verdict on the open turn (R18 N1). Set optimistically to
+    /// `accepted` at send — the waking state keys off it — then refreshed every 10s
+    /// from /api/dashboard/room-health. Survives a needs_attention halt so the room
+    /// keeps saying WHY it stopped; cleared when a new turn begins or the
+    /// conversation visibly continues.
+    @Published private(set) var turnHealth: RoomHealth?
+    /// True when the last thread fetch FAILED while a turn is open. Rule 3 of the
+    /// status derivation: a live turn on a stale feed is `stuck`, not `working` —
+    /// "working" would be a guess wearing a status chip. Clears on the next
+    /// successful fetch.
+    @Published private(set) var feedStale = false
+    /// One honest feature_off hides Stop for the rest of the session (R18 N2) —
+    /// showing a control the bridge will 404 is a button that lies.
+    @Published private(set) var stopUnavailable = false
+    /// The live partial reply, revealed at a steady cadence (R18 N3). NEVER
+    /// persisted, never a message: the durable row is the only thing that ever
+    /// renders as one. Internal state — render through `draft`, which gates on
+    /// the turn being open (the web's snapshot-gating kill, kill #2 of the
+    /// no-duplicate contract).
+    @Published private(set) var streamDraft: String?
+    /// The stop honesty strip: set when a stop was accepted but nothing confirmed
+    /// it within the timeout. Cleared by the next send or the turn settling.
+    @Published private(set) var stopNotice: String?
     /// When the current turn opened — drives the "Working — 2m 10s" elapsed clock.
     @Published private(set) var turnStartedAt: Date?
     /// Soft flag: steps have been silent past `quietThreshold` but the turn is not
@@ -154,11 +177,30 @@ final class ChatViewModel: ObservableObject {
     private let quietThreshold: TimeInterval
     private let stepInterval: TimeInterval
     private let reconcileInterval: TimeInterval
+    private let stewardInterval: TimeInterval
+    private let repairAfter: TimeInterval
     private let onFirstReply: @MainActor () async -> Void
 
     private var subscription: RoomSubscribing?
     private var pollTask: Task<Void, Never>?
     private var stepTask: Task<Void, Never>?
+    private var stewardTask: Task<Void, Never>?
+    private var stopTimeoutTask: Task<Void, Never>?
+    private let stopTimeout: TimeInterval
+    // Streaming (R18 N3): one reader per turn, keyed on the durable parent id.
+    private var streamTask: Task<Void, Never>?
+    private var revealTask: Task<Void, Never>?
+    private var streamKey: String?
+    /// Chunks land here raw; the reveal loop drains into `streamDraft` at a
+    /// steady tick — the cadence, not the network, owns the paint rate.
+    private var streamBuffer = ""
+    private let revealInterval: TimeInterval
+    /// The one repair ask per turn (the web's contract: GET until 45s, then ONE
+    /// POST). Repair is not a retry loop.
+    private var repairAskedThisTurn = false
+    /// Last (status, label) mirrored to the Live Activity — updates are sent
+    /// only on change, never on every 1.5s poll tick (R18 N7).
+    private var lastActivitySignature = ""
 
     // Turn tracking — every field here answers a question with a server fact.
     /// Server id of the NEWEST user row in this turn. Displayed facts (the resend
@@ -206,6 +248,10 @@ final class ChatViewModel: ObservableObject {
         quietThreshold: TimeInterval = Config.quietTurnThreshold,
         stepInterval: TimeInterval = Config.stepPollInterval,
         reconcileInterval: TimeInterval = Config.reconcileInterval,
+        stewardInterval: TimeInterval = Config.stewardPollInterval,
+        repairAfter: TimeInterval = Config.stewardRepairAfter,
+        stopTimeout: TimeInterval = Config.stopConfirmTimeout,
+        revealInterval: TimeInterval = Config.streamRevealInterval,
         onFirstReply: @escaping @MainActor () async -> Void = {
             await PushService.shared.requestAuthorizationAfterFirstReply()
         }
@@ -216,6 +262,10 @@ final class ChatViewModel: ObservableObject {
         self.quietThreshold = quietThreshold
         self.stepInterval = stepInterval
         self.reconcileInterval = reconcileInterval
+        self.stewardInterval = stewardInterval
+        self.repairAfter = repairAfter
+        self.stopTimeout = stopTimeout
+        self.revealInterval = revealInterval
         self.onFirstReply = onFirstReply
         // Restore per-room mode, defaulting to work — mirrors web's localStorage.cv6.chatMode.<key>
         let saved = UserDefaults.standard.string(forKey: "chatMode.\(room.id)")
@@ -238,6 +288,36 @@ final class ChatViewModel: ObservableObject {
         return false
     }
 
+    /// A turn is OPEN — working or stalled. The stalled notice is a notice, not a
+    /// close: polling continues underneath, so for the status vocabulary the turn
+    /// is still awaiting.
+    var turnIsOpen: Bool {
+        if case .idle = turn { return false }
+        return true
+    }
+
+    /// The renderable STREAM draft (named to never collide with the composer's
+    /// `draft` — the web hit this exact collision): kill #2 of the no-duplicate
+    /// contract. The instant the turn settles this is nil regardless of state.
+    var liveDraft: String? {
+        guard turnIsOpen, let text = streamDraft, !text.isEmpty else { return nil }
+        return text
+    }
+
+    /// THE one status word for this room, derived by the ported roomStatus rules.
+    /// Every surface reads this — the header pill, and anything N2+ adds — so the
+    /// room can never say two different things about the same turn.
+    var roomStatus: RoomStatus {
+        RoomStatus.derive(
+            awaiting: turnIsOpen,
+            liveStepCount: liveSteps.count,
+            draftStreaming: liveDraft != nil,
+            healthState: turnHealth?.state,
+            healthCause: turnHealth?.cause,
+            feedStale: feedStale
+        )
+    }
+
     // MARK: - Lifecycle
 
     func start() {
@@ -249,6 +329,9 @@ final class ChatViewModel: ObservableObject {
     func stop() {
         pollTask?.cancel(); pollTask = nil
         stepTask?.cancel(); stepTask = nil
+        stewardTask?.cancel(); stewardTask = nil
+        stopTimeoutTask?.cancel(); stopTimeoutTask = nil
+        closeTurnStream()
         subscription?.stop(); subscription = nil
     }
 
@@ -288,12 +371,16 @@ final class ChatViewModel: ObservableObject {
     func load() async {
         do {
             let fetched = try await api.fetchMessages(room: room, limit: 100)
+            feedStale = false
             apply(fetched)
             loadState = thread.isEmpty ? .empty : .ready
         } catch {
             // A failed reconcile under a thread that is already rendering must NOT
             // blank the room — the user loses their place for a transient error. Only
             // a failure with nothing on screen is worth showing as a failure.
+            // But while a turn is OPEN, a failed fetch makes "working" a guess —
+            // the status derivation reads this as stuck until the feed recovers.
+            if turnIsOpen { feedStale = true }
             if rows.isEmpty && outbox.isEmpty {
                 loadState = .error((error as? CornerAPI.APIError)?.errorDescription
                     ?? "This room could not be loaded.")
@@ -314,6 +401,7 @@ final class ChatViewModel: ObservableObject {
             if hadRows, let anchor, !fetched.contains(where: { $0.id == anchor }) {
                 fetched = try await api.fetchMessages(room: room, limit: 400)
             }
+            feedStale = false
             let previousIDs = Set(rows.map(\.id))
             let arrived = fetched.filter { !previousIDs.contains($0.id) && !$0.isUser }.count
             apply(fetched)
@@ -324,6 +412,7 @@ final class ChatViewModel: ObservableObject {
                     : "\(arrived) new messages while you were away"
             }
         } catch {
+            if turnIsOpen { feedStale = true }
             if rows.isEmpty && outbox.isEmpty {
                 loadState = .error((error as? CornerAPI.APIError)?.errorDescription
                     ?? "This room could not be loaded.")
@@ -352,6 +441,18 @@ final class ChatViewModel: ObservableObject {
                 return false
             }
             return true
+        }
+
+        // Kill #1 of the no-duplicate contract: the draft dies in the SAME
+        // mutation pass that renders the real row — rows and the cleared draft
+        // commit together, so the reply can never paint twice, not even for a
+        // frame. The bridge's interim progress rows are NOT the answer and do
+        // not clear it (the web's known draft-flicker defect, decided here:
+        // suppressed).
+        if streamDraft != nil,
+           awaitingUserEpoch > 0,
+           fetched.contains(where: { !$0.isUser && !$0.isInterimProgress && $0.epoch >= awaitingUserEpoch }) {
+            closeTurnStream()
         }
 
         rows = fetched
@@ -400,22 +501,34 @@ final class ChatViewModel: ObservableObject {
 
         switch turn {
         case .idle:
+            // A needs_attention verdict outlives the turn on purpose — the room keeps
+            // saying WHY it stopped. But a genuinely new reply means the conversation
+            // continued and the verdict is history; keeping the Stuck chip over a
+            // fresh answer would be the lie in the other direction.
+            if replyIsNew, turnHealth?.state == "needs_attention" {
+                turnHealth = nil
+            }
             return
         case .working:
             if replyIsNew { lastTurnActivity = Date() }
             guard !sawLiveSteps else { return }
-            if let newestReply, awaitingUserEpoch > 0, newestReply.epoch >= awaitingUserEpoch {
+            // The bridge's interim "Still working on this" rows feed the clock
+            // above but are NOT the answer — settling on one is calling a turn
+            // done while it is still working (R18 N3).
+            if let newestReply, !newestReply.isInterimProgress,
+               awaitingUserEpoch > 0, newestReply.epoch >= awaitingUserEpoch {
                 settleTurn()
             }
         case .stalled:
             guard replyIsNew else { return }
             // A reply arrived after the quiet notice: the conversation continues.
             // With live steps flowing the sentinel still owns the stop signal, so
-            // this goes back to working; without steps the reply IS the answer.
+            // this goes back to working; without steps the reply IS the answer —
+            // unless it is an interim progress row, which only proves life.
             lastTurnActivity = Date()
             if sawLiveSteps {
                 turn = .working(detail: liveSteps.last?.text)
-            } else if replyEpoch >= awaitingUserEpoch {
+            } else if newestReply?.isInterimProgress == false, replyEpoch >= awaitingUserEpoch {
                 settleTurn()
             } else {
                 turn = .working(detail: nil)
@@ -432,6 +545,14 @@ final class ChatViewModel: ObservableObject {
             newestSeenStepEpoch = 0
             liveSteps = []
             turnStartedAt = Date()
+            // Optimistic accepted — the web sets it at send. The waking state keys
+            // off it, and the steward's first real read replaces it within 10s.
+            turnHealth = RoomHealth(state: "accepted")
+            repairAskedThisTurn = false
+            stopNotice = nil
+            // The running turn on the lock screen / Dynamic Island (R18 N7).
+            lastActivitySignature = ""
+            TurnActivityService.shared.turnBegan(roomTitle: room.title, ask: text)
         } else {
             // Mid-turn follow-up: the bridge live-steers it into the in-flight turn,
             // so the earlier parents stay tracked — their steps and their settle are
@@ -446,6 +567,13 @@ final class ChatViewModel: ObservableObject {
         turnIsQuiet = false
         turn = .working(detail: liveSteps.last?.text)
         startStepPoll()
+        startStewardPoll()
+        // One stream per TURN, keyed to its first parent — the bridge live-steers
+        // a mid-turn follow-up into the in-flight turn, so the original stream is
+        // the one that keeps narrating. Re-entry with the same key is a no-op.
+        if awaitingParentIDs.count == 1 {
+            openTurnStream(parentID: parentID)
+        }
     }
 
     private func settleTurn() {
@@ -465,6 +593,115 @@ final class ChatViewModel: ObservableObject {
         turnIsQuiet = false
         stepTask?.cancel()
         stepTask = nil
+        stewardTask?.cancel()
+        stewardTask = nil
+        stopTimeoutTask?.cancel()
+        stopTimeoutTask = nil
+        closeTurnStream()
+        turnHealth = nil
+        stopNotice = nil
+        repairAskedThisTurn = false
+        // Catch-all for the teardown paths that carry no better word (dismiss,
+        // resend). The explicit ends above already ran on the main paths, and
+        // the service no-ops once its activity is gone.
+        TurnActivityService.shared.turnEnded(outcomeWord: "Done", startedAt: turnStartedAt)
+    }
+
+    // MARK: - Live reply stream (R18 N3)
+
+    /// One reader per live turn, keyed by the durable parent id. Re-entry with
+    /// the same id is a no-op; a superseded reader can never write into a new
+    /// turn (the key guard below). nil from the transport = no stream lane —
+    /// the engine behaves exactly as before streaming existed.
+    private func openTurnStream(parentID: String) {
+        guard streamKey != parentID else { return }
+        closeTurnStream()
+        guard let events = api.turnStream(room: room, messageID: parentID) else { return }
+        streamKey = parentID
+        streamTask = Task { [weak self] in
+            for await event in events {
+                guard let self, !Task.isCancelled else { return }
+                guard self.streamKey == parentID else { return }
+                self.applyStreamEvent(event)
+            }
+        }
+    }
+
+    private func applyStreamEvent(_ event: TurnStreamEvent) {
+        switch event {
+        case .typing:
+            break
+        case .chunk(let delta):
+            streamBuffer += delta
+            // Live text is life — it feeds the same silence clock steps do.
+            lastTurnActivity = Date()
+            ensureRevealLoop()
+        case .done, .superseded:
+            // The durable row is the only renderable reply. Reveal what was
+            // buffered, reload, and let apply() clear the draft in the same
+            // pass the row renders. done.text is deliberately ignored.
+            flushRevealBuffer()
+            Task { await load() }
+        case .error:
+            // Silent no-op: the step poll is the fallback and keeps running.
+            flushRevealBuffer()
+        }
+    }
+
+    /// The reveal loop: network chunks arrive in bursts, the visible draft
+    /// drains at a steady tick — the cadence owns the paint rate, which is what
+    /// reads as smooth. A zero interval (tests) reveals synchronously.
+    private func ensureRevealLoop() {
+        if revealInterval <= 0 {
+            streamDraft = (streamDraft ?? "") + streamBuffer
+            streamBuffer = ""
+            return
+        }
+        guard revealTask == nil else { return }
+        let interval = revealInterval
+        revealTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(interval))
+                if Task.isCancelled { break }
+                guard let self else { return }
+                if self.drainRevealTick() { break }
+            }
+            self?.revealTask = nil
+        }
+    }
+
+    /// One tick. Returns true when the buffer is empty and the loop may rest —
+    /// a later chunk restarts it.
+    private func drainRevealTick() -> Bool {
+        guard !streamBuffer.isEmpty else { return true }
+        let backlog = streamBuffer.count
+        let take = backlog > Config.streamCatchupThreshold
+            ? max(Config.streamRevealChars, backlog / 15)
+            : Config.streamRevealChars
+        let cut = streamBuffer.index(streamBuffer.startIndex, offsetBy: min(take, backlog))
+        streamDraft = (streamDraft ?? "") + String(streamBuffer[..<cut])
+        streamBuffer = String(streamBuffer[cut...])
+        return streamBuffer.isEmpty
+    }
+
+    /// The stream ended — no reason to keep dripping. Reveal the rest now.
+    private func flushRevealBuffer() {
+        if !streamBuffer.isEmpty {
+            streamDraft = (streamDraft ?? "") + streamBuffer
+            streamBuffer = ""
+        }
+        revealTask?.cancel()
+        revealTask = nil
+    }
+
+    private func closeTurnStream() {
+        streamTask?.cancel()
+        streamTask = nil
+        revealTask?.cancel()
+        revealTask = nil
+        streamKey = nil
+        streamBuffer = ""
+        streamDraft = nil
     }
 
     /// Live steps: the only source that can say "still working" or "stopped" without
@@ -499,7 +736,14 @@ final class ChatViewModel: ObservableObject {
         // The bridge's `settled` sentinel IS "the agent stopped working" — for the
         // whole folded turn, whichever parent id it lands on. Stopping on it is
         // knowing; stopping on a countdown is guessing.
-        if mine.contains(where: \.isSettledSentinel) {
+        if let sentinel = mine.first(where: \.isSettledSentinel) {
+            // The lock screen's final word rides the sentinel's phase: a stop the
+            // user asked for reads "Stopped", everything else reads "Done"
+            // (phase `waiting` is deliberately NOT surfaced as needs-you).
+            TurnActivityService.shared.turnEnded(
+                outcomeWord: sentinel.phase == "stopped" ? "Stopped" : "Done",
+                startedAt: turnStartedAt
+            )
             settleTurn()
             return
         }
@@ -543,6 +787,209 @@ final class ChatViewModel: ObservableObject {
         case .idle:
             break
         }
+
+        // Mirror to the Live Activity, only when the frame actually changed.
+        let word = roomStatus.label
+        let label = WorkProjection.currentLabel(steps: liveSteps, ask: awaitingSentText)
+        let signature = "\(word)|\(label)"
+        if signature != lastActivitySignature {
+            lastActivitySignature = signature
+            TurnActivityService.shared.update(
+                statusWord: word, stepLabel: label, startedAt: turnStartedAt
+            )
+        }
+    }
+
+    // MARK: - Steward (room-health) — R18 N1
+
+    /// The steward loop: every `stewardInterval` seconds while a turn is open, ask
+    /// /api/dashboard/room-health what it thinks. GET until `repairAfter` seconds
+    /// have passed since send, then exactly ONE POST — the same endpoint the
+    /// server's own auto-repair uses; a client ask just asks sooner.
+    private func startStewardPoll() {
+        stewardTask?.cancel()
+        let interval = stewardInterval
+        stewardTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(interval))
+                if Task.isCancelled { return }
+                await self?.pollHealth()
+            }
+        }
+    }
+
+    private func pollHealth() async {
+        guard turnIsOpen, let parentID = awaitingParentID else { return }
+        let sentAt = turnStartedAt ?? Date()
+        let wantRepair = !repairAskedThisTurn && Date().timeIntervalSince(sentAt) >= repairAfter
+        if wantRepair { repairAskedThisTurn = true }
+
+        let result = try? await api.roomHealth(room: room, messageID: parentID, repair: wantRepair)
+        // Health is advisory: a failed or empty read changes nothing. found:false
+        // means the steward does not know this turn — also nothing.
+        guard let health = result ?? nil, health.found != false else { return }
+        // The poll may outlive the turn it asked about.
+        guard turnIsOpen else { return }
+        // A client-set `stopping` outranks routine steward reads: the user's stop
+        // is in flight, and "active" arriving 10s later must not un-say it. Only
+        // an END verdict (settled / needs_attention) may replace it.
+        if turnHealth?.state == "stopping",
+           health.state != "settled", health.state != "needs_attention" {
+            return
+        }
+
+        turnHealth = health
+        switch health.state {
+        case "settled":
+            // The steward says this turn is over — the same server fact the 9999
+            // sentinel carries. Settle, then reload so whatever the reply row says
+            // (or its absence) is what the user sees.
+            TurnActivityService.shared.turnEnded(outcomeWord: "Done", startedAt: turnStartedAt)
+            settleTurn()
+            await load()
+        case "needs_attention" where health.repaired != true:
+            TurnActivityService.shared.turnEnded(
+                outcomeWord: RoomStatus.hardCauses.contains(health.cause ?? "") ? "Stuck" : "Needs you",
+                startedAt: turnStartedAt
+            )
+            haltTurnKeepingHealth()
+        default:
+            break
+        }
+    }
+
+    /// A needs_attention verdict: nothing is running, or the agent needs the user.
+    /// The turn stops being "awaiting" (the web flips awaiting=false on exactly
+    /// this) but the verdict STAYS — clearing it would erase the WHY. The parent id
+    /// and sent text survive too, so recovery actions have something to act on.
+    private func haltTurnKeepingHealth() {
+        let keepHealth = turnHealth
+        let keepParent = awaitingParentID
+        let keepText = awaitingSentText
+        turn = .idle
+        clearTurnTracking()
+        turnHealth = keepHealth
+        awaitingParentID = keepParent
+        awaitingSentText = keepText
+    }
+
+    // MARK: - Stop (R18 N2)
+
+    enum StopControl: Equatable { case hidden, ready, stopping }
+
+    /// What the Stop control should render. Hidden after one honest feature_off —
+    /// a control the bridge will refuse is a lie in button form.
+    var stopControl: StopControl {
+        guard turnIsOpen, !stopUnavailable, awaitingParentID != nil else { return .hidden }
+        if turnHealth?.state == "stopping" { return .stopping }
+        return .ready
+    }
+
+    /// Ask the bridge to stop the running turn. NEVER fakes a settled turn: the
+    /// optimistic state is `stopping`, and the turn only ends when the durable
+    /// stopped row or the settled sentinel arrives through the normal feed. A stop
+    /// the bridge accepted but never confirmed reverts after `stopTimeout` with an
+    /// honest notice — the web's own decision record names the missing timeout as
+    /// the defect to fix in any port.
+    @discardableResult
+    func stopTurn() async -> Bool {
+        guard turnIsOpen, let parentID = awaitingParentID, !stopUnavailable else { return false }
+        guard turnHealth?.state != "stopping" else { return false } // already stopping
+        let previous = turnHealth
+        turnHealth = RoomHealth(state: "stopping")
+        stopNotice = nil
+        startStopTimeout()
+        do {
+            let result = try await api.stopTurn(room: room, messageID: parentID)
+            if result.stopped == true {
+                // Accepted. The stopping state STANDS until the stopped row or
+                // sentinel lands; the timeout covers a watcher that never confirms.
+                await load()
+                return true
+            }
+            if result.featureOff == true { stopUnavailable = true }
+            cancelStopTimeout()
+            if turnHealth?.state == "stopping" { turnHealth = previous }
+            return false
+        } catch {
+            cancelStopTimeout()
+            if turnHealth?.state == "stopping" { turnHealth = previous }
+            return false
+        }
+    }
+
+    private func startStopTimeout() {
+        stopTimeoutTask?.cancel()
+        let timeout = stopTimeout
+        stopTimeoutTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(timeout))
+            if Task.isCancelled { return }
+            await self?.stopTimeoutFired()
+        }
+    }
+
+    private func cancelStopTimeout() {
+        stopTimeoutTask?.cancel()
+        stopTimeoutTask = nil
+    }
+
+    private func stopTimeoutFired() {
+        guard turnIsOpen, turnHealth?.state == "stopping" else { return }
+        turnHealth = nil
+        stopNotice = "Couldn't confirm the stop — the turn may still be running."
+    }
+
+    // MARK: - Recovery actions (R18 N2)
+
+    /// One human repair ask — the same endpoint the steward's 45s auto-ask uses.
+    /// On success the turn resumes as `recovering`; polling picks it back up.
+    @discardableResult
+    func repairTurn() async -> Bool {
+        guard let parentID = awaitingParentID else { return false }
+        let result = try? await api.roomHealth(room: room, messageID: parentID, repair: true)
+        await load()
+        guard let health = result ?? nil else { return false }
+        turnHealth = health
+        if health.repaired == true {
+            // The repair re-ran something: the turn is live again. Re-open the
+            // tracking so steps and the steward keep watching it.
+            if case .idle = turn {
+                lastTurnActivity = Date()
+                turnIsQuiet = false
+                if turnStartedAt == nil { turnStartedAt = Date() }
+                awaitingParentIDs.insert(parentID)
+                turn = .working(detail: liveSteps.last?.text)
+                startStepPoll()
+                startStewardPoll()
+            }
+            turnHealth = RoomHealth(state: "recovering", cause: health.cause)
+            return true
+        }
+        return false
+    }
+
+    /// Dismiss the recovery notice. The verdict is acknowledged, not erased from
+    /// the server — the steward will speak again if it recurs on a future turn.
+    func dismissRecovery() {
+        if turnHealth?.state == "needs_attention" || turnHealth?.state == "recovering" {
+            turnHealth = nil
+        }
+        stopNotice = nil
+    }
+
+    /// agent_silent's way out: send the same words as a genuinely new turn.
+    func resendAfterRecovery() {
+        guard let text = awaitingSentText, !text.isEmpty else { return }
+        turn = .idle
+        clearTurnTracking()
+        enqueue(text: text)
+    }
+
+    /// agent_silent's lighter way out — the web's literal status ask.
+    func askForStatus() {
+        turn = .idle
+        clearTurnTracking()
+        enqueue(text: "Are you still on this? Give me a quick status on my last message.")
     }
 
     /// Ask for notifications the first time an agent actually answers — the one moment

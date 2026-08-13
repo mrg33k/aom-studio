@@ -55,6 +55,12 @@ struct CornerApp: App {
         if ProcessInfo.processInfo.arguments.contains("-glassPreview") {
             ThemeManager.shared.kind = .glass
         }
+        // R18 N6 proof rig: ask for notification permission at launch so a
+        // simctl-pushed payload can render its banner in the capture. Debug-only,
+        // arg-gated — the shipped ask stays where it belongs (after first reply).
+        if ProcessInfo.processInfo.arguments.contains("-askPushPermission") {
+            Task { _ = await PushService.shared.requestAuthorizationExplicitly() }
+        }
         #endif
     }
 
@@ -100,6 +106,21 @@ struct CornerApp: App {
             }
         } else if args.contains("-chatPreview") {
             ChatPreviewHarness()
+        } else if args.contains("-turnStatesPreview") {
+            // R18 N1: the status vocabulary + waking/opener/working indicator faces.
+            TurnStatesPreviewHarness()
+        } else if args.contains("-stopRecoveryPreview") {
+            // R18 N2: stop control, honesty strip, recovery notices.
+            StopRecoveryPreviewHarness()
+        } else if args.contains("-streamingPreview") {
+            // R18 N3: the live draft bubble mid-write with the work card under it.
+            StreamingPreviewHarness()
+        } else if args.contains("-scrollPreview") {
+            // R18 N4: the reading-history state with the jump-to-latest pill.
+            ScrollPreviewHarness()
+        } else if args.contains("-liveActivityPreview") {
+            // R18 N7: fixture running-turn Live Activity for the island capture.
+            LiveActivityPreviewHarness()
         } else if args.contains("-settingsPreview") {
             // The Settings sheet's own render, no auth: identity rows show their
             // signed-out placeholders, the workspace list shows its failure row.

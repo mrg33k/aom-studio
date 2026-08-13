@@ -744,6 +744,88 @@ final class CornerAPI: ObservableObject {
         return (try? JSONDecoder().decode(StepsEnvelope.self, from: data))?.steps ?? []
     }
 
+    /// GET|POST /api/dashboard/room-health — the steward's verdict on one turn.
+    /// GET inspects; `repair: true` POSTs, which performs the repair server-side
+    /// (the same endpoint the 45s auto-repair uses — a client ask just asks sooner).
+    /// Returns nil on any failure: health is advisory, and a failed advisory read
+    /// must never take a room down.
+    func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth? {
+        let world = try requireWorld()
+        let request: URLRequest
+        if repair {
+            request = try await authorizedRequest(
+                path: "/api/dashboard/room-health",
+                method: "POST",
+                jsonBody: ["client_id": world, "message_id": messageID]
+            )
+        } else {
+            request = try await authorizedRequest(
+                path: "/api/dashboard/room-health",
+                queryItems: [
+                    URLQueryItem(name: "client_id", value: world),
+                    URLQueryItem(name: "message_id", value: messageID),
+                ]
+            )
+        }
+        let data = try await run(request)
+        return try? JSONDecoder().decode(RoomHealth.self, from: data)
+    }
+
+    /// GET /api/dashboard/chat-bridge?stream=<messageId> — the live-reply SSE
+    /// lane (R18 N3). Not an EventSource: EventSource cannot carry Authorization,
+    /// which is exactly why the web reads it with fetch + reader; here it is
+    /// URLSession.bytes + line splitting. Every event is one single-line JSON
+    /// `data:` payload, so line reads are a correct SSE parse for THIS stream.
+    /// Every failure ends the stream silently — the 1.5s step poll is the
+    /// fallback lane and keeps running regardless. The proxy hard-caps a stream
+    /// at 5 minutes; a turn outliving it simply falls back to steps.
+    func turnStream(room: Room, messageID: String) -> AsyncStream<TurnStreamEvent>? {
+        AsyncStream { continuation in
+            let task = Task {
+                do {
+                    var request = try await self.authorizedRequest(
+                        path: "/api/dashboard/chat-bridge",
+                        queryItems: [URLQueryItem(name: "stream", value: messageID)]
+                    )
+                    request.timeoutInterval = 330 // past the proxy's own 300s cap
+                    let (bytes, response) = try await URLSession.shared.bytes(for: request)
+                    guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                        continuation.finish()
+                        return
+                    }
+                    for try await line in bytes.lines {
+                        if Task.isCancelled { break }
+                        guard let event = TurnStreamEvent.parse(line: line) else { continue }
+                        continuation.yield(event)
+                        if case .done = event { break }
+                        if case .superseded = event { break }
+                        if case .error = event { break }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish()
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// POST /api/dashboard/chat-bridge {action:'stop', message_id} — ask the bridge
+    /// to stop the running turn. The proxy answers 200 with a StopResult either
+    /// way; feature_off means the bridge flag is off (or the bridge is out of
+    /// reach) and the control should hide for the rest of the session.
+    func stopTurn(room: Room, messageID: String) async throws -> StopResult {
+        let world = try requireWorld()
+        let request = try await authorizedRequest(
+            path: "/api/dashboard/chat-bridge",
+            method: "POST",
+            jsonBody: ["action": "stop", "message_id": messageID, "client_id": world]
+        )
+        let data = try await run(request)
+        return (try? JSONDecoder().decode(StopResult.self, from: data))
+            ?? StopResult(stopped: false, reason: "bad_response")
+    }
+
     // MARK: - Rail
 
     struct ProjectRow: Decodable, Identifiable, Hashable {
