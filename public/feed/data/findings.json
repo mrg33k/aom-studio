@@ -1,6 +1,59 @@
 {
  "days": [
   {
+   "date": "2026-08-13",
+   "items": [
+    {
+     "lane": "claude-animation",
+     "headline": "New community skill pack: GSAP/SVG/Lottie web-animation skills for Claude Code",
+     "body": "iart-ai/web-animation-skills is a separate 9-skill pack (gsap-web, 60fps-animation, page-transition-animation, accessible-animation, micro-interaction, glassmorphism, svg-animation, lottie-animation, ascii-animation) distinct from the already-covered motion-skills 51-pack — this one targets code-driven DOM/SVG web motion rather than full video production. Useful for CV6/dashboard UI polish, not just reels.",
+     "action": "Trial gsap-web + accessible-animation skills on one CV6 UI polish task and compare to impeccable's current motion guidance.",
+     "source_name": "GitHub — iart-ai/web-animation-skills",
+     "source_url": "https://github.com/iart-ai/web-animation-skills"
+    },
+    {
+     "lane": "claude-animation",
+     "headline": "Independent Remotion skill for Claude adds automatic frame-inspection QA before delivery",
+     "body": "haidrrrry/claude-remotion-skill is a community (MIT) alternative to remotion-dev/skills: it encodes 10 motion-design rules, 17 reusable motion patterns, and an automatic render-then-inspect-frames QA step before handing back a clip. That QA pattern maps directly onto how AOM's social-reels pipeline captures and verifies MP4 output.",
+     "action": "Read the QA/frame-inspection pattern in this skill and consider porting it into social-reels' capture-and-verify step.",
+     "source_name": "GitHub — haidrrrry/claude-remotion-skill",
+     "source_url": "https://github.com/haidrrrry/claude-remotion-skill"
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "Devin Desktop ships Spaces + Subagents: shared-context containers for multi-agent work",
+     "body": "Cognition's Devin Desktop added \"Spaces\" (July 29) that group agent sessions, PRs, files and context into one task-level container so multiple agents — Devin, Claude Agent, Codex, OpenCode — share the same working understanding via the open Agent Client Protocol. Aug 10 added a full Subagents management panel, flat agents/<name>.md subagent definitions, and org-level permission composition where an explicit deny always wins.",
+     "action": "Prototype a Space-style container for Corner rooms bundling a task's chat, files, and worker sessions, and audit permission composition against theirs.",
+     "source_name": "Devin Docs Changelog",
+     "source_url": "https://docs.devin.ai/desktop/changelog"
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "MCP 2026-07-28 spec goes stateless and formalizes a Tasks lifecycle for long-running work",
+     "body": "The Model Context Protocol's July 28 release moved from a stateful, session-based model to stateless request/response (serverless/edge-deployable) and graduated MCP Tasks to an official extension: tool calls return a task handle that clients poll via tasks/get, tasks/update, tasks/cancel. MCP Apps also graduated, letting servers render interactive UI inline in a conversation.",
+     "action": "Map Corner's dispatched-task/worker pattern onto the MCP Tasks handle model so external tools could poll a Corner worker without a custom integration.",
+     "source_name": "Claude by Anthropic",
+     "source_url": "https://claude.com/blog/bringing-mcp-2026-07-28-to-claude"
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "Klaviyo acquires AI agent startup Agency, absorbing 25-person team into its marketing/support agents",
+     "body": "Klaviyo announced Aug 5, 2026 it's acquiring Agency, the AI-native customer-engagement startup founded by Elias Torres ($32M raised from Sequoia, Menlo, Felicis), who becomes Klaviyo's Chief Product Officer. The deal folds Agency's proactive AI agents into Klaviyo's Composer (AI campaign builder) and Customer Agent products, using Klaviyo's claimed 9 billion consumer profiles as the data layer — a template for how big martech platforms are buying AI-agency capability outright instead of building it.",
+     "action": "Position AOM's pitch around judgment and brand-specific creative direction that platform-bundled AI agents can't replicate.",
+     "source_name": "Klaviyo Newsroom",
+     "source_url": "https://www.klaviyo.com/newsroom/agency-elias-torres"
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "Meta Business Agent starts charging per-token (~$2/M tokens) from Aug 1, 2026 after 1M-business pilot",
+     "body": "Meta's AI agent for WhatsApp/Instagram/Messenger — which fields customer inquiries, books appointments, vets leads, and completes transactions — moved from free pilot to metered paid usage on Aug 1, 2026, following a rollout that hit over 1 million businesses in pilot markets before its June global launch. Meta is now directly monetizing the AI-front-desk function small businesses previously paid agencies or dedicated tools to handle.",
+     "action": "Check whether any AOM construction-client retainer line item overlaps with Meta Business Agent's paid features, and reprice around what a platform-native agent can't do.",
+     "source_name": "TechCrunch",
+     "source_url": "https://techcrunch.com/2026/06/03/metas-ai-agent-for-whatsapp-business-is-now-available-globally/"
+    }
+   ]
+  },
+  {
    "date": "2026-08-12",
    "items": [
     {
