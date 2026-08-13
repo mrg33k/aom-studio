@@ -535,6 +535,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/privacy",
+      "destination": "/index.html"
+    },
+    {
       "source": "/internal/scope/higher-orbits-biz7tkhq9h",
       "destination": "/scope-higher-orbits-biz7tkhq9h.html"
     },
