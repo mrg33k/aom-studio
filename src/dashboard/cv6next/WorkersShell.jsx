@@ -90,6 +90,77 @@ function roomPayload(p, worldId, text) {
   return { ...base, agent: p.who || 'corner' };
 }
 
+// ── The status board (R-SMOOTHNESS Round H) ─────────────────────────────────
+// The whole queue in TaskQueueFAB's proven order, not just running work:
+// waiting-on-you (with the actual question + an inline answer), queued, and
+// the recent finished/failed tail. Polls v2-task-list every 5s while the
+// window is open — same cadence the orphaned FAB used.
+function useTaskBoard(worldId) {
+  const [board, setBoard] = useState({ needs_input: [], queued: [], done: [], failed: [] });
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    const load = async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/v2-task-list?client_id=${encodeURIComponent(worldId)}&limit=50`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!alive) return;
+        const rows = Array.isArray(d.tasks) ? d.tasks : [];
+        const pick = (st) => rows.filter((t) => t.status === st);
+        setBoard({
+          needs_input: pick('needs_input'),
+          queued: [...pick('queued'), ...pick('waiting')],
+          done: pick('done').slice(0, 5),
+          failed: pick('failed').slice(0, 5),
+        });
+      } catch { /* poll again */ }
+    };
+    load();
+    const t = setInterval(load, 5000);
+    return () => { alive = false; clearInterval(t); };
+  }, [worldId]);
+  return board;
+}
+
+// Inline answer for a waiting task: the typed reply posts into the task's room
+// (the documented needs_input answer path), quoting the question for context.
+function AnswerBox({ task, worldId }) {
+  const [text, setText] = useState('');
+  const [sent, setSent] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const q = String(task?.metadata?.question || '').trim();
+  if (sent) return <div style={{ ...btnRow, color: 'var(--muted)', fontSize: 12 }}>Answer sent to the room.</div>;
+  const send = async () => {
+    const body = text.trim();
+    if (!body) return;
+    setFailed(false);
+    try {
+      const r = await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(roomPayload({ project: task.project, mission: task.metadata?.mission_slug, who: task.agent }, worldId,
+          q ? `Answering your question ("${q.slice(0, 120)}"): ${body}` : body)),
+      });
+      if (r && r.ok) setSent(true); else setFailed(true);
+    } catch { setFailed(true); }
+  };
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
+          placeholder="Type your answer…"
+          style={{ flex: 1, height: 32, borderRadius: 10, border: '1px solid var(--divider)', background: 'var(--surface-2)', color: 'var(--fg)', padding: '0 10px', font: '400 13px var(--font-sans)' }}
+        />
+        <button type="button" style={startBtn} onClick={send}>Send</button>
+      </div>
+      {failed ? <div style={{ marginTop: 4, fontSize: 12, color: 'var(--accent)' }}>That didn't send. Try again.</div> : null}
+    </div>
+  );
+}
+
 function SectionHeader({ label, count, dim }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -230,12 +301,14 @@ export default function WorkersShell({ onClose, expanded = false, onToggleWidth 
   // room=null -> the whole world's in-flight work: this window is the one place
   // that answers "is anything running?", so it never narrows to a project.
   const { tasks, promises } = useRunningTasks(null);
+  const board = useTaskBoard(worldId);
   const [now, setNow] = useState(() => Date.now());
   // Dismissed ids the server confirmed, hidden immediately; the hook's next
   // refetch (realtime on followups fires within seconds) makes it permanent.
   const [cleared, setCleared] = useState(() => new Set());
   const livePromises = promises.filter((p) => !cleared.has(p.id));
-  const total = tasks.length + livePromises.length;
+  const boardTotal = board.needs_input.length + board.queued.length + board.done.length + board.failed.length;
+  const total = tasks.length + livePromises.length + boardTotal;
 
   useEffect(() => {
     if (!total) return undefined;
@@ -311,6 +384,65 @@ export default function WorkersShell({ onClose, expanded = false, onToggleWidth 
                   />
                 );
               })}
+
+              {/* ── The status board (Round H): the rest of the queue, in the
+                     proven FAB order. Needs-you first — it is the section that
+                     can unblock a worker right now. */}
+              {board.needs_input.length ? (
+                <div style={{ marginTop: 8 }}>
+                  <SectionHeader label="Waiting on you" count={board.needs_input.length} />
+                </div>
+              ) : null}
+              {board.needs_input.map((t, idx) => (
+                <Row
+                  key={t.id}
+                  title={t.title || t.text || 'A task'}
+                  meta={String(t.metadata?.question || '').slice(0, 200)}
+                  wrap
+                  actions={<AnswerBox task={t} worldId={worldId} />}
+                  separated={idx < board.needs_input.length - 1}
+                />
+              ))}
+
+              {board.queued.length ? (
+                <div style={{ marginTop: 8 }}>
+                  <SectionHeader label="Queued" count={board.queued.length} dim />
+                </div>
+              ) : null}
+              {board.queued.map((t, idx) => (
+                <Row
+                  key={t.id}
+                  title={t.title || t.text || 'A task'}
+                  meta={[titleCaseName(t.agent), t.project && `in ${t.project.replace(/-/g, ' ')}`].filter(Boolean).join(' · ')}
+                  metaQuiet
+                  separated={idx < board.queued.length - 1}
+                />
+              ))}
+
+              {board.done.length ? (
+                <div style={{ marginTop: 8 }}>
+                  <SectionHeader label="Finished recently" count={board.done.length} dim />
+                </div>
+              ) : null}
+              {board.done.map((t, idx) => (
+                <Row key={t.id} title={t.title || t.text || 'A task'} metaQuiet separated={idx < board.done.length - 1} />
+              ))}
+
+              {board.failed.length ? (
+                <div style={{ marginTop: 8 }}>
+                  <SectionHeader label="Failed" count={board.failed.length} dim />
+                </div>
+              ) : null}
+              {board.failed.map((t, idx) => (
+                <Row
+                  key={t.id}
+                  title={t.title || t.text || 'A task'}
+                  meta={String(t.error || '').slice(0, 160)}
+                  metaQuiet
+                  rightTone="var(--accent)"
+                  separated={idx < board.failed.length - 1}
+                />
+              ))}
             </>
           )}
         </div>

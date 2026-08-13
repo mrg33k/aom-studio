@@ -261,6 +261,36 @@ export async function applyScopedRepair(receipt, health) {
   return { repaired: !['skipped', 'no_expired_job'].includes(outcome), action, outcome, receipt: updated, health: { ...health, state: updated.state } }
 }
 
+// Web push on the needs-you TRANSITION (R-SMOOTHNESS Round H). Fired where the
+// state is WRITTEN, so dedup is structural: a transition happens once. The
+// notification tag adds OS-level belt-and-suspenders (same tag replaces, never
+// stacks). Fire-and-forget — a push failure must never cost a health verdict.
+async function notifyNeedsYou(receipt, health) {
+  try {
+    const base = process.env.PUSH_SELF_URL || 'https://www.aheadofmarket.com'
+    const headers = { 'Content-Type': 'application/json' }
+    if (process.env.PUSH_WEBHOOK_SECRET) headers['x-push-secret'] = process.env.PUSH_WEBHOOK_SECRET
+    const room = String(receipt.room_id || '').split(':').pop().replace(/[-_]/g, ' ').trim()
+    const causeCopy = {
+      settled_without_reply: 'The worker stopped without leaving a reply.',
+      runner_failed: 'The worker reported a failure.',
+      agent_silent: 'The agent went quiet mid-turn.',
+      unclaimed: 'A turn could not start after a recovery attempt.',
+    }[health.cause] || 'A turn needs your decision.'
+    await fetch(`${base}/api/push/notify`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        worldId: receipt.client_id,
+        title: `${room ? room.replace(/\b\w/g, (c) => c.toUpperCase()) : 'A room'} needs you`,
+        body: causeCopy,
+        tag: `needs-you-${receipt.message_id}`,
+        url: '/dashboard',
+      }),
+    })
+  } catch { /* fire-and-forget */ }
+}
+
 export async function inspectTurnByMessage({ clientId, messageId, repair = false }) {
   const rows = await db(`room_turn_receipts?client_id=eq.${encodeURIComponent(clientId)}&message_id=eq.${encodeURIComponent(messageId)}&select=*&limit=1`)
   const receipt = rows?.[0]
@@ -268,6 +298,9 @@ export async function inspectTurnByMessage({ clientId, messageId, repair = false
   const evidence = await receiptEvidence(receipt)
   const health = classifyTurnHealth({ receipt, ...evidence })
   const saved = await updateReceipt(receipt, health)
+  if (receipt.state !== 'needs_attention' && health.state === 'needs_attention') {
+    await notifyNeedsYou(receipt, health)
+  }
   if (repair && health.repair) {
     const result = await applyScopedRepair(saved, health)
     return { found: true, ...result, state: result.receipt?.state || health.state, cause: health.cause, evidence: saved.evidence }
