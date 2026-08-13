@@ -67,6 +67,14 @@ function getBridgeUrl() {
   return LOCAL_BRIDGE_URL
 }
 
+// R-SMOOTHNESS Round C: shared token for the two tunnel-publishable bridge
+// routes (/stream, /interrupt). The bridge refuses tunneled requests without
+// it; local dev (no tunnel) never needs it.
+const BRIDGE_PUBLIC_TOKEN = process.env.BRIDGE_PUBLIC_TOKEN || ''
+function bridgeAuthHeaders() {
+  return BRIDGE_PUBLIC_TOKEN ? { 'X-Bridge-Token': BRIDGE_PUBLIC_TOKEN } : {}
+}
+
 // What the agent is told when the sender can't be named. NEVER a person's name:
 // the bridge turns user_name into "You are talking to **X**", and "Patrik" there
 // is an authorization signal agents act on. An honest label makes the absence
@@ -416,6 +424,7 @@ export default async function handler(req, res) {
 
     try {
       const streamRes = await fetch(`${bridgeUrl}/stream/${encodeURIComponent(messageId)}`, {
+        headers: bridgeAuthHeaders(),
         signal: AbortSignal.timeout(300000), // 5 min max stream
       })
 
@@ -466,6 +475,34 @@ export default async function handler(req, res) {
       throw err
     }
     body.client_id = verified.tenant
+
+    // ---- Stop (R-SMOOTHNESS Round C) ---------------------------------------
+    // Forward a stop request for an in-flight turn to the local bridge's
+    // /interrupt. Tenant-verified above; the bridge does the actual interrupt
+    // and owns the durable write. Every failure shape maps to an honest
+    // {stopped:false} the UI treats as feature-off (fold remains the floor).
+    if ((body.action || '') === 'stop') {
+      const stopId = String(body.message_id || '').trim()
+      if (!stopId) return res.status(400).json({ error: 'message_id required' })
+      try {
+        const r = await fetch(`${getBridgeUrl()}/interrupt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...bridgeAuthHeaders() },
+          body: JSON.stringify({ message_id: stopId }),
+          signal: AbortSignal.timeout(8000),
+        })
+        const j = await r.json().catch(() => ({}))
+        return res.status(200).json({
+          stopped: !!j.stopped,
+          reason: j.reason || null,
+          already: !!j.already,
+          pre_send: !!j.pre_send,
+          feature_off: r.status === 404,
+        })
+      } catch (_) {
+        return res.status(200).json({ stopped: false, reason: 'bridge_unreachable', feature_off: true })
+      }
+    }
 
     // WHO is sending, resolved from the same verified session. Everything below
     // attributes to this and only this — body.user_name / body.user_id are never
