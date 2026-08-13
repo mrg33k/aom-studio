@@ -26,7 +26,7 @@ export default function HomeR38Preview() {
             onClick={(e) => e.stopPropagation()}
             className="bg-[#F5F3EE] border border-[#0A0A08]/10 p-10 max-w-md mx-4 cursor-default"
           >
-            <h3 className="font-anton uppercase text-[28px] leading-[1.0] text-[#0A0A08] mb-4">
+            <h3 className="font-anton uppercase text-[30px] leading-[1.0] text-[#0A0A08] mb-4">
               Tell us what you need
             </h3>
             <p className="font-hanken text-[15px] text-[#0A0A08]/70 leading-[1.6] mb-7">

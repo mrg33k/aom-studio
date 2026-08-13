@@ -58,7 +58,7 @@ export default function StickyVideoDeck({ items = [], theme = 'classic' }) {
         <>
           <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/65 to-transparent pointer-events-none z-10" />
           <div className="absolute bottom-3 left-4 right-4 z-20">
-            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6] truncate">{it.client}</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#F0ECE6] truncate">{it.client}</p>
           </div>
         </>
       )}

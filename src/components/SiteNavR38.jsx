@@ -34,7 +34,7 @@ export default function SiteNavR38({ onStartProject }) {
       }`}
     >
       <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-[72px] flex items-center justify-between gap-8">
-        <a href="/" className="font-mono text-[13px] font-medium uppercase tracking-[0.22em] text-[#0A0A08] no-underline whitespace-nowrap">
+        <a href="/" className="font-mono text-[15px] font-medium uppercase tracking-[0.22em] text-[#0A0A08] no-underline whitespace-nowrap">
           {NAV.brand}
         </a>
 
@@ -59,11 +59,11 @@ export default function SiteNavR38({ onStartProject }) {
                 >
                   {m.cols.map((col, ci) => (
                     <div key={ci} className={`p-8 flex flex-col gap-4 ${ci > 0 ? 'border-l border-[#0A0A08]/10' : ''}`}>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#C43800]">{col.kick}</p>
+                      <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#C43800]">{col.kick}</p>
                       {col.links.map((l) => (
                         <a key={l.t} href={l.href} onClick={() => setOpen(null)} className="group block no-underline">
                           <p className="font-hanken text-[15px] font-semibold text-[#0A0A08] group-hover:text-[#C43800] transition-colors">{l.t}</p>
-                          <p className="font-hanken text-[13px] text-[#0A0A08]/55 mt-0.5">{l.s}</p>
+                          <p className="font-hanken text-[15px] text-[#0A0A08]/55 mt-0.5">{l.s}</p>
                         </a>
                       ))}
                     </div>
@@ -101,7 +101,7 @@ export default function SiteNavR38({ onStartProject }) {
               <div key={m.label} className="border-b border-[#0A0A08]/10">
                 <button
                   onClick={() => setMobileOpen({ ...mobileOpen, [m.label]: !openM })}
-                  className="w-full flex items-center justify-between py-4 font-mono text-[12px] uppercase tracking-[0.22em] text-[#0A0A08]"
+                  className="w-full flex items-center justify-between py-4 font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08]"
                 >
                   {m.label}
                   <ChevronDown size={13} className={`transition-transform ${openM ? 'rotate-180' : ''}`} />
@@ -111,7 +111,7 @@ export default function SiteNavR38({ onStartProject }) {
                     {m.cols.flatMap((c) => c.links).map((l) => (
                       <a key={l.t} href={l.href} onClick={() => setMobileNav(false)} className="no-underline">
                         <p className="font-hanken text-[15px] font-semibold text-[#0A0A08]">{l.t}</p>
-                        <p className="font-hanken text-[13px] text-[#0A0A08]/55">{l.s}</p>
+                        <p className="font-hanken text-[15px] text-[#0A0A08]/55">{l.s}</p>
                       </a>
                     ))}
                   </div>
@@ -120,7 +120,7 @@ export default function SiteNavR38({ onStartProject }) {
             );
           })}
           {NAV.flat.map((l) => (
-            <a key={l.label} href={l.href} onClick={() => setMobileNav(false)} className="block py-4 font-mono text-[12px] uppercase tracking-[0.22em] text-[#0A0A08] no-underline border-b border-[#0A0A08]/10">
+            <a key={l.label} href={l.href} onClick={() => setMobileNav(false)} className="block py-4 font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08] no-underline border-b border-[#0A0A08]/10">
               {l.label}
             </a>
           ))}

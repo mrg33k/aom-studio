@@ -1,10 +1,12 @@
 import React from 'react';
-import { ArrowRight, ArrowUpRight, Play } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Play, ClipboardList, Camera, Globe, Megaphone, MessageSquare } from 'lucide-react';
 import StickyVideoDeck from './StickyVideoDeck';
 import LazyGumlet from './LazyGumlet';
 import { HERO_DECK, RECENT_WORK, CASE_TILES } from './content';
 
 // Trades and job-site reels lead the deck on the contractor-first page.
+const MODULE_ICONS = [ClipboardList, Camera, Globe, Megaphone, MessageSquare];
+
 const DECK_TRADES_FIRST = [...HERO_DECK].sort((a, b) => {
   const lead = ['Primrose Ambition', 'NGOTS Restoration', "Tiffany's", 'Nook 10 Year'];
   const ai = lead.indexOf(a.client); const bi = lead.indexOf(b.client);
@@ -19,7 +21,7 @@ import { HERO, DEPT, NINETY, MONTH, FILMS, WORK, ALACARTE, MATH, PROOF, CLOSING 
  */
 
 const Kick = ({ children, dark }) => (
-  <p className={`font-mono text-[10.5px] uppercase tracking-[0.32em] mb-5 ${dark ? 'text-[#F04404]' : 'text-[#C43800]'}`}>
+  <p className={`font-mono text-[11px] uppercase tracking-[0.32em] mb-5 ${dark ? 'text-[#F04404]' : 'text-[#C43800]'}`}>
     {children}
   </p>
 );
@@ -45,15 +47,15 @@ export default function HomeConsoleR38({ openBrief }) {
         <div className="relative px-6 md:px-12 pt-28 md:pt-36 pb-12 lg:pb-0 lg:py-40 max-w-[1608px] mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-24 relative lg:min-h-[700px]">
             <div className="lg:w-1/2 flex flex-col">
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#C43800] mb-8">
+              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#C43800] mb-8">
                 {HERO.eyebrow}
               </p>
-              <h1 className="font-anton font-normal uppercase text-[12.5vw] md:text-[56px] lg:text-[62px] xl:text-[74px] leading-[0.96] tracking-[-0.01em]">
+              <h1 className="font-anton font-normal uppercase text-[12.5vw] md:text-[56px] lg:text-[62px] xl:text-[72px] leading-[0.96] tracking-[-0.01em]">
                 {HERO.h1Lines[0]}<br />
                 {HERO.h1Lines[1]}<br />
                 <em className="font-hanken normal-case italic font-medium tracking-[-0.02em] text-[#F04404]">{HERO.h1Emphasis}</em>
               </h1>
-              <p className="text-[16px] md:text-[18px] text-[#0A0A08]/70 mt-8 leading-[1.55] max-w-xl">
+              <p className="text-[15px] md:text-[17px] text-[#0A0A08]/70 mt-8 leading-[1.55] max-w-xl">
                 {HERO.sub}
               </p>
               <div className="flex flex-wrap items-center gap-4 mt-10">
@@ -104,13 +106,13 @@ export default function HomeConsoleR38({ openBrief }) {
       {/* 2. RECENT WORK — honest marquee, paper-soft band */}
       <section className="border-y border-[#0A0A08]/10 py-6 overflow-hidden bg-[#EDE9E1]">
         <div className="px-6 md:px-12 max-w-[1440px] mx-auto pb-4">
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#C43800]">Recent work</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.32em] text-[#C43800]">Recent work</p>
         </div>
         <div className="flex items-center gap-5 whitespace-nowrap animate-marquee-console">
           {[...RECENT_WORK, ...RECENT_WORK, ...RECENT_WORK].map((w, i) => (
             <div key={i} className="inline-flex items-center gap-3 border border-[#0A0A08]/12 bg-[#F5F3EE] rounded-full pl-5 pr-4 py-2.5 shrink-0">
-              <span className="font-anton uppercase text-[18px] md:text-[22px] tracking-[0.01em] text-[#0A0A08]">{w.client}</span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#0A0A08]/55 border-l border-[#0A0A08]/15 pl-3">{w.tag}</span>
+              <span className="font-anton uppercase text-[17px] md:text-[22px] tracking-[0.01em] text-[#0A0A08]">{w.client}</span>
+              <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08]/55 border-l border-[#0A0A08]/15 pl-3">{w.tag}</span>
             </div>
           ))}
         </div>
@@ -127,18 +129,22 @@ export default function HomeConsoleR38({ openBrief }) {
           <div className="lg:col-span-5">
             <Kick dark>{DEPT.kick}</Kick>
             <H2 dark>{DEPT.open}</H2>
-            <p className="text-[16px] text-[#F5F3EE]/72 mt-7 leading-[1.6] max-w-lg">{DEPT.para}</p>
+            <p className="text-[17px] text-[#F5F3EE]/72 mt-7 leading-[1.6] max-w-lg">{DEPT.para}</p>
           </div>
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {DEPT.modules.map((m, i) => (
+            {DEPT.modules.map((m, i) => {
+              const Icon = MODULE_ICONS[i];
+              return (
               <div
                 key={m.label}
                 className={`border border-[#F5F3EE]/14 p-8 flex flex-col gap-3 hover:border-[#F04404]/60 transition-colors ${i % 2 === 1 ? 'sm:translate-y-10' : ''}`}
               >
-                <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#F04404]">{m.label}</p>
+                <Icon size={20} strokeWidth={1.75} className="text-[#F04404] mb-1" aria-hidden="true" />
+                <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#F04404]">{m.label}</p>
                 <p className="text-[15px] text-[#F5F3EE]/85 leading-[1.6]">{m.body}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -149,20 +155,24 @@ export default function HomeConsoleR38({ openBrief }) {
           <div className="lg:col-span-6">
             <Kick>{MONTH.kick}</Kick>
             <H2>{MONTH.tail}</H2>
-            <p className="text-[16px] text-[#0A0A08]/60 mt-7 leading-[1.6] max-w-lg">{MONTH.body}</p>
+            <p className="text-[17px] text-[#0A0A08]/60 mt-7 leading-[1.6] max-w-lg">{MONTH.body}</p>
             <div className="mt-10">
               {MONTH.weeks.map((w) => (
                 <div key={w.wk} className="flex items-baseline gap-6 py-4 border-t border-[#0A0A08]/12 last:border-b">
-                  <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#C43800] min-w-[76px]">{w.wk}</span>
-                  <span className="font-anton uppercase text-[24px] md:text-[30px] tracking-[0.01em] text-[#0A0A08]">{w.what}</span>
+                  <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#C43800] min-w-[76px]">{w.wk}</span>
+                  <span className="font-anton uppercase text-[22px] md:text-[30px] tracking-[0.01em] text-[#0A0A08]">{w.what}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div className="lg:col-span-6 flex flex-col justify-center">
+          <div className="lg:col-span-6 flex flex-col gap-12 justify-center">
+            <div className="relative min-h-[440px]">
+              <img src="/aom-kit/img/welder.png" alt="Welder working a steel beam" className="absolute top-0 right-0 w-[62%] aspect-[3/4] object-cover" />
+              <img src="/aom-kit/img/ridge.png" alt="Crew on a rooftop ridge line" className="absolute bottom-0 left-0 w-[46%] aspect-[4/5] object-cover border-8 border-[#F5F3EE]" />
+            </div>
             <div className="border-l border-[#0A0A08]/15 pl-8 py-2">
               <Kick>{NINETY.kick}</Kick>
-              <p className="text-[18px] md:text-[20px] text-[#0A0A08]/85 leading-[1.6] max-w-xl">{NINETY.body}</p>
+              <p className="text-[17px] text-[#0A0A08]/85 leading-[1.6] max-w-xl">{NINETY.body}</p>
             </div>
           </div>
         </div>
@@ -179,8 +189,8 @@ export default function HomeConsoleR38({ openBrief }) {
                 <LazyGumlet id={f.reel} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent z-10 pointer-events-none" />
                 <div className="absolute bottom-7 left-7 right-7 z-20">
-                  <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#F04404] mb-3">{f.label}</p>
-                  <h3 className="font-anton uppercase text-[26px] md:text-[36px] leading-[0.98] tracking-[0.005em] text-[#F5F3EE]">{f.title}</h3>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#F04404] mb-3">{f.label}</p>
+                  <h3 className="font-anton uppercase text-[22px] md:text-[30px] leading-[0.98] tracking-[0.005em] text-[#F5F3EE]">{f.title}</h3>
                   <span className="mt-5 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[#F5F3EE]">
                     <Play size={13} className="fill-current text-[#F04404]" /> Watch
                   </span>
@@ -200,15 +210,15 @@ export default function HomeConsoleR38({ openBrief }) {
               <H2>{WORK.h2}</H2>
             </div>
           </div>
-          <p className="text-[16px] text-[#0A0A08]/60 leading-[1.6] max-w-xl mb-12">{WORK.lede}</p>
+          <p className="text-[17px] text-[#0A0A08]/60 leading-[1.6] max-w-xl mb-12">{WORK.lede}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {CASE_TILES.map((t) => (
               <a key={t.client} href="#" className="group block relative aspect-[5/4] overflow-hidden bg-[#0A0A08] no-underline border border-[#0A0A08]/15 hover:border-[#F04404]/70 transition-colors">
                 <LazyGumlet id={t.reel} className="transition-transform duration-700 group-hover:scale-[1.05]" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
                 <div className="absolute bottom-5 left-5 right-5">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F04404] mb-1.5">{t.tag}</p>
-                  <p className="font-anton uppercase text-[20px] md:text-[24px] leading-tight tracking-[0.01em] text-[#F5F3EE]">{t.client}</p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#F04404] mb-1.5">{t.tag}</p>
+                  <p className="font-anton uppercase text-[22px] leading-tight tracking-[0.01em] text-[#F5F3EE]">{t.client}</p>
                 </div>
               </a>
             ))}
@@ -218,29 +228,38 @@ export default function HomeConsoleR38({ openBrief }) {
 
       {/* 7. A LA CARTE — paper-soft band, mid-page */}
       <section id="one-thing" className="py-20 md:py-24 px-6 md:px-12 bg-[#EDE9E1] border-y border-[#0A0A08]/10">
-        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-8">
-          <div>
-            <H2 className="!text-[32px] md:!text-[52px]">{ALACARTE.kick}</H2>
-            <p className="text-[16px] text-[#0A0A08]/65 mt-5 leading-[1.6] max-w-xl">{ALACARTE.body}</p>
+        <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="lg:col-span-6">
+            <H2 className="!text-[30px] md:!text-[42px]">{ALACARTE.kick}</H2>
+            <p className="text-[17px] text-[#0A0A08]/65 mt-5 leading-[1.6] max-w-xl">{ALACARTE.body}</p>
           </div>
-          <button
-            onClick={() => openBrief?.()}
-            className="self-start md:self-center shrink-0 font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08] border border-[#0A0A08]/35 rounded-full px-7 py-4 hover:border-[#F04404] hover:text-[#C43800] transition-colors inline-flex items-center gap-2"
-          >
-            {ALACARTE.link} <ArrowUpRight size={14} />
-          </button>
+          <div className="lg:col-span-6 border border-[#0A0A08]/15 bg-[#F5F3EE]">
+            {['A crew for a day', 'A website', 'Somebody to run your ads'].map((item) => (
+              <button
+                key={item}
+                onClick={() => openBrief?.()}
+                className="group w-full flex items-center justify-between px-8 py-6 border-b border-[#0A0A08]/10 text-left hover:bg-[#EDE9E1]/60 transition-colors"
+              >
+                <span className="font-hanken text-[17px] font-semibold text-[#0A0A08] group-hover:text-[#C43800] transition-colors">{item}</span>
+                <ArrowUpRight size={16} className="text-[#C43800]" />
+              </button>
+            ))}
+            <div className="px-8 py-5">
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08]/55">{ALACARTE.link}</p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* 8. THE MATH — carbon block, money's one appearance */}
       <section id="math" className="py-24 md:py-32 px-6 md:px-12 bg-[#0A0A08] text-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 lg:order-2">
             <Kick dark>{MATH.kick}</Kick>
             <H2 dark>{MATH.h2}</H2>
             <p className="text-[17px] text-[#F5F3EE]/80 mt-8 leading-[1.65] max-w-2xl">{MATH.body}</p>
           </div>
-          <div className="lg:col-span-5 flex flex-col justify-center gap-8">
+          <div className="lg:col-span-5 lg:order-1 flex flex-col justify-center gap-8">
             <p className="font-anton uppercase text-[30px] md:text-[42px] leading-[1.02] tracking-[0.005em] text-[#F04404]">{MATH.punch}</p>
             <button
               onClick={() => openBrief?.()}
@@ -255,13 +274,16 @@ export default function HomeConsoleR38({ openBrief }) {
       {/* 9. PROOF — paper block */}
       <section id="proof" className="py-24 md:py-32 px-6 md:px-12 bg-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="lg:col-span-5">
+            <figure>
+              <img src="/aom-kit/img/ambition-crew.jpg" alt="Ambition Mechanical crew on site, shot by AOM" className="w-full aspect-[4/3] object-cover" />
+              <figcaption className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#0A0A08]/55 mt-4">{PROOF.label}</figcaption>
+            </figure>
+          </div>
           <div className="lg:col-span-7">
             <Kick>{PROOF.kick}</Kick>
-            <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#0A0A08]/55 mb-6">{PROOF.label}</p>
             <p className="font-hanken text-[22px] md:text-[30px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0A0A08] max-w-3xl">{PROOF.body}</p>
-          </div>
-          <div className="lg:col-span-5">
-            <div className="border-l border-[#0A0A08]/15 pl-8 py-2">
+            <div className="border-l border-[#0A0A08]/15 pl-8 py-2 mt-10">
               <p className="text-[17px] text-[#0A0A08]/70 leading-[1.65]">{PROOF.aside}</p>
             </div>
           </div>
@@ -269,16 +291,16 @@ export default function HomeConsoleR38({ openBrief }) {
       </section>
 
       {/* 10. CLOSING — carbon end card */}
-      <section className="py-32 md:py-44 px-6 md:px-12 text-center bg-[#0A0A08] text-[#F5F3EE]">
+      <section className="py-32 md:py-40 px-6 md:px-12 text-center bg-[#0A0A08] text-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto">
           <h2 className="font-anton uppercase text-[56px] md:text-[118px] leading-[0.9] tracking-[-0.01em]">{CLOSING.h2}</h2>
           <button
             onClick={() => openBrief?.()}
-            className="mt-12 font-mono text-[12px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-10 py-5 rounded-full transition-transform duration-200 hover:scale-[1.04] inline-flex items-center gap-2"
+            className="mt-12 font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-10 py-5 rounded-full transition-transform duration-200 hover:scale-[1.04] inline-flex items-center gap-2"
           >
             {CLOSING.cta} <ArrowRight size={15} />
           </button>
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#F5F3EE]/60 mt-10 max-w-xl mx-auto leading-[1.8]">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#F5F3EE]/60 mt-10 max-w-xl mx-auto leading-[1.8]">
             {CLOSING.footnote}
           </p>
         </div>
