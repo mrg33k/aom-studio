@@ -235,9 +235,11 @@ function cardHTML(it, i){
   const subBlock = it.subtitle
     ? `<p class="subtitle">${esc(it.subtitle)}</p>`
     : '';
-  const srcTag = it.source_url && it.source_url !== '#'
-    ? `<a class="src" href="${esc(it.source_url)}" target="_blank" rel="noopener">${esc(host)} &#8599;</a>`
-    : `<span class="src">${esc(host)}</span>`;
+  const srcTag = host
+    ? (it.source_url && it.source_url !== '#'
+      ? `<a class="src" href="${esc(it.source_url)}" target="_blank" rel="noopener">${esc(host)} &#8599;</a>`
+      : `<span class="src">${esc(host)}</span>`)
+    : '';
   const progressTag = it.progress
     ? `<span class="progress">${esc(it.progress)}</span>`
     : '';
@@ -396,7 +398,7 @@ fetch('/feed/data/agent-updates.json',{cache:'no-store'})
         lane:'agent', date:ag.last_updated, id:'agent-'+ag.slug,
         headline:ag.name, subtitle:ag.title,
         body:ag.summary, action:ag.bar,
-        source_name:ag.slug, source_url:'#',
+        source_name:'', source_url:'#',
         progress: total>1 ? ag.name+' · 1 / '+total : ''
       });
       /* update cards */
@@ -406,7 +408,7 @@ fetch('/feed/data/agent-updates.json',{cache:'no-store'})
           id:'agent-'+ag.slug+'-u'+(j+1),
           headline:u.headline, subtitle:u.tag,
           body:u.body, action:ag.name,
-          source_name:ag.slug, source_url:'#',
+          source_name:'', source_url:'#',
           progress: ag.name+' · '+(j+2)+' / '+total,
           _update:true
         });
