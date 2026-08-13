@@ -50,6 +50,8 @@ export default {
         mono: ['"JetBrains Mono"', 'monospace'],
         'display-italic': ['"Playfair Display"', 'Georgia', 'serif'],
         'display-serif': ['"Playfair Display"', 'Georgia', 'serif'],
+        anton: ['Anton', 'Archivo Black', 'system-ui', 'sans-serif'],
+        hanken: ['"Hanken Grotesk"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'orange-glow': '0 0 30px rgba(232,93,38,0.15)',

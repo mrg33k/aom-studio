@@ -129,6 +129,7 @@ const OnboardingVoice = lazy(() => import('./pages/OnboardingVoice.jsx'))
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite.jsx'))
 const DashboardWelcome = lazy(() => import('./pages/DashboardWelcome.jsx'))
 const HomeR4Preview = lazy(() => import('./pages/HomeR4Preview.jsx'))
+const HomeR38Preview = lazy(() => import('./pages/HomeR38Preview.jsx'))
 const HomeR5Preview = lazy(() => import('./pages/HomeR5Preview.jsx'))
 const HomeR6Taste = lazy(() => import('./pages/HomeR6Taste.jsx'))
 const VersionsGallery = lazy(() => import('./pages/versions/VersionsGallery.jsx'))
@@ -391,7 +392,7 @@ function TestModeBanner() {
   const { pathname } = useLocation()
   if (import.meta.env.VITE_DASHBOARD_MODE !== 'test') return null
   // Hide on the public marketing preview pages so they review clean (it never shows on real prod anyway).
-  if (pathname === '/r5' || pathname === '/r6' || pathname === '/taste' || pathname === '/r4' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname === '/work' || pathname.startsWith('/work/') || pathname.startsWith('/services/') || pathname.startsWith('/about/')) return null
+  if (pathname === '/r5' || pathname === '/r6' || pathname === '/taste' || pathname === '/r4' || pathname === '/r38' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname === '/work' || pathname.startsWith('/work/') || pathname.startsWith('/services/') || pathname.startsWith('/about/')) return null
   return (
     <>
       <style>{`
@@ -505,6 +506,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/about" element={<App />} />
           <Route path="/home-v2" element={<V2Home />} />
           <Route path="/r4" element={<HomeR4Preview />} />
+          <Route path="/r38" element={<HomeR38Preview />} />
           <Route path="/r5" element={<HomeR5Preview />} />
           <Route path="/r6" element={<HomeR6Baby />} />
           <Route path="/services/brand-film" element={<ServiceBrandFilm />} />

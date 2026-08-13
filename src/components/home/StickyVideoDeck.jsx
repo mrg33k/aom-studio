@@ -26,10 +26,11 @@ export default function StickyVideoDeck({ items = [], theme = 'classic' }) {
     classic:   'bg-[#161616] border border-white/[0.08]',
     editorial: 'bg-[#FDF6EC] border border-[#0C0C0C]/10',
     cinema:    'bg-black border border-[#E85D26]/25',
+    paper:     'bg-[#EDE9E1] border border-[#0A0A08]/10',
   }[theme] || '';
 
-  const filter = theme === 'editorial' ? 'grayscale(0)' : 'grayscale(0.05) contrast(1.08)';
-  const poster = theme === 'editorial' ? '#EFE7DA' : '#161616';
+  const filter = (theme === 'editorial' || theme === 'paper') ? 'grayscale(0)' : 'grayscale(0.05) contrast(1.08)';
+  const poster = theme === 'editorial' ? '#EFE7DA' : theme === 'paper' ? '#EDE9E1' : '#161616';
 
   // Split tiles to two columns
   const colA = all.filter((_, i) => i % 2 === 0);
