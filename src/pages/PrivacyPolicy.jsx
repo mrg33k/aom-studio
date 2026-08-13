@@ -12,7 +12,7 @@ const INK_TEXT = '#EDE9DE'
 const INK_DIM = 'rgba(237,233,222,0.68)'
 const INK_FAINT = 'rgba(237,233,222,0.40)'
 const AMBER = '#F59E0B'
-const SERIF = '"Instrument Serif", Georgia, serif'
+const SERIF = 'Georgia, "Times New Roman", serif'
 const BODY = '"Hanken Grotesk", system-ui, -apple-system, sans-serif'
 
 const sectionTitle = {
@@ -29,7 +29,7 @@ const para = {
   fontSize: 16,
   lineHeight: 1.7,
   color: INK_DIM,
-  margin: '0 0 14px',
+  margin: '0 0 16px',
 }
 
 const listItem = { ...para, margin: '0 0 8px', paddingLeft: 4 }
@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
         <p style={{ fontFamily: BODY, fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', color: INK_FAINT, margin: '0 0 16px' }}>
           Ahead of Market
         </p>
-        <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(34px, 5vw, 48px)', color: INK_TEXT, margin: '0 0 10px', lineHeight: 1.1 }}>
+        <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(34px, 5vw, 48px)', color: INK_TEXT, margin: '0 0 8px', lineHeight: 1.1 }}>
           Privacy Policy
         </h1>
         <p style={{ ...para, color: INK_FAINT, marginBottom: 8 }}>Effective August 12, 2026</p>
@@ -54,7 +54,7 @@ export default function PrivacyPolicy() {
         </p>
 
         <h2 style={sectionTitle}>What we collect</h2>
-        <ul style={{ margin: 0, padding: '0 0 0 18px' }}>
+        <ul style={{ margin: 0, padding: '0 0 0 16px' }}>
           <li style={listItem}>
             <strong style={{ color: INK_TEXT, fontWeight: 600 }}>Account information.</strong>{' '}
             Your name, email address, and login credentials when you create an account.
