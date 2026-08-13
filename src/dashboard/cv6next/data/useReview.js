@@ -641,7 +641,10 @@ export function useReview(worldId = null, injected = null) {
           const next = { items, readyCount: items.length };
           queueRef.current = next;
           setQueue(next);
-          const total = d.total || items.length;
+          // BUG FIX: d.total is the ALL-TIME file count (e.g. 1706), not the pending count.
+          // d.counts.waiting is the count of genuinely-pending (undecided) items.
+          // Use waiting as the badge number; fall back to d.total only when waiting is absent.
+          const total = d.counts?.waiting ?? d.total ?? items.length;
           queueServerTotalRef.current = total;
           setQueueServerTotal(total);
           if (d.newest_ts) setNewestTs(d.newest_ts);
