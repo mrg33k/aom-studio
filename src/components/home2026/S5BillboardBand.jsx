@@ -89,7 +89,7 @@ export default function S5BillboardBand({ onOpenBrief }) {
           )}
         </Display>
 
-        <Eyebrow style={{ fontSize: T.b2, marginTop: 'var(--s5b-gap)', marginBottom: 0 }}>
+        <Eyebrow tone="bone" style={{ fontSize: T.b2, marginTop: 'var(--s5b-gap)', marginBottom: 0 }}>
           {S5_BILLBOARD.sub}
         </Eyebrow>
       </Reveal>

@@ -89,7 +89,7 @@ const SCOPED_CSS = `
   font-size: ${T.lbl};
   letter-spacing: ${LS.label};
   text-transform: uppercase;
-  color: ${C.bronze};
+  color: ${C.bronzeDim};
   padding-top: ${SP[4]}px;
 }
 .s3-cell { padding-top: ${SP[4]}px; padding-bottom: ${SP[5]}px; }
@@ -113,7 +113,7 @@ const SCOPED_CSS = `
   font-size: ${T.lbl};
   letter-spacing: ${LS.label};
   text-transform: uppercase;
-  color: ${C.bronze};
+  color: ${C.bronzeDim};
   margin: 0;
 }
 `;
@@ -147,7 +147,8 @@ function WeekLabel({ children, size = T.d4 }) {
         lineHeight: LH.head,
         letterSpacing: LS.display,
         textTransform: 'uppercase',
-        color: C.bronze,
+        /* 2.7:1 on bone fails even the large-text floor; dim bronze holds 4.3:1. */
+        color: C.bronzeDim,
       }}
     >
       {children}

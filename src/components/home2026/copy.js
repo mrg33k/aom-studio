@@ -5,7 +5,10 @@
 
 export const COPY_VERSION = 'v2';
 
-export const NAV = ['WORK', 'WHAT WE DO', 'CASE STUDIES', 'FILM', 'CONTACT'];
+// FILM removed 2026-08-12: no film page exists, and a nav item that anchors to a
+// three-card band teaches visitors this site over-promises. The film service still
+// shows in S9's range cards. Restore only WITH a real destination.
+export const NAV = ['WORK', 'WHAT WE DO', 'CASE STUDIES', 'CONTACT'];
 
 export const S1_HERO = {
   eyebrow: 'PHOENIX, ARIZONA — MARKETING RUN IN-HOUSE FOR CONTRACTORS',
@@ -149,11 +152,17 @@ export const S9_RANGE = {
   eyebrow: 'ALSO OUT OF THIS OFFICE',
   h2: 'NOT ONLY A CONTRACTOR SHOP.',
   items: [
-    { title: 'CORNER', body: 'Our own app, in the App Store.' },
+    // "in the App Store" pulled 2026-08-12 — Corner is in TestFlight, not the App
+    // Store; a checkable false claim on a page built on verifiable numbers is the
+    // one thing this page cannot afford. Restore the store line when it ships.
+    { title: 'CORNER', body: 'Our own app, built in-house.' },
     { title: 'FILM AND BTS', body: 'Crews for brands and agencies.' },
     { title: 'WEBSITES', body: 'Built to load fast and rank.' },
   ],
-  footnote: 'LOOKING FOR A VIDEO CREW RATHER THAN A MARKETING DEPARTMENT? THAT IS A DIFFERENT PAGE.',
+  // "THAT IS A DIFFERENT PAGE" promised a page that does not exist (the link was a
+  // same-page hop to #the-range). The last three words are the link (splitFootnote)
+  // and now open the brief instead.
+  footnote: 'LOOKING FOR A VIDEO CREW RATHER THAN A MARKETING DEPARTMENT? SAY SO AND START THE BRIEF.',
 };
 
 export const MODAL = {
@@ -180,7 +189,9 @@ export const MODAL = {
     label: 'STEP 3 OF 3',
     h: 'WHAT DO YOU WANT MORE OF?',
     groups: [
-      { key: 'want', label: '', options: ['SERVICE CALLS', 'BIGGER JOBS', 'BETTER PHOTOS', 'ALL OF IT'] },
+      // Label was '' — the modal renders "01 <label>", so the empty string shipped
+      // a bare orphan "01" above the chips (2026-08-12 critique P3).
+      { key: 'want', label: 'YOU WANT', options: ['SERVICE CALLS', 'BIGGER JOBS', 'BETTER PHOTOS', 'ALL OF IT'] },
       { key: 'when', label: 'WHEN', options: ['NOW', 'THIS QUARTER', 'JUST LOOKING'] },
     ],
     back: 'BACK',

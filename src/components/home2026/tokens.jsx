@@ -80,7 +80,9 @@ export function Eyebrow({ children, tone = 'ink', style }) {
         fontSize: T.lbl,
         letterSpacing: LS.label,
         textTransform: 'uppercase',
-        color: C.bronze,
+        /* Bright bronze reads 2.7:1 on bone — below AA for label sizes. The dim
+           bronze token holds 4.3:1 there; ink sections keep the bright accent. */
+        color: tone === 'bone' ? C.bronzeDim : C.bronze,
         marginBottom: SP[5],
         ...style,
       }}

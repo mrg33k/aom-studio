@@ -80,7 +80,7 @@ const S7_CSS = `
   border-left: 1px solid ${C.bronze};
   padding-left: ${SP[5]}px;
   padding-right: ${SP[2]}px;
-  color: ${C.bronze};
+  color: ${C.bronzeDim};
   font-weight: 700;
   font-size: ${T.lbl};
   letter-spacing: ${LS.label};
@@ -98,7 +98,7 @@ const S7_CSS = `
 }
 .s7-hdr .s7-c2, .s7-hdr .s7-c3 {
   border-left: none;
-  color: ${C.bronze};
+  color: ${C.bronzeDim};
   margin-right: calc(-1 * ${LS.label});
 }
 .s7-hdr .s7-c4 { border-left: none; align-items: flex-start; }
@@ -163,6 +163,9 @@ const S7_CSS = `
      rides the right edge of that same line, so no cell ever orphans from its label. */
   .s7-row {
     grid-template-columns: 1fr 1fr 0.85fr;
+    /* Without a column gap the totals row renders "$12,408$148,900" — the two
+       display-size figures kiss at exactly the phone viewport. */
+    column-gap: ${SP[3]}px;
     row-gap: ${SP[1]}px;
     padding-top: ${SP[3]}px;
     padding-bottom: ${SP[2]}px;
@@ -243,7 +246,7 @@ export default function S7Math({ onOpenBrief }) {
     <Section tone="bone" id="math">
       <style>{S7_CSS}</style>
 
-      <Eyebrow>{S7_MATH.eyebrow}</Eyebrow>
+      <Eyebrow tone="bone">{S7_MATH.eyebrow}</Eyebrow>
       <div className="s7-h2wrap">
         <Display as="h2" size="var(--s7-h2)" style={{ color: C.onBone }}>
           {h2a}<br className="s7-brm" />{' '}{h2b}<br className="s7-brm" />{' '}{h2c}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BrandMark from '../components/home/BrandMark';
 import BriefModal from '../components/BriefModal';
-import { C, F, T, LS, SP, MAXW, GUTTER } from '../components/home2026/tokens';
+import { C, F, T, LS, LH, SP, MAXW, GUTTER, Cta } from '../components/home2026/tokens';
 import { NAV } from '../components/home2026/copy';
 
 import S1Hero from '../components/home2026/S1Hero';
@@ -20,13 +20,13 @@ import S9RangeBand from '../components/home2026/S9RangeBand';
 // math so the reader sees the result, then sees what getting that result himself would cost.
 
 // Every nav destination below resolves. A nav item with nowhere to go is a click error, which
-// is the exact failure this build was told to avoid. FILM has no page yet, so it lands on the
-// range band that names the film work rather than 404ing.
+// is the exact failure this build was told to avoid. FILM was cut from NAV 2026-08-12 — its
+// "destination" was a same-page hop to the range band, which is a promise the page broke;
+// the film work stays named in S9. Restore only with a real film page.
 const NAV_TARGETS = {
   'WORK': { href: '/work/construction' },
   'WHAT WE DO': { hash: '#how-it-runs' },
   'CASE STUDIES': { href: '/work/ambition-mechanical' },
-  'FILM': { hash: '#the-range' },
   'CONTACT': { modal: true },
 };
 
@@ -119,7 +119,20 @@ function Header({ onOpenBrief }) {
 
 function Footer({ onOpenBrief }) {
   return (
-    <footer style={{ background: C.ink, color: C.onInkMute, padding: `${SP[9]}px ${GUTTER}` }}>
+    <footer style={{ background: C.ink, color: C.onInkMute, padding: `${SP[8]}px ${GUTTER} ${SP[7]}px` }}>
+      {/* Closing ask (2026-08-12 critique P2): the page's strongest proof used to be
+          followed by nothing but a 10px footer link — peak mid-page, end a shrug.
+          One display line + the solid CTA, reusing the existing system, no new language. */}
+      <div style={{ maxWidth: MAXW, margin: '0 auto', paddingBottom: SP[7] }}>
+        <h2 style={{
+          fontFamily: F.display, fontWeight: 400, fontSize: T.d3, lineHeight: LH.head,
+          letterSpacing: LS.display, textTransform: 'uppercase', color: C.onInk,
+          margin: 0, marginBottom: SP[5],
+        }}>
+          Ready when you are.
+        </h2>
+        <Cta onClick={onOpenBrief}>Start a brief</Cta>
+      </div>
       <div style={{
         maxWidth: MAXW, margin: '0 auto', display: 'flex', flexWrap: 'wrap',
         gap: SP[6], alignItems: 'center', justifyContent: 'space-between',

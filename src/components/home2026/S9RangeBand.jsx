@@ -136,7 +136,7 @@ const SCOPED_CSS = `
 }
 `;
 
-export default function S9RangeBand() {
+export default function S9RangeBand({ onOpenBrief }) {
   const isMobile = useIsMobile();
   const foot = splitFootnote(S9_RANGE.footnote);
   const h2Lines = isMobile ? H2_MOBILE : H2_DESKTOP;
@@ -202,16 +202,26 @@ export default function S9RangeBand() {
           }}
         >
           {foot.lead}
-          <a
-            href="#the-range"
+          {/* Was href="#the-range" — a link to the section it already sits in, under copy
+              promising "a different page". The linked phrase now does the real thing. */}
+          <button
+            type="button"
+            onClick={onOpenBrief}
             style={{
+              font: 'inherit',
+              letterSpacing: 'inherit',
+              textTransform: 'inherit',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
               color: C.bronze,
               textDecoration: 'underline',
               textUnderlineOffset: SP[1],
             }}
           >
             {foot.link}
-          </a>
+          </button>
           {foot.tail}
         </p>
       </div>
