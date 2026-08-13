@@ -2,7 +2,7 @@
 // Ports the iOS native login's full visual treatment (SignInView.swift, ASCIIBackground.swift)
 // to the web. Emerald on deep navy, ASCII flow field, mesh blobs, corner marks.
 
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 
 // ── Palette — matches iOS SignInView colors exactly ────────────────────────
 
@@ -257,13 +257,29 @@ export function ASCIIBackground({ palette }) {
 
 export function CenterScrim({ palette }) {
   const [r, g, b] = hexToRgb(palette.bgBase)
+  // At phone widths the iOS-ratio circle leaves the form's reading zone
+  // unprotected — field glyphs collide with labels and placeholders
+  // (390px QA walkthrough, 2026-08-13). Under 640px the scrim becomes a
+  // taller, stronger ellipse so the form column reads clean while the
+  // field stays visible around it.
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const onChange = (e) => setNarrow(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  const background = narrow
+    ? `radial-gradient(ellipse 150% 52% at center, rgba(${r},${g},${b},0.94) 0%, rgba(${r},${g},${b},0.55) 58%, rgba(${r},${g},${b},0) 82%)`
+    : `radial-gradient(circle at center, rgba(${r},${g},${b},0.85) 0%, rgba(${r},${g},${b},0) 50%)`
   return (
     <div
       aria-hidden="true"
       style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
         pointerEvents: 'none', zIndex: 0,
-        background: `radial-gradient(circle at center, rgba(${r},${g},${b},0.85) 0%, rgba(${r},${g},${b},0) 50%)`,
+        background,
       }}
     />
   )
