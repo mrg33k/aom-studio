@@ -391,9 +391,11 @@ export async function notifyDevicesForMessageRow({ supabaseUrl, headers, row }) 
       // while you were away is one notification, not six.
       collapseId: row.room_id || undefined,
       threadId: row.room_id || undefined,
-      // Actionable ONLY for a single-file hand-off (see deliveryForRow). Every other
-      // reply keeps the plain banner it has always had.
-      category: delivery ? 'CORNER_DELIVERY' : undefined,
+      // A single-file hand-off gets the delivery actions; every OTHER reply now
+      // carries CORNER_REPLY (R18 N6) — the client's inline-reply category. An
+      // older build that never registered the name degrades to the plain banner
+      // it always had; nothing else changes.
+      category: delivery ? 'CORNER_DELIVERY' : 'CORNER_REPLY',
       data: {
         room_id: row.room_id || null,
         message_id: row.id || null,

@@ -55,6 +55,12 @@ struct CornerApp: App {
         if ProcessInfo.processInfo.arguments.contains("-glassPreview") {
             ThemeManager.shared.kind = .glass
         }
+        // R18 N6 proof rig: ask for notification permission at launch so a
+        // simctl-pushed payload can render its banner in the capture. Debug-only,
+        // arg-gated — the shipped ask stays where it belongs (after first reply).
+        if ProcessInfo.processInfo.arguments.contains("-askPushPermission") {
+            Task { _ = await PushService.shared.requestAuthorizationExplicitly() }
+        }
         #endif
     }
 

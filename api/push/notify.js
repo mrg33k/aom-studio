@@ -108,7 +108,27 @@ export default async function handler(req, res) {
       const { data: devices } = await db
         .from('device_tokens').select('token, environment').eq('world_id', world);
       if (!devices?.length) return { sent: 0 };
-      const out = await sendApnsBatch(devices, { title: payload.title, body: payload.body, url: payload.url });
+      // R18 N6: the native lane carries the ROUTE, not just the words. Without
+      // room keys a tapped banner can only open the rail; with them it deep-links,
+      // collapses per room, and (for a record push) offers the inline Reply action
+      // the client registered under CORNER_REPLY.
+      const out = await sendApnsBatch(devices, {
+        title: payload.title,
+        body: payload.body,
+        ...(record?.room_id ? { threadId: record.room_id, collapseId: record.room_id, category: 'CORNER_REPLY' } : {}),
+        data: {
+          url: payload.url,
+          ...(record ? {
+            room_id: record.room_id || '',
+            message_id: record.id || '',
+            agent: record.agent || '',
+            project: record.project || '',
+            mission_slug: (record.metadata && record.metadata.mission_slug) || '',
+            world_id: world,
+            deep_link: record.room_id ? `corner://room/${encodeURIComponent(record.room_id)}` : 'corner://rooms',
+          } : {}),
+        },
+      });
       return { sent: out.sent || 0 };
     } catch { return { sent: 0 }; }
   };

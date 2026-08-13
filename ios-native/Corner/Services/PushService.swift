@@ -54,7 +54,7 @@ final class PushService: NSObject, ObservableObject {
         // `category` against the categories registered RIGHT NOW, and a push that
         // arrives before registration shows as a plain banner with the actions
         // silently missing. Registering costs nothing when push is refused.
-        center.setNotificationCategories([PushService.deliveryCategory])
+        center.setNotificationCategories([PushService.deliveryCategory, PushService.replyCategory])
     }
 
     // MARK: - Actionable categories
@@ -89,6 +89,43 @@ final class PushService: NSObject, ObservableObject {
             intentIdentifiers: [],
             options: []
         )
+    }
+
+    /// The category on a plain agent reply / needs-you push (R18 N6): answer from
+    /// the banner without opening the app — the Messages inline-reply treatment.
+    nonisolated static let replyCategoryID = "CORNER_REPLY"
+    nonisolated static let replyActionID = "CORNER_SEND_REPLY"
+    nonisolated static let openRoomActionID = "CORNER_OPEN_ROOM"
+
+    nonisolated static var replyCategory: UNNotificationCategory {
+        // REPLY REQUIRES UNLOCKING THE PHONE — same reasoning as Approve: the
+        // message posts under the user's name, and the lock screen is the first
+        // surface a pocket reaches.
+        let reply = UNTextInputNotificationAction(
+            identifier: replyActionID,
+            title: "Reply",
+            options: [.authenticationRequired],
+            textInputButtonTitle: "Send",
+            textInputPlaceholder: "Message…"
+        )
+        let open = UNNotificationAction(
+            identifier: openRoomActionID,
+            title: "Open room",
+            options: [.foreground]
+        )
+        return UNNotificationCategory(
+            identifier: replyCategoryID,
+            actions: [reply, open],
+            intentIdentifiers: [],
+            options: []
+        )
+    }
+
+    /// Where a notification tap lands. Payloads from the lean webhook lane carry
+    /// NO room keys at all — a tap must still go somewhere, and the rooms rail is
+    /// the honest somewhere. Never a silent swallow.
+    nonisolated static func targetForTap(userInfo: [AnyHashable: Any]) -> DeepLinkTarget {
+        DeepLinkTarget(userInfo: userInfo) ?? .rail
     }
 
     // MARK: - Lifecycle
@@ -221,9 +258,19 @@ extension PushService: UNUserNotificationCenterDelegate {
             return
         }
 
+        // Inline reply (R18 N6): send from the banner without ever opening the
+        // app, then SAY what happened — same doctrine as approve.
+        if response.actionIdentifier == PushService.replyActionID,
+           let textResponse = response as? UNTextInputNotificationResponse {
+            await PushService.shared.replyFromNotification(text: textResponse.userText, userInfo: info)
+            return
+        }
+
         // Stage 3: a push may name any of the four routes, not only a room. The flat
-        // room fields still win when they are there — they carry more than the URL can.
-        guard let target = DeepLinkTarget(userInfo: info) else { return }
+        // room fields still win when they are there — they carry more than the URL
+        // can. A payload with NO room keys (the lean webhook lane) opens the rail —
+        // a tap that appears to do nothing trains people to stop tapping.
+        let target = PushService.targetForTap(userInfo: info)
         await MainActor.run {
             PushService.shared.pendingTarget = target
             // Both the default tap and the explicit "Open file" action land in the room;
@@ -291,6 +338,35 @@ extension PushService {
     /// posted — success names the file, failure says plainly that nothing was recorded
     /// and the file is still waiting, because a user who tapped Approve and heard
     /// nothing will assume it worked.
+    /// Send an inline reply from the banner, and then SAY what happened. The app
+    /// was never brought forward, so a local notification is the only surface —
+    /// and a failure must carry the typed words back, because text that vanishes
+    /// into a failed send is the worst outcome a reply button can produce.
+    func replyFromNotification(text: String, userInfo: [AnyHashable: Any]) async {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let room = DeepLink(userInfo: userInfo)?.resolveRoom()
+
+        let content = UNMutableNotificationContent()
+        if let room {
+            do {
+                _ = try await CornerAPI.shared.send(text: trimmed, room: room, interactionMode: "work")
+                content.title = "Sent to \(room.title)"
+                content.body = trimmed.count > 80 ? String(trimmed.prefix(77)) + "…" : trimmed
+            } catch {
+                content.title = "Not sent"
+                content.body = "Your reply to \(room.title) didn't go through. It was: \u{201C}\(trimmed)\u{201D} — open the room to send it."
+            }
+        } else {
+            content.title = "Not sent"
+            content.body = "This notification didn't say which room to reply into. Your reply was: \u{201C}\(trimmed)\u{201D}."
+        }
+        content.sound = nil
+        try? await UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        )
+    }
+
     func approveFromNotification(_ file: DeliveredFile) async {
         let ok = await ReviewStore.shared.decide(
             attachment: file.attachment,
