@@ -19,6 +19,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRunningTasks } from './data/useRunningTasks.js';
 import { currentTurnWorkLabel, liveWorkLabels } from './data/roomWorkProjection.js';
+import { actionGlyph } from './ChatGoalThread.jsx';
 
 // Elapsed as the shortest true thing: 42s, 7m, 1h04.
 function elapsedLabel(ms) {
@@ -213,8 +214,14 @@ function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, t
           >{turnHealth?.state === 'stopping' ? 'Stopping…' : 'Stop'}</button>
         ) : null}
       </div>
-      {/* Row 2: current step text — key change triggers CSS fadeIn */}
-      <div key={activeLabel} className="cv6-sc-current">{shorten(activeLabel, 72)}</div>
+      {/* Row 2: current step text — key change triggers CSS fadeIn. The glyph
+          names WHAT the agent is doing (search/read/write/run/send), the same
+          vocabulary done steps already use — the live row now reads as a tool
+          card, not an anonymous line (R-SMOOTHNESS Round F). */}
+      <div key={activeLabel} className="cv6-sc-current" style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <span style={{ flex: 'none', display: 'inline-flex', opacity: 0.75 }}>{actionGlyph(activeLabel)}</span>
+        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{shorten(activeLabel, 72)}</span>
+      </div>
       {/* Row 3: ghosted previous step — fades out via CSS, then unmounts */}
       {ghostLabel ? <div className="cv6-sc-prev">{shorten(ghostLabel, 72)}</div> : null}
       {/* Row 4: progress bar (determinate when real N/M available, indeterminate otherwise) */}

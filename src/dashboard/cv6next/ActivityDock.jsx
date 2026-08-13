@@ -18,16 +18,6 @@ const KIND_TINTS = {
   agent: 'is-agent', // legacy demo kind
 };
 
-// Demo job (shown when no real agents running) — clearly labelled SAMPLE.
-const DEMO_JOB = {
-  id: 'demo-1',
-  kind: 'agent',
-  title: 'Elon · writing docs',
-  shortTitle: 'Elon',
-  sub: 'documentation update · 12 KB done',
-  badge: 'SAMPLE',
-  isDemonstration: true,
-};
 
 function ActivityDock({ worldId, onOpenJob }) {
   // qa-sweep 2026-07-17: consume the CommandProvider result instead of calling
@@ -38,17 +28,17 @@ function ActivityDock({ worldId, onOpenJob }) {
   const [expandedJobId, setExpandedJobId] = useState(null);
   const dockRef = useRef(null);
 
-  // Real jobs from active agents, or fallback to demo. The activity feed now
+  // Real jobs from active agents ONLY. The activity feed now
   // carries the full bucketed work list (proposed/done/failed included —
   // R-CMD-BUCKETS); the FLOAT dock pins only heartbeat-live work, never a
   // finished or queued card, so filter to job.live here.
   const liveJobs = (commandData?.activity?.jobs || []).filter((j) => j.live);
-  const jobs = liveJobs.length > 0 ? liveJobs : [DEMO_JOB];
+  // No-fake-UI (R-SMOOTHNESS Round F): no demo fallback. No live job = no dock.
+  const jobs = liveJobs;
 
   // Pick the first job to show in the float dock (only one visible at a time).
-  const currentJob = jobs[0] || DEMO_JOB;
-  const tintClass = KIND_TINTS[currentJob.kind] || 'is-agent';
-  const isDemonstration = currentJob.isDemonstration === true;
+  const currentJob = jobs[0] || null;
+  const tintClass = currentJob ? (KIND_TINTS[currentJob.kind] || 'is-agent') : 'is-agent';
 
   // Close expand on outside click.
   useEffect(() => {
@@ -73,11 +63,8 @@ function ActivityDock({ worldId, onOpenJob }) {
     setExpandedJobId(expandedJobId ? null : currentJob.id);
   };
 
-  // When no real agent job is running, the only "job" is the labelled SAMPLE demo. Showing a
-  // fake job bar pinned to the top of every screen (which also overlaps the top content row)
-  // is worse than showing nothing, so hide the dock entirely while idle. It reappears the
-  // moment a real job lands (jobs has entries -> isDemonstration is false). (QA #7, Patrik OK.)
-  if (isDemonstration) return null;
+  // No live job = no dock, period (no-fake-UI; the SAMPLE demo fallback is gone).
+  if (!currentJob) return null;
 
   return (
     <div
@@ -94,36 +81,19 @@ function ActivityDock({ worldId, onOpenJob }) {
     >
       {/* Job icon with tint */}
       <span className={`ad-ico ${tintClass}`} style={{ flex: 'none' }}>
-        {isDemonstration ? (
-          // Demo icon: static pulse (not spinning)
-          <svg
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            style={{ opacity: 0.8 }}
-          >
-            <circle cx="12" cy="12" r="9" />
-            <circle cx="12" cy="12" r="5" />
-          </svg>
-        ) : (
-          // Real agent: spinning icon
-          <svg
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            style={{ animation: 'spin 1.05s linear infinite' }}
-          >
-            <path d="M21 12a9 9 0 1 1-6.2-8.6" />
-          </svg>
-        )}
+        {/* Real agent: spinning icon */}
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          style={{ animation: 'spin 1.05s linear infinite' }}
+        >
+          <path d="M21 12a9 9 0 1 1-6.2-8.6" />
+        </svg>
       </span>
 
       {/* Job title + subtitle */}
@@ -132,13 +102,13 @@ function ActivityDock({ worldId, onOpenJob }) {
         <div className="ad-sub">{currentJob.sub}</div>
       </div>
 
-      {/* Badge: LIVE (real agent) or SAMPLE (demo) */}
+      {/* Badge: always a real live job */}
       <span
         style={{
           fontSize: '10px',
           fontWeight: 700,
-          color: isDemonstration ? 'var(--muted)' : 'var(--accent)',
-          background: isDemonstration ? 'var(--chip)' : 'var(--accent-weak)',
+          color: 'var(--accent)',
+          background: 'var(--accent-weak)',
           padding: '3px 8px',
           borderRadius: '8px',
           flex: 'none',

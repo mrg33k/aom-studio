@@ -102,6 +102,7 @@
  * @typedef {Object} SummaryBlock
  * @property {number} [stepIndex]
  * @property {'summary'} type
+ * @property {string} [headline] - The bottom line, one sentence. IS line one (BLUF; added 2026-08-06, typedef caught up 2026-08-12).
  * @property {Array<string | {text: string, warn?: boolean}>} bullets - Scan-friendly bullet points.
  * @property {Array<string | {text: string, done?: boolean}>} [actions] - Checkable action items.
  * @property {string} [meta] - Optional metadata (e.g., "4 items").
@@ -240,8 +241,10 @@ export function createDataBlock(index, title, columns, rows, totals = null) {
   return { stepIndex: index, type: 'data', title, columns, rows, totals };
 }
 
-export function createSummaryBlock(index, bullets = [], actions = [], chips = []) {
-  return { stepIndex: index, type: 'summary', bullets, actions, chips };
+export function createSummaryBlock(index, bullets = [], actions = [], chips = [], headline = '') {
+  return headline
+    ? { stepIndex: index, type: 'summary', headline, bullets, actions, chips }
+    : { stepIndex: index, type: 'summary', bullets, actions, chips };
 }
 
 export function createCodeBlock(index, code, file = 'code', lang = 'js', explain = '') {

@@ -132,7 +132,7 @@ function normalizeData(b) {
 // by its action at a glance instead of a row of identical checks (Patrik 2026-06-30: use icons
 // that apply to the action). Keyword match on the row text; falls back to a check. Stroke icons,
 // currentColor, so they inherit the row's done/accent color from the kit CSS.
-function actionGlyph(text) {
+export function actionGlyph(text) {
   const t = String(text || '').toLowerCase();
   const svg = (children) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
   if (/\b(ship|shipped|deploy|deployed|live|launch|launched|release|released|push|pushed|publish|published)\b/.test(t)) return svg(<><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></>); // up — shipped/live
