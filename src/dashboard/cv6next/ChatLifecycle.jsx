@@ -1347,8 +1347,31 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     onOpenReview?.(normalizeReviewHandoff(files));
   }, [onOpenReview]);
 
+  // Defect A fix: measure the composer for real so the transcript reserve tracks
+  // its actual height (textarea autogrow, chip rows, paste bar, /clear confirm).
+  const screenRef = useRef(null);
+  const composerObserverRef = useRef(null);
+  const setMComposerRef = useCallback((node) => {
+    // Disconnect any previous observer
+    if (composerObserverRef.current) { composerObserverRef.current.disconnect(); composerObserverRef.current = null; }
+    if (!node) return;
+    const screen = node.closest('[data-screen="chat-room"]');
+    if (!screen) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = Math.round(entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height);
+        screen.style.setProperty('--cv6-composer-h', `${h}px`);
+      }
+    });
+    observer.observe(node);
+    composerObserverRef.current = observer;
+    // Set initial value immediately
+    const h = Math.round(node.getBoundingClientRect().height);
+    screen.style.setProperty('--cv6-composer-h', `${h}px`);
+  }, []);
+
   return (
-    <div data-cv6 data-theme="dark" data-screen="chat-room" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div data-cv6 data-theme="dark" data-screen="chat-room" className="cv6-screen" ref={screenRef} style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="mhdr">
         {/* .mback removed 2026-08-07: swipe left returns Home, swipe right advances to next chat */}
         <RoomAvatar room={fullRoom || room} worldId={worldId} size={40} />
@@ -1358,11 +1381,12 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
             {(() => {
               // Round E: the open room's pill derives from the live engine truth;
               // the server room.status string is only the fallback when idle.
+              // Defect B fix: no .sd dot here — RoomAvatar's presence dot is THE
+              // single indicator; the pill is text-only. Raw-status fallback deleted:
+              // the header only speaks ROOM_STATUS_LABEL vocabulary.
               const k = deriveRoomStatus({ awaiting, liveSteps, draft: streamDraft, turnHealth, connection });
-              if (k !== 'idle') return <span className={`astat is-${ROOM_STATUS_TONE[k]}`}><span className="sd" />{ROOM_STATUS_LABEL[k].toUpperCase()}</span>;
-              return (isActiveRoomStatus(room.status) || room.status === 'blocked')
-                ? <span className={`astat is-${room.status}`}><span className="sd" />{String(room.status).toUpperCase()}</span>
-                : null;
+              if (k !== 'idle') return <span className={`astat is-${ROOM_STATUS_TONE[k]}`}>{ROOM_STATUS_LABEL[k].toUpperCase()}</span>;
+              return null;
             })()}
           </div>
           <div className="msub">{room.statusText || 'conversation'}</div>
@@ -1508,7 +1532,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               slash commands, image gen, voice) portals into this host.
               cv6-mcomposer-host adds the collapse transition (opacity+translateY). */}
           <div className={`mcomposer cv6-mcomposer-host${composerCollapsed ? ' is-collapsed' : ''}`}
-            ref={setMComposerHost}
+            ref={(node) => { setMComposerHost(node); setMComposerRef(node); }}
             style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }} />
           <Cv6FullComposer target={mComposerHost} room={fullRoom} worldId={worldId} agents={[]}
             roomOptions={roomOptions} quickSend={onSendAndCollapse} onOpenFiles={() => setFilesSheetOpen(true)}
@@ -1516,6 +1540,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
         </>
       ) : (
       <div className={`mcomposer cv6-mcomposer-host${composerCollapsed ? ' is-collapsed' : ''}`}
+        ref={setMComposerRef}
         style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
         {dictate.supported && (
           <button onClick={dictate.toggle} aria-label={dictate.listening ? 'Stop dictation' : 'Speak your message'}

@@ -41,7 +41,10 @@ test('440px mobile composer lands 20px above the physical viewport and stays key
   expect(resting.columnBottom).toBeCloseTo(resting.viewport, 0)
   expect(resting.roomBottom).toBeCloseTo(resting.viewport, 0)
   expect(resting.composerBottomGap).toBeCloseTo(20, 0)
-  expect(resting.transcriptBottomPadding).toBeCloseTo(122, 0)
+  // Defect A: reserve is now dynamic via --cv6-composer-h ResizeObserver;
+  // the contract is reserve >= measured composer height + 12px.
+  const composerHeight = await page.evaluate(() => document.querySelector('[data-screen="chat-room"] > .mcomposer').getBoundingClientRect().height)
+  expect(resting.transcriptBottomPadding).toBeGreaterThanOrEqual(composerHeight + 12)
   await page.screenshot({ path: '/tmp/corner-r16-composer-bottom.png' })
 
   await page.locator('[data-testid="cv6-chat-input"]').focus()

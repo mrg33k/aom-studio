@@ -1046,8 +1046,10 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         // One vocabulary for the open room (Round E): the pill and the
                         // step card can never disagree — both derive from the engine.
                         const k = deriveRoomStatus({ awaiting, liveSteps, draft, turnHealth, connection });
+                        // Defect B fix: no .sd dot here — RoomAvatar's presence dot is
+                        // THE single indicator; the pill is text-only.
                         return k !== 'idle'
-                          ? <span className={`astat is-${ROOM_STATUS_TONE[k]}`} style={{ flex: 'none' }}><span className="sd" />{ROOM_STATUS_LABEL[k].toUpperCase()}</span>
+                          ? <span className={`astat is-${ROOM_STATUS_TONE[k]}`} style={{ flex: 'none' }}>{ROOM_STATUS_LABEL[k].toUpperCase()}</span>
                           : null;
                       })()}
                     </div>

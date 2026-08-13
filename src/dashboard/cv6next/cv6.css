@@ -2861,14 +2861,17 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
    stranded the whole card roughly one extra toolbar-height above Patrik's iPhone
    home indicator. Twenty pixels matches the requested visual landing line. */
 [data-cv6] .cv6-floating-composer { box-sizing:border-box; }
-[data-cv6] .mcomposer { left:12px !important; right:12px !important; bottom:20px !important; padding:0 !important; border-top:none !important; background:transparent !important; }
-[data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:150px !important; }
+[data-cv6] .mcomposer { left:12px !important; right:12px !important; bottom:20px !important; padding:0 !important; border-top:none !important; background:transparent !important; z-index:10; }
+/* Defect A fix: the transcript reserve tracks the composer's real measured height
+   via --cv6-composer-h (set by ResizeObserver in ChatLifecycle.jsx), so textarea
+   autogrow, chip rows, paste bar, and /clear confirm never occlude the progress bar. */
+[data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important; }
 /* WebKit keeps safe-area-inset-bottom populated after the software keyboard
    opens. The focused visual viewport is already rectangular, so retaining that
    inset creates the white moat visible in the iPhone capture. */
 html.cv6-keyboard-open [data-cv6] .mcomposer { bottom:8px !important; }
-html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:138px !important; }
-[data-cv6] .jumplive { bottom:164px !important; }
+html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important; }
+[data-cv6] .jumplive { bottom:calc(var(--cv6-composer-h, 108px) + 44px) !important; }
 [data-cv6] .cv6-mode-toggle { min-width:62px; }
 
 /* Real bridge activity only: the moving segment exists only while WorkingTurn is
@@ -4604,7 +4607,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 }
 
 @media (max-width:640px) {
-  [data-cv6][data-screen="chat-room"] > .scrbody { padding-left:12px !important; padding-right:12px !important; padding-bottom:122px !important; }
+  [data-cv6][data-screen="chat-room"] > .scrbody { padding-left:12px !important; padding-right:12px !important; padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important; }
 }
 
 /* iPad portrait/split-view gets a deliberate desktop-derived canvas: a 720px
@@ -4619,7 +4622,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   [data-cv6][data-screen="chat-room"] > .scrbody {
     padding-left:max(24px, calc((100% - 720px) / 2)) !important;
     padding-right:max(24px, calc((100% - 720px) / 2)) !important;
-    padding-bottom:130px !important;
+    padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important;
   }
   [data-cv6][data-screen="chat-room"] > .mcomposer {
     left:24px !important;
