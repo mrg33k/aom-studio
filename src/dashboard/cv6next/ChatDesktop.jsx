@@ -16,6 +16,7 @@ import { buildChecklistRoomOptions } from './data/roomKeys.js';
 
 import { SendCtx, ReviewCtx } from './ChatGoalThread.jsx';
 import StreamingDraft from './StreamingDraft.jsx';
+import { deriveRoomStatus, ROOM_STATUS_LABEL, ROOM_STATUS_TONE } from './data/roomStatus.js';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
@@ -644,7 +645,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav, windowMode]);
 
-  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, draft, turnHealth, status: threadStatus, connection, retryTurn, nudgeTurn, reload: reloadThread } = useRoomThread(worldId, selected);
+  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, draft, turnHealth, status: threadStatus, connection, retryTurn, nudgeTurn, repairTurn, stopTurn, stopAvailable, reload: reloadThread } = useRoomThread(worldId, selected);
   // The room agent's own steps — the half of "background work" the old card could not see.
   const roomGoal = useGoalThread(worldId, selected);
   // Per-room running tasks — used by the work-indicator icon to know if anything is active.
@@ -1056,7 +1057,17 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       {selected.isProject || selected.isMission ? <span aria-hidden="true">/</span> : null}
                       {selected.isMission ? <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{projects.find((p) => p.slug === selected.projectSlug || p.id === selected.projectSlug)?.name || selected.statusText || selected.projectSlug}</span> : null}
                     </div>
-                    <div className="desktop-room-title">{selected.name}</div>
+                    <div className="desktop-room-title" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</span>
+                      {(() => {
+                        // One vocabulary for the open room (Round E): the pill and the
+                        // step card can never disagree — both derive from the engine.
+                        const k = deriveRoomStatus({ awaiting, liveSteps, draft, turnHealth, connection });
+                        return k !== 'idle'
+                          ? <span className={`astat is-${ROOM_STATUS_TONE[k]}`} style={{ flex: 'none' }}><span className="sd" />{ROOM_STATUS_LABEL[k].toUpperCase()}</span>
+                          : null;
+                      })()}
+                    </div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.hasCustomTitle && selected.specialistTitle ? `${selected.specialistTitle} specialist` : (goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation'))}</div>
                   </div>
                   {hasRoomWork ? (
@@ -1123,8 +1134,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         live counter on each. The Background work window still exists for the
                         world-wide view. */}
                     <StreamingDraft room={selected} draft={draft} />
-                    <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} turnHealth={turnHealth} currentAsk={currentAskTitle} />
-                    <RoomRecoveryNotice health={turnHealth} onRetry={retryTurn} onNudge={nudgeTurn} />
+                    <RoomWorkList room={selected} goal={roomGoal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} turnHealth={turnHealth} currentAsk={currentAskTitle} onStop={stopAvailable ? stopTurn : null} />
+                    <RoomRecoveryNotice health={turnHealth} onRetry={retryTurn} onNudge={nudgeTurn} onRestart={repairTurn} />
                     {/* The full-thread error above already says the connection dropped;
                         don't stack a second strip under it saying the same thing. */}
                     <RoomConnectionNotice connection={(threadStatus === 'error' && !messages?.length) ? null : connection} onRetry={reloadThread} />

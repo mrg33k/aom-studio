@@ -342,6 +342,8 @@ class RoomThreadEngine {
     this.retryTurn = this.retryTurn.bind(this);
     this.nudgeTurn = this.nudgeTurn.bind(this);
     this.reload = this.reload.bind(this);
+    this.repairTurn = this.repairTurn.bind(this);
+    this.stopTurn = this.stopTurn.bind(this);
   }
 
   // ── React plumbing ─────────────────────────────────────────────────────────
@@ -442,6 +444,9 @@ class RoomThreadEngine {
       draft: s.awaiting ? s.draft : null,
       turnHealth: s.turnHealth,
       connection: s.connection,
+      // Round E: the Stop control hides for the session after one honest
+      // feature_off answer from the proxy (bridge flag/tunnel not live yet).
+      stopAvailable: !this.stopUnavailable,
     };
   }
 
@@ -1113,6 +1118,48 @@ class RoomThreadEngine {
     return this.send('Are you still on this? Give me a quick status on my last message.', this.lastSentOptions || {});
   }
 
+  // One-tap restart for a stuck turn (R-SMOOTHNESS Round E): ask the steward to
+  // run its server-allowlisted repair for this exact turn, then reload. Same
+  // endpoint the 45s auto-repair path uses — a human tap just asks sooner.
+  async repairTurn() {
+    if (!this.state.lastSentId) return false;
+    try {
+      const res = await authFetch('/api/dashboard/room-health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: this.worldId, message_id: this.state.lastSentId }),
+      });
+      const j = res.ok ? await res.json() : null;
+      this.load({ full: true });
+      return !!j?.repaired;
+    } catch { return false; }
+  }
+
+  // Stop the live turn (R-SMOOTHNESS Round E, bridge Round C). Optimistic
+  // 'stopping' state; the durable stopped row arrives through the normal feed.
+  // Never fakes a settled turn: awaiting only flips when the server's row or
+  // sentinel says so. feature_off (bridge flag/tunnel not live) hides the
+  // control for the rest of the session.
+  async stopTurn() {
+    if (!this.state.awaiting || !this.state.lastSentId) return false;
+    this.commit({ turnHealth: { state: 'stopping', cause: null } });
+    try {
+      const res = await authFetch('/api/dashboard/chat-bridge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stop', message_id: this.state.lastSentId, client_id: this.worldId }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (j.stopped) { this.load({ full: false }); return true; }
+      if (j.feature_off) this.stopUnavailable = true;
+      this.commit({ turnHealth: null });
+      return false;
+    } catch {
+      this.commit({ turnHealth: null });
+      return false;
+    }
+  }
+
   // The old reloadKey bump: a full window, fresh persisted steps, and a socket check.
   reload() {
     if (!this.started) return;
@@ -1210,6 +1257,8 @@ export function useRoomThread(worldId, room) {
     retryTurn: engine.retryTurn,
     nudgeTurn: engine.nudgeTurn,
     reload: engine.reload,
+    repairTurn: engine.repairTurn,
+    stopTurn: engine.stopTurn,
   }), [snapshot, engine]);
 }
 

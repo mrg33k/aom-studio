@@ -10,6 +10,7 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
 import StreamingDraft from './StreamingDraft.jsx';
+import { deriveRoomStatus, ROOM_STATUS_LABEL, ROOM_STATUS_TONE } from './data/roomStatus.js';
 import { Result } from './BlockRenderer.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
 import { useDictation } from './data/useDictation.js';
@@ -1175,7 +1176,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, draft: streamDraft, turnHealth, connection, onRetryTurn, onNudgeTurn, onReloadThread, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, draft: streamDraft, turnHealth, connection, onRetryTurn, onNudgeTurn, onReloadThread, onRepairTurn, onStopTurn, stopAvailable = true, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -1389,9 +1390,15 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
         <div className="mhtitle">
           <div className="mhname">
             <span className="mttl">{room.name}</span>
-            {(isActiveRoomStatus(room.status) || room.status === 'blocked') && (
-              <span className={`astat is-${room.status}`}><span className="sd" />{String(room.status).toUpperCase()}</span>
-            )}
+            {(() => {
+              // Round E: the open room's pill derives from the live engine truth;
+              // the server room.status string is only the fallback when idle.
+              const k = deriveRoomStatus({ awaiting, liveSteps, draft: streamDraft, turnHealth, connection });
+              if (k !== 'idle') return <span className={`astat is-${ROOM_STATUS_TONE[k]}`}><span className="sd" />{ROOM_STATUS_LABEL[k].toUpperCase()}</span>;
+              return (isActiveRoomStatus(room.status) || room.status === 'blocked')
+                ? <span className={`astat is-${room.status}`}><span className="sd" />{String(room.status).toUpperCase()}</span>
+                : null;
+            })()}
           </div>
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
@@ -1503,8 +1510,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               the old accumulating WorkingTurn steps; bridge steps now animate through
               this fixed-height card and the same projection names the Activity dropdown. */}
           <StreamingDraft room={fullRoom || room} draft={streamDraft} />
-          <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} turnHealth={turnHealth} currentAsk={currentAskTitle} />
-          <RoomRecoveryNotice health={turnHealth} onRetry={onRetryTurn} onNudge={onNudgeTurn} />
+          <RoomWorkList room={fullRoom || room} goal={goal} awaiting={awaiting} awaitingSince={awaitingSince} liveSteps={liveSteps} turnHealth={turnHealth} currentAsk={currentAskTitle} onStop={stopAvailable ? onStopTurn : null} />
+          <RoomRecoveryNotice health={turnHealth} onRetry={onRetryTurn} onNudge={onNudgeTurn} onRestart={onRepairTurn} />
           {/* The full-thread error above already says the connection dropped;
               don't stack a second strip under it saying the same thing. */}
           <RoomConnectionNotice connection={loadFailed ? null : connection} onRetry={onReloadThread} />

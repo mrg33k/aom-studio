@@ -130,7 +130,7 @@ const STEP_CARD_OPENERS = ['Reading your message', 'Thinking it through', 'Worki
 // §5 compliance:
 //   - If goal.checklist has real steps: progress = activeStepIndex/totalSteps (genuine N/M).
 //   - Else (only synthetic awaiting or agent tasks with no count): indeterminate, no % or fill.
-function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, turnHealth, currentAsk }) {
+function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, turnHealth, currentAsk, onStop = null }) {
   // --- data ---
   const totalSteps = roomSteps.length;
   const activeStepIdx = roomSteps.findIndex((s) => s.state === 'active');  // 0-based in checklist
@@ -199,6 +199,19 @@ function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, t
         {stepN != null && stepM != null && (
           <span className="cv6-sc-counter">Step {stepN} of {stepM}</span>
         )}
+        {/* Round E: real Stop (bridge interrupt). Only offered while the turn is
+            live and the feature answered available; 'stopping' is the engine's
+            optimistic state and the server's row settles the truth. */}
+        {onStop && awaiting ? (
+          <button
+            type="button"
+            className="cv6-sc-stop"
+            disabled={turnHealth?.state === 'stopping'}
+            onClick={() => onStop()}
+            title="Stop this turn"
+            style={{ marginLeft: 'auto', flex: 'none', border: '1px solid var(--line, rgba(255,255,255,.14))', background: 'transparent', color: 'var(--muted)', borderRadius: 7, font: '600 11px var(--font-sans)', padding: '3px 9px', cursor: 'pointer' }}
+          >{turnHealth?.state === 'stopping' ? 'Stopping…' : 'Stop'}</button>
+        ) : null}
       </div>
       {/* Row 2: current step text — key change triggers CSS fadeIn */}
       <div key={activeLabel} className="cv6-sc-current">{shorten(activeLabel, 72)}</div>
@@ -221,7 +234,7 @@ function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, t
 }
 
 // expandable — when true (dropdown mode) "+N more" is a button that expands the list.
-export default function RoomWorkList({ room, goal, awaiting, awaitingSince, liveSteps, turnHealth, currentAsk, expandable = false }) {
+export default function RoomWorkList({ room, goal, awaiting, awaitingSince, liveSteps, turnHealth, currentAsk, onStop = null, expandable = false }) {
   const { tasks, promises } = useRunningTasks(room);
   const [now, setNow] = useState(() => Date.now());
   const [localExpanded, setLocalExpanded] = useState(false);
@@ -307,6 +320,7 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, live
           liveSteps={liveSteps}
           turnHealth={turnHealth}
           currentAsk={currentAsk}
+          onStop={onStop}
         />
       </>
     );
