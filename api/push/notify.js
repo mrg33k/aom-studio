@@ -100,9 +100,25 @@ export default async function handler(req, res) {
   // crucially: .eq('world_id', 'aom') does NOT match rows where world_id IS NULL because
   // Postgres NULL != 'aom'. Legacy/null-world rows are therefore silently excluded, which
   // is the correct behaviour: an unknown device should not receive any world's notifications.
+  // Native lane first (R-SMOOTHNESS Round H follow-up): APNs delivery must not
+  // depend on web enrollment — an iPhone-only user is the normal case.
+  const sendNative = async () => {
+    if (!apnsConfigured()) return { sent: 0 };
+    try {
+      const { data: devices } = await db
+        .from('device_tokens').select('token, environment').eq('world_id', world);
+      if (!devices?.length) return { sent: 0 };
+      const out = await sendApnsBatch(devices, { title: payload.title, body: payload.body, url: payload.url });
+      return { sent: out.sent || 0 };
+    } catch { return { sent: 0 }; }
+  };
+
   const { data: subs, error } = await db.from('push_subscriptions').select('*').eq('world_id', world);
   if (error) return res.status(500).json({ error: error.message });
-  if (!subs?.length) return res.status(200).json({ ok: true, sent: 0, note: 'no subscribed devices' });
+  if (!subs?.length) {
+    const apns = await sendNative();
+    return res.status(200).json({ ok: true, sent: 0, note: 'no subscribed web devices', apns });
+  }
 
   const json = JSON.stringify(payload);
   let sent = 0;
@@ -124,18 +140,6 @@ export default async function handler(req, res) {
 
   if (dead.length) await db.from('push_subscriptions').delete().in('endpoint', dead);
 
-  // R-SMOOTHNESS Round H follow-up (2026-08-12): the same notification also
-  // goes out natively via APNs to this world's registered iPhones. Silent
-  // no-op until the key envs exist; key verified live against Apple today.
-  let apns = { sent: 0 };
-  if (apnsConfigured()) {
-    try {
-      const { data: devices } = await db
-        .from('device_tokens').select('token, environment').eq('world_id', world);
-      if (devices?.length) {
-        apns = await sendApnsBatch(devices, { title: payload.title, body: payload.body, url: payload.url });
-      }
-    } catch { /* fire-and-forget — web push already reported */ }
-  }
-  return res.status(200).json({ ok: true, sent, pruned: dead.length, apns: { sent: apns.sent || 0 } });
+  const apns = await sendNative();
+  return res.status(200).json({ ok: true, sent, pruned: dead.length, apns });
 }
