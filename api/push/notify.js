@@ -17,6 +17,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
+import { sendApnsBatch, apnsConfigured } from '../_lib/apns.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -122,5 +123,19 @@ export default async function handler(req, res) {
   }));
 
   if (dead.length) await db.from('push_subscriptions').delete().in('endpoint', dead);
-  return res.status(200).json({ ok: true, sent, pruned: dead.length });
+
+  // R-SMOOTHNESS Round H follow-up (2026-08-12): the same notification also
+  // goes out natively via APNs to this world's registered iPhones. Silent
+  // no-op until the key envs exist; key verified live against Apple today.
+  let apns = { sent: 0 };
+  if (apnsConfigured()) {
+    try {
+      const { data: devices } = await db
+        .from('device_tokens').select('token, environment').eq('world_id', world);
+      if (devices?.length) {
+        apns = await sendApnsBatch(devices, { title: payload.title, body: payload.body, url: payload.url });
+      }
+    } catch { /* fire-and-forget — web push already reported */ }
+  }
+  return res.status(200).json({ ok: true, sent, pruned: dead.length, apns: { sent: apns.sent || 0 } });
 }
