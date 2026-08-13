@@ -246,7 +246,7 @@ struct RoomSettingsView: View {
         switch room.typeTag {
         case .agent:
             // Web: "<specialist title> specialist"
-            let entry = AgentRoster.all.first(where: {
+            let entry = AgentRoster.resolved.first(where: {
                 $0.slug == room.kind.agentSlug
             })
             return entry.map { "\($0.title) specialist" } ?? "Specialist"

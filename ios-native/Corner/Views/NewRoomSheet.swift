@@ -53,9 +53,9 @@ final class NewRoomModel: ObservableObject {
 
     private let api = CornerAPI.shared
 
-    // Agents: Auto first, then the full roster by title.
+    // Agents: Auto first, then the resolved roster by title.
     var agentOptions: [(id: String, title: String)] {
-        [("__auto", "Auto")] + AgentRoster.all.map { ($0.slug, $0.title) }
+        [("__auto", "Auto")] + AgentRoster.resolved.map { ($0.slug, $0.title) }
     }
 
     func loadProjects() async {
@@ -86,7 +86,7 @@ final class NewRoomModel: ObservableObject {
                 switch self.mode {
                 case .mission:
                     let agentName = self.selectedAgentId == "__auto" ? "" :
-                        (AgentRoster.all.first { $0.slug == self.selectedAgentId }?.title ?? "")
+                        (AgentRoster.resolved.first { $0.slug == self.selectedAgentId }?.title ?? "")
                     let priLabel: String = switch self.priority {
                         case "low": "Low"; case "high": "High"; default: "Medium"
                     }

@@ -84,6 +84,68 @@ final class RoomRoutingTests: XCTestCase {
         )
     }
 
+    // MARK: - Tenant-scoped roster (mirrors web 750feda9)
+
+    func testAomWorldKeepsHardcodedRoster() {
+        // aom world ALWAYS uses the hardcoded doctrine roster regardless of live data.
+        AgentRoster.configure(world: "aom", liveAgents: nil)
+        XCTAssertEqual(AgentRoster.resolved.count, 13)
+        XCTAssertEqual(AgentRoster.resolved.map(\.slug), AgentRoster.all.map(\.slug))
+        // Name cache is empty — aom uses the hardcoded titles directly.
+        XCTAssertEqual(AgentRoster.title(for: "rex"), "Assistant")
+    }
+
+    func testNonAomWorldRendersOnlyLiveAgents() {
+        // A tenant with one agent in agent_status should see exactly that one.
+        let live = [CornerAPI.RoomAgentOption(slug: "ea", title: "Demo EA", role: "Your assistant")]
+        AgentRoster.configure(world: "demo", liveAgents: live)
+
+        XCTAssertEqual(AgentRoster.resolved.count, 1)
+        XCTAssertEqual(AgentRoster.resolved.first?.slug, "ea")
+        XCTAssertEqual(AgentRoster.resolved.first?.title, "Demo EA")
+        XCTAssertEqual(AgentRoster.resolved.first?.subtitle, "Your assistant")
+
+        // title(for:) uses the live name, not prettify.
+        XCTAssertEqual(AgentRoster.title(for: "ea"), "Demo EA")
+        // Unrecognized slugs still prettify (no crash, no bare slug).
+        XCTAssertEqual(AgentRoster.title(for: "unknown-agent"), "Unknown Agent")
+
+        // rooms() builds Room objects from the resolved entries.
+        let rooms = AgentRoster.rooms(world: "demo")
+        XCTAssertEqual(rooms.count, 1)
+        XCTAssertEqual(rooms.first?.roomID, "demo:agent:ea")
+        XCTAssertEqual(rooms.first?.title, "Demo EA")
+
+        // Restore defaults so other tests are unaffected.
+        AgentRoster.configure(world: "aom", liveAgents: nil)
+    }
+
+    func testNonAomEndpointFailureGivesEmptyRoster() {
+        // Endpoint failing for a non-aom world should produce an empty roster
+        // (beats showing 13 fake agents).
+        AgentRoster.configure(world: "demo", liveAgents: nil)
+        XCTAssertTrue(AgentRoster.resolved.isEmpty)
+        XCTAssertTrue(AgentRoster.rooms(world: "demo").isEmpty)
+
+        // Restore defaults.
+        AgentRoster.configure(world: "aom", liveAgents: nil)
+    }
+
+    func testNameCacheUsedByTitleForSlug() {
+        let live = [CornerAPI.RoomAgentOption(slug: "ea", title: "Demo EA", role: "assistant")]
+        AgentRoster.configure(world: "demo", liveAgents: live)
+
+        // The name cache takes priority over prettify for known slugs.
+        XCTAssertEqual(AgentRoster.title(for: "ea"), "Demo EA")
+        XCTAssertEqual(AgentRoster.title(for: "EA"), "Demo EA") // case-insensitive
+
+        // Off-roster titles still work (corner/studio).
+        XCTAssertEqual(AgentRoster.title(for: "corner"), "Corner")
+
+        // Restore defaults.
+        AgentRoster.configure(world: "aom", liveAgents: nil)
+    }
+
     // MARK: - History query shapes (must match useRoomThread exactly)
 
     private func items(_ room: Room) -> [String: String] {

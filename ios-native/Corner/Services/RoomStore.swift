@@ -63,6 +63,15 @@ final class RoomStore: ObservableObject {
             return
         }
 
+        // Tenant-scoped roster (mirrors web 750feda9): aom keeps the hardcoded
+        // AgentRoster; every other world populates from the live agent_status
+        // endpoint so Apple's demo reviewer sees only their own agents.
+        if world == "aom" {
+            AgentRoster.configure(world: world, liveAgents: nil)
+        } else {
+            let liveAgents = try? await api.roomAgents().agents
+            AgentRoster.configure(world: world, liveAgents: liveAgents)
+        }
         agents = AgentRoster.rooms(world: world)
         isLoading = true
         defer { isLoading = false; hasLoadedOnce = true }

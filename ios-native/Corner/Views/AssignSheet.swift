@@ -81,7 +81,7 @@ struct AssignSheet: View {
             .listRowBackground(Theme.raised.opacity(0.6))
 
             Section("Who takes it") {
-                ForEach(AgentRoster.all, id: \.slug) { agent in
+                ForEach(AgentRoster.resolved, id: \.slug) { agent in
                     Button {
                         selected = agent
                     } label: {

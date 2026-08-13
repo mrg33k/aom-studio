@@ -288,17 +288,22 @@ struct Room: Identifiable, Hashable {
 /// Mirror of DASHBOARD_AGENTS (order) + TITLE_OVERRIDES (labels) in
 /// aom-studio/src/dashboard/cv6next/data/agentTitles.js.
 ///
-/// This is a hardcoded mirror on purpose, and it is the one piece of rail data that
-/// is: the roster is product doctrine that changes on a deploy, not tenant data, and
-/// there is no endpoint that serves it. Projects and missions below it come from the
-/// live APIs. When agentTitles.js changes, this list changes with it.
+/// The hardcoded AOM roster is product doctrine — the 13 titles that changed on a deploy,
+/// not tenant data. For the `aom` world this is still the single source; for every OTHER
+/// world `resolved` is populated from the live `/api/dashboard/room-agent` endpoint so
+/// Apple's demo reviewer (or any tenant) sees only their own `agent_status` rows.
+///
+/// Consumers iterate `AgentRoster.resolved` (never `.all`) and call `title(for:)` which
+/// checks the live name cache first, so message-author labels and file attributions
+/// automatically use the server-provided display name for non-aom worlds.
 enum AgentRoster {
-    struct Entry {
+    struct Entry: Equatable {
         let slug: String
         let title: String
         let subtitle: String
     }
 
+    /// The AOM-product roster (unchanged, doctrine).
     static let all: [Entry] = [
         Entry(slug: "director", title: "Creative",   subtitle: "Creative direction"),
         Entry(slug: "bobby",    title: "Web",        subtitle: "Sites and frontends"),
@@ -315,6 +320,15 @@ enum AgentRoster {
         Entry(slug: "pixel",    title: "Media",      subtitle: "Media production"),
     ]
 
+    /// The roster views should iterate — `all` for aom, the live endpoint result for
+    /// everyone else. Set once during RoomStore.load(); all views read it after that.
+    static var resolved: [Entry] = all
+
+    /// Slug-to-display-name from the live roster endpoint. Non-empty only for non-aom
+    /// worlds. `title(for:)` checks here first so message author labels and file
+    /// attribution automatically pick up server-provided names like "Demo EA".
+    private(set) static var nameCache: [String: String] = [:]
+
     /// Titles for slugs that are NOT on the visible roster but can still author a row —
     /// `corner` answers every project and mission room, `studio` dispatches. A reply
     /// from one of them must not render as a bare slug, and it must never render as a
@@ -324,14 +338,38 @@ enum AgentRoster {
         "studio": "Studio",
     ]
 
+    /// Resolve a slug to a human-readable title. Checks the live name cache first (for
+    /// non-aom worlds), then the hardcoded roster, then off-roster overrides, then
+    /// falls through to prettify so a bare slug never leaks to UI.
     static func title(for slug: String) -> String {
         let key = slug.lowercased()
+        if let cached = nameCache[key] { return cached }
         if let entry = all.first(where: { $0.slug == key }) { return entry.title }
         if let off = offRosterTitles[key] { return off }
         return Room.prettify(key)
     }
 
     static func rooms(world: String) -> [Room] {
-        all.map { Room(world: world, kind: .agent(slug: $0.slug), title: $0.title, subtitle: $0.subtitle) }
+        rooms(world: world, entries: resolved)
+    }
+
+    static func rooms(world: String, entries: [Entry]) -> [Room] {
+        entries.map { Room(world: world, kind: .agent(slug: $0.slug), title: $0.title, subtitle: $0.subtitle) }
+    }
+
+    /// Called by RoomStore.load() — sets the resolved entries and name cache for
+    /// the current world. AOM keeps doctrine; everyone else gets live data.
+    static func configure(world: String, liveAgents: [CornerAPI.RoomAgentOption]?) {
+        if world == "aom" {
+            resolved = all
+            nameCache = [:]
+        } else if let agents = liveAgents, !agents.isEmpty {
+            resolved = agents.map { Entry(slug: $0.slug, title: $0.title, subtitle: $0.role) }
+            nameCache = Dictionary(uniqueKeysWithValues: agents.map { ($0.slug.lowercased(), $0.title) })
+        } else {
+            // Endpoint failed: empty roster + retry on next load beats 13 fake agents.
+            resolved = []
+            nameCache = [:]
+        }
     }
 }

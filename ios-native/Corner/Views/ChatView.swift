@@ -355,7 +355,7 @@ struct ChatView: View {
     private var headerTitle: some View {
         Menu {
             Section("Switch specialist") {
-                ForEach(AgentRoster.all, id: \.slug) { entry in
+                ForEach(AgentRoster.resolved, id: \.slug) { entry in
                     Button {
                         router.open(Room(world: model.room.world,
                                          kind: .agent(slug: entry.slug),
@@ -394,9 +394,9 @@ struct ChatView: View {
                     HStack(spacing: 4) {
                         let status = model.roomStatus
                         if status != .idle {
-                            Circle()
-                                .fill(status.tone == .blocked ? Theme.warning : Theme.live)
-                                .frame(width: 6, height: 6)
+                            // Single presence dot lives on the avatar (RoomAvatarView);
+                            // the pill carries only the status label text (mirrors web
+                            // ce7ad25a — one dot, not two).
                             Text(status.label)
                                 .font(.hanken(10.5).weight(.medium))
                                 .foregroundStyle(status.tone == .blocked ? Theme.warning : Theme.live)

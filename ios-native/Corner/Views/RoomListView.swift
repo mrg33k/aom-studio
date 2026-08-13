@@ -291,7 +291,7 @@ struct RoomListView: View {
     private var chipCount: [HomeFilter: Int] {
         [
             .all: store.recent.filter { !hiddenRoomIDs.contains($0.room.roomID) }.count,
-            .agents: AgentRoster.all.count,
+            .agents: store.agents.count,
             .projects: store.projects.count,
         ]
     }
@@ -415,7 +415,7 @@ struct RoomListView: View {
     @ViewBuilder
     private var agentRows: some View {
         sectionLabel("Agents")
-        ForEach(AgentRoster.all, id: \.slug) { entry in
+        ForEach(AgentRoster.resolved, id: \.slug) { entry in
             Button {
                 if let world = api.world {
                     router.open(Room(world: world, kind: .agent(slug: entry.slug), title: entry.title, subtitle: entry.subtitle))
@@ -499,7 +499,7 @@ struct RoomListView: View {
                 }
             }
         }
-        let agents: [[String: Any]] = AgentRoster.all.map { ["slug": $0.slug, "name": $0.title] }
+        let agents: [[String: Any]] = AgentRoster.resolved.map { ["slug": $0.slug, "name": $0.title] }
         return ["projects": projects, "missions": missions, "agents": agents]
     }
 
@@ -844,19 +844,7 @@ private struct AgentPickerRow: View {
                     in: Circle()
                 )
             VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: Theme.s2) {
-                    Text(entry.title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
-                    HStack(spacing: 5) {
-                        Circle().fill(Theme.inkFaint).frame(width: 6, height: 6)
-                        Text("READY")
-                            .font(.hanken(10).weight(.bold))
-                            .tracking(0.8)
-                            .foregroundStyle(Theme.inkSoft)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Theme.chipFill, in: Capsule())
-                }
+                Text(entry.title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
                 Text(entry.subtitle).font(.hkCaption).foregroundStyle(Theme.inkSoft)
             }
             Spacer(minLength: 0)
