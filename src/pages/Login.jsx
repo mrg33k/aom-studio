@@ -2,112 +2,10 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signInWithPassword, getCurrentUser } from '../dashboard/lib/auth.js'
 import { useThemeMode } from '../dashboard/hooks/useThemeMode.js'
-
-const DARK = {
-  bgBase:     '#040810',
-  bgGrad:     ['#06090F', '#040810'],
-  text:       '#F8FAFC',
-  textMuted:  'rgba(255,255,255,0.30)',
-  textDim:    'rgba(255,255,255,0.18)',
-  fieldLine:  'rgba(255,255,255,0.10)',
-  divider:    'rgba(255,255,255,0.06)',
-  accent:     '#10B981',
-  accent2:    '#34D399',
-  blobs: [
-    'rgba(16,185,129,0.07)',
-    'rgba(6,95,70,0.08)',
-    'rgba(52,211,153,0.04)',
-    'rgba(16,185,129,0.05)',
-  ],
-  errBg:      'rgba(239,68,68,0.08)',
-  errFg:      '#F87171',
-  buttonText: '#FFFFFF',
-}
-const LIGHT = {
-  bgBase:     '#F2EFE8',
-  bgGrad:     ['#FAF7F0', '#E8E2D4'],
-  text:       '#1A1F2C',
-  textMuted:  'rgba(26,31,44,0.55)',
-  textDim:    'rgba(26,31,44,0.38)',
-  fieldLine:  'rgba(26,31,44,0.16)',
-  divider:    'rgba(26,31,44,0.10)',
-  accent:     '#0E8F66',
-  accent2:    '#10B981',
-  blobs: [
-    'rgba(255,180,120,0.18)',
-    'rgba(255,205,140,0.16)',
-    'rgba(180,210,255,0.14)',
-    'rgba(14,143,102,0.10)',
-  ],
-  errBg:      'rgba(220,38,38,0.08)',
-  errFg:      '#B91C1C',
-  buttonText: '#FFFFFF',
-}
-
-// ── Animated mesh background ────────────────────────────────────────────────
-function MeshBackground({ palette }) {
-  const canvasRef = useRef(null)
-  const raf = useRef(null)
-  const paletteRef = useRef(palette)
-  paletteRef.current = palette
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    let w = window.innerWidth
-    let h = window.innerHeight
-    canvas.width = w
-    canvas.height = h
-    let t = 0
-
-    const handleResize = () => {
-      w = window.innerWidth
-      h = window.innerHeight
-      canvas.width = w
-      canvas.height = h
-    }
-    window.addEventListener('resize', handleResize)
-
-    const draw = () => {
-      t += 0.003
-      const p = paletteRef.current
-      ctx.clearRect(0, 0, w, h)
-      ctx.fillStyle = p.bgBase
-      ctx.fillRect(0, 0, w, h)
-      const positions = [
-        { cx: w * 0.3 + Math.sin(t * 0.7) * w * 0.15, cy: h * 0.25 + Math.cos(t * 0.5) * h * 0.1, r: Math.max(w, h) * 0.4 },
-        { cx: w * 0.7 + Math.cos(t * 0.6) * w * 0.12, cy: h * 0.7  + Math.sin(t * 0.8) * h * 0.15, r: Math.max(w, h) * 0.35 },
-        { cx: w * 0.5 + Math.sin(t * 1.1) * w * 0.2,  cy: h * 0.5  + Math.cos(t * 0.9) * h * 0.2,  r: Math.max(w, h) * 0.3 },
-        { cx: w * 0.15 + Math.cos(t * 0.4) * w * 0.08, cy: h * 0.8 + Math.sin(t * 0.6) * h * 0.1,  r: Math.max(w, h) * 0.25 },
-      ]
-      positions.forEach((b, i) => {
-        const grad = ctx.createRadialGradient(b.cx, b.cy, 0, b.cx, b.cy, b.r)
-        grad.addColorStop(0, p.blobs[i] || p.blobs[0])
-        grad.addColorStop(1, 'transparent')
-        ctx.fillStyle = grad
-        ctx.fillRect(0, 0, w, h)
-      })
-      raf.current = requestAnimationFrame(draw)
-    }
-    draw()
-
-    return () => {
-      cancelAnimationFrame(raf.current)
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-        pointerEvents: 'none', zIndex: 0,
-      }}
-    />
-  )
-}
+import {
+  DARK, LIGHT, FONT,
+  MeshBackground, ASCIIBackground, CenterScrim, CornerMarks,
+} from './login-visuals.jsx'
 
 // ── Loading screen after sign-in ────────────────────────────────────────────
 function LoadingScreen({ palette }) {
@@ -121,7 +19,7 @@ function LoadingScreen({ palette }) {
       minHeight: '100vh', background: palette.bgBase,
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      fontFamily: FONT,
     }}>
       <MeshBackground palette={palette} />
       <style>{`@keyframes loaderBar { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
@@ -237,11 +135,11 @@ export default function Login() {
     border: 'none',
     borderBottom: `1px solid ${focused ? palette.accent : palette.fieldLine}`,
     borderRadius: 0,
-    padding: '8px 0',
-    fontSize: 15,
+    padding: '8px 0 10px',
+    fontSize: 16,
     fontWeight: 500,
     color: palette.text,
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: FONT,
     letterSpacing: '-0.01em',
     outline: 'none',
     transition: 'border-color 220ms ease',
@@ -255,7 +153,7 @@ export default function Login() {
       padding: nativeShell
         ? 'max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom))'
         : '1rem',
-      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      fontFamily: FONT,
       position: 'relative', overflow: 'hidden',
     }}>
       <style>{`
@@ -267,8 +165,8 @@ export default function Login() {
       `}</style>
 
       <MeshBackground palette={palette} />
-
-      {/* Corner-marker frame — futuristic accent, no chrome */}
+      <ASCIIBackground palette={palette} />
+      <CenterScrim palette={palette} />
       <CornerMarks color={palette.fieldLine} />
 
       <div style={{
@@ -287,14 +185,14 @@ export default function Login() {
         transition: 'opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
 
-        {/* Wordmark — small, restrained */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        {/* Wordmark — left-aligned, matching iOS SignInView layout */}
+        <div style={{ marginBottom: 32 }}>
           <div style={{
-            fontSize: 20, fontWeight: 600,
+            fontSize: 22, fontWeight: 600,
             color: palette.text,
             letterSpacing: '-0.02em',
           }}>
-            Corner<span style={{ color: palette.accent }}>.</span>
+            Corner<span style={{ color: palette.accent2 }}>.</span>
           </div>
           <div style={{
             marginTop: 6, fontSize: 10, fontWeight: 600,
@@ -312,21 +210,21 @@ export default function Login() {
             borderLeft: `2px solid ${palette.errFg}`,
             padding: '8px 12px', marginBottom: 18,
             fontSize: 12, color: palette.errFg, fontWeight: 500, lineHeight: 1.4,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: FONT,
           }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSignIn} noValidate>
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 24 }}>
             <label style={{
               display: 'block', fontSize: 9, fontWeight: 700,
-              color: emailFocused ? palette.accent : palette.textMuted,
-              marginBottom: 4, letterSpacing: '0.14em',
+              color: emailFocused ? palette.accent2 : palette.textMuted,
+              marginBottom: 8, letterSpacing: '0.14em',
               textTransform: 'uppercase',
               transition: 'color 220ms ease',
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: FONT,
             }}>Email</label>
             <input
               ref={emailRef}
@@ -343,11 +241,11 @@ export default function Login() {
           <div style={{ marginBottom: 28 }}>
             <label style={{
               display: 'block', fontSize: 9, fontWeight: 700,
-              color: passFocused ? palette.accent : palette.textMuted,
-              marginBottom: 4, letterSpacing: '0.14em',
+              color: passFocused ? palette.accent2 : palette.textMuted,
+              marginBottom: 8, letterSpacing: '0.14em',
               textTransform: 'uppercase',
               transition: 'color 220ms ease',
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: FONT,
             }}>Password</label>
             <input
               type="password"
@@ -363,15 +261,15 @@ export default function Login() {
 
           <button type="submit" disabled={loading} style={{
             width: '100%',
-            padding: '11px 16px',
+            padding: '13px 16px',
             background: loading
               ? `${palette.accent}33`
               : `linear-gradient(135deg, ${palette.accent} 0%, ${palette.accent2} 100%)`,
             border: 'none',
             borderRadius: 10,
-            fontSize: 13, fontWeight: 600,
+            fontSize: 15, fontWeight: 600,
             color: palette.buttonText,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: FONT,
             cursor: loading ? 'not-allowed' : 'pointer',
             letterSpacing: '0.02em',
             transition: 'all 220ms ease',
@@ -389,17 +287,17 @@ export default function Login() {
         </form>
 
         <div style={{
-          marginTop: 22, textAlign: 'center',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          marginTop: 24, textAlign: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         }}>
           <div style={{
             width: 4, height: 4, borderRadius: '50%',
-            background: palette.accent,
-            animation: 'dotPulse 2s ease-in-out infinite',
+            background: palette.accent2,
+            animation: 'dotPulse 2.2s ease-in-out infinite',
           }} />
           <span style={{
             fontSize: 9, color: palette.textMuted,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: FONT,
             fontWeight: 600,
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
@@ -409,40 +307,5 @@ export default function Login() {
         </div>
       </div>
     </div>
-  )
-}
-
-function CornerMarks({ color }) {
-  const len = 14
-  const margin = 18
-  const stroke = 1
-  const mark = (style) => ({
-    position: 'fixed', width: len, height: len,
-    pointerEvents: 'none', zIndex: 1,
-    ...style,
-  })
-  const line = (orient) => ({
-    position: 'absolute', background: color,
-    ...(orient === 'h' ? { left: 0, width: '100%', height: stroke } : { top: 0, height: '100%', width: stroke }),
-  })
-  return (
-    <>
-      <div style={mark({ top: margin, left: margin })}>
-        <div style={{ ...line('h'), top: 0 }} />
-        <div style={{ ...line('v'), left: 0 }} />
-      </div>
-      <div style={mark({ top: margin, right: margin })}>
-        <div style={{ ...line('h'), top: 0 }} />
-        <div style={{ ...line('v'), right: 0 }} />
-      </div>
-      <div style={mark({ bottom: margin, left: margin })}>
-        <div style={{ ...line('h'), bottom: 0 }} />
-        <div style={{ ...line('v'), left: 0 }} />
-      </div>
-      <div style={mark({ bottom: margin, right: margin })}>
-        <div style={{ ...line('h'), bottom: 0 }} />
-        <div style={{ ...line('v'), right: 0 }} />
-      </div>
-    </>
   )
 }

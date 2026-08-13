@@ -1,18 +1,31 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, updatePassword } from '../dashboard/lib/auth.js'
 import { supabase } from '../dashboard/lib/supabase.js'
+import { useThemeMode } from '../dashboard/hooks/useThemeMode.js'
+import {
+  DARK, LIGHT, FONT,
+  MeshBackground, ASCIIBackground, CenterScrim, CornerMarks,
+} from './login-visuals.jsx'
 
 // Forced password change for admin-created accounts (temp_password: true).
 // After success, clears temp_password flag and redirects to dashboard.
+// Visual treatment matches Login.jsx — same emerald-on-navy brand moment,
+// same animated background, same component language.
 
 export default function ChangePassword() {
   const navigate = useNavigate()
+  const { isLight } = useThemeMode()
+  const palette = isLight ? LIGHT : DARK
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
+  const [mounted, setMounted] = useState(false)
+  const [newFocused, setNewFocused] = useState(false)
+  const [confirmFocused, setConfirmFocused] = useState(false)
+  const newRef = useRef(null)
 
   useEffect(() => {
     getCurrentUser().then(user => {
@@ -23,9 +36,14 @@ export default function ChangePassword() {
         navigate('/dashboard', { replace: true })
       } else {
         setCheckingSession(false)
+        setTimeout(() => setMounted(true), 50)
       }
     })
   }, [navigate])
+
+  useEffect(() => {
+    if (!checkingSession && newRef.current) newRef.current.focus()
+  }, [checkingSession])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -63,122 +81,165 @@ export default function ChangePassword() {
   if (checkingSession) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0A0F1A',
+        minHeight: '100vh', background: palette.bgBase,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', borderTop: '2px solid #E85D26', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{
+          width: 16, height: 16, borderRadius: '50%',
+          border: `1.5px solid ${palette.divider}`,
+          borderTop: `1.5px solid ${palette.textMuted}`,
+          animation: 'spin 0.8s linear infinite',
+        }} />
       </div>
     )
   }
 
+  const inputStyle = (focused) => ({
+    width: '100%',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: `1px solid ${focused ? palette.accent : palette.fieldLine}`,
+    borderRadius: 0,
+    padding: '8px 0 10px',
+    fontSize: 16,
+    fontWeight: 500,
+    color: palette.text,
+    fontFamily: FONT,
+    letterSpacing: '-0.01em',
+    outline: 'none',
+    transition: 'border-color 220ms ease',
+  })
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: `linear-gradient(180deg, #060A14 0%, #0A1028 45%, #0F1830 100%)`,
+      background: palette.bgBase,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '1rem', fontFamily: "'Inter', system-ui, sans-serif",
+      padding: '1rem',
+      fontFamily: FONT,
       position: 'relative', overflow: 'hidden',
     }}>
-      {/* Background grid */}
-      <div style={{
-        position: 'absolute', inset: 0, zIndex: 0,
-        backgroundImage: `
-          linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px)
-        `,
-        backgroundSize: '48px 48px',
-        pointerEvents: 'none',
-      }} />
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        * { box-sizing: border-box; }
+        input::placeholder { color: ${palette.textDim}; font-weight: 400; }
+      `}</style>
+
+      <MeshBackground palette={palette} />
+      <ASCIIBackground palette={palette} />
+      <CenterScrim palette={palette} />
+      <CornerMarks color={palette.fieldLine} />
 
       <div style={{
         position: 'relative', zIndex: 1,
-        width: '100%', maxWidth: 420,
-        background: 'rgba(15,23,42,0.92)',
-        border: '1.5px solid rgba(59,130,246,0.2)',
-        borderRadius: 16,
-        padding: '40px 36px',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.08)',
+        width: '100%', maxWidth: 320,
+        opacity: mounted ? 1 : 0,
+        transform: mounted ? 'translateY(0)' : 'translateY(12px)',
+        transition: 'opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 32, fontWeight: 900, color: '#F1F5F9', letterSpacing: '0.01em', marginBottom: 8 }}>
-            Corner<span style={{ color: '#E85D26' }}>.</span>
+
+        {/* Wordmark — left-aligned, matching login */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{
+            fontSize: 22, fontWeight: 600,
+            color: palette.text,
+            letterSpacing: '-0.02em',
+          }}>
+            Corner<span style={{ color: palette.accent2 }}>.</span>
           </div>
-          <div style={{ fontSize: 14, color: '#64748B' }}>
-            Choose a password to continue
+          <div style={{
+            marginTop: 6, fontSize: 10, fontWeight: 600,
+            color: palette.textMuted,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+          }}>
+            Choose your password
           </div>
         </div>
 
         {error && (
           <div style={{
-            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-            borderRadius: 8, padding: '10px 14px', marginBottom: 20,
-            fontSize: 13, color: '#F87171', fontWeight: 500, lineHeight: 1.4,
+            background: palette.errBg,
+            borderLeft: `2px solid ${palette.errFg}`,
+            padding: '8px 12px', marginBottom: 18,
+            fontSize: 12, color: palette.errFg, fontWeight: 500, lineHeight: 1.4,
+            fontFamily: FONT,
           }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} noValidate>
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>New Password</label>
+          <div style={{ marginBottom: 24 }}>
+            <label style={{
+              display: 'block', fontSize: 9, fontWeight: 700,
+              color: newFocused ? palette.accent2 : palette.textMuted,
+              marginBottom: 8, letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              transition: 'color 220ms ease',
+              fontFamily: FONT,
+            }}>New Password</label>
             <input
+              ref={newRef}
               type="password"
               value={newPassword}
               onChange={e => { setNewPassword(e.target.value); setError('') }}
               placeholder="At least 8 characters"
               autoComplete="new-password"
-              style={inputStyle}
-              onFocus={e => { e.target.style.borderColor = 'rgba(232,93,38,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(232,93,38,0.12)' }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.2)'; e.target.style.boxShadow = 'none' }}
+              style={inputStyle(newFocused)}
+              onFocus={() => setNewFocused(true)}
+              onBlur={() => setNewFocused(false)}
             />
           </div>
-          <div style={{ marginBottom: 24 }}>
-            <label style={labelStyle}>Confirm Password</label>
+          <div style={{ marginBottom: 28 }}>
+            <label style={{
+              display: 'block', fontSize: 9, fontWeight: 700,
+              color: confirmFocused ? palette.accent2 : palette.textMuted,
+              marginBottom: 8, letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              transition: 'color 220ms ease',
+              fontFamily: FONT,
+            }}>Confirm Password</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={e => { setConfirmPassword(e.target.value); setError('') }}
               placeholder="Same password again"
               autoComplete="new-password"
-              style={inputStyle}
-              onFocus={e => { e.target.style.borderColor = 'rgba(232,93,38,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(232,93,38,0.12)' }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.2)'; e.target.style.boxShadow = 'none' }}
+              style={inputStyle(confirmFocused)}
+              onFocus={() => setConfirmFocused(true)}
+              onBlur={() => setConfirmFocused(false)}
             />
           </div>
-          <button type="submit" disabled={loading} style={primaryBtnStyle(loading)}>
-            {loading ? 'Updating...' : 'Set Password'}
+
+          <button type="submit" disabled={loading} style={{
+            width: '100%',
+            padding: '13px 16px',
+            background: loading
+              ? `${palette.accent}33`
+              : `linear-gradient(135deg, ${palette.accent} 0%, ${palette.accent2} 100%)`,
+            border: 'none',
+            borderRadius: 10,
+            fontSize: 15, fontWeight: 600,
+            color: palette.buttonText,
+            fontFamily: FONT,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            letterSpacing: '0.02em',
+            transition: 'all 220ms ease',
+            boxShadow: loading ? 'none' : `0 6px 22px ${palette.accent}33, 0 0 0 1px ${palette.accent}1A`,
+          }}>
+            {loading ? (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                Updating
+              </span>
+            ) : 'Set Password'}
           </button>
         </form>
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } } * { box-sizing: border-box; }`}</style>
     </div>
   )
 }
-
-const labelStyle = {
-  display: 'block', fontSize: 12, fontWeight: 600,
-  color: '#94A3B8', marginBottom: 6,
-  letterSpacing: '0.02em', textTransform: 'uppercase',
-}
-
-const inputStyle = {
-  width: '100%', background: 'rgba(255,255,255,0.04)',
-  border: '1.5px solid rgba(59,130,246,0.2)',
-  borderRadius: 8, padding: '11px 14px',
-  fontSize: 14, fontWeight: 400, color: '#F1F5F9',
-  fontFamily: "'Inter', system-ui, sans-serif",
-  outline: 'none', transition: 'border-color 150ms ease, box-shadow 150ms ease',
-}
-
-const primaryBtnStyle = (loading) => ({
-  width: '100%', padding: '12px 20px',
-  background: loading ? 'rgba(232,93,38,0.4)' : 'linear-gradient(135deg, #E85D26, #C44B1C)',
-  border: 'none', borderRadius: 8,
-  fontSize: 14, fontWeight: 700, color: '#FFFFFF',
-  fontFamily: "'Inter', system-ui, sans-serif",
-  cursor: loading ? 'not-allowed' : 'pointer',
-  letterSpacing: '0.02em', transition: 'all 150ms ease',
-  boxShadow: loading ? 'none' : '0 4px 16px rgba(232,93,38,0.3)',
-})
