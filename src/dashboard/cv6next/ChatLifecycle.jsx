@@ -10,6 +10,7 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
 import StreamingDraft from './StreamingDraft.jsx';
+import useStickToBottom from './useStickToBottom.js';
 import { deriveRoomStatus, ROOM_STATUS_LABEL, ROOM_STATUS_TONE } from './data/roomStatus.js';
 import { Result } from './BlockRenderer.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
@@ -1195,9 +1196,6 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   // one room never reappears when the fallback composer mounts in another
   // (fresh-eyes review 2026-07-06, finding 4).
   useEffect(() => { setFilesSheetOpen(false); setDraft(''); }, [roomKeyForSheet]);
-  const scrollRef = useRef(null);
-  const bottomRef = useRef(null);
-  const [showJump, setShowJump] = useState(false);
   const filesLiftRef = useRef(null);
 
   // At the newest message, a deliberate upward overscroll opens Files. Restricting
@@ -1318,50 +1316,17 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     step?.state,
   ].join(':')).join('|'), [liveSteps]);
 
-  const followTail = useCallback((behavior = 'smooth') => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior });
-  }, []);
-  const jumpToLatest = useCallback(() => followTail('smooth'), [followTail]);
-
-  // The pill shows when scrolled away from the active exchange.
-  const onScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setShowJump(!awaiting && fromBottom > 240);
-  }, [awaiting]);
-
-  const prevLenRef = useRef(0);
+  // THE one stick-to-bottom (Round G): shared with ChatDesktop via the hook.
+  // contentKey follows the streaming draft's growth (Round D) — text that grows
+  // scrollHeight without changing the message count.
   const roomKey = room?.id || room?.name;
-  useEffect(() => { prevLenRef.current = 0; }, [roomKey]);
-  useEffect(() => {
-    const el = scrollRef.current;
-    const len = messages?.length || 0;
-    const prev = prevLenRef.current;
-    prevLenRef.current = len;
-    if (!el || !len) return;
-    // The thread polls every 3s and hands back a fresh array each time. When the count didn't
-    // change it's an identical re-render, not a new message — bail before any pin/scroll so the
-    // view stays exactly where you left it (this is the guard the desktop screen already has;
-    // without it a poll could re-snap your latest message to the top while you sat at the bottom).
-    if (len === prev) return;
-    // First load and every newly-sent active turn land at the tail. Once work settles,
-    // preserve history reading unless the user was already following the bottom.
-    if (prev === 0 || awaiting) { followTail(prev === 0 ? 'auto' : 'smooth'); return; }
-    const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (fromBottom < 200) followTail('smooth');
-  }, [messages, roomKey, awaiting, followTail]);
-
-  // Step polling can change the live thread without adding a message. Follow those
-  // real updates too, after React has laid out the newest step, so the singular
-  // progress surface remains visibly anchored at the conversation tail.
-  useEffect(() => {
-    if (!awaiting) return undefined;
-    const frame = requestAnimationFrame(() => followTail('auto'));
-    return () => cancelAnimationFrame(frame);
-  }, [awaiting, liveProgressKey, followTail]);
+  const { scrollRef, bottomRef, onScroll, showJump, jumpToLatest } = useStickToBottom({
+    roomKey,
+    itemsLength: messages?.length || 0,
+    awaiting,
+    liveKey: liveProgressKey,
+    contentKey: streamDraft?.text?.length || 0,
+  });
 
   // A thread whose first load failed is NOT an empty room. Before this, `empty` swallowed
   // it and a network-dead room greeted you with "start the conversation" — the friendliest

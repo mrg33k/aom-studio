@@ -16,6 +16,7 @@ import { buildChecklistRoomOptions } from './data/roomKeys.js';
 
 import { SendCtx, ReviewCtx } from './ChatGoalThread.jsx';
 import StreamingDraft from './StreamingDraft.jsx';
+import useStickToBottom from './useStickToBottom.js';
 import { deriveRoomStatus, ROOM_STATUS_LABEL, ROOM_STATUS_TONE } from './data/roomStatus.js';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
@@ -808,10 +809,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // Pin to the latest message: after the thread loads (messages arrive async) and whenever a
   // new one lands, so opening a room lands at the tail and your just-sent message isn't hidden
   // below the fold. Reading history (scrolled up) is left alone.
-  const scrollRef = useRef(null);
-  const bottomRef = useRef(null);
-  const prevLenRef = useRef(0);
-  const selKey = selected?.id || '';
+  // Live-step signature: steps change the tail without changing the message
+  // count; this key tells the follow effect a real update happened.
   const liveProgressKey = useMemo(() => (liveSteps || []).map((step) => [
     step?.id,
     step?.step_index,
@@ -820,32 +819,16 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     step?.progress,
     step?.state,
   ].join(':')).join('|'), [liveSteps]);
-  useEffect(() => { prevLenRef.current = 0; }, [selKey]);
-  useEffect(() => {
-    const el = scrollRef.current;
-    const len = messages?.length || 0;
-    const prev = prevLenRef.current;
-    prevLenRef.current = len;
-    if (!el || !len) return;
-    // The thread polls every 3s and hands back a fresh array each time. Only move the scroll
-    // when a NEW message actually arrived (len grew) or on first load — never on an identical
-    // re-render, which is what made the view jump every few seconds.
-    if (len === prev) return;
-    const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (prev === 0) bottomRef.current?.scrollIntoView();
-    else if (fromBottom < 400) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, selKey]);
-  // Live step polling does not change the message count, so the message-only effect above
-  // cannot keep the active work visible. While this room is genuinely awaiting a reply,
-  // follow the singular live thread at the tail after each real step update.
-  useEffect(() => {
-    if (!awaiting) return undefined;
-    const frame = requestAnimationFrame(() => {
-      const el = scrollRef.current;
-      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [awaiting, liveProgressKey, selKey]);
+  // THE one stick-to-bottom (Round G): shared with ChatLifecycle via the hook.
+  // Desktop gains the jump-to-latest pill; contentKey follows the streaming
+  // draft's growth (Round D).
+  const { scrollRef, bottomRef, onScroll, showJump, jumpToLatest } = useStickToBottom({
+    roomKey: selKey,
+    itemsLength: messages?.length || 0,
+    awaiting,
+    liveKey: liveProgressKey,
+    contentKey: draft?.text?.length || 0,
+  });
 
   const pickAgent = (a) => { const room = { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel, specialistTitle: a.specialistTitle, hasCustomTitle: a.hasCustomTitle }; if (onOpenRoomColumn) onOpenRoomColumn(room, worldId); else setPicked(room); };
   const pickProject = (p) => { const room = { id: p.slug || p.id, slug: p.slug, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' }; if (onOpenRoomColumn) onOpenRoomColumn(room, worldId); else setPicked(room); };
@@ -1113,7 +1096,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     </>
                   ) : null}
                 </div>
-                <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: composerCollapsed ? '22px 24px 88px' : '22px 24px' }}>
+                <div ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: composerCollapsed ? '22px 24px 88px' : '22px 24px' }}>
                   {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
                       the thread + its tables/charts centered instead of stretched. Set to 660px
                       to match the kit design (templates/chat.html) and reflow to full width on mobile. */}
@@ -1152,6 +1135,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>
+                {/* Round G: desktop gains the jump-to-latest pill (same kit class as mobile). */}
+                {showJump ? (
+                  <button className="jumplive" onClick={jumpToLatest}>
+                    Jump to latest
+                  </button>
+                ) : null}
                 {/* Rich CV4 composer host — wrapped in a collapsible container.
                     The wrapper animates shut on send (slides+fades down, 220ms).
                     A collapse handle lets Patrik minimize manually at any time.

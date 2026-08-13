@@ -12,7 +12,12 @@ test('R14 keeps recent chats swipeable and live progress singular at the tail', 
   assert.match(thread, /export function settleHistoricalBlocks/)
   assert.match(thread, /data-cv6-live-work=/)
   assert.match(lifecycle, /liveProgressKey/)
-  assert.match(lifecycle, /el\.scrollTo\(\{ top: el\.scrollHeight, behavior \}\)/)
+  // Round G: the scrollTo semantics moved to the ONE shared hook (useStickToBottom).
+  const hook = readFileSync(new URL('../src/dashboard/cv6next/useStickToBottom.js', import.meta.url), 'utf8')
+  assert.match(hook, /el\.scrollTo\(\{ top: el\.scrollHeight, behavior \}\)/)
+  assert.match(lifecycle, /useStickToBottom\(\{/)
   assert.doesNotMatch(lifecycle, /height: awaiting \? '78vh'/)
-  assert.match(desktop, /Live step polling does not change the message count/)
+  // Round G: the live-step follow semantics live in the hook; desktop passes its liveKey.
+  assert.match(hook, /steps and the streaming draft grow scrollHeight/)
+  assert.match(desktop, /useStickToBottom\(\{/)
 })
