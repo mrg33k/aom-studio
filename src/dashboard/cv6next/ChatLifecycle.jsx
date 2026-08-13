@@ -8,7 +8,8 @@
 // emitting a live Goal Thread, ChatGoalThread renders that instead. Honest with real
 // data: we fold by DAY (which we have), not by past "goals" (never stored).
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks, StreamingDraft } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
+import StreamingDraft from './StreamingDraft.jsx';
 import { Result } from './BlockRenderer.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
 import { useDictation } from './data/useDictation.js';

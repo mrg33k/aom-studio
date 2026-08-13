@@ -7,7 +7,7 @@ import assert from 'node:assert'
 import { readFileSync } from 'node:fs'
 
 const engine = readFileSync(new URL('../src/dashboard/cv6next/data/useRoomThread.js', import.meta.url), 'utf8')
-const goalThread = readFileSync(new URL('../src/dashboard/cv6next/ChatGoalThread.jsx', import.meta.url), 'utf8')
+const draftModule = readFileSync(new URL('../src/dashboard/cv6next/StreamingDraft.jsx', import.meta.url), 'utf8')
 const desktop = readFileSync(new URL('../src/dashboard/cv6next/ChatDesktop.jsx', import.meta.url), 'utf8')
 const lifecycle = readFileSync(new URL('../src/dashboard/cv6next/ChatLifecycle.jsx', import.meta.url), 'utf8')
 const worklist = readFileSync(new URL('../src/dashboard/cv6next/RoomWorkList.jsx', import.meta.url), 'utf8')
@@ -38,8 +38,8 @@ test('snapshot exposes draft only while awaiting; new turns start clean', () => 
 })
 
 test('StreamingDraft renders through the shared markdown path on both surfaces', () => {
-  assert.match(goalThread, /export function StreamingDraft/)
-  const draftBody = goalThread.slice(goalThread.indexOf('export function StreamingDraft'), goalThread.indexOf('function normalizeData'))
+  assert.match(draftModule, /export default function StreamingDraft/)
+  const draftBody = draftModule
   assert.match(draftBody, /ChatMessageRenderer content=\{draft\.text\}/)
   for (const [name, src] of [['ChatDesktop', desktop], ['ChatLifecycle', lifecycle]]) {
     const draftIdx = src.indexOf('<StreamingDraft')

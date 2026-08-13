@@ -14,7 +14,8 @@ import { useRoomThread, useGoalThread, rowAttachments } from './data/useRoomThre
 import { titleForAgent } from './data/agentTitles.js';
 import { buildChecklistRoomOptions } from './data/roomKeys.js';
 
-import { SendCtx, ReviewCtx, StreamingDraft } from './ChatGoalThread.jsx';
+import { SendCtx, ReviewCtx } from './ChatGoalThread.jsx';
+import StreamingDraft from './StreamingDraft.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
