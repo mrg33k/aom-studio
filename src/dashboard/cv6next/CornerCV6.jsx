@@ -957,15 +957,36 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // in BOTH the desktop convo column and the mobile Home screen. Tracked across
   // template re-binds like the other hosts so the composer keeps its typed text.
   const [intakeHost, setIntakeHost] = useState(null);
+  // Defect 3 fix: measure the intake host for real so .hbody's bottom reserve
+  // tracks the composer's actual height (grows when IntakeConfirm is showing).
+  // Same ResizeObserver pattern as the chat-room composer (commit ce7ad25a).
+  const intakeObserverRef = useRef(null);
   useEffect(() => {
     const pick = () => {
       const el = document.querySelector('[data-cv6-intake]');
       setIntakeHost((prev) => (prev === el ? prev : (el || null)));
+      // Wire ResizeObserver on the intake host to publish --cv6-intake-h.
+      if (intakeObserverRef.current) { intakeObserverRef.current.disconnect(); intakeObserverRef.current = null; }
+      if (el) {
+        const screen = el.closest('[data-screen="home-mobile"]');
+        if (screen) {
+          const ro = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+              const h = Math.round(entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height);
+              screen.style.setProperty('--cv6-intake-h', `${h}px`);
+            }
+          });
+          ro.observe(el);
+          intakeObserverRef.current = ro;
+          const h = Math.round(el.getBoundingClientRect().height);
+          screen.style.setProperty('--cv6-intake-h', `${h}px`);
+        }
+      }
     };
     pick();
     const obs = new MutationObserver(pick);
     obs.observe(document.body, { childList: true, subtree: true });
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); if (intakeObserverRef.current) { intakeObserverRef.current.disconnect(); intakeObserverRef.current = null; } };
   }, []);
   // col3 quick-reply thread host: the message list is React (Cv6QuickThread) portaled into
   // the template's emptied .convo-thread, so attachments render as cards (same pattern as the

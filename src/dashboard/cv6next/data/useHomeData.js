@@ -78,10 +78,12 @@ function relTime(ts) {
   return `${Math.round(h / 24)}d`;
 }
 
-export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [], agentThreadRooms = [], roomActivity = null, unreadRooms = [] } = {}) {
+export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [], agentThreadRooms = [], roomActivity = null, unreadRooms = [], worldId = '' } = {}) {
   // Agents render as TITLES (curated set), never names. id stays the agent slug so the chat
   // opens the right thread. (Agents-as-titles + Agents accordion, decided 2026-06-23.)
-  const agentRooms = curateTitledAgents(agents).map((a) => {
+  // Non-AOM worlds see ONLY their own agent_status rows (no hard-coded roster).
+  const isAom = worldId === 'aom';
+  const agentRooms = curateTitledAgents(agents, { isAom }).map((a) => {
     const status = agentStatus(a.status);
     return {
       id: a.slug, name: a.title,
@@ -361,7 +363,7 @@ export function useHome() {
   // when the underlying pipe arrays change). Without this, `data` was a new object every
   // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
   // list under the user's finger and making taps miss (the "can't open a chat" bug).
-  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms]);
+  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId]);
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
@@ -374,9 +376,10 @@ const CHAT_STATUS = { online: 'live', live: 'live', working: 'live', running: 'l
 function chatStatus(s) { return CHAT_STATUS[String(s || '').toLowerCase()] || 'ready'; }
 const CHAT_STATUS_LABEL = { live: 'LIVE', blocked: 'NEEDS YOU', ready: 'READY', done: 'DONE' };
 
-export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] } = {}) {
+export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [], worldId = '' } = {}) {
   // last needs-you message + count per agent (the only per-room snippet we have without a
   // separate fetch); rooms with no unread show no snippet rather than a fabricated one.
+  const isAom = worldId === 'aom';
   const byAgent = {};
   for (const it of inboxItems || []) {
     const k = String(it.agent || '').toLowerCase(); if (!k) continue;
@@ -384,7 +387,7 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] 
     byAgent[k].count += 1;
     if (!byAgent[k].text) { byAgent[k].text = firstLine(it.text); byAgent[k].time = relTime(it.timestamp); }
   }
-  const agentRows = curateTitledAgents(agents).map((a) => {
+  const agentRows = curateTitledAgents(agents, { isAom }).map((a) => {
     const status = chatStatus(a.status);
     const inb = byAgent[String(a.slug || a.name || '').toLowerCase()] || null;
     return {
@@ -412,7 +415,7 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] 
 export function useChatList() {
   const { status, worldId } = useTenantContext();
   const { agents, projectRooms, inboxItems } = useDataContext();
-  const shaped = useMemo(() => shapeChatList({ agents, projectRooms, inboxItems }), [agents, projectRooms, inboxItems]);
+  const shaped = useMemo(() => shapeChatList({ agents, projectRooms, inboxItems, worldId }), [agents, projectRooms, inboxItems, worldId]);
   // Same DEF-2 null-check fix applied to the chat-list hook. Both supabase-only
   // clauses stay gated behind `supabase &&` so local no-Supabase mode never blocks
   // on an auth-derived worldId (the branch's local-mode contract holds).

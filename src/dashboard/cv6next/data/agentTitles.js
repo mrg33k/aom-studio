@@ -71,44 +71,53 @@ export function titleForAgent(a) {
   return AGENT_TITLES[k] || cap(k) || 'Agent';
 }
 
-// Build the dashboard's curated agent roster, in order. The FULL set always shows (titles, with
-// live status merged from the real agent list when present, else ready), so you see every agent
-// you reach for even when they're quiet. `aomOnly` agents only show when they actually exist in
-// this world's live list. Each row carries its real `slug` so the chat opens the right thread.
-export function curateTitledAgents(agents = []) {
+// Build the dashboard's curated agent roster, in order.
+// AOM world: the FULL hard-coded set always shows (titles, with live status merged
+// from the real agent list when present, else ready). Tenant-created agents are
+// appended after the curated set.
+// Non-AOM worlds: ONLY the agents from Supabase agent_status for this client_id
+// are shown; the hard-coded roster is skipped entirely so a fresh tenant sees
+// exactly their own agents (e.g. just the EA), not the 13-agent AOM roster.
+// Display names for non-AOM agents prefer agent_status.name over the slug.
+export function curateTitledAgents(agents = [], { isAom = true } = {}) {
   const bySlug = {};
   for (const a of agents || []) bySlug[agentKey(a)] = a;
   const out = [];
-  for (const d of DASHBOARD_AGENTS) {
-    const live = bySlug[d.slug];
-    const specialistTitle = AGENT_TITLES[d.slug] || cap(d.slug);
-    const chatTitle = String(live?.chatTitle || '').trim();
-    out.push({
-      ...(live || {}),
-      slug: d.slug,
-      title: chatTitle || specialistTitle,
-      specialistTitle,
-      chatTitle: chatTitle || null,
-      hasCustomTitle: !!chatTitle,
-      status: live?.status || 'ready',
-      unread: live?.unread || 0,
-      _order: d.order,
-    });
+  // Walk the hard-coded roster only for the AOM world.
+  if (isAom) {
+    for (const d of DASHBOARD_AGENTS) {
+      const live = bySlug[d.slug];
+      const specialistTitle = AGENT_TITLES[d.slug] || cap(d.slug);
+      const chatTitle = String(live?.chatTitle || '').trim();
+      out.push({
+        ...(live || {}),
+        slug: d.slug,
+        title: chatTitle || specialistTitle,
+        specialistTitle,
+        chatTitle: chatTitle || null,
+        hasCustomTitle: !!chatTitle,
+        status: live?.status || 'ready',
+        unread: live?.unread || 0,
+        _order: d.order,
+      });
+    }
   }
   for (const [slug, live] of Object.entries(bySlug)) {
     if (!slug || out.some((a) => a.slug === slug)) continue;
     const specialistTitle = AGENT_TITLES[slug] || cap(slug);
     const chatTitle = String(live?.chatTitle || '').trim();
+    // Non-AOM worlds: prefer agent_status.name (e.g. "Demo EA") over the slug fallback.
+    const agentName = !isAom ? String(live?.name || '').trim() : '';
     out.push({
       ...(live || {}),
       slug,
-      title: chatTitle || specialistTitle,
-      specialistTitle,
+      title: chatTitle || agentName || specialistTitle,
+      specialistTitle: agentName || specialistTitle,
       chatTitle: chatTitle || null,
       hasCustomTitle: !!chatTitle,
       status: live?.status || 'ready',
       unread: live?.unread || 0,
-      _order: 1000 + out.length,
+      _order: isAom ? (1000 + out.length) : out.length,
     });
   }
   return out.sort((x, y) => x._order - y._order);
