@@ -26,7 +26,23 @@ const ms = (value) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-export function classifyTurnHealth({ receipt, message, roomMessages = [], steps = [], runnerJob = null, activeProcess = null, agentLiveProcess = null, processEvidenceAvailable = false, agentStatus = null, now = Date.now() }) {
+export function classifyTurnHealth(args) {
+  const verdict = classifyTurnHealthCore(args)
+  // R-SMOOTHNESS Round B: surface the bridge-stamped turn phase (thinking |
+  // working | streaming | done | waiting) from the freshest step, and a
+  // one-tap repair suggestion when the turn is beyond scoped repairs.
+  const steps = args.steps || []
+  const settled = steps.find((s) => Number(s.step_index) === 9999 || s.text === 'settled') || null
+  const live = steps.filter((s) => !settled || s.id !== settled.id).sort((a, b) => ms(b.timestamp) - ms(a.timestamp))[0] || null
+  verdict.phase = settled?.phase || live?.phase || null
+  if (verdict.state === 'needs_attention'
+    && (Number(args.receipt?.repair_count || 0) >= 3 || verdict.cause === 'settled_without_reply')) {
+    verdict.suggested_action = 'room_reset'
+  }
+  return verdict
+}
+
+function classifyTurnHealthCore({ receipt, message, roomMessages = [], steps = [], runnerJob = null, activeProcess = null, agentLiveProcess = null, processEvidenceAvailable = false, agentStatus = null, now = Date.now() }) {
   const ageMs = Math.max(0, now - ms(receipt?.accepted_at))
   const sinceRepairMs = receipt?.last_repair_at ? Math.max(0, now - ms(receipt.last_repair_at)) : null
   if (!message) return { state: 'needs_attention', cause: 'message_missing', repair: null, ageMs }
@@ -121,7 +137,9 @@ async function receiptEvidence(receipt) {
     db(`messages?id=eq.${encodeURIComponent(receipt.message_id)}&client_id=eq.${client}&select=id,role,room_id,agent,project,metadata,timestamp,reply_to,user_id,user_name&limit=1`),
     db(`messages?client_id=eq.${client}&room_id=eq.${room}&timestamp=gte.${after}&select=id,role,room_id,agent,project,metadata,timestamp,reply_to,user_id,user_name&order=timestamp.asc&limit=40`),
     db(`messages?client_id=eq.${client}&reply_to=eq.${encodeURIComponent(receipt.message_id)}&select=id,role,room_id,agent,project,metadata,timestamp,reply_to,user_id,user_name&order=timestamp.asc&limit=10`).catch(() => []),
-    db(`events?event_type=eq.message_step&payload->>parent_message_id=eq.${encodeURIComponent(receipt.message_id)}&select=id,timestamp,payload&order=timestamp.asc&limit=100`).catch(() => []),
+    // order=desc (Round B): asc+limit dropped the NEWEST steps on marathon
+    // turns — the settle sentinel and live heartbeat are the rows that matter.
+    db(`events?event_type=eq.message_step&payload->>parent_message_id=eq.${encodeURIComponent(receipt.message_id)}&select=id,timestamp,payload&order=timestamp.desc&limit=100`).catch(() => []),
     receipt.route === 'local'
       ? db(`corner_runner_jobs?message_id=eq.${encodeURIComponent(receipt.message_id)}&select=id,status,lease_expires_at,claimed_at,finished_at,error,updated_at&limit=1`).catch(() => [])
       : Promise.resolve([]),

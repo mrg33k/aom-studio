@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-11T14:02:40.059Z",
+  "generated_at": "2026-08-13T00:31:09.979Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -4468,6 +4468,20 @@
       "path": "corner/users/aom/missions/system-map-for-family"
     },
     {
+      "slug": "aom:totally-unknown-tail",
+      "raw_slug": "totally-unknown-tail",
+      "folder_name": "totally-unknown-tail",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Totally Unknown Tail",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/totally-unknown-tail"
+    },
+    {
       "slug": "aom:video-hook",
       "raw_slug": "video-hook",
       "folder_name": "video-hook",
@@ -4725,8 +4739,8 @@
     },
     {
       "slug": "aom",
-      "total": 41,
-      "in_flight": 41,
+      "total": 42,
+      "in_flight": 42,
       "done": 0
     }
   ]

@@ -18,6 +18,9 @@ function responseShape(result) {
     message_id: receipt?.message_id || null,
     room_id: receipt?.room_id || null,
     checked_at: receipt?.last_checked_at || null,
+    // R-SMOOTHNESS Round B: bridge-stamped turn phase + one-tap suggestion.
+    phase: health?.phase || null,
+    suggested_action: health?.suggested_action || null,
   }
 }
 

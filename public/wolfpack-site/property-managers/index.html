@@ -96,6 +96,15 @@ body.menu,body.reqopen{overflow:hidden}
   transition:color .2s,padding-left .25s var(--ease)}
 .sheet a:hover{color:var(--blue);padding-left:var(--s2)}
 .sheet a[aria-current]{color:var(--blue)}
+.sheet .grp{display:flex;flex-direction:column;border-bottom:1px solid var(--line-2)}
+.sheet .grp-l{padding:var(--s4) 0 var(--s2);font-family:'Archivo',sans-serif;
+  font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;
+  font-size:var(--t4);letter-spacing:.04em;color:var(--ink)}
+.sheet .grp a{border-bottom:none;padding:var(--s2) 0 var(--s2) var(--s4);
+  font-size:var(--t3);font-variation-settings:'wdth' 88,'wght' 600;
+  text-transform:none;letter-spacing:.02em;color:var(--ink-2)}
+.sheet .grp a:last-child{padding-bottom:var(--s4)}
+.sheet .grp a:hover{color:var(--blue);padding-left:calc(var(--s4) + var(--s2))}
 .sheet .sheet-call{margin-top:var(--s5);border:none;background:var(--blue);color:#fff;
   text-align:center;padding:var(--s4)}
 .sheet .sheet-call:hover{padding-left:0;color:#fff;background:var(--blue-dk)}
@@ -274,6 +283,9 @@ body.plot .hero-shot img{transform:scale(1)}
 .city:hover{background:var(--blue);color:#fff}
 .city.wide{grid-column:1/-1}
 .note{margin-top:var(--s5);text-align:center;color:var(--ink-2);font-size:var(--t2)}
+.gc-lead{margin-top:var(--s4);text-align:center;color:var(--ink-2);font-size:var(--t3);
+  max-width:60ch;margin-left:auto;margin-right:auto;line-height:1.6}
+.gc-cta{margin-top:var(--s6);display:flex;justify-content:center}
 
 /* contact methods */
 .ways{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s5)}
@@ -388,11 +400,15 @@ body.reqopen .reqdrawer{transform:none}
   font-size:var(--t4);color:var(--blue);white-space:nowrap;line-height:1.2}
 .foot .cities{font-family:'IBM Plex Mono',monospace;font-size:var(--t1);
   letter-spacing:.1em;text-transform:uppercase;color:#71767F;line-height:1.7}
-.foot .fnav{display:flex;flex-wrap:wrap;gap:var(--s3) var(--s5);
+.foot .fcols{display:flex;flex-wrap:wrap;gap:var(--s6) var(--s8);width:100%}
+.foot .fcol{display:flex;flex-direction:column}
+.foot .fcol h4{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  text-transform:uppercase;font-size:var(--t1);letter-spacing:.16em;color:var(--blue);
+  margin-bottom:var(--s2)}
+.foot .fcol a{color:#A2A7B0;transition:color .2s,padding-left .2s var(--ease);
   font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 600;
-  font-size:var(--t1);letter-spacing:.12em;text-transform:uppercase}
-.foot .fnav a{color:#A2A7B0;transition:color .2s;display:inline-block;padding:var(--s3) 0}
-.foot .fnav a:hover{color:var(--blue)}
+  font-size:var(--t2);letter-spacing:.03em;padding:var(--s2) 0}
+.foot .fcol a:hover{color:var(--blue);padding-left:var(--s2)}
 .foot .legal{font-family:'IBM Plex Mono',monospace;font-size:var(--t1);
   letter-spacing:.08em;color:#71767F}
 
@@ -500,6 +516,26 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
     transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease)}
   .nav a:hover::after,.nav a[aria-current]::after{transform:scaleX(1)}
   .nav a[aria-current]{color:var(--blue)}
+  .navdd{position:relative;display:flex;align-items:center}
+  .navdd>.trg{font:inherit;color:inherit;background:none;border:none;cursor:pointer;
+    text-transform:inherit;letter-spacing:inherit;padding:var(--s3) 0;position:relative;
+    display:inline-flex;align-items:center;gap:4px}
+  .navdd>.trg::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+    background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease)}
+  .navdd:hover>.trg::after,.navdd:focus-within>.trg::after{transform:scaleX(1)}
+  .navdd .car{width:9px;height:9px;fill:none;stroke:currentColor;stroke-width:2.4;
+    stroke-linecap:round;stroke-linejoin:round;transition:transform .25s var(--ease)}
+  .navdd:hover .car,.navdd:focus-within .car{transform:rotate(180deg)}
+  .navdd .menu{position:absolute;top:100%;left:0;transform:translateY(6px);min-width:236px;
+    background:var(--nav);border:1px solid var(--line);box-shadow:0 14px 38px rgba(0,0,0,.16);
+    padding:var(--s2) 0;display:flex;flex-direction:column;opacity:0;visibility:hidden;
+    transition:opacity .2s ease,transform .2s var(--ease),visibility .2s;z-index:80}
+  .navdd:hover .menu,.navdd:focus-within .menu{opacity:1;visibility:visible;transform:translateY(0)}
+  .navdd .menu a{padding:var(--s3) var(--s5);white-space:nowrap;text-transform:none;
+    letter-spacing:.02em;font-variation-settings:'wdth' 88,'wght' 600;font-size:var(--t2);
+    transition:background .18s,color .18s}
+  .navdd .menu a::after{content:none}
+  .navdd .menu a:hover{background:var(--tint);color:var(--blue)}
   .tt{margin-left:var(--s5)}
   .burger,.sheet,.callbar{display:none}
   .head-cta{background:var(--blue);color:#fff;padding:var(--s3) var(--s5);text-align:center;
@@ -625,7 +661,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
     <img class="brandword logo-lt" src="/wolfpack-site/assets/wolfpack-wordmark.png" alt="">
     <img class="brandword logo-dk" src="/wolfpack-site/assets/wolfpack-wordmark-knockout.png" alt="">
   </a>
-  <nav class="nav"><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/" aria-current="page">Property Managers</a><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/grease-fog/">Grease &amp; FOG</a><a href="/wolfpack-site/contact/">Contact</a></nav>
+  <nav class="nav"><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/" aria-current="page">Property Managers</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/grease-fog/">Grease &amp; FOG</a><a href="/wolfpack-site/#services">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/#services">Backflow &amp; Boilers</a></div></div><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/#general-contracting">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a></nav>
   <button class="tt" id="tt" aria-label="Switch between light and dark">
     <svg data-v="light" viewBox="0 0 24 24"><use href="#i-sun"/></svg>
     <svg data-v="dark" viewBox="0 0 24 24"><use href="#i-moon"/></svg>
@@ -633,7 +669,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><i></i></button>
   <a class="head-cta" href="tel:6025505452"><b>602-550-5452</b><span>24/7 Emergency</span></a>
 </div></header>
-<nav class="sheet" id="sheet"><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/" aria-current="page">Property Managers</a><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/grease-fog/">Grease &amp; FOG</a><a href="/wolfpack-site/contact/">Contact</a>
+<nav class="sheet" id="sheet"><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/" aria-current="page">Property Managers</a><div class="grp"><span class="grp-l">Services</span><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/grease-fog/">Grease &amp; FOG</a><a href="/wolfpack-site/#services">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/#services">Backflow &amp; Boilers</a></div><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/#general-contracting">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a>
   <a class="sheet-call" href="tel:6025505452">Call 602-550-5452</a>
 </nav>
 <a class="callbar" href="tel:6025505452"><b>602-550-5452</b><span>24/7 Emergency</span></a>
@@ -661,8 +697,8 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   <h2 class="sec-h display rv">A promise with a number on it.</h2>
   <div class="stats">
     <div class="stat rv"><p class="n">24/7</p><p class="k">Live answer</p><p class="d">We answer the phone, day or night.</p></div>
-    <div class="stat rv"><p class="n">30</p><p class="k">Min callback on emergencies</p><p class="d">We call you back within 30 minutes.</p></div>
-    <div class="stat rv"><p class="n">4</p><p class="k">Hr on site, contracted properties</p><p class="d">We are on site within 4 hours.</p></div>
+    <div class="stat rv"><p class="n">2 Hr</p><p class="k">On-site response</p><p class="d">On site within 2 hours for contracted properties.</p></div>
+    <div class="stat rv"><p class="n">5.0</p><p class="k">Google rating</p><p class="d">Rated 5.0 by the property managers we serve.</p></div>
   </div>
 </div></section>
 
@@ -687,14 +723,17 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
       <img class="brandmark" src="/wolfpack-site/assets/wolfpack-icon-knockout.png" alt="">
       <img class="brandword" src="/wolfpack-site/assets/wolfpack-wordmark-knockout.png" alt="Wolfpack Companies LLC">
     </div>
-    <p class="cities">Phoenix &middot; Scottsdale &middot; Paradise Valley &middot; Glendale &middot; Surprise &middot; Tempe &middot; Mesa &middot; Chandler &middot; San Tan Valley</p>
+    <p class="cities">Phoenix &middot; Scottsdale &middot; Tempe &middot; Mesa &middot; Chandler &middot; Gilbert &middot; Glendale &middot; Peoria &middot; Surprise &middot; Goodyear &middot; Avondale &middot; Paradise Valley &middot; Apache Junction &middot; Litchfield Park &middot; San Tan Valley</p>
   </div>
   <div class="fr">
     <a href="tel:6025505452"><svg viewBox="0 0 24 24"><use href="#i-phone"/></svg><b>602-550-5452</b></a>
     <a href="mailto:Service@wolfpackcompanies.com"><svg viewBox="0 0 24 24"><use href="#i-mail"/></svg><span>Service@wolfpackcompanies.com</span></a>
-    <p class="cities-row"><svg viewBox="0 0 24 24"><use href="#i-pin"/></svg><span class="cities">Phoenix &middot; Scottsdale &middot; Paradise Valley &middot; Glendale &middot; Surprise &middot; Tempe &middot; Mesa &middot; Chandler &middot; San Tan Valley</span></p>
+    <p class="cities-row"><svg viewBox="0 0 24 24"><use href="#i-pin"/></svg><span class="cities">Phoenix &middot; Scottsdale &middot; Tempe &middot; Mesa &middot; Chandler &middot; Gilbert &middot; Glendale &middot; Peoria &middot; Surprise &middot; Goodyear &middot; Avondale &middot; Paradise Valley &middot; Apache Junction &middot; Litchfield Park &middot; San Tan Valley</span></p>
   </div>
-  <nav class="fnav"><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/grease-fog/">Grease &amp; FOG</a><a href="/wolfpack-site/contact/">Contact</a></nav>
+  <div class="fcols">
+    <div class="fcol"><h4>Services</h4><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/grease-fog/">Grease &amp; FOG</a><a href="/wolfpack-site/#services">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/#services">Backflow &amp; Boilers</a></div>
+    <div class="fcol"><h4>Company</h4><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/">Property &amp; Facility Managers</a><a href="/wolfpack-site/#general-contracting">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a></div>
+  </div>
   <p class="legal">&copy; 2026 Wolfpack Companies LLC &middot; AZ ROC #326629</p>
 </div></footer>
 <a class="dock" href="tel:6025505452">

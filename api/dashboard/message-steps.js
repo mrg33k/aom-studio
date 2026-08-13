@@ -157,6 +157,9 @@ export default async function handler(req, res) {
       status: p.status || 'in_progress',
       timestamp: row.timestamp,
       project: p.project || '',
+      // R-SMOOTHNESS Round B: turn-phase tag stamped by the bridge
+      // (thinking | working | streaming | done | waiting). Additive.
+      phase: p.phase || '',
     })
   }
   return res.status(200).json({ steps })
