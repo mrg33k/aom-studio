@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Menu, X } from 'lucide-react';
-import { NAV, T } from './home/contentR38';
+import { NAV } from './home/contentR38';
 
 /**
  * SiteNavR38 — the SiteNavR4 mega-menu pattern reskinned to the console system.
@@ -82,7 +82,7 @@ export default function SiteNavR38({ onStartProject }) {
         <div className="flex items-center gap-4">
           <button
             onClick={() => onStartProject?.()}
-            className="hidden sm:inline-block font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#F5F3EE] rounded-full px-7 py-3.5 transition-transform duration-200 hover:scale-[1.04]"
+            className="hidden sm:inline-block font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] rounded-full px-7 py-3.5 transition-transform duration-200 hover:scale-[1.04]"
           >
             {NAV.cta}
           </button>
@@ -126,7 +126,7 @@ export default function SiteNavR38({ onStartProject }) {
           ))}
           <button
             onClick={() => { setMobileNav(false); onStartProject?.(); }}
-            className="mt-6 w-full font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#F5F3EE] rounded-full px-7 py-4"
+            className="mt-6 w-full font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] rounded-full px-7 py-4"
           >
             {NAV.cta}
           </button>

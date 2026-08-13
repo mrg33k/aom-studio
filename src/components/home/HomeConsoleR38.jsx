@@ -32,7 +32,7 @@ const H2 = ({ children, dark, className = '' }) => (
 
 export default function HomeConsoleR38({ openBrief }) {
   return (
-    <div className="bg-[#F5F3EE] text-[#0A0A08] font-hanken">
+    <div className="r38-root bg-[#F5F3EE] text-[#0A0A08] font-hanken">
 
       {/* 1. HERO — light split, living background behind the drifting deck */}
       <section className="relative overflow-hidden lg:min-h-[900px]">
@@ -59,7 +59,7 @@ export default function HomeConsoleR38({ openBrief }) {
               <div className="flex flex-wrap items-center gap-4 mt-10">
                 <button
                   onClick={() => openBrief?.()}
-                  className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#F5F3EE] px-8 py-4 rounded-full transition-transform duration-200 hover:scale-[1.04] flex items-center gap-2"
+                  className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-8 py-4 rounded-full transition-transform duration-200 hover:scale-[1.04] flex items-center gap-2"
                 >
                   {HERO.cta} <ArrowRight size={14} />
                 </button>
@@ -75,6 +75,8 @@ export default function HomeConsoleR38({ openBrief }) {
         </div>
 
         <style>{`
+          .r38-root ::selection { background: #F04404; color: #0A0A08; }
+          .r38-root a:focus-visible, .r38-root button:focus-visible { outline: 2px solid #F04404; outline-offset: 3px; border-radius: 2px; }
           .hero-grid-drift {
             background-image:
               repeating-linear-gradient(0deg, rgba(10,10,8,0.055) 0 1px, transparent 1px 56px),
@@ -158,7 +160,7 @@ export default function HomeConsoleR38({ openBrief }) {
             </div>
           </div>
           <div className="lg:col-span-6 flex flex-col justify-center">
-            <div className="border-l-2 border-[#F04404] pl-8 py-2">
+            <div className="border-l border-[#0A0A08]/15 pl-8 py-2">
               <Kick>{NINETY.kick}</Kick>
               <p className="text-[18px] md:text-[20px] text-[#0A0A08]/85 leading-[1.6] max-w-xl">{NINETY.body}</p>
             </div>
@@ -242,7 +244,7 @@ export default function HomeConsoleR38({ openBrief }) {
             <p className="font-anton uppercase text-[30px] md:text-[42px] leading-[1.02] tracking-[0.005em] text-[#F04404]">{MATH.punch}</p>
             <button
               onClick={() => openBrief?.()}
-              className="self-start font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#F5F3EE] px-8 py-4 rounded-full transition-transform duration-200 hover:scale-[1.04] flex items-center gap-2"
+              className="self-start font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-8 py-4 rounded-full transition-transform duration-200 hover:scale-[1.04] flex items-center gap-2"
             >
               {CLOSING.cta} <ArrowRight size={14} />
             </button>
@@ -259,7 +261,7 @@ export default function HomeConsoleR38({ openBrief }) {
             <p className="font-hanken text-[22px] md:text-[30px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0A0A08] max-w-3xl">{PROOF.body}</p>
           </div>
           <div className="lg:col-span-5">
-            <div className="border-l-2 border-[#F04404] pl-8 py-2">
+            <div className="border-l border-[#0A0A08]/15 pl-8 py-2">
               <p className="text-[17px] text-[#0A0A08]/70 leading-[1.65]">{PROOF.aside}</p>
             </div>
           </div>
@@ -269,14 +271,14 @@ export default function HomeConsoleR38({ openBrief }) {
       {/* 10. CLOSING — carbon end card */}
       <section className="py-32 md:py-44 px-6 md:px-12 text-center bg-[#0A0A08] text-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto">
-          <h2 className="font-anton uppercase text-[56px] md:text-[140px] leading-[0.9] tracking-[-0.01em]">{CLOSING.h2}</h2>
+          <h2 className="font-anton uppercase text-[56px] md:text-[118px] leading-[0.9] tracking-[-0.01em]">{CLOSING.h2}</h2>
           <button
             onClick={() => openBrief?.()}
-            className="mt-12 font-mono text-[12px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#F5F3EE] px-10 py-5 rounded-full transition-transform duration-200 hover:scale-[1.04] inline-flex items-center gap-2"
+            className="mt-12 font-mono text-[12px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-10 py-5 rounded-full transition-transform duration-200 hover:scale-[1.04] inline-flex items-center gap-2"
           >
             {CLOSING.cta} <ArrowRight size={15} />
           </button>
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#F5F3EE]/45 mt-10 max-w-xl mx-auto leading-[1.8]">
+          <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#F5F3EE]/60 mt-10 max-w-xl mx-auto leading-[1.8]">
             {CLOSING.footnote}
           </p>
         </div>

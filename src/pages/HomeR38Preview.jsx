@@ -36,7 +36,7 @@ export default function HomeR38Preview() {
             </p>
             <button
               onClick={() => setBriefOpen(false)}
-              className="font-mono text-[11px] uppercase tracking-[0.22em] bg-[#F04404] text-[#F5F3EE] px-6 py-3 rounded-full"
+              className="font-mono text-[11px] uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-6 py-3 rounded-full"
             >
               Close
             </button>
