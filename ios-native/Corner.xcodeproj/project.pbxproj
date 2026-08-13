@@ -78,6 +78,7 @@
 		D5AC8F72E32D152ADD09E7E2 /* OrganizeFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3B3D011843BAF1D207471C /* OrganizeFile.swift */; };
 		D9FFF59D4BF03630C15A0404 /* MessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC55DE9AD33D944A1172351 /* MessageRow.swift */; };
 		DA1EB5D4B866DFE79EF1D58D /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78195C7CEC61A8E2A7C22582 /* NotificationsView.swift */; };
+		DA24D1642230C7CAEBEFA62B /* WorkProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472C80894E72475D7BF66DE9 /* WorkProjection.swift */; };
 		DA5EDE403E83544994CC49AF /* RoomStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D8FE03F68E468709423ABF /* RoomStore.swift */; };
 		E088321A5DD334011E79ED97 /* Attachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE9EA2C183A1DE148D6AC9D /* Attachment.swift */; };
 		E40FFC19D015526252E7DA4C /* MessageTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFC308C0F588971B5149FAA /* MessageTransport.swift */; };
@@ -87,6 +88,7 @@
 		E8B80F143EFA78E8DDC4C953 /* SessionHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6163C7CC8968AAD5CB272E08 /* SessionHistoryView.swift */; };
 		E8E73FFFDA7DF9FA8064EF47 /* BlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5CFBB6863CA0F004E7A1BF1 /* BlockView.swift */; };
 		EADFCDD97E5E982685045F28 /* StreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F699E1C9894B7F4CA90C266B /* StreamTests.swift */; };
+		EBC045F870ACA54B530AD5C9 /* WorkProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DDE7D78AE9015EEB08E6F6 /* WorkProjectionTests.swift */; };
 		EC1499CF15C0D29AEF56EA2B /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C62786309F50F5448B66011A /* FileStore.swift */; };
 		ECB52710BD4D59929EE091DC /* FakeTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4988E1AE930BD71A16CE2EEE /* FakeTransport.swift */; };
 		F2ECFB887F2E992960E10A3A /* MessageBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07EAECF062E7FAA88D07CFCA /* MessageBubbleView.swift */; };
@@ -130,8 +132,10 @@
 		40AE09620DF2207D00FDA5FA /* ScrollBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollBrain.swift; sourceTree = "<group>"; };
 		414FBC6E316F126CBB060672 /* TrackerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerModels.swift; sourceTree = "<group>"; };
 		41EB3D2C357667840C871590 /* RoomAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomAvatarView.swift; sourceTree = "<group>"; };
+		472C80894E72475D7BF66DE9 /* WorkProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkProjection.swift; sourceTree = "<group>"; };
 		4951296375FEC3116AC43157 /* MessageContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageContentTests.swift; sourceTree = "<group>"; };
 		4988E1AE930BD71A16CE2EEE /* FakeTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeTransport.swift; sourceTree = "<group>"; };
+		49DDE7D78AE9015EEB08E6F6 /* WorkProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkProjectionTests.swift; sourceTree = "<group>"; };
 		49FDC9EB2F5FB0CC8AF8FFF7 /* CornerAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerAPI.swift; sourceTree = "<group>"; };
 		4CB548873FD74F1BFC766C33 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		4D1F48718CC857618DDD22AC /* RouteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteTests.swift; sourceTree = "<group>"; };
@@ -320,6 +324,7 @@
 				C5A28224A37CA4FF1FEAB137 /* StopTests.swift */,
 				F699E1C9894B7F4CA90C266B /* StreamTests.swift */,
 				50F30FB88FFD022F2EE47866 /* TrackerTests.swift */,
+				49DDE7D78AE9015EEB08E6F6 /* WorkProjectionTests.swift */,
 			);
 			path = CornerTests;
 			sourceTree = "<group>";
@@ -347,6 +352,7 @@
 				99BE7756A7FF16D575F011F2 /* RoomPreview.swift */,
 				9AF65AAEC8B2AFEB4B0762CE /* RoomStatus.swift */,
 				40AE09620DF2207D00FDA5FA /* ScrollBrain.swift */,
+				472C80894E72475D7BF66DE9 /* WorkProjection.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -490,6 +496,7 @@
 				BF6717E93F7830302CD2B2D5 /* StopTests.swift in Sources */,
 				EADFCDD97E5E982685045F28 /* StreamTests.swift in Sources */,
 				25A6748FD4B611B4B17EC825 /* TrackerTests.swift in Sources */,
+				EBC045F870ACA54B530AD5C9 /* WorkProjectionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -562,6 +569,7 @@
 				55924787137A19668A11C0E9 /* TrackerView.swift in Sources */,
 				A2EAF0E7C9A5AF056437FB67 /* TurnStreamEvent.swift in Sources */,
 				5CCD87F91BDBF76B032178E5 /* Typography.swift in Sources */,
+				DA24D1642230C7CAEBEFA62B /* WorkProjection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

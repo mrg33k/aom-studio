@@ -140,7 +140,23 @@ struct ChatView: View {
                         composer
                     }
                 }
-                .animation(.easeOut(duration: 0.2), value: model.turn)
+                // Interruptible spring (iOS 17 model): the card can retarget
+                // mid-flight when a turn ends the moment another begins.
+                .animation(.spring(duration: 0.35, bounce: 0.15), value: model.turn)
+            }
+            // ONE haptic per state change, never during streaming (chunk arrivals
+            // change no state here — the buzz-while-generating anti-pattern is
+            // structurally impossible). Reply landed = success; the agent needs
+            // you = warning; stuck = error; a turn opening = a light tap.
+            .sensoryFeedback(trigger: model.roomStatus) { old, new in
+                switch new {
+                case .needsYou: return .warning
+                case .stuck: return .error
+                case .idle: return old == .idle ? nil : .success
+                case .thinking, .working, .streaming:
+                    return old == .idle ? .impact(weight: .light) : nil
+                case .stopping: return .impact(weight: .medium)
+                }
             }
             // Search bar slides in at the top of the thread when isSearching is true —
             // sits above the message list so it doesn't collide with the nav bar or the
@@ -513,7 +529,7 @@ struct ChatView: View {
             distanceFromBottom: distanceFromBottom
         )
         if show != showJump {
-            withAnimation(.easeOut(duration: 0.18)) { showJump = show }
+            withAnimation(.spring(duration: 0.3, bounce: 0.2)) { showJump = show }
         }
     }
 
@@ -1254,6 +1270,10 @@ struct TurnIndicatorView: View {
 
     @State private var stepsExpanded = false
 
+    /// The deduped, collapsed, ordered projection — the ONLY step list this
+    /// card renders (raw steps re-emit and repeat; see WorkProjection).
+    private var projectedSteps: [MessageStep] { WorkProjection.projected(steps) }
+
     var body: some View {
         switch turn {
         case .idle:
@@ -1272,12 +1292,12 @@ struct TurnIndicatorView: View {
                             .foregroundStyle(Theme.inkSoft)
                     }
                     Spacer(minLength: 0)
-                    if steps.count > 1 {
+                    if projectedSteps.count > 1 {
                         Button {
                             withAnimation(.easeOut(duration: 0.2)) { stepsExpanded.toggle() }
                         } label: {
                             HStack(spacing: 4) {
-                                Text("\(steps.count) steps")
+                                Text("\(projectedSteps.count) steps")
                                 Image(systemName: stepsExpanded ? "chevron.down" : "chevron.up")
                                     .imageScale(.small)
                             }
@@ -1304,15 +1324,33 @@ struct TurnIndicatorView: View {
                         .accessibilityLabel(stopControl == .stopping ? "Stopping this turn" : "Stop this turn")
                     }
                 }
-                if !steps.isEmpty {
+                let projected = projectedSteps
+                if !projected.isEmpty {
                     if stepsExpanded {
                         VStack(alignment: .leading, spacing: 6) {
-                            ForEach(steps) { step in
-                                stepRow(step, isLatest: step.id == steps.last?.id)
+                            ForEach(projected) { step in
+                                stepRow(step, isLatest: step.id == projected.last?.id)
                             }
                         }
-                    } else if let latest = steps.last {
-                        stepRow(latest, isLatest: true)
+                    } else if let latest = projected.last {
+                        // The current line: action glyph + label, cross-fading
+                        // 500ms on change (the web card's ghost swap) inside a
+                        // stable-height slot so the card never jitters.
+                        ZStack(alignment: .topLeading) {
+                            currentLine(latest)
+                                .id(latest.text ?? "")
+                                .transition(.opacity)
+                        }
+                        .animation(.easeInOut(duration: 0.5), value: latest.text)
+                        .frame(minHeight: 18, alignment: .topLeading)
+                    }
+                    // Honest progress: a bar ONLY when the latest label carries a
+                    // real N-of-M count. No count, no bar — an invented fraction
+                    // is fake UI (the pulsing mark already says "alive").
+                    if let fraction = WorkProjection.checklistProgress(in: projected.last?.text ?? "") {
+                        ProgressView(value: fraction)
+                            .tint(fraction >= 1.0 ? Theme.live : Theme.accent)
+                            .animation(.easeOut(duration: 0.4), value: fraction)
                     }
                 }
                 if quiet {
@@ -1389,11 +1427,27 @@ struct TurnIndicatorView: View {
         return "Working — \(clock)"
     }
 
-    /// One step line: a check for a finished step, the accent dot on the latest.
+    /// The collapsed card's current line: the label's action glyph + the label.
+    private func currentLine(_ step: MessageStep) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Theme.s2) {
+            Image(systemName: WorkProjection.glyph(for: step.text ?? ""))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Theme.accent)
+            Text(step.text ?? "")
+                .font(.hkCaption)
+                .foregroundStyle(Theme.ink)
+                .lineLimit(2)
+        }
+    }
+
+    /// One step line in the expanded run: a check for a finished step, the
+    /// action glyph on the latest.
     private func stepRow(_ step: MessageStep, isLatest: Bool) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Theme.s2) {
-            Image(systemName: isLatest ? "circle.fill" : "checkmark.circle.fill")
-                .font(.system(size: 9))
+            Image(systemName: isLatest
+                ? WorkProjection.glyph(for: step.text ?? "")
+                : "checkmark.circle.fill")
+                .font(.system(size: isLatest ? 11 : 9, weight: .medium))
                 .foregroundStyle(isLatest ? Theme.accent : Theme.inkFaint)
             Text(step.text ?? "")
                 .font(.hkCaption)
