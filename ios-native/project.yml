@@ -52,6 +52,8 @@ targets:
     dependencies:
       - package: Supabase
         product: Supabase
+      - target: CornerWidgets
+        embed: true
     info:
       path: Support/Info.plist
       properties:
@@ -73,6 +75,8 @@ targets:
         # HTTPS only — no ATS exceptions anywhere in this app.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
+        # R18 N7: the running-turn Live Activity (lock screen + Dynamic Island).
+        NSSupportsLiveActivities: true
         # Export compliance: HTTPS-only use of platform crypto is exempt.
         ITSAppUsesNonExemptEncryption: false
         # R7 voice dictation — the composer mic (SFSpeechRecognizer + AVAudioEngine).
@@ -128,6 +132,31 @@ targets:
           CODE_SIGN_ENTITLEMENTS: Support/Corner.entitlements
           APS_ENVIRONMENT: production
           PROVISIONING_PROFILE_SPECIFIER: Corner App Store Distribution
+
+  # R18 N7 — the Live Activity's widget extension. The activity UI can ONLY live
+  # here; ActivityKit matches app and extension by the shared attributes type
+  # (Corner/Models/TurnActivityAttributes.swift compiles into BOTH targets).
+  # SIGNING: simulator builds need nothing; the next DEVICE install or archive
+  # needs provisioning for com.aheadofmarket.corner.CornerWidgets minted in the
+  # portal (needs-Patrik, ~5 min — same flow as the app's own profiles).
+  CornerWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: CornerWidgets
+      - path: Corner/Models/TurnActivityAttributes.swift
+    info:
+      path: Support/CornerWidgets-Info.plist
+      properties:
+        CFBundleDisplayName: Corner
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aheadofmarket.corner.CornerWidgets
+        GENERATE_INFOPLIST_FILE: "NO"
+        SKIP_INSTALL: "YES"
+        SWIFT_EMIT_LOC_STRINGS: "YES"
 
   CornerTests:
     type: bundle.unit-test

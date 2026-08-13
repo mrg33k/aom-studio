@@ -198,6 +198,9 @@ final class ChatViewModel: ObservableObject {
     /// The one repair ask per turn (the web's contract: GET until 45s, then ONE
     /// POST). Repair is not a retry loop.
     private var repairAskedThisTurn = false
+    /// Last (status, label) mirrored to the Live Activity — updates are sent
+    /// only on change, never on every 1.5s poll tick (R18 N7).
+    private var lastActivitySignature = ""
 
     // Turn tracking — every field here answers a question with a server fact.
     /// Server id of the NEWEST user row in this turn. Displayed facts (the resend
@@ -547,6 +550,9 @@ final class ChatViewModel: ObservableObject {
             turnHealth = RoomHealth(state: "accepted")
             repairAskedThisTurn = false
             stopNotice = nil
+            // The running turn on the lock screen / Dynamic Island (R18 N7).
+            lastActivitySignature = ""
+            TurnActivityService.shared.turnBegan(roomTitle: room.title, ask: text)
         } else {
             // Mid-turn follow-up: the bridge live-steers it into the in-flight turn,
             // so the earlier parents stay tracked — their steps and their settle are
@@ -595,6 +601,10 @@ final class ChatViewModel: ObservableObject {
         turnHealth = nil
         stopNotice = nil
         repairAskedThisTurn = false
+        // Catch-all for the teardown paths that carry no better word (dismiss,
+        // resend). The explicit ends above already ran on the main paths, and
+        // the service no-ops once its activity is gone.
+        TurnActivityService.shared.turnEnded(outcomeWord: "Done", startedAt: turnStartedAt)
     }
 
     // MARK: - Live reply stream (R18 N3)
@@ -726,7 +736,14 @@ final class ChatViewModel: ObservableObject {
         // The bridge's `settled` sentinel IS "the agent stopped working" — for the
         // whole folded turn, whichever parent id it lands on. Stopping on it is
         // knowing; stopping on a countdown is guessing.
-        if mine.contains(where: \.isSettledSentinel) {
+        if let sentinel = mine.first(where: \.isSettledSentinel) {
+            // The lock screen's final word rides the sentinel's phase: a stop the
+            // user asked for reads "Stopped", everything else reads "Done"
+            // (phase `waiting` is deliberately NOT surfaced as needs-you).
+            TurnActivityService.shared.turnEnded(
+                outcomeWord: sentinel.phase == "stopped" ? "Stopped" : "Done",
+                startedAt: turnStartedAt
+            )
             settleTurn()
             return
         }
@@ -769,6 +786,17 @@ final class ChatViewModel: ObservableObject {
             if existing != latest { turn = .working(detail: latest) }
         case .idle:
             break
+        }
+
+        // Mirror to the Live Activity, only when the frame actually changed.
+        let word = roomStatus.label
+        let label = WorkProjection.currentLabel(steps: liveSteps, ask: awaitingSentText)
+        let signature = "\(word)|\(label)"
+        if signature != lastActivitySignature {
+            lastActivitySignature = signature
+            TurnActivityService.shared.update(
+                statusWord: word, stepLabel: label, startedAt: turnStartedAt
+            )
         }
     }
 
@@ -816,9 +844,14 @@ final class ChatViewModel: ObservableObject {
             // The steward says this turn is over — the same server fact the 9999
             // sentinel carries. Settle, then reload so whatever the reply row says
             // (or its absence) is what the user sees.
+            TurnActivityService.shared.turnEnded(outcomeWord: "Done", startedAt: turnStartedAt)
             settleTurn()
             await load()
         case "needs_attention" where health.repaired != true:
+            TurnActivityService.shared.turnEnded(
+                outcomeWord: RoomStatus.hardCauses.contains(health.cause ?? "") ? "Stuck" : "Needs you",
+                startedAt: turnStartedAt
+            )
             haltTurnKeepingHealth()
         default:
             break

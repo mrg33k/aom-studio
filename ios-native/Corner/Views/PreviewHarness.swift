@@ -395,6 +395,46 @@ struct ScrollPreviewHarness: View {
     }
 }
 
+// MARK: - Live Activity proof (R18 N7)
+
+/// Starts a FIXTURE running-turn Live Activity on launch so the capture can
+/// background the app and photograph the Dynamic Island / lock screen banner.
+/// Fixture data only; no network, no auth.
+struct LiveActivityPreviewHarness: View {
+    @State private var started = false
+
+    var body: some View {
+        VStack(spacing: Theme.s4) {
+            Image(systemName: started ? "checkmark.circle" : "hourglass")
+                .font(.system(size: 40))
+                .foregroundStyle(started ? Theme.live : Theme.inkSoft)
+            Text(started
+                 ? "Live Activity started — background the app and look at the Dynamic Island."
+                 : "Starting the fixture Live Activity…")
+                .font(.hkFootnote)
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Theme.s6)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .groundBackground()
+        .task {
+            TurnActivityService.shared.turnBegan(
+                roomTitle: "Native iOS",
+                ask: "Ship the smoothness pass"
+            )
+            try? await Task.sleep(for: .seconds(1))
+            TurnActivityService.shared.update(
+                statusWord: "Working",
+                stepLabel: "Rendering the mobile thread against the web tokens",
+                startedAt: Date().addingTimeInterval(-127)
+            )
+            started = true
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+}
+
 // MARK: - Home composer proof
 
 /// The home timeline (reusing HomePreviewHarness's look) with the real HomeComposerBar

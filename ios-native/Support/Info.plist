@@ -48,6 +48,8 @@
 	<string>Corner saves an image only when you tap Save Image after generating it.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Corner turns your speech into text in the composer. Audio is processed by Apple's speech recognition.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIAppFonts</key>
 	<array>
 		<string>HankenGrotesk-VF.ttf</string>

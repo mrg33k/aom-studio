@@ -118,6 +118,9 @@ struct CornerApp: App {
         } else if args.contains("-scrollPreview") {
             // R18 N4: the reading-history state with the jump-to-latest pill.
             ScrollPreviewHarness()
+        } else if args.contains("-liveActivityPreview") {
+            // R18 N7: fixture running-turn Live Activity for the island capture.
+            LiveActivityPreviewHarness()
         } else if args.contains("-settingsPreview") {
             // The Settings sheet's own render, no auth: identity rows show their
             // signed-out placeholders, the workspace list shows its failure row.

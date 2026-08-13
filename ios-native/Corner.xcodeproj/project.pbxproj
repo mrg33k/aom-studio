@@ -10,10 +10,13 @@
 		03633E17DD9097F16B3FC0E4 /* EmailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6485AD7BDCDB6B83FF83ABDC /* EmailStore.swift */; };
 		0488714B0ACA56A6F88863C2 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4E330537A94F6BCADAAAD4 /* SignInView.swift */; };
 		09C9ADE896667C4859CA462C /* RoomSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE3EAACFEA3E82CAEC19854 /* RoomSettingsView.swift */; };
+		0C660BE3353D043E19EF0DE5 /* TurnActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFA3E11D565975BCF1963E6 /* TurnActivityAttributes.swift */; };
 		0FBF4F77E469127A232146DA /* StewardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F1982A7FB4CC833E7B9019 /* StewardTests.swift */; };
 		10C8D99B63F181C712335A3B /* RoomFilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2668E5F1D641717C4F6D22D1 /* RoomFilesView.swift */; };
 		11441CDD8CD68584FE437B4D /* RoomListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDD31795F9B656F625EAD892 /* RoomListView.swift */; };
+		17A3D4606681732C04850845 /* CornerWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695BDD890D1149C5F2C34C22 /* CornerWidgetsBundle.swift */; };
 		198EF3479D6A575E37861632 /* BackgroundWorkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67A307160A2BA6304E0D969F /* BackgroundWorkView.swift */; };
+		2511737A965FB08574CE81B9 /* TurnActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFA3E11D565975BCF1963E6 /* TurnActivityAttributes.swift */; };
 		256F30250207446B2B8E8AC2 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 738107B73EFB279CB127593B /* Theme.swift */; };
 		25A6748FD4B611B4B17EC825 /* TrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F30FB88FFD022F2EE47866 /* TrackerTests.swift */; };
 		2AC0BF1ADB5977E4643C2A9B /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8899E5EB7B22DB9ECBE0F3AD /* ChatViewModel.swift */; };
@@ -59,6 +62,7 @@
 		8EC250D36A67090713DBA18C /* DebugAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53452A91F35EB1FCB0A97D20 /* DebugAuth.swift */; };
 		97D0B387A6639C5A5AB59DE3 /* AirPodsVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99FB8DFF3ED23530DF860CA1 /* AirPodsVoiceView.swift */; };
 		A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131E1F3ED0F460574DE878C8 /* PushService.swift */; };
+		A22E60838F4603A0CDEF0E27 /* CornerWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A2EAF0E7C9A5AF056437FB67 /* TurnStreamEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00ECA7EAEB08CBB46C7E3091 /* TurnStreamEvent.swift */; };
 		A37A798B47F30125C1DF2AC4 /* FilesAndReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0DB974AD71B1EFB7D9FEB9E /* FilesAndReviewTests.swift */; };
 		A8CE144E7B95956A1649A091 /* OrganizeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A3070E25A550ED51EC0D6C /* OrganizeStore.swift */; };
@@ -96,11 +100,19 @@
 		F42C78E0F08A0C382DEED0EC /* OrganizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA762654D7DF58269E50F794 /* OrganizeView.swift */; };
 		F5F670A1A6362533E6104243 /* MessageContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24F1365EAA4F96E30C9F1974 /* MessageContent.swift */; };
 		F7093BA3DA32092E788924CA /* RoomAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41EB3D2C357667840C871590 /* RoomAvatarView.swift */; };
+		F7C7CD438E6BCCCC2F5D8565 /* TurnActivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDDB385881E1A882A2BB055 /* TurnActivityService.swift */; };
 		FAF9F44A90CFF18DCB681A88 /* RoomChecklistPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250FB7020FBCD6913F87DC0E /* RoomChecklistPanelView.swift */; };
 		FFE9E8F1F4CA6652FA1C030D /* RoomPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99BE7756A7FF16D575F011F2 /* RoomPreview.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		5CE651D02ADE9689C999755C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DAB69DFD71A5E4425F4FF6F1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1EF7BB98BEB3F881A1C38354;
+			remoteInfo = CornerWidgets;
+		};
 		90F3E50B250966A3D74744C7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DAB69DFD71A5E4425F4FF6F1 /* Project object */;
@@ -109,6 +121,20 @@
 			remoteInfo = Corner;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8729365FE4AB2051547554CB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A22E60838F4603A0CDEF0E27 /* CornerWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		00ECA7EAEB08CBB46C7E3091 /* TurnStreamEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnStreamEvent.swift; sourceTree = "<group>"; };
@@ -129,6 +155,7 @@
 		2A92F26E1C6D5083CFB19872 /* AssignSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssignSheet.swift; sourceTree = "<group>"; };
 		2B7AF275C1A50596A51C2BE7 /* AvatarEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarEditSheet.swift; sourceTree = "<group>"; };
 		30D577DF665C37F7C6CDC690 /* TrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerView.swift; sourceTree = "<group>"; };
+		3BDDB385881E1A882A2BB055 /* TurnActivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnActivityService.swift; sourceTree = "<group>"; };
 		3DA0369243BECC948ABC6C34 /* Room.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Room.swift; sourceTree = "<group>"; };
 		40AE09620DF2207D00FDA5FA /* ScrollBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollBrain.swift; sourceTree = "<group>"; };
 		414FBC6E316F126CBB060672 /* TrackerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerModels.swift; sourceTree = "<group>"; };
@@ -151,6 +178,7 @@
 		61F1982A7FB4CC833E7B9019 /* StewardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StewardTests.swift; sourceTree = "<group>"; };
 		6485AD7BDCDB6B83FF83ABDC /* EmailStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailStore.swift; sourceTree = "<group>"; };
 		67A307160A2BA6304E0D969F /* BackgroundWorkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundWorkView.swift; sourceTree = "<group>"; };
+		695BDD890D1149C5F2C34C22 /* CornerWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerWidgetsBundle.swift; sourceTree = "<group>"; };
 		6E3B3D011843BAF1D207471C /* OrganizeFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizeFile.swift; sourceTree = "<group>"; };
 		714FB0F47259B6FE53E2B007 /* DeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkTests.swift; sourceTree = "<group>"; };
 		738107B73EFB279CB127593B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -194,6 +222,7 @@
 		DA762654D7DF58269E50F794 /* OrganizeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganizeView.swift; sourceTree = "<group>"; };
 		DC4E330537A94F6BCADAAAD4 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		DCF3E52AD81A2EC95CEED4E8 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		DCFA3E11D565975BCF1963E6 /* TurnActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnActivityAttributes.swift; sourceTree = "<group>"; };
 		E0DB974AD71B1EFB7D9FEB9E /* FilesAndReviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesAndReviewTests.swift; sourceTree = "<group>"; };
 		E3984DE7AC39AFF032327719 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		E85B84B4FDE537A6A0F8AFC4 /* RoomRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomRoutingTests.swift; sourceTree = "<group>"; };
@@ -203,6 +232,7 @@
 		F6827290BB3EFB1945CC8003 /* ScrollBrainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollBrainTests.swift; sourceTree = "<group>"; };
 		F699E1C9894B7F4CA90C266B /* StreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamTests.swift; sourceTree = "<group>"; };
 		FC666C376DEDBBB91CD4B4A5 /* ReviewItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewItem.swift; sourceTree = "<group>"; };
+		FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = CornerWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -269,6 +299,7 @@
 			children = (
 				85F08D846117AAFAB92DF5F9 /* Corner */,
 				82872DE9E1C2741B07572EBE /* CornerTests */,
+				593DD4607AB469AF7916DFA9 /* CornerWidgets */,
 				485F22BA650FA307351DBBDD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -278,8 +309,17 @@
 			children = (
 				C9DA6E1D50DE52ED44D3041F /* Corner.app */,
 				937B6E4A3DF5DA1EBF7D9D7D /* CornerTests.xctest */,
+				FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		593DD4607AB469AF7916DFA9 /* CornerWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				695BDD890D1149C5F2C34C22 /* CornerWidgetsBundle.swift */,
+			);
+			path = CornerWidgets;
 			sourceTree = "<group>";
 		};
 		67DAA622703677F8F0BE8D76 /* Services */ = {
@@ -301,6 +341,7 @@
 				81D8FE03F68E468709423ABF /* RoomStore.swift */,
 				0200B80365B5D89CF18C2325 /* SpeechService.swift */,
 				EC120F7C6D2DBDEE3EED7C41 /* TrackerStore.swift */,
+				3BDDB385881E1A882A2BB055 /* TurnActivityService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -374,6 +415,7 @@
 				3DA0369243BECC948ABC6C34 /* Room.swift */,
 				F369BDA68010DC01F327B636 /* RoomFile.swift */,
 				414FBC6E316F126CBB060672 /* TrackerModels.swift */,
+				DCFA3E11D565975BCF1963E6 /* TurnActivityAttributes.swift */,
 				00ECA7EAEB08CBB46C7E3091 /* TurnStreamEvent.swift */,
 			);
 			path = Models;
@@ -382,6 +424,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1EF7BB98BEB3F881A1C38354 /* CornerWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5B5B663A4D9606EC57841029 /* Build configuration list for PBXNativeTarget "CornerWidgets" */;
+			buildPhases = (
+				126B68DF6B4AC981301606A9 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CornerWidgets;
+			packageProductDependencies = (
+			);
+			productName = CornerWidgets;
+			productReference = FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		AAF2C2BAB82E503FC81DEAFF /* Corner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CE662710D2F0E72118F5B3C4 /* Build configuration list for PBXNativeTarget "Corner" */;
@@ -389,10 +448,12 @@
 				6E6190A8F0E0A95FE051DB63 /* Sources */,
 				C7555F2840F62EDC31BF5F15 /* Resources */,
 				859E46210D5049B0A7486D12 /* Frameworks */,
+				8729365FE4AB2051547554CB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5630E590812BF6F247F5D66B /* PBXTargetDependency */,
 			);
 			name = Corner;
 			packageProductDependencies = (
@@ -429,6 +490,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					1EF7BB98BEB3F881A1C38354 = {
+						DevelopmentTeam = PDYFTMXNJ2;
+						ProvisioningStyle = Automatic;
+					};
 					AAF2C2BAB82E503FC81DEAFF = {
 						DevelopmentTeam = PDYFTMXNJ2;
 						ProvisioningStyle = Manual;
@@ -457,6 +522,7 @@
 			projectRoot = "";
 			targets = (
 				AAF2C2BAB82E503FC81DEAFF /* Corner */,
+				1EF7BB98BEB3F881A1C38354 /* CornerWidgets */,
 				E030416519AE77BE41E2336B /* CornerTests */,
 			);
 		};
@@ -477,6 +543,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		126B68DF6B4AC981301606A9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				17A3D4606681732C04850845 /* CornerWidgetsBundle.swift in Sources */,
+				2511737A965FB08574CE81B9 /* TurnActivityAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		60A27F425EA75A67A9AFC111 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -571,6 +646,8 @@
 				4B264EB64750986042B1356F /* TrackerModels.swift in Sources */,
 				3CFC9CA3C44161F52E03C317 /* TrackerStore.swift in Sources */,
 				55924787137A19668A11C0E9 /* TrackerView.swift in Sources */,
+				0C660BE3353D043E19EF0DE5 /* TurnActivityAttributes.swift in Sources */,
+				F7C7CD438E6BCCCC2F5D8565 /* TurnActivityService.swift in Sources */,
 				A2EAF0E7C9A5AF056437FB67 /* TurnStreamEvent.swift in Sources */,
 				5CCD87F91BDBF76B032178E5 /* Typography.swift in Sources */,
 				DA24D1642230C7CAEBEFA62B /* WorkProjection.swift in Sources */,
@@ -580,6 +657,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5630E590812BF6F247F5D66B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1EF7BB98BEB3F881A1C38354 /* CornerWidgets */;
+			targetProxy = 5CE651D02ADE9689C999755C /* PBXContainerItemProxy */;
+		};
 		5D284581D32FA2CD65B73BA3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = AAF2C2BAB82E503FC81DEAFF /* Corner */;
@@ -692,6 +774,24 @@
 			};
 			name = Release;
 		};
+		92FC2F4255F7BA753321793D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Support/CornerWidgets-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.aheadofmarket.corner.CornerWidgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		A50A6A143F751BD99BBFC118 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -802,9 +902,36 @@
 			};
 			name = Debug;
 		};
+		CE00A191AE4569D276FCE0D9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Support/CornerWidgets-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.aheadofmarket.corner.CornerWidgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		5B5B663A4D9606EC57841029 /* Build configuration list for PBXNativeTarget "CornerWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				92FC2F4255F7BA753321793D /* Debug */,
+				CE00A191AE4569D276FCE0D9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		BFD2A0AC1F3974FFD7EFF111 /* Build configuration list for PBXProject "Corner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
