@@ -3,18 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>AOM — Research Feed</title>
-<meta name="description" content="Ahead of Market — the research feed. Fresh findings every morning: AI animation, agent platforms, and the studios we compete with.">
-<meta property="og:title" content="AOM — Research Feed">
+<title>AOM — Feed</title>
+<meta name="description" content="Ahead of Market — the daily feed. Research findings and agent updates every morning.">
+<meta property="og:title" content="AOM — Feed">
 <meta property="og:description" content="Fresh research every morning, one finding per swipe.">
 <style>
 /* ============================================================
-   AOM /feed — daily research briefing in TikTok feed grammar.
-   One finding per full-screen card; vertical snap scroll.
-   Data: /feed/data/findings.json, appended each morning by the
-   daily-research routine. Brand: obsidian/ivory + bronze accent,
-   flat surfaces + hairlines by brand law, chrome type = tracked
-   Schibsted (Druk stays above its 104px floor, so none here).
+   AOM /feed — daily research + agent updates in TikTok feed
+   grammar. Two tabs: Research (findings from 6 lanes) and
+   Agents (the roster + recent changes). One card per full-
+   screen snap; vertical snap scroll. Optional hero images on
+   research cards.
+   Data: /feed/data/findings.json + /feed/data/agent-updates.json
+   Brand: obsidian/ivory + bronze accent, flat surfaces +
+   hairlines, chrome type = tracked Schibsted only.
    ============================================================ */
 @font-face{font-family:'Schibsted Grotesk';src:url('/feed/assets/fonts/SchibstedGrotesk-var.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 
@@ -27,6 +29,7 @@
   --ivory:#F6F6F4;
   --gold:#B58A38;
   --mast-h:56px;
+  --tab-h:40px;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -48,15 +51,25 @@ a{color:inherit}
   border:1px solid var(--ink-700);padding:4px 12px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .mast .count b{color:var(--ivory);font-weight:500}
 
+/* ---- tab bar ---- */
+.tabs{position:fixed;top:var(--mast-h);left:0;right:0;height:var(--tab-h);z-index:29;
+  display:flex;background:var(--obsidian);border-bottom:1px solid var(--ink-700)}
+.tab{flex:1;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-500);border-bottom:2px solid transparent;transition:color .15s}
+.tab.active{color:var(--ivory);border-bottom-color:var(--gold)}
+.tab:hover:not(.active){color:var(--ink-300)}
+
 /* ---- feed ---- */
-.feed{position:fixed;inset:0;top:var(--mast-h);
+.feed{position:fixed;inset:0;top:calc(var(--mast-h) + var(--tab-h));
   overflow-y:scroll;scroll-snap-type:y mandatory;
   scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .feed::-webkit-scrollbar{display:none}
+.feed.hidden{display:none}
 .item{height:100%;scroll-snap-align:start;scroll-snap-stop:always;
   position:relative;display:flex;align-items:center;justify-content:center}
 
-/* the card: full-bleed on phone, 9/16 frame on desktop (feed identity) */
+/* the card: full-bleed on phone, 9/16 frame on desktop */
 .stage{position:relative;width:100%;height:100%;display:flex;flex-direction:column;
   justify-content:space-between;overflow:hidden;
   padding:24px 20px calc(24px + var(--safe-b));background:var(--obsidian)}
@@ -64,6 +77,16 @@ a{color:inherit}
   .stage{width:auto;aspect-ratio:9/16;height:min(100%,92vh);border:1px solid var(--ink-700);
     padding:32px 32px 32px}
 }
+
+/* card image hero (optional) */
+.card-img{width:100%;height:36%;flex:none;overflow:hidden;border-bottom:1px solid var(--ink-700)}
+.card-img img{width:100%;height:100%;object-fit:cover;display:block}
+.has-img .core{margin:8px 0;gap:12px}
+.has-img .headline{font-size:clamp(24px,6vw,36px)}
+@media (min-width:700px){.has-img .headline{font-size:36px}}
+.has-img .body{font-size:14px}
+.has-img .stage{padding-top:0}
+@media (min-width:700px){.has-img .stage{padding-top:0}}
 
 /* card header: lane plate + date + lane mark */
 .head{display:flex;align-items:flex-start;gap:8px}
@@ -79,6 +102,7 @@ a{color:inherit}
 .headline{font-weight:700;line-height:1.04;letter-spacing:-0.01em;
   font-size:clamp(32px,8.6vw,48px);text-wrap:balance;overflow-wrap:break-word}
 @media (min-width:700px){.headline{font-size:44px}}
+.subtitle{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
 .body{font-size:16px;line-height:1.5;color:var(--ink-300);max-width:52ch}
 .act{display:flex;gap:12px;align-items:flex-start;max-width:52ch}
 .act .sq{width:8px;height:8px;background:var(--gold);flex:none;margin-top:8px}
@@ -93,7 +117,7 @@ a{color:inherit}
   padding-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
 .src:hover{color:var(--ivory);border-color:var(--gold)}
 
-/* ---- fixed action rail (acts on the active card) ---- */
+/* ---- fixed action rail ---- */
 .rail{position:fixed;right:16px;bottom:calc(24px + var(--safe-b));z-index:31;
   display:flex;flex-direction:column;gap:8px}
 .rail button{width:46px;height:46px;border:1px solid var(--ink-700);background:var(--obsidian);
@@ -130,9 +154,15 @@ a{color:inherit}
   <div class="count"><b id="pos">01</b>&nbsp;/&nbsp;<span id="total">--</span></div>
 </header>
 
-<main class="feed" id="feed" aria-label="AOM daily research feed"></main>
+<nav class="tabs" aria-label="Feed sections">
+  <button class="tab active" data-tab="research" aria-selected="true">Research</button>
+  <button class="tab" data-tab="agents" aria-selected="false">Agents</button>
+</nav>
 
-<nav class="rail" aria-label="Actions for current finding">
+<main class="feed" id="feed-research" aria-label="AOM daily research feed"></main>
+<main class="feed hidden" id="feed-agents" aria-label="AOM agent updates"></main>
+
+<nav class="rail" aria-label="Actions for current card">
   <button id="likeBtn" aria-label="Like" aria-pressed="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20l-7-7a4.2 4.2 0 010-6 4.2 4.2 0 016 0l1 1 1-1a4.2 4.2 0 016 0 4.2 4.2 0 010 6l-7 7z"/></svg>
   </button>
@@ -141,11 +171,13 @@ a{color:inherit}
   </button>
 </nav>
 
-<p class="hint">Scroll · J / K</p>
+<p class="hint">Scroll · J / K · 1 / 2 tabs</p>
 
 <script>
-/* lane definitions: display name + constructed hairline mark (real graphic
-   anchor per card — encodes the lane, not decoration) */
+/* ============================================================
+   Lane definitions: display name + constructed hairline mark
+   6 research lanes + 1 agent lane
+   ============================================================ */
 const LANES = {
   'claude-animation': {tag:'Claude Animation', mark:
     '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M4 26 Q12 8 18 18 T32 12"/><path d="M4 31 Q12 13 18 23 T32 17" opacity=".45"/></svg>'},
@@ -153,23 +185,54 @@ const LANES = {
     '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M6 14 V6 h8"/><path d="M30 22 v8 h-8"/><rect x="13" y="13" width="10" height="10"/></svg>'},
   'vs-aom': {tag:'Studio Market', mark:
     '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M6 30 L18 6 30 30"/><path d="M11 21 h14"/></svg>'},
+  'construction-intel': {tag:'Construction Intel', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M8 28h20"/><path d="M12 28V18"/><path d="M24 28V18"/><path d="M10 18h16l-2-8H12z"/></svg>'},
+  'ai-packaging': {tag:'AI Packaging', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><rect x="14" y="14" width="8" height="8"/><path d="M18 6v8"/><path d="M18 22v8"/><path d="M6 18h8"/><path d="M22 18h8"/></svg>'},
+  'tool-releases': {tag:'Tools &amp; Models', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M20 6L12 20h6l-2 10 10-14h-6z"/></svg>'},
+  'agent': {tag:'Agent', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="12" r="5"/><path d="M8 30c0-6 4-10 10-10s10 4 10 10"/></svg>'},
 };
 const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad = n => String(n+1).padStart(2,'0');
 
-const feed  = document.getElementById('feed');
-const posEl = document.getElementById('pos');
-let ITEMS = [], shells = [], active = -1;
+/* ---- state ---- */
+const state = {
+  tab: 'research',
+  research: { items:[], shells:[], active:-1, observer:null },
+  agents:   { items:[], shells:[], active:-1, observer:null }
+};
+function cur(){ return state[state.tab]; }
+
+const feedResearch = document.getElementById('feed-research');
+const feedAgents   = document.getElementById('feed-agents');
+const posEl  = document.getElementById('pos');
+const totalEl = document.getElementById('total');
 const likes = new Set(JSON.parse(localStorage.getItem('aom-feed-likes')||'[]'));
 
+/* ---- card builder (shared by both tabs) ---- */
 function cardHTML(it, i){
   const lane = LANES[it.lane] || {tag: it.lane, mark: ''};
   const d = new Date(it.date + 'T12:00:00');
   const dateTxt = MONTHS[d.getMonth()] + ' ' + String(d.getDate()).padStart(2,'0');
   let host = it.source_name || '';
   try{ host = host || new URL(it.source_url).hostname.replace('www.',''); }catch(_){}
+
+  const hasImg = it.image ? ' has-img' : '';
+  const imgBlock = it.image
+    ? `<div class="card-img"><img src="${esc(it.image)}" alt="" loading="lazy"></div>`
+    : '';
+  const subBlock = it.subtitle
+    ? `<p class="subtitle">${esc(it.subtitle)}</p>`
+    : '';
+  const srcTag = it.source_url && it.source_url !== '#'
+    ? `<a class="src" href="${esc(it.source_url)}" target="_blank" rel="noopener">${esc(host)} &#8599;</a>`
+    : `<span class="src">${esc(host)}</span>`;
+
   return `<div class="stage">
+    ${imgBlock}
     <div class="head">
       <span class="lane">${esc(lane.tag)}</span>
       <span class="date">${dateTxt}</span>
@@ -177,80 +240,118 @@ function cardHTML(it, i){
     </div>
     <div class="core">
       <h2 class="headline">${esc(it.headline)}</h2>
+      ${subBlock}
       <p class="body">${esc(it.body)}</p>
       <div class="act"><span class="sq" aria-hidden="true"></span><p>${esc(it.action)}</p></div>
     </div>
     <div class="foot">
       <span class="idx">${pad(i)}</span>
-      <a class="src" href="${esc(it.source_url)}" target="_blank" rel="noopener">${esc(host)} &#8599;</a>
+      ${srcTag}
     </div>
   </div>`;
 }
 
-function build(items){
-  ITEMS = items;
-  document.getElementById('total').textContent = String(items.length).padStart(2,'0');
-  feed.innerHTML = '';
+/* ---- build a feed ---- */
+function buildFeed(feedEl, items, key){
+  const s = state[key];
+  s.items = items;
+  feedEl.innerHTML = '';
+  if(s.observer) s.observer.disconnect();
+
   items.forEach((it,i)=>{
-    const s = document.createElement('section');
-    s.className='item'; s.dataset.i=i; s.id=it.id;
-    s.innerHTML = cardHTML(it,i);
-    feed.appendChild(s);
+    const sec = document.createElement('section');
+    sec.className='item'; sec.dataset.i=i; sec.id=it.id;
+    sec.innerHTML = cardHTML(it,i);
+    if(it.image) sec.classList.add('has-img');
+    feedEl.appendChild(sec);
   });
-  shells = [...feed.children];
+  s.shells = [...feedEl.children];
+
   const ratios = new Map();
-  const io = new IntersectionObserver(entries=>{
+  s.observer = new IntersectionObserver(entries=>{
     entries.forEach(e=>ratios.set(+e.target.dataset.i, e.intersectionRatio));
     let best=-1, bestR=0;
     ratios.forEach((r,i)=>{ if(r>bestR){bestR=r;best=i;} });
-    if(best>=0 && best!==active && bestR>=.5) setActive(best);
-  },{root:feed,threshold:[0,.25,.5,.75,1]});
-  shells.forEach(el=>io.observe(el));
-  const start = items.findIndex(it=>'#'+it.id===decodeURIComponent(location.hash));
-  if(start>0) shells[start].scrollIntoView();
+    if(best>=0 && best!==s.active && bestR>=.5){
+      s.active=best;
+      if(key===state.tab) updateCounter();
+    }
+  },{root:feedEl,threshold:[0,.25,.5,.75,1]});
+  s.shells.forEach(el=>s.observer.observe(el));
+
+  /* jump to hash if present */
+  if(key===state.tab){
+    const start = items.findIndex(it=>'#'+it.id===decodeURIComponent(location.hash));
+    if(start>0) s.shells[start].scrollIntoView();
+    updateCounter();
+  }
 }
 
-function setActive(i){
-  active=i;
-  posEl.textContent = pad(i);
+function updateCounter(){
+  const s = cur();
+  posEl.textContent = s.active>=0 ? pad(s.active) : '01';
+  totalEl.textContent = String(s.items.length).padStart(2,'0');
+}
+
+/* ---- tab switching ---- */
+const tabBtns = document.querySelectorAll('.tab');
+function switchTab(key){
+  if(key===state.tab) return;
+  state.tab = key;
+  tabBtns.forEach(b=>{
+    const on = b.dataset.tab===key;
+    b.classList.toggle('active',on);
+    b.setAttribute('aria-selected',String(on));
+  });
+  feedResearch.classList.toggle('hidden', key!=='research');
+  feedAgents.classList.toggle('hidden', key!=='agents');
+  updateCounter();
   likeUI();
-  history.replaceState(null,'','#'+ITEMS[i].id);
 }
+tabBtns.forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 
-/* rail */
+/* ---- rail ---- */
 const likeBtn=document.getElementById('likeBtn'), shareBtn=document.getElementById('shareBtn');
 function likeUI(){
-  const on = active>=0 && likes.has(ITEMS[active].id);
+  const s=cur();
+  const on = s.active>=0 && likes.has(s.items[s.active].id);
   likeBtn.classList.toggle('on',on);
   likeBtn.setAttribute('aria-pressed',String(on));
 }
 likeBtn.addEventListener('click',()=>{
-  if(active<0) return;
-  const id=ITEMS[active].id;
+  const s=cur(); if(s.active<0) return;
+  const id=s.items[s.active].id;
   likes.has(id)?likes.delete(id):likes.add(id);
   localStorage.setItem('aom-feed-likes',JSON.stringify([...likes]));
   likeUI();
 });
 shareBtn.addEventListener('click',async()=>{
-  const url = location.origin+'/feed'+(active>=0?'#'+ITEMS[active].id:'');
+  const s=cur();
+  const url = location.origin+'/feed'+(s.active>=0?'#'+s.items[s.active].id:'');
   try{
-    if(navigator.share) await navigator.share({title:'AOM — Research Feed',url});
+    if(navigator.share) await navigator.share({title:'AOM — Feed',url});
     else{ await navigator.clipboard.writeText(url);
       shareBtn.classList.add('on'); setTimeout(()=>shareBtn.classList.remove('on'),700); }
   }catch(_){}
 });
 
-/* keyboard */
+/* ---- keyboard ---- */
 function jump(d){
-  const t=Math.min(ITEMS.length-1,Math.max(0,(active<0?0:active)+d));
-  if(shells[t]) shells[t].scrollIntoView({behavior:'smooth'});
+  const s=cur();
+  const t=Math.min(s.items.length-1,Math.max(0,(s.active<0?0:s.active)+d));
+  if(s.shells[t]){
+    const feedEl = state.tab==='research' ? feedResearch : feedAgents;
+    s.shells[t].scrollIntoView({behavior:'smooth'});
+  }
 }
 addEventListener('keydown',e=>{
   if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();jump(1);}
   else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();jump(-1);}
+  else if(e.key==='1'){e.preventDefault();switchTab('research');}
+  else if(e.key==='2'){e.preventDefault();switchTab('agents');}
 });
 
-/* data: newest day first, file order within a day */
+/* ---- load research feed ---- */
 fetch('/feed/data/findings.json',{cache:'no-store'})
   .then(r=>r.json())
   .then(data=>{
@@ -258,14 +359,34 @@ fetch('/feed/data/findings.json',{cache:'no-store'})
     data.days.sort((a,b)=>b.date.localeCompare(a.date)).forEach(day=>{
       day.items.forEach((it,j)=>items.push({...it, date:day.date, id:day.date+'-'+(j+1)}));
     });
-    build(items);
+    buildFeed(feedResearch, items, 'research');
   })
   .catch(()=>{
-    build([{lane:'vs-aom', date:new Date().toISOString().slice(0,10), id:'boot',
+    buildFeed(feedResearch, [{lane:'vs-aom', date:new Date().toISOString().slice(0,10), id:'boot',
       headline:'The first briefing lands tomorrow at 5:04 AM.',
-      body:'This feed carries AOM\'s daily research: AI animation techniques, agent platforms, and the studios we compete with. One finding per swipe, sourced.',
+      body:'This feed carries AOM\'s daily research: AI animation, agent platforms, creative studios, construction intel, AI packaging, and tools. One finding per swipe, sourced.',
       action:'Come back after the morning run.',
-      source_name:'aheadofmarket.com', source_url:'https://www.aheadofmarket.com'}]);
+      source_name:'aheadofmarket.com', source_url:'https://www.aheadofmarket.com'}], 'research');
+  });
+
+/* ---- load agent feed ---- */
+fetch('/feed/data/agent-updates.json',{cache:'no-store'})
+  .then(r=>r.json())
+  .then(data=>{
+    const items = data.roster.map((ag,i)=>({
+      lane:'agent', date:ag.last_updated, id:'agent-'+ag.slug,
+      headline:ag.name, subtitle:ag.title,
+      body:ag.summary, action:ag.bar,
+      source_name:ag.slug, source_url:'#'
+    }));
+    buildFeed(feedAgents, items, 'agents');
+  })
+  .catch(()=>{
+    buildFeed(feedAgents, [{lane:'agent', date:new Date().toISOString().slice(0,10), id:'agent-boot',
+      headline:'Agent roster loading.',
+      body:'The morning routine scans agent changes every 72 hours. The first scan populates this tab.',
+      action:'Check back after the next morning run.',
+      source_name:'system', source_url:'#'}], 'agents');
   });
 </script>
 </body>

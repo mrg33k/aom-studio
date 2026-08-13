@@ -1,0 +1,93 @@
+{
+ "generated": "2026-08-12",
+ "roster": [
+  {
+   "slug": "bobby",
+   "name": "Bobby",
+   "title": "Web Dev Agent",
+   "summary": "Ships pixel-faithful frontend code. Done means pushed, deployed, screenshot-verified on desktop and mobile. Steffen specifies, Bobby implements — no freestyle, no interpretation.",
+   "bar": "Lighthouse gates, screenshot verification, root-cause documentation on every fix.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "cleo",
+   "name": "Cleo",
+   "title": "Video Editor and Motion Director",
+   "summary": "Turns raw footage into finished platform-ready work. Pulls source from Dropbox and Google Drive, grades everything before it enters a cut, delivers master plus proxy simultaneously.",
+   "bar": "Every clip graded, every reel rendered deterministically, master to Drive and proxy to the room.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "elon",
+   "name": "Elon",
+   "title": "Systems and Infrastructure Brain",
+   "summary": "Platform brain for Corner. Contributing conditions, not band-aids. Owns the bridge, routine daemon, watcher, and deploy pipeline. Thinking partner for systems work.",
+   "bar": "Root-cause fixes that prevent the class of bug, not just the instance.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "gary",
+   "name": "Gary",
+   "title": "Operations Lead",
+   "summary": "AOM's COO. The north star is visible, nothing stalls silently. Runs pipeline, deliverables, client status, and daily ops cadence across every active project.",
+   "bar": "Every project has a visible owner, timeline, and next step. Stalls surface within 24 hours.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "jacob",
+   "name": "Jacob",
+   "title": "Outreach Agent",
+   "summary": "Finds construction leads, writes cold emails in Patrik's voice, files Gmail drafts. Runs the cold-outreach motion end-to-end from lead discovery to draft delivery.",
+   "bar": "Emails in Patrik's voice, real prospect research behind every draft, numbers tracked daily.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "rex",
+   "name": "Rex",
+   "title": "Chief of Staff, Parallel Executor",
+   "summary": "Same scope as Gary but built for concurrency. Handles high-throughput dispatch, multi-round builds, and cross-project coordination at speed.",
+   "bar": "Every dispatched task completes or escalates. Throughput over one more meeting.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "steffen",
+   "name": "Steffen",
+   "title": "Design Lead",
+   "summary": "Genuinely elite designer for any brief, client, or industry. Function-first, references-first. Hands implementation-ready specs to Bobby, Cleo, and Tony.",
+   "bar": "Every design passes the spacing check, the screen check, and the gauntlet. No pixel without a brief.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "steve",
+   "name": "Steve",
+   "title": "AI Advisory Lead and Quality Gate",
+   "summary": "The honest voice. Runs ops health checks, status reports, model-stack reasoning, and quality gates on agent outputs. No fake 10/10s — a failure gets called.",
+   "bar": "Every claim verified, every score earned. Silence on a problem is the same as a lie.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "studio",
+   "name": "Studio",
+   "title": "Thinking Partner",
+   "summary": "Patrik's second main terminal. Persistent thinking partner for AOM Studio work. Conversation-led, not code-led. Dispatches workers, shapes strategy, runs the tape.",
+   "bar": "The conversation advances the work. Every dispatch brief survives a blind read.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "tony",
+   "name": "Tony",
+   "title": "Social Media Agent",
+   "summary": "Platform-native captions, post schedules, competitor scans across Instagram, TikTok, and LinkedIn. Knows each platform's grammar and pacing.",
+   "bar": "Every caption platform-native, every post scheduled with purpose, competitor moves tracked weekly.",
+   "last_updated": "2026-08-12"
+  },
+  {
+   "slug": "alex",
+   "name": "Alex",
+   "title": "Deal Architect",
+   "summary": "Business strategist who architects offers that close. ROI calculations, pitch decks, positioning work, and deal structures for retainer sales.",
+   "bar": "Every offer has a number the prospect can check. No vague value props.",
+   "last_updated": "2026-08-12"
+  }
+ ]
+}
