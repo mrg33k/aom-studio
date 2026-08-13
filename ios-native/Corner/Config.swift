@@ -50,6 +50,20 @@ enum Config {
     /// Live-step cadence while a turn is running.
     static let stepPollInterval: TimeInterval = 1.5
 
+    /// Steward cadence while a turn is open — GET /api/dashboard/room-health, the
+    /// web's 10s. The steward is what lets the room say "needs you" or "stuck" with
+    /// a server fact behind the word instead of a countdown.
+    static let stewardPollInterval: TimeInterval = 10
+
+    /// How long after send before the steward's read becomes ONE repair ask (POST).
+    /// The web's 45s: the same endpoint the auto-repair uses; a human tap just asks
+    /// sooner. One ask per turn — repair is not a retry loop.
+    static let stewardRepairAfter: TimeInterval = 45
+
+    /// A turn accepted with no step after this long is a quiet room WAKING, and the
+    /// indicator should say that instead of cycling thinking phrases over dead air.
+    static let wakingThreshold: TimeInterval = 8
+
     /// Short marketing version + build, read from the bundle for the device row.
     static var appVersion: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"

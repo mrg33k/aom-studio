@@ -72,6 +72,19 @@ final class FakeTransport: MessageTransport {
         return steps
     }
 
+    /// Steward verdicts (R18 N1). `healthScript` entries are consumed one per poll;
+    /// when the script is empty `healthDefault` repeats. nil = the steward has no
+    /// verdict, which must change nothing.
+    var healthScript: [RoomHealth] = []
+    var healthDefault: RoomHealth?
+    private(set) var healthRequests: [(messageID: String, repair: Bool)] = []
+
+    func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth? {
+        healthRequests.append((messageID, repair))
+        if !healthScript.isEmpty { return healthScript.removeFirst() }
+        return healthDefault
+    }
+
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing {
         let sub = FakeSubscription()
         subscriptions.append(sub)
@@ -107,13 +120,15 @@ extension MessageRow {
 }
 
 extension MessageStep {
-    static func fake(id: String, parent: String, index: Int, text: String) -> MessageStep {
-        let data = try! JSONSerialization.data(withJSONObject: [
+    static func fake(id: String, parent: String, index: Int, text: String, phase: String? = nil) -> MessageStep {
+        var dict: [String: Any] = [
             "id": id,
             "parent_message_id": parent,
             "step_index": index,
             "text": text,
-        ])
+        ]
+        if let phase { dict["phase"] = phase }
+        let data = try! JSONSerialization.data(withJSONObject: dict)
         return try! JSONDecoder().decode(MessageStep.self, from: data)
     }
 }

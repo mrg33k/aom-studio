@@ -121,6 +121,17 @@ final class ChatViewModel: ObservableObject {
     /// the normal state for phone-originated turns today; the card must render as a
     /// bare timer then, never as an empty list.
     @Published private(set) var liveSteps: [MessageStep] = []
+    /// The steward's verdict on the open turn (R18 N1). Set optimistically to
+    /// `accepted` at send — the waking state keys off it — then refreshed every 10s
+    /// from /api/dashboard/room-health. Survives a needs_attention halt so the room
+    /// keeps saying WHY it stopped; cleared when a new turn begins or the
+    /// conversation visibly continues.
+    @Published private(set) var turnHealth: RoomHealth?
+    /// True when the last thread fetch FAILED while a turn is open. Rule 3 of the
+    /// status derivation: a live turn on a stale feed is `stuck`, not `working` —
+    /// "working" would be a guess wearing a status chip. Clears on the next
+    /// successful fetch.
+    @Published private(set) var feedStale = false
     /// When the current turn opened — drives the "Working — 2m 10s" elapsed clock.
     @Published private(set) var turnStartedAt: Date?
     /// Soft flag: steps have been silent past `quietThreshold` but the turn is not
@@ -154,11 +165,17 @@ final class ChatViewModel: ObservableObject {
     private let quietThreshold: TimeInterval
     private let stepInterval: TimeInterval
     private let reconcileInterval: TimeInterval
+    private let stewardInterval: TimeInterval
+    private let repairAfter: TimeInterval
     private let onFirstReply: @MainActor () async -> Void
 
     private var subscription: RoomSubscribing?
     private var pollTask: Task<Void, Never>?
     private var stepTask: Task<Void, Never>?
+    private var stewardTask: Task<Void, Never>?
+    /// The one repair ask per turn (the web's contract: GET until 45s, then ONE
+    /// POST). Repair is not a retry loop.
+    private var repairAskedThisTurn = false
 
     // Turn tracking — every field here answers a question with a server fact.
     /// Server id of the NEWEST user row in this turn. Displayed facts (the resend
@@ -206,6 +223,8 @@ final class ChatViewModel: ObservableObject {
         quietThreshold: TimeInterval = Config.quietTurnThreshold,
         stepInterval: TimeInterval = Config.stepPollInterval,
         reconcileInterval: TimeInterval = Config.reconcileInterval,
+        stewardInterval: TimeInterval = Config.stewardPollInterval,
+        repairAfter: TimeInterval = Config.stewardRepairAfter,
         onFirstReply: @escaping @MainActor () async -> Void = {
             await PushService.shared.requestAuthorizationAfterFirstReply()
         }
@@ -216,6 +235,8 @@ final class ChatViewModel: ObservableObject {
         self.quietThreshold = quietThreshold
         self.stepInterval = stepInterval
         self.reconcileInterval = reconcileInterval
+        self.stewardInterval = stewardInterval
+        self.repairAfter = repairAfter
         self.onFirstReply = onFirstReply
         // Restore per-room mode, defaulting to work — mirrors web's localStorage.cv6.chatMode.<key>
         let saved = UserDefaults.standard.string(forKey: "chatMode.\(room.id)")
@@ -238,6 +259,28 @@ final class ChatViewModel: ObservableObject {
         return false
     }
 
+    /// A turn is OPEN — working or stalled. The stalled notice is a notice, not a
+    /// close: polling continues underneath, so for the status vocabulary the turn
+    /// is still awaiting.
+    var turnIsOpen: Bool {
+        if case .idle = turn { return false }
+        return true
+    }
+
+    /// THE one status word for this room, derived by the ported roomStatus rules.
+    /// Every surface reads this — the header pill, and anything N2+ adds — so the
+    /// room can never say two different things about the same turn.
+    var roomStatus: RoomStatus {
+        RoomStatus.derive(
+            awaiting: turnIsOpen,
+            liveStepCount: liveSteps.count,
+            draftStreaming: false, // N3 wires the live draft; dormant until then.
+            healthState: turnHealth?.state,
+            healthCause: turnHealth?.cause,
+            feedStale: feedStale
+        )
+    }
+
     // MARK: - Lifecycle
 
     func start() {
@@ -249,6 +292,7 @@ final class ChatViewModel: ObservableObject {
     func stop() {
         pollTask?.cancel(); pollTask = nil
         stepTask?.cancel(); stepTask = nil
+        stewardTask?.cancel(); stewardTask = nil
         subscription?.stop(); subscription = nil
     }
 
@@ -288,12 +332,16 @@ final class ChatViewModel: ObservableObject {
     func load() async {
         do {
             let fetched = try await api.fetchMessages(room: room, limit: 100)
+            feedStale = false
             apply(fetched)
             loadState = thread.isEmpty ? .empty : .ready
         } catch {
             // A failed reconcile under a thread that is already rendering must NOT
             // blank the room — the user loses their place for a transient error. Only
             // a failure with nothing on screen is worth showing as a failure.
+            // But while a turn is OPEN, a failed fetch makes "working" a guess —
+            // the status derivation reads this as stuck until the feed recovers.
+            if turnIsOpen { feedStale = true }
             if rows.isEmpty && outbox.isEmpty {
                 loadState = .error((error as? CornerAPI.APIError)?.errorDescription
                     ?? "This room could not be loaded.")
@@ -314,6 +362,7 @@ final class ChatViewModel: ObservableObject {
             if hadRows, let anchor, !fetched.contains(where: { $0.id == anchor }) {
                 fetched = try await api.fetchMessages(room: room, limit: 400)
             }
+            feedStale = false
             let previousIDs = Set(rows.map(\.id))
             let arrived = fetched.filter { !previousIDs.contains($0.id) && !$0.isUser }.count
             apply(fetched)
@@ -324,6 +373,7 @@ final class ChatViewModel: ObservableObject {
                     : "\(arrived) new messages while you were away"
             }
         } catch {
+            if turnIsOpen { feedStale = true }
             if rows.isEmpty && outbox.isEmpty {
                 loadState = .error((error as? CornerAPI.APIError)?.errorDescription
                     ?? "This room could not be loaded.")
@@ -400,6 +450,13 @@ final class ChatViewModel: ObservableObject {
 
         switch turn {
         case .idle:
+            // A needs_attention verdict outlives the turn on purpose — the room keeps
+            // saying WHY it stopped. But a genuinely new reply means the conversation
+            // continued and the verdict is history; keeping the Stuck chip over a
+            // fresh answer would be the lie in the other direction.
+            if replyIsNew, turnHealth?.state == "needs_attention" {
+                turnHealth = nil
+            }
             return
         case .working:
             if replyIsNew { lastTurnActivity = Date() }
@@ -432,6 +489,10 @@ final class ChatViewModel: ObservableObject {
             newestSeenStepEpoch = 0
             liveSteps = []
             turnStartedAt = Date()
+            // Optimistic accepted — the web sets it at send. The waking state keys
+            // off it, and the steward's first real read replaces it within 10s.
+            turnHealth = RoomHealth(state: "accepted")
+            repairAskedThisTurn = false
         } else {
             // Mid-turn follow-up: the bridge live-steers it into the in-flight turn,
             // so the earlier parents stay tracked — their steps and their settle are
@@ -446,6 +507,7 @@ final class ChatViewModel: ObservableObject {
         turnIsQuiet = false
         turn = .working(detail: liveSteps.last?.text)
         startStepPoll()
+        startStewardPoll()
     }
 
     private func settleTurn() {
@@ -465,6 +527,10 @@ final class ChatViewModel: ObservableObject {
         turnIsQuiet = false
         stepTask?.cancel()
         stepTask = nil
+        stewardTask?.cancel()
+        stewardTask = nil
+        turnHealth = nil
+        repairAskedThisTurn = false
     }
 
     /// Live steps: the only source that can say "still working" or "stopped" without
@@ -543,6 +609,67 @@ final class ChatViewModel: ObservableObject {
         case .idle:
             break
         }
+    }
+
+    // MARK: - Steward (room-health) — R18 N1
+
+    /// The steward loop: every `stewardInterval` seconds while a turn is open, ask
+    /// /api/dashboard/room-health what it thinks. GET until `repairAfter` seconds
+    /// have passed since send, then exactly ONE POST — the same endpoint the
+    /// server's own auto-repair uses; a client ask just asks sooner.
+    private func startStewardPoll() {
+        stewardTask?.cancel()
+        let interval = stewardInterval
+        stewardTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(interval))
+                if Task.isCancelled { return }
+                await self?.pollHealth()
+            }
+        }
+    }
+
+    private func pollHealth() async {
+        guard turnIsOpen, let parentID = awaitingParentID else { return }
+        let sentAt = turnStartedAt ?? Date()
+        let wantRepair = !repairAskedThisTurn && Date().timeIntervalSince(sentAt) >= repairAfter
+        if wantRepair { repairAskedThisTurn = true }
+
+        let result = try? await api.roomHealth(room: room, messageID: parentID, repair: wantRepair)
+        // Health is advisory: a failed or empty read changes nothing. found:false
+        // means the steward does not know this turn — also nothing.
+        guard let health = result ?? nil, health.found != false else { return }
+        // The poll may outlive the turn it asked about.
+        guard turnIsOpen else { return }
+
+        turnHealth = health
+        switch health.state {
+        case "settled":
+            // The steward says this turn is over — the same server fact the 9999
+            // sentinel carries. Settle, then reload so whatever the reply row says
+            // (or its absence) is what the user sees.
+            settleTurn()
+            await load()
+        case "needs_attention" where health.repaired != true:
+            haltTurnKeepingHealth()
+        default:
+            break
+        }
+    }
+
+    /// A needs_attention verdict: nothing is running, or the agent needs the user.
+    /// The turn stops being "awaiting" (the web flips awaiting=false on exactly
+    /// this) but the verdict STAYS — clearing it would erase the WHY. The parent id
+    /// and sent text survive too, so recovery actions have something to act on.
+    private func haltTurnKeepingHealth() {
+        let keepHealth = turnHealth
+        let keepParent = awaitingParentID
+        let keepText = awaitingSentText
+        turn = .idle
+        clearTurnTracking()
+        turnHealth = keepHealth
+        awaitingParentID = keepParent
+        awaitingSentText = keepText
     }
 
     /// Ask for notifications the first time an agent actually answers — the one moment

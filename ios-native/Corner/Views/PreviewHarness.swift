@@ -156,6 +156,80 @@ struct ChatPreviewHarness: View {
     }
 }
 
+// MARK: - Turn states proof (R18 N1)
+
+/// Every word the room can say, and the three faces of the pre-step indicator —
+/// one frame, so the status vocabulary ships with its visual proof. The pill rows
+/// replicate the chat header's status line exactly (6pt dot + 10.5 medium label,
+/// live vs blocked tone); the cards are the REAL TurnIndicatorView.
+struct TurnStatesPreviewHarness: View {
+    private let statuses: [RoomStatus] = [.thinking, .working, .streaming, .stopping, .needsYou, .stuck]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.s3) {
+                    Text("THE ONE STATUS VOCABULARY")
+                        .font(.hanken(11).weight(.bold))
+                        .foregroundStyle(Theme.inkFaint)
+                    ForEach(statuses, id: \.self) { status in
+                        HStack(spacing: Theme.s3) {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(status.tone == .blocked ? Theme.warning : Theme.live)
+                                    .frame(width: 6, height: 6)
+                                Text(status.label)
+                                    .font(.hanken(10.5).weight(.medium))
+                                    .foregroundStyle(status.tone == .blocked ? Theme.warning : Theme.live)
+                            }
+                            Spacer()
+                            Text(status.rawValue)
+                                .font(.hanken(10))
+                                .foregroundStyle(Theme.inkFaint)
+                        }
+                        .padding(.horizontal, Theme.s3)
+                        .padding(.vertical, 6)
+                        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+
+                    Text("OPENERS — FIRST 8 SECONDS")
+                        .font(.hanken(11).weight(.bold))
+                        .foregroundStyle(Theme.inkFaint)
+                        .padding(.top, Theme.s3)
+                    TurnIndicatorView(
+                        turn: .working(detail: nil), steps: [],
+                        startedAt: Date().addingTimeInterval(-4), healthState: "accepted"
+                    )
+
+                    Text("WAKING — ACCEPTED, NO STEP AFTER 8s")
+                        .font(.hanken(11).weight(.bold))
+                        .foregroundStyle(Theme.inkFaint)
+                        .padding(.top, Theme.s3)
+                    TurnIndicatorView(
+                        turn: .working(detail: nil), steps: [],
+                        startedAt: Date().addingTimeInterval(-23), healthState: "accepted"
+                    )
+
+                    Text("WORKING — REAL STEPS")
+                        .font(.hanken(11).weight(.bold))
+                        .foregroundStyle(Theme.inkFaint)
+                        .padding(.top, Theme.s3)
+                    TurnIndicatorView(
+                        turn: .working(detail: PreviewFixtures.turnSteps.last?.text),
+                        steps: PreviewFixtures.turnSteps,
+                        startedAt: Date().addingTimeInterval(-130)
+                    )
+                }
+                .padding(Theme.s4)
+            }
+            .groundBackground()
+            .navigationTitle("Turn states")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(ThemeManager.shared.colorScheme)
+    }
+}
+
 // MARK: - Home composer proof
 
 /// The home timeline (reusing HomePreviewHarness's look) with the real HomeComposerBar

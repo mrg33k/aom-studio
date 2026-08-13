@@ -356,16 +356,19 @@ struct ChatView: View {
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(Theme.inkSoft)
                     }
-                    // Status line: "active" with a live dot when a turn is running,
-                    // else the room's subtitle (specialist / project / mission).
+                    // Status line: THE one vocabulary word while the room has
+                    // something to say — Thinking / Working / Writing / Stopping… /
+                    // Needs you / Stuck — else the room's subtitle. Same derivation
+                    // every surface uses; the header can never disagree with the card.
                     HStack(spacing: 4) {
-                        if model.isAwaiting {
+                        let status = model.roomStatus
+                        if status != .idle {
                             Circle()
-                                .fill(Theme.live)
+                                .fill(status.tone == .blocked ? Theme.warning : Theme.live)
                                 .frame(width: 6, height: 6)
-                            Text("active")
+                            Text(status.label)
                                 .font(.hanken(10.5).weight(.medium))
-                                .foregroundStyle(Theme.live)
+                                .foregroundStyle(status.tone == .blocked ? Theme.warning : Theme.live)
                         } else {
                             let sub = model.room.subtitle.isEmpty
                                 ? model.room.typeLabel.lowercased()
@@ -375,7 +378,7 @@ struct ChatView: View {
                                 .foregroundStyle(Theme.inkSoft)
                         }
                     }
-                    .animation(.easeOut(duration: 0.2), value: model.isAwaiting)
+                    .animation(.easeOut(duration: 0.2), value: model.roomStatus)
                 }
             }
             .contentShape(Rectangle())
@@ -573,6 +576,7 @@ struct ChatView: View {
             steps: model.liveSteps,
             startedAt: model.turnStartedAt,
             quiet: model.turnIsQuiet,
+            healthState: model.turnHealth?.state,
             resend: { model.resendStalled() },
             dismiss: { model.dismissStalled() }
         )
@@ -1042,6 +1046,8 @@ struct TurnIndicatorView: View {
     var steps: [MessageStep] = []
     var startedAt: Date? = nil
     var quiet: Bool = false
+    /// The steward's current state word — the waking line keys off "accepted".
+    var healthState: String? = nil
     var resend: () -> Void = {}
     var dismiss: () -> Void = {}
 
@@ -1145,11 +1151,24 @@ struct TurnIndicatorView: View {
 
     /// "Working — 2m 10s", counting from the turn's open. No start date (an older
     /// API deploy answered without the row) degrades to the plain word.
+    ///
+    /// Before the first step arrives the word rotates through the web's openers on
+    /// a 2.5s wall clock — and after 8 seconds of an ACCEPTED turn with no step it
+    /// says the honest thing instead: a quiet room is waking up, which can take a
+    /// minute. Cycling thinking phrases over dead air is the lie this replaces.
     private func workingLabel(now: Date) -> String {
         guard let startedAt else { return "Working…" }
         let seconds = max(0, Int(now.timeIntervalSince(startedAt)))
-        if seconds < 60 { return "Working — \(seconds)s" }
-        return "Working — \(seconds / 60)m \(seconds % 60)s"
+        let clock = seconds < 60 ? "\(seconds)s" : "\(seconds / 60)m \(seconds % 60)s"
+        if steps.isEmpty {
+            if healthState == "accepted", TimeInterval(seconds) > Config.wakingThreshold {
+                return "Waking the room — \(clock)"
+            }
+            let openers = ["Reading your message", "Thinking it through", "Working out the approach"]
+            let index = Int(now.timeIntervalSince1970 / 2.5) % openers.count
+            return "\(openers[index]) — \(clock)"
+        }
+        return "Working — \(clock)"
     }
 
     /// One step line: a check for a finished step, the accent dot on the latest.

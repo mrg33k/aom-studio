@@ -135,9 +135,14 @@ struct MessageStep: Decodable, Identifiable, Equatable {
     let text: String?
     let status: String?
     let timestamp: String?
+    /// R-SMOOTHNESS Round B: the bridge stamps a turn-phase on every step —
+    /// thinking | working | streaming on live steps; done | waiting | stopped ride
+    /// ONLY on the 9999 settled sentinel. Meaningful on the freshest step only.
+    let phase: String?
+    let project: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, agent, text, status, timestamp
+        case id, agent, text, status, timestamp, phase, project
         case parentMessageID = "parent_message_id"
         case stepIndex = "step_index"
     }
@@ -153,6 +158,8 @@ struct MessageStep: Decodable, Identifiable, Equatable {
         text = try? c.decodeIfPresent(String.self, forKey: .text)
         status = try? c.decodeIfPresent(String.self, forKey: .status)
         timestamp = try? c.decodeIfPresent(String.self, forKey: .timestamp)
+        phase = try? c.decodeIfPresent(String.self, forKey: .phase)
+        project = try? c.decodeIfPresent(String.self, forKey: .project)
     }
 
     /// The bridge stamps step_index 9999 / text "settled" when a turn ENDS. That

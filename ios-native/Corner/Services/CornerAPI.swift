@@ -744,6 +744,33 @@ final class CornerAPI: ObservableObject {
         return (try? JSONDecoder().decode(StepsEnvelope.self, from: data))?.steps ?? []
     }
 
+    /// GET|POST /api/dashboard/room-health — the steward's verdict on one turn.
+    /// GET inspects; `repair: true` POSTs, which performs the repair server-side
+    /// (the same endpoint the 45s auto-repair uses — a client ask just asks sooner).
+    /// Returns nil on any failure: health is advisory, and a failed advisory read
+    /// must never take a room down.
+    func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth? {
+        let world = try requireWorld()
+        let request: URLRequest
+        if repair {
+            request = try await authorizedRequest(
+                path: "/api/dashboard/room-health",
+                method: "POST",
+                jsonBody: ["client_id": world, "message_id": messageID]
+            )
+        } else {
+            request = try await authorizedRequest(
+                path: "/api/dashboard/room-health",
+                queryItems: [
+                    URLQueryItem(name: "client_id", value: world),
+                    URLQueryItem(name: "message_id", value: messageID),
+                ]
+            )
+        }
+        let data = try await run(request)
+        return try? JSONDecoder().decode(RoomHealth.self, from: data)
+    }
+
     // MARK: - Rail
 
     struct ProjectRow: Decodable, Identifiable, Hashable {

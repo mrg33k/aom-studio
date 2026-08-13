@@ -34,6 +34,7 @@ protocol MessageTransport: AnyObject {
     func send(text: String, room: Room, interactionMode: String, attachments: [Attachment], roomAgent: String?, clientMessageID: String) async throws -> MessageRow?
     func fetchSteps(room: Room, limit: Int) async throws -> [MessageStep]
     func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep]
+    func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth?
     func subscribeToRoom(_ room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscribing
 }
 
@@ -68,6 +69,13 @@ extension MessageTransport {
 
     func fetchSteps(room: Room, roomAgent: String?, limit: Int) async throws -> [MessageStep] {
         try await fetchSteps(room: room, limit: limit)
+    }
+
+    /// R18 N1 steward seam. Defaulted to "no verdict" so existing fakes keep
+    /// compiling; CornerAPI overrides with the real room-health call, and the
+    /// failure tests script verdicts through FakeTransport.
+    func roomHealth(room: Room, messageID: String, repair: Bool) async throws -> RoomHealth? {
+        nil
     }
 }
 
