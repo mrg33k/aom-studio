@@ -19,7 +19,7 @@ function recoveryCopy(health) {
       // corner:bridge frontend-visibility D1 — the dead-turn backstop used to switch the
       // working bar off and say nothing at all, which is the exact "it failed mid turn and
       // I don't know what's happening" report. Say it, and give it somewhere to go.
- agent_silent: 'The agent stopped responding, three minutes with no activity and no reply. Your message is saved.',
+ agent_silent: 'The agent went quiet — 90 seconds with no update. Your message is saved. Tap retry or ask for a status.',
     }[health.cause] || 'Corner could not safely recover this turn automatically. Your message is preserved.'
   }
   return null

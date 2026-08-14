@@ -41,8 +41,11 @@ import useChatSettings from '../components/cv3/chat/useChatSettings.js';
 import VoiceModeBar from '../components/cv3/thread/VoiceModeBar.jsx';
 import Cv6InputBar from './Cv6InputBar.jsx';
 import { roomChecklistKey } from './data/roomKeys.js';
-import { dispatchAgentSlug, roomAgentPreferenceKey, resolveEffectiveRoomAgent } from './data/agentPreferences.js';
-import { pickerAgents } from './data/agentTitles.js';
+import { dispatchAgentSlug, resolveEffectiveRoomAgent, roomAgentPreferenceKey, resolveRoomHost, resolveEffectiveAgentForRoom } from './data/agentPreferences.js';
+import { pickerAgents, titleForAgent } from './data/agentTitles.js';
+import { pickSpecialistForMessage, isVisualAsk } from './data/agentRouting.js';
+import { detectOverride, getThreadOverride, setThreadOverride } from './data/agentOverride.js';
+import { handoffLine } from './data/agentHandoff.js';
 import VoiceChat from '../components/VoiceChat.jsx';
 
 const READ_ONLY_COPY = 'Chat needs a connected workspace. Local mode is read-only.';
@@ -183,8 +186,15 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     window.addEventListener('aom-agent-pref-changed', loadRoomAgents);
     return () => window.removeEventListener('aom-agent-pref-changed', loadRoomAgents);
   }, [loadRoomAgents]);
+  // R-B1: host resolves from room subject, not generic corner/elon
+  const hostSlug = resolveRoomHost(room)
+  const hostTitle = titleForAgent(hostSlug)
   const selectedAgentSlug = resolveEffectiveRoomAgent(agentAssignments, agentPreferenceKey).slug;
-  const dispatchAgent = dispatchAgentSlug(selectedAgentSlug);
+  // R-B1: effective dispatch uses host when unpinned, not corner
+  const effectiveAgent = resolveEffectiveAgentForRoom(room, agentAssignments, agentPreferenceKey)
+  const dispatchAgent = effectiveAgent.slug === 'default' ? hostSlug : dispatchAgentSlug(selectedAgentSlug);
+  // Expose host for header (R-B1: visible in room header by title)
+  const roomHost = { slug: hostSlug, title: hostTitle, source: effectiveAgent.source }
 
   // ── Throwaway messages slice. The col3 thread renders from useRoomThread; the
   // CV4 hooks only need setMessages for optimistic rows, which we let the thread
@@ -337,12 +347,54 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       setSendError('');
       // Keep the caret in the box: sending is a conversation beat, not an exit.
       try { inputRef.current?.focus?.(); } catch { /* portal not mounted yet */ }
+      // R-B2/B3/B4/B5: routing, handoff, Creative-first, correction — all inside the room.
+      // The host (R-B1) stays visible; when work belongs elsewhere the host pulls the
+      // specialist into the same thread, in speech, running their own method. Routing
+      // is tunable (keywords), the process is not — Creative-first is the floor.
+      let effectiveAgent = dispatchAgent
+      let handoffMeta = null
+      const override = detectOverride(text)
+      if (override) {
+        // R-B5: one plain sentence moves the stick this turn and holds for thread
+        setThreadOverride(room, override.slug)
+        effectiveAgent = override.slug
+        if (override.slug !== hostSlug) {
+          handoffMeta = { handoffTo: override.slug, handoffFrom: hostSlug }
+        }
+      } else {
+        const threadOverride = getThreadOverride(room)
+        if (threadOverride && threadOverride.slug) {
+          effectiveAgent = threadOverride.slug
+          if (threadOverride.slug !== hostSlug) {
+            handoffMeta = { handoffTo: threadOverride.slug, handoffFrom: hostSlug }
+          }
+        } else {
+          // R-B4: visual asks route to Creative first, always — hard floor
+          if (isVisualAsk(text)) {
+            effectiveAgent = 'director'
+            if (hostSlug !== 'director') handoffMeta = { handoffTo: 'director', handoffFrom: hostSlug }
+          } else {
+            const picked = pickSpecialistForMessage(text)
+            if (picked && picked.slug !== hostSlug) {
+              effectiveAgent = picked.slug
+              handoffMeta = { handoffTo: picked.slug, handoffFrom: hostSlug }
+            }
+          }
+        }
+      }
+      // R-A1: send-to-signal contract — awaiting:true committed before network (useRoomThread does this)
       // `onKeptInThread` fires when the room thread has kept the failed message as a
       // bubble you can retry. In that case restoring the text here too would show your
       // words in two places at once, so the thread's copy wins.
       let keptInThread = false;
+      const sendAgent = effectiveAgent || dispatchAgent
+      const sendOpts = { interactionMode, agent: sendAgent, onKeptInThread: (reason) => { keptInThread = true; setSendError(SEND_ERROR_COPY[reason] || SEND_ERROR_COPY.server); } }
+      if (handoffMeta) {
+        sendOpts.handoffTo = handoffMeta.handoffTo
+        sendOpts.handoffFrom = handoffMeta.handoffFrom
+      }
       const ok = typeof quickSend === 'function'
-        ? await quickSend(text, { interactionMode, agent: dispatchAgent, onKeptInThread: (reason) => { keptInThread = true; setSendError(SEND_ERROR_COPY[reason] || SEND_ERROR_COPY.server); } })
+        ? await quickSend(text, sendOpts)
         : false;
       if (ok !== false) acceptIfRouted();
       if (ok === false && !keptInThread) {
@@ -355,7 +407,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     } finally {
       sendingRef.current = false;
     }
-  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode, dispatchAgent, acceptIfRouted]);
+  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode, dispatchAgent, acceptIfRouted, hostSlug, room]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }

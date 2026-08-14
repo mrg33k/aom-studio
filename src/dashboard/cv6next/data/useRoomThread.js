@@ -10,6 +10,7 @@ import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { titleForAgent } from './agentTitles.js';
 import { extractLinkCards, stripTrailingCardUrl } from './resultLinks.js';
 import { useDataContext } from '../providers/DataContext.jsx';
+import { deriveRoomStatus, deriveTurnState } from './roomStatus.js';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function initials(name) {
@@ -190,7 +191,7 @@ const RECONCILE_MS = 10000;           // reconcile cadence (unchanged)
 const FULL_EVERY_N_RECONCILES = 6;    // one full refetch a minute, behind the deltas
 const DELTA_OVERLAP_MS = 1000;        // two rows can share a millisecond; ask back a beat
 const ENGINE_GRACE_MS = 20000;        // keep a room warm this long after its last mount
-const DEAD_TURN_MS = 180000;          // dead-bridge backstop (unchanged)
+const DEAD_TURN_MS = 90000;           // dead-bridge backstop — R-A5: 180s → 90s, plain-language recovery
 
 const rowKey = (row) => (row && row.id
   ? String(row.id)
@@ -414,6 +415,18 @@ class RoomThreadEngine {
       d.from = s.messages; d.pending = s.pending; d.steps = s.stepsByParent;
       d.awaiting = s.awaiting; d.lastSentId = s.lastSentId;
     }
+    // R-A3: single turnState truth — every surface reads this one object
+    const turnState = deriveTurnState({
+      awaiting: s.awaiting,
+      liveSteps: s.liveSteps,
+      draft: s.awaiting ? s.draft : null,
+      turnHealth: s.turnHealth,
+      connection: s.connection,
+      lastSentId: s.lastSentId,
+      lastSentTs: this.lastSentTs,
+      lastSentText: this.lastSentText,
+      turnStartTs: this.lastSentTs,
+    })
     this.snapshot = {
       messages: d.messages,
       archivedMessages: s.archivedMessages,
@@ -427,6 +440,7 @@ class RoomThreadEngine {
       draft: s.awaiting ? s.draft : null,
       turnHealth: s.turnHealth,
       connection: s.connection,
+      turnState,
       // Round E: the Stop control hides for the session after one honest
       // feature_off answer from the proxy (bridge flag/tunnel not live yet).
       stopAvailable: !this.stopUnavailable,
@@ -695,13 +709,16 @@ class RoomThreadEngine {
       this.silentTurn = false;
       this.sawLiveSteps = false;
       this.commit({ lastSentId: String(newestUser.id), awaiting: true, liveSteps: [], draft: null });
-    } else if (!this.sawLiveSteps && newestReply && tms(newestReply) >= this.lastSentTs && this.lastSentTs) {
-      // A reply at/after our last user message → settle — but ONLY when the bridge is
-      // NOT streaming live steps for this turn. Once steps are flowing, the agent
-      // flushes its in-progress thoughts as interim reply messages; settling on those
-      // would yank the bar off a still-running turn (the exact "bar stops while it's
-      // still working" bug). With steps active, the settled sentinel is the honest stop.
-      this.commit({ awaiting: false });
+    } else if (newestReply && tms(newestReply) >= this.lastSentTs && this.lastSentTs) {
+      // R-A2: an interim reply must NEVER end a turn. Only an explicit settled signal
+      // (step_index 9999 / steward health settled) or the dead-turn timeout ends it.
+      // The previous guard `!sawLiveSteps && reply >= lastSentTs` yanked the bar off
+      // a still-running turn before the first step arrived — exactly Patrik's
+      // "it never works properly." Settling on any reply is removed; awaiting now
+      // only clears via liveStepPoll settled sentinel, steward health, or DEAD_TURN_MS.
+      // For simple chat without steps, the bridge must emit a settled sentinel; the
+      // steward health poll (10s cadence) is the fallback so a turn never hangs.
+      // Intentionally no awaiting:false here — see startLiveStepPoll + startStewardPoll.
     }
     // Refresh the session render cache with what this room actually shows now.
     threadCache.set(this.key, { messages: this.state.messages, blocks: liveBlocks, sig });
@@ -1020,15 +1037,22 @@ class RoomThreadEngine {
     const interactionMode = options?.interactionMode === 'plan' ? 'plan' : 'work';
     // Project and mission rooms keep one shared thread, but the room's saved
     // specialist decides who handles this turn. Agent 1:1 rooms remain fixed.
-    const roomAgent = options?.agent || 'corner';
+    // R-B1: default host is director (Creative), not corner/elon — 0 unpinned rooms fall back to generic
+    // R-B2/B3/B5: routing + handoff + override may pass agent explicitly; host stays visible in header
+    const roomAgent = options?.agent || 'director';
+    // R-B3/B4: allow handoff metadata to ride along so the host session can summon
+    // the specialist in the same thread, in speech, running their own method
+    const extraMeta = options?.metadata && typeof options.metadata === 'object' ? options.metadata : null
+    const handoffMeta = options?.handoffTo ? { handoff_to: String(options.handoffTo), handoff_from: String(options.handoffFrom || roomAgent) } : null
+    const mergedMeta = { ...(extraMeta || {}), ...(handoffMeta || {}) }
     const payload = room.isMission
       // Send the CANONICAL "<project>:<mission>" slug (room.missionSlug), not the bare
       // tail — write-message.js passes a slug containing ':' through untouched, so the
       // mission never enters the bare-slug first-wins lottery (Bug 1).
-      ? { client_id: worldId, agent: roomAgent, project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), interaction_mode: interactionMode } }
+      ? { client_id: worldId, agent: roomAgent, project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), interaction_mode: interactionMode, ...mergedMeta } }
       : room.isProject
-        ? { client_id: worldId, agent: roomAgent, project: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } }
-        : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode } };
+        ? { client_id: worldId, agent: roomAgent, project: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode, ...mergedMeta } }
+        : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode, ...mergedMeta } };
     // Show "working" the instant you send, so the thread never looks dead.
     this.sawLiveSteps = false;
     this.lastSentTs = now.getTime();
