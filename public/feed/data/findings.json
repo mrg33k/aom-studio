@@ -1,6 +1,121 @@
 {
  "days": [
   {
+   "date": "2026-08-14",
+   "items": [
+    {
+     "lane": "claude-animation",
+     "headline": "Claude Design Ships First-Party Motion Graphics Creator",
+     "body": "Anthropic's own Claude Design tool (claude.ai/design) now creates animation and motion graphics from prompts, reference images, or transcripts -- first-party, no skill install or CLI needed. Users bring a design system once and reuse it across projects. This puts the same capability the community Remotion/LottieFiles skills offer into a browser for non-technical creative directors.",
+     "action": "Test Claude Design for a real client social reel concept and benchmark time-to-first-draft vs the Remotion skill pipeline.",
+     "source_name": "Frank's World",
+     "source_url": "https://www.franksworld.com/2026/08/05/unleashing-creativity-claude-design-unlocks-ai-motion-graphics/",
+     "image": null,
+     "video": null
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "Ahrefs Launches Letaido: Agent Workspace for Marketing Teams",
+     "body": "Ahrefs ($100M+ ARR, 170T page index) launched Letaido Aug 12 -- an AI agent workspace where teams delegate multistep jobs to persistent agents that run keyword research, content audits, and competitor monitoring on recurring schedules. Foundation Marketing Services cut research time from 40 hours/week to 60 minutes. Integrates Notion, Slack, HubSpot, Google Ads.",
+     "action": "Study Letaido's multistep-jobs UI and real-time agent output display for Corner room design; track pricing when announced.",
+     "source_name": "SiliconANGLE",
+     "source_url": "https://siliconangle.com/2026/08/12/ahrefs-launches-ai-agent-workspace-letaido-marketers-agencies/",
+     "image": "https://d15shllkswkct0.cloudfront.net/wp-content/blogs.dir/1/files/2026/08/ahrefsletaido.png",
+     "video": null
+    },
+    {
+     "lane": "vs-corner",
+     "headline": "Tencent Open-Sources Shared Memory Layer for Multi-Agent Systems",
+     "body": "Tencent released an open-source shared memory layer that lets agents in separate contexts read and write to a common knowledge base -- 20K GitHub stars in 90 days. Shared memory is becoming standard infra for multi-agent products. Corner already has this via Supabase + mission files, but the pattern is being commoditized. The moat moves up to what agents DO with shared context.",
+     "action": "Evaluate whether Corner's shared-state model competes with purpose-built memory layers, or needs a dedicated memory API.",
+     "source_name": "Agentic AI News",
+     "source_url": "https://www.agentic.ai/news",
+     "image": null,
+     "video": null
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "54% of Small Businesses Now Use AI Marketing Tools",
+     "body": "Multiple 2026 surveys converge: 54% of small businesses actively use AI for marketing (up from ~35% a year ago), and AI-assisted campaigns deliver 22% higher ROI on average. The adoption curve crossed the majority threshold -- 'we use AI' is no longer a differentiator. The pitch must be about orchestration depth, brand-locked direction, and domain knowledge.",
+     "action": "Rewrite AOM pitch deck slide 3: '54% of your competitors already use AI marketing -- we make it actually work for construction.'",
+     "source_name": "Pict.ai / HubSpot State of Marketing",
+     "source_url": "https://pict.ai/blog/ai-tools-for-small-business-marketing/",
+     "image": null,
+     "video": null
+    },
+    {
+     "lane": "vs-aom",
+     "headline": "Vibe Marketing Gets a Name: Human Direction + AI Execution",
+     "body": "The model where a senior marketer sets creative direction and AI handles volume production, A/B variants, and platform adaptation is now called 'vibe marketing' across marketing blogs and conferences. This is exactly AOM's operating model -- Patrik and Steffen set direction, agents execute. A named category means prospects can search for it and compare providers.",
+     "action": "Claim 'vibe marketing for contractors' positioning before a competitor does -- update website copy and outreach templates.",
+     "source_name": "mean.ceo / Marketing Brew",
+     "source_url": "https://blog.mean.ceo/vibemarketing-news-august-2026/",
+     "image": null,
+     "video": null
+    },
+    {
+     "lane": "construction-intel",
+     "headline": "AEO Is Now a Named Service Contractors Buy",
+     "body": "Answer Engine Optimization -- getting cited by ChatGPT, Google AI Overviews, and Perplexity -- is now a purchasable service in contractor marketing. It uses structured data, FAQ content, conversational keywords, and local authority signals. Unlike SEO (page-1 rank), AEO targets being the cited answer when a homeowner asks AI 'who is the best roofer near me.'",
+     "action": "Add AEO as a $500/month add-on to construction retainers and build a one-page explainer for prospects.",
+     "source_name": "Footbridge Media",
+     "source_url": "https://www.footbridgemedia.com/marketing-tips/aeo-contractors-home-service-companies",
+     "image": null,
+     "video": null
+    },
+    {
+     "lane": "construction-intel",
+     "headline": "2026 Construction Marketing Benchmarks: 2.8% Conversion, $95-130 CPA",
+     "body": "CuFinder's 2026 report pins the numbers: 2.8% website conversion, 4.5% landing page conversion, $95-130 CPA, 58.4% mobile traffic, $6.45 Google Ads CPC, 22.5% email open rate, 72% B2B retention. Every number is a benchmark AOM can beat and prove. '$130 CPA and we got it to $85' closes deals and makes the $2K/month retainer feel cheap.",
+     "action": "Bake these benchmarks into Jacob's outreach templates as comparison points and build a 'beat the benchmark' case study template.",
+     "source_name": "CuFinder",
+     "source_url": "https://cufinder.io/blog/benchmarks/construction/",
+     "image": "https://cufinder.io/blog/wp-content/uploads/2026/01/Frame-1-59.webp",
+     "video": null
+    },
+    {
+     "lane": "ai-packaging",
+     "headline": "Agent Licensing Model: $20K Setup + $2K/Month Gains Traction",
+     "body": "The Digital Agency Network's 2026 pricing report identifies 'agent licensing' as an emerging model: build a custom AI agent for the client ($15K-25K setup), then charge $1.5K-2.5K/month for license + maintenance + model upgrades + API costs. Switching means retraining on the client's brand and data -- that lock-in is the moat. AOM's $2K retainer already looks like this.",
+     "action": "Reframe the AOM retainer as an 'agent license' in the next pitch deck revision and test the language with 3 prospects.",
+     "source_name": "Digital Agency Network",
+     "source_url": "https://digitalagencynetwork.com/ai-agency-pricing/",
+     "image": null,
+     "video": null
+    },
+    {
+     "lane": "ai-packaging",
+     "headline": "Per-Deliverable Pricing Replacing Hourly: $180/Blog, $350/Page",
+     "body": "Digital Applied's 2026 guide shows per-deliverable pricing overtaking hourly in AI agencies: blogs $150-200, landing pages $300-400, social packs $500-800/month, video $200-500. AI makes production costs predictable so fixed pricing is safe. A $2K retainer delivering 4 blogs ($720) + 2 pages ($700) + social ($600) = $2,020 in itemized value. The retainer is the discount.",
+     "action": "Build an itemized value breakdown showing per-deliverable market rates inside the $2K retainer.",
+     "source_name": "Digital Applied",
+     "source_url": "https://www.digitalapplied.com/blog/ai-agency-pricing-models-2026-decision-guide",
+     "image": null,
+     "video": null
+    },
+    {
+     "lane": "tool-releases",
+     "headline": "Gemini 3.7 Flash: $0.75/M Input, 43.6% FrontierCode, 1M Context",
+     "body": "Google released Gemini 3.7 Flash on Aug 13 -- just 23 days after 3.6, the fastest Gemini iteration ever. Coding-focused: 43.6% FrontierCode (up from 34.4%), 65.3% DeepSWE, 97% on 128K recall. At $0.75/M input (50% intro through Dec 31) with 1M context, it is the cheapest way to analyze 13+ minutes of video or massive codebases in one call.",
+     "action": "Evaluate Gemini 3.7 Flash for video analysis (footage review, shot logging) using the 1M context window.",
+     "source_name": "MarkTechPost / Google AI Blog",
+     "source_url": "https://www.marktechpost.com/2026/08/13/google-ai-just-released-gemini-3-7-flash/",
+     "image": null,
+     "video": null
+    },
+    {
+     "lane": "tool-releases",
+     "headline": "GPT-5.6 Luna Gets 80% Price Cut: Now ~$0.20/M Input",
+     "body": "OpenAI slashed GPT-5.6 Luna pricing by 80% on July 30, bringing it to roughly $0.20/M input tokens. Luna sits below full GPT-5.6 in capability but above GPT-4o on most benchmarks. The floor price for 'good enough AI' keeps dropping -- tooling cost per deliverable approaches zero. The value is in orchestration and direction, not the model.",
+     "action": "Update internal cost models with Luna pricing for batch content operations (social captions, SEO copy, email variants).",
+     "source_name": "OpenAI",
+     "source_url": "https://openai.com/index/gpt-5-6-luna/",
+     "image": null,
+     "video": null
+    }
+   ]
+  },
+  {
    "date": "2026-08-13",
    "items": [
     {
