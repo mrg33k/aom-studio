@@ -302,6 +302,156 @@
      "source_url": "https://code.claude.com/docs/en/changelog",
      "image": "https://www-cdn.anthropic.com/images/4zrzovbb/website/9890d1bb39c15c41772af22d2282eb612469051c-2880x1620.jpg",
      "video": null
+    },
+    {
+     "lane": "yt-ai-workflows",
+     "headline": "Claude Code Just Made Subagents Feel Obsolete",
+     "body": "A deep breakdown of Claude Code's latest orchestration features that let you run complex multi-step tasks without manually spawning subagents. The workflow hooks and background-agent patterns shown here map directly to how we run AOM's own daily routines.",
+     "action": "Watch for the custom hook patterns and test whether they simplify any of our current cron-dispatched agent chains.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=oqp6D-ugtX4",
+     "image": "https://i.ytimg.com/vi/oqp6D-ugtX4/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-ai-workflows",
+     "headline": "Claude Code's New Upgrade Lets You Automate Any Task (Full Tutorial 2026)",
+     "body": "A step-by-step walkthrough of Claude Code's automation layer: scheduling tasks, chaining tools, and building repeatable workflows entirely from the CLI. Covers the same patterns AOM uses for daily research runs.",
+     "action": "Compare the tutorial's scheduling approach against our launchd+Supabase routines setup and flag any simplification wins.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=ZbawXiYm4Go",
+     "image": "https://i.ytimg.com/vi/ZbawXiYm4Go/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-ai-workflows",
+     "headline": "5 Ways to Build Beautiful Websites Using Claude for FREE",
+     "body": "Five concrete approaches to shipping production sites with Claude as the primary builder, from single-page HTML to full-stack deploys. Directly relevant to AOM's proof-page and client-site pipeline.",
+     "action": "Check whether any of the five patterns outperforms our current prospect-page workflow in speed or visual quality.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=83geKREHQY0",
+     "image": "https://i.ytimg.com/vi/83geKREHQY0/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-ai-workflows",
+     "headline": "How To Edit Videos With AI in 2026 (Complete Guide)",
+     "body": "A comprehensive guide to AI-assisted video editing workflows covering auto-cuts, caption generation, color matching, and multi-format export. Covers tools from Runway to CapCut Pro to DaVinci Resolve AI features.",
+     "action": "Identify which AI editing steps could replace manual Resolve work in AOM's reel pipeline and estimate time savings per reel.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=x3Go2UiHZWk",
+     "image": "https://i.ytimg.com/vi/x3Go2UiHZWk/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-ai-workflows",
+     "headline": "Can AI Actually Help Your Color Grade? Tested on Real Projects",
+     "body": "A practical test of AI-powered color grading tools on real footage, comparing AI-suggested grades against manual colorist work. Covers the latest DaVinci Resolve AI features and third-party LUT generators.",
+     "action": "Test the top-performing AI grading tool from this video on AOM's current S-curve house warm and compare against our manual grade.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=6Ku0boP2KRk",
+     "image": "https://i.ytimg.com/vi/6Ku0boP2KRk/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-filmmaking",
+     "headline": "16 AI Filmmaking News Updates You Missed",
+     "body": "Curious Refuge's rapid-fire roundup of the latest AI filmmaking developments: new video generation models, production pipeline tools, and industry adoption trends. A quick way to stay current on the tools AOM could deploy for client video work.",
+     "action": "Flag any tools from the roundup that could slot into AOM's existing Resolve-to-delivery pipeline.",
+     "source_name": "Curious Refuge",
+     "source_url": "https://www.youtube.com/watch?v=N7zh3PoMeSk",
+     "image": "https://i.ytimg.com/vi/N7zh3PoMeSk/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-filmmaking",
+     "headline": "Learn Color Grading in DaVinci Resolve: Complete Beginner's Guide",
+     "body": "A thorough beginner-to-intermediate color grading course in DaVinci Resolve covering nodes, qualifiers, curves, power windows, and scopes. Useful as a reference for anyone touching AOM's color pipeline.",
+     "action": "Bookmark as the reference tutorial for onboarding anyone new to AOM's Resolve color workflow.",
+     "source_name": "Frenchie Color Grading",
+     "source_url": "https://www.youtube.com/watch?v=ZozmUI1kBVI",
+     "image": "https://i.ytimg.com/vi/ZozmUI1kBVI/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-filmmaking",
+     "headline": "Gimbal VS Handheld: When and Why (DJI RS5)",
+     "body": "A practical comparison of gimbal-stabilized vs handheld shooting on the DJI RS5, covering when each approach serves the shot better. Directly relevant to Ronin 4D and field shoot planning.",
+     "action": "Apply the decision framework from this video to AOM's next client shoot to choose gimbal vs handheld per scene.",
+     "source_name": "Jacques Crafford",
+     "source_url": "https://www.youtube.com/watch?v=iYJxyImCmRs",
+     "image": "https://i.ytimg.com/vi/iYJxyImCmRs/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-filmmaking",
+     "headline": "Top 5 Secret AI Filmmaking Tools July 2026",
+     "body": "Simon Meyer highlights five under-the-radar AI filmmaking tools that shipped in mid-2026, covering video generation, audio cleanup, motion tracking, and post-production automation.",
+     "action": "Test the top-ranked tool from this list on a recent AOM project clip and evaluate whether it beats our current workflow.",
+     "source_name": "Simon Meyer",
+     "source_url": "https://www.youtube.com/watch?v=8d1UPMD4E3g",
+     "image": "https://i.ytimg.com/vi/8d1UPMD4E3g/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-filmmaking",
+     "headline": "How To Color Grade Cheap 8-Bit Footage Like a Pro",
+     "body": "Director Qim shows techniques for getting the most out of 8-bit camera footage in the grading suite, including noise management, skin tone protection, and banding prevention. Directly applicable to AOM shoots on non-cinema cameras.",
+     "action": "Apply the banding-prevention technique to any AOM footage shot on 8-bit cameras before the next delivery.",
+     "source_name": "Director Qim",
+     "source_url": "https://www.youtube.com/watch?v=g3GTDu1Mjws",
+     "image": "https://i.ytimg.com/vi/g3GTDu1Mjws/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-music-production",
+     "headline": "First Beat of 2026: MPC Live III Production",
+     "body": "A hands-on session building the first beat of the year on the new AKAI MPC Live III, showing the new workflow features, expanded pads, and built-in effects chain. A good look at what the latest MPC hardware brings to production sessions.",
+     "action": "Note any Live III workflow features that could speed up Patrik's current MPC session flow.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=76ZfGoG5k1Y",
+     "image": "https://i.ytimg.com/vi/76ZfGoG5k1Y/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-music-production",
+     "headline": "MPC Beat Making: How to Use STEMS",
+     "body": "A focused tutorial on using the stem separation feature in MPC to isolate vocals, drums, bass, and melody from any sample, then recombine them into new arrangements. A practical chop-and-flip workflow.",
+     "action": "Try the stem workflow on a soul sample to compare speed vs manual chopping on the MPC.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=y2SBb0d51cg",
+     "image": "https://i.ytimg.com/vi/y2SBb0d51cg/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-music-production",
+     "headline": "It's That Simple: MPC Beat Making",
+     "body": "A straightforward cook-up session showing how simple it can be to flip a sample into a full beat on the MPC. No overproduction, just pads, chops, and drums laid down live.",
+     "action": "Watch for the sample selection and chop technique and try replicating the approach on the next cook-up session.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=HH9QIoVoVps",
+     "image": "https://i.ytimg.com/vi/HH9QIoVoVps/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-music-production",
+     "headline": "The Ultimate Ableton Workflow Guide (Full Course)",
+     "body": "A comprehensive Ableton Live workflow course covering template setup, session view vs arrangement, grouping, sends, macros, and export chains. Designed to cut production time in half by optimizing the DAW environment.",
+     "action": "Identify the top 3 workflow optimizations from this course and test them in Ableton for AOM's beat production sessions.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=oSqDqAiWJ3g",
+     "image": "https://i.ytimg.com/vi/oSqDqAiWJ3g/maxresdefault.jpg",
+     "video": null
+    },
+    {
+     "lane": "yt-music-production",
+     "headline": "I Will Change Your Ableton Workflow FOREVER in Under 10 Minutes",
+     "body": "Ten rapid-fire Ableton workflow hacks that most producers miss: shortcut chains, consolidate tricks, follow-action patterns, and audio-to-MIDI conversions that save hours per session.",
+     "action": "Try the top 3 shortcuts from this video in the next Ableton session and track time saved per beat.",
+     "source_name": "YouTube",
+     "source_url": "https://www.youtube.com/watch?v=u83XcTqAnls",
+     "image": "https://i.ytimg.com/vi/u83XcTqAnls/maxresdefault.jpg",
+     "video": null
     }
    ]
   },

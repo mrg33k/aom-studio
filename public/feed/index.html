@@ -165,10 +165,12 @@ a{color:inherit}
 <nav class="tabs" aria-label="Feed sections">
   <button class="tab active" data-tab="research" aria-selected="true">Research</button>
   <button class="tab" data-tab="agents" aria-selected="false">Agents</button>
+  <button class="tab" data-tab="saved" aria-selected="false">Saved</button>
 </nav>
 
 <main class="feed" id="feed-research" aria-label="AOM daily research feed"></main>
 <main class="feed hidden" id="feed-agents" aria-label="AOM agent updates"></main>
+<main class="feed hidden" id="feed-saved" aria-label="Saved items"></main>
 
 <nav class="rail" aria-label="Actions for current card">
   <button id="likeBtn" aria-label="Like" aria-pressed="false">
@@ -179,7 +181,7 @@ a{color:inherit}
   </button>
 </nav>
 
-<p class="hint">Scroll · J / K · 1 / 2 tabs</p>
+<p class="hint">Scroll · J / K · 1 / 2 / 3 tabs</p>
 
 <script>
 /* ============================================================
@@ -199,6 +201,12 @@ const LANES = {
     '<svg viewBox="0 0 36 36" aria-hidden="true"><rect x="14" y="14" width="8" height="8"/><path d="M18 6v8"/><path d="M18 22v8"/><path d="M6 18h8"/><path d="M22 18h8"/></svg>'},
   'tool-releases': {tag:'Tools &amp; Models', mark:
     '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M20 6L12 20h6l-2 10 10-14h-6z"/></svg>'},
+  'yt-ai-workflows': {tag:'AI Workflows', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><polygon points="14,10 26,18 14,26"/><rect x="4" y="8" width="28" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'},
+  'yt-music-production': {tag:'Music Production', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><polygon points="14,10 26,18 14,26"/><circle cx="18" cy="18" r="12" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'},
+  'yt-filmmaking': {tag:'Filmmaking &amp; Color', mark:
+    '<svg viewBox="0 0 36 36" aria-hidden="true"><polygon points="14,10 26,18 14,26"/><path d="M6 8h24v20H6z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 12h24M6 24h24" stroke="currentColor" stroke-width=".75"/></svg>'},
   'agent': {tag:'Agent', mark:
     '<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="12" r="5"/><path d="M8 30c0-6 4-10 10-10s10 4 10 10"/></svg>'},
 };
@@ -210,12 +218,14 @@ const pad = n => String(n+1).padStart(2,'0');
 const state = {
   tab: 'research',
   research: { items:[], shells:[], active:-1, observer:null },
-  agents:   { items:[], shells:[], active:-1, observer:null }
+  agents:   { items:[], shells:[], active:-1, observer:null },
+  saved:    { items:[], shells:[], active:-1, observer:null }
 };
 function cur(){ return state[state.tab]; }
 
 const feedResearch = document.getElementById('feed-research');
 const feedAgents   = document.getElementById('feed-agents');
+const feedSaved    = document.getElementById('feed-saved');
 const posEl  = document.getElementById('pos');
 const totalEl = document.getElementById('total');
 const likes = new Set(JSON.parse(localStorage.getItem('aom-feed-likes')||'[]'));
@@ -330,6 +340,8 @@ function switchTab(key){
   });
   feedResearch.classList.toggle('hidden', key!=='research');
   feedAgents.classList.toggle('hidden', key!=='agents');
+  feedSaved.classList.toggle('hidden', key!=='saved');
+  if(key==='saved') rebuildSaved();
   updateCounter();
   likeUI();
 }
@@ -349,6 +361,7 @@ likeBtn.addEventListener('click',()=>{
   likes.has(id)?likes.delete(id):likes.add(id);
   localStorage.setItem('aom-feed-likes',JSON.stringify([...likes]));
   likeUI();
+  if(state.tab==='saved') rebuildSaved();
 });
 shareBtn.addEventListener('click',async()=>{
   const s=cur();
@@ -365,7 +378,7 @@ function jump(d){
   const s=cur();
   const t=Math.min(s.items.length-1,Math.max(0,(s.active<0?0:s.active)+d));
   if(s.shells[t]){
-    const feedEl = state.tab==='research' ? feedResearch : feedAgents;
+    const feedEl = state.tab==='research' ? feedResearch : state.tab==='agents' ? feedAgents : feedSaved;
     s.shells[t].scrollIntoView({behavior:'smooth'});
   }
 }
@@ -374,7 +387,23 @@ addEventListener('keydown',e=>{
   else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();jump(-1);}
   else if(e.key==='1'){e.preventDefault();switchTab('research');}
   else if(e.key==='2'){e.preventDefault();switchTab('agents');}
+  else if(e.key==='3'){e.preventDefault();switchTab('saved');}
 });
+
+/* ---- saved tab ---- */
+function rebuildSaved(){
+  const all = [...state.research.items, ...state.agents.items];
+  const saved = all.filter(it=>likes.has(it.id));
+  if(saved.length===0){
+    buildFeed(feedSaved, [{lane:'vs-aom', date:new Date().toISOString().slice(0,10), id:'saved-empty',
+      headline:'Nothing saved yet.',
+      body:'Tap the heart on any card to save it here. Your saved items stay across sessions.',
+      action:'Swipe through Research or Agents to find something worth keeping.',
+      source_name:'', source_url:'#'}], 'saved');
+  } else {
+    buildFeed(feedSaved, saved, 'saved');
+  }
+}
 
 /* ---- load research feed ---- */
 fetch('/feed/data/findings.json',{cache:'no-store'})
@@ -425,6 +454,7 @@ fetch('/feed/data/agent-updates.json',{cache:'no-store'})
     });
     buildFeed(feedAgents, items, 'agents');
     if(urlTab==='agents') switchTab('agents');
+    if(urlTab==='saved'){ rebuildSaved(); switchTab('saved'); }
   })
   .catch(()=>{
     buildFeed(feedAgents, [{lane:'agent', date:new Date().toISOString().slice(0,10), id:'agent-boot',
@@ -433,6 +463,7 @@ fetch('/feed/data/agent-updates.json',{cache:'no-store'})
       action:'Check back after the next morning run.',
       source_name:'system', source_url:'#'}], 'agents');
     if(urlTab==='agents') switchTab('agents');
+    if(urlTab==='saved'){ rebuildSaved(); switchTab('saved'); }
   });
 </script>
 </body>
