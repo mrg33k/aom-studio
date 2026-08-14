@@ -350,6 +350,7 @@ export default function SupportInbox({ isDesktop = false }) {
         .from('messages')
         .select('id, text, role, timestamp, metadata')
         .eq('metadata->>embed_id', 'emb_corner_support')
+        .eq('client_id', 'aom')
         .not('metadata->>embed_visitor_id', 'is', null)
         .order('timestamp', { ascending: false })
         .limit(500)
