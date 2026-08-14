@@ -4251,10 +4251,13 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .cv6-composer-wrap:has(.cv6-floating-composer.is-checklist-open) { max-height:min(620px, 72vh); }
 
 @media (max-width:640px) {
-  [data-cv6] .cv6-chat-header-button { width:36px; min-width:36px; height:36px; min-height:36px; min-block-size:36px; }
+  [data-cv6] .cv6-chat-header-button { width:var(--cv6-bar-control-size); min-width:var(--cv6-bar-control-size); height:var(--cv6-bar-control-size); min-height:var(--cv6-bar-control-size); min-block-size:var(--cv6-bar-control-size); }
   [data-cv6] .mhdr .mhactions { gap:6px; }
   [data-cv6] .cv6-room-identity-layer { align-items:flex-end; padding:10px; }
   [data-cv6] .cv6-room-identity-card { width:100%; max-height:calc(100dvh - env(safe-area-inset-top, 0px) - 18px); padding:17px; border-radius:22px; }
+  /* iOS auto-zoom prevention: inputs below 16px trigger Safari zoom on focus */
+  [data-cv6] .finput { font-size:16px; }
+  [data-cv6] .cv6-autoreply-grid :where(input,select,textarea) { font-size:16px; }
 }
 
 /* ---- SMOOTHNESS: motion that makes the app feel alive (R29) ---- */
@@ -4291,6 +4294,26 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 [data-cv6] .chip-btn:nth-child(3) { animation-delay: 100ms; }
 [data-cv6] .chip-btn:nth-child(4) { animation-delay: 150ms; }
 [data-cv6] .chip-btn:nth-child(5) { animation-delay: 200ms; }
+
+/* Header progress bar — animated sweep below room header while agent works */
+[data-cv6] .cv6-header-progress {
+  height:3px; flex:none; background:var(--surface-2); overflow:hidden; position:relative;
+}
+[data-cv6] .cv6-header-progress > i {
+  display:block; position:absolute; top:0; bottom:0; left:0; width:38%;
+  border-radius:2px; background:linear-gradient(90deg,var(--accent),#6366F1);
+  animation:cv6HeaderSweep 1.15s cubic-bezier(.45,0,.55,1) infinite;
+}
+@keyframes cv6HeaderSweep { 0%{left:-40%;} 100%{left:100%;} }
+
+/* Specialist handoff divider — marks when a different agent takes the thread */
+[data-cv6] .cv6-handoff-divider {
+  display:flex; align-items:center; gap:10px; padding:14px 0 6px;
+}
+[data-cv6] .cv6-handoff-line { flex:1; height:1px; background:var(--divider); }
+[data-cv6] .cv6-handoff-label {
+  font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--muted); white-space:nowrap;
+}
 
 /* ---- end SMOOTHNESS ---- */
 

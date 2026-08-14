@@ -368,6 +368,7 @@ function MobileMessageThread({
     }
     fileRun = [];
   };
+  let prevAgentKey = null;
   list.forEach((message, i) => {
     if (message?.isFile && renderAttachments === 'mobileGallery') {
       // Same-sender guard as ChatLifecycle's renderItems: never fold the user's
@@ -377,6 +378,21 @@ function MobileMessageThread({
       return;
     }
     flushFiles(i);
+    // Specialist handoff divider: when a different agent takes the thread
+    if (!message?.isUser && message?.agentName) {
+      if (prevAgentKey && prevAgentKey !== message.agentName) {
+        out.push(
+          <div key={`handoff-${i}`} className="cv6-handoff-divider" aria-hidden="true">
+            <span className="cv6-handoff-line" />
+            <span className="cv6-handoff-label">{message.agentName}</span>
+            <span className="cv6-handoff-line" />
+          </div>
+        );
+      }
+      prevAgentKey = message.agentName;
+    } else if (message?.isUser) {
+      prevAgentKey = null;
+    }
     if (message?.blocks?.length) {
       out.push(<MobileGoalTurn key={message.id || i} message={message} goal={goal} />);
     } else {
@@ -485,21 +501,33 @@ export function Cv6MessageThread({
     <SendCtx.Provider value={onAction || (() => {})}>
       <ReviewCtx.Provider value={(file) => { if (file) onReviewAttachment?.(file); }}>
         <div className="pconv" data-cv6-message-thread="" data-variant={variant} data-mode={mode} data-cv6-new-messages={hasNewMessages || undefined}>
-          {groups.map((group, i) => (
-            <Cv6MessageGroup
-              key={`${group.key}-${i}`}
-              group={group}
-              goal={goal}
-              variant={variant}
-              renderBlocks={renderBlocks}
-              allowBlocks={allowBlocks}
-              allowAttachments={allowAttachments}
-              allowLinkCards={allowLinkCards}
-              allowChips={allowChips}
-              chipsPrimaryFirst={chipsPrimaryFirst}
-              onReviewAttachment={onReviewAttachment}
-            />
-          ))}
+          {groups.map((group, i) => {
+            const prev = i > 0 ? groups[i - 1] : null;
+            const showHandoff = prev && !prev.isUser && !group.isUser && prev.key !== group.key;
+            return (
+              <React.Fragment key={`${group.key}-${i}`}>
+                {showHandoff ? (
+                  <div className="cv6-handoff-divider" aria-hidden="true">
+                    <span className="cv6-handoff-line" />
+                    <span className="cv6-handoff-label">{group.items[0]?.agentName || 'Agent'}</span>
+                    <span className="cv6-handoff-line" />
+                  </div>
+                ) : null}
+                <Cv6MessageGroup
+                  group={group}
+                  goal={goal}
+                  variant={variant}
+                  renderBlocks={renderBlocks}
+                  allowBlocks={allowBlocks}
+                  allowAttachments={allowAttachments}
+                  allowLinkCards={allowLinkCards}
+                  allowChips={allowChips}
+                  chipsPrimaryFirst={chipsPrimaryFirst}
+                  onReviewAttachment={onReviewAttachment}
+                />
+              </React.Fragment>
+            );
+          })}
           {showLive && renderLiveWork === 'goalBody' ? (
             <div data-cv6-live-work="" className="cv6-live-work" style={{ marginTop: 16 }}>
               <GoalThreadBody goal={askGoal} blocks={liveBlocks} header={false} />

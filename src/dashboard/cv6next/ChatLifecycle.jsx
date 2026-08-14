@@ -1451,6 +1451,9 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
           ) : null}
         </div>
       </div>
+      {ROOM_STATUS_TONE[turnState.status] === 'live' ? (
+        <div className="cv6-header-progress" aria-hidden="true"><i /></div>
+      ) : null}
 
       {/* Bottom padding clears the absolutely-positioned composer (.mcomposer is
           position:absolute; bottom:0) plus the phone home indicator, so the last

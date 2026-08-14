@@ -1102,6 +1102,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     </>
                   ) : null}
                 </div>
+                {ROOM_STATUS_TONE[turnState?.status] === 'live' ? (
+                  <div className="cv6-header-progress" aria-hidden="true"><i /></div>
+                ) : null}
                 <div ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: composerCollapsed ? '22px 24px 88px' : '22px 24px' }}>
                   {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
                       the thread + its tables/charts centered instead of stretched. Set to 660px
