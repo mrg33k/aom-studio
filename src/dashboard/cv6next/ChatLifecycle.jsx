@@ -1563,7 +1563,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
         )}
         <input value={draft} disabled={localReadOnly} readOnly={localReadOnly} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
           placeholder={localReadOnly ? 'Chat needs a connected workspace.' : (dictate.listening ? 'Listening…' : `Message ${room.name}…`)}
-          style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', fontSize: 14, color: localReadOnly ? 'var(--muted)' : 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none', opacity: 1 }} />
+          style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', fontSize: 16, color: localReadOnly ? 'var(--muted)' : 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none', opacity: 1, touchAction: 'manipulation' }} />
         <button onClick={submit} disabled={localReadOnly} title={localReadOnly ? 'Local mode is read-only' : 'Send'} style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', opacity: localReadOnly ? .55 : 1 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" /></svg>
         </button>

@@ -966,6 +966,20 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const intakeObserverRef = useRef(null);
   useEffect(() => {
     const pick = () => {
+      // TOP-20 #12 + #6 parity: at phone width the Home intake ("Type a task…")
+      // lives in the DOM even when a chat room is active (workspace pager).
+      // Without this gate the same viewport shows TWO composers 38px apart at 390
+      // (Home y=704 + Room y=742) while 1440 correctly shows one. Desktop keeps
+      // both columns side-by-side, so the gate is mobile-only.
+      const isPhone = typeof window !== 'undefined' && window.matchMedia('(max-width: 899px)').matches;
+      const hasRoom = !!document.querySelector('[data-screen="chat-room"]');
+      if (isPhone && hasRoom) {
+        if (intakeObserverRef.current) { intakeObserverRef.current.disconnect(); intakeObserverRef.current = null; }
+        const homeScreen = document.querySelector('[data-screen="home-mobile"]');
+        if (homeScreen) homeScreen.style.removeProperty('--cv6-intake-h');
+        setIntakeHost((prev) => (prev === null ? prev : null));
+        return;
+      }
       const el = document.querySelector('[data-cv6-intake]');
       setIntakeHost((prev) => (prev === el ? prev : (el || null)));
       // Wire ResizeObserver on the intake host to publish --cv6-intake-h.
