@@ -126,6 +126,11 @@ function CurrentUserProfileButton({ fallbackInitials = 'P', onOpenProfile }) {
 }
 
 const LOGO = '/cv6/assets/corner-logo-white.svg';
+const LOGO_ALT = ''; // TOP-20 #13: bar shows the mark, not the word "Corner"
+
+const VoiceGlyph = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 22h8" /></svg>
+);
 
 // One theme control, three states. The icon always describes the active surface:
 // sun = light, moon = dark, crystal ball = glass. A click advances to the next.
@@ -161,7 +166,7 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn,
       <div className="tgreet" style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
         <button type="button" onClick={() => onPick?.('home')} aria-label="Open Rooms home"
           style={{ display: 'flex', alignItems: 'center', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}>
-          <img src={LOGO} alt="Corner" style={{ height: 20 }} />
+          <img src={LOGO} alt={LOGO_ALT} style={{ height: 20 }} />
         </button>
       </div>
       <div className="toolnav">
@@ -190,7 +195,8 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn,
           <button type="button" className="ib" onClick={() => onOpenWorkersColumn?.() || onPick?.('workers')} aria-label="Open Background work" title="Open Background work"><Icon id="workers" size={18} /></button>
         ) : null}
         <button type="button" className={`ib${current === 'support' ? ' is-active' : ''}`} onClick={() => onOpenEmailColumn?.() || onPick?.('support')} aria-label="Open Email column" title="Open Email column"><Icon id="support" size={18} /></button>
-        <button type="button" className="ib" onClick={() => onOpenCommandK?.()} aria-label="Search"><SearchGlyph /></button>
+        <button type="button" className="ib" onClick={() => onOpenCommandK?.()} aria-label="Search" title="Search"><SearchGlyph /></button>
+        <button type="button" className="ib" onClick={() => window.dispatchEvent(new CustomEvent('cv6:open-voice'))} aria-label="Voice" title="Voice"><VoiceGlyph /></button>
         {/* The bell: notification sound + phone notifications. The home template has
             always drawn one; the live shell never did, so the panel behind it had no
             way in until now (Patrik 2026-08-06). */}
@@ -225,7 +231,7 @@ export function MobileNav({ open, current, onPick, onClose, badges = {}, theme, 
       <div className="navdrawer" data-app-theme={theme} onClick={(e) => e.stopPropagation()}
         style={{ paddingTop: 'max(16px, env(safe-area-inset-top, 0px))', paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 14px 12px', borderBottom: '1px solid var(--divider)', marginBottom: 8 }}>
-          <img src={LOGO} alt="Corner" style={{ height: 19 }} />
+          <img src={LOGO} alt={LOGO_ALT} style={{ height: 19 }} />
           <button type="button" className="ib" onClick={onClose} aria-label="Close menu"
             style={{ width: 30, height: 30, borderRadius: 9, cursor: 'pointer' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>

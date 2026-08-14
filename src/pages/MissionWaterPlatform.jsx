@@ -75,7 +75,7 @@ function useSEO() {
       }
       el.setAttribute('content', content);
     };
- setMeta('description'·'Mission Water, the interactive learning platform for the Conrad Foundation masterclass. The future of water in space.');
+    setMeta('description', 'Mission Water, the interactive learning platform for the Conrad Foundation masterclass. The future of water in space.');
     setMeta('og:title', 'Mission Water | The future of water in space', true);
     setMeta('og:type', 'article', true);
     setMeta('robots', 'noindex, nofollow');

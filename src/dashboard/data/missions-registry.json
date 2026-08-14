@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T14:10:43.121Z",
+  "generated_at": "2026-08-14T16:06:25.462Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -3614,20 +3614,6 @@
       "path": "corner/users/aom/missions/digital-products"
     },
     {
-      "slug": "aom:director",
-      "raw_slug": "director",
-      "folder_name": "director",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "aom",
-      "workstream": null,
-      "name": "Director",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/missions/director"
-    },
-    {
       "slug": "aom:dropbox-video-feedback",
       "raw_slug": "dropbox-video-feedback",
       "folder_name": "dropbox-video-feedback",
@@ -4207,8 +4193,8 @@
     },
     {
       "slug": "aom",
-      "total": 46,
-      "in_flight": 46,
+      "total": 45,
+      "in_flight": 45,
       "done": 0
     }
   ]

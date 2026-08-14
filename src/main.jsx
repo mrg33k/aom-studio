@@ -646,10 +646,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           {/* R21a: canonical per-project chat URL ("/dashboard/projects/<slug>/chat"). */}
           <Route path="/dashboard/projects/:projectId/chat" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
           <Route path="/dashboard/projects/:projectId" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
-          {/* corner:mission-rooms R3b — mission-as-clickable-unit. Standalone
-              page (not CornerV4) so the surface lands without risk to the
-              live chat machinery. R4 promotes missions to the drawer. */}
-          <Route path="/dashboard/mission/:missionSlug" element={<AuthGuard><MissionRoom /></AuthGuard>} />
+          {/* TOP-20 #2 routing fix — every CV6 URL must mount DashboardSurface so parseRoomFromUrl can open it. */}
+          <Route path="/dashboard/agent/:agentId" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
+          <Route path="/dashboard/agents/:agentId/chat" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
+          <Route path="/dashboard/chat/agent/:agentId" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
+          <Route path="/dashboard/missions/:missionSlug/chat" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
+          <Route path="/dashboard/mission/:missionSlug" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
+          <Route path="/dashboard/legacy/mission/:missionSlug" element={<AuthGuard><MissionRoom /></AuthGuard>} />
           {/* corner:mission-rooms R5 — missions index. Demotes the task table
               by giving missions their own primary navigation surface. */}
           <Route path="/dashboard/missions" element={<AuthGuard><MissionsIndex /></AuthGuard>} />

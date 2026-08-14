@@ -32,7 +32,7 @@ function useSEO() {
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
- set('description'·'Watch Mission Water live classes, Conrad Foundation');
+    set('description', 'Watch Mission Water live classes, Conrad Foundation');
     set('robots', 'noindex, nofollow');
   }, []);
 }

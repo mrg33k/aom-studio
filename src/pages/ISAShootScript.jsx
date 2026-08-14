@@ -252,10 +252,10 @@ const BROLL_STOCK = [
 
 const EQUIPMENT = [
   { category: 'Camera', items: ['Cinema camera package (primary + backup body)', 'Interview lens: 50mm or 85mm (shallow DOF)', 'B-roll: 24mm wide, 100mm macro (device close-ups)'] },
- { category: 'Support', items: ['Tripod + fluid head for interviews'·'Handheld rig or gimbal for lab b-roll'·'Drone (if permitted, check Sedona local regs)'] },
+  { category: 'Support', items: ['Tripod + fluid head for interviews', 'Handheld rig or gimbal for lab b-roll', 'Drone (if permitted, check Sedona local regs)'] },
   { category: 'Lighting', items: ['2x LED panel lights (key + fill for interviews)', '1x LED tube or edge light (hair / rim / separation)', 'Gaffer tape, clamps, extension cords'] },
   { category: 'Audio', items: ['Shotgun mic on camera for b-roll ambient', '2x lavalier mics (wired or wireless) for interviews', 'Boom mic + operator if crew allows', 'Audio recorder (backup to camera audio)'] },
- { category: 'Media / Power', items: ['4+ memory cards, shoot heavy, do not run out'·'Batteries for everything, plus chargers'·'Laptop for on-set review'] },
+  { category: 'Media / Power', items: ['4+ memory cards, shoot heavy, do not run out', 'Batteries for everything, plus chargers', 'Laptop for on-set review'] },
   { category: 'Production', items: ['Release forms for all 4 interview subjects', 'Shot list printout (this document)', 'Room tone recording before first interview (30 sec silence each setup)'] },
 ];
 
