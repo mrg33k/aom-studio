@@ -16,6 +16,34 @@ const SUPABASE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
 
+// ─── Exact origin + scheme check (TOP-20 #3 #13) ────────────────────────────
+function normalizeOrigin(origin) {
+  try {
+    const u = new URL(String(origin).trim());
+    const isLocalhost = u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '::1' || u.hostname === '[::1]';
+    if (u.protocol === 'https:') {
+    } else if (u.protocol === 'http:' && isLocalhost) {
+    } else {
+      return null;
+    }
+    if (u.pathname !== '/' && u.pathname !== '') return null;
+    if (u.search || u.hash) return null;
+    return u.origin;
+  } catch {
+    return null;
+  }
+}
+function isOriginAllowed(origin, allowlist) {
+  if (!origin || !Array.isArray(allowlist) || allowlist.length === 0) return false;
+  const norm = normalizeOrigin(origin);
+  if (!norm) return false;
+  for (const allowed of allowlist) {
+    const aNorm = normalizeOrigin(allowed);
+    if (aNorm && aNorm === norm) return true;
+  }
+  return false;
+}
+
 function sbHeaders() {
   return {
     apikey: SUPABASE_KEY,
@@ -48,7 +76,8 @@ export default async function handler(req, res) {
   if (!cfg) return res.status(404).json({ error: 'unknown embed_id' })
   if (!parentId) return res.status(400).json({ error: 'parent_message_id required' })
 
-  if (origin && cfg.host_allowlist.indexOf(origin) < 0) {
+  // Exact origin + scheme check
+  if (origin && !isOriginAllowed(origin, cfg.host_allowlist)) {
     return res.status(403).json({ error: 'origin not on allowlist' })
   }
   res.setHeader('Access-Control-Allow-Origin', origin || '*')

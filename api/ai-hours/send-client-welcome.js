@@ -5,14 +5,17 @@
 //   1. Client welcome email with access code + login URL
 //   2. Facilitator confirmation to courtney@aom-inhouse.com
 //
-// Auth: verifies the access_code exists in ai_hours_clients (service role)
-// before sending — prevents arbitrary email spam.
+// Auth: requires verifyTenant('aom', req) — caller must hold a valid JWT for the
+// aom tenant. This prevents an unauthenticated attacker who brute-forces a
+// low-entropy access_code from triggering arbitrary Gmail sends via AOM's
+// OAuth connection (spam via trusted domain).
 //
 // Body: { client_name, client_email, access_code }
 //
 // Response: { ok: true } on success.
 
 import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -139,9 +142,19 @@ function facilitatorEmailHtml({ client_name, client_email, access_code }) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
+
+  // ── Require verifyTenant — prevents Gmail spam via guessed access_code ──
+  try {
+    await verifyTenant('aom', req);
+  } catch (err) {
+    if (err instanceof TenantAuthError) {
+      return res.status(err.status || 403).json({ error: err.message });
+    }
+    return res.status(403).json({ error: 'forbidden' });
+  }
 
   let payload
   try {

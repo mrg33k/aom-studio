@@ -160,6 +160,22 @@ function parseQuery(query) {
   return result;
 }
 
+// ─── PostgREST escaping for or/ilike ──────────────────────────────────────
+// PostgREST `or` filter is comma-separated and %/_ are wildcards. Caller
+// keywords come from `parseQuery` (already stripped to [a-z0-9]) but the
+// fallback path feeds the raw `query` string, so we must escape.
+// See TOP-20 #3 #8: `or(name.ilike.%keyword%)` without escaping widens the
+// query or triggers a parse error (`,` splits the filter, `%` matches any).
+function escapePostgrestIlike(s) {
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_')
+    .replace(/,/g, '\\,')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
 // ─── SUPABASE QUERY ──────────────────────────────────────────────────────────
 
 async function queryDirectory(parsed) {
@@ -175,7 +191,7 @@ async function queryDirectory(parsed) {
   }
 
   if (parsed.location) {
-    query = query.ilike('city', `%${parsed.location}%`);
+    query = query.ilike('city', `%${escapePostgrestIlike(parsed.location)}%`);
   }
 
   if (parsed.employee_ranges && parsed.employee_ranges.length > 0) {
@@ -183,8 +199,9 @@ async function queryDirectory(parsed) {
   }
 
   if (parsed.keywords.length > 0) {
-    // Use the first keyword for name+description ilike
-    query = query.or(`name.ilike.%${parsed.keywords[0]}%,description.ilike.%${parsed.keywords[0]}%`);
+    // Use the first keyword for name+description ilike — escape %/_ so they cannot widen the filter
+    const kw = escapePostgrestIlike(parsed.keywords[0]);
+    query = query.or(`name.ilike.%${kw}%,description.ilike.%${kw}%`);
   }
 
   const { data, error } = await query.limit(25);
@@ -270,11 +287,12 @@ export default async function handler(req, res) {
 
     // ── Step 4: Graceful fallback -- if parser found nothing, try plain ilike ─
     if (results.length === 0) {
+      const escapedQuery = escapePostgrestIlike(query);
       const { data: fallback } = await supabase
         .from('directory_companies')
         .select('*, directory_certifications(*), directory_organizations(name, slug)')
         .eq('status', 'active')
-        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(`name.ilike.%${escapedQuery}%,description.ilike.%${escapedQuery}%`)
         .order('featured', { ascending: false })
         .order('name', { ascending: true })
         .limit(25);

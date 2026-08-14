@@ -22,6 +22,10 @@ struct RoomSettingsView: View {
     let onOpenFiles: () -> Void
     /// Fires when the user confirms "Start a fresh session". Returns true on success.
     let onClearRoom: (() async -> Bool)?
+    /// Who answers this project/mission room. Nil for agent 1:1 rooms (already the specialist).
+    let roomAgentChoice: String
+    let roomAgentRoster: [CornerAPI.RoomAgentOption]
+    let onSelectAgent: ((String) async -> Void)?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -46,13 +50,19 @@ struct RoomSettingsView: View {
         modelChoice: String,
         onSelectModel: @escaping (String) async -> Void,
         onOpenFiles: @escaping () -> Void,
-        onClearRoom: (() async -> Bool)? = nil
+        onClearRoom: (() async -> Bool)? = nil,
+        roomAgentChoice: String = "default",
+        roomAgentRoster: [CornerAPI.RoomAgentOption] = [],
+        onSelectAgent: ((String) async -> Void)? = nil
     ) {
         self.room = room
         self.modelChoice = modelChoice
         self.onSelectModel = onSelectModel
         self.onOpenFiles = onOpenFiles
         self.onClearRoom = onClearRoom
+        self.roomAgentChoice = roomAgentChoice
+        self.roomAgentRoster = roomAgentRoster
+        self.onSelectAgent = onSelectAgent
 
         // Resolve initial follow state from the web's muted-rooms key.
         let isMuted = RoomSettingsView.readMuted()[room.id] == true
@@ -177,7 +187,61 @@ struct RoomSettingsView: View {
                 }
 
                 // ── Specialist tab ──────────────────────────────────────────
+                // Mirrors web Cv6InputBar Commands → Agent + Model menus, plus
+                // RoomSettingsDialog Specialist tab. Both pickers via same native
+                // bridge (room-agent + agent-model) so switching works without
+                // opening the composer.
                 if section == .specialist {
+                    if room.agentPreferenceKey != nil {
+                        Section("Who answers this room") {
+                            Button {
+                                Task { await onSelectAgent?("default") }
+                                dismiss()
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Room default")
+                                            .font(.hanken(14).weight(.medium))
+                                            .foregroundStyle(Theme.ink)
+                                        Text("Use this room's own specialist identity.")
+                                            .font(.hanken(12))
+                                            .foregroundStyle(Theme.inkSoft)
+                                    }
+                                    Spacer()
+                                    if roomAgentChoice == "default" {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(Theme.accent)
+                                    }
+                                }
+                            }
+                            .listRowBackground(Theme.raised)
+                            ForEach(roomAgentRoster, id: \.slug) { specialist in
+                                Button {
+                                    Task { await onSelectAgent?(specialist.slug) }
+                                    dismiss()
+                                } label: {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(specialist.title)
+                                                .font(.hanken(14).weight(.medium))
+                                                .foregroundStyle(Theme.ink)
+                                            Text(specialist.role.isEmpty ? "Talk to \(specialist.title)." : specialist.role)
+                                                .font(.hanken(12))
+                                                .foregroundStyle(Theme.inkSoft)
+                                        }
+                                        Spacer()
+                                        if specialist.slug == roomAgentChoice {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 13, weight: .semibold))
+                                                .foregroundStyle(Theme.accent)
+                                        }
+                                    }
+                                }
+                                .listRowBackground(Theme.raised)
+                            }
+                        }
+                    }
                     Section("Model preference") {
                         ForEach(modelOptions, id: \.id) { option in
                             Button {
@@ -321,11 +385,17 @@ struct RoomSettingsView: View {
 
     // MARK: - Model options (mirrors chatConstants.js MODEL_OPTIONS)
 
+    // Single source: aom-studio/src/dashboard/data/models.json — same JSON that
+    // api/dashboard/agent-model.js validates ALLOWED_MODELS against. Keep
+    // labels/descs identical so native and web never diverge.
     private let modelOptions: [(id: String, label: String, description: String)] = [
-        ("default", "Auto",           "Claude + intelligent fallback"),
-        ("opus",    "Claude Opus",    "Highest capability, slower"),
-        ("sonnet",  "Claude Sonnet",  "Fast, accurate, balanced"),
-        ("haiku",   "Claude Haiku",   "Fastest, great for quick tasks"),
+        ("default", "Auto (Claude → Codex)", "Codex fallback when Corner Runner is online"),
+        ("opus", "Claude Opus", "Deepest reasoning"),
+        ("sonnet", "Claude Sonnet", "Fast + capable"),
+        ("haiku", "Claude Haiku", "Fastest, light"),
+        ("muse-spark", "Muse Spark", "Muse Code · Meta"),
+        ("openai-gpt-5.6", "OpenAI GPT-5.6", "Hosted reasoning · AOM managed"),
+        ("codex-local", "Codex on this computer", "Your ChatGPT subscription · local runner"),
     ]
 }
 

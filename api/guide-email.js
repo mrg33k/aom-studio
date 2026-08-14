@@ -1,15 +1,18 @@
 // AOM AI Guide — email capture + prompt delivery
 // Part of corner:digital-products R3.
 //
-// Accepts POST { email, category, prompts: [{label, prompt}] }
+// Accepts POST { email, category, prompts: [{label, prompt}], turnstile_token }
 //   1. Validates the email
-//   2. Stores the lead in Supabase `guide_leads` (skipped silently if table missing)
-//   3. Emails the prompts to the user via Resend
+//   2. Turnstile verification (Cloudflare) — stubbed for dev, enforced when TURNSTILE_SECRET_KEY set
+//   3. Rate limit: 5/min per IP (in-memory stub; production uses Upstash/Redis)
+//   4. Stores the lead in Supabase `guide_leads` (skipped silently if table missing)
+//   5. Emails the prompts to the user via Resend
 //
 // Required env:
 //   RESEND_API_KEY            — Resend API key
 //   SUPABASE_URL              — Supabase project URL
 //   SUPABASE_SERVICE_ROLE_KEY — Supabase service role key
+//   TURNSTILE_SECRET_KEY      — Cloudflare Turnstile secret (optional in dev; required in prod)
 //
 // NOTE on FROM address (2026-06-04):
 //   Resend plan only allows 1 verified domain. `sourcing.directory` is the active one.
@@ -31,6 +34,52 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
+// ─── Turnstile check stub ───────────────────────────────────────────────────
+// Cloudflare Turnstile: https://developers.cloudflare.com/turnstile/get-started/
+// Frontend must render the widget and POST turnstile_token. This stub verifies
+// against siteverify when TURNSTILE_SECRET_KEY is set; in dev (no secret) it
+// logs and allows through so local testing is not blocked.
+async function verifyTurnstile(token, ip) {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    console.warn('[guide-email] TURNSTILE_SECRET_KEY not set — Turnstile check stub bypassed (dev only)');
+    return true;
+  }
+  if (!token || typeof token !== 'string') return false;
+  try {
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret, response: token, remoteip: ip }),
+    });
+    const data = await r.json();
+    return !!data.success;
+  } catch (e) {
+    console.warn('[guide-email] Turnstile verify failed:', e.message);
+    return false;
+  }
+}
+
+// ─── 5/min rate limit per IP ────────────────────────────────────────────────
+// In-memory stub: 5 requests per 60s sliding window per IP.
+// Production MUST replace with Upstash Redis / Vercel KV (this map resets per lambda).
+// Comment documents the contract for the infra hardening ticket.
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const rateLimitMap = new Map(); // ip -> { count, resetAt }
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const key = String(ip || 'unknown');
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count += 1;
+  return true;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -43,7 +92,19 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Email service not configured' });
   }
 
-  const { email, category, prompts } = req.body || {};
+  // ── 5/min rate limit per IP ───────────────────────────────────────────
+  const ip = (req.headers['x-forwarded-for']?.split(',')[0]?.trim()) || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip)) {
+    return res.status(429).json({ error: 'Rate limit exceeded: 5/min per IP' });
+  }
+
+  const { email, category, prompts, turnstile_token } = req.body || {};
+
+  // ── Turnstile check stub ──────────────────────────────────────────────
+  const turnstileOk = await verifyTurnstile(turnstile_token, ip);
+  if (!turnstileOk) {
+    return res.status(403).json({ error: 'Turnstile verification failed' });
+  }
 
   if (!email || typeof email !== 'string' || !email.includes('@')) {
     return res.status(400).json({ error: 'Valid email required' });

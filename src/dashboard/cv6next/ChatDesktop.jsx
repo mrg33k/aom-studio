@@ -17,7 +17,7 @@ import { buildChecklistRoomOptions } from './data/roomKeys.js';
 import { SendCtx, ReviewCtx } from './ChatGoalThread.jsx';
 import StreamingDraft from './StreamingDraft.jsx';
 import useStickToBottom from './useStickToBottom.js';
-import { deriveRoomStatus, ROOM_STATUS_LABEL, ROOM_STATUS_TONE } from './data/roomStatus.js';
+import { deriveTurnState, ROOM_STATUS_LABEL, ROOM_STATUS_TONE } from './data/roomStatus.js';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { useRunningTasks } from './data/useRunningTasks.js';
@@ -646,7 +646,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav, windowMode]);
 
-  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, draft, turnHealth, status: threadStatus, connection, retryTurn, nudgeTurn, repairTurn, stopTurn, stopAvailable, reload: reloadThread } = useRoomThread(worldId, selected);
+  const { messages, archivedMessages, blocks, send, clearRoom, awaiting, awaitingSince, liveSteps, draft, turnHealth, turnState, status: threadStatus, connection, retryTurn, nudgeTurn, repairTurn, stopTurn, stopAvailable, reload: reloadThread } = useRoomThread(worldId, selected);
   // The room agent's own steps — the half of "background work" the old card could not see.
   const roomGoal = useGoalThread(worldId, selected);
   // Per-room running tasks — used by the work-indicator icon to know if anything is active.
@@ -1031,7 +1031,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
             {selected ? (
               <>
                 <div className="desktop-room-header">
-                  <RoomAvatar room={selected} worldId={worldId} size={40} />
+                  <RoomAvatar room={selected} worldId={worldId} size={40} turnState={turnState} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, marginBottom: 2, fontSize: 11.5, color: 'var(--muted)' }}>
                       {windowMode
@@ -1043,9 +1043,13 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div className="desktop-room-title" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.name}</span>
                       {(() => {
-                        // One vocabulary for the open room (Round E): the pill and the
-                        // step card can never disagree — both derive from the engine.
-                        const k = deriveRoomStatus({ awaiting, liveSteps, draft, turnHealth, connection });
+                        // TOP-20 #19: single turnState truth drives the presence pill,
+                        // not a separate deriveRoomStatus guess and not an isInfra
+                        // filter. turnState is the engine's one object; pill and
+                        // presence dot read the same field so they can never disagree.
+                        // When turnState is still loading (null), derive it once —
+                        // never fall back to the server room.status string.
+                        const k = turnState ? turnState.status : deriveTurnState({ awaiting, liveSteps, draft, turnHealth, connection }).status;
                         // Defect B fix: no .sd dot here — RoomAvatar's presence dot is
                         // THE single indicator; the pill is text-only.
                         return k !== 'idle'
@@ -1202,7 +1206,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>{selected.isMission ? 'Mission' : selected.isProject ? 'Project room' : 'Agent on this goal'}</div>
                 <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20, position: 'relative' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <RoomAvatar room={selected} worldId={worldId} size={34} />
+                    <RoomAvatar room={selected} worldId={worldId} size={34} turnState={turnState} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{selected.name}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{selected.statusText || 'ready'}</div>

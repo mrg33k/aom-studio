@@ -11,7 +11,7 @@ import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
 import StreamingDraft from './StreamingDraft.jsx';
 import useStickToBottom from './useStickToBottom.js';
-import { deriveRoomStatus, ROOM_STATUS_LABEL, ROOM_STATUS_TONE } from './data/roomStatus.js';
+import { deriveTurnState, ROOM_STATUS_LABEL, ROOM_STATUS_TONE } from './data/roomStatus.js';
 import { Result } from './BlockRenderer.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
 import { useDictation } from './data/useDictation.js';
@@ -1181,7 +1181,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
   );
 }
 
-export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, draft: streamDraft, turnHealth, connection, onRetryTurn, onNudgeTurn, onReloadThread, onRepairTurn, onStopTurn, stopAvailable = true, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
+export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, draft: streamDraft, turnHealth, turnState: turnStateProp, connection, onRetryTurn, onNudgeTurn, onReloadThread, onRepairTurn, onStopTurn, stopAvailable = true, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
   const localReadOnly = !supabase;
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -1307,6 +1307,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   // shows when you open a busy room) so mobile reads identically to the other surfaces; fall
   // back to the local "last message is mine" guess only when no signal was passed (demo).
   const awaiting = awaitingProp != null ? awaitingProp : (!!lastMsg && lastMsg.isUser);
+  // TOP-20 #19: when the parent already computed turnState (CornerCV6 → useRoomThread),
+  // reuse that single object so pill + presence dot read the same truth. Otherwise
+  // derive it once here — never synthesize a second opinion from isInfra or server status.
+  const turnState = turnStateProp || deriveTurnState({ awaiting, liveSteps, draft: streamDraft, turnHealth, connection });
   // Per-room running tasks + goal-step signal — drives the topbar work indicator.
   const { tasks: roomTasks, promises: roomPromises } = useRunningTasks(fullRoom || room);
   const hasRoomWork = !!(
@@ -1382,17 +1386,16 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     <div data-cv6 data-theme="dark" data-screen="chat-room" className="cv6-screen" ref={screenRef} style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="mhdr">
         {/* .mback removed 2026-08-07: swipe left returns Home, swipe right advances to next chat */}
-        <RoomAvatar room={fullRoom || room} worldId={worldId} size={40} />
+        <RoomAvatar room={fullRoom || room} worldId={worldId} size={40} turnState={turnState} />
         <div className="mhtitle">
           <div className="mhname">
             <span className="mttl">{room.name}</span>
             {(() => {
-              // Round E: the open room's pill derives from the live engine truth;
-              // the server room.status string is only the fallback when idle.
-              // Defect B fix: no .sd dot here — RoomAvatar's presence dot is THE
-              // single indicator; the pill is text-only. Raw-status fallback deleted:
-              // the header only speaks ROOM_STATUS_LABEL vocabulary.
-              const k = deriveRoomStatus({ awaiting, liveSteps, draft: streamDraft, turnHealth, connection });
+              // TOP-20 #19: single turnState truth drives the presence pill,
+              // not a separate deriveRoomStatus guess and not an isInfra filter.
+              // Pill and RoomAvatar's dot read the same turnState.status/running,
+              // so they can never disagree. Raw server status fallback deleted.
+              const k = turnState.status;
               if (k !== 'idle') return <span className={`astat is-${ROOM_STATUS_TONE[k]}`}>{ROOM_STATUS_LABEL[k].toUpperCase()}</span>;
               return null;
             })()}

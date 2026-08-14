@@ -236,7 +236,10 @@ struct ChatView: View {
                     onClearRoom: {
                         let ok = await model.clearRoom()
                         return ok
-                    }
+                    },
+                    roomAgentChoice: model.roomAgentChoice,
+                    roomAgentRoster: model.roomAgentRoster,
+                    onSelectAgent: { slug in await model.selectRoomAgent(slug) }
                 )
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
@@ -1226,11 +1229,17 @@ struct ChatView: View {
 
     // MARK: - Model options (chatConstants.js MODEL_OPTIONS)
 
+    // Mirrors aom-studio/src/dashboard/data/models.json — single source in
+    // api/dashboard/agent-model.js ALLOWED_MODELS. Keep labels identical to
+    // web's MODEL_OPTIONS so a shared spec never diverges.
     static let modelOptions: [(id: String, label: String)] = [
-        ("default", "Auto (Claude + fallback)"),
+        ("default", "Auto (Claude → Codex)"),
         ("opus", "Claude Opus"),
         ("sonnet", "Claude Sonnet"),
         ("haiku", "Claude Haiku"),
+        ("muse-spark", "Muse Spark"),
+        ("openai-gpt-5.6", "OpenAI GPT-5.6"),
+        ("codex-local", "Codex on this computer"),
     ]
 
     static func shortModelLabel(_ id: String) -> String {
@@ -1239,6 +1248,9 @@ struct ChatView: View {
         case "opus": return "Opus"
         case "sonnet": return "Sonnet"
         case "haiku": return "Haiku"
+        case "muse-spark": return "Spark"
+        case "openai-gpt-5.6": return "GPT-5.6"
+        case "codex-local": return "Codex"
         default: return id
         }
     }

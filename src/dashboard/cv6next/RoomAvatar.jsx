@@ -2,10 +2,16 @@ import { useState } from 'react';
 import AvatarIdentityDialog from './AvatarIdentityDialog.jsx';
 import { isActiveRoomStatus, useRoomIdentity } from './data/roomIdentity.js';
 
-export default function RoomAvatar({ room, worldId, size = 40, editable = true, className = '' }) {
+export default function RoomAvatar({ room, worldId, size = 40, editable = true, className = '', turnState = null }) {
   const { identity, saving, save } = useRoomIdentity(room, worldId);
   const [open, setOpen] = useState(false);
-  const active = isActiveRoomStatus(room);
+  // Presence truth: single turnState drives the open-room indicator. When a
+  // live turnState is supplied (ChatDesktop/ChatLifecycle header), the presence
+  // dot reads turnState.running (derived from awaiting/liveSteps/turnHealth) —
+  // not a separate isInfra guess and not the stale server room.status. Rail rows
+  // without a loaded thread still fall back to the freshness-windowed
+  // isActiveRoomStatus check (TOP-20 #19).
+  const active = turnState ? Boolean(turnState.running && turnState.status !== 'idle') : isActiveRoomStatus(room);
 
   const avatarStyle = {
     width: size,
