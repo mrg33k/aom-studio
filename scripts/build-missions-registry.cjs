@@ -24,9 +24,19 @@ const OUT_PATH = process.env.MISSIONS_REGISTRY_OUT
   : path.join(STUDIO_ROOT, 'src', 'dashboard', 'data', 'missions-registry.json')
 
 // On Vercel the parent AOM-EA repo isn't checked out — only aom-studio.
-// Skip so we don't clobber the registry that was committed locally.
+// Previously this skipped entirely, assuming the registry was committed. Since 17:18
+// (b56e3dab) the registry is gitignored and generated locally — on Vercel it doesn't
+// exist, so the static import would fail. Now: if the output already exists, keep it;
+// otherwise emit a minimal stub so the build can resolve the import and the runtime
+// fetch (missions-registry-live.json) provides real data.
 if (!fs.existsSync(path.join(REPO_ROOT, 'corner'))) {
-  console.log('[missions-registry] no corner/ at', REPO_ROOT, '— skipping (already-committed registry stays)')
+  if (fs.existsSync(OUT_PATH)) {
+    console.log('[missions-registry] no corner/ at', REPO_ROOT, '— skipping (already-committed registry stays)')
+    process.exit(0)
+  }
+  console.log('[missions-registry] no corner/ at', REPO_ROOT, 'and no registry at', OUT_PATH, '— emitting minimal stub')
+  fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true })
+  fs.writeFileSync(OUT_PATH, JSON.stringify({ missions: [], generated_at: new Date().toISOString(), stub: true }, null, 2))
   process.exit(0)
 }
 
