@@ -325,17 +325,17 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     <>
       <div style={{ fontSize: 11.5, color: 'var(--muted)', margin: '0 4px 10px' }}>Everything that crossed this chat. Nothing else.</div>
       {toolbar}
+      {windowFull ? (
+        <div style={{ background: 'var(--warn-weak, rgba(251,191,36,.08))', border: '1px solid rgba(251,191,36,.2)', borderRadius: 10, padding: '10px 12px', marginBottom: 12, fontSize: 12, lineHeight: 1.4, color: 'var(--fg)' }}>
+          Showing the newest crossings — older files exist. Ask the agent for one by name, or open All files.
+        </div>
+      ) : null}
       {grouped ? (
         <>
           {fromAgent.length ? section(fromLabel, inOrder(fromAgent)) : null}
           {youSent.length ? section('You sent', inOrder(youSent)) : null}
         </>
       ) : section('', timeline)}
-      {windowFull ? (
-        <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', padding: '6px 4px' }}>
-          Showing the newest crossings — older files exist. Ask the agent for one by name, or open All files.
-        </div>
-      ) : null}
     </>
   );
 }
@@ -415,11 +415,22 @@ export function useRoomCrossings(worldId, room) {
       })
       .catch(() => { if (alive) setStatus((s) => (s === 'ready' ? s : 'error')); });
     load();
-    // 5s, not 25s: a file that takes half a minute to show up reads as a lie
-    // even when the delivery was correct, and "it's in your Files panel" landing
-    // before the card does is exactly the complaint this panel exists to answer.
-    const t = setInterval(load, 5000);
-    return () => { alive = false; clearInterval(t); };
+    // Progressive polling: 5s for the first 3 polls (a file that takes half a
+    // minute to show up reads as a lie), then 30s to ease off once the room is
+    // warm. setTimeout recursive so each poll decides the next interval.
+    const pollRef = { current: null };
+    const pollCountRef = { current: 0 };
+    const scheduleNext = () => {
+      const delay = pollCountRef.current < 3 ? 5000 : 30000;
+      pollRef.current = setTimeout(() => {
+        if (!alive) return;
+        load();
+        pollCountRef.current += 1;
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+    return () => { alive = false; if (pollRef.current) clearTimeout(pollRef.current); };
   }, [worldId, room?.id, room?.isMission, room?.isProject, room?.missionSlug]); // eslint-disable-line react-hooks/exhaustive-deps
   const fromAgent = useMemo(() => items.filter((i) => !i.isUser), [items]);
   const youSent = useMemo(() => items.filter((i) => i.isUser), [items]);

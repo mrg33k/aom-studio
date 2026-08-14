@@ -31,6 +31,8 @@ import ReviewDesktop from './ReviewDesktop.jsx';
 import Settings from './Settings.jsx';
 import LiveScribe from './LiveScribe.jsx';
 import Search from './Search.jsx';
+import KeyboardShortcutsOverlay from './KeyboardShortcutsOverlay.jsx';
+import { useVoiceInput } from './data/useVoiceInput.js';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { AirPodsHeaderButton } from './airpods/AirPodsProvider.jsx';
 import { CornerLogoLoader } from '../cv6kit/FullscreenLoading.jsx';
@@ -42,6 +44,7 @@ import IntakeComposer from './IntakeComposer.jsx';
 import { playNotifyChime } from './notifyChime.js';
 import AlertsPanel from './AlertsPanel.jsx';
 import { useChatSwipe } from './useChatSwipe.js';
+import { useCatchUpSwipe } from './useCatchUpSwipe.js';
 import { useRoomSwipeArchive } from './useRoomSwipeArchive.js';
 import { registerPushWorker } from './pushNotifications.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
@@ -1460,6 +1463,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         aliases={ADD_TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
     </div>
   ) : null;
+
+  // Catch-up card swipe (#12): left swipe advances, right swipe goes back.
+  useCatchUpSwipe({
+    enabled: !isDesktop && liveCatchUpView.count > 1,
+    onNext: () => setCatchUpIndex((i) => Math.min(i + 1, Math.max(0, liveCatchUpView.count - 1))),
+    onPrev: () => setCatchUpIndex((i) => Math.max(0, i - 1)),
+  });
 
   if (catchUpOpen) {
     // Clicking Catch Up opens the actual conversation for the item that needs Patrik
@@ -3602,6 +3612,8 @@ export default function CornerCV6() {
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false); // ? keyboard shortcuts overlay
+  const voice = useVoiceInput();
   const [assignConfig, setAssignConfig] = useState(null); // { type, id, title } for AssignButton overlay
   // When you tap "Review" on a file card anywhere (Home catch-up, a chat attachment),
   // this carries the target into FILES ({ name | files, project, missionSlug,
@@ -3810,15 +3822,40 @@ export default function CornerCV6() {
 
   // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
   // nav's search icon opens it too (onOpenCommandK below). Escape closes inside Search.
+  // ? toggles the keyboard shortcuts overlay (skipped when typing in an input).
   useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setSearchOpen((s) => !s);
       }
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.contentEditable === 'true') return;
+        e.preventDefault();
+        setShortcutsOpen(s => !s);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Voice dictation: listen for finalized speech text and inject into the active composer.
+  useEffect(() => {
+    const onText = (e) => {
+      const text = e.detail?.text;
+      if (!text) return;
+      const composer = document.querySelector('[data-cv6-composer] textarea, [data-cv6-composer] input[type="text"], [data-cv6-intake] textarea, [data-cv6-intake] input[type="text"]');
+      if (composer) {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+        if (nativeInputValueSetter) {
+          nativeInputValueSetter.call(composer, (composer.value || '') + text + ' ');
+          composer.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    };
+    window.addEventListener('cv6:voice-text', onText);
+    return () => window.removeEventListener('cv6:voice-text', onText);
   }, []);
 
   // Theme (drop 7): dark | light | glass, persisted. Applied as data-app-theme on the
@@ -4256,6 +4293,7 @@ export default function CornerCV6() {
           onOpenRoom={(room, wid) => { setSearchOpen(false); onOpenRoom(room, wid); }}
         />
       )}
+      <KeyboardShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       {/* AssignButton overlay — opened by artifact surfaces (review, tracker, support, organize).
           artifactTitle is the REAL artifact name the surface passed (email subject, bug title,
           file name); assignConfig.title is only the overlay heading fallback. details carries

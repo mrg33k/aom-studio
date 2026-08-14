@@ -1113,7 +1113,7 @@ class RoomThreadEngine {
         const id = j?.message?.id;
         if (id) {
           this.commit({ lastSentId: String(id) });
-          this.updatePending((p) => p.map((m) => (m.optId === optId ? { ...m, serverId: String(id) } : m)));
+          this.updatePending((p) => p.map((m) => (m.optId === optId ? { ...m, serverId: String(id), receipt: true } : m)));
         }
         if (j?.turn_receipt) this.commit({ turnHealth: { state: j.turn_receipt.state || 'accepted', cause: null, repaired: false } });
       } catch { /* non-JSON */ }
@@ -1267,6 +1267,39 @@ function acquireEngine(worldId, room) {
     }, ENGINE_GRACE_MS);
   }
   return engine;
+}
+
+// Prefetch a room's thread into the render cache so opening it shows content instantly.
+// Called from useHome after the first successful data load for the top 5 recent rooms.
+export function prefetchThread(worldId, room) {
+  const key = threadCacheKey(worldId, room);
+  if (!worldId || !key || threadCache.has(key)) return;
+  const params = new URLSearchParams();
+  params.set('client', worldId);
+  if (room.isMission) {
+    params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
+    if (room.projectSlug) params.set('project', room.projectSlug);
+  } else if (room.isProject) {
+    params.set('project', room.id);
+    params.set('project_only', '1');
+  } else {
+    params.set('agent', room.id);
+  }
+  params.set('limit', '20');
+  authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
+    .then(r => r && r.ok ? r.json() : null)
+    .then(d => {
+      if (!d) return;
+      const msgs = Array.isArray(d.messages) ? d.messages : [];
+      if (!msgs.length) return;
+      // Store raw projection in the cache (same shape project() builds)
+      threadCache.set(key, { messages: msgs.map(m => ({
+        id: m.id || '', isUser: m.role === 'user' || !!m.user_name,
+        agentName: (m.role === 'user' || m.user_name) ? (m.user_name || 'You') : titleForAgent(m.agent || room.name),
+        text: m.text || '', time: '', ts: m.timestamp || null,
+      })).filter(m => m.text), blocks: null, sig: null });
+    })
+    .catch(() => {});
 }
 
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.

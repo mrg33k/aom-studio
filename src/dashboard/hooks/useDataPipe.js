@@ -849,10 +849,18 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
     // "still struggling" while agents worked. Coalesce realtime triggers into
     // ONE fetch per window. Mount + 60s poll stay immediate; only the
     // event-driven refetches are debounced.
+    // smoothness-blitz #9: messages use a fast 500ms debounce so agent responses
+    // appear in <500ms instead of up to 2.5s. Status/task/project changes keep
+    // the slower 2.5s window (they batch well and are less latency-sensitive).
     let realtimeDebounce = null
+    let messageDebounce = null
     const scheduleFetch = () => {
       if (realtimeDebounce) clearTimeout(realtimeDebounce)
       realtimeDebounce = setTimeout(() => { realtimeDebounce = null; fetchAll() }, 2500)
+    }
+    const scheduleMessageFetch = () => {
+      if (messageDebounce) clearTimeout(messageDebounce)
+      messageDebounce = setTimeout(() => { messageDebounce = null; fetchAll() }, 500)
     }
 
     // Supabase Realtime subscriptions -- instant updates without waiting for poll.
@@ -883,12 +891,12 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
         })
         .subscribe((status) => console.log('[Corner Realtime] tasks sub:', status))
 
-      // messages table: INSERT triggers (debounced) refresh (new chat messages update throughput + unread)
+      // messages table: INSERT triggers fast (500ms) refresh so agent responses appear quickly
       messagesChannel = supabase
         .channel(`messages-inserts-${cid}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
           console.log('[Corner Realtime] messages INSERT')
-          scheduleFetch()
+          scheduleMessageFetch()
         })
         .subscribe((status) => console.log('[Corner Realtime] messages sub:', status))
 
@@ -919,6 +927,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
     return () => {
       clearInterval(timer)
       if (realtimeDebounce) clearTimeout(realtimeDebounce)
+      if (messageDebounce) clearTimeout(messageDebounce)
       if (agentStatusChannel) supabase.removeChannel(agentStatusChannel)
       if (tasksChannel) supabase.removeChannel(tasksChannel)
       if (messagesChannel) supabase.removeChannel(messagesChannel)

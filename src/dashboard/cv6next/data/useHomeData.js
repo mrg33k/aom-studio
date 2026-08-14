@@ -8,7 +8,7 @@
 // is not exposed), so we bind it to honest empties (no fabricated steps/bullets)
 // instead of leaving the design's sample text on screen. No fake data.
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
 import { useTenantContext } from '../../lib/tenantContext.jsx';
@@ -18,6 +18,7 @@ import { normalizePreview } from './previewText.js';
 import { missionRecencyKey } from './roomKeys.js';
 import { isRoomActivityNoise, isMachinePreview } from './presentationClean.js';
 import { fetchRoomActivity } from './roomActivity.js';
+import { prefetchThread } from './useRoomThread.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -389,12 +390,29 @@ export function useHome() {
   useEffect(() => {
     if (!worldId) return undefined;
     let alive = true;
-    const load = () => { fetchRoomActivity(worldId).then((value) => { if (alive && value) setRoomActivity(value); }); };
+    // smoothness-blitz #8: recencyOnly=true uses the fast 500-row path (~50ms) instead
+    // of the full 6000-row window (~400ms). Home only needs recency ordering.
+    const load = () => { fetchRoomActivity(worldId, { recencyOnly: true }).then((value) => { if (alive && value) setRoomActivity(value); }); };
     load();
     // Matches the endpoint's own 180s edge cache — polling faster just re-reads it.
     const timer = setInterval(load, 180000);
     return () => { alive = false; clearInterval(timer); };
   }, [worldId]);
+
+  // Prefetch top 5 recent rooms' threads (#6)
+  const prefetchedRef = useRef(false);
+  useEffect(() => {
+    if (prefetchedRef.current || !shaped.data.recent?.length || !worldId) return;
+    prefetchedRef.current = true;
+    const top5 = shaped.data.recent.slice(0, 5);
+    for (const r of top5) {
+      let room;
+      if (r.kind === 'mission') room = { id: String(r.missionSlug || '').split(':').pop(), isMission: true, missionSlug: r.missionSlug, projectSlug: r.project || String(r.missionSlug || '').split(':')[0], name: r.name };
+      else if (r.kind === 'project') room = { id: r.project, isProject: true, name: r.name };
+      else room = { id: r.agent || r.id, name: r.name };
+      prefetchThread(worldId, room);
+    }
+  }, [shaped.data.recent, worldId]);
 
   // Memoize the shaped data so its identity is stable between renders (it only changes
   // when the underlying pipe arrays change). Without this, `data` was a new object every

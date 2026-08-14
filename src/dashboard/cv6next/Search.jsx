@@ -9,6 +9,21 @@ import React, { useState, useMemo } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { buildSearchGroups } from './data/searchResults.js';
 
+function useRecentSearches() {
+  const KEY = 'cv6.search.recent';
+  const [recents, setRecents] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]').slice(0, 5); } catch { return []; }
+  });
+  const add = (query) => {
+    const q = String(query || '').trim();
+    if (!q) return;
+    const next = [q, ...recents.filter(r => r !== q)].slice(0, 5);
+    setRecents(next);
+    try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* private mode */ }
+  };
+  return { recents, add };
+}
+
 function useIsDesktop() {
   const [d, setD] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(min-width: 900px)').matches : true));
   React.useEffect(() => {
@@ -54,11 +69,12 @@ export default function Search({ onClose, onOpenMenu, onOpenRoom }) {
   const agents = data?.agents || [];
   const projects = data?.projects || [];
   const [q, setQ] = useState('');
+  const { recents, add: addRecent } = useRecentSearches();
 
   const groups = useMemo(() => buildSearchGroups({ query: q, agents, projects, byProject }), [q, agents, projects, byProject]);
 
   const total = groups.reduce((n, g) => n + g.results.length, 0);
-  const pick = (r) => { onOpenRoom?.(r.room, worldId); onClose?.(); };
+  const pick = (r) => { addRecent(q); onOpenRoom?.(r.room, worldId); onClose?.(); };
 
   const searchInput = (
     <input autoFocus type="search" aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search rooms and missions…"
@@ -82,8 +98,21 @@ export default function Search({ onClose, onOpenMenu, onOpenRoom }) {
         </div>
       )}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px max(12px, env(safe-area-inset-bottom, 0px))' }}>
+        {!q.trim() && recents.length > 0 ? (
+          <div style={{ marginBottom: 8 }}>
+            <div className="eyebrow" style={{ padding: '8px 10px 6px', color: 'var(--muted)' }}>Recent</div>
+            {recents.map((r, ri) => (
+              <div key={ri} className="sres" onClick={() => setQ(r)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px', borderRadius: 11, cursor: 'pointer' }}>
+                <span className="sgly" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: 'var(--surface-2)', flex: 'none' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                </span>
+                <span style={{ fontSize: 14, color: 'var(--fg)' }}>{r}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {total === 0 ? (
-          <div style={{ color: 'var(--muted)', fontSize: 13.5, textAlign: 'center', padding: '32px 20px' }}>{q.trim() ? `Nothing matches “${q.trim()}”.` : 'Type to search your rooms and missions.'}</div>
+          <div style={{ color: 'var(--muted)', fontSize: 13.5, textAlign: 'center', padding: '32px 20px' }}>{q.trim() ? `Nothing matches "${q.trim()}".` : (!recents.length ? 'Type to search your rooms and missions.' : null)}</div>
         ) : groups.map((g) => (
           <div key={g.label} style={{ marginBottom: 8 }}>
             <div className="eyebrow" style={{ padding: '8px 10px 6px', color: 'var(--muted)' }}>{g.label} <span style={{ color: 'var(--faint)' }}>{g.count}</span></div>

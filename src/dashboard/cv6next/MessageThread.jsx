@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
+import MessageReactions from './MessageReactions.jsx';
 import ResultLinkCards from './ResultLinkCard.jsx';
 import { Result } from './BlockRenderer.jsx';
 import {
@@ -88,6 +89,12 @@ export function Cv6MessageExtras({
   const linkCards = Array.isArray(message.linkCards) ? message.linkCards : [];
   const chips = Array.isArray(message.chips) ? message.chips : [];
   if (!hasMessageExtras(message, { allowBlocks, allowAttachments, allowLinkCards, allowChips })) return null;
+  // Inline image previews (#22): split image attachments from non-image so images
+  // render as clickable thumbnails and non-images keep the file-chip treatment.
+  const imageAtts = allowAttachments ? attachments.filter(att =>
+    att.url && (att.mime?.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(att.name || ''))
+  ) : [];
+  const nonImageAtts = allowAttachments ? attachments.filter(att => !imageAtts.includes(att)) : [];
   return (
     <div className={`cv6-msg-extras cv6-msg-extras--${variant}`} style={{ marginTop: 8, width: '100%' }}>
       {allowBlocks && blocks.length ? (
@@ -95,7 +102,16 @@ export function Cv6MessageExtras({
           ? <GoalThreadBody goal={goal} blocks={blocks} header={false} />
           : <AgentBlocks goal={goal} blocks={blocks} />
       ) : null}
-      {allowAttachments && attachments.length ? <MessageAttachments attachments={attachments} onReview={onReviewAttachment} /> : null}
+      {imageAtts.length ? (
+        <div className="cv6-inline-images" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+          {imageAtts.map((att, i) => (
+            <img key={att.url || i} src={att.url} alt={att.name || 'Image'} loading="lazy"
+              onClick={() => window.open(att.url, '_blank', 'noopener')}
+              style={{ maxWidth: 280, maxHeight: 280, borderRadius: 12, cursor: 'zoom-in', objectFit: 'cover' }} />
+          ))}
+        </div>
+      ) : null}
+      {nonImageAtts.length ? <MessageAttachments attachments={nonImageAtts} onReview={onReviewAttachment} /> : null}
       {allowLinkCards && linkCards.length ? <ResultLinkCards cards={linkCards} /> : null}
       {allowChips && chips.length ? <ActionChips actions={chips} primaryFirst={chipsPrimaryFirst} /> : null}
     </div>
@@ -126,6 +142,9 @@ export function Cv6MessageTurn({
         </div>
       ) : null}
       <MessageFailedNote message={message} />
+      {message.isUser && message.receipt ? (
+        <div style={{ fontSize: 10.5, color: 'var(--faint)', textAlign: 'right', marginTop: 2, opacity: 0.7 }}>Sent</div>
+      ) : null}
       {extras ? (
         <Cv6MessageExtras
           message={message}
@@ -140,6 +159,7 @@ export function Cv6MessageTurn({
           onReviewAttachment={onReviewAttachment}
         />
       ) : null}
+      <MessageReactions messageId={message.id} reactions={message.reactions} />
     </span>
   );
 }
@@ -258,6 +278,9 @@ function MobileMessageTurn({ message, onAction }) {
             </div>
           </div>
           <MessageFailedNote message={message} />
+          {message.isUser && message.receipt ? (
+            <div style={{ fontSize: 10.5, color: 'var(--faint)', textAlign: 'right', marginTop: 2, opacity: 0.7 }}>Sent</div>
+          ) : null}
           {clamped ? (
             <button className="longmsg-more cv6-mob-more-user" onClick={() => setOpen((v) => !v)}>
               {open ? 'Show less' : 'Show more'}

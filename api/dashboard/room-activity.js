@@ -182,6 +182,12 @@ export default async function handler(req, res) {
   // cached at all — see the Cache-Control note at the bottom. Read it before touching
   // either line: they are one mechanism, not two.
   const fromUrl = (req.query.client || req.query.client_id || '').toString().trim();
+  // smoothness-blitz #8: recency_only=1 uses a 500-row window (one page, ~50ms) and
+  // returns only last_message_at per room (no text digest). The Home screen's recently-
+  // active list only needs recency ordering, not descriptions; the intake router keeps
+  // using the full 6000-row mode for its text matching.
+  const recencyOnly = req.query.recency_only === '1';
+  const effectiveWindow = recencyOnly ? 500 : WINDOW_ROWS;
   let clientId;
   try {
     const requested = await scopeWorld(fromUrl, req);
@@ -195,13 +201,16 @@ export default async function handler(req, res) {
   const missions = {};
   const agents   = {};
   try {
-    for (let offset = 0; offset < WINDOW_ROWS; offset += PAGE) {
+    for (let offset = 0; offset < effectiveWindow; offset += PAGE) {
       // eslint-disable-next-line no-await-in-loop -- pages must be sequential; PostgREST has no cursor here.
+      const select = recencyOnly
+        ? 'project,agent,metadata,timestamp'  // skip text+role: no digest, no quarantine walk
+        : 'project,agent,metadata,text,timestamp,role';
       const rows = await supabaseGet(
         // `role` is here for the quarantine walk: it needs to tell the user's turns from
         // the agent's to know where a pending exchange ends.
         // `agent` is added so 1:1 agent threads (no project, no mission) can be keyed.
-        `client_id=eq.${encodeURIComponent(clientId)}&select=project,agent,metadata,text,timestamp,role`
+        `client_id=eq.${encodeURIComponent(clientId)}&select=${select}`
         + `&order=timestamp.desc&limit=${PAGE}&offset=${offset}`
       );
       if (!Array.isArray(rows) || !rows.length) break;
@@ -249,7 +258,11 @@ export default async function handler(req, res) {
         // router believes a room is about, and the composer prefers Home's own poll for
         // recency anyway (useIntakeRoute assembleCandidates), so filtering it here would be
         // half-effective at best. Semantic contamination is the defect; ranking is not.
-        bucket[key] = { last_message_at: b.last_message_at, last_message_text: digestOf(acceptedTexts(b.rows).slice(0, HINT_SOURCES)) };
+        if (recencyOnly) {
+          bucket[key] = { last_message_at: b.last_message_at, last_message_text: '' };
+        } else {
+          bucket[key] = { last_message_at: b.last_message_at, last_message_text: digestOf(acceptedTexts(b.rows).slice(0, HINT_SOURCES)) };
+        }
       }
     }
   } catch (err) {

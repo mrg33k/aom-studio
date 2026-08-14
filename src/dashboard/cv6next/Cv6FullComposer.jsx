@@ -479,14 +479,14 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     const current = agentRoster.find((entry) => entry.slug === selectedAgentSlug) || agentRoster[0];
     return {
       enabled: !!agentPreferenceKey,
-      title: current?.title || 'Room default',
+      title: current?.slug === 'default' ? `${hostTitle} (default)` : (current?.title || 'Room default'),
       blurb: current?.blurb || '',
       roster: agentRoster,
       roomSelection: selectedAgentSlug,
       saving: agentSaving,
       select: selectRoomAgent,
     };
-  }, [agentRoster, selectedAgentSlug, agentPreferenceKey, agentSaving, selectRoomAgent]);
+  }, [agentRoster, selectedAgentSlug, agentPreferenceKey, agentSaving, selectRoomAgent, hostTitle]);
 
   const composerValue = useMemo(() => ({
     input, setInput, inputRef, handleSend, handleKeyDown,

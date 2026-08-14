@@ -17,18 +17,21 @@ const ACTIVITY_TTL_MS = 120000;
 const ACTIVITY_TIMEOUT_MS = 2500;
 let activityCache = { worldId: '', at: 0, value: null };
 
-export async function fetchRoomActivity(worldId) {
+export async function fetchRoomActivity(worldId, { recencyOnly = false } = {}) {
   const now = Date.now();
-  if (activityCache.value && activityCache.worldId === worldId && (now - activityCache.at) < ACTIVITY_TTL_MS) {
+  // Recency-only requests use a separate cache key so they don't evict the full digest.
+  const cacheKey = recencyOnly ? 'fast' : 'full';
+  if (activityCache.value && activityCache.worldId === worldId && activityCache.mode === cacheKey && (now - activityCache.at) < ACTIVITY_TTL_MS) {
     return activityCache.value;
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ACTIVITY_TIMEOUT_MS);
   try {
-    const res = await authFetch(`/api/dashboard/room-activity?client=${encodeURIComponent(worldId)}`, { signal: controller.signal });
+    const q = `client=${encodeURIComponent(worldId)}${recencyOnly ? '&recency_only=1' : ''}`;
+    const res = await authFetch(`/api/dashboard/room-activity?${q}`, { signal: controller.signal });
     const value = res && res.ok ? await res.json() : null;
     if (value && (value.projects || value.missions)) {
-      activityCache = { worldId, at: now, value };
+      activityCache = { worldId, at: now, value, mode: cacheKey };
       return value;
     }
     return null;
