@@ -132,6 +132,11 @@ const STEP_CARD_OPENERS = ['Reading your message', 'Thinking it through', 'Worki
 //   - If goal.checklist has real steps: progress = activeStepIndex/totalSteps (genuine N/M).
 //   - Else (only synthetic awaiting or agent tasks with no count): indeterminate, no % or fill.
 function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, turnHealth, currentAsk, onStop = null }) {
+  // Truth gate: the bar only shows when a turn is actually live. Otherwise it lies
+  // (TOP-20 #7: "runs when nothing is running", "hangs on Getting started", blinks).
+  // Awaiting + liveSteps/activeStep are the live-turn signals; without them, hide.
+  const isLiveTurn = Boolean(awaiting || (Array.isArray(liveSteps) && liveSteps.length) || roomSteps.some(s => s.state === 'active'));
+  if (!isLiveTurn) return null;
   // --- data ---
   const totalSteps = roomSteps.length;
   const activeStepIdx = roomSteps.findIndex((s) => s.state === 'active');  // 0-based in checklist
