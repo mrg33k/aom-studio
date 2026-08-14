@@ -41,7 +41,12 @@ async function getRoster(clientId, headers) {
     .filter((a) => !a.is_owner)
     .map((a) => ({
       slug: a.slug,
-      title: AGENT_TITLES[a.slug] || a.role || a.slug,
+      // Tenant agents carry their real name in agent_status.name ("Demo EA");
+      // the AGENT_TITLES doctrine map only describes the aom roster. Without
+      // this preference every tenant surface trusting this endpoint renders
+      // the raw role/slug ("EA") — the phone's R19 roster fix reads this field.
+      title: (clientId !== 'aom' && a.name) || AGENT_TITLES[a.slug] || a.role || a.slug,
+      name: a.name || '',
       role: a.role || '',
     }))
     .sort((a, b) => a.title.localeCompare(b.title));
