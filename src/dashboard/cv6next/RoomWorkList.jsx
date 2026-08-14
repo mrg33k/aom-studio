@@ -132,11 +132,11 @@ const STEP_CARD_OPENERS = ['Reading your message', 'Thinking it through', 'Worki
 //   - If goal.checklist has real steps: progress = activeStepIndex/totalSteps (genuine N/M).
 //   - Else (only synthetic awaiting or agent tasks with no count): indeterminate, no % or fill.
 function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, turnHealth, currentAsk, onStop = null }) {
-  // Truth gate: the bar only shows when a turn is actually live. Otherwise it lies
-  // (TOP-20 #7: "runs when nothing is running", "hangs on Getting started", blinks).
-  // Awaiting + liveSteps/activeStep are the live-turn signals; without them, hide.
-  const isLiveTurn = Boolean(awaiting || (Array.isArray(liveSteps) && liveSteps.length) || roomSteps.some(s => s.state === 'active'));
-  if (!isLiveTurn) return null;
+  // Truth gate: the bar only shows when a turn is actually live (PARITY #9).
+  // Checklist/task active alone is NOT live — without awaiting it animates while idle.
+  // R5 covered liveSteps; this closes the checklist/task path at 153-157/313.
+  const liveTurn = Boolean(awaiting) || (Array.isArray(liveSteps) && liveSteps.length > 0) || (turnHealth && ['thinking','working','streaming','stopping'].includes(turnHealth.state));
+  if (!liveTurn) return null;
   // --- data ---
   const totalSteps = roomSteps.length;
   const activeStepIdx = roomSteps.findIndex((s) => s.state === 'active');  // 0-based in checklist
@@ -312,6 +312,12 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, live
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [running]);
+
+  // Truth gate for the expandable list (PARITY #9, line 313): even if a
+  // checklist/task item is technically 'active', without a live turn
+  // (awaiting/liveSteps/turnHealth) it must not surface as "running".
+  const isLiveTurn = Boolean(awaiting) || (Array.isArray(liveSteps) && liveSteps.length > 0) || (turnHealth && ['thinking','working','streaming','stopping'].includes(turnHealth.state));
+  if (!isLiveTurn) return null;
 
   // Nothing running = no panel at all. A standing "Working" box on a quiet room is the
   // dead surface this is meant to replace, and a backlog is not work in flight.
