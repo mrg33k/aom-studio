@@ -94,9 +94,9 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   const isInfra = (slug) => {
     if (!slug) return false;
     const s = String(slug).toLowerCase();
-    return s === 'bridge-smoke' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-');
+    return s === 'bridge-smoke' || s === 'daily-research' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-');
   };
-  const filteredRooms = (projectRooms || []).filter((p) => !isInfra(p.slug) && p.slug !== 'daily-research');
+  const filteredRooms = (projectRooms || []).filter((p) => !isInfra(p.slug));
   // Generic archived/hidden gate: supabase-status already drops archived
   // (is_active=false) + hidden rows from the rail, but recentMap is
   // message-driven (6000-row room-activity window) and would re-inject
