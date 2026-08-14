@@ -49,7 +49,7 @@ export const VOICE_OPTIONS = [
 // Per-chat model selection. Single source: src/dashboard/data/models.json
 // (gut-pruning-ship). Import is canonical; ALLOWED_MODELS in
 // api/dashboard/agent-model.js validates against the same JSON.
-import modelsJson from '../../data/models.json' with { type: 'json' }
+import modelsJson from '../../../data/models.json'
 export const MODEL_OPTIONS = modelsJson
 
 // Per-surface model (corner:gemini-workers step 6). Model is decided by which

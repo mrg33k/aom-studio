@@ -16,7 +16,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const PREF_KEY = 'agent_models';
-import modelsJson from '../../src/dashboard/data/models.json' with { type: 'json' }
+import modelsJson from '../../src/dashboard/data/models.json' assert { type: 'json' }
 const ALLOWED_MODELS = new Set(modelsJson.map(m => m.id));
 
 async function getModels(clientId, headers) {
