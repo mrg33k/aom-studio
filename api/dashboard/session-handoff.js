@@ -125,7 +125,7 @@ export default async function handler(req, res) {
 
   let verified
   try {
-    verified = await verifyTenant(world_id || 'aom', req)
+    verified = await verifyTenant(world_id || '', req)
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
     throw err

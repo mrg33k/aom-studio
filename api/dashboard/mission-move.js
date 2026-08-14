@@ -61,7 +61,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const { world, project_slug, mission_slug, new_project_slug, source_path } = req.body || {};
-  const w = (world || 'aom').toString();
+  const _wRaw = world ? String(world).trim() : '';
+  if (!_wRaw) return res.status(401).json({ error: 'Missing client' });
+  const w = _wRaw;
 
   if (!project_slug || !SLUG_RE.test(project_slug)) return res.status(400).json({ error: 'project_slug required' });
   if (!new_project_slug || !SLUG_RE.test(new_project_slug)) return res.status(400).json({ error: 'new_project_slug required' });

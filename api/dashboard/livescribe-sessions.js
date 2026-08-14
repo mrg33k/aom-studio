@@ -137,7 +137,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    const world = clean(req.query.world || 'aom', 60) || 'aom';
+    const _worldRaw = req.query.world ? String(req.query.world).trim() : '';
+    if (!_worldRaw) return res.status(401).json({ error: 'Missing client' });
+    const world = clean(_worldRaw, 60);
+    if (!world) return res.status(401).json({ error: 'Missing client' });
     const sessions = await loadSessions(world);
     // Return newest first, cap at 20
     return res.status(200).json({
@@ -150,7 +153,10 @@ export default async function handler(req, res) {
 
   const body = req.body || {};
   const action = body.action;
-  const world = clean(body.world || 'aom', 60) || 'aom';
+  const _worldBodyRaw = body.world ? String(body.world).trim() : '';
+  if (!_worldBodyRaw) return res.status(401).json({ error: 'Missing client' });
+  const world = clean(_worldBodyRaw, 60);
+  if (!world) return res.status(401).json({ error: 'Missing client' });
 
   // Every action is tenant-gated — including extract, which spends Gemini tokens
   // on whatever transcript it is handed. An ungated extract is a free LLM proxy.

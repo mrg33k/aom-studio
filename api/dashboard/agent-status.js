@@ -81,7 +81,8 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { agent, text, project, status: taskStatus = 'todo', client_id } = req.body || {};
     if (!text) return res.status(400).json({ error: 'text required' });
-    const resolvedClientId = await gate(client_id || 'aom', req, res);
+    if (!client_id || !String(client_id).trim()) return res.status(401).json({ error: 'Missing client' });
+    const resolvedClientId = await gate(String(client_id).trim().toLowerCase(), req, res);
     if (!resolvedClientId) return;
     const identity = await callerIdentity(req).catch(() => null);
     const crypto = await import('crypto');
@@ -139,9 +140,9 @@ export default async function handler(req, res) {
   // REQUESTED world; verifyTenant turns it into a verified one, and the verified
   // value is what goes into the row filter — so a slug-only PATCH can no longer
   // rewrite the same-named row in every world at once.
-  const requestedClient = (req.query.client_id && String(req.query.client_id).trim())
-    ? String(req.query.client_id).trim().toLowerCase()
-    : 'aom';
+  const _requestedRaw = req.query.client_id && String(req.query.client_id).trim();
+  if (!_requestedRaw) return res.status(401).json({ error: 'Missing client' });
+  const requestedClient = _requestedRaw.toLowerCase();
 
   // Task update mode: PATCH tasks table
   if (table === 'tasks') {

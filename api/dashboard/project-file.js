@@ -157,9 +157,15 @@ export default async function handler(req, res) {
 
   // Platform missions belong to the 'corner' project — their world is whoever
   // owns that project row (no world segment exists in the path to trust).
-  const world       = isPlatformMission
-    ? (await resolveProjectWorld('corner')) || 'aom'
-    : segments[2];
+  let world;
+  if (isPlatformMission) {
+    const _resolved = await resolveProjectWorld('corner');
+    const _trimmed = _resolved && String(_resolved).trim();
+    if (!_trimmed) return res.status(401).json({ error: 'Missing client' });
+    world = _trimmed;
+  } else {
+    world = segments[2];
+  }
   const slug        = isPlatformMission ? 'corner' : segments[4];
   const isMission   = !isPlatformMission && segments[3] === 'missions';
 

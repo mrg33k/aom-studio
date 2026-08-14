@@ -86,7 +86,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
 
   const body = req.body || {};
-  const world = clean(body.world || 'aom', 60) || 'aom';
+  const world = clean(body.world || '', 60) || '';
   try {
     await verifyTenant(world, req);
   } catch (err) {

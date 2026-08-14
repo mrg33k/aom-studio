@@ -26,7 +26,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
   const agent = ((req.body && req.body.agent) || '').toString().trim().toLowerCase()
-  const requested = ((req.body && req.body.client_id) || 'aom').toString().trim()
+  const _reqClient = (req.body && req.body.client_id) ? String(req.body.client_id).trim() : '';
+  if (!_reqClient) return res.status(401).json({ error: 'Missing client' });
+  const requested = _reqClient.toLowerCase()
 
   if (!agent) return res.status(400).json({ error: 'agent required' })
   if (!/^[a-z][a-z0-9-]*$/.test(agent)) return res.status(400).json({ error: 'invalid agent slug' })

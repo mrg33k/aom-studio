@@ -780,7 +780,7 @@ export default async function handler(req, res) {
     }
 
     if (type === 'text') {
-      const clientId = client || 'aom'
+      const clientId = client || ''
       // Legacy text_files read (best-effort; the table was never migrated in
       // the current Supabase project so this is usually empty). Primary
       // source of truth for scaffold MDs is the `events` table via
@@ -841,7 +841,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'filename and content required' })
       }
       const payload = {
-        client_id: client_id || 'aom',
+        client_id: client_id || '',
         filename,
         content,
         type: 'text',

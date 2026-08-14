@@ -91,9 +91,11 @@ export default async function handler(req, res) {
 
   // Tenant gate BEFORE anything is written. verifyTenant admits the owner world
   // and (for shared:<slug>) any world holding a project_access grant.
+  const _reqClient = clientId && String(clientId).trim();
+  if (!_reqClient) return res.status(401).json({ error: 'Missing client' });
   let verified;
   try {
-    verified = await verifyTenant(clientId || 'aom', req);
+    verified = await verifyTenant(_reqClient.toLowerCase(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     throw err;

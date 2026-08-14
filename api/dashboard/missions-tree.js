@@ -103,9 +103,11 @@ export default async function handler(req, res) {
   // signed-in user of any world could enumerate another world's whole project +
   // mission tree. verifyTenant is the gate that was already imported here but
   // never called.
+  const _clientRaw = req.query.client && String(req.query.client).trim()
+  if (!_clientRaw) return res.status(401).json({ error: 'Missing client' })
   let clientId
   try {
-    ({ tenant: clientId } = await verifyTenant(String(req.query.client || 'aom'), req))
+    ({ tenant: clientId } = await verifyTenant(String(_clientRaw), req))
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
     throw err

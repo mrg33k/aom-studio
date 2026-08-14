@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' })
 
   const body = req.body || {}
-  const requestedTenant = cleanSlug(body.client_id || body.tenant || 'aom')
+  const requestedTenant = cleanSlug(body.client_id || body.tenant || '')
   const agent = cleanSlug(body.agent)
   const project = cleanSlug(body.project)
   const missionSlug = cleanSlug(body.mission_slug)

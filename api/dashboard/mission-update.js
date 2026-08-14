@@ -42,8 +42,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  // Derive tenant from body (defaults to 'aom'). For shared rooms callers pass shared:<slug>.
-  const requestedTenant = (req.body && (req.body.client_id || req.body.clientId)) || 'aom'
+  // Derive tenant from body. For shared rooms callers pass shared:<slug>.
+  const _requestedRaw = req.body && (req.body.client_id || req.body.clientId) ? String(req.body.client_id || req.body.clientId).trim() : ''
+  if (!_requestedRaw) return res.status(401).json({ error: 'Missing client' })
+  const requestedTenant = _requestedRaw
   let tenant
   try {
     tenant = await verifyTenant(requestedTenant, req)

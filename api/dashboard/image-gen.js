@@ -88,8 +88,10 @@ export default async function handler(req, res) {
   // Image generation spends provider credits. CORS and an outbound provider
   // bearer token are not caller authorization; require the same verified tenant
   // session as every other dashboard action before validating or executing a job.
+  const _imageGenClient = req.body?.client_id ? String(req.body.client_id).trim() : '';
+  if (!_imageGenClient) return res.status(401).json({ error: 'Missing client' });
   try {
-    await verifyTenant(req.body?.client_id || 'aom', req);
+    await verifyTenant(_imageGenClient, req);
   } catch (err) {
     if (err instanceof TenantAuthError) {
       return res.status(err.status).json({ error: err.message });

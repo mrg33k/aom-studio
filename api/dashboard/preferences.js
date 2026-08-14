@@ -27,9 +27,11 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { key, client } = req.query;
     if (!key) return res.status(400).json({ error: 'key required' });
+    const _getClient = client && String(client).trim();
+    if (!_getClient) return res.status(401).json({ error: 'Missing client' });
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(client || 'aom', req));
+      ({ tenant } = await verifyTenant(_getClient, req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;
@@ -50,9 +52,11 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { key, client_id, value } = req.body || {};
     if (!key || value === undefined) return res.status(400).json({ error: 'key and value required' });
+    const _postClient = client_id && String(client_id).trim();
+    if (!_postClient) return res.status(401).json({ error: 'Missing client' });
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(client_id || 'aom', req));
+      ({ tenant } = await verifyTenant(_postClient, req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;

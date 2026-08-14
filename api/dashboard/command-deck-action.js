@@ -135,9 +135,11 @@ export default async function handler(req, res) {
   // super-admin so any valid world passes). Earlier this called verifyTenant(req)
   // with no world, which always 400'd "tenant required" — the reason no action
   // ever worked.
+  const _worldRaw = world && String(world).trim();
+  if (!_worldRaw) return res.status(401).json({ error: 'Missing client' });
   let verified = null;
   try {
-    verified = await verifyTenant((world || 'aom').toString(), req);
+    verified = await verifyTenant(_worldRaw.toLowerCase(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) {
       return res.status(err.status).json({ error: err.message });

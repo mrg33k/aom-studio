@@ -34,8 +34,9 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
   // ── Verify tenant (required for dashboard access) ────────────────────────────
-  // verifyTenant takes (world, req); calling it with just (req) always 400'd.
-  const world = (req.query?.world || 'aom').toString();
+  const _worldRaw = req.query?.world && String(req.query.world).trim();
+  if (!_worldRaw) return res.status(401).json({ error: 'Missing client' });
+  const world = _worldRaw.toLowerCase();
   let tenantId = null;
   try {
     tenantId = await verifyTenant(world, req);

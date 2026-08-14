@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    const world = clean(req.query.world || 'aom', 60) || 'aom';
+    const world = clean(req.query.world || '', 60) || '';
     const items = await loadChecklist(world);
     const deliverable = req.query.deliverable;
     if (deliverable) return res.status(200).json({ deliverable, list: items[deliverable] || [] });
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
 
   const { action, world, deliverable } = req.body || {};
   try {
-    await verifyTenant((world || 'aom').toString(), req);
+    await verifyTenant((world || '').toString(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     return res.status(500).json({ error: 'Auth verification failed' });

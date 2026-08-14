@@ -75,7 +75,9 @@ export default async function handler(req, res) {
 
   // ── GET — list folders + assignments for the world ─────────────────────────
   if (req.method === 'GET') {
-    const world = String(req.query.client || 'aom').trim().toLowerCase()
+    const _worldRaw = req.query.client ? String(req.query.client).trim() : ''
+    if (!_worldRaw) return res.status(401).json({ error: 'Missing client' })
+    const world = _worldRaw.toLowerCase()
     try {
       const [foldersRes, assignRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/mission_folders?world=eq.${encodeURIComponent(world)}&select=id,project_slug,slug,name,parent_folder_slug,created_at&order=created_at.asc`, { headers: sbHeaders() }),

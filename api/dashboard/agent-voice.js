@@ -51,9 +51,11 @@ export default async function handler(req, res) {
   };
 
   if (req.method === 'GET') {
+    const _reqClient = req.query.client && String(req.query.client).trim();
+    if (!_reqClient) return res.status(401).json({ error: 'Missing client' });
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(req.query.client || 'aom', req));
+      ({ tenant } = await verifyTenant(_reqClient, req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;
@@ -69,9 +71,11 @@ export default async function handler(req, res) {
   if (req.method === 'PATCH') {
     const { slug, voice, client_id } = req.body || {};
     if (!slug || !voice) return res.status(400).json({ error: 'slug and voice required' });
+    const _patchClient = client_id && String(client_id).trim();
+    if (!_patchClient) return res.status(401).json({ error: 'Missing client' });
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(client_id || 'aom', req));
+      ({ tenant } = await verifyTenant(_patchClient, req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;

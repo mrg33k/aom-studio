@@ -53,9 +53,9 @@ export default async function handler(req, res) {
   }
 
   const statusParam = typeof req.query.status === 'string' ? req.query.status : '';
-  const requested = (typeof req.query.client_id === 'string' && req.query.client_id.trim())
-    ? req.query.client_id.trim()
-    : DEFAULT_CLIENT_ID;
+  const _rawClient = typeof req.query.client_id === 'string' ? req.query.client_id.trim() : '';
+  if (!_rawClient) return res.status(401).json({ error: 'Missing client' });
+  const requested = _rawClient.toLowerCase();
   let clientId;
   try {
     ({ tenant: clientId } = await verifyTenant(requested, req));

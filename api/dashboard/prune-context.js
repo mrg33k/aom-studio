@@ -74,7 +74,9 @@ export default async function handler(req, res) {
 
   const body = req.body || {}
   const agent = (body.agent || '').toString().trim().toLowerCase()
-  const requestedTenant = (body.tenant || body.client_id || 'aom').toString().trim().toLowerCase()
+  const _rawTenant = (body.tenant || body.client_id) ? String(body.tenant || body.client_id).trim() : '';
+  if (!_rawTenant) return res.status(401).json({ error: 'Missing client' });
+  const requestedTenant = _rawTenant.toLowerCase()
   const helloText = (body.cleanup_hello || DEFAULT_HELLO).toString()
 
   if (!validSlug(agent)) return res.status(400).json({ error: 'valid agent required' })

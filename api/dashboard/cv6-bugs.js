@@ -47,10 +47,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    // GET was unauthenticated and honored any ?world=, returning that world's
-    // full bug list (107 rows live). Require the world and verify the caller's
-    // JWT may access it — mirror the POST gate below.
-    const world = clean(req.query.world || 'aom', 60) || 'aom';
+    const _worldRaw = req.query.world && String(req.query.world).trim();
+    if (!_worldRaw) return res.status(401).json({ error: 'Missing client' });
+    const world = clean(_worldRaw, 60).toLowerCase();
     try {
       await verifyTenant(world, req);
     } catch (err) {
@@ -65,9 +64,11 @@ export default async function handler(req, res) {
 
   // Writes are tenant-gated (same posture as command-deck-action).
   const { action, world } = req.body || {};
+  const _worldPost = world && String(world).trim();
+  if (!_worldPost) return res.status(401).json({ error: 'Missing client' });
   let verified = null;
   try {
-    verified = await verifyTenant((world || 'aom').toString(), req);
+    verified = await verifyTenant(_worldPost.toLowerCase(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     return res.status(500).json({ error: 'Auth verification failed' });

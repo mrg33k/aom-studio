@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
-  const requestedWorld = String(req.query.world || 'aom').trim();
+  const requestedWorld = String(req.query.world || '').trim();
   if (!/^[a-z0-9][a-z0-9-_:]{0,64}$/i.test(requestedWorld)) {
     return res.status(400).json({ error: 'invalid world' });
   }

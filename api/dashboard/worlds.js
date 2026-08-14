@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       const worlds = users.map(u => ({
         id: u.id,
         email: u.email || '',
-        world: u.user_metadata?.world || 'aom',
+        world: u.user_metadata?.world || '',
         name: u.user_metadata?.workspace_name
            || u.user_metadata?.display_name
            || u.user_metadata?.name

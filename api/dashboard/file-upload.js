@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'filename and data_base64 required' })
   }
 
-  const requestedTenant = (rawWorld || 'aom').toString().trim().toLowerCase()
+  const requestedTenant = (rawWorld || '').toString().trim().toLowerCase()
   let world
   try {
     ({ tenant: world } = await verifyTenant(requestedTenant, req))

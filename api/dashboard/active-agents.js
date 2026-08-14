@@ -30,7 +30,6 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Rows with heartbeat older than this are excluded (queue-runner must have died)
 const HEARTBEAT_TTL_SECONDS = 90;
-const DEFAULT_CLIENT_ID = 'aom';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,9 +44,11 @@ export default async function handler(req, res) {
   }
 
   // Resolve + verify tenant. JWT must prove the caller can access this world.
+  // Fail-closed: no default client — caller must present JWT or explicit ?client that verifyTenant can authorize.
   const requested = (req.query.client && req.query.client.trim())
     ? req.query.client.trim().toLowerCase()
-    : DEFAULT_CLIENT_ID;
+    : '';
+  if (!requested) return res.status(401).json({ error: 'Missing client' });
   let clientId;
   try {
     ({ tenant: clientId } = await verifyTenant(requested, req));

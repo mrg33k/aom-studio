@@ -61,9 +61,11 @@ export default async function handler(req, res) {
   // messages with no client_id predicate at all, so a Ben-world or Karen-world
   // session saw which AOM missions were hot and when they last moved. The world
   // parameter is now verified AND actually applied, below.
+  const _worldRaw = req.query.world && String(req.query.world).trim()
+  if (!_worldRaw) return res.status(401).json({ error: 'Missing client' })
   let worldId
   try {
-    ({ tenant: worldId } = await verifyTenant(String(req.query.world || 'aom'), req))
+    ({ tenant: worldId } = await verifyTenant(String(_worldRaw), req))
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
     throw err

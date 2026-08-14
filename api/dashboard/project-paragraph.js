@@ -199,7 +199,9 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
-  const world = String(req.query.world || 'aom').trim();
+  const _worldRaw = req.query.world && String(req.query.world).trim();
+  if (!_worldRaw) return res.status(401).json({ error: 'Missing client' });
+  const world = _worldRaw;
   if (!SLUG_RE.test(world)) return res.status(400).json({ error: 'invalid world' });
   const scope = String(req.query.scope || 'all').trim();
   if (scope !== 'all' && !SLUG_RE.test(scope)) return res.status(400).json({ error: 'invalid scope' });

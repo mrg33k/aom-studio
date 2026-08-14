@@ -96,7 +96,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(req.query.client || 'aom', req));
+      ({ tenant } = await verifyTenant(req.query.client || '', req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;
@@ -116,7 +116,7 @@ export default async function handler(req, res) {
     const { room, agent } = req.body || {};
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(req.body?.client_id || 'aom', req));
+      ({ tenant } = await verifyTenant(req.body?.client_id || '', req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;

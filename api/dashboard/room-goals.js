@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   const who = await callerIdentity(req);
   if (!who) return res.status(401).json({ error: 'sign in required' });
 
-  const world = String(req.query.world || 'aom').slice(0, 60) || 'aom';
+  const world = String(req.query.world || '').slice(0, 60) || '';
 
   const raw = await readSource();
   if (raw) {

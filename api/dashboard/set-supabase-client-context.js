@@ -64,6 +64,6 @@ export async function resolveClientId({ worldId, clientId } = {}) {
     return resolved;
   }
 
-  // No explicit context -- fall back to AOM internal world
-  return DEFAULT_CLIENT_ID;
+  // Fail-closed: no implicit fallback — caller must supply context
+  throw new Error('Missing client: provide clientId or worldId');
 }

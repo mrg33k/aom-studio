@@ -85,7 +85,7 @@ export default async function handler(req, res) {
 
   const { world, slug, on } = req.body || {};
   try {
-    await verifyTenant((world || 'aom').toString(), req);
+    await verifyTenant((world || '').toString(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     return res.status(500).json({ error: 'Auth verification failed' });

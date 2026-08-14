@@ -61,7 +61,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    const world = clean(req.query.world || 'aom', 60) || 'aom';
+    const world = clean(req.query.world || '', 60) || '';
     const items = await loadSteps(world);
     // Archived steps (stale never-accepted proposals the goal-notetaker aged
     // out) stay in the store but never render — filtered here once so every
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
 
   const { action, world, room } = req.body || {};
   try {
-    await verifyTenant((world || 'aom').toString(), req);
+    await verifyTenant((world || '').toString(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     return res.status(500).json({ error: 'Auth verification failed' });

@@ -99,9 +99,9 @@ export default async function handler(req, res) {
     }
 
     // client_id filter ready for multi-tenant (add column to Supabase first)
-    const requestedClient = (req.query.client && req.query.client.trim())
-      ? req.query.client.trim().toLowerCase()
-      : DEFAULT_CLIENT_ID
+    const _reqClientRaw = req.query.client && String(req.query.client).trim();
+    if (!_reqClientRaw) return res.status(401).json({ error: 'Missing client' });
+    const requestedClient = _reqClientRaw.toLowerCase()
     // One gate for every tenant shape. For `shared:<slug>` verifyTenant runs the
     // owner-or-grant check (hasSharedProjectAccess, incl. the legacy-room
     // fallback); for a plain world it runs world equality / world-admin. Ash and
@@ -289,10 +289,10 @@ export default async function handler(req, res) {
     // display-name costume. Identity is derived from the JWT below (RULE 1).
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
-    // Resolve client_id: prefer body field, else default to 'aom'
-    const requestedClientId = (client_id && client_id.trim())
-      ? client_id.trim().toLowerCase()
-      : DEFAULT_CLIENT_ID
+    // Resolve client_id: fail-closed — no default, caller must supply
+    const _bodyClientRaw = client_id && String(client_id).trim();
+    if (!_bodyClientRaw) return res.status(401).json({ error: 'Missing client' });
+    const requestedClientId = _bodyClientRaw.toLowerCase()
     // Same single gate as GET — shared rooms included (owner-or-grant).
     const resolvedClientId = await resolveTenant(requestedClientId, req, res)
     if (!resolvedClientId) return

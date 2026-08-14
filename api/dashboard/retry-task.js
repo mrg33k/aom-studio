@@ -72,9 +72,11 @@ export default async function handler(req, res) {
 
     // Gate on the world that OWNS the task, read off the row — never on
     // anything the caller supplied.
+    const _rowClient = failed.client_id && String(failed.client_id).trim();
+    if (!_rowClient) return res.status(401).json({ error: 'Missing client' });
     let verified;
     try {
-      verified = await verifyTenant(failed.client_id || 'aom', req);
+      verified = await verifyTenant(_rowClient.toLowerCase(), req);
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;

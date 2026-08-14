@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Scope to caller world — fail-closed (no || 'aom' fallback).
+    // Scope to caller world — fail-closed (no || '' fallback).
     let world;
     const requested = (req.query.client || '').toString().trim().toLowerCase();
     if (requested) {

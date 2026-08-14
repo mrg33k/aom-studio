@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     }
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(client || 'aom', req));
+      ({ tenant } = await verifyTenant(client || '', req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     }
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(client_id || 'aom', req));
+      ({ tenant } = await verifyTenant(client_id || '', req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
     }
     let tenant;
     try {
-      ({ tenant } = await verifyTenant(client_id || 'aom', req));
+      ({ tenant } = await verifyTenant(client_id || '', req));
     } catch (err) {
       if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
       throw err;

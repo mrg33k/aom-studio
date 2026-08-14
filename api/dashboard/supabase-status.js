@@ -11,8 +11,6 @@ import { directChatTitlesByAgent } from '../_lib/chatTitles.js';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-const DEFAULT_CLIENT_ID = 'aom';
-
 async function supabaseGet(table, params = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
     headers: {
@@ -33,11 +31,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
 
-  // Resolve + verify tenant. Falls back to 'aom' default; verifyTenant
-  // requires a JWT and proves the caller may access that tenant.
-  const requested = (req.query.client && req.query.client.trim())
-    ? req.query.client.trim().toLowerCase()
-    : DEFAULT_CLIENT_ID;
+  const _requestedRaw = req.query.client && String(req.query.client).trim();
+  if (!_requestedRaw) return res.status(401).json({ error: 'Missing client' });
+  const requested = _requestedRaw.toLowerCase();
   let clientId;
   const _vtStart = Date.now();
   let _vtMs = 0;

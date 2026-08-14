@@ -118,7 +118,7 @@ export default async function handler(req, res) {
   }
 
   const { action, taskText, taskId, agent, payload, clientId: rawClientId, project } = req.body || {};
-  const requestedTenant = (rawClientId || 'aom').toString().trim().toLowerCase();
+  const requestedTenant = (rawClientId || '').toString().trim().toLowerCase();
 
   // --- WORLD GATE (r7) ------------------------------------------------------
   // The gate used to run against the tenant the CALLER named, while the row

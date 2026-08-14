@@ -195,7 +195,7 @@ export default async function handler(req, res) {
 
   let verified;
   try {
-    verified = await verifyTenant((world || 'aom').toString(), req);
+    verified = await verifyTenant((world || '').toString(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     return res.status(500).json({ error: 'Auth verification failed' });
@@ -294,7 +294,7 @@ export default async function handler(req, res) {
     let projectSlug = clean(req.body.project, 80) || (pathMatch ? pathMatch[1] : null);
     // Stamp the VERIFIED tenant, not the raw body string — verifyTenant already
     // lowercased and validated it, and the task/message rows below both key off it.
-    const worldId = String(verified?.tenant || clean(world || 'aom', 60) || 'aom');
+    const worldId = String(verified?.tenant || clean(world || '', 60) || '');
 
     // --- PROJECT SCOPE (r7) -------------------------------------------------
     // verifyTenant above proved the caller may act inside `world`. It proved

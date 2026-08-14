@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' })
 
-  const requested = String(req.body?.client_id || 'aom').trim().toLowerCase()
+  const requested = String(req.body?.client_id || '').trim().toLowerCase()
   let clientId
   try {
     ({ tenant: clientId } = await verifyTenant(requested, req))

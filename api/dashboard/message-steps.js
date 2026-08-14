@@ -109,9 +109,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' })
   }
 
+  const _msgClient = req.query.client_id ? String(req.query.client_id).trim() : ''
+  if (!_msgClient) return res.status(401).json({ error: 'Missing client' })
   let tenant
   try {
-    ({ tenant } = await verifyTenant(req.query.client_id || 'aom', req))
+    ({ tenant } = await verifyTenant(_msgClient, req))
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
     throw err

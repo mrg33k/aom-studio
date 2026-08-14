@@ -111,7 +111,7 @@ export default async function handler(req, res) {
       // 'aom' since the repo IS AOM's). Pre-tagging rows are treated as 'aom'
       // — every existing scaffold_file row was authored from AOM-EA before the
       // tagging change shipped. Cross-tenant search is blocked here.
-      const rowTenant = row?.payload?.tenant_id || 'aom';
+      const rowTenant = row?.payload?.tenant_id || '';
       if (rowTenant !== tenant) continue;
       // Belt-and-suspenders: confirm a real text match (ilike is case-
       // insensitive Postgres; we verify in JS too so the preview is accurate).

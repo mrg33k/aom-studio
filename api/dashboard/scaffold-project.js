@@ -226,7 +226,7 @@ export default async function handler(req, res) {
   }
 
   // tenant body param (defaults to 'aom') gates who can scaffold + tags rows.
-  const requestedTenant = (rawTenant || 'aom').toString().trim().toLowerCase()
+  const requestedTenant = (rawTenant || '').toString().trim().toLowerCase()
   let tenantId
   try {
     ({ tenant: tenantId } = await verifyTenant(requestedTenant, req))

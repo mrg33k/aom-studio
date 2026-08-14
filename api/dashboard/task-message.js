@@ -57,7 +57,7 @@ export default async function handler(req, res) {
   const text = String(body.text || '').trim()
   if (!taskId) return res.status(400).json({ error: 'task_id required' })
   if (!text) return res.status(400).json({ error: 'text required' })
-  const clientId = (String(body.client_id || '').trim() || 'aom').toLowerCase()
+  const clientId = (String(body.client_id || '').trim() || '').toLowerCase()
   const role = body.role === 'assistant' ? 'assistant' : 'user'
 
   // Load the task row so we can include its agent + status in the message

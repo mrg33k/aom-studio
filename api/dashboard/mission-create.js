@@ -27,7 +27,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const { world, parent_path, slug, name } = req.body || {};
-  const w = (world || 'aom').toString().toLowerCase();
+  const _wRaw = world ? String(world).trim() : '';
+  if (!_wRaw) return res.status(401).json({ error: 'Missing client' });
+  const w = _wRaw.toLowerCase();
 
   if (!slug || !SLUG_RE.test(slug) || slug.length > 50) {
     return res.status(400).json({ error: 'slug must be lowercase letters/numbers/hyphens, max 50' });

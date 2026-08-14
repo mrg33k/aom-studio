@@ -140,7 +140,7 @@ async function postInvestigationTrigger(taskId, taskRow) {
       body: JSON.stringify({
         id: crypto.randomUUID(),
         agent: (taskRow && taskRow.agent_identity) || 'system',
-        client_id: (taskRow && taskRow.client_id) || 'aom',
+        client_id: (taskRow && taskRow.client_id) || '',
         event_type: 'investigation_trigger',
         payload: {
           task_id: String(taskId),
