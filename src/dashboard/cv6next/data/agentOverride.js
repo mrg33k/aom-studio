@@ -40,8 +40,10 @@ const OVERRIDE_PATTERNS = [
   /(?:no[,!]?\s*)?(?:actually\s*)?(?:ask|talk to|get|bring in|loop in|hand (?:this )?to|pass to|switch to)\s+(creative(?: director)?|designer|design|web|engineer|content|video|social|operations|ops|assistant|systems|outreach|strategy|advisory|qa|media|bobby|cleo|steffen|director|gary|elon|rex|jacob|tony|alex|steve|elmo|pixel)\b/i,
   // Indirect: "this is a design question", "this is creative work"
   /this is (?:a |an )?(creative|design|web|engineering|content|video|social|operations|outreach|strategy|advisory|qa|media)\s+(?:question|thing|task|work|job|issue)\b/i,
-  // Correction: "no, creative should do this", "let creative handle it"
+  // Correction: "no, creative should do this", "let creative handle it", "creative should do this"
   /(?:let|have)\s+(creative|design|web|content|social|operations|assistant|systems|outreach|strategy|advisory|qa|media|director|bobby|cleo|steffen|gary|elon|rex|jacob|tony)\s+(?:handle|take|do)\s+(?:this|it|that)/i,
+  // Should-do: "creative should do this" without let/have
+  /(creative|design|web|content|social|operations|assistant|systems|outreach|strategy|advisory|qa|media|director|bobby|cleo|steffen|gary|elon|rex|jacob|tony|steve|elmo|pixel)\s+should\s+(?:do|handle|take)\s+(?:this|it|that)/i,
 ]
 
 export function detectOverride(text) {
@@ -112,8 +114,8 @@ export function testOverridePhrases() {
     ['no, creative should do this', 'director'],
     ['bring in Content', 'cleo'],
     ['switch to Operations', 'gary'],
-    // Indirect
-    ['this is a web thing', null], // "web thing" not in pattern — should not match
+    // Indirect — "this is a web thing" IS a valid override (web + thing), so it should match bobby
+    ['this is a web thing', 'bobby'],
   ]
   return cases.map(([text, expectedSlug]) => {
     const got = detectOverride(text)
