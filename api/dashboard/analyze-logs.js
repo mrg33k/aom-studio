@@ -2,6 +2,8 @@
 // AI Log Analysis Agent Service
 // Analyzes failure logs and returns structured analysis with actionable steps
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // System prompt for log analysis
@@ -148,6 +150,12 @@ export default async function handler(req, res) {
   // Only accept POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
+  }
+  try {
+    await verifyTenant('aom', req);
+  } catch (e) {
+    if (e instanceof TenantAuthError) return res.status(e.status).json({ error: e.message });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   
   try {
