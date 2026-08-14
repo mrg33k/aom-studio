@@ -492,7 +492,6 @@
 				TargetAttributes = {
 					1EF7BB98BEB3F881A1C38354 = {
 						DevelopmentTeam = PDYFTMXNJ2;
-						ProvisioningStyle = Automatic;
 					};
 					AAF2C2BAB82E503FC81DEAFF = {
 						DevelopmentTeam = PDYFTMXNJ2;
@@ -705,7 +704,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = PDYFTMXNJ2;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -869,7 +868,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = PDYFTMXNJ2;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -905,6 +904,8 @@
 		CE00A191AE4569D276FCE0D9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Support/CornerWidgets-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -913,6 +914,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.aheadofmarket.corner.CornerWidgets;
+				PROVISIONING_PROFILE_SPECIFIER = "Corner Widgets App Store";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
