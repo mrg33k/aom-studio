@@ -58,11 +58,40 @@ export function TenantProvider({ children }) {
   useEffect(() => {
     refresh()
     if (!supabase) return undefined
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+    let lastUserId = null
+    supabase.auth.getSession().then(({ data }) => {
+      lastUserId = data?.session?.user?.id || null
+    }).catch(() => {})
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       // A world override must never survive a logout into another account
       // (corner:tenant-isolation R1). Fresh page loads are already handled by
       // the boot purge in clientConfig.js.
-      if (event === 'SIGNED_OUT') clearWorldOverride()
+      if (event === 'SIGNED_OUT') {
+        clearWorldOverride()
+        lastUserId = null
+        applyUser(null)
+        return
+      }
+      const nextUserId = session?.user?.id || null
+      const isAccountSwitch = lastUserId && nextUserId && lastUserId !== nextUserId
+      // TOP-20 #15 + #17: auth refresh on account switch. When the user switches
+      // Google accounts, the Supabase session may still carry the old token for a
+      // beat and produce a 404/401 or a stale rate-limit. Refresh the session so
+      // the next api call carries the new account's JWT, clear any stale 429
+      // banner, and re-check the limit for the new account (auto-respawn).
+      if (isAccountSwitch || event === 'SIGNED_IN') {
+        try { await supabase.auth.refreshSession().catch(() => {}) } catch {}
+        if (isAccountSwitch) {
+          try {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('corner:account-switched', { detail: { prevUserId: lastUserId, nextUserId, at: Date.now() } }))
+              window.dispatchEvent(new CustomEvent('corner:rate-limit-cleared', { detail: { reason: 'account-switched' } }))
+              window.dispatchEvent(new CustomEvent('corner:rate-limit-retry', { detail: { reason: 'account-switched', auto: true } }))
+            }
+          } catch {}
+        }
+      }
+      lastUserId = nextUserId
       applyUser(session?.user || null)
     })
     return () => sub?.subscription?.unsubscribe?.()

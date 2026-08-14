@@ -15,6 +15,7 @@ import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import ActivityDock from './ActivityDock.jsx';
+import RateLimitBanner from './RateLimitBanner.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop, { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
@@ -2251,6 +2252,7 @@ function Chat({ room, worldId, onNav, onSearch, columnMode = false, onClose, exp
       messages={messages} archivedMessages={isDemo ? [] : rt.archivedMessages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       draft={isDemo ? null : rt.draft}
       turnHealth={isDemo ? null : rt.turnHealth}
+      turnState={isDemo ? null : rt.turnState}
       connection={isDemo ? null : rt.connection}
       onRetryTurn={isDemo ? null : rt.retryTurn} onNudgeTurn={isDemo ? null : rt.nudgeTurn}
       onReloadThread={isDemo ? null : rt.reload}
@@ -4175,6 +4177,10 @@ export default function CornerCV6() {
           settings view which already exists and is reached via onNav('settings'). */}
       {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings', { section: 'account' })} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {!isDesktop && <MobileAirPodsHeaderPortal canvasRef={workspaceCanvasRef} activeColumnId={activeColumnId} />}
+      {/* TOP-20 #15: 429 banner with retry — re-checks limit on account switch and auto-respawn via onAuthStateChange */}
+      <div style={{ padding: '0 12px', marginTop: 6 }}>
+        <RateLimitBanner onRetry={() => { try { window.dispatchEvent(new CustomEvent('corner:rate-limit-retry', { detail: { reason: 'banner-retry' } })); } catch {} }} />
+      </div>
       <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} worldId={worldId} />
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(job) => {

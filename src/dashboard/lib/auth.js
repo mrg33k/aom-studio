@@ -9,8 +9,20 @@ import { supabase } from './supabase.js'
  */
 export async function getCurrentUser() {
   if (!supabase) return null
-  const { data: { user } } = await supabase.auth.getUser()
-  return user || null
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) return user
+    // TOP-20 #17: transient 404 after Google profile click can leave getUser null
+    // even though a session exists. One refresh attempt before giving up.
+    try {
+      const { data: refreshed } = await supabase.auth.refreshSession().catch(() => ({ data: null }))
+      if (refreshed?.user) return refreshed.user
+      const { data: retry } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }))
+      return retry?.user || null
+    } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -51,7 +63,26 @@ export function onAuthStateChange(callback) {
     callback(null)
     return () => {}
   }
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+  let lastUserId = null
+  supabase.auth.getSession().then(({ data }) => {
+    lastUserId = data?.session?.user?.id || null
+  }).catch(() => {})
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const nextUserId = session?.user?.id || null
+    const isAccountSwitch = lastUserId && nextUserId && lastUserId !== nextUserId
+    // TOP-20 #15 + #17: re-check limit and refresh auth on account switch.
+    // A Google account switch should immediately hydrate the new session and
+    // clear any stale 429/404 state for the previous account.
+    if (isAccountSwitch) {
+      try { await supabase.auth.refreshSession().catch(() => {}) } catch {}
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('corner:account-switched', { detail: { prevUserId: lastUserId, nextUserId } }))
+          window.dispatchEvent(new CustomEvent('corner:rate-limit-cleared', { detail: { reason: 'account-switched' } }))
+        }
+      } catch {}
+    }
+    lastUserId = nextUserId
     callback(session)
   })
   return () => subscription.unsubscribe()
