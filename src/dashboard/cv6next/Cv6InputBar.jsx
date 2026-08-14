@@ -17,6 +17,7 @@
 // are deliberately absent instead of dead.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import SlashCommandAutocomplete from '../components/cv3/SlashCommandAutocomplete.jsx';
 import IntegrationsModal from '../components/cv3/IntegrationsModal.jsx';
 import { PasteChipBar, shouldChipPaste } from '../components/cv3/shared/PasteChip.jsx';
@@ -119,13 +120,50 @@ function CommandsMenu({
   const { selectedImageTool, setSelectedImageTool } = useChatComposerCtx();
   const { isRecording, handleMicToggle } = useChatRecordingCtx();
 
+  const [anchorRect, setAnchorRect] = useState(null);
+  useEffect(() => {
+    if (!open || !wrapRef.current) return undefined;
+    const update = () => {
+      try { setAnchorRect(wrapRef.current.getBoundingClientRect()); } catch {}
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+  }, [open]);
+
   useEffect(() => {
     if (!open) { setView('root'); return undefined; }
-    const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    const handler = (e) => {
+      // When portaled, wrapRef no longer contains the popover — also check the portal node.
+      const portal = typeof document !== 'undefined' ? document.querySelector('[data-testid="cv6-commands-menu-popover"]') : null;
+      if (wrapRef.current && wrapRef.current.contains(e.target)) return;
+      if (portal && portal.contains(e.target)) return;
+      setOpen(false);
+    };
     document.addEventListener('mousedown', handler);
     document.addEventListener('touchstart', handler);
     return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
   }, [open, setOpen]);
+
+  const popoverStyle = anchorRect ? {
+    position: 'fixed',
+    left: Math.max(12, Math.min(anchorRect.left, (typeof window !== 'undefined' ? window.innerWidth : 1024) - 312)),
+    bottom: Math.max(12, (typeof window !== 'undefined' ? window.innerHeight - anchorRect.top + 10 : 80)),
+    minWidth: 300,
+    maxWidth: 'calc(100vw - 24px)',
+    background: 'var(--composer-solid, var(--surface))',
+    color: 'var(--fg)',
+    border: '1px solid var(--hair)',
+    borderRadius: 14,
+    boxShadow: '0 18px 44px -12px rgba(0,0,0,.38)',
+    padding: 6,
+    zIndex: 45,
+    fontFamily: 'var(--font-sans)',
+  } : {
+    position: 'fixed', left: 12, bottom: 80, minWidth: 300, maxWidth: 'calc(100vw - 24px)',
+    background: 'var(--composer-solid, var(--surface))', color: 'var(--fg)', border: '1px solid var(--hair)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.38)', padding: 6, zIndex: 45, fontFamily: 'var(--font-sans)',
+  };
 
   return (
     <div ref={wrapRef} data-testid="cv6-commands-menu" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 'none' }}>
@@ -141,15 +179,17 @@ function CommandsMenu({
           </span>
         )}
       </button>
-      {open ? (
+      {open && typeof document !== 'undefined' ? createPortal((
         <>
         {/* Full-viewport backdrop: dims the thread behind the open menu and is an
             always-there tap-to-dismiss target (Steffen gate R1, defects 1+2 —
             the document-listener alone missed synthetic taps and left the thread
-            visually competing with the panel). */}
+            visually competing with the panel). Portaled out of .cv6-composer-wrap
+            which has overflow:hidden (PARITY #2: menu clipped invisible while scrim
+            dimmed the screen). */}
         <div data-testid="cv6-commands-menu-scrim" onClick={() => setOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 44, background: 'rgba(0,0,0,.38)' }} />
-        <div data-testid="cv6-commands-menu-popover" style={{ position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, minWidth: 300, maxWidth: 'calc(100vw - 32px)', background: 'var(--composer-solid, var(--surface))', color: 'var(--fg)', border: '1px solid var(--hair)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.38)', padding: 6, zIndex: 45, fontFamily: 'var(--font-sans)' }}>
+        <div data-testid="cv6-commands-menu-popover" style={popoverStyle}>
           {view === 'root' ? (
             <>
               <div className="eyebrow" style={{ padding: '7px 10px 6px' }}>Commands</div>
@@ -248,7 +288,7 @@ function CommandsMenu({
           )}
         </div>
         </>
-      ) : null}
+      ), document.body) : null}
     </div>
   );
 }
