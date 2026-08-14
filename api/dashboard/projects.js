@@ -60,7 +60,16 @@ export default async function handler(req, res) {
       return res.status(r.status).json({ error: err });
     }
 
-    const projects = await r.json();
+    let projects = await r.json();
+    if (Array.isArray(projects)) {
+      // LAB-RAIL (2026-08-14 Block 3): filter infra slugs even if is_active leaked true
+      const isInfra = (slug) => {
+        if (!slug) return false;
+        const s = String(slug).toLowerCase();
+        return s === 'bridge-smoke' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-');
+      };
+      projects = projects.filter(p => !isInfra(p.slug));
+    }
     return res.status(200).json({ ok: true, projects: Array.isArray(projects) ? projects : [] });
   } catch (err) {
     if (err instanceof TenantAuthError) {

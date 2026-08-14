@@ -78,13 +78,20 @@ export function useProjects(worldId) {
           } catch (_) {}
         }
 
-        const owned = (ownedResult.data || []).map(p => ({
+        // LAB-RAIL (2026-08-14, corner:room-organizer Block 3): hide infrastructure noise
+        // even if is_active leaks true — lab/qa/smoke + bridge-smoke never show in user rail.
+        const isInfra = (slug) => {
+          if (!slug) return false
+          const s = slug.toLowerCase()
+          return s === 'bridge-smoke' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-')
+        }
+        const owned = (ownedResult.data || []).filter(p => !isInfra(p.slug)).map(p => ({
           ...p,
           isShared: sharedProjectIds.has(p.id),
         }))
         const shared = (sharedResult.data || [])
           .map(r => r.projects)
-          .filter(p => p && p.is_active)
+          .filter(p => p && p.is_active && !isInfra(p.slug))
           .map(p => ({ ...p, isShared: true }))
         const seen = new Set()
         const all = []
