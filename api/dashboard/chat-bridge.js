@@ -152,7 +152,7 @@ async function writeFallbackToSupabase(body, sender, scope) {
     role: 'user',
     source: 'corner-dashboard',
     agent: body.agent || 'elon',
-    clientId: body.client_id || 'aom',
+    clientId: body.client_id || scope?.worldId || null,
     id: body.id,
     project: body.project,
     roomProject,
@@ -193,7 +193,8 @@ async function maybeCreateChain(body, sender, scope) {
   const agent = (body.agent || 'elon').trim()
   let project = (body.project || '').trim()
   const now = new Date().toISOString()
-  const client_id = body.client_id || 'aom'
+  const client_id = body.client_id || scope?.worldId || null
+  if (!client_id) throw new Error('client_id required (fail-closed)')
 
   // Scope-gate the chain's project ONCE, with the same authorizer the writer
   // uses (memoized, so the two writeMessageRow calls below reuse this verdict at
@@ -462,7 +463,9 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const body = req.body || {}
     const message = (body.message || '').trim()
-    const requestedTenant = (body.client_id || 'aom').toString().trim().toLowerCase()
+    const raw = (body.client_id || '').toString().trim().toLowerCase()
+    if (!raw) return res.status(401).json({ error: 'client_id required' })
+    const requestedTenant = raw
 
     // JWT-gate: verify caller can write to client_id before any bridge dispatch
     // or Supabase write. Replaces the previously-trusted body.client_id with
