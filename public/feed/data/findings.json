@@ -4,6 +4,114 @@
    "date": "2026-08-14",
    "items": [
     {
+     "youtube_id": "v-6KM2ysQYo",
+     "title": "I Built GTA 6 in 24 Hours Using Only AI (Claude Code + Unreal Engine)",
+     "channel": "Leon van Zyl",
+     "views": "2.1M",
+     "published": "2026-08-10",
+     "lane": "ai-builds",
+     "why": "Full game built with Claude Code + Unreal Engine in one session. The quality bar for AI-assisted game dev \u2014 real 3D, real mechanics, shipped in 24 hours."
+    },
+    {
+     "youtube_id": "F0hHY0D-WTk",
+     "title": "Claude Code Built These Games From One Prompt",
+     "channel": "SkillCurb",
+     "views": "485K",
+     "published": "2026-08-11",
+     "lane": "ai-builds",
+     "why": "Multiple games from single prompts \u2014 shows the breadth of what Claude Code ships when the prompt is right. Community favorite for the speed-to-playable ratio."
+    },
+    {
+     "youtube_id": "TTeMU5iOE84",
+     "title": "Build AMAZING Websites Using Claude Code! (Full Guide)",
+     "channel": "AI Foundations",
+     "views": "320K",
+     "published": "2026-08-09",
+     "lane": "ai-builds",
+     "why": "Step-by-step from zero to production website with Claude Code. Practical, not hype \u2014 shows the real workflow decisions that make the output pro-grade."
+    },
+    {
+     "youtube_id": "7C_IHWkHKmU",
+     "title": "The Creator of Claude Code on The Hottest Piece of Software in the World",
+     "channel": "Bloomberg Podcasts",
+     "views": "890K",
+     "published": "2026-08-08",
+     "lane": "ai-tools",
+     "why": "Bloomberg Odd Lots interview with the Claude Code creator. The backstory on why it works differently from every other AI coding tool \u2014 and where it is going next."
+    },
+    {
+     "youtube_id": "gYSMeJXXOiI",
+     "title": "MiniMax H3 or Seedance 2.5 or Kling?",
+     "channel": "AI News Vortex",
+     "views": "156K",
+     "published": "2026-08-12",
+     "lane": "ai-tools",
+     "why": "Head-to-head comparison of the three video gen models everyone is choosing between right now. Real outputs, real prompts, honest ranking."
+    },
+    {
+     "youtube_id": "tmA1FChDslc",
+     "title": "Claude Code: Build Production-Ready Features with Skills, Agents & Hooks",
+     "channel": "Integrations Ninjas",
+     "views": "78K",
+     "published": "2026-08-11",
+     "lane": "ai-tools",
+     "why": "Deep dive into Skills, Agents, and Hooks \u2014 the three Claude Code primitives that turn it from a chatbot into a real development platform."
+    },
+    {
+     "youtube_id": "Hth_tLaC2j8",
+     "title": "Reflecting on a year of Claude Code",
+     "channel": "Claude",
+     "views": "1.2M",
+     "published": "2026-08-07",
+     "lane": "ai-tools",
+     "why": "Anthropic official retrospective. Where Claude Code started, what the community built, and the roadmap signal for what is coming."
+    },
+    {
+     "youtube_id": "z2NDqA92L8o",
+     "title": "How Contractors Generate 500+ Leads | Construction Marketing 2026",
+     "channel": "Marketing 360",
+     "views": "245K",
+     "published": "2026-08-06",
+     "lane": "construction",
+     "why": "The numbers: 500+ leads from one contractor marketing campaign. Breaks down the funnel, the spend, and the close rate \u2014 the exact playbook AOM runs for clients."
+    },
+    {
+     "youtube_id": "lEaJgxbdUFs",
+     "title": "Contractor Lead Generation: How I Get Customers for My Construction Business",
+     "channel": "Chuck the Contractor",
+     "views": "189K",
+     "published": "2026-08-05",
+     "lane": "construction",
+     "why": "Owner-operator shares his actual lead gen system \u2014 Google Business Profile, yard signs, referral programs. Real numbers from a real contractor, not a marketing agency pitch."
+    },
+    {
+     "youtube_id": "igoCll8airU",
+     "title": "Lead Generation That Works for New Contractors",
+     "channel": "Contractor Fight TV",
+     "views": "92K",
+     "published": "2026-08-10",
+     "lane": "construction",
+     "why": "New contractor playbook: how to get your first 10 clients when you have no portfolio and no budget. Scrappy tactics that actually close jobs."
+    },
+    {
+     "youtube_id": "jQO9RAmy5lk",
+     "title": "Claude + Seedance 2.0: Creates Viral UGC Videos on Autopilot",
+     "channel": "Jason Lee",
+     "views": "210K",
+     "published": "2026-08-11",
+     "lane": "creative-workflows",
+     "why": "Claude orchestrating Seedance for batch UGC video production. The workflow AOM should study \u2014 prompt-to-video with brand constraints baked in."
+    },
+    {
+     "youtube_id": "ppSbdneOiIc",
+     "title": "AI Filmmaking Demo Reel 2026",
+     "channel": "Sergio Valdez",
+     "views": "340K",
+     "published": "2026-08-09",
+     "lane": "creative-workflows",
+     "why": "The current ceiling of AI filmmaking quality. Every shot AI-generated or AI-assisted \u2014 color grading, compositing, sound design. This is the bar."
+    },
+    {
      "lane": "claude-animation",
      "headline": "Claude Design Ships First-Party Motion Graphics Creator",
      "body": "Anthropic's own Claude Design tool (claude.ai/design) now creates animation and motion graphics from prompts, reference images, or transcripts -- first-party, no skill install or CLI needed. Users bring a design system once and reuse it across projects. This puts the same capability the community Remotion/LottieFiles skills offer into a browser for non-technical creative directors.",
