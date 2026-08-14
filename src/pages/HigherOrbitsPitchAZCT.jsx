@@ -23,7 +23,7 @@ function useSEO() {
       el.setAttribute('content', content);
     };
     setMeta('robots', 'noindex, nofollow');
- setMeta('description'·'A documentary campaign proposal for Higher Orbits, the 100th Go For Launch! and the decade that made it possible.');
+ setMeta('description', 'A documentary campaign proposal for Higher Orbits, the 100th Go For Launch! and the decade that made it possible.');
     setMeta('og:title', 'Higher Orbits Campaign Proposal', true);
     setMeta('og:description', 'Ten years. One hundred events. Three thousand students. Twenty-four experiments in orbit.', true);
   }, []);
@@ -718,7 +718,7 @@ export default function HigherOrbitsPitchAZCT() {
         </DataTitle>
         <StructureTable rows={[
           ['Specifics', 'Student and alumni interview segments woven throughout the hero piece and available as standalone cuts for grant and donor use.'],
- ['Focus'·'The journey, from a Go For Launch! workshop to a STEM career, a university engineering program, ongoing involvement in spaceflight, or simply the confidence that comes from having built something real and watched it leave the atmosphere.'],
+ ['Focus', 'The journey, from a Go For Launch! workshop to a STEM career, a university engineering program, ongoing involvement in spaceflight, or simply the confidence that comes from having built something real and watched it leave the atmosphere.'],
           ['Visuals', 'Alumni in their environments today: labs, research settings, workplaces. Students mid-build and mid-presentation. Archival moments from past events cut against present-day Chicago coverage. The astronaut mentor layer: professionals who give their time because the mission genuinely matters, captured in a way that shows it.'],
         ]} />
         <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid rgba(255,255,255,0.1)', maxWidth: 860 }}>
@@ -821,12 +821,12 @@ export default function HigherOrbitsPitchAZCT() {
         <DataTable
           headers={['Project Deliverable', 'Amount', 'Timeline']}
           rows={[
- ['Hero Documentary'·'1', "End of July 2026, 3–5 min final cut. Opening (Michelle's NASA origin + 2016 Deerfield gym) → Middle (alumni voices + 24 ISS experiments) → End (100th event, full circle)."],
- ['Pre-Event Teaser'·'1'·'7 days before the June event, 30 sec, built from pre-production material and early Chicago footage.'],
- ['48-Hour Recap'·'1'·'Within 48 hours of event close, 60–75 sec, share-ready for social, email, and press while the moment is still news.'],
- ['Social Cuts Pack'·'8–10 short verticals'·'End of July 2026, 4 alumni/student voice reels (15–30 sec), 2 Michelle highlights (30–45 sec), 2 event-day energy cuts (15–20 sec), 1–2 Dorothy/astronaut moments (20–30 sec).'],
- ['Hero Photo Set'·'100 edited stills'·'End of July 2026, 50 event-day (ceremony, presentations, crowd), 25 interview/portrait (Michelle, Dorothy, student subjects), 25 B-roll and production documentation.'],
- ['Raw Footage Archive'·'8–12 TB'·'At final delivery, all raw Chicago footage organized by shoot day and subject, delivered on a portable hard drive. Higher Orbits owns this archive permanently.'],
+ ['Hero Documentary', '1', "End of July 2026, 3–5 min final cut. Opening (Michelle's NASA origin + 2016 Deerfield gym) → Middle (alumni voices + 24 ISS experiments) → End (100th event, full circle)."],
+ ['Pre-Event Teaser', '1', '7 days before the June event, 30 sec, built from pre-production material and early Chicago footage.'],
+ ['48-Hour Recap', '1', 'Within 48 hours of event close, 60–75 sec, share-ready for social, email, and press while the moment is still news.'],
+ ['Social Cuts Pack', '8–10 short verticals', 'End of July 2026, 4 alumni/student voice reels (15–30 sec), 2 Michelle highlights (30–45 sec), 2 event-day energy cuts (15–20 sec), 1–2 Dorothy/astronaut moments (20–30 sec).'],
+ ['Hero Photo Set', '100 edited stills', 'End of July 2026, 50 event-day (ceremony, presentations, crowd), 25 interview/portrait (Michelle, Dorothy, student subjects), 25 B-roll and production documentation.'],
+ ['Raw Footage Archive', '8–12 TB', 'At final delivery, all raw Chicago footage organized by shoot day and subject, delivered on a portable hard drive. Higher Orbits owns this archive permanently.'],
             ['Sponsor Recognition Package', 'Included', 'Logo in film credits and opening sequence. One branded social post template for Chevron, BRPH, and board sponsors. One 60–90 sec thank-you highlight clip for donor communications.'],
           ]}
         />
@@ -841,12 +841,12 @@ export default function HigherOrbitsPitchAZCT() {
           headers={['Phase', 'Duration', 'Team', 'Details']}
           rows={[
             ['Pre-Production', '10–12 planning days', '3', 'Alignment sessions with Michelle; subject selection and interview outlines; shot list; alumni intro calls; access and logistics coordination with Higher Orbits; travel booking; teaser material prep.'],
- ['Chicago, Travel'·'2 days'·'3'·'PHX → Chicago (day in), Chicago → PHX (day out).'],
- ['Chicago, Production'·'4 days on-ground'·'3'·'Two cameras running simultaneously throughout. Full event-day coverage. Michelle documentary interview. Dorothy Metcalf-Lindenburger interview. Student team interviews and B-roll. Stills throughout every day.'],
- ['Post, 48-Hour Recap'·'1.5–2 days'·'1–2'·'Urgency-mode edit from event footage. Hard 48-hour delivery window from event close.'],
- ['Post, Hero Piece'·'6–8 days'·'1–2'·'Rough assembly → assembly cut → fine cut (Michelle review round) → revisions → final master. One revision round included.'],
- ['Post, Social Cuts'·'3–4 days'·'1'·'8–10 verticals, batched from hero footage selects.'],
- ['Post, Photos + Sponsor Package'·'3 days'·'1'·'Photo culling (400–600 raws → 100 finals) + grading; credits integration, social template, thank-you clip.'],
+ ['Chicago, Travel', '2 days', '3', 'PHX → Chicago (day in), Chicago → PHX (day out).'],
+ ['Chicago, Production', '4 days on-ground', '3', 'Two cameras running simultaneously throughout. Full event-day coverage. Michelle documentary interview. Dorothy Metcalf-Lindenburger interview. Student team interviews and B-roll. Stills throughout every day.'],
+ ['Post, 48-Hour Recap', '1.5–2 days', '1–2', 'Urgency-mode edit from event footage. Hard 48-hour delivery window from event close.'],
+ ['Post, Hero Piece', '6–8 days', '1–2', 'Rough assembly → assembly cut → fine cut (Michelle review round) → revisions → final master. One revision round included.'],
+ ['Post, Social Cuts', '3–4 days', '1', '8–10 verticals, batched from hero footage selects.'],
+ ['Post, Photos + Sponsor Package', '3 days', '1', 'Photo culling (400–600 raws → 100 finals) + grading; credits integration, social template, thank-you clip.'],
             ['Collaborative Review', '2 sessions', '2–3', 'Rough cut review with Michelle (session 1). Final approval before delivery (session 2). One revision round included.'],
             ['Total', '~10 weeks (May–July 2026)', '', 'Full delivery by end of July 2026.'],
           ]}
@@ -865,12 +865,12 @@ export default function HigherOrbitsPitchAZCT() {
           rows={[
             ['Shooting Labor', '4 production days in Chicago × 3 people', '3', '$5,600'],
             ['Travel Labor', '2 travel days × 3 people (full working rate)', '3', '$2,800'],
- ['Post Production Labor'·'13.5 days, hero piece, recap, teaser, social cuts, photo edit, sponsor package'·'1–2'·'$7,250'],
+ ['Post Production Labor', '13.5 days, hero piece, recap, teaser, social cuts, photo edit, sponsor package', '1–2', '$7,250'],
             ['Pre-Production & Wrap', 'Planning, logistics, shot list, interview prep', '3', '$1,400'],
             ['Travel + Accommodations', 'PHX ↔ Chicago RT × 3 + Deerfield hotel 4.5 nights × 3 rooms + rideshares', '3', '$4,110'],
             ['Per Diems', '$75/day × 3 people × 5 days', '3', '$1,125'],
- ['Music & Rights'·'Sync licensing, hero, recap, teaser, and social cuts'·', '·'$700'],
- ['Storage, Archive & Gear'·'12TB archive drive + cloud backup + production insurance + overhead'·', '·'$1,950'],
+ ['Music & Rights', 'Sync licensing, hero, recap, teaser, and social cuts', '', '$700'],
+ ['Storage, Archive & Gear', '12TB archive drive + cloud backup + production insurance + overhead', '', '$1,950'],
             ['Contingency', '', '', '$3,065'],
             ['Total', '', '', '$28,000'],
           ]}
