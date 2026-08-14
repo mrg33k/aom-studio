@@ -381,7 +381,7 @@ export function useRoomCrossings(worldId, room) {
     else if (room.isProject) { params.set('project', room.id); params.set('project_only', '1'); }
     else params.set('agent', room.id);
     params.set('attachments', '1');
-    params.set('limit', '400');
+    params.set('limit', '2000');
     const load = () => authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -410,7 +410,7 @@ export function useRoomCrossings(worldId, room) {
           return true;
         });
         setItems(deduped);
-        setWindowFull(rows.length >= 400);
+        setWindowFull(rows.length >= 2000);
         setStatus(deduped.length ? 'ready' : 'empty');
       })
       .catch(() => { if (alive) setStatus((s) => (s === 'ready' ? s : 'error')); });
