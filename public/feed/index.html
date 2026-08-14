@@ -4,19 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AOM — Feed</title>
-<meta name="description" content="Ahead of Market — the daily feed. Research findings and agent updates every morning.">
+<meta name="description" content="Ahead of Market — trending videos across AI, construction, and creative workflows.">
 <meta property="og:title" content="AOM — Feed">
-<meta property="og:description" content="Fresh research every morning, one finding per swipe.">
+<meta property="og:description" content="Trending videos every morning. Tap to play.">
 <style>
 /* ============================================================
-   AOM /feed — daily research + agent updates in TikTok feed
-   grammar. Two tabs: Research (findings from 6 lanes) and
-   Agents (the roster + recent changes). One card per full-
-   screen snap; vertical snap scroll. Optional hero images on
-   research cards.
-   Data: /feed/data/findings.json + /feed/data/agent-updates.json
-   Brand: obsidian/ivory + bronze accent, flat surfaces +
-   hairlines, chrome type = tracked Schibsted only.
+   AOM /feed — TikTok-style video feed
+   Full-screen YouTube thumbnails with overlay text, snap scroll.
+   Data: /feed/data/findings.json (video items with youtube_id)
+   Brand: obsidian/ivory + bronze accent, flat surfaces.
    ============================================================ */
 @font-face{font-family:'Schibsted Grotesk';src:url('/feed/assets/fonts/SchibstedGrotesk-var.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 
@@ -28,9 +24,9 @@
   --ink-300:#B6B2AB;
   --ivory:#F6F6F4;
   --gold:#B58A38;
-  --mast-h:56px;
-  --tab-h:40px;
+  --mast-h:48px;
   --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;background:var(--obsidian);color:var(--ivory);overflow:hidden}
@@ -38,114 +34,111 @@ body{font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing
 button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 a{color:inherit}
 
-/* ---- masthead ---- */
+/* ---- compact masthead ---- */
 .mast{position:fixed;top:0;left:0;right:0;height:var(--mast-h);z-index:30;
-  display:flex;align-items:center;gap:16px;padding:0 20px;
-  background:var(--obsidian);border-bottom:1px solid var(--ink-700)}
-.mast .mark{width:26px;height:26px;display:block;color:var(--ivory);flex:none}
+  display:flex;align-items:center;gap:12px;padding:0 16px;
+  background:linear-gradient(to bottom,rgba(11,11,11,.92) 0%,rgba(11,11,11,.6) 70%,transparent 100%);
+  pointer-events:none}
+.mast>*{pointer-events:auto}
+.mast .mark{width:22px;height:22px;display:block;color:var(--ivory);flex:none}
 .mast .mark svg{width:100%;height:100%;display:block}
-.wordmark{font-size:14px;font-weight:700;line-height:1;
-  letter-spacing:.26em;text-transform:uppercase;display:flex;align-items:baseline;gap:4px}
-.wordmark .period{width:5px;height:5px;background:var(--gold);display:inline-block;flex:none}
-.mast .count{margin-left:auto;font-size:11px;letter-spacing:.18em;color:var(--ink-300);
-  border:1px solid var(--ink-700);padding:4px 12px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.mast .count b{color:var(--ivory);font-weight:500}
+.wordmark{font-size:13px;font-weight:700;line-height:1;
+  letter-spacing:.26em;text-transform:uppercase;display:flex;align-items:baseline;gap:3px}
+.wordmark .period{width:4px;height:4px;background:var(--gold);display:inline-block;flex:none}
+.mast .counter{margin-left:auto;font-size:11px;letter-spacing:.14em;color:rgba(246,246,244,.5);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
 
-/* ---- tab bar ---- */
-.tabs{position:fixed;top:var(--mast-h);left:0;right:0;height:var(--tab-h);z-index:29;
-  display:flex;background:var(--obsidian);border-bottom:1px solid var(--ink-700)}
-.tab{flex:1;display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--ink-500);border-bottom:2px solid transparent;transition:color .15s}
-.tab.active{color:var(--ivory);border-bottom-color:var(--gold)}
-.tab:hover:not(.active){color:var(--ink-300)}
+/* ---- tab pills (overlaid on feed) ---- */
+.tabs{position:fixed;top:calc(var(--mast-h) + 4px);left:50%;transform:translateX(-50%);z-index:29;
+  display:flex;gap:2px;background:rgba(11,11,11,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(246,246,244,.08);padding:3px}
+.tab{padding:6px 16px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(246,246,244,.4);transition:all .15s}
+.tab.active{color:var(--ivory);background:rgba(246,246,244,.1)}
 
-/* ---- feed ---- */
-.feed{position:fixed;inset:0;top:calc(var(--mast-h) + var(--tab-h));
-  overflow-y:scroll;scroll-snap-type:y mandatory;
+/* ---- feed container ---- */
+.feed{position:fixed;inset:0;overflow-y:scroll;scroll-snap-type:y mandatory;
   scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .feed::-webkit-scrollbar{display:none}
 .feed.hidden{display:none}
-.item{height:100%;scroll-snap-align:start;scroll-snap-stop:always;
-  position:relative;display:flex;align-items:center;justify-content:center}
 
-/* the card: full-bleed on phone, 9/16 frame on desktop */
-.stage{position:relative;width:100%;height:100%;display:flex;flex-direction:column;
-  justify-content:flex-start;overflow:hidden;
-  padding:24px 20px calc(24px + var(--safe-b));background:var(--obsidian)}
-.foot{margin-top:auto}
-@media (min-width:700px){
-  .stage{width:auto;aspect-ratio:9/16;height:min(100%,92vh);border:1px solid var(--ink-700);
-    padding:32px 32px 32px}
-}
+/* ---- video card: full viewport ---- */
+.vcard{height:100%;scroll-snap-align:start;scroll-snap-stop:always;
+  position:relative;overflow:hidden;background:var(--obsidian)}
 
-/* card image hero (optional) */
-.card-img{position:relative;width:100%;height:36%;flex:none;overflow:hidden;border-bottom:1px solid var(--ink-700)}
-.card-img img,.card-img video{width:100%;height:100%;object-fit:cover;display:block}
-.has-img .core{flex:initial;justify-content:flex-start;padding:8px 0;gap:12px}
-.has-img .headline{font-size:clamp(24px,6vw,36px)}
-@media (min-width:700px){.has-img .headline{font-size:36px}}
-.has-img .body{font-size:14px}
-.has-img .stage{padding-top:0}
-@media (min-width:700px){.has-img .stage{padding-top:0}}
+/* thumbnail fills card */
+.vcard .thumb{position:absolute;inset:0;background-size:cover;background-position:center;
+  background-repeat:no-repeat;transition:transform 8s ease-out}
+.vcard.active .thumb{transform:scale(1.05)}
 
-/* card header: lane plate + date + lane mark */
-.head{display:flex;align-items:flex-start;gap:8px}
-.lane{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--obsidian);background:var(--gold);padding:4px 8px}
-.date{font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--ink-300);border:1px solid var(--ink-700);padding:4px 8px}
-.lanemark{margin-left:auto;width:36px;height:36px;color:var(--ink-300);flex:none}
-.lanemark svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:1.5}
+/* gradient overlay: bottom third */
+.vcard .grad{position:absolute;inset:0;
+  background:linear-gradient(
+    to bottom,
+    rgba(11,11,11,.3) 0%,
+    transparent 30%,
+    transparent 45%,
+    rgba(11,11,11,.65) 65%,
+    rgba(11,11,11,.92) 85%,
+    rgba(11,11,11,.98) 100%
+  )}
 
-/* card body */
-.core{flex:1;display:flex;flex-direction:column;gap:16px;justify-content:flex-start;padding:16px 0}
-#feed-agents .core{justify-content:center}
-#feed-agents .agent-update .core{justify-content:flex-start}
-#feed-agents .body{-webkit-line-clamp:8}
-.progress{font-size:11px;font-weight:700;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ink-500);font-variant-numeric:tabular-nums;
-  margin-left:auto}
-.headline{font-weight:700;line-height:1.04;letter-spacing:-0.01em;
-  font-size:clamp(32px,8.6vw,48px);text-wrap:balance;overflow-wrap:break-word}
-@media (min-width:700px){.headline{font-size:44px}}
-.subtitle{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
-.body{font-size:16px;line-height:1.5;color:var(--ink-300);max-width:52ch;
-  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
-.act{display:flex;gap:12px;align-items:flex-start;max-width:52ch}
-.act .sq{width:8px;height:8px;background:var(--gold);flex:none;margin-top:8px}
-.act p{font-size:16px;line-height:1.5;font-weight:600}
+/* play button */
+.vcard .play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:72px;height:72px;cursor:pointer;z-index:5;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid rgba(246,246,244,.7);border-radius:50%;
+  background:rgba(11,11,11,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:all .2s}
+.vcard .play:hover{border-color:var(--ivory);background:rgba(11,11,11,.55);transform:translate(-50%,-50%) scale(1.08)}
+.vcard .play svg{width:28px;height:28px;fill:var(--ivory);margin-left:3px}
 
-/* card foot: index + source */
-.foot{display:flex;align-items:center;gap:8px}
-.idx{font-size:12px;font-weight:700;letter-spacing:.14em;
-  color:var(--obsidian);background:var(--gold);padding:4px 8px;font-variant-numeric:tabular-nums}
-.src{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink-300);text-decoration:none;border-bottom:1px solid var(--ink-700);
-  padding-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
-.src:hover{color:var(--ivory);border-color:var(--gold)}
+/* text overlay at bottom */
+.vcard .info{position:absolute;bottom:0;left:0;right:0;z-index:4;
+  padding:0 72px 32px 20px;
+  padding-bottom:calc(32px + var(--safe-b))}
+@media (min-width:700px){.vcard .info{padding:0 100px 40px 40px}}
 
-/* ---- fixed action rail ---- */
-.rail{position:fixed;right:16px;bottom:calc(24px + var(--safe-b));z-index:31;
-  display:flex;flex-direction:column;gap:8px}
-.rail button{width:46px;height:46px;border:1px solid var(--ink-700);background:var(--obsidian);
-  display:flex;align-items:center;justify-content:center;color:var(--ivory)}
-.rail button:active{background:var(--ink-800)}
+.vcard .lane-pill{display:inline-block;font-size:10px;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--obsidian);background:var(--gold);padding:3px 8px;margin-bottom:10px}
+
+.vcard .vtitle{font-size:clamp(22px,5.5vw,32px);font-weight:700;line-height:1.12;
+  letter-spacing:-0.01em;text-wrap:balance;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;
+  text-shadow:0 1px 4px rgba(0,0,0,.5)}
+@media (min-width:700px){.vcard .vtitle{font-size:28px;-webkit-line-clamp:2}}
+
+.vcard .meta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;
+  font-size:12px;font-weight:500;letter-spacing:.06em;color:rgba(246,246,244,.6)}
+.vcard .meta .dot{width:3px;height:3px;background:rgba(246,246,244,.3);border-radius:50%;flex:none}
+.vcard .channel{font-weight:700;color:rgba(246,246,244,.8)}
+
+.vcard .why{margin-top:8px;font-size:13px;line-height:1.45;color:rgba(246,246,244,.5);
+  max-width:48ch;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+
+/* card index */
+.vcard .vidx{position:absolute;top:calc(var(--mast-h) + 44px);left:20px;z-index:4;
+  font-size:11px;font-weight:700;letter-spacing:.14em;
+  color:rgba(246,246,244,.3);font-variant-numeric:tabular-nums}
+@media (min-width:700px){.vcard .vidx{left:40px}}
+
+/* ---- right action rail ---- */
+.rail{position:fixed;right:12px;bottom:calc(120px + var(--safe-b));z-index:31;
+  display:flex;flex-direction:column;gap:6px}
+@media (min-width:700px){.rail{right:24px;bottom:calc(140px + var(--safe-b))}}
+.rail button{width:44px;height:44px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(246,246,244,.15);border-radius:50%;
+  background:rgba(11,11,11,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  color:rgba(246,246,244,.7);transition:all .15s}
+.rail button:hover{border-color:rgba(246,246,244,.3);color:var(--ivory)}
+.rail button:active{transform:scale(.92)}
 .rail svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.6}
-.rail .on{color:var(--obsidian);background:var(--gold);border-color:var(--gold)}
-.rail .on svg{fill:currentColor}
-@media (min-width:700px){.rail{right:calc(50% - min(46vh*9/16,46vw) - 78px)}}
+.rail .on{color:var(--gold);border-color:var(--gold)}
+.rail .on svg{fill:var(--gold);stroke:var(--gold)}
 
-/* keyboard hint, desktop only */
-.hint{position:fixed;left:20px;bottom:calc(18px + var(--safe-b));z-index:31;
-  font-size:11px;letter-spacing:.18em;color:var(--ink-500);text-transform:uppercase;display:none}
-@media (min-width:700px){.hint{display:block}}
-
-/* ---- YouTube play overlay + full-screen modal ---- */
-.yt-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(11,11,11,.35);cursor:pointer;transition:background .15s;z-index:2}
-.yt-play:hover{background:rgba(11,11,11,.15)}
-.yt-play svg{width:56px;height:56px;color:var(--ivory);filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+/* ---- YouTube full-screen overlay ---- */
 .yt-overlay{position:fixed;inset:0;z-index:50;background:rgba(11,11,11,.97);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
   opacity:0;pointer-events:none;transition:opacity .2s}
@@ -158,15 +151,61 @@ a{color:inherit}
 .yt-overlay .yt-close{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;
   background:var(--obsidian);border:1px solid var(--ink-700);color:var(--ivory);font-size:20px;cursor:pointer}
 .yt-overlay .yt-close:hover{border-color:var(--gold);color:var(--gold)}
+.yt-overlay .yt-title{font-size:14px;font-weight:600;color:var(--ivory);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .yt-overlay .yt-ext{font-size:12px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink-300);text-decoration:none;border-bottom:1px solid var(--ink-700);padding-bottom:2px;margin-left:auto}
+  color:var(--ink-300);text-decoration:none;border-bottom:1px solid var(--ink-700);padding-bottom:2px;margin-left:auto;flex:none}
 .yt-overlay .yt-ext:hover{color:var(--ivory);border-color:var(--gold)}
-/* ---- toast notification ---- */
-.toast{position:fixed;top:calc(var(--mast-h) + var(--tab-h) + 12px);left:50%;transform:translateX(-50%);
+
+/* ---- toast ---- */
+.toast{position:fixed;top:calc(var(--mast-h) + 52px);left:50%;transform:translateX(-50%);
   z-index:40;padding:8px 16px;background:var(--gold);color:var(--obsidian);
   font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
+
+/* ---- empty state ---- */
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 24px;text-align:center;gap:16px;scroll-snap-align:start}
+.empty .headline{font-size:clamp(28px,7vw,40px);font-weight:700;line-height:1.08;letter-spacing:-0.01em}
+.empty .body{font-size:15px;line-height:1.5;color:var(--ink-300);max-width:36ch}
+.empty .pill{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--obsidian);background:var(--gold);padding:4px 10px}
+
+/* ---- keyboard hint ---- */
+.hint{position:fixed;left:20px;bottom:calc(18px + var(--safe-b));z-index:31;
+  font-size:11px;letter-spacing:.18em;color:rgba(246,246,244,.2);text-transform:uppercase;display:none}
+@media (min-width:700px){.hint{display:block}}
+
+/* ---- agent feed (kept as-is) ---- */
+.item{height:100%;scroll-snap-align:start;scroll-snap-stop:always;
+  position:relative;display:flex;align-items:center;justify-content:center}
+.stage{position:relative;width:100%;height:100%;display:flex;flex-direction:column;
+  justify-content:flex-start;overflow:hidden;
+  padding:24px 20px calc(24px + var(--safe-b));background:var(--obsidian)}
+@media (min-width:700px){
+  .stage{width:auto;aspect-ratio:9/16;height:min(100%,92vh);border:1px solid var(--ink-700);padding:32px}
+}
+.head{display:flex;align-items:flex-start;gap:8px}
+.lane{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--obsidian);background:var(--gold);padding:4px 8px}
+.date{font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-300);border:1px solid var(--ink-700);padding:4px 8px}
+.core{flex:1;display:flex;flex-direction:column;gap:16px;justify-content:center;padding:16px 0}
+.headline{font-weight:700;line-height:1.04;letter-spacing:-0.01em;
+  font-size:clamp(32px,8.6vw,48px);text-wrap:balance;overflow-wrap:break-word}
+@media (min-width:700px){.headline{font-size:44px}}
+.subtitle{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.abody{font-size:16px;line-height:1.5;color:var(--ink-300);max-width:52ch;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
+.act{display:flex;gap:12px;align-items:flex-start;max-width:52ch}
+.act .sq{width:8px;height:8px;background:var(--gold);flex:none;margin-top:8px}
+.act p{font-size:16px;line-height:1.5;font-weight:600}
+.foot{margin-top:auto;display:flex;align-items:center;gap:8px}
+.idx{font-size:12px;font-weight:700;letter-spacing:.14em;
+  color:var(--obsidian);background:var(--gold);padding:4px 8px;font-variant-numeric:tabular-nums}
+.progress{font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-500);font-variant-numeric:tabular-nums;margin-left:auto}
 </style>
 </head>
 <body>
@@ -186,37 +225,33 @@ a{color:inherit}
 <rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect>
 </svg></a>
   <div class="wordmark">Feed<span class="period" aria-hidden="true"></span></div>
-  <div class="count"><b id="pos">01</b>&nbsp;/&nbsp;<span id="total">--</span></div>
+  <span class="counter" id="counter">1 / --</span>
 </header>
 
 <nav class="tabs" aria-label="Feed sections">
-  <button class="tab active" data-tab="research" aria-selected="true">Research</button>
+  <button class="tab active" data-tab="videos" aria-selected="true">Videos</button>
   <button class="tab" data-tab="agents" aria-selected="false">Agents</button>
-  <button class="tab" data-tab="saved" aria-selected="false">Saved</button>
 </nav>
 
-<main class="feed" id="feed-research" aria-label="AOM daily research feed"></main>
-<main class="feed hidden" id="feed-agents" aria-label="AOM agent updates"></main>
-<main class="feed hidden" id="feed-saved" aria-label="Saved items"></main>
+<main class="feed" id="feed-videos" aria-label="Trending video feed"></main>
+<main class="feed hidden" id="feed-agents" aria-label="Agent updates"></main>
 
-<nav class="rail" aria-label="Actions for current card">
+<nav class="rail" aria-label="Actions">
   <button id="likeBtn" aria-label="Like" aria-pressed="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20l-7-7a4.2 4.2 0 010-6 4.2 4.2 0 016 0l1 1 1-1a4.2 4.2 0 016 0 4.2 4.2 0 010 6l-7 7z"/></svg>
-  </button>
-  <button id="cornerBtn" aria-label="Send to Corner" title="Send to Corner">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4H3v14l4-3h14z"/></svg>
   </button>
   <button id="shareBtn" aria-label="Share">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>
   </button>
 </nav>
 
-<p class="hint">Scroll · J / K · 1 / 2 / 3 tabs · Esc close</p>
+<p class="hint">J / K to browse. Enter to play. Esc to close.</p>
 
 <div class="yt-overlay" id="ytOverlay">
   <div class="yt-bar">
     <button class="yt-close" aria-label="Close video">&times;</button>
-    <a class="yt-ext" id="ytExtLink" href="#" target="_blank" rel="noopener">Watch on YouTube &#8599;</a>
+    <span class="yt-title" id="ytTitle"></span>
+    <a class="yt-ext" id="ytExtLink" href="#" target="_blank" rel="noopener">YouTube &#8599;</a>
   </div>
   <div class="yt-wrap"><iframe id="ytFrame" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
 </div>
@@ -224,153 +259,136 @@ a{color:inherit}
 
 <script>
 /* ============================================================
-   Lane definitions: display name + constructed hairline mark
-   6 research lanes + 1 agent lane
+   AOM /feed — TikTok-style video feed engine
+   Items must have youtube_id. Legacy article items are skipped.
    ============================================================ */
 const LANES = {
-  'claude-animation': {tag:'Claude Animation', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M4 26 Q12 8 18 18 T32 12"/><path d="M4 31 Q12 13 18 23 T32 17" opacity=".45"/></svg>'},
-  'vs-corner': {tag:'Agent Platforms', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M6 14 V6 h8"/><path d="M30 22 v8 h-8"/><rect x="13" y="13" width="10" height="10"/></svg>'},
-  'vs-aom': {tag:'Studio Market', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M6 30 L18 6 30 30"/><path d="M11 21 h14"/></svg>'},
-  'construction-intel': {tag:'Construction Intel', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M8 28h20"/><path d="M12 28V18"/><path d="M24 28V18"/><path d="M10 18h16l-2-8H12z"/></svg>'},
-  'ai-packaging': {tag:'AI Packaging', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><rect x="14" y="14" width="8" height="8"/><path d="M18 6v8"/><path d="M18 22v8"/><path d="M6 18h8"/><path d="M22 18h8"/></svg>'},
-  'tool-releases': {tag:'Tools &amp; Models', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M20 6L12 20h6l-2 10 10-14h-6z"/></svg>'},
-  'yt-ai-workflows': {tag:'AI Workflows', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><polygon points="14,10 26,18 14,26"/><rect x="4" y="8" width="28" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'},
-  'yt-music-production': {tag:'Music Production', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><polygon points="14,10 26,18 14,26"/><circle cx="18" cy="18" r="12" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'},
-  'yt-filmmaking': {tag:'Filmmaking &amp; Color', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><polygon points="14,10 26,18 14,26"/><path d="M6 8h24v20H6z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 12h24M6 24h24" stroke="currentColor" stroke-width=".75"/></svg>'},
-  'agent': {tag:'Agent', mark:
-    '<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="12" r="5"/><path d="M8 30c0-6 4-10 10-10s10 4 10 10"/></svg>'},
+  'ai-builds':          {tag:'AI Builds',          color:'var(--gold)'},
+  'ai-tools':           {tag:'AI Tools',           color:'var(--gold)'},
+  'construction':       {tag:'Construction',       color:'var(--gold)'},
+  'creative-workflows': {tag:'Creative Workflows', color:'var(--gold)'},
+  /* legacy lanes (for any old data that leaks through) */
+  'yt-ai-workflows':    {tag:'AI Workflows',       color:'var(--gold)'},
+  'yt-music-production':{tag:'Music Production',   color:'var(--gold)'},
+  'yt-filmmaking':      {tag:'Filmmaking',         color:'var(--gold)'},
 };
-const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad = n => String(n+1).padStart(2,'0');
 
 /* ---- state ---- */
 const state = {
-  tab: 'research',
-  research: { items:[], shells:[], active:-1, observer:null },
-  agents:   { items:[], shells:[], active:-1, observer:null },
-  saved:    { items:[], shells:[], active:-1, observer:null }
+  tab: 'videos',
+  videos: { items:[], els:[], active:-1, observer:null },
+  agents: { items:[], els:[], active:-1, observer:null }
 };
 function cur(){ return state[state.tab]; }
 
-const feedResearch = document.getElementById('feed-research');
-const feedAgents   = document.getElementById('feed-agents');
-const feedSaved    = document.getElementById('feed-saved');
-const posEl  = document.getElementById('pos');
-const totalEl = document.getElementById('total');
+const feedVideos = document.getElementById('feed-videos');
+const feedAgents = document.getElementById('feed-agents');
+const counterEl  = document.getElementById('counter');
 const likes = new Set(JSON.parse(localStorage.getItem('aom-feed-likes')||'[]'));
 
-/* ---- card builder (shared by both tabs) ---- */
-function cardHTML(it, i){
-  const lane = LANES[it.lane] || {tag: it.lane, mark: ''};
-  const d = new Date(it.date + 'T12:00:00');
-  const dateTxt = MONTHS[d.getMonth()] + ' ' + String(d.getDate()).padStart(2,'0');
-  let host = it.source_name || '';
-  try{ host = host || new URL(it.source_url).hostname.replace('www.',''); }catch(_){}
-
-  const hasMedia = (it.image || it.video) ? ' has-img' : '';
-  const isYT = it.lane && it.lane.startsWith('yt-');
-  const ytPlay = isYT && it.source_url ? '<div class="yt-play" data-yt-url="'+esc(it.source_url)+'"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="23" stroke="currentColor" stroke-width="1.5"/><polygon points="19,14 35,24 19,34" fill="currentColor"/></svg></div>' : '';
-  const mediaBlock = it.video
-    ? `<div class="card-img"><video src="${esc(it.video)}" autoplay loop muted playsinline></video></div>`
-    : it.image
-      ? `<div class="card-img">${ytPlay}<img src="${esc(it.image)}" alt="" loading="lazy"></div>`
-      : '';
-  const subBlock = it.subtitle
-    ? `<p class="subtitle">${esc(it.subtitle)}</p>`
-    : '';
-  const srcTag = host
-    ? (it.source_url && it.source_url !== '#'
-      ? `<a class="src" href="${esc(it.source_url)}" target="_blank" rel="noopener">${esc(host)} &#8599;</a>`
-      : `<span class="src">${esc(host)}</span>`)
-    : '';
-  const progressTag = it.progress
-    ? `<span class="progress">${esc(it.progress)}</span>`
-    : '';
-
-  return `<div class="stage">
-    ${mediaBlock}
-    <div class="head">
-      <span class="lane">${esc(lane.tag)}</span>
-      <span class="date">${dateTxt}</span>
-      <span class="lanemark" aria-hidden="true">${lane.mark}</span>
-    </div>
-    <div class="core">
-      <h2 class="headline">${esc(it.headline)}</h2>
-      ${subBlock}
-      <p class="body">${esc(it.body)}</p>
-      <div class="act"><span class="sq" aria-hidden="true"></span><p>${esc(it.action)}</p></div>
-    </div>
-    <div class="foot">
-      <span class="idx">${pad(i)}</span>
-      ${srcTag}
-      ${progressTag}
-    </div>
-  </div>`;
+/* ---- YouTube thumbnail URL (tries maxres, falls back to hq) ---- */
+function thumbUrl(ytId){
+  return 'https://img.youtube.com/vi/'+ytId+'/hqdefault.jpg';
+}
+function maxThumbUrl(ytId){
+  return 'https://img.youtube.com/vi/'+ytId+'/maxresdefault.jpg';
 }
 
-/* ---- build a feed ---- */
-function buildFeed(feedEl, items, key){
-  const s = state[key];
+/* ---- video card builder ---- */
+function videoCardHTML(it, i, total){
+  const lane = LANES[it.lane] || {tag: it.lane || 'Video', color:'var(--gold)'};
+  const views = it.views || '';
+  const channel = it.channel || '';
+  const title = it.title || it.headline || '';
+  const why = it.why || it.body || '';
+  const ytId = it.youtube_id;
+
+  return `<div class="thumb" style="background-image:url('${esc(maxThumbUrl(ytId))}'),url('${esc(thumbUrl(ytId))}')"></div>
+    <div class="grad"></div>
+    <button class="play" data-yt-id="${esc(ytId)}" data-title="${esc(title)}" aria-label="Play video">
+      <svg viewBox="0 0 24 24"><polygon points="8,4 20,12 8,20"/></svg>
+    </button>
+    <span class="vidx">${pad(i)} / ${String(total).padStart(2,'0')}</span>
+    <div class="info">
+      <span class="lane-pill">${esc(lane.tag)}</span>
+      <h2 class="vtitle">${esc(title)}</h2>
+      <div class="meta">
+        ${channel ? '<span class="channel">'+esc(channel)+'</span>' : ''}
+        ${channel && views ? '<span class="dot"></span>' : ''}
+        ${views ? '<span>'+esc(views)+' views</span>' : ''}
+      </div>
+      ${why ? '<p class="why">'+esc(why)+'</p>' : ''}
+    </div>`;
+}
+
+/* ---- build video feed ---- */
+function buildVideoFeed(items){
+  const s = state.videos;
   s.items = items;
-  feedEl.innerHTML = '';
+  feedVideos.innerHTML = '';
   if(s.observer) s.observer.disconnect();
+
+  if(items.length === 0){
+    feedVideos.innerHTML = '<section class="empty"><span class="pill">Coming Soon</span><h2 class="headline">First videos drop tomorrow.</h2><p class="body">The morning sweep finds trending YouTube videos across AI builds, construction, and creative workflows. Check back after the run.</p></section>';
+    counterEl.textContent = '-- / --';
+    return;
+  }
 
   items.forEach((it,i)=>{
     const sec = document.createElement('section');
-    sec.className='item'; sec.dataset.i=i; sec.id=it.id;
-    sec.innerHTML = cardHTML(it,i);
-    if(it.image || it.video) sec.classList.add('has-img');
-    if(it._update) sec.classList.add('agent-update');
-    feedEl.appendChild(sec);
+    sec.className = 'vcard';
+    sec.dataset.i = i;
+    sec.id = it.id;
+    sec.innerHTML = videoCardHTML(it, i, items.length);
+    feedVideos.appendChild(sec);
   });
-  s.shells = [...feedEl.children];
+  s.els = [...feedVideos.children];
 
+  /* try loading maxres thumbnail, fall back to hq on error */
+  s.els.forEach(el=>{
+    const thumb = el.querySelector('.thumb');
+    if(!thumb) return;
+    const style = thumb.style.backgroundImage;
+    const img = new Image();
+    const ytId = el.querySelector('.play')?.dataset?.ytId;
+    if(!ytId) return;
+    img.onload = ()=>{ if(img.naturalWidth>120) thumb.style.backgroundImage = "url('"+maxThumbUrl(ytId)+"')"; };
+    img.onerror = ()=>{ thumb.style.backgroundImage = "url('"+thumbUrl(ytId)+"')"; };
+    img.src = maxThumbUrl(ytId);
+  });
+
+  /* intersection observer for active card */
   const ratios = new Map();
   s.observer = new IntersectionObserver(entries=>{
     entries.forEach(e=>ratios.set(+e.target.dataset.i, e.intersectionRatio));
     let best=-1, bestR=0;
     ratios.forEach((r,i)=>{ if(r>bestR){bestR=r;best=i;} });
     if(best>=0 && best!==s.active && bestR>=.5){
-      s.active=best;
-      if(key===state.tab) updateCounter();
-      /* play/pause videos based on visibility */
-      s.shells.forEach((el,j)=>{
-        const v=el.querySelector('video');
-        if(!v) return;
-        if(j===best) v.play().catch(()=>{});
-        else v.pause();
-      });
+      /* remove active class from old */
+      if(s.active>=0 && s.els[s.active]) s.els[s.active].classList.remove('active');
+      s.active = best;
+      s.els[best].classList.add('active');
+      if(state.tab==='videos') updateCounter();
     }
-  },{root:feedEl,threshold:[0,.25,.5,.75,1]});
-  s.shells.forEach(el=>s.observer.observe(el));
+  },{root:feedVideos,threshold:[0,.25,.5,.75,1]});
+  s.els.forEach(el=>s.observer.observe(el));
 
-  /* jump to hash if present */
-  if(key===state.tab){
-    const start = items.findIndex(it=>'#'+it.id===decodeURIComponent(location.hash));
-    if(start>0) s.shells[start].scrollIntoView();
-    updateCounter();
-  }
+  /* hash jump */
+  const start = items.findIndex(it=>'#'+it.id===decodeURIComponent(location.hash));
+  if(start>0) s.els[start].scrollIntoView();
+  updateCounter();
 }
 
 function updateCounter(){
   const s = cur();
-  posEl.textContent = s.active>=0 ? pad(s.active) : '01';
-  totalEl.textContent = String(s.items.length).padStart(2,'0');
+  if(s.items.length===0){ counterEl.textContent='-- / --'; return; }
+  counterEl.textContent = pad(s.active>=0?s.active:0) + ' / ' + String(s.items.length).padStart(2,'0');
 }
 
 /* ---- tab switching ---- */
 const tabBtns = document.querySelectorAll('.tab');
-const urlTab = new URLSearchParams(location.search).get('tab');
 function switchTab(key){
   if(key===state.tab) return;
   state.tab = key;
@@ -379,10 +397,8 @@ function switchTab(key){
     b.classList.toggle('active',on);
     b.setAttribute('aria-selected',String(on));
   });
-  feedResearch.classList.toggle('hidden', key!=='research');
+  feedVideos.classList.toggle('hidden', key!=='videos');
   feedAgents.classList.toggle('hidden', key!=='agents');
-  feedSaved.classList.toggle('hidden', key!=='saved');
-  if(key==='saved') rebuildSaved();
   updateCounter();
   likeUI();
 }
@@ -392,79 +408,142 @@ tabBtns.forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 const likeBtn=document.getElementById('likeBtn'), shareBtn=document.getElementById('shareBtn');
 function likeUI(){
   const s=cur();
-  const on = s.active>=0 && likes.has(s.items[s.active].id);
+  const on = s.active>=0 && s.items[s.active] && likes.has(s.items[s.active].id);
   likeBtn.classList.toggle('on',on);
   likeBtn.setAttribute('aria-pressed',String(on));
 }
 likeBtn.addEventListener('click',()=>{
-  const s=cur(); if(s.active<0) return;
+  const s=cur(); if(s.active<0||!s.items[s.active]) return;
   const id=s.items[s.active].id;
   likes.has(id)?likes.delete(id):likes.add(id);
   localStorage.setItem('aom-feed-likes',JSON.stringify([...likes]));
   likeUI();
-  if(state.tab==='saved') rebuildSaved();
 });
 shareBtn.addEventListener('click',async()=>{
   const s=cur();
-  const url = location.origin+'/feed'+(s.active>=0?'#'+s.items[s.active].id:'');
-  try{
-    if(navigator.share) await navigator.share({title:'AOM — Feed',url});
-    else{ await navigator.clipboard.writeText(url);
-      shareBtn.classList.add('on'); setTimeout(()=>shareBtn.classList.remove('on'),700); }
-  }catch(_){}
+  if(s.active>=0 && s.items[s.active] && s.items[s.active].youtube_id){
+    const url = 'https://www.youtube.com/watch?v='+s.items[s.active].youtube_id;
+    try{
+      if(navigator.share) await navigator.share({title:s.items[s.active].title||'AOM Feed',url});
+      else{ await navigator.clipboard.writeText(url); showToast('Link copied'); }
+    }catch(_){}
+  } else {
+    const url = location.origin+'/feed'+(s.active>=0&&s.items[s.active]?'#'+s.items[s.active].id:'');
+    try{
+      if(navigator.share) await navigator.share({title:'AOM Feed',url});
+      else{ await navigator.clipboard.writeText(url); showToast('Link copied'); }
+    }catch(_){}
+  }
 });
 
 /* ---- keyboard ---- */
 function jump(d){
   const s=cur();
   const t=Math.min(s.items.length-1,Math.max(0,(s.active<0?0:s.active)+d));
-  if(s.shells[t]){
-    const feedEl = state.tab==='research' ? feedResearch : state.tab==='agents' ? feedAgents : feedSaved;
-    s.shells[t].scrollIntoView({behavior:'smooth'});
-  }
+  const feedEl = state.tab==='videos' ? feedVideos : feedAgents;
+  if(s.els[t]) s.els[t].scrollIntoView({behavior:'smooth'});
 }
 addEventListener('keydown',e=>{
+  if(ytOverlay.classList.contains('open')){
+    if(e.key==='Escape'){e.preventDefault();closeYT();}
+    return;
+  }
   if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();jump(1);}
   else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();jump(-1);}
-  else if(e.key==='1'){e.preventDefault();switchTab('research');}
+  else if(e.key==='Enter'){
+    e.preventDefault();
+    const s=cur();
+    if(s.active>=0&&s.items[s.active]&&s.items[s.active].youtube_id){
+      openYT(s.items[s.active].youtube_id, s.items[s.active].title||'');
+    }
+  }
+  else if(e.key==='1'){e.preventDefault();switchTab('videos');}
   else if(e.key==='2'){e.preventDefault();switchTab('agents');}
-  else if(e.key==='3'){e.preventDefault();switchTab('saved');}
 });
 
-/* ---- saved tab ---- */
-function rebuildSaved(){
-  const all = [...state.research.items, ...state.agents.items];
-  const saved = all.filter(it=>likes.has(it.id));
-  if(saved.length===0){
-    buildFeed(feedSaved, [{lane:'vs-aom', date:new Date().toISOString().slice(0,10), id:'saved-empty',
-      headline:'Nothing saved yet.',
-      body:'Tap the heart on any card to save it here. Your saved items stay across sessions.',
-      action:'Swipe through Research or Agents to find something worth keeping.',
-      source_name:'', source_url:'#'}], 'saved');
-  } else {
-    buildFeed(feedSaved, saved, 'saved');
-  }
+/* ---- YouTube overlay ---- */
+const ytOverlay=document.getElementById('ytOverlay');
+const ytFrame=document.getElementById('ytFrame');
+const ytExtLink=document.getElementById('ytExtLink');
+const ytTitle=document.getElementById('ytTitle');
+function openYT(ytId,title){
+  ytFrame.src='https://www.youtube.com/embed/'+ytId+'?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+  ytExtLink.href='https://www.youtube.com/watch?v='+ytId;
+  ytTitle.textContent=title||'';
+  ytOverlay.classList.add('open');
 }
+function closeYT(){ytOverlay.classList.remove('open');ytFrame.src='';}
+document.addEventListener('click',e=>{
+  const p=e.target.closest('.play');
+  if(p){e.preventDefault();e.stopPropagation();openYT(p.dataset.ytId,p.dataset.title);return;}
+  if(e.target===ytOverlay) closeYT();
+});
+ytOverlay.querySelector('.yt-close').addEventListener('click',closeYT);
 
-/* ---- load research feed ---- */
+/* ---- toast ---- */
+const toastEl=document.getElementById('toast');
+function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),1400);}
+
+/* ---- load video feed ---- */
 fetch('/feed/data/findings.json',{cache:'no-store'})
   .then(r=>r.json())
   .then(data=>{
     const items=[];
     data.days.sort((a,b)=>b.date.localeCompare(a.date)).forEach(day=>{
-      day.items.forEach((it,j)=>items.push({...it, date:day.date, id:day.date+'-'+(j+1)}));
+      day.items.forEach((it,j)=>{
+        /* only include items with youtube_id */
+        if(!it.youtube_id) return;
+        items.push({...it, date:day.date, id:day.date+'-yt-'+(j+1)});
+      });
     });
-    buildFeed(feedResearch, items, 'research');
+    buildVideoFeed(items);
   })
   .catch(()=>{
-    buildFeed(feedResearch, [{lane:'vs-aom', date:new Date().toISOString().slice(0,10), id:'boot',
-      headline:'The first briefing lands tomorrow at 5:04 AM.',
-      body:'This feed carries AOM\'s daily research: AI animation, agent platforms, creative studios, construction intel, AI packaging, and tools. One finding per swipe, sourced.',
-      action:'Come back after the morning run.',
-      source_name:'aheadofmarket.com', source_url:'https://www.aheadofmarket.com'}], 'research');
+    buildVideoFeed([]);
   });
 
-/* ---- load agent feed ---- */
+/* ---- load agent feed (kept from prior version) ---- */
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+function agentCardHTML(it, i){
+  const d = new Date(it.date + 'T12:00:00');
+  const dateTxt = MONTHS[d.getMonth()] + ' ' + String(d.getDate()).padStart(2,'0');
+  const subBlock = it.subtitle ? '<p class="subtitle">'+esc(it.subtitle)+'</p>' : '';
+  const progressTag = it.progress ? '<span class="progress">'+esc(it.progress)+'</span>' : '';
+  return '<div class="stage"><div class="head"><span class="lane">'+esc('Agent')+'</span><span class="date">'+dateTxt+'</span></div>'
+    +'<div class="core"><h2 class="headline">'+esc(it.headline)+'</h2>'+subBlock
+    +'<p class="abody">'+esc(it.body)+'</p>'
+    +(it.action?'<div class="act"><span class="sq"></span><p>'+esc(it.action)+'</p></div>':'')
+    +'</div><div class="foot"><span class="idx">'+pad(i)+'</span>'+progressTag+'</div></div>';
+}
+
+function buildAgentFeed(items){
+  const s = state.agents;
+  s.items = items;
+  feedAgents.innerHTML = '';
+  if(s.observer) s.observer.disconnect();
+
+  items.forEach((it,i)=>{
+    const sec = document.createElement('section');
+    sec.className='item'; sec.dataset.i=i; sec.id=it.id;
+    sec.innerHTML = agentCardHTML(it,i);
+    feedAgents.appendChild(sec);
+  });
+  s.els = [...feedAgents.children];
+
+  const ratios = new Map();
+  s.observer = new IntersectionObserver(entries=>{
+    entries.forEach(e=>ratios.set(+e.target.dataset.i, e.intersectionRatio));
+    let best=-1, bestR=0;
+    ratios.forEach((r,i)=>{ if(r>bestR){bestR=r;best=i;} });
+    if(best>=0 && best!==s.active && bestR>=.5){
+      s.active=best;
+      if(state.tab==='agents') updateCounter();
+    }
+  },{root:feedAgents,threshold:[0,.25,.5,.75,1]});
+  s.els.forEach(el=>s.observer.observe(el));
+  if(state.tab==='agents') updateCounter();
+}
+
 fetch('/feed/data/agent-updates.json',{cache:'no-store'})
   .then(r=>r.json())
   .then(data=>{
@@ -472,80 +551,32 @@ fetch('/feed/data/agent-updates.json',{cache:'no-store'})
     data.roster.forEach(ag=>{
       const ups = ag.updates||[];
       const total = 1 + ups.length;
-      /* intro card */
       items.push({
         lane:'agent', date:ag.last_updated, id:'agent-'+ag.slug,
         headline:ag.name, subtitle:ag.title,
         body:ag.summary, action:ag.bar,
-        source_name:'', source_url:'#',
         progress: total>1 ? ag.name+' · 1 / '+total : ''
       });
-      /* update cards */
       ups.forEach((u,j)=>{
         items.push({
           lane:'agent', date:ag.last_updated,
           id:'agent-'+ag.slug+'-u'+(j+1),
           headline:u.headline, subtitle:u.tag,
           body:u.body, action:ag.name,
-          source_name:'', source_url:'#',
-          progress: ag.name+' · '+(j+2)+' / '+total,
-          _update:true
+          progress: ag.name+' · '+(j+2)+' / '+total
         });
       });
     });
-    buildFeed(feedAgents, items, 'agents');
+    buildAgentFeed(items);
+    const urlTab = new URLSearchParams(location.search).get('tab');
     if(urlTab==='agents') switchTab('agents');
-    if(urlTab==='saved'){ rebuildSaved(); switchTab('saved'); }
   })
   .catch(()=>{
-    buildFeed(feedAgents, [{lane:'agent', date:new Date().toISOString().slice(0,10), id:'agent-boot',
+    buildAgentFeed([{lane:'agent', date:new Date().toISOString().slice(0,10), id:'agent-boot',
       headline:'Agent roster loading.',
-      body:'The morning routine scans agent changes every 72 hours. The first scan populates this tab.',
-      action:'Check back after the next morning run.',
-      source_name:'system', source_url:'#'}], 'agents');
-    if(urlTab==='agents') switchTab('agents');
-    if(urlTab==='saved'){ rebuildSaved(); switchTab('saved'); }
+      body:'The morning routine scans agent changes. The first scan populates this tab.',
+      action:'Check back after the next morning run.'}]);
   });
-
-/* ---- YouTube overlay ---- */
-const ytOverlay=document.getElementById('ytOverlay');
-const ytFrame=document.getElementById('ytFrame');
-const ytExtLink=document.getElementById('ytExtLink');
-function ytVid(url){const m=url&&url.match(/[?&]v=([A-Za-z0-9_-]{11})/);return m?m[1]:null;}
-function openYT(url){
-  const id=ytVid(url);if(!id)return;
-  ytFrame.src='https://www.youtube.com/embed/'+id+'?autoplay=1&rel=0&modestbranding=1&playsinline=1';
-  ytExtLink.href=url;
-  ytOverlay.classList.add('open');
-}
-function closeYT(){ytOverlay.classList.remove('open');ytFrame.src='';}
-document.addEventListener('click',e=>{
-  const p=e.target.closest('.yt-play');
-  if(p){e.preventDefault();e.stopPropagation();openYT(p.dataset.ytUrl);return;}
-  if(e.target===ytOverlay) closeYT();
-});
-ytOverlay.querySelector('.yt-close').addEventListener('click',closeYT);
-addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&ytOverlay.classList.contains('open')){e.preventDefault();closeYT();}
-});
-
-/* ---- Corner send (copies card to clipboard, ready for Corner chat) ---- */
-const cornerBtn=document.getElementById('cornerBtn');
-const toastEl=document.getElementById('toast');
-function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),1400);}
-cornerBtn.addEventListener('click',async()=>{
-  const s=cur();if(s.active<0)return;
-  const it=s.items[s.active];
-  const lane=LANES[it.lane]||{tag:it.lane};
-  const lines=['[Feed] '+lane.tag, it.headline, it.body];
-  if(it.source_url&&it.source_url!=='#') lines.push(it.source_url);
-  if(it.action) lines.push('Action: '+it.action);
-  const txt=lines.join('\n');
-  try{
-    await navigator.clipboard.writeText(txt);
-    showToast('Copied for Corner');
-  }catch(_){showToast('Copy failed');}
-});
 </script>
 </body>
 </html>
