@@ -1773,7 +1773,7 @@ function TrackerToolOverlay({ projects, missionsByProject, agents, user }) {
           Area: t.area || '',
           Owner: t.owner || '',
         }))
- const srTracker = { id: 'sr-tickets', name: 'Space Rising, Tickets', scope: 'Space Rising', template: 'bugs', columns: ['Item'·'Priority'·'Status'·'Area'·'Owner'], rows, on: false, live: true }
+        const srTracker = { id: 'sr-tickets', name: 'Space Rising, Tickets', scope: 'Space Rising', template: 'bugs', columns: ['Item', 'Priority', 'Status', 'Area', 'Owner'], rows, on: false, live: true }
         // STABLE SORT FIX: update Space Rising tracker in place to preserve list order (no re-insert on refresh)
         setTrackers(prev => {
           const hasSR = prev.some(t => t.id === 'sr-tickets')

@@ -1203,7 +1203,7 @@ export default function IncludedHealthBrand() {
                     ['Font', 'Figtree only'],
                     ['Name color', '#0012E7 electric blue'],
                     ['Title color', '#001048 navy'],
- ['Style'·'Text on frame, NO bar'],
+                    ['Style', 'Text on frame, NO bar'],
                   ],
                 },
               ].map(({ title, items }) => (

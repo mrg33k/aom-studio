@@ -22,7 +22,7 @@ function useSEO() {
       }
       el.setAttribute('content', content);
     };
- setMeta('description'·'Mission Water, three pieces (Game, Platform, Marketing) with plain deliverables, pricing, and add-ons.');
+    setMeta('description', 'Mission Water, three pieces (Game, Platform, Marketing) with plain deliverables, pricing, and add-ons.');
     setMeta('robots', 'noindex, nofollow');
   }, []);
 }

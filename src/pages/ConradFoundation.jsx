@@ -223,7 +223,7 @@ export default function ConradFoundation() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     {[
                       ['★ 14', 'Gold stars earned this week'],
- ['5 day'·'Streak, every day, in a row'],
+                      ['5 day', 'Streak, every day, in a row'],
                       ['Report card', 'Modules done · time · fastest lesson'],
                     ].map(([value, label]) => (
                       <div key={label} className="border border-[#E85D26]/20 rounded-xl bg-[#E85D26]/[0.03] px-6 py-7">
