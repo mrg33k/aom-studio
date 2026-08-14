@@ -243,6 +243,8 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   for (const mr of missionRooms || []) {
     if (!mr.last_message_at || !mr.slug) continue;
     if (isRoomActivityNoise({ text: mr.last_message_text })) continue;
+    if (isInfra(mr.slug) || mr.slug === 'daily-research') continue;
+    if (mr.project && (isInfra(mr.project) || mr.project === 'daily-research')) continue;
     const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
     const nm = missionLabel(mr.slug) || mr.slug;
     bump('m:' + missionRecencyKey(mr.slug), { key: 'm:' + missionRecencyKey(mr.slug), id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: rowPreview(mr.last_message_text, mr) });
@@ -274,6 +276,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   for (const [slug, entry] of Object.entries(activityProjects)) {
     const ts = entry?.last_message_at ? new Date(entry.last_message_at).getTime() : 0;
     if (!slug || !ts) continue;
+    if (isInfra(slug) || slug === 'daily-research') continue;
     bump('p:' + slug, { key: 'p:' + slug, id: slug, kind: 'project', project: slug, name: projectNameBySlug[slug] || cap(slug), sub: 'Project chat', ts, preview: '' });
   }
   const activityMissions = roomActivity?.missions || {};
@@ -285,6 +288,8 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     const project = key.includes(':') ? key.slice(0, key.indexOf(':')) : '';
     const slug = key.includes(':') ? key.slice(key.indexOf(':') + 1) : key;
     if (!slug) continue;
+    if (isInfra(slug) || slug === 'daily-research') continue;
+    if (isInfra(project) || project === 'daily-research') continue;
     const pn = project ? (projectNameBySlug[project] || cap(project)) : '';
     const nm = missionLabel(slug) || slug;
     bump('m:' + missionRecencyKey(slug), { key: 'm:' + missionRecencyKey(slug), id: slug, kind: 'mission', missionSlug: slug, project, name: nm, sub: missionSub(pn, nm), ts, preview: '' });
