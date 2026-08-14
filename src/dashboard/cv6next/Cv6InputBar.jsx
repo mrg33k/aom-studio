@@ -301,7 +301,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
     pasteChips, addPasteChip, removePasteChip,
     selectedImageTool, setSelectedImageTool,
     interactionMode = 'work', setInteractionMode,
-    agentPicker,
+    agentPicker, sent,
   } = useChatComposerCtx();
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx();
   const { isVoiceActive, setIsVoiceActive } = useChatVoiceCtx();
@@ -541,7 +541,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
             style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
             {I.mic}
           </button>
-          <button type="button" className="cv6-composer-primary" title="Send" aria-label="Send message" onClick={handleSend} disabled={!hasContent}
+          <button type="button" className="cv6-composer-primary" title="Send" aria-label="Send message" onClick={handleSend} disabled={!hasContent} data-cv6-sent={sent || undefined}
             style={{ width: 34, height: 34, borderRadius: 8, border: 'none', background: hasContent ? 'var(--accent)' : 'var(--surface-2)', color: hasContent ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : .72 }}>
             {I.send}
           </button>

@@ -140,6 +140,8 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   // session and a 500 all used to look identical: the message simply disappeared
   // (corner:bridge frontend-visibility D3/D10).
   const [sendError, setSendError] = useState('');
+  // SMOOTHNESS: brief "launch" pop on the send button after successful send
+  const [sent, setSent] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [interactionMode, setInteractionMode] = useState(() => {
     try { return localStorage.getItem(`cv6.chatMode.${currentChatKey}`) === 'plan' ? 'plan' : 'work'; } catch { return 'work'; }
@@ -404,7 +406,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       const ok = typeof quickSend === 'function'
         ? await quickSend(text, sendOpts)
         : false;
-      if (ok !== false) acceptIfRouted();
+      if (ok !== false) { acceptIfRouted(); setSent(true); setTimeout(() => setSent(false), 250); }
       if (ok === false && !keptInThread) {
         // Honest failure: put the words back so nothing typed is ever lost — but
         // never clobber something newly typed during the in-flight window
@@ -489,8 +491,8 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const composerValue = useMemo(() => ({
     input, setInput, inputRef, handleSend, handleKeyDown,
     pasteChips, addPasteChip, removePasteChip, selectedImageTool, setSelectedImageTool,
-    interactionMode, setInteractionMode: changeInteractionMode, agentPicker,
-  }), [input, handleSend, handleKeyDown, pasteChips, addPasteChip, removePasteChip, selectedImageTool, interactionMode, changeInteractionMode, agentPicker]);
+    interactionMode, setInteractionMode: changeInteractionMode, agentPicker, sent,
+  }), [input, handleSend, handleKeyDown, pasteChips, addPasteChip, removePasteChip, selectedImageTool, interactionMode, changeInteractionMode, agentPicker, sent]);
 
   const messagesValue = useMemo(() => ({ setMessages }), [setMessages]);
 

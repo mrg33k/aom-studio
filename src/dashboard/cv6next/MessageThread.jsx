@@ -345,6 +345,7 @@ function MobileMessageThread({
   onOpenFile,
   onReviewFiles,
   empty,
+  hasNewMessages,
 }) {
   const list = Array.isArray(messages) ? messages : [];
   const liveBlocks = liveStepsToBlocks(liveSteps);
@@ -387,7 +388,7 @@ function MobileMessageThread({
     return <div style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '28px 0' }}>{empty}</div>;
   }
   return (
-    <div data-cv6-message-thread="" data-variant="mobile" data-mode={mode}>
+    <div data-cv6-message-thread="" data-variant="mobile" data-mode={mode} data-cv6-new-messages={hasNewMessages || undefined}>
       {out}
       {showLive && renderLiveWork === 'goalBody' ? (
         <MobileGoalTurn
@@ -426,6 +427,25 @@ export function Cv6MessageThread({
   empty = 'No conversation yet.',
 }) {
   const list = Array.isArray(messages) ? messages : [];
+
+  // ── SMOOTHNESS: new-message entrance animation ──
+  // Track previous message count so only genuinely NEW messages animate in.
+  // Initial mount (prevCount 0 → N) does NOT animate; subsequent additions do.
+  const prevCountRef = useRef(0);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  useEffect(() => {
+    const cur = list.length;
+    if (cur > prevCountRef.current && prevCountRef.current > 0) {
+      setHasNewMessages(true);
+      const t = setTimeout(() => setHasNewMessages(false), 200);
+      return () => clearTimeout(t);
+    }
+    prevCountRef.current = cur;
+  }, [list.length]);
+  // Sync ref on every render (the effect runs after paint, so the ref update
+  // needs to happen for the NEXT comparison).
+  useEffect(() => { prevCountRef.current = list.length; });
+
   if (variant === 'mobile') {
     return (
       <SendCtx.Provider value={onAction || (() => {})}>
@@ -448,6 +468,7 @@ export function Cv6MessageThread({
             onOpenFile={onOpenFile}
             onReviewFiles={onReviewFiles}
             empty={empty}
+            hasNewMessages={hasNewMessages}
           />
         </ReviewCtx.Provider>
       </SendCtx.Provider>
@@ -463,7 +484,7 @@ export function Cv6MessageThread({
   return (
     <SendCtx.Provider value={onAction || (() => {})}>
       <ReviewCtx.Provider value={(file) => { if (file) onReviewAttachment?.(file); }}>
-        <div className="pconv" data-cv6-message-thread="" data-variant={variant} data-mode={mode}>
+        <div className="pconv" data-cv6-message-thread="" data-variant={variant} data-mode={mode} data-cv6-new-messages={hasNewMessages || undefined}>
           {groups.map((group, i) => (
             <Cv6MessageGroup
               key={`${group.key}-${i}`}

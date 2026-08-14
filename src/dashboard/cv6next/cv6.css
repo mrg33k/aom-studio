@@ -391,7 +391,7 @@
   from { opacity:.58; transform:translateX(7px); }
   to { opacity:1; transform:translateX(0); }
 }
-[data-cv6] .navscrim { animation:cv6NavScrimIn var(--dur-press) ease-out both; }
+[data-cv6] .navscrim { animation:cv6NavScrimIn var(--dur-press) ease-out both; backdrop-filter:none; -webkit-backdrop-filter:none; }
 [data-cv6] .navdrawer {
   left:auto;
   right:0;
@@ -1323,7 +1323,7 @@
     .trk, .trow, .rrow, .qitem, .projrow, .missrow, .restrow, .grow, .frowm,
     .ochip, .chip-btn, .pillbtn, .cuarrow, .caretbtn
   ) {
-    transition: opacity var(--dur-press) ease, scale var(--dur-press) var(--ease-out);
+    transition: opacity var(--dur-press) ease, scale var(--dur-press) var(--ease-out), background var(--dur-press) ease;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2800,9 +2800,10 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
    agent dot, so one mark means one thing across the whole interface. `is-none` is the
    read state and takes no space — a permanent grey dot would train the eye to ignore
    the green one. */
+@keyframes cv6DotIn { from { scale:0; } to { scale:1; } }
 [data-cv6] .sdot.newdot.is-new {
   background:var(--success); box-shadow:var(--glow-online);
-  animation:statPulse 1.7s infinite;
+  animation:cv6DotIn var(--dur-move) var(--ease-out) both, statPulse 1.7s .2s infinite;
 }
 /* HOLD THE SLOT, don't collapse it (2026-08-07). `display:none` let the dot
    take zero width, so in a recent-room row the name started 10px further left
@@ -4256,13 +4257,50 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   [data-cv6] .cv6-room-identity-card { width:100%; max-height:calc(100dvh - env(safe-area-inset-top, 0px) - 18px); padding:17px; border-radius:22px; }
 }
 
+/* ---- SMOOTHNESS: motion that makes the app feel alive (R29) ---- */
+
+/* #1 Room transition — workspace columns slide in from right on mount */
+@keyframes cv6ColIn { from { opacity:0; transform:translateX(8px); } to { opacity:1; transform:translateX(0); } }
+[data-cv6] .cv6-workspace-column { animation: cv6ColIn var(--dur-move) var(--ease-out) both; }
+
+/* #2 New-message entrance — last group slides up when thread count grows */
+@keyframes cv6MsgIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] .grp:last-child { animation: cv6MsgIn var(--dur-press) var(--ease-out) both; }
+[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] > [data-cv6-message-turn]:last-child { animation: cv6MsgIn var(--dur-press) var(--ease-out) both; }
+
+/* #3 Content fade-in — message thread + file list appear with a soft crossfade */
+@keyframes cv6ContentIn { from { opacity:0; } to { opacity:1; } }
+[data-cv6] .pconv { animation: cv6ContentIn 100ms ease both; }
+
+/* #4 Theme switch — background + text crossfade when toggling dark/light/glass */
+[data-cv6],
+[data-cv6] .cv6-workspace-column,
+[data-cv6] .cv6-workspace-base,
+[data-cv6] .cv6-screen-stage,
+[data-cv6] .mhdr,
+[data-cv6] .topbar { transition: background-color var(--dur-move) ease, color var(--dur-move) ease; }
+
+/* #5 Send-button pop — brief launch after successful send */
+@keyframes cv6SendPop { 0% { transform:translateY(0) scale(1); } 40% { transform:translateY(-2px) scale(1.05); } 100% { transform:translateY(0) scale(1); } }
+[data-cv6] .cv6-composer-primary[data-cv6-sent] { animation: cv6SendPop var(--dur-move) var(--ease-out); }
+
+/* Suggested-response chips stagger in */
+@keyframes cv6ChipIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+[data-cv6] .chip-btn { animation: cv6ChipIn var(--dur-press) var(--ease-out) both; }
+[data-cv6] .chip-btn:nth-child(2) { animation-delay: 50ms; }
+[data-cv6] .chip-btn:nth-child(3) { animation-delay: 100ms; }
+[data-cv6] .chip-btn:nth-child(4) { animation-delay: 150ms; }
+[data-cv6] .chip-btn:nth-child(5) { animation-delay: 200ms; }
+
+/* ---- end SMOOTHNESS ---- */
+
 /* One motion contract: quick input feedback, short spatial movement, no competing
    navigation while an accessibility setting asks for stillness. */
 [data-cv6] :is(.cv6-room-avatar-button, .cv6-chat-header-button, .cv6-composer-util, .cv6-composer-primary, .cv6-composer-attach) {
   transition:color var(--dur-press) ease, background-color var(--dur-press) ease, border-color var(--dur-press) ease, box-shadow var(--dur-press) ease, scale var(--dur-press) var(--ease-out);
 }
 [data-cv6] .cv6-composer-wrap {
-  transition:max-height var(--dur-move) var(--ease-out), opacity var(--dur-press) ease, transform var(--dur-move) var(--ease-out);
+  transition:max-height var(--dur-move) var(--ease-out), opacity var(--dur-press) ease, transform var(--dur-move) var(--ease-out), border-color var(--dur-press) ease, box-shadow var(--dur-move) var(--ease-out);
 }
 @media (prefers-reduced-motion:reduce) {
   [data-cv6], [data-cv6] * { scroll-behavior:auto !important; }
