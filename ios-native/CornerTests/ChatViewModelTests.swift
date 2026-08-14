@@ -538,4 +538,90 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertFalse(RoomPreview.isFollowupTrigger("Follow up with the client tomorrow"),
                        "ordinary prose about follow-ups is not a trigger")
     }
+
+    // MARK: - R20 Bug C: duplicate file card deduplication
+
+    /// THE REGRESSION: an agent re-delivers the same file (same room, same filename,
+    /// same URL) and the thread shows two identical file cards. After R20 the older
+    /// delivery is suppressed and only the newest card renders.
+    func testRedeliveredFileCardIsDeduplicatedInThread() throws {
+        let delivery1 = try row("""
+        {"id":"d1","timestamp":"2026-08-13T10:00:00Z","role":"assistant","agent":"rex",
+         "text":"Attached file: report.pdf\\nhttps://rag.aheadofmarket.com/files/aom/report.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/report.pdf","name":"report.pdf"}}}
+        """)
+        let delivery2 = try row("""
+        {"id":"d2","timestamp":"2026-08-13T10:05:00Z","role":"assistant","agent":"rex",
+         "text":"Attached file: report.pdf\\nhttps://rag.aheadofmarket.com/files/aom/report.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/report.pdf","name":"report.pdf"}}}
+        """)
+        let result = ChatViewModel.deduplicateFileDeliveries([delivery1, delivery2])
+        XCTAssertEqual(result.count, 1, "two deliveries of the same file should collapse to one")
+        XCTAssertEqual(result.first?.id, "d2", "the NEWEST delivery survives")
+    }
+
+    /// Different files with the same name but different URLs must NOT be deduped.
+    func testDifferentFilesWithSameNameAreKept() throws {
+        let file1 = try row("""
+        {"id":"f1","timestamp":"2026-08-13T10:00:00Z","role":"assistant","agent":"rex",
+         "text":"Attached file: report.pdf\\nhttps://rag.aheadofmarket.com/files/aom/v1/report.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/v1/report.pdf","name":"report.pdf"}}}
+        """)
+        let file2 = try row("""
+        {"id":"f2","timestamp":"2026-08-13T10:05:00Z","role":"assistant","agent":"rex",
+         "text":"Attached file: report.pdf\\nhttps://rag.aheadofmarket.com/files/aom/v2/report.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/v2/report.pdf","name":"report.pdf"}}}
+        """)
+        let result = ChatViewModel.deduplicateFileDeliveries([file1, file2])
+        XCTAssertEqual(result.count, 2, "different URLs = different files, both kept")
+    }
+
+    /// A message with real prose (isPure == false) is never suppressed, even if
+    /// it carries a file that was later re-delivered.
+    func testHandoffWithProseIsNeverSuppressed() throws {
+        let handoff = try row("""
+        {"id":"h1","timestamp":"2026-08-13T10:00:00Z","role":"assistant","agent":"rex",
+         "text":"Here are the changes you asked for.",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/report.pdf","name":"report.pdf"}}}
+        """)
+        let redelivery = try row("""
+        {"id":"h2","timestamp":"2026-08-13T10:05:00Z","role":"assistant","agent":"rex",
+         "text":"Attached file: report.pdf\\nhttps://rag.aheadofmarket.com/files/aom/report.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/report.pdf","name":"report.pdf"}}}
+        """)
+        let result = ChatViewModel.deduplicateFileDeliveries([handoff, redelivery])
+        XCTAssertEqual(result.count, 2,
+                       "the hand-off with real prose stays even though the file was re-delivered")
+        XCTAssertTrue(result.contains { $0.id == "h1" })
+    }
+
+    /// User-uploaded files and agent-delivered files with the same URL are kept
+    /// because they are different directions.
+    func testUserAndAgentDeliveriesOfSameFileAreKept() throws {
+        let userUpload = try row("""
+        {"id":"u1","timestamp":"2026-08-13T10:00:00Z","role":"user",
+         "text":"Attached file: doc.pdf\\nhttps://rag.aheadofmarket.com/files/aom/doc.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/doc.pdf","name":"doc.pdf"}}}
+        """)
+        let agentShare = try row("""
+        {"id":"a1","timestamp":"2026-08-13T10:05:00Z","role":"assistant","agent":"rex",
+         "text":"Attached file: doc.pdf\\nhttps://rag.aheadofmarket.com/files/aom/doc.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/doc.pdf","name":"doc.pdf"}}}
+        """)
+        let result = ChatViewModel.deduplicateFileDeliveries([userUpload, agentShare])
+        XCTAssertEqual(result.count, 2,
+                       "user upload and agent delivery are different events")
+    }
+
+    /// Ordinary messages (no attachments) pass through untouched.
+    func testNonFileMessagesAreUnaffectedByDedup() throws {
+        let msg1 = try row(#"{"id":"m1","role":"assistant","text":"Working on it."}"#)
+        let msg2 = try row(#"{"id":"m2","role":"assistant","text":"Done."}"#)
+        let result = ChatViewModel.deduplicateFileDeliveries([msg1, msg2])
+        XCTAssertEqual(result.count, 2)
+    }
+
+    private func row(_ json: String) throws -> MessageRow {
+        try JSONDecoder().decode(MessageRow.self, from: Data(json.utf8))
+    }
 }

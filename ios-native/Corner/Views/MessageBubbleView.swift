@@ -258,10 +258,15 @@ struct MessageBubbleView: View {
             // Files in the thread. An image renders as the image — a photo the
             // agent sent arriving as a grey "photo.png" row is the single most
             // common way a delivered picture reads as a broken delivery.
+            //
+            // R20: isWaiting now also fires when the attachment's own gateStatus
+            // is "fail" — the server's "[not reviewed]" prefix is stripped from
+            // prose (Bug B) and surfaced here as a proper badge instead.
             ForEach(content.attachments) { attachment in
                 AttachmentCardView(
                     attachment: attachment,
-                    isWaiting: !row.isUser && waitingIDs.contains(attachment.url)
+                    isWaiting: !row.isUser && (waitingIDs.contains(attachment.url)
+                               || attachment.gateStatus == "fail")
                 ) {
                     previewing = attachment
                 }

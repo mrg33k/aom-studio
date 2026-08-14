@@ -267,25 +267,36 @@ struct BlockView: View {
     /// fires a structured choice reply; this build does not own that payload shape yet,
     /// and a chip that sends the wrong thing is worse than one that types the right
     /// thing and lets the user press send.
+    ///
+    /// R20 FIX: chips were rendering with FlowLayout inside a constrained bubble, but
+    /// individual chips wider than the available space clipped past the right screen
+    /// edge (no per-chip maxWidth, and FlowLayout places an oversized first-item at x=0
+    /// regardless). Now: horizontally scrollable chip row — matches the CV6 web's chip
+    /// tray and keeps every touch target whole. Chips that are wider than 85% of the
+    /// screen width truncate so the user can still see the edge of the next one.
     @ViewBuilder
     private var optionChips: some View {
         if !block.options.isEmpty {
-            FlowLayout(spacing: Theme.s2) {
-                ForEach(Array(block.options.enumerated()), id: \.offset) { _, label in
-                    Button {
-                        onOption(label)
-                    } label: {
-                        Text(label)
-                            .font(.hkCaption.weight(.medium))
-                            .padding(.horizontal, Theme.s3)
-                            .padding(.vertical, 6)
-                            .background(Theme.ground, in: Capsule())
-                            .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.5), lineWidth: 1))
-                            .foregroundStyle(Theme.accent)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Theme.s2) {
+                    ForEach(Array(block.options.enumerated()), id: \.offset) { _, label in
+                        Button {
+                            onOption(label)
+                        } label: {
+                            Text(label)
+                                .font(.hkCaption.weight(.medium))
+                                .lineLimit(1)
+                                .padding(.horizontal, Theme.s3)
+                                .padding(.vertical, 6)
+                                .background(Theme.ground, in: Capsule())
+                                .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.5), lineWidth: 1))
+                                .foregroundStyle(Theme.accent)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
+            .contentMargins(.horizontal, 0, for: .scrollContent)
         }
     }
 

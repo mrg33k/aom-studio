@@ -279,8 +279,50 @@ final class ChatViewModel: ObservableObject {
         UserDefaults.standard.set(value, forKey: "chatMode.\(room.id)")
     }
 
+    /// R20: the thread now deduplicates re-delivered file cards. When an agent
+    /// re-shares the same file (same filename + URL + direction), only the LATEST
+    /// card renders — the earlier delivery is suppressed. This prevents the "two
+    /// cards with the same name" visual bug on re-deliveries. Conservative: only
+    /// dedupes when the message is a pure file announcement (no real prose), and
+    /// both filename and URL match.
     var thread: [ThreadItem] {
-        rows.map(ThreadItem.message) + outbox.map(ThreadItem.outbox)
+        let messages = ChatViewModel.deduplicateFileDeliveries(rows)
+        return messages.map(ThreadItem.message) + outbox.map(ThreadItem.outbox)
+    }
+
+    /// Suppress older pure-file-announcement rows that re-deliver the same file.
+    /// Walks from newest to oldest, keeping the first (newest) occurrence of each
+    /// unique (direction, url, name) triple. Rows with real prose (isPure == false)
+    /// are never suppressed — they carry the agent's commentary.
+    static func deduplicateFileDeliveries(_ rows: [MessageRow]) -> [MessageRow] {
+        // Build the set of file keys we have already seen, scanning from newest
+        // (end of array) to oldest (start). A file key is "u|<url>|<name>" or
+        // "a|<url>|<name>" — the same identity RoomFile.crossings uses.
+        var seenFileKeys = Set<String>()
+        var keep = [Bool](repeating: true, count: rows.count)
+
+        for i in stride(from: rows.count - 1, through: 0, by: -1) {
+            let row = rows[i]
+            let parsed = Attachment.parse(row: row)
+            // Only suppress pure announcements — rows with real prose stay.
+            guard parsed.isPure, !parsed.attachments.isEmpty else { continue }
+            let direction = row.isUser ? "u" : "a"
+            var allSeen = true
+            for att in parsed.attachments {
+                let key = "\(direction)|\(att.url)|\(att.name)"
+                if !seenFileKeys.contains(key) {
+                    seenFileKeys.insert(key)
+                    allSeen = false
+                }
+            }
+            // If every attachment in this row was already seen (from a newer row),
+            // this row is a duplicate delivery — suppress it.
+            if allSeen {
+                keep[i] = false
+            }
+        }
+
+        return rows.enumerated().compactMap { keep[$0.offset] ? $0.element : nil }
     }
 
     var isAwaiting: Bool {

@@ -247,6 +247,10 @@ extension Attachment {
     /// True when the row's prose says nothing the file cards do not already say: it is
     /// empty, or it is the "Attached …" announcement followed only by the attachments'
     /// own URLs. Anything else is the agent talking, and it renders.
+    ///
+    /// R20: bracket-prefix lines (e.g. "[not reviewed] Attached file: …") are now
+    /// recognised as announcements — the prefix is stripped before checking. This
+    /// prevents the raw "[not reviewed]" text from leaking into the bubble.
     static func textIsOnlyAnnouncement(_ text: String, of attachments: [Attachment]) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return true }
@@ -279,9 +283,28 @@ extension Attachment {
 
     // MARK: Announcement matching
 
+    /// Strip leading bracket-enclosed prefixes that share-file.py (and other bridge
+    /// paths) prepend to file-delivery messages: `[not reviewed]`, `[gate waived]`,
+    /// `[UNGATED]`, `[direction check - not final]`, etc. The brackets are always
+    /// `[…]` followed by optional whitespace, and there can be more than one. The
+    /// result is the text the purity check and the prose display should see.
+    ///
+    /// R20: added so that the `[not reviewed]` prefix no longer breaks purity
+    /// detection (causing the raw prefix to leak into the bubble as literal text)
+    /// and so that prose display strips it on the render side.
+    static func stripBracketPrefixes(_ text: String) -> String {
+        var s = text
+        while s.hasPrefix("[") {
+            guard let close = s.firstIndex(of: "]") else { break }
+            s = String(s[s.index(after: close)...]).trimmingCharacters(in: .whitespaces)
+        }
+        return s
+    }
+
     /// `^\s*attached file:\s*(.+?)\s*$`, case-insensitive.
+    /// R20: strips bracket prefixes (e.g. `[not reviewed]`) before matching.
     static func singleAnnouncement(_ line: String) -> String? {
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        let trimmed = Attachment.stripBracketPrefixes(line.trimmingCharacters(in: .whitespaces))
         let prefix = "attached file:"
         guard trimmed.lowercased().hasPrefix(prefix) else { return nil }
         let value = trimmed.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
@@ -290,8 +313,9 @@ extension Attachment {
 
     /// `^\s*attached\s+\d+\s+files?:\s*(.+?)\s*$`, case-insensitive. Names are
     /// comma-separated, and an empty tail is not a multi-file row.
+    /// R20: strips bracket prefixes before matching.
     static func multiAnnouncement(_ line: String) -> [String]? {
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        let trimmed = Attachment.stripBracketPrefixes(line.trimmingCharacters(in: .whitespaces))
         guard let colon = trimmed.firstIndex(of: ":") else { return nil }
         let head = trimmed[trimmed.startIndex..<colon].lowercased()
         let words = head.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)

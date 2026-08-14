@@ -201,7 +201,13 @@ struct MessageContent: Equatable {
         // file card does not already say, so it is dropped. A hand-off that also carries
         // the agent's actual point KEEPS that point — see the purity note in
         // Attachment.swift for why this is computed rather than assumed per shape.
-        let prose = parsed.isPure ? "" : MessageContent.stripTrailingCardURL(rawText, cards: cards)
+        //
+        // R20: bracket prefixes ("[not reviewed]", "[gate waived]", etc.) that
+        // share-file.py prepends are stripped from the displayed prose. The state
+        // they carry is surfaced as a badge on the file card (via gateStatus) rather
+        // than rendered as literal text in the bubble.
+        let rawProse = parsed.isPure ? "" : MessageContent.stripTrailingCardURL(rawText, cards: cards)
+        let prose = parsed.attachments.isEmpty ? rawProse : Attachment.stripBracketPrefixes(rawProse)
 
         return MessageContent(
             prose: prose,

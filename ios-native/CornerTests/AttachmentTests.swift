@@ -189,4 +189,62 @@ final class AttachmentTests: XCTestCase {
         XCTAssertTrue(parsed.isEmpty)
         XCTAssertFalse(parsed.isPure, "an ordinary message is not an announcement")
     }
+
+    // MARK: - R20 Bug B: bracket prefix stripping
+
+    /// The "[not reviewed]" prefix that share-file.py prepends must not leak as
+    /// literal text in the bubble. The announcement matcher must see through it.
+    func testNotReviewedPrefixDoesNotBreakPurity() throws {
+        let parsed = Attachment.parse(row: try row("""
+        {"id":"nr","role":"assistant",
+         "text":"[not reviewed] Attached file: report.pdf\\nhttps://rag.aheadofmarket.com/files/aom/report.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/report.pdf","name":"report.pdf",
+                      "gate_status":"fail"}}}
+        """))
+        XCTAssertTrue(parsed.isPure,
+                      "[not reviewed] announcement is still just an announcement")
+        XCTAssertEqual(parsed.attachments.count, 1)
+    }
+
+    /// The prose side must strip the bracket prefix from displayed text.
+    func testNotReviewedPrefixIsStrippedFromProse() throws {
+        let content = MessageContent.build(from: try row("""
+        {"id":"nr2","role":"assistant",
+         "text":"[not reviewed] Attached file: report.pdf\\nhttps://rag.aheadofmarket.com/files/aom/report.pdf",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/report.pdf","name":"report.pdf",
+                      "gate_status":"fail"}}}
+        """))
+        XCTAssertTrue(content.prose.isEmpty,
+                      "a pure [not reviewed] announcement should produce no prose")
+        XCTAssertEqual(content.attachments.first?.gateStatus, "fail")
+    }
+
+    /// A hand-off with real text plus a bracket prefix keeps the text but strips
+    /// the prefix.
+    func testBracketPrefixStrippedFromHandoffProse() throws {
+        let content = MessageContent.build(from: try row("""
+        {"id":"nr3","role":"assistant",
+         "text":"[not reviewed] Here is the deliverable with your changes applied.",
+         "metadata":{"attachment":{"url":"https://rag.aheadofmarket.com/files/aom/v2.pdf","name":"v2.pdf",
+                      "gate_status":"fail"}}}
+        """))
+        XCTAssertFalse(content.prose.contains("[not reviewed]"),
+                       "the bracket prefix must never appear in displayed prose")
+        XCTAssertTrue(content.prose.contains("deliverable"),
+                      "the agent's real text survives")
+    }
+
+    func testStripBracketPrefixesHandlesMultiplePrefixes() {
+        XCTAssertEqual(Attachment.stripBracketPrefixes("[not reviewed] [URGENT] hello"), "hello")
+        XCTAssertEqual(Attachment.stripBracketPrefixes("[gate waived] Attached file: x.pdf"), "Attached file: x.pdf")
+        XCTAssertEqual(Attachment.stripBracketPrefixes("No brackets here"), "No brackets here")
+        XCTAssertEqual(Attachment.stripBracketPrefixes(""), "")
+    }
+
+    func testSingleAnnouncementMatchesWithBracketPrefix() {
+        XCTAssertEqual(Attachment.singleAnnouncement("[not reviewed] Attached file: a.png"), "a.png")
+        XCTAssertEqual(Attachment.singleAnnouncement("[UNGATED] Attached file: b.pdf"), "b.pdf")
+        // Non-bracket prefix still fails as expected
+        XCTAssertNil(Attachment.singleAnnouncement("I attached file: a.png"))
+    }
 }
