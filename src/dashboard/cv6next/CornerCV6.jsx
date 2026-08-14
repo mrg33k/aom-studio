@@ -419,10 +419,14 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
     const t = draft.trim();
     if (!t || !room || sending) return;
     setSending(true); setSendError('');
+    // Optimistic: clear instantly, bubble is pending
+    setDraft('');
     const ok = await send(t);
     setSending(false);
-    if (ok !== false) setDraft('');
-    else setSendError('Could not send. Your reply is still here.');
+    if (ok === false) {
+      setDraft(t);
+      setSendError('Could not send. Your reply is still here.');
+    }
   };
   const caughtUp = !room || !card?.id;
   return (

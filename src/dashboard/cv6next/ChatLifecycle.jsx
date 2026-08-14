@@ -1283,11 +1283,15 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   const submit = async () => {
     const t = draft.trim();
     if (!t || localReadOnly) return;
+    // Optimistic: clear the box sub-100ms, bubble is already pending via updatePending
+    setDraft('');
+    clearTimeout(composerCollapseTimerRef.current);
+    composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
     const ok = await onSend?.(t);
-    if (ok !== false) {
-      setDraft('');
-      clearTimeout(composerCollapseTimerRef.current);
-      composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
+    if (ok === false) {
+      // Send failed — bubble stays as "Not sent" with retry, restore text so you can edit
+      setDraft(t);
+      setComposerCollapsed(false);
     }
   };
 
