@@ -729,16 +729,23 @@ class RoomThreadEngine {
     // TIMED_OUT / CLOSED were never observed, there was no reconnect, and no history
     // catch-up on re-subscribe. Now: exponential-backoff resubscribe, and a FULL load()
     // on every SUBSCRIBED so rows that landed while the socket was down come straight in.
-    this.channel = supabase
+    // Channel-identity guard (PARITY #3): without it one transient
+    // CHANNEL_ERROR/TIMED_OUT causes permanent live↔reconnecting
+    // oscillation — the callback closes over a stale `this.channel` and
+    // a new subscribeRoom() races the old retry timer, each firing
+    // full refetches every 1-2s. This is a top "not responding/blinking" driver.
+    const myChannel = supabase
       .channel(`cv6-thread-${this.worldId}-${this.room.id}-${Date.now()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter },
         // Targeted reload-on-insert: a delta, not a whole-window refetch.
-        () => { if (this.alive) this.load(); },
-      )
-      .subscribe((channelStatus) => {
+        () => { if (this.alive && this.channel === myChannel) this.load(); },
+      );
+    this.channel = myChannel;
+    myChannel.subscribe((channelStatus) => {
         if (!this.alive) return;
+        if (myChannel !== this.channel) return; // stale channel — ignore
         if (channelStatus === 'SUBSCRIBED') {
           this.channelRetryAttempt = 0;
           this.updateConnection({ realtime: 'live' });
@@ -748,7 +755,7 @@ class RoomThreadEngine {
           const delay = Math.min(30000, 1000 * (2 ** this.channelRetryAttempt));
           this.channelRetryAttempt += 1;
           if (this.channelRetryTimer) clearTimeout(this.channelRetryTimer);
-          this.channelRetryTimer = setTimeout(() => this.subscribeRoom(), delay);
+          this.channelRetryTimer = setTimeout(() => { if (this.alive && this.channel === myChannel) this.subscribeRoom(); }, delay);
         }
       });
   }
