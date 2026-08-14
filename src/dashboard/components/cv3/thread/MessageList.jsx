@@ -10,6 +10,7 @@ import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu, MobileActionSheet } from '../ContextMenu.jsx'
 import MessageChecks from './MessageChecks.jsx'
 import MessageStatusLabel from './MessageStatusLabel.jsx'
+import { authFetch } from '../../../lib/authFetch.js'
 import SummaryMessage from './SummaryMessage.jsx'
 import useThreadMsgMenu from './useThreadMsgMenu.js'
 import useThreadMessageStatus from './useThreadMessageStatus.js'
@@ -50,7 +51,9 @@ function AttachmentPreview({ att, onClose }) {
   useEffect(() => {
     if (inlineText || !isText || !url) return
     setTextBody(null)
-    fetch(url)
+    const isApi = typeof url === 'string' && url.startsWith('/api/')
+    const doFetch = isApi ? authFetch(url) : fetch(url)
+    doFetch
       .then(r => r.ok ? r.text() : 'Could not load file.')
       .then(setTextBody)
       .catch(() => setTextBody('Could not load file.'))

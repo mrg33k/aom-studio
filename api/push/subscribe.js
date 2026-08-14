@@ -12,6 +12,7 @@
 //   created_at · last_sent_at · failure_count
 
 import { createClient } from '@supabase/supabase-js';
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -22,6 +23,15 @@ function admin() {
 }
 
 export default async function handler(req, res) {
+  // POST requires auth — push subscriptions are per-world and use service_role
+  if (req.method === 'POST') {
+    try {
+      await verifyTenant(req.headers['x-client-id'] || req.query.client || 'aom', req);
+    } catch (e) {
+      if (e instanceof TenantAuthError) return res.status(e.status).json({ error: e.message });
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
   // The public key is not a secret — the client cannot subscribe without it.
   if (req.method === 'GET') {
     const key = process.env.VAPID_PUBLIC_KEY || '';

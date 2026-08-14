@@ -5,11 +5,18 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const contextIndex = JSON.parse(readFileSync(join(__dirname, 'context-index.json'), 'utf-8'));
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
+  try {
+    await verifyTenant('aom', req);
+  } catch (e) {
+    if (e instanceof TenantAuthError) return res.status(e.status).json({ error: e.message });
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'public, max-age=300');
 

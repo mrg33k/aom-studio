@@ -222,7 +222,7 @@ export default function CornerFilesPanel() {
   useEffect(() => {
     if (!projectSlug) { setFiles([]); return }
     setLoading(true)
-    fetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(projectSlug)}`)
+    authFetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(projectSlug)}`)
       .then(r => r.json())
       .then(data => { setFiles(data.files || []); setLoading(false) })
       .catch(() => { setFiles([]); setLoading(false) })

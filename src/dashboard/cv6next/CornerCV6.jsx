@@ -894,6 +894,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // useRoomThread the full Chat tool uses, so the quick panel and the full chat agree.
   const quickThread = useRoomThread(worldId, knavOpenedRoom);
   const quickSend = quickThread && quickThread.send;
+  // DEDUP-11: 50ms debounce for col3 quick reply — two identical POSTs 20ms apart = 1 row
+  const quickSendDedupRef = useRef({ text: '', ts: 0 });
   // Live goal thread for the col3 quick room — feeds Cv6QuickThread's live step loader so the
   // quick reply shows the same ticking progress the full Chat tool does (Patrik #1, 2026-06-26).
   const quickGoal = useGoalThread(worldId, knavOpenedRoom);
@@ -1338,8 +1340,12 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       const root = e?.currentTarget?.closest('.composer') || document.querySelector('[data-screen="convo"] .composer');
       const inp = root && root.querySelector('.convo-input');
       const v = inp && inp.value;
-      if (v && v.trim() && quickSend) {
-        const ok = await quickSend(v.trim());
+      const trimmed = v && v.trim();
+      if (trimmed && quickSend) {
+        const _sdNow = Date.now();
+        if (trimmed === quickSendDedupRef.current.text && (_sdNow - quickSendDedupRef.current.ts) < 50) return;
+        quickSendDedupRef.current = { text: trimmed, ts: _sdNow };
+        const ok = await quickSend(trimmed);
         if (inp && ok !== false) inp.value = '';
       }
     },

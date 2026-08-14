@@ -2,6 +2,8 @@
 // Accepts base64 audio, sends to Gemini Flash for transcription, returns text.
 // Used by telephone mode (long-form record -> transcribe -> send as message).
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 
 export default async function handler(req, res) {
@@ -10,6 +12,12 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
+  try {
+    await verifyTenant('aom', req);
+  } catch (e) {
+    if (e instanceof TenantAuthError) return res.status(e.status).json({ error: e.message });
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   if (!GEMINI_API_KEY) {
     return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })

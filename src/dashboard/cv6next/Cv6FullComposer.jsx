@@ -46,6 +46,7 @@ import { pickerAgents, titleForAgent } from './data/agentTitles.js';
 import { pickSpecialistForMessage, isVisualAsk } from './data/agentRouting.js';
 import { detectOverride, getThreadOverride, setThreadOverride } from './data/agentOverride.js';
 import { handoffLine } from './data/agentHandoff.js';
+import { useRoomThread } from './data/useRoomThread.js';
 import VoiceChat from '../components/VoiceChat.jsx';
 
 const READ_ONLY_COPY = 'Chat needs a connected workspace. Local mode is read-only.';
@@ -195,6 +196,8 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const dispatchAgent = effectiveAgent.slug === 'default' ? hostSlug : dispatchAgentSlug(selectedAgentSlug);
   // Expose host for header (R-B1: visible in room header by title)
   const roomHost = { slug: hostSlug, title: hostTitle, source: effectiveAgent.source }
+  // #10 memory — thread history for routing context (TOP-20 #10)
+  const { messages: threadMessages } = useRoomThread(worldId, room)
 
   // ── Throwaway messages slice. The col3 thread renders from useRoomThread; the
   // CV4 hooks only need setMessages for optimistic rows, which we let the thread
@@ -292,12 +295,17 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   }, [worldId, room]);
 
   const sendingRef = useRef(false);
+  const lastSubmitRef = useRef({ text: '', ts: 0 });
   const handleSend = useCallback(async () => {
     const base = input.trim();
     const chipsSuffix = pasteChips.length ? '\n\n' + pasteChips.map(c => c.text).join('\n\n') : '';
     const text = base + chipsSuffix;
     if (!text) return;
     if (!composerLive()) return;
+    // DEDUP-11: 50ms debounce before second POST — two identical sends 20ms apart = 1 row
+    const _now = Date.now();
+    if (text === lastSubmitRef.current.text && (_now - lastSubmitRef.current.ts) < 50) return;
+    lastSubmitRef.current = { text, ts: _now };
     if (sendingRef.current) return;
     sendingRef.current = true;
     try {
@@ -374,7 +382,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
             effectiveAgent = 'director'
             if (hostSlug !== 'director') handoffMeta = { handoffTo: 'director', handoffFrom: hostSlug }
           } else {
-            const picked = pickSpecialistForMessage(text)
+            const picked = pickSpecialistForMessage(text, { priorMessages: (threadMessages || []).slice(-10) })
             if (picked && picked.slug !== hostSlug) {
               effectiveAgent = picked.slug
               handoffMeta = { handoffTo: picked.slug, handoffFrom: hostSlug }
@@ -596,11 +604,16 @@ function ReadOnlyComposer({ target, room }) {
 // posting through the same useRoomThread send the col3 thread uses.
 function MiniComposer({ target, room, quickSend }) {
   const [val, setVal] = useState('');
+  const sendingRef = useRef(false);
+  const lastMiniSubmitRef = useRef({ text: '', ts: 0 });
   if (!target || !room) return null;
   if (!composerLive()) return <ReadOnlyComposer target={target} room={room} />;
-  const sendingRef = useRef(false);
   const send = async () => {
     const t = val.trim();
+    // DEDUP-11: 50ms debounce for fallback composer too
+    const _mnNow = Date.now();
+    if (t === lastMiniSubmitRef.current.text && (_mnNow - lastMiniSubmitRef.current.ts) < 50) return;
+    lastMiniSubmitRef.current = { text: t, ts: _mnNow };
     if (t && typeof quickSend === 'function' && !sendingRef.current) {
       // Same R3 send-feel contract as the full composer: clear instantly, in-flight
       // guard, restore on explicit failure only into a still-empty box.

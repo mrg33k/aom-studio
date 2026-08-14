@@ -260,6 +260,9 @@ class RoomThreadEngine {
     this.lastSentTs = 0;
     this.lastSentText = '';
     this.lastSentOptions = null;
+    // DEDUP-11: 50ms client debounce — two identical POSTs 20ms apart = 1 row
+    this._lastDedupText = '';
+    this._lastDedupTs = 0;
     this.silentTurn = false;      // this turn was declared dead by the backstop
     this.sawLiveSteps = false;    // the bridge is streaming steps → it owns the stop signal
     this.didBaseline = false;
@@ -1025,6 +1028,13 @@ class RoomThreadEngine {
     // Real local no-Supabase mode is read-only (no phantom sends); explicit ?demo=
     // fixtures keep the send path live because Playwright intercepts own the POST.
     if (!supabase && !demoFixtureActive()) return false;
+    // DEDUP-11: 50ms client debounce — second identical POST within 50ms is a double-click
+    const _dedupNow = Date.now();
+    if (body === this._lastDedupText && (_dedupNow - this._lastDedupTs) < 50) {
+      return true;
+    }
+    this._lastDedupText = body;
+    this._lastDedupTs = _dedupNow;
     // Show it immediately as your turn (reconciled away when the real row arrives).
     const now = new Date();
     const optId = `${now.getTime()}-${Math.random().toString(36).slice(2)}`;
@@ -1044,7 +1054,8 @@ class RoomThreadEngine {
     // the specialist in the same thread, in speech, running their own method
     const extraMeta = options?.metadata && typeof options.metadata === 'object' ? options.metadata : null
     const handoffMeta = options?.handoffTo ? { handoff_to: String(options.handoffTo), handoff_from: String(options.handoffFrom || roomAgent) } : null
-    const mergedMeta = { ...(extraMeta || {}), ...(handoffMeta || {}) }
+    const clientMessageMeta = { client_message_id: optId }
+    const mergedMeta = { ...(extraMeta || {}), ...(handoffMeta || {}), ...clientMessageMeta }
     const payload = room.isMission
       // Send the CANONICAL "<project>:<mission>" slug (room.missionSlug), not the bare
       // tail — write-message.js passes a slug containing ':' through untouched, so the

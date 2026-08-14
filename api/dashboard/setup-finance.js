@@ -1,6 +1,9 @@
 // One-time setup endpoint: creates the finance_transactions table
 // POST /api/dashboard/setup-finance
 // After running once, this endpoint can be deleted.
+// Gated: requires tenant auth (verifyTenant) — prevents anon schema probe
+
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -44,6 +47,12 @@ END $$;
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
+  }
+  try {
+    await verifyTenant('aom', req);
+  } catch (e) {
+    if (e instanceof TenantAuthError) return res.status(e.status).json({ error: e.message });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {

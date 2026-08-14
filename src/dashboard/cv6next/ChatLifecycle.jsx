@@ -40,6 +40,7 @@ import { useRunningTasks } from './data/useRunningTasks.js';
 import RoomAvatar from './RoomAvatar.jsx';
 import { isActiveRoomStatus } from './data/roomIdentity.js';
 import { gestureStartsOnInteractiveControl } from './useChatSwipe.js';
+import { authFetch } from '../lib/authFetch.js';
 
 function dayKey(ts) {
   const d = ts ? new Date(ts) : null;
@@ -527,7 +528,10 @@ async function mfsSaveFile(f) {
   if (!f?.url) return { ok: false, reason: 'no-url' };
   const filename = f.name || 'file';
   try {
-    const res = await fetch(f.url, { mode: 'cors', credentials: 'omit' });
+    const isApi = typeof f.url === 'string' && f.url.startsWith('/api/')
+    const res = isApi
+      ? await authFetch(f.url)
+      : await fetch(f.url, { mode: 'cors', credentials: 'omit' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
     const href = URL.createObjectURL(blob);

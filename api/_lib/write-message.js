@@ -441,6 +441,8 @@ export async function writeMessageRow({
   // Retrying that outbox item must recover the existing row, not create a second
   // user turn. The opaque id lives in metadata so no schema migration is required;
   // tenant + role scope prevents a token from crossing rooms/worlds.
+  // DEDUP-11 TOP-20 #11: two identical POSTs 20ms apart = 1 row — client sends optId as dedup key,
+  // server checks it AND a 5s content window as fallback for double-click with different keys.
   const clientMessageId = mergedMeta && String(mergedMeta.client_message_id || '').trim()
   if (role === 'user' && /^[a-zA-Z0-9_-]{16,128}$/.test(clientMessageId)) {
     const existingRes = await fetch(
@@ -453,6 +455,32 @@ export async function writeMessageRow({
         return { ok: true, status: 200, row: existing[0], error: null, idempotent: true }
       }
     }
+  }
+  // 5s window content dedup — handles double-click where client generated two different optIds
+  // (or legacy clients with no key). Two identical user texts in same room within 5s = 1 row.
+  if (role === 'user' && messageText) {
+    const fiveSecAgoIso = new Date(Date.now() - 5000).toISOString()
+    const dedupRoomId = deriveRoomId({
+      clientId,
+      agent,
+      project: resolvedProject,
+      missionSlug: canonicalMission || (mergedMeta && mergedMeta.mission_slug) || null,
+    })
+    try {
+      let dupUrl = `${supabaseUrl}/rest/v1/messages?client_id=eq.${encodeURIComponent(clientId)}&role=eq.user&timestamp=gte.${encodeURIComponent(fiveSecAgoIso)}&select=*&limit=20&order=timestamp.desc`
+      if (dedupRoomId) dupUrl += `&room_id=eq.${encodeURIComponent(dedupRoomId)}`
+      const dupRes = await fetch(dupUrl, { headers })
+      if (dupRes.ok) {
+        const recent = await dupRes.json().catch(() => [])
+        if (Array.isArray(recent)) {
+          for (const row of recent) {
+            if (String(row.text || '').trim() === messageText) {
+              return { ok: true, status: 200, row, error: null, idempotent: true }
+            }
+          }
+        }
+      }
+    } catch { /* dedup best-effort — fall through to insert */ }
   }
 
   // --- 3. Build + insert the row ---

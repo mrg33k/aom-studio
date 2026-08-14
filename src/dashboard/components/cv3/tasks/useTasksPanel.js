@@ -252,7 +252,7 @@ export function useTasksPanel() {
 
     const fetchLatest = async () => {
       try {
-        const resp = await fetch(`/api/dashboard/project-summary?slug=${encodeURIComponent(activeProject)}`)
+        const resp = await authFetch(`/api/dashboard/project-summary?slug=${encodeURIComponent(activeProject)}`)
         if (cancelled) return
         if (!resp.ok) return
         const data = await resp.json().catch(() => null)
@@ -315,8 +315,8 @@ export function useTasksPanel() {
     // them because text-path rows carry no slug field).
     const imgPrefix = activeProject
     Promise.all([
-      fetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(imgPrefix)}/`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
-      fetch(`/api/dashboard/files?type=briefs&project=${encodeURIComponent(drawerScope)}&client=${encodeURIComponent(worldId || 'aom')}`).then(r => r.ok ? r.json() : { briefs: [] }).catch(() => ({ briefs: [] })),
+      authFetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(imgPrefix)}/`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
+      authFetch(`/api/dashboard/files?type=briefs&project=${encodeURIComponent(drawerScope)}&client=${encodeURIComponent(worldId || 'aom')}`).then(r => r.ok ? r.json() : { briefs: [] }).catch(() => ({ briefs: [] })),
     ]).then(([imgData, briefsData]) => {
       if (cancelled) return
       const images = (imgData.files || []).map(f => ({ ...f, filename: f.name }))
@@ -342,7 +342,7 @@ export function useTasksPanel() {
     }
     let cancelled = false
     setTaskMissionsLoading(true)
-    fetch(`/api/dashboard/missions?project=${encodeURIComponent(drawerScope)}`)
+    authFetch(`/api/dashboard/missions?project=${encodeURIComponent(drawerScope)}`)
       .then(r => r.ok ? r.json() : { missions: [] })
       .catch(() => ({ missions: [] }))
       .then(data => {
@@ -357,7 +357,7 @@ export function useTasksPanel() {
     if (activeProject !== 'all') return
     let cancelled = false
     setAllBriefsLoading(true)
-    fetch(`/api/dashboard/files?type=briefs&project=all&client=${encodeURIComponent(worldId || 'aom')}`)
+    authFetch(`/api/dashboard/files?type=briefs&project=all&client=${encodeURIComponent(worldId || 'aom')}`)
       .then(r => r.ok ? r.json() : { briefs: [] })
       .catch(() => ({ briefs: [] }))
       .then(data => {
