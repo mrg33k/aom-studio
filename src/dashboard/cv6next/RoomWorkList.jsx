@@ -333,59 +333,21 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, live
     );
   }
 
-  // Expandable = dropdown mode. Keep the existing accumulating-list design.
+  // Expandable = dropdown mode — now also single progress-bar card.
+  // Patrik: steps animate THROUGH the bar, not as a list. Snappier chat.
   return (
-    <div data-testid="cv6-room-work-list"
-      style={{ margin: '10px 0 4px', padding: '10px 10px 8px', borderRadius: 14, border: '1px solid var(--hair)', background: 'var(--surface-2)', fontFamily: 'var(--font-sans)' }}>
+    <>
       <style>{'@keyframes cv6WorklistSpin{to{transform:rotate(360deg)}}.cv6-worklist-spin{animation:cv6WorklistSpin .8s linear infinite}'}</style>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <span className="cv6-wl-title">Action items</span>
-        <span style={{ flex: 1 }} />
-        {running ? (
-          <span className="cv6-wl-running-badge">{running} running</span>
-        ) : null}
-      </div>
-
-      {/* R2c reskin: three distinct card states — active (hero), todo (quiet), done (dimmed). */}
-      {items.map((item) => {
-        const start = item.since || (item.state === 'active' ? stepStarts[item.label] : null);
-        const timer = start ? elapsedLabel(now - start) : '';
-        const ownerText = humanizeOwner(item.owner);
-        const stateSlug = item.state === 'active' ? 'active' : item.state === 'done' ? 'done' : 'todo';
-        const stateWord = stateSlug === 'active' ? 'running' : stateSlug === 'done' ? 'done' : 'to do';
-        return (
-          <div key={item.key} className={`cv6-wl-item cv6-wl-item--${stateSlug}`}>
-            {stateSlug === 'done' && <Box state="done" />}
-            <div className="cv6-wl-content">
-              <span className="cv6-wl-label">{shorten(item.label)}</span>
-              {ownerText && <span className="cv6-wl-owner">{ownerText}</span>}
-              {stateSlug === 'active' && (
-                <div className="cv6-wl-bar"><div className="cv6-wl-bar-fill" /></div>
-              )}
-              <div className="cv6-wl-status">
-                {stateSlug === 'active' && <span className="cv6-wl-dot" />}
-                <span className="cv6-wl-state-word">{stateWord}</span>
-                {timer && <span className="cv6-wl-time">{timer}</span>}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-      {remaining > 0 ? (
-        !localExpanded ? (
-          <button
-            type="button"
-            onClick={() => setLocalExpanded(true)}
-            style={{ display: 'block', width: '100%', textAlign: 'left', border: 0, background: 'transparent', padding: '4px 0 2px', fontSize: 10.5, color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
-          >
-            Show {remaining} more
-          </button>
-        ) : (
-          <div style={{ fontSize: 10.5, color: 'var(--faint)', padding: '4px 0 2px' }}>
-            +{remaining} more on this room's list
-          </div>
-        )
-      ) : null}
-    </div>
+      <StepCard
+        roomSteps={roomSteps}
+        agentItems={agentItems}
+        awaiting={awaiting}
+        awaitingSince={awaitingSince}
+        liveSteps={liveSteps}
+        turnHealth={turnHealth}
+        currentAsk={currentAsk}
+        onStop={onStop}
+      />
+    </>
   );
 }
