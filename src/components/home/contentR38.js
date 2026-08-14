@@ -111,15 +111,15 @@ export const NAV = {
           kick: 'The department',
           links: [
             { t: 'The plan',    s: 'A 90-day plan you can read.',        href: '#department' },
-            { t: 'The filming', s: 'Shot on your jobs. We come to you.', href: '#films' },
-            { t: 'The website', s: 'Yours — your domain, your name.',    href: '#work' },
+            { t: 'The filming', s: 'Shot on your jobs. Never stock.',    href: '#department' },
+            { t: 'The website', s: 'Yours — your domain, your name.',    href: '#department' },
           ],
         },
         {
           kick: 'And the rest',
           links: [
-            { t: 'The ads',     s: 'Paid at cost, in your account.',     href: '#math' },
-            { t: 'The reviews', s: 'Answered in your voice.',            href: '#proof' },
+            { t: 'The ads',     s: 'Paid at cost, in your account.',     href: '#department' },
+            { t: 'The reviews', s: 'Answered in your voice.',            href: '#department' },
             { t: 'A crew for a day', s: 'Filmed, edited, back in two days.', href: '#one-thing' },
           ],
         },

@@ -366,7 +366,7 @@ export function useRoomCrossings(worldId, room) {
   useEffect(() => {
     const fixture = demoRoomCrossings(room);
     if (fixture) { setItems(fixture); setWindowFull(false); setStatus('ready'); return undefined; }
-    if (!worldId || !room?.id) { setItems([]); setStatus('empty'); return undefined; }
+    if (!worldId || !room?.id) { setItems([]); setStatus('loading'); return undefined; }
     let alive = true;
     setItems([]);
     setStatus('loading');
