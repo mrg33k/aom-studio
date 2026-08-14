@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ArrowUpRight, Play, ClipboardList, Camera, Globe, Megaphone, MessageSquare } from 'lucide-react';
+import { ArrowRight, Play, ClipboardList, Camera, Globe, Megaphone, MessageSquare, ArrowUpRight } from 'lucide-react';
 import StickyVideoDeck from './StickyVideoDeck';
 import LazyGumlet from './LazyGumlet';
 import { HERO_DECK, RECENT_WORK, CASE_TILES } from './content';
@@ -9,123 +9,162 @@ const MODULE_ICONS = [ClipboardList, Camera, Globe, Megaphone, MessageSquare];
 
 const DECK_TRADES_FIRST = [...HERO_DECK].sort((a, b) => {
   const lead = ['Primrose Ambition', 'NGOTS Restoration', "Tiffany's", 'Nook 10 Year'];
-  const ai = lead.indexOf(a.client); const bi = lead.indexOf(b.client);
+  const ai = lead.indexOf(a.client);
+  const bi = lead.indexOf(b.client);
   return (ai === -1 ? lead.length : ai) - (bi === -1 ? lead.length : bi);
 });
 
 const Kick = ({ children, dark }) => (
-  <p className={`font-mono text-[11px] uppercase tracking-[0.32em] mb-5 ${dark ? 'text-[#F04404]' : 'text-[#C43800]'}`}>
-    {children}
-  </p>
+  <p className={`font-mono text-[10px] uppercase tracking-[0.28em] ${dark ? 'text-[#F04404]' : 'text-[#8A6A2B]'}`}>{children}</p>
 );
 
 const H2 = ({ children, dark, className = '' }) => (
-  <h2 className={`font-anton font-normal uppercase text-[40px] md:text-[72px] leading-[0.94] tracking-[-0.01em] ${dark ? 'text-[#F5F3EE]' : 'text-[#0A0A08]'} ${className}`}>
+  <h2 className={`font-anton font-normal uppercase text-[36px] md:text-[64px] lg:text-[72px] leading-[0.94] tracking-[-0.02em] ${dark ? 'text-[#F5F3EE]' : 'text-[#0A0A08]'} ${className}`}>
     {children}
   </h2>
 );
 
 export default function HomeConsoleR38({ openBrief }) {
   return (
-    <div className="r38-root bg-[#F5F3EE] text-[#0A0A08] font-hanken">
+    <div className="r38-root bg-[#F5F3EE] text-[#0A0A08] font-hanken antialiased">
+      <div
+        dangerouslySetInnerHTML={{
+          __html: `<!-- THESIS: The value is the visual — $12k in-house vs $3k with us as giant ledger hero, not a pitch beside media. Refuses the category-default hero image + headline + ghost CTA.\nOWN-WORLD: Paper #F5F3EE / ink #0A0A08 / accent #F04404→#C43800 (ink) / #8A6A2B on bone; Anton display 36-72px, Hanken Grotesk/mono 11px tracked caps; paper-ledger tables, 1px hairlines, no glass/grad-text, grid-drift + breathe as single authored motion.\nSTORY: Skeptical Phoenix owner sees the math is 4× in one glance, believes the numbers because 46 shoots / 399 photos and 30-day work wall prove it, then taps Tell us what you need.\nFIRST VIEWPORT: Centered column max 720px: eyebrow → H1 (68px max) → one-sentence sub (68ch) → full ledger band (Role/In-house/With us, 4 rows, Per month ~$12k / $3k big) → CTA + See the work → 3-stat proof rail. No deck in viewport; deck follows as substantiation.\nFORM: Persuade surface inside established world, candidate 3/7 Math Ledger Domination, seed a3095012 degraded, assigned index 3. Built ledger-first.\nFINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md -->`,
+        }}
+      />
 
-      {/* 1. HERO — paper, living grid + breathing air, proof rail fills the band */}
-      <section className="relative overflow-hidden lg:min-h-[900px]">
+      {/* 1. HERO — MATH LEDGER DOMINATION */}
+      <section className="relative overflow-hidden border-b border-[#0A0A08]/10">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div className="absolute inset-[-80px] hero-grid-drift" />
           <div className="absolute inset-0 hero-air-breathe" />
         </div>
 
-        <div className="relative px-6 md:px-12 pt-28 md:pt-36 pb-12 lg:pb-0 lg:py-28 max-w-[1608px] mx-auto">
-          <div className="flex flex-col lg:flex-row lg:items-start gap-10 lg:gap-16 relative lg:min-h-[700px]">
-            <div className="lg:w-[46%] flex flex-col pt-2">
-              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#C43800] mb-8">
-                {HERO.eyebrow}
-              </p>
-              <h1 className="font-anton font-normal uppercase text-[12.5vw] md:text-[56px] lg:text-[58px] xl:text-[68px] leading-[0.96] tracking-[-0.01em]">
-                {HERO.h1Lines[0]}<br />
-                {HERO.h1Lines[1]}<br />
-                <em className="font-hanken normal-case italic font-medium tracking-[-0.02em] text-[#F04404]">{HERO.h1Emphasis}</em>
-              </h1>
-              <p className="text-[15px] md:text-[17px] text-[#0A0A08]/70 mt-8 leading-[1.55] max-w-xl">
-                {HERO.sub}
-              </p>
-              <div className="flex flex-wrap items-center gap-4 mt-10">
-                <button
-                  onClick={() => openBrief?.()}
-                  className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-8 py-4 rounded-full transition-transform duration-200 hover:scale-[1.04] flex items-center gap-2"
-                >
-                  {HERO.cta} <ArrowRight size={14} />
-                </button>
-                <a href="#work" className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08] no-underline flex items-center gap-2 px-2 py-3 border-b border-[#0A0A08]/40 hover:border-[#F04404] hover:text-[#C43800] transition-colors">
-                  <Play size={13} className="fill-current" /> {HERO.ctaSub}
-                </a>
+        <div className="relative max-w-[1440px] mx-auto px-6 md:px-12 pt-24 md:pt-28 pb-10 md:pb-14">
+          <div className="max-w-[760px]">
+            <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#8A6A2B]">{HERO.eyebrow}</p>
+
+            <h1 className="font-anton font-normal uppercase text-[11vw] md:text-[56px] lg:text-[64px] leading-[0.96] tracking-[-0.02em] mt-4 text-balance">
+              {HERO.h1Lines[0]}
+              <br />
+              {HERO.h1Lines[1]}
+              <br />
+              <em className="font-hanken normal-case italic font-medium tracking-[-0.02em] text-[#F04404]">{HERO.h1Emphasis}</em>
+            </h1>
+
+            <p className="text-[16px] md:text-[18px] text-[#0A0A08]/70 mt-6 leading-[1.6] max-w-[68ch] text-pretty">{HERO.sub}</p>
+
+            {/* Ledger as hero */}
+            <div className="mt-10 border border-[#0A0A08]/15 bg-white overflow-hidden">
+              <div className="grid grid-cols-12 gap-0 font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/45 px-5 py-3 border-b border-[#0A0A08]/10 bg-[#EDE9E1]">
+                <span className="col-span-6">Role</span>
+                <span className="col-span-3 text-right">In-house</span>
+                <span className="col-span-3 text-right text-[#8A6A2B]">With us</span>
               </div>
-              {/* Proof rail — fills the hero band bottom with evidence, not empty air */}
-              <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#0A0A08]/12 pt-6 max-w-xl">
-                <div>
-                  <p className="font-anton uppercase text-[28px] leading-none tracking-[-0.01em] text-[#0A0A08]">46</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#0A0A08]/60 mt-1">Shoots / year</p>
-                  <p className="font-hanken text-[12px] text-[#0A0A08]/50 leading-tight mt-1">Ambition Mechanical</p>
+              {(MATH.rows || []).map((r) => (
+                <div key={r.role} className="grid grid-cols-12 gap-0 px-5 py-4 border-t border-[#0A0A08]/8 items-center first:border-t-0">
+                  <span className="col-span-6 font-hanken text-[14px] md:text-[15px] font-medium text-[#0A0A08] leading-tight">{r.role}</span>
+                  <span className="col-span-3 font-mono text-[13px] md:text-[14px] text-[#0A0A08]/50 text-right tabular-nums">{r.inhouse}</span>
+                  <span className="col-span-3 font-mono text-[13px] md:text-[14px] font-semibold text-[#C43800] text-right tabular-nums">{r.us}</span>
                 </div>
-                <div className="border-l border-[#0A0A08]/12 pl-4">
-                  <p className="font-anton uppercase text-[28px] leading-none tracking-[-0.01em] text-[#0A0A08]">399</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#0A0A08]/60 mt-1">Photos delivered</p>
-                  <p className="font-hanken text-[12px] text-[#0A0A08]/50 leading-tight mt-1">Edited, yours to keep</p>
-                </div>
-                <div className="border-l border-[#0A0A08]/12 pl-4">
-                  <p className="font-anton uppercase text-[28px] leading-none tracking-[-0.01em] text-[#0A0A08]">$3k</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#0A0A08]/60 mt-1">Per month</p>
-                  <p className="font-hanken text-[12px] text-[#0A0A08]/50 leading-tight mt-1">No contract</p>
-                </div>
+              ))}
+              <div className="grid grid-cols-12 gap-0 px-5 py-5 bg-[#F04404] text-[#0A0A08] items-center">
+                <span className="col-span-6 font-mono text-[11px] font-semibold uppercase tracking-[0.18em]">Per month</span>
+                <span className="col-span-3 font-anton text-[26px] md:text-[38px] leading-none text-right tracking-[-0.02em] tabular-nums">~$12k</span>
+                <span className="col-span-3 font-anton text-[26px] md:text-[38px] leading-none text-right tracking-[-0.02em] tabular-nums">$3k</span>
               </div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/40 mt-3">Phoenix · Since 2014 · Every industry, a soft spot for construction</p>
             </div>
-            <div className="lg:absolute lg:top-0 lg:right-0 lg:bottom-0 lg:w-[52%] lg:pr-8 lg:pl-4">
-              <StickyVideoDeck items={DECK_TRADES_FIRST} theme="paper" />
+
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#0A0A08]/35 mt-3 leading-relaxed max-w-[68ch]">{MATH.foot}</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 mt-1">You pay Google directly for ad spend. No markup.</p>
+
+            <div className="flex flex-wrap items-center gap-4 mt-8">
+              <button
+                onClick={() => openBrief?.()}
+                className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-8 py-4 rounded-full transition-[transform,background-color] duration-200 hover:scale-[1.02] hover:bg-[#E93E00] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2 inline-flex items-center gap-2"
+              >
+                {HERO.cta} <ArrowRight size={14} aria-hidden="true" />
+              </button>
+              <a
+                href="#work"
+                className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08] no-underline inline-flex items-center gap-2 px-2 py-3 border-b border-[#0A0A08]/30 hover:border-[#F04404] hover:text-[#8A6A2B] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2"
+              >
+                <Play size={13} className="fill-current" aria-hidden="true" /> {HERO.ctaSub}
+              </a>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 hidden md:inline">No contract · You own every file</span>
             </div>
+
+            {/* Proof rail — fills hero band bottom with checkable evidence, not empty air */}
+            <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#0A0A08]/10 pt-6">
+              <div>
+                <p className="font-anton uppercase text-[26px] md:text-[32px] leading-none tracking-[-0.02em] text-[#0A0A08] tabular-nums">46</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/50 mt-1">Shoots / year</p>
+                <p className="font-hanken text-[12px] text-[#0A0A08]/45 leading-tight mt-1">Ambition Mechanical</p>
+              </div>
+              <div className="border-l border-[#0A0A08]/10 pl-4">
+                <p className="font-anton uppercase text-[26px] md:text-[32px] leading-none tracking-[-0.02em] text-[#0A0A08] tabular-nums">399</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/50 mt-1">Photos delivered</p>
+                <p className="font-hanken text-[12px] text-[#0A0A08]/45 leading-tight mt-1">Edited, yours to keep</p>
+              </div>
+              <div className="border-l border-[#0A0A08]/10 pl-4">
+                <p className="font-anton uppercase text-[26px] md:text-[32px] leading-none tracking-[-0.02em] text-[#0A0A08] tabular-nums">$3k</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/50 mt-1">Per month</p>
+                <p className="font-hanken text-[12px] text-[#0A0A08]/45 leading-tight mt-1">No contract</p>
+              </div>
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 mt-4">Phoenix · Since 2014 · Every industry, a soft spot for construction</p>
           </div>
         </div>
 
         <style>{`
           .r38-root ::selection { background: #F04404; color: #0A0A08; }
+          .r38-root ::-moz-selection { background: #F04404; color: #0A0A08; }
           .r38-root a:focus-visible, .r38-root button:focus-visible { outline: 2px solid #F04404; outline-offset: 3px; border-radius: 2px; }
+          .r38-root * { scrollbar-color: #0A0A08 #F5F3EE; scrollbar-width: thin; }
+          .r38-root ::-webkit-scrollbar { width: 8px; height: 8px; }
+          .r38-root ::-webkit-scrollbar-thumb { background: #0A0A08; border-radius: 999px; }
+          .r38-root ::-webkit-scrollbar-track { background: #F5F3EE; }
           .hero-grid-drift {
             background-image:
-              repeating-linear-gradient(0deg, rgba(10,10,8,0.055) 0 1px, transparent 1px 56px),
-              repeating-linear-gradient(90deg, rgba(10,10,8,0.055) 0 1px, transparent 1px 56px);
+              repeating-linear-gradient(0deg, rgba(10,10,8,0.045) 0 1px, transparent 1px 56px),
+              repeating-linear-gradient(90deg, rgba(10,10,8,0.045) 0 1px, transparent 1px 56px);
             animation: heroGridDrift 46s linear infinite;
           }
-          @keyframes heroGridDrift {
-            from { transform: translate(0, 0); }
-            to   { transform: translate(56px, 56px); }
-          }
+          @keyframes heroGridDrift { from { transform: translate(0, 0); } to { transform: translate(56px, 56px); } }
           .hero-air-breathe {
-            background: radial-gradient(52% 44% at 68% 38%, rgba(240,68,4,0.07), transparent 70%);
-            animation: heroAirBreathe 9s ease-in-out infinite alternate;
+            background: radial-gradient(52% 44% at 68% 38%, rgba(240,68,4,0.06), transparent 70%);
+            animation: heroAirBreathe 10s ease-in-out infinite alternate;
           }
-          @keyframes heroAirBreathe {
-            from { opacity: 0.55; transform: scale(1); }
-            to   { opacity: 1;    transform: scale(1.06); }
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .hero-grid-drift, .hero-air-breathe { animation: none; }
-          }
+          @keyframes heroAirBreathe { from { opacity: 0.5; transform: scale(1); } to { opacity: 1; transform: scale(1.04); } }
+          @media (prefers-reduced-motion: reduce) { .hero-grid-drift, .hero-air-breathe { animation: none; } }
         `}</style>
       </section>
 
+      {/* 1b. DEPARTMENT IN ACTION — deck now substantiates the ledger, not the hero */}
+      <section className="bg-white border-b border-[#0A0A08]/10">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-12 py-8 md:py-10">
+          <div className="flex items-baseline justify-between gap-6">
+            <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#8A6A2B]">Department in action — real jobs, this month</p>
+            <p className="hidden md:block font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/35">Swipe →</p>
+          </div>
+          <div className="mt-6">
+            <StickyVideoDeck items={DECK_TRADES_FIRST} theme="paper" />
+          </div>
+        </div>
+      </section>
+
       {/* 2. RECENT WORK — fills frame: header + dense marquee */}
-      <section className="border-y border-[#0A0A08]/10 bg-[#EDE9E1] overflow-hidden">
+      <section className="border-b border-[#0A0A08]/10 bg-[#EDE9E1] overflow-hidden">
         <div className="px-6 md:px-12 max-w-[1440px] mx-auto flex items-baseline justify-between gap-6 pt-5 pb-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.32em] text-[#C43800]">Recent work — what shipped in the last 30 days</p>
-          <p className="hidden md:block font-mono text-[10px] uppercase tracking-[0.2em] text-[#0A0A08]/40">{RECENT_WORK.length} active projects</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#8A6A2B]">Recent work — what shipped in the last 30 days</p>
+          <p className="hidden md:block font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/40">{RECENT_WORK.length} active projects</p>
         </div>
         <div className="flex items-center gap-5 whitespace-nowrap animate-marquee-console pb-5">
           {[...RECENT_WORK, ...RECENT_WORK, ...RECENT_WORK].map((w, i) => (
             <div key={i} className="inline-flex items-center gap-3 border border-[#0A0A08]/12 bg-[#F5F3EE] rounded-full pl-5 pr-4 py-2.5 shrink-0">
-              <span className="font-anton uppercase text-[17px] md:text-[22px] tracking-[0.01em] text-[#0A0A08]">{w.client}</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08]/55 border-l border-[#0A0A08]/15 pl-3">{w.tag}</span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#C43800] border-l border-[#0A0A08]/10 pl-3 hidden md:inline">{w.when}</span>
+              <span className="font-anton uppercase text-[17px] md:text-[20px] tracking-[0.01em] text-[#0A0A08]">{w.client}</span>
+              <span className="font-mono text-[11px] uppercase tracking-[0.20em] text-[#0A0A08]/55 border-l border-[#0A0A08]/15 pl-3">{w.tag}</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#8A6A2B] border-l border-[#0A0A08]/10 pl-3 hidden md:inline">{w.when}</span>
             </div>
           ))}
         </div>
@@ -136,98 +175,107 @@ export default function HomeConsoleR38({ openBrief }) {
         `}</style>
       </section>
 
-      {/* 3. THE DEPARTMENT — TYPE + DATA: ledger, not cards. Fills frame. */}
+      {/* 3. THE DEPARTMENT — ledger, not cards. Fills frame. */}
       <section id="department" className="bg-[#0A0A08] text-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
-          {/* Left: sticky manifesto */}
           <div className="lg:col-span-5 px-6 md:px-12 lg:pr-12 pt-16 md:pt-20 lg:py-20 lg:sticky lg:top-0 lg:self-start">
-            <Kick dark>{DEPT.kick}</Kick>
-            <H2 dark className="max-w-sm">{DEPT.open}</H2>
-            <p className="text-[18px] md:text-[19px] text-[#F5F3EE]/85 mt-6 leading-[1.65] max-w-md">{DEPT.para}</p>
+            <div className="mb-4">
+              <Kick dark>{DEPT.kick}</Kick>
+            </div>
+            <H2 dark className="max-w-sm text-balance">
+              {DEPT.open}
+            </H2>
+            <p className="text-[18px] md:text-[19px] text-[#F5F3EE]/85 mt-6 leading-[1.65] max-w-[60ch] text-pretty">{DEPT.para}</p>
             <div className="mt-10 flex items-center gap-3">
               <div className="h-px w-10 bg-[#F04404]" />
-              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#F5F3EE]/50">Five people who do one thing well</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#F5F3EE]/50">Five people who do one thing well</p>
             </div>
             <figure className="mt-10 -mx-6 md:-mx-12 lg:mx-0">
-              <img src="/aom-kit/img/ambition-crew.jpg" alt="Ambition Mechanical crew on the job, photographed by AOM" className="w-full aspect-[16/10] object-cover" />
-              <figcaption className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#F5F3EE]/40 mt-3 px-6 md:px-12 lg:px-0">Ambition Mechanical · Phoenix · shot on the job, not in a studio</figcaption>
+              <img src="/aom-kit/img/ambition-crew.jpg" alt="Ambition Mechanical crew on the job, photographed by AOM" className="w-full aspect-[16/10] object-cover" loading="lazy" />
+              <figcaption className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 mt-3 px-6 md:px-12 lg:px-0">
+                Ambition Mechanical · Phoenix · shot on the job, not in a studio
+              </figcaption>
             </figure>
           </div>
-          {/* Right: ledger rows */}
           <div className="lg:col-span-7 lg:border-l lg:border-[#F5F3EE]/10">
-            {(DEPT.ledger || DEPT.modules.map((m,i)=>({n:String(i+1).padStart(2,'0'),label:m.label,meta:'',detail:''}))).map((row) => {
-              const idx = parseInt(row.n,10) - 1;
+            {(DEPT.ledger || DEPT.modules.map((m, i) => ({ n: String(i + 1).padStart(2, '0'), label: m.label, meta: '', detail: '' }))).map((row) => {
+              const idx = parseInt(row.n, 10) - 1;
               const Icon = MODULE_ICONS[idx] || ClipboardList;
               const mod = DEPT.modules[idx];
               return (
-                <div key={row.n} className="grid grid-cols-12 gap-4 px-6 md:px-12 py-9 md:py-10 border-t border-[#F5F3EE]/10 first:border-t-0 hover:bg-[#F5F3EE]/[0.04] transition-colors">
+                <div
+                  key={row.n}
+                  className="grid grid-cols-12 gap-4 px-6 md:px-12 py-9 md:py-10 border-t border-[#F5F3EE]/10 first:border-t-0 hover:bg-[#F5F3EE]/[0.04] transition-colors"
+                >
                   <div className="col-span-2 md:col-span-1">
-                    <p className="font-anton text-[28px] md:text-[32px] leading-none tracking-[-0.02em] text-[#F04404]">{row.n}</p>
+                    <p className="font-anton text-[28px] md:text-[32px] leading-none tracking-[-0.02em] text-[#F04404] tabular-nums">{row.n}</p>
                   </div>
                   <div className="col-span-10 md:col-span-11">
                     <div className="flex items-center gap-3 mb-2">
                       <Icon size={16} strokeWidth={1.75} className="text-[#F04404] shrink-0" aria-hidden="true" />
-                      <p className="font-mono text-[11px] font-medium uppercase tracking-[0.28em] text-[#F04404]">{row.label}</p>
+                      <p className="font-mono text-[10px] font-medium uppercase tracking-[0.28em] text-[#F04404]">{row.label}</p>
                     </div>
                     <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 mb-3">{row.meta}</p>
-                    <p className="text-[15px] md:text-[16px] text-[#F5F3EE]/88 leading-[1.65] max-w-xl">{mod.body}</p>
+                    <p className="text-[15px] md:text-[16px] text-[#F5F3EE]/88 leading-[1.65] max-w-[68ch] text-pretty">{mod.body}</p>
                     <p className="font-hanken text-[13px] text-[#F5F3EE]/35 mt-2">{row.detail}</p>
                   </div>
                 </div>
               );
             })}
             <div className="px-6 md:px-12 py-8 bg-[#F04404] text-[#0A0A08]">
-              <p className="font-mono text-[11px] uppercase tracking-[0.2em] opacity-70">The loop</p>
-              <p className="font-anton uppercase text-[22px] md:text-[28px] leading-[0.98] tracking-[0.01em] mt-2">At the end of the month you get one page that shows what happened.</p>
-              <p className="font-hanken text-[14px] leading-[1.6] opacity-80 mt-3 max-w-xl">What ran, what it did, and what is next. No deck. One page you can forward.</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] opacity-60">The loop</p>
+              <p className="font-anton uppercase text-[22px] md:text-[26px] leading-[0.98] tracking-[0.01em] mt-2 text-balance">At the end of the month you get one page that shows what happened.</p>
+              <p className="font-hanken text-[14px] leading-[1.6] opacity-70 mt-3 max-w-[60ch]">What ran, what it did, and what is next. No deck. One page you can forward.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. A MONTH WITH US — DIAGRAM + PHOTO: fills frame edge-to-edge */}
+      {/* 4. A MONTH WITH US — diagram + photo: fills frame edge-to-edge */}
       <section className="bg-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
           <div className="lg:col-span-7 px-6 md:px-12 py-16 md:py-20 lg:pr-12">
-            <Kick>{MONTH.kick}</Kick>
-            <H2 className="max-w-lg">{MONTH.tail}</H2>
-            <p className="text-[17px] md:text-[18px] text-[#0A0A08]/70 mt-6 leading-[1.65] max-w-lg">{MONTH.body}</p>
-            <div className="mt-10 border border-[#0A0A08]/12 bg-white">
-              <div className="grid grid-cols-12 gap-0 font-mono text-[10px] uppercase tracking-[0.2em] text-[#0A0A08]/40 px-5 py-3 border-b border-[#0A0A08]/10 bg-[#EDE9E1]">
+            <div className="mb-4">
+              <Kick>{MONTH.kick}</Kick>
+            </div>
+            <H2 className="max-w-lg text-balance">{MONTH.tail}</H2>
+            <p className="text-[17px] md:text-[18px] text-[#0A0A08]/65 mt-6 leading-[1.65] max-w-[60ch] text-pretty">{MONTH.body}</p>
+            <div className="mt-10 border border-[#0A0A08]/12 bg-white overflow-hidden">
+              <div className="grid grid-cols-12 gap-0 font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/40 px-5 py-3 border-b border-[#0A0A08]/10 bg-[#EDE9E1]">
                 <span className="col-span-3">Week</span>
                 <span className="col-span-5">Focus</span>
                 <span className="col-span-4 text-right hidden md:block">Ships</span>
               </div>
               {MONTH.weeks.map((w) => (
                 <div key={w.wk} className="grid grid-cols-12 gap-2 md:gap-4 px-5 py-5 border-t border-[#0A0A08]/10 first:border-t-0 items-baseline">
-                  <span className="col-span-3 font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-[#C43800]">{w.wk}</span>
-                  <span className="col-span-9 md:col-span-5 font-anton uppercase text-[22px] md:text-[28px] leading-[0.98] tracking-[0.01em] text-[#0A0A08]">{w.what}</span>
+                  <span className="col-span-3 font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-[#8A6A2B]">{w.wk}</span>
+                  <span className="col-span-9 md:col-span-5 font-anton uppercase text-[20px] md:text-[26px] leading-[0.98] tracking-[0.01em] text-[#0A0A08]">{w.what}</span>
                   <span className="col-span-12 md:col-span-4 font-hanken text-[13px] text-[#0A0A08]/55 leading-tight md:text-right mt-1 md:mt-0">{w.out}</span>
                 </div>
               ))}
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/35 mt-4">Work goes live as it is ready — no batch at month end.</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 mt-4">Work goes live as it is ready — no batch at month end.</p>
           </div>
           <div className="lg:col-span-5 bg-[#0A0A08] text-[#F5F3EE] flex flex-col">
             <div className="grid grid-cols-2 gap-0 flex-1">
               <div className="relative overflow-hidden">
-                <img src="/aom-kit/img/welder.png" alt="Welder on a structural beam — AOM filming on the job" className="w-full h-full object-cover min-h-[320px]" />
+                <img src="/aom-kit/img/welder.png" alt="Welder on a structural beam — AOM filming on the job" className="w-full h-full object-cover min-h-[320px]" loading="lazy" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/80">Shoot</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-white/80">Shoot</p>
                   <p className="font-hanken text-[13px] font-medium text-white leading-tight mt-1">On your jobs, not in a studio.</p>
                 </div>
               </div>
               <div className="relative overflow-hidden border-l border-[#F5F3EE]/10">
-                <img src="/aom-kit/img/ridge.png" alt="Crew on a rooftop ridge — AOM on site" className="w-full h-full object-cover min-h-[320px]" />
+                <img src="/aom-kit/img/ridge.png" alt="Crew on a rooftop ridge — AOM on site" className="w-full h-full object-cover min-h-[320px]" loading="lazy" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/80">Report</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-white/80">Report</p>
                   <p className="font-hanken text-[13px] font-medium text-white leading-tight mt-1">One page at month end.</p>
                 </div>
               </div>
             </div>
             <div className="px-6 md:px-8 py-8">
               <Kick dark>{NINETY.kick}</Kick>
-              <p className="text-[16px] md:text-[17px] text-[#F5F3EE]/85 leading-[1.65]">{NINETY.body}</p>
+              <p className="text-[16px] md:text-[17px] text-[#F5F3EE]/85 leading-[1.65] mt-3 max-w-[60ch] text-pretty">{NINETY.body}</p>
               <div className="mt-6 grid grid-cols-3 gap-4 border-t border-[#F5F3EE]/12 pt-5">
                 {(NINETY.steps || []).map((s) => (
                   <div key={s.d}>
@@ -242,56 +290,66 @@ export default function HomeConsoleR38({ openBrief }) {
         </div>
       </section>
 
-      {/* 5. FILMS — PHOTO: asymmetric hero + dossier */}
+      {/* 5. FILMS — asymmetric hero + dossier */}
       <section id="films" className="bg-[#0A0A08] text-[#F5F3EE] border-t border-[#F5F3EE]/10">
         <div className="max-w-[1440px] mx-auto">
           <div className="px-6 md:px-12 pt-16 md:pt-20 pb-8 flex items-end justify-between gap-6 flex-wrap">
             <div>
-              <Kick dark>{FILMS.kick}</Kick>
-              <H2 dark className="max-w-xl">{FILMS.h2}</H2>
+              <div className="mb-4">
+                <Kick dark>{FILMS.kick}</Kick>
+              </div>
+              <H2 dark className="max-w-xl text-balance">
+                {FILMS.h2}
+              </H2>
             </div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 max-w-xs leading-relaxed">Every reel is a real client job. No stock, no staged set.</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 max-w-xs leading-relaxed">Every reel is a real client job. No stock, no staged set.</p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 border-t border-[#F5F3EE]/10">
-            <a href="#" className="lg:col-span-7 group relative block aspect-[16/10] lg:aspect-[4/3] overflow-hidden border-r-0 lg:border-r border-[#F5F3EE]/10 bg-black no-underline">
+            <a
+              href="#"
+              className="lg:col-span-7 group relative block aspect-[16/10] lg:aspect-[4/3] overflow-hidden border-r-0 lg:border-r border-[#F5F3EE]/10 bg-black no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-[-2px]"
+            >
               <LazyGumlet id={FILMS.items[0].reel} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent z-10 pointer-events-none" />
               <div className="absolute top-5 left-5 z-20">
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] bg-[#F04404] text-[#0A0A08] px-3 py-1.5">01 — Feature</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.20em] bg-[#F04404] text-[#0A0A08] px-3 py-1.5">01 — Feature</span>
               </div>
               <div className="absolute bottom-7 left-7 right-7 z-20">
                 <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#F04404] mb-3">{FILMS.items[0].label}</p>
-                <h3 className="font-anton uppercase text-[24px] md:text-[34px] leading-[0.96] tracking-[0.005em] text-[#F5F3EE] max-w-lg">{FILMS.items[0].title}</h3>
+                <h3 className="font-anton uppercase text-[24px] md:text-[32px] leading-[0.96] tracking-[0.005em] text-[#F5F3EE] max-w-lg text-balance">{FILMS.items[0].title}</h3>
                 <span className="mt-5 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[#F5F3EE] border border-[#F5F3EE]/20 rounded-full px-4 py-2 group-hover:border-[#F04404]/60 transition-colors">
-                  <Play size={13} className="fill-current text-[#F04404]" /> Watch — 1:00
+                  <Play size={13} className="fill-current text-[#F04404]" aria-hidden="true" /> Watch — 1:00
                 </span>
               </div>
             </a>
             <div className="lg:col-span-5 flex flex-col">
-              <a href="#" className="group relative block aspect-[16/10] overflow-hidden bg-black no-underline flex-1">
+              <a
+                href="#"
+                className="group relative block aspect-[16/10] overflow-hidden bg-black no-underline flex-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-[-2px]"
+              >
                 <LazyGumlet id={FILMS.items[1].reel} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent z-10 pointer-events-none" />
                 <div className="absolute top-5 left-5 z-20">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] bg-[#F5F3EE] text-[#0A0A08] px-3 py-1.5">02 — Documentary</span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.20em] bg-[#F5F3EE] text-[#0A0A08] px-3 py-1.5">02 — Documentary</span>
                 </div>
                 <div className="absolute bottom-6 left-6 right-6 z-20">
                   <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#F04404] mb-2">{FILMS.items[1].label}</p>
-                  <h3 className="font-anton uppercase text-[20px] md:text-[24px] leading-[0.98] tracking-[0.005em] text-[#F5F3EE]">{FILMS.items[1].title}</h3>
+                  <h3 className="font-anton uppercase text-[20px] md:text-[24px] leading-[0.98] tracking-[0.005em] text-[#F5F3EE] text-balance">{FILMS.items[1].title}</h3>
                   <span className="mt-4 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[#F5F3EE]">
-                    <Play size={13} className="fill-current text-[#F04404]" /> Watch
+                    <Play size={13} className="fill-current text-[#F04404]" aria-hidden="true" /> Watch
                   </span>
                 </div>
               </a>
               <div className="grid grid-cols-2 gap-0 border-t border-[#F5F3EE]/10 bg-[#141412]">
                 <div className="relative aspect-[4/3] overflow-hidden">
-                  <img src="/aom-kit/img/jobsite.png" alt="Job site behind the scenes, filmed by AOM" className="w-full h-full object-cover opacity-90" />
+                  <img src="/aom-kit/img/jobsite.png" alt="Job site behind the scenes, filmed by AOM" className="w-full h-full object-cover opacity-90" loading="lazy" />
                   <div className="absolute bottom-2 left-2 right-2">
                     <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/70">On the job</p>
                   </div>
                 </div>
                 <div className="px-5 py-5 flex flex-col justify-center border-l border-[#F5F3EE]/10">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#F5F3EE]/40">How it is made</p>
-                  <p className="font-hanken text-[14px] leading-[1.5] text-[#F5F3EE]/85 mt-2">Two people, one day, real work happening around us. Back in two days cut.</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#F5F3EE]/40">How it is made</p>
+                  <p className="font-hanken text-[14px] leading-[1.5] text-[#F5F3EE]/85 mt-2 text-pretty">Two people, one day, real work happening around us. Back in two days cut.</p>
                   <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#F5F3EE]/30 mt-3">No studio · No actors</p>
                 </div>
               </div>
@@ -300,75 +358,83 @@ export default function HomeConsoleR38({ openBrief }) {
         </div>
       </section>
 
-      {/* 6. THE WORK — PHOTO + UI: featured tile breaks the grid */}
+      {/* 6. THE WORK — featured tile breaks the grid */}
       <section id="work" className="py-16 md:py-20 px-6 md:px-12 bg-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between flex-wrap gap-6 mb-4">
             <div>
-              <Kick>{WORK.kick}</Kick>
-              <H2 className="max-w-xl">{WORK.h2}</H2>
+              <div className="mb-4">
+                <Kick>{WORK.kick}</Kick>
+              </div>
+              <H2 className="max-w-xl text-balance">{WORK.h2}</H2>
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/40 max-w-xs leading-relaxed text-right hidden md:block">Tap any tile to watch. Every reel is a real job — no stock.</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/35 max-w-xs leading-relaxed text-right hidden md:block">Tap any tile to watch. Every reel is a real job — no stock.</p>
           </div>
-          <p className="text-[16px] text-[#0A0A08]/60 leading-[1.6] max-w-xl mb-8">{WORK.lede}</p>
+          <p className="text-[16px] text-[#0A0A08]/55 leading-[1.6] max-w-[60ch] mb-8 text-pretty">{WORK.lede}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
             {CASE_TILES.map((t, idx) => {
               const isFeature = idx === 0;
               return (
-                <a key={t.client} href="#" className={`group block relative overflow-hidden bg-[#0A0A08] no-underline border border-[#0A0A08]/12 hover:border-[#F04404]/60 transition-colors ${isFeature ? 'lg:col-span-8 aspect-[16/9] lg:aspect-[16/8]' : 'lg:col-span-4 aspect-[5/4]'}`}>
+                <a
+                  key={t.client}
+                  href="#"
+                  className={`group block relative overflow-hidden bg-[#0A0A08] no-underline border border-[#0A0A08]/12 hover:border-[#F04404]/60 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2 ${isFeature ? 'lg:col-span-8 aspect-[16/9] lg:aspect-[16/8]' : 'lg:col-span-4 aspect-[5/4]'}`}
+                >
                   <LazyGumlet id={t.reel} className="transition-transform duration-700 group-hover:scale-[1.04]" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-                  {isFeature && <span className="absolute top-4 left-4 font-mono text-[10px] uppercase tracking-[0.2em] bg-[#F04404] text-[#0A0A08] px-3 py-1.5 z-20">Featured</span>}
-                  <div className="absolute bottom-5 left-5 right-5">
-                    <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#F04404] mb-1.5">{t.tag}</p>
-                    <p className={`font-anton uppercase leading-tight tracking-[0.01em] text-[#F5F3EE] ${isFeature ? 'text-[26px] md:text-[32px]' : 'text-[20px] md:text-[22px]'}`}>{t.client}</p>
+                  {isFeature && <span className="absolute top-4 left-4 font-mono text-[10px] uppercase tracking-[0.20em] bg-[#F04404] text-[#0A0A08] px-3 py-1.5 z-20">Featured</span>}
+                  <div className="absolute bottom-5 left-5 right-5 z-10">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F04404] mb-1.5">{t.tag}</p>
+                    <p className={`font-anton uppercase leading-tight tracking-[0.01em] text-[#F5F3EE] ${isFeature ? 'text-[26px] md:text-[30px]' : 'text-[20px] md:text-[22px]'} text-balance`}>{t.client}</p>
                   </div>
                 </a>
               );
             })}
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-[#0A0A08]/10 pt-5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#0A0A08]/40">Also:</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/35">Also:</span>
             {['Walkthroughs', 'Brand films', 'Event recaps', 'Drone', 'Social cuts', 'Photography'].map((tag) => (
-              <span key={tag} className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#0A0A08]/70 border border-[#0A0A08]/12 bg-white rounded-full px-3.5 py-1.5">{tag}</span>
+              <span key={tag} className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#0A0A08]/60 border border-[#0A0A08]/12 bg-white rounded-full px-3.5 py-1.5">
+                {tag}
+              </span>
             ))}
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 ml-auto hidden md:inline">All shot on your jobs</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/25 ml-auto hidden md:inline">All shot on your jobs</span>
           </div>
         </div>
       </section>
 
-      {/* 7. A LA CARTE — UI + photo */}
+      {/* 7. A LA CARTE */}
       <section id="one-thing" className="bg-[#EDE9E1] border-y border-[#0A0A08]/10">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
           <div className="lg:col-span-7 px-6 md:px-12 py-16 md:py-20">
-            <H2 className="!text-[30px] md:!text-[42px]">{ALACARTE.kick}</H2>
-            <p className="text-[16px] md:text-[17px] text-[#0A0A08]/65 mt-4 leading-[1.6] max-w-xl">{ALACARTE.body}</p>
+            <H2 className="!text-[30px] md:!text-[40px] text-balance">{ALACARTE.kick}</H2>
+            <p className="text-[16px] md:text-[17px] text-[#0A0A08]/60 mt-4 leading-[1.6] max-w-[60ch] text-pretty">{ALACARTE.body}</p>
             <div className="mt-8 border border-[#0A0A08]/12 bg-[#F5F3EE] overflow-hidden">
-              {(ALACARTE.items || ['A crew for a day', 'A website', 'Somebody to run your ads'].map(t=>({title:t,detail:'',meta:''}))).map((item) => (
+              {(ALACARTE.items || ['A crew for a day', 'A website', 'Somebody to run your ads'].map((t) => ({ title: t, detail: '', meta: '' }))).map((item) => (
                 <button
                   key={item.title}
                   onClick={() => openBrief?.()}
-                  className="group w-full flex items-center gap-6 px-6 md:px-8 py-6 border-b border-[#0A0A08]/10 text-left hover:bg-white transition-colors last:border-b-0"
+                  className="group w-full flex items-center gap-6 px-6 md:px-8 py-6 border-b border-[#0A0A08]/10 text-left hover:bg-white transition-colors last:border-b-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-[-2px]"
                 >
                   <span className="flex-1 min-w-0">
-                    <span className="font-hanken text-[17px] font-semibold text-[#0A0A08] group-hover:text-[#C43800] transition-colors block">{item.title}</span>
-                    <span className="font-hanken text-[13px] text-[#0A0A08]/55 block mt-0.5">{item.detail}</span>
+                    <span className="font-hanken text-[17px] font-semibold text-[#0A0A08] group-hover:text-[#8A6A2B] transition-colors block text-balance">{item.title}</span>
+                    <span className="font-hanken text-[13px] text-[#0A0A08]/50 block mt-0.5">{item.detail}</span>
                   </span>
-                  <span className="hidden md:block font-mono text-[10px] uppercase tracking-[0.16em] text-[#0A0A08]/35 text-right max-w-[140px] leading-tight">{item.meta}</span>
+                  <span className="hidden md:block font-mono text-[10px] uppercase tracking-[0.16em] text-[#0A0A08]/30 text-right max-w-[140px] leading-tight">{item.meta}</span>
                   <span className="shrink-0 w-9 h-9 rounded-full border border-[#0A0A08]/12 flex items-center justify-center group-hover:border-[#F04404] group-hover:bg-[#F04404] transition-colors">
-                    <ArrowUpRight size={16} className="text-[#C43800] group-hover:text-[#0A0A08] transition-colors" />
+                    <ArrowUpRight size={16} className="text-[#8A6A2B] group-hover:text-[#0A0A08] transition-colors" aria-hidden="true" />
                   </span>
                 </button>
               ))}
             </div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#0A0A08]/40 mt-4">{ALACARTE.link}</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/35 mt-4">{ALACARTE.link}</p>
           </div>
           <div className="lg:col-span-5 lg:border-l border-[#0A0A08]/10 bg-[#0A0A08] text-[#F5F3EE] p-6 md:p-8 flex flex-col">
             <figure className="relative overflow-hidden flex-1 min-h-[280px]">
-              <img src="/aom-kit/img/owner1.png" alt="Business owner on a job site, photographed by AOM" className="absolute inset-0 w-full h-full object-cover" onError={(e)=>{e.currentTarget.style.display='none';}} />
+              <img src="/aom-kit/img/owner1.png" alt="Business owner on a job site, photographed by AOM" className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <figcaption className="absolute bottom-4 left-4 right-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/70">A crew for a day</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-white/70">A crew for a day</p>
                 <p className="font-hanken text-[14px] font-medium text-white leading-tight mt-1">You get the photos, the cuts, and the files. Yours to keep.</p>
               </figcaption>
             </figure>
@@ -390,26 +456,30 @@ export default function HomeConsoleR38({ openBrief }) {
         </div>
       </section>
 
-      {/* 8. THE MATH — DATA: comparison table */}
+      {/* 8. THE MATH — recap closes the ledger argument, not a duplicate table */}
       <section id="math" className="bg-[#0A0A08] text-[#F5F3EE] border-t border-[#F5F3EE]/10">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
           <div className="lg:col-span-6 px-6 md:px-12 py-16 md:py-20">
-            <Kick dark>{MATH.kick}</Kick>
-            <H2 dark className="max-w-md">{MATH.h2}</H2>
-            <p className="text-[16px] md:text-[17px] text-[#F5F3EE]/75 mt-6 leading-[1.65] max-w-xl">{MATH.body}</p>
+            <div className="mb-4">
+              <Kick dark>{MATH.kick}</Kick>
+            </div>
+            <H2 dark className="max-w-md text-balance">
+              {MATH.h2}
+            </H2>
+            <p className="text-[16px] md:text-[17px] text-[#F5F3EE]/70 mt-6 leading-[1.65] max-w-[60ch] text-pretty">{MATH.body}</p>
             <div className="mt-10">
-              <p className="font-anton uppercase text-[30px] md:text-[44px] leading-[0.98] tracking-[-0.01em] text-[#F04404] max-w-md">{MATH.punch}</p>
+              <p className="font-anton uppercase text-[28px] md:text-[42px] leading-[0.98] tracking-[-0.02em] text-[#F04404] max-w-md text-balance">{MATH.punch}</p>
               <button
                 onClick={() => openBrief?.()}
-                className="mt-8 font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-8 py-4 rounded-full transition-transform duration-200 hover:scale-[1.04] inline-flex items-center gap-2"
+                className="mt-8 font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-8 py-4 rounded-full transition-[transform,background-color] duration-200 hover:scale-[1.02] hover:bg-[#E93E00] inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2"
               >
-                {CLOSING.cta} <ArrowRight size={14} />
+                {CLOSING.cta} <ArrowRight size={14} aria-hidden="true" />
               </button>
             </div>
           </div>
           <div className="lg:col-span-6 lg:border-l border-[#F5F3EE]/10 px-6 md:px-12 py-16 md:py-20 flex flex-col justify-center">
             <div className="border border-[#F5F3EE]/15 bg-[#141412] overflow-hidden">
-              <div className="grid grid-cols-12 gap-0 font-mono text-[10px] uppercase tracking-[0.2em] text-[#F5F3EE]/40 px-5 py-3 border-b border-[#F5F3EE]/10">
+              <div className="grid grid-cols-12 gap-0 font-mono text-[10px] uppercase tracking-[0.20em] text-[#F5F3EE]/40 px-5 py-3 border-b border-[#F5F3EE]/10">
                 <span className="col-span-6">Role</span>
                 <span className="col-span-3 text-right">In-house</span>
                 <span className="col-span-3 text-right text-[#F04404]">With us</span>
@@ -417,27 +487,26 @@ export default function HomeConsoleR38({ openBrief }) {
               {(MATH.rows || []).map((r) => (
                 <div key={r.role} className="grid grid-cols-12 gap-0 px-5 py-4 border-t border-[#F5F3EE]/8 items-center">
                   <span className="col-span-6 font-hanken text-[14px] font-medium text-[#F5F3EE]">{r.role}</span>
-                  <span className="col-span-3 font-mono text-[13px] text-[#F5F3EE]/50 text-right">{r.inhouse}</span>
-                  <span className="col-span-3 font-mono text-[13px] font-semibold text-[#F04404] text-right">{r.us}</span>
+                  <span className="col-span-3 font-mono text-[13px] text-[#F5F3EE]/50 text-right tabular-nums">{r.inhouse}</span>
+                  <span className="col-span-3 font-mono text-[13px] font-semibold text-[#F04404] text-right tabular-nums">{r.us}</span>
                 </div>
               ))}
-              <div className="grid grid-cols-12 gap-0 px-5 py-4 bg-[#F04404] text-[#0A0A08]">
+              <div className="grid grid-cols-12 gap-0 px-5 py-4 bg-[#F04404] text-[#0A0A08] items-center">
                 <span className="col-span-6 font-mono text-[11px] font-semibold uppercase tracking-[0.18em]">Per month</span>
-                <span className="col-span-3 font-anton text-[18px] leading-none text-right">~$12k</span>
-                <span className="col-span-3 font-anton text-[18px] leading-none text-right">$3k</span>
+                <span className="col-span-3 font-anton text-[18px] leading-none text-right tabular-nums">~$12k</span>
+                <span className="col-span-3 font-anton text-[18px] leading-none text-right tabular-nums">$3k</span>
               </div>
             </div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#F5F3EE]/35 mt-4 leading-relaxed">{MATH.foot}</p>
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#F5F3EE]/25 mt-2">You pay Google directly for the ad spend. No markup.</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#F5F3EE]/30 mt-4 leading-relaxed">{MATH.foot}</p>
           </div>
         </div>
       </section>
 
-      {/* 9. PROOF — PHOTO + DATA */}
+      {/* 9. PROOF — photo + data */}
       <section id="proof" className="bg-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
           <div className="lg:col-span-6 relative overflow-hidden bg-[#0A0A08] min-h-[480px] lg:min-h-0">
-            <img src="/aom-kit/img/ambition-crew.jpg" alt="Ambition Mechanical crew on site, shot by AOM" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/aom-kit/img/ambition-crew.jpg" alt="Ambition Mechanical crew on site, shot by AOM" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
               <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-white">{PROOF.label}</p>
@@ -445,50 +514,54 @@ export default function HomeConsoleR38({ openBrief }) {
             </div>
           </div>
           <div className="lg:col-span-6 px-6 md:px-10 lg:px-12 py-16 md:py-20 flex flex-col justify-center">
-            <Kick>{PROOF.kick}</Kick>
-            <p className="font-hanken text-[22px] md:text-[30px] font-medium leading-[1.35] tracking-[-0.01em] text-[#0A0A08] max-w-xl">{PROOF.body}</p>
+            <div className="mb-4">
+              <Kick>{PROOF.kick}</Kick>
+            </div>
+            <p className="font-hanken text-[22px] md:text-[28px] font-medium leading-[1.35] tracking-[-0.01em] text-[#0A0A08] max-w-[60ch] text-pretty">{PROOF.body}</p>
             <div className="mt-8 grid grid-cols-3 gap-4 border-y border-[#0A0A08]/10 py-6">
-              {(PROOF.stats || []).map((s) => (
+              {(PROOF.stats || [
+                { k: 'Shoots', v: '46', d: 'A year on his jobs' },
+                { k: 'Photos', v: '399', d: 'Edited, yours' },
+                { k: 'Months', v: '12', d: 'No contract' },
+              ]).map((s) => (
                 <div key={s.k} className="border-l border-[#0A0A08]/10 pl-4 first:border-l-0 first:pl-0">
-                  <p className="font-anton uppercase text-[36px] md:text-[44px] leading-none tracking-[-0.02em] text-[#0A0A08]">{s.v}</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#C43800] mt-1">{s.k}</p>
-                  <p className="font-hanken text-[12px] text-[#0A0A08]/45 leading-tight mt-1">{s.d}</p>
+                  <p className="font-anton uppercase text-[32px] md:text-[40px] leading-none tracking-[-0.02em] text-[#0A0A08] tabular-nums">{s.v}</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#8A6A2B] mt-1">{s.k}</p>
+                  <p className="font-hanken text-[12px] text-[#0A0A08]/40 leading-tight mt-1">{s.d}</p>
                 </div>
               ))}
             </div>
             <div className="border-l-2 border-[#F04404] pl-6 py-1 mt-8">
-              <p className="text-[16px] md:text-[17px] text-[#0A0A08]/70 leading-[1.65]">{PROOF.aside}</p>
+              <p className="text-[16px] md:text-[17px] text-[#0A0A08]/65 leading-[1.65] max-w-[60ch] text-pretty">{PROOF.aside}</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 10. CLOSING — TYPE + photo */}
+      {/* 10. CLOSING — type + photo */}
       <section className="bg-[#0A0A08] text-[#F5F3EE] overflow-hidden">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
           <div className="lg:col-span-8 px-6 md:px-12 py-20 md:py-28 lg:py-32">
             <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#F04404] mb-6">Phoenix, Arizona — since 2014</p>
-            <h2 className="font-anton uppercase text-[56px] md:text-[96px] lg:text-[110px] leading-[0.9] tracking-[-0.02em]">{CLOSING.h2}</h2>
+            <h2 className="font-anton uppercase text-[52px] md:text-[88px] lg:text-[104px] leading-[0.9] tracking-[-0.02em] text-balance">{CLOSING.h2}</h2>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <button
                 onClick={() => openBrief?.()}
-                className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-10 py-5 rounded-full transition-transform duration-200 hover:scale-[1.04] inline-flex items-center gap-2"
+                className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-10 py-5 rounded-full transition-[transform,background-color] duration-200 hover:scale-[1.02] hover:bg-[#E93E00] inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2"
               >
-                {CLOSING.cta} <ArrowRight size={15} />
+                {CLOSING.cta} <ArrowRight size={15} aria-hidden="true" />
               </button>
               <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 px-2">No contract · You own every file</span>
             </div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/45 mt-10 max-w-xl leading-[1.8]">
-              {CLOSING.footnote}
-            </p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 mt-10 max-w-[68ch] leading-[1.8] text-pretty">{CLOSING.footnote}</p>
           </div>
           <div className="lg:col-span-4 lg:border-l border-[#F5F3EE]/10 flex flex-col">
             <div className="relative flex-1 min-h-[260px] overflow-hidden">
-              <img src="/aom-kit/img/jobsite.png" alt="A job site at golden hour, Phoenix" className="absolute inset-0 w-full h-full object-cover" onError={(e)=>{e.currentTarget.style.display='none';}} />
-              <div className="absolute inset-0 bg-[#0A0A08]/20" />
+              <img src="/aom-kit/img/jobsite.png" alt="A job site at golden hour, Phoenix" className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <div className="absolute inset-0 bg-[#0A0A08]/15" />
             </div>
             <div className="px-6 md:px-8 py-8 bg-[#141412] border-t border-[#F5F3EE]/10">
-              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#F5F3EE]/40">What happens next</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#F5F3EE]/40">What happens next</p>
               <ol className="mt-4 space-y-3">
                 <li className="flex gap-3">
                   <span className="font-mono text-[11px] text-[#F04404]">01</span>

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T14:10:43.121Z",
+  "generated_at": "2026-08-14T20:19:37.158Z",
   "missions": [
     {
       "slug": "corner:agent-direct-chats",
@@ -3572,6 +3572,20 @@
       "path": "corner/users/aom/missions/command-deck"
     },
     {
+      "slug": "aom:daily-research",
+      "raw_slug": "daily-research",
+      "folder_name": "daily-research",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aom",
+      "workstream": null,
+      "name": "Daily Research",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/missions/daily-research"
+    },
+    {
       "slug": "aom:deck-vibe-overhaul",
       "raw_slug": "deck-vibe-overhaul",
       "folder_name": "deck-vibe-overhaul",
@@ -3612,20 +3626,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/missions/digital-products"
-    },
-    {
-      "slug": "aom:director",
-      "raw_slug": "director",
-      "folder_name": "director",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "aom",
-      "workstream": null,
-      "name": "Director",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/missions/director"
     },
     {
       "slug": "aom:dropbox-video-feedback",
