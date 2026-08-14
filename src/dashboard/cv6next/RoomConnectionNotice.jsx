@@ -12,6 +12,13 @@ import React from 'react'
 // conversation is lost — what's on screen is the last good load.
 function connectionCopy(connection) {
   if (!connection) return null
+  // Per-reply-1 copy — user-world words only, never bridge/tmux
+  if (connection.queued) {
+    return { tone: 'working', label: 'Queued', body: 'Queued — sends when reconnected. Your messages are safe.' }
+  }
+  if (connection.snag) {
+    return { tone: 'attention', label: 'Snag', body: 'This room hit a snag — restarting it now. Your messages are safe.' }
+  }
   if (connection.online === false) {
     return { tone: 'attention', label: 'Offline', body: 'You are offline. Messages you send now will not go out until the connection is back.' }
   }
@@ -19,7 +26,7 @@ function connectionCopy(connection) {
     return { tone: 'attention', label: 'Not syncing', body: "Corner can't reach this conversation right now. You're seeing the last messages it loaded — nothing was lost." }
   }
   if (connection.realtime === 'reconnecting') {
-    return { tone: 'working', label: 'Reconnecting', body: 'The live connection dropped. New messages may take a few seconds until it is back.' }
+    return { tone: 'working', label: 'Reconnecting…', body: 'The live connection dropped. New messages may take a few seconds until it is back.' }
   }
   return null
 }

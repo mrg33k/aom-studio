@@ -1448,7 +1448,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
       {/* Bottom padding clears the absolutely-positioned composer (.mcomposer is
           position:absolute; bottom:0) plus the phone home indicator, so the last
           message can scroll fully into view instead of being cut off behind it. */}
-      <div ref={scrollRef} onScroll={onScroll} onTouchStart={onFilesLiftStart} onTouchEnd={onFilesLiftEnd} onTouchCancel={() => { filesLiftRef.current = null; }} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(84px + env(safe-area-inset-bottom, 0px))' }}>
+      <div ref={scrollRef} onScroll={onScroll} onTouchStart={onFilesLiftStart} onTouchEnd={onFilesLiftEnd} onTouchCancel={() => { filesLiftRef.current = null; }} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(96px + env(safe-area-inset-bottom, 0px))' }}>
         {/* One named reading lane keeps the transcript centered across expanded desktop
             columns and the tablet canvas. CSS owns its responsive width so iPad can use
             more of the display without becoming a stretched phone layout. */}

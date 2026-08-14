@@ -23,17 +23,20 @@ export function isRoomActivityNoise(message = {}) {
 // name, tint, time and unread dot — a room you touched is still a room you touched.
 // isRoomActivityNoise (above) is the harsher one that drops the whole row.
 const MACHINE_PREVIEW = [
-  // 1. The bridge's canned delivery acknowledgement.
+  // 1. The bridge's canned delivery acknowledgement + boot-speak (BASELINE #4).
   /^\s*(?:received|acknowledged|ack)\s*[—–-]\s/i,
+  /I've loaded the room\.? I'm in/i,
+  /Standing by/i,
   // 2. Dispatch + task plumbing leaking into prose.
   /\[dispatch task\b/i,
   /\btask-complete(?:\.sh)?\b/i,
   /\bstatus\s*=\s*'?(?:queued|running|needs_input)'?/i,
   /\b(?:needs_input|run_in_background|task_id)\b/i,
-  // 3. Test / probe / acceptance chatter.
+  // 3. Test / probe / acceptance chatter — incl. file docs leaking to feed (BASELINE #2).
   /\b(?:smoke|probe|acceptance|regression|e2e)[\s-](?:test|check|ping|run|probe)\b/i,
   /\b(?:test|probe)\s+(?:ping|payload|message|send)\b/i,
   /^\s*r\d+\b[^.]*\bcheck\b/i,
+  /\b(?:claude-reply|test-ledger)\b/i,
   // 4. Internal identifiers surfacing as prose: room_id shapes and bare uuids.
   /\b[a-z0-9][a-z0-9-]*:(?:agent|project|mission):[a-z0-9:._-]+/i,
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i,

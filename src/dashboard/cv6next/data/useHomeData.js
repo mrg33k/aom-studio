@@ -91,7 +91,13 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
       status, statusText: statusText(status), initials: initials(a.title),
     };
   });
-  const projects = [...(projectRooms || [])].sort((a, b) => {
+  const isInfra = (slug) => {
+    if (!slug) return false;
+    const s = String(slug).toLowerCase();
+    return s === 'bridge-smoke' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-');
+  };
+  const filteredRooms = (projectRooms || []).filter((p) => !isInfra(p.slug) && p.slug !== 'daily-research');
+  const projects = [...filteredRooms].sort((a, b) => {
     const ta = !isRoomActivityNoise({ text: a.last_message_text }) && a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
     const tb = !isRoomActivityNoise({ text: b.last_message_text }) && b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
     return tb - ta;
@@ -113,9 +119,18 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // Each is an unread agent message in a room — the "needs you" feed. The agent who
   // pinged is the sender; the room (project/mission/agent thread) is the subject.
   const projectNameBySlug = {};
-  for (const p of projectRooms || []) { if (p.slug) projectNameBySlug[p.slug] = p.name || p.slug; }
+  for (const p of filteredRooms || []) { if (p.slug) projectNameBySlug[p.slug] = p.name || p.slug; }
   const agentNameBySlug = Object.fromEntries(agentRooms.map((a) => [a.id, a.name]));
-  const cards = (inboxItems || []).map((it) => {
+  const isMachinery = (t) => {
+    const s = String(t || '').toLowerCase();
+    return s.includes('probe-') || s.includes('test-ledger') || s.includes('claude-reply') || s.includes('standing by') || s.includes("i've loaded the room");
+  };
+  const cards = (inboxItems || []).filter((it) => {
+    if (isInfra(it.project) || it.project === 'daily-research') return false;
+    if (it.missionSlug && isInfra(it.missionSlug.split(':').pop())) return false;
+    if (isMachinery(it.text)) return false;
+    return true;
+  }).map((it) => {
     // No structured action-item feed exists yet (H3): the card carries an empty list and
     // actionState='none', which hides the "Action items" header instead of showing a naked
     // section over dead space. Flips to 'has' automatically once a real feed populates this.
@@ -201,8 +216,12 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   const missionSub = (pn, nm) => (pn && pn.trim().toLowerCase() !== String(nm || '').trim().toLowerCase()) ? pn : 'Mission';
   for (const it of inboxItems || []) {
     if (isRoomActivityNoise(it)) continue;
+    if (isInfra(it.project) || it.project === 'daily-research') continue;
+    if (it.missionSlug && isInfra(String(it.missionSlug).split(':').pop())) continue;
+    if (isMachinery(it.text)) continue;
     const ts = it.timestamp ? new Date(it.timestamp).getTime() : 0;
     const preview = rowPreview(it.text, it);
+    if (!preview && isMachinery(it.text)) continue;
     if (it.missionSlug) {
       const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
       const nm = missionLabel(it.missionSlug) || it.missionSlug;
@@ -213,7 +232,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
       bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: agentNameBySlug[it.agent] || titleForAgent(it.agent), sub: 'Direct chat', ts, preview });
     }
   }
-  for (const p of projectRooms || []) {
+  for (const p of filteredRooms || []) {
     if (!p.last_message_at || !p.slug) continue;
     if (isRoomActivityNoise({ text: p.last_message_text })) continue;
     bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at, preview: rowPreview(p.last_message_text, p) });
@@ -397,7 +416,12 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [],
       snippet: inb?.text || '', time: inb?.time || '', needsCount: a.unread || inb?.count || 0,
     };
   });
-  const projectRows = (projectRooms || []).map((p) => ({
+  const isChatInfra = (slug) => {
+    if (!slug) return false;
+    const s = String(slug).toLowerCase();
+    return s === 'bridge-smoke' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-') || s === 'daily-research';
+  };
+  const projectRows = (projectRooms || []).filter((p) => !isChatInfra(p.slug)).map((p) => ({
     // Key the room by SLUG, not the UUID: the messages table tags rows by project slug, so a
     // UUID id makes the thread query (project=<id>) return nothing -> an empty chat. (Corner bug.)
     id: p.slug || p.id, slug: p.slug, databaseId: p.id || '', name: p.name || p.slug || 'Project', snippet: '',

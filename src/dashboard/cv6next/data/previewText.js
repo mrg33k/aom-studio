@@ -19,8 +19,12 @@ export function humanizeUrls(t) {
 
 // "Attached file: path/to/name.md" → "Shared a file: name.md"; anything else
 // gets its embedded URLs humanized. Whitespace collapsed either way.
+// Also strip raw markdown syntax (**bold**, *italic*, `code`, [label](url)) so
+// previews never show literal asterisks — BASELINE #3.
 export function normalizePreview(text) {
-  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  let t = String(text || '').replace(/\s+/g, ' ').trim();
+  // Strip markdown before humanizing
+  t = t.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
   const m = t.match(/^(?:attached file|attachment)\s*[:\-]?\s*([^\s|,]+\.[a-z0-9]{2,5})/i);
   if (!m) return humanizeUrls(t);
   const filename = m[1].replace(/^.*[/\\]/, '');
