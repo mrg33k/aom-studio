@@ -2876,7 +2876,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
 
 /* Real bridge activity only: the moving segment exists only while WorkingTurn is
    mounted. Determinate tool progress stays numeric; heartbeat-only work glides. */
-[data-cv6] .cv6-live-progress.is-indeterminate > i { animation:cv6-live-sweep 1.35s cubic-bezier(.4,0,.2,1) infinite; }
+[data-cv6] .cv6-live-progress.is-indeterminate > i { animation:cv6-live-sweep 0.85s cubic-bezier(.4,0,.2,1) infinite; }
 @keyframes cv6-live-sweep { from { transform:translateX(-105%); } to { transform:translateX(280%); } }
 @media (prefers-reduced-motion:reduce) { [data-cv6] .cv6-live-progress.is-indeterminate > i { animation:none; transform:translateX(80%); } }
 
@@ -2974,7 +2974,7 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
    Matches cv6WorklistSpin in RoomWorkList's inline <style>; keeping both so the
    icon animates even before the dropdown has mounted RoomWorkList. */
 @keyframes cv6WorklistSpin { to { transform:rotate(360deg); } }
-[data-cv6] .cv6-worklist-spin { animation:cv6WorklistSpin .8s linear infinite; }
+[data-cv6] .cv6-worklist-spin { animation:cv6WorklistSpin .45s linear infinite; }
 
 @media (max-width:640px) {
   /* Match the shared mobile 44px touch floor on both axes so the icon actions

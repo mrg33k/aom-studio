@@ -247,10 +247,7 @@ const GOAL_THREAD_HTML = `
     <span class="thread-title" style="font-size:14.5px;"><span style="color:var(--muted);font-weight:600;">Goal:</span> <span data-bind="goal.title">Current goal</span></span>
     <span class="mono" style="margin-left:auto;font-size:11px;color:var(--muted);"><span data-bind="goal.doneCount">0</span>/<span data-bind="goal.total">0</span></span>
   </div>
-  <div style="height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden;margin-bottom:13px;"><div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#6366F1);" data-mod="width:goal.pct"></div></div>
-  <div style="display:flex;flex-direction:column;gap:10px;">
-    <div class="gchk is-pending" style="display:flex;align-items:center;gap:10px;" data-each="goal.checklist" data-mod="is-:item.state"><span class="gchk-mark"></span><span class="gchk-label" style="flex:1;font-size:13px;" data-bind="item.label">Step</span></div>
-  </div>
+  <div style="height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden;"><div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#6366F1);" data-mod="width:goal.pct"></div></div>
 </div>`;
 function composeChatMobile(withGoal) {
   const doc = new DOMParser().parseFromString(chatRaw, 'text/html');

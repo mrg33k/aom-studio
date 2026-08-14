@@ -164,20 +164,20 @@ function StepCard({ roomSteps, agentItems, awaiting, awaitingSince, liveSteps, t
   // take a minute. Say that, instead of cycling thinking phrases over dead air.
   const waking = awaiting && !liveLabel && !activeStep
     && turnHealth?.state === 'accepted'
-    && awaitingSince && (Date.now() - awaitingSince > 8000);
-  // Cycle LIVE_OPENERS by wall-clock so the card title feels alive.
+    && awaitingSince && (Date.now() - awaitingSince > 3000);
+  // Cycle LIVE_OPENERS by wall-clock so the card title feels alive — faster for snappy chat.
   const stateTitle = waking
     ? 'Waking the room'
-    : STEP_CARD_OPENERS[Math.floor(Date.now() / 2500) % STEP_CARD_OPENERS.length];
+    : STEP_CARD_OPENERS[Math.floor(Date.now() / 1200) % STEP_CARD_OPENERS.length];
 
   // Cross-fade: track previous active label so the ghost line renders on step change.
-  // When activeLabel changes → save old to prevDisplayed (renders fading out) → clear after 500ms.
+  // When activeLabel changes → save old to prevDisplayed (renders fading out) → clear after 220ms.
   const prevActiveLabelRef = useRef(activeLabel);
   const [fadingOutLabel, setFadingOutLabel] = useState('');
   useEffect(() => {
     if (activeLabel && prevActiveLabelRef.current && prevActiveLabelRef.current !== activeLabel) {
       setFadingOutLabel(prevActiveLabelRef.current);
-      const t = setTimeout(() => setFadingOutLabel(''), 500);
+      const t = setTimeout(() => setFadingOutLabel(''), 220);
       prevActiveLabelRef.current = activeLabel;
       return () => clearTimeout(t);
     }
@@ -318,7 +318,7 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, live
   if (!expandable) {
     return (
       <>
-        <style>{'@keyframes cv6WorklistSpin{to{transform:rotate(360deg)}}.cv6-worklist-spin{animation:cv6WorklistSpin .8s linear infinite}'}</style>
+        <style>{'@keyframes cv6WorklistSpin{to{transform:rotate(360deg)}}.cv6-worklist-spin{animation:cv6WorklistSpin .45s linear infinite}'}</style>
         <StepCard
           roomSteps={roomSteps}
           agentItems={agentItems}
@@ -337,7 +337,7 @@ export default function RoomWorkList({ room, goal, awaiting, awaitingSince, live
   // Patrik: steps animate THROUGH the bar, not as a list. Snappier chat.
   return (
     <>
-      <style>{'@keyframes cv6WorklistSpin{to{transform:rotate(360deg)}}.cv6-worklist-spin{animation:cv6WorklistSpin .8s linear infinite}'}</style>
+      <style>{'@keyframes cv6WorklistSpin{to{transform:rotate(360deg)}}.cv6-worklist-spin{animation:cv6WorklistSpin .45s linear infinite}'}</style>
       <StepCard
         roomSteps={roomSteps}
         agentItems={agentItems}
