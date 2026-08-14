@@ -178,7 +178,12 @@ export default async function handler(req, res) {
     // wd40 DEF-4: drop agent_status project rooms whose projects row is
     // archived — projects.is_active is the canonical lifecycle flag.
     const archivedSlugs = new Set((archivedProjects || []).map(p => p.slug).filter(Boolean));
-    const projectList = visibleAgents.filter(a => a.type === 'project' && !archivedSlugs.has(a.slug));
+    const isInfra = (slug) => {
+      if (!slug) return false;
+      const s = String(slug).toLowerCase();
+      return s === 'bridge-smoke' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-') || s === 'daily-research';
+    };
+    const projectList = visibleAgents.filter(a => a.type === 'project' && !archivedSlugs.has(a.slug) && !isInfra(a.slug));
 
     // Build status format matching what useDataPipe expects.
     // agent_status table is the SOLE source of truth for agent status.
