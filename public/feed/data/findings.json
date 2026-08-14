@@ -4,6 +4,155 @@
    "date": "2026-08-14",
    "items": [
     {
+     "lane": "ai-builds",
+     "youtube_id": "v-6KM2ysQYo",
+     "title": "I Built GTA 6 in 24 Hours Using Only AI (Claude Code + Unreal Engine)",
+     "channel": "Leon van Zyl",
+     "views": "890K",
+     "published": "2026-08-08",
+     "why": "The video that set the bar for AI builds. Leon recreated GTA 6 in Unreal Engine using Claude Code in 24 hours \u2014 full open-world, driving, NPCs \u2014 and the internet lost its mind. Massive press coverage, community rallying behind it as proof of what one person can ship."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "vr_XtUhuFDs",
+     "title": "How I Manage Projects & Tasks in a Custom App I Built with Claude Code",
+     "channel": "Jerad Hill",
+     "views": "62K",
+     "published": "2026-08-10",
+     "why": "Not a toy demo \u2014 Jerad built a full project management app he actually uses daily and walks through the complete Claude Code workflow from idea to production. Real tool, real usage, real workflow."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "i5tT58E3Z38",
+     "title": "Devs Charge $50,000 for This. I Built It in 15 Minutes with Claude Code",
+     "channel": "Astro K Joseph",
+     "views": "215K",
+     "published": "2026-08-07",
+     "why": "Built a real-time collaboration app (live cursors, shared whiteboard, synced Kanban board) in 15 minutes flat. The viral title landed because the build is genuinely impressive \u2014 the kind of app agencies quote five figures for."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "DPtOIljNmOg",
+     "title": "This AI Agent Built an App While I Watched... (Open Hands + Daytona Demo)",
+     "channel": "Daytona",
+     "views": "78K",
+     "published": "2026-08-09",
+     "why": "An AI agent autonomously builds a complete application while the developer just watches. Open Hands + Daytona cloud environment \u2014 the zero-intervention build pattern that is redefining what 'coding' means."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "ViKIlLMn99A",
+     "title": "Seedance 2.5 vs Seedance 2.0 vs MiniMax H3: Ultimate AI Video Generator Test!",
+     "channel": "Dom the AI Tutor",
+     "views": "145K",
+     "published": "2026-08-08",
+     "why": "30-video stress test across the three AI video models that all dropped in the last two weeks. Data-driven comparison at a scale nobody else ran \u2014 actual test results showing where each model excels and fails."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "gYSMeJXXOiI",
+     "title": "MiniMax H3 or Seedance 2.5 or Kling?",
+     "channel": "AI News Vortex",
+     "views": "230K",
+     "published": "2026-08-07",
+     "why": "Head-to-head comparison of the three hottest AI video generation models. MiniMax H3 takes text+image+video+audio as input, Seedance 2.5 generates 30 seconds natively, Kling 3.0 leads in cinematic motion. The comparison everyone is watching."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "Ku6FbvAGV_U",
+     "title": "MiniMax H3 vs Seedance: Stop Burning Credits",
+     "channel": "AI Video School",
+     "views": "95K",
+     "published": "2026-08-10",
+     "why": "The practical cost-efficiency angle creators actually need. Which model gives the best results per credit? Essential viewing before committing budget to any AI video platform."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "Hth_tLaC2j8",
+     "title": "Reflecting on a year of Claude Code",
+     "channel": "Claude",
+     "views": "180K",
+     "published": "2026-08-12",
+     "why": "Official Anthropic retrospective on Claude Code's first year \u2014 from the team that built it. Covers what shipped, what users actually use, and where the product is headed. First-party insight you cannot get anywhere else."
+    },
+    {
+     "lane": "construction",
+     "youtube_id": "z2NDqA92L8o",
+     "title": "How Contractors Generate 500+ Leads | Construction Marketing 2026",
+     "channel": "Marketing 360",
+     "views": "48K",
+     "published": "2026-08-09",
+     "why": "Concrete lead gen system for contractors \u2014 the 500+ leads framework with specific tactics from real campaigns. Marketing 360 works with actual contractors and the numbers come from measured results, not theory."
+    },
+    {
+     "lane": "construction",
+     "youtube_id": "bpEFxN0Q5dw",
+     "title": "Top 10 Ways to Blow Up Your Construction Business in 2026",
+     "channel": "Trade Mastermind",
+     "views": "35K",
+     "published": "2026-08-11",
+     "why": "Actionable growth playbook for construction businesses from a channel that speaks contractor language. Each tip is immediately implementable \u2014 no agency jargon, just what works in the field right now."
+    },
+    {
+     "lane": "construction",
+     "youtube_id": "NLsKjvOMggw",
+     "title": "The Proven Marketing System Contractors Pay Me to Learn",
+     "channel": "Jesse Lane",
+     "views": "28K",
+     "published": "2026-08-08",
+     "why": "Jesse Lane's full marketing system \u2014 the same framework contractors pay for as consulting, given away on YouTube. Complete system covering Google Business Profile, social content, and paid ads for construction businesses."
+    },
+    {
+     "lane": "construction",
+     "youtube_id": "nnZLsowcW1w",
+     "title": "Grow Your #Construction Business for Free Using Social Media",
+     "channel": "Jesse Lane",
+     "views": "22K",
+     "published": "2026-08-10",
+     "why": "Zero-budget social media strategy built specifically for contractors. Shows how to create content that generates leads without ad spend \u2014 the first move most small contractors need to make."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "1j1cfAwQC7s",
+     "title": "AI Video Workflow 2026: From Storyboards to TikTok, Shorts and YouTube",
+     "channel": "Ryan Collins",
+     "views": "110K",
+     "published": "2026-08-09",
+     "why": "Complete end-to-end AI video pipeline: storyboard to generate to edit to publish across TikTok, Shorts, and YouTube. Real production workflow, not theory \u2014 every step demonstrated with actual output."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "0e8jNWKU-5k",
+     "title": "How Motion Designers & Video Editors Should Use AI in 2026",
+     "channel": "Dope Motions",
+     "views": "85K",
+     "published": "2026-08-08",
+     "why": "Practical guide for professional motion designers integrating AI into their existing workflow. Not 'replace yourself with AI' \u2014 shows how to augment professional work with AI tools while keeping creative control."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "TooMsOysra0",
+     "title": "Combine AI and Motion Design | Step by Step Workflow",
+     "channel": "Yaroflasher",
+     "views": "72K",
+     "published": "2026-08-11",
+     "why": "Step-by-step workflow combining After Effects, FlashBoards, and Seedance to produce cinematic motion design shots. Professional quality output from an AI-augmented pipeline that traditional studios are starting to adopt."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "BA4e8FVXB8g",
+     "title": "How to Make Professional AI Animations in 2026",
+     "channel": "Youri van Hofwegen",
+     "views": "58K",
+     "published": "2026-08-10",
+     "why": "Professional-grade AI animation pipeline achieving studio-level output. Demonstrates the latest tools and techniques for animators who want to integrate AI without sacrificing quality."
+    }
+   ]
+  },
+  {
+   "date": "2026-08-14",
+   "items": [
+    {
      "youtube_id": "v-6KM2ysQYo",
      "title": "I Built GTA 6 in 24 Hours Using Only AI (Claude Code + Unreal Engine)",
      "channel": "Leon van Zyl",
