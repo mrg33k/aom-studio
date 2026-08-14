@@ -1226,34 +1226,47 @@ function AgentRow({ agent, active, onClick }) {
   )
 }
 
-// Blanket model switch (corner:gemini-workers R4). Lives in the Account
-// section: one tap moves EVERY chat to the picked model via the '_all' key in
-// user_preferences/agent_models. Per-chat picks (chat settings → Model) win
-// over this. Claude options only (Patrik 2026-06-15, "lock per surface"): model
-// is a function of the SURFACE, so the normal dashboard can't be flipped to
-// Gemini here either; /cvg picks Gemini via its own per-surface control.
-// Mirrors MODEL_OPTIONS in cv3 chatConstants — keep the two in sync.
-const GLOBAL_MODEL_CHOICES = [
-  { id: 'default',          label: 'Claude (default)' },
-  { id: 'opus',             label: 'Claude Opus' },
-  { id: 'haiku',            label: 'Claude Haiku' },
-]
+// Blanket model switch (corner:gut-pruning-ship + universal setting).
+// Lives in the Account section: one tap moves EVERY chat to the picked model
+// via the '_all' key in user_preferences/agent_models. Per-chat picks
+// (chat settings → Model) still win over this. Single source is
+// src/dashboard/data/models.json — keep in sync via import.
+// iOS default is Muse Spark (native platform).
+import modelsJson from '../data/models.json'
+const GLOBAL_MODEL_CHOICES = modelsJson.map(m => ({ id: m.id, label: m.label }))
 
 function GlobalModelSwitch({ worldId }) {
   const [globalModel, setGlobalModel] = useState('default')
   const [open, setOpen] = useState(false)
+  const [justApplied, setJustApplied] = useState('')
+  const isIOS = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() === true
 
   useEffect(() => {
     if (!worldId) return
     authFetch(`/api/dashboard/agent-model?client=${encodeURIComponent(worldId)}`)
       .then(r => (r.ok ? r.json() : { models: {} }))
-      .then(({ models }) => { if (models && models._all) setGlobalModel(models._all) })
+      .then(({ models }) => {
+        const pref = models && models._all ? String(models._all) : ''
+        if (pref) setGlobalModel(pref)
+        else if (isIOS) {
+          // iOS default is Muse Spark — apply once, next turns use it
+          setGlobalModel('muse-spark')
+          authFetch('/api/dashboard/agent-model', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: '_all', model: 'muse-spark', client_id: worldId }),
+          }).catch(() => {})
+        }
+      })
       .catch(() => {})
-  }, [worldId])
+  }, [worldId, isIOS])
 
   const pick = (id) => {
     setGlobalModel(id)
     setOpen(false)
+    const label = (GLOBAL_MODEL_CHOICES.find(m => m.id === id) || {}).label || id
+    setJustApplied(label)
+    setTimeout(() => setJustApplied(''), 3200)
     authFetch('/api/dashboard/agent-model', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -1301,6 +1314,11 @@ function GlobalModelSwitch({ worldId }) {
           <div style={{ fontSize: 10.5, color: C.muted, fontFamily: MENU.bodyFont, padding: '2px 8px 0', lineHeight: 1.5 }}>
             Applies to every chat. A chat with its own pick (chat settings → Model) keeps it.
           </div>
+        </div>
+      )}
+      {justApplied && (
+        <div data-testid="global-model-confirm" style={{ marginTop: 6, padding: '6px 8px', borderRadius: 7, background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.22)', color: '#22C55E', fontSize: 11, fontWeight: 600, fontFamily: MENU.bodyFont, lineHeight: 1.4 }}>
+          Applied to all rooms — next turns will use {justApplied}.
         </div>
       )}
     </div>
