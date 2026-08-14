@@ -153,15 +153,6 @@
    "date": "2026-08-14",
    "items": [
     {
-     "youtube_id": "v-6KM2ysQYo",
-     "title": "I Built GTA 6 in 24 Hours Using Only AI (Claude Code + Unreal Engine)",
-     "channel": "Leon van Zyl",
-     "views": "2.1M",
-     "published": "2026-08-10",
-     "lane": "ai-builds",
-     "why": "Full game built with Claude Code + Unreal Engine in one session. The quality bar for AI-assisted game dev \u2014 real 3D, real mechanics, shipped in 24 hours."
-    },
-    {
      "youtube_id": "F0hHY0D-WTk",
      "title": "Claude Code Built These Games From One Prompt",
      "channel": "SkillCurb",
@@ -189,15 +180,6 @@
      "why": "Bloomberg Odd Lots interview with the Claude Code creator. The backstory on why it works differently from every other AI coding tool \u2014 and where it is going next."
     },
     {
-     "youtube_id": "gYSMeJXXOiI",
-     "title": "MiniMax H3 or Seedance 2.5 or Kling?",
-     "channel": "AI News Vortex",
-     "views": "156K",
-     "published": "2026-08-12",
-     "lane": "ai-tools",
-     "why": "Head-to-head comparison of the three video gen models everyone is choosing between right now. Real outputs, real prompts, honest ranking."
-    },
-    {
      "youtube_id": "tmA1FChDslc",
      "title": "Claude Code: Build Production-Ready Features with Skills, Agents & Hooks",
      "channel": "Integrations Ninjas",
@@ -205,24 +187,6 @@
      "published": "2026-08-11",
      "lane": "ai-tools",
      "why": "Deep dive into Skills, Agents, and Hooks \u2014 the three Claude Code primitives that turn it from a chatbot into a real development platform."
-    },
-    {
-     "youtube_id": "Hth_tLaC2j8",
-     "title": "Reflecting on a year of Claude Code",
-     "channel": "Claude",
-     "views": "1.2M",
-     "published": "2026-08-07",
-     "lane": "ai-tools",
-     "why": "Anthropic official retrospective. Where Claude Code started, what the community built, and the roadmap signal for what is coming."
-    },
-    {
-     "youtube_id": "z2NDqA92L8o",
-     "title": "How Contractors Generate 500+ Leads | Construction Marketing 2026",
-     "channel": "Marketing 360",
-     "views": "245K",
-     "published": "2026-08-06",
-     "lane": "construction",
-     "why": "The numbers: 500+ leads from one contractor marketing campaign. Breaks down the funnel, the spend, and the close rate \u2014 the exact playbook AOM runs for clients."
     },
     {
      "youtube_id": "lEaJgxbdUFs",
