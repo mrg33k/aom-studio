@@ -80,36 +80,19 @@ function workStepsToBlocks(steps) {
   return ordered.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: 'done' }));
 }
 
-// Render every agent turn as the step/checkmark thread (Patrik 2026-06-30: agent talk is dense,
-// the checkmark rows read cleaner). For each plain agent message we build its blocks as: the
-// turn's persisted working steps (done rows) + the reply text itself as a `note` row, so the
-// whole turn is one scannable checklist. Steps are keyed to the USER message (parent_message_id)
-// and hung on the FIRST agent reply of the turn. Left untouched: messages the agent already
-// authored structured blocks for (curated thread), file cards, and the turn still working live
-// (WorkingTurn shows that; it persists the moment it settles).
-function injectWorkSteps(list, stepsByParent, awaiting, awaitingId) {
-  if (!Array.isArray(list)) return list;
-  const byParent = stepsByParent || {};
-  let lastUserId = '';
-  const usedWork = new Set();
-  return list.map((m) => {
-    if (m.isUser) { lastUserId = m.id ? String(m.id) : lastUserId; return m; }
-    if (m.isFile) return m;                                    // file cards don't render blocks
-    if (Array.isArray(m.blocks) && m.blocks.length) return m;  // agent-authored thread — leave it
-    const out = [];
-    // Work steps: once per turn, on the first plain agent reply, unless this turn is live now.
-    if (lastUserId && !usedWork.has(lastUserId)) {
-      usedWork.add(lastUserId);
-      if (!(awaiting && lastUserId === String(awaitingId || ''))) {
-        const steps = byParent[lastUserId];
-        if (steps && steps.length) out.push(...workStepsToBlocks(steps));
-      }
-    }
-    // The reply text becomes a done `note` row in the same checkmark thread.
-    if (m.text && m.text.trim()) out.push({ type: 'step', kind: 'note', stepIndex: out.length, title: m.text, state: 'done' });
-    if (!out.length) return m;
-    return { ...m, blocks: out, text: '' };
-  });
+// RULE (smoothness-blitz R3, RESEARCH #8): steps NEVER render as thread rows.
+// The live bar (RoomWorkList StepCard + liveSteps) is the ONE place steps appear.
+// Persisted workSteps are kept for the bar's history, not injected as checkmark rows.
+// Two render paths for the same data is why this defect re-emerged in 3 UI generations.
+// Enforced: injectWorkSteps does not push workStepsToBlocks, and ChatLifecycle/WorkingTurn
+// are the only consumers of liveSteps. A thread row may only carry curated blocks
+// authored by the agent itself (Array.isArray(m.blocks) early-return).
+function injectWorkSteps(list, _stepsByParent, _awaiting, _awaitingId) {
+  // No-op: steps belong to the bar, not the thread. Keep the function as a guard rail
+  // so a future UI generation cannot re-introduce the row path by calling the old name.
+  // The agent's own structured blocks (curated thread) are already left untouched above,
+  // and the bridge's liveSteps continue to drive RoomWorkList's StepCard.
+  return Array.isArray(list) ? list : list;
 }
 
 // ── rowAttachments — THE definition of "this message carries a file" ──────────
