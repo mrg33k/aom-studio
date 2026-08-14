@@ -193,6 +193,36 @@ export default function RoomSettingsDialog({
     });
   };
 
+  const [archiveState, setArchiveState] = useState({ busy: false, error: '' });
+  const archiveRoom = async () => {
+    if (!confirm(`Archive "${room?.name || room?.id}"? It will be hidden from the room list and can be restored.`)) return;
+    setArchiveState({ busy: true, error: '' });
+    try {
+      const isProj = room.isProject && !room.isMission;
+      const isMission = !!room.isMission;
+      let url = '/api/dashboard/project-update';
+      let body = { client_id: worldId, slug: room.id, is_active: false };
+      if (isMission) {
+        url = '/api/dashboard/mission-update';
+        body = { client_id: worldId, project_slug: room.projectSlug, mission_slug: bareMission(room), is_active: false };
+      } else if (!isProj && !isMission) {
+        // agent rooms: hide via room-title hidden flag
+        url = '/api/dashboard/room-title';
+        body = { client_id: worldId, agent: room.id, hidden: true };
+      }
+      const r = await authFetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || d.ok === false) throw new Error(d?.error || 'Could not archive');
+      setArchiveState({ busy: false, error: '' });
+      onClose?.();
+      // remove stale card from recentMap-driven lists immediately
+      try { localStorage.setItem('cv6.archivedAt.' + (room.id || room.missionSlug || ''), Date.now().toString()); } catch {}
+      window.dispatchEvent(new CustomEvent('cv6:room-archived', { detail: { roomId: room.id || room.missionSlug } }));
+    } catch (e) {
+      setArchiveState({ busy: false, error: e?.message || 'Archive failed' });
+    }
+  };
+
   const copyRoomLink = async () => {
     try {
       await copyText(roomUrl);
@@ -288,6 +318,8 @@ export default function RoomSettingsDialog({
               <div className="room-settings-card room-settings-stack">
                 <SettingRow icon={<SettingIcon type="updates" />} title={following ? 'Following this room' : 'Updates muted'} copy={following ? 'Activity can surface on Home.' : 'The room stays available without update nudges.'} action={<button type="button" role="switch" aria-checked={following} className={`room-settings-switch${following ? ' is-on' : ''}`} onClick={toggleFollowing}><span /></button>} />
                 {onOpenFiles ? <SettingRow icon={<SettingIcon type="files" />} title="Room files" copy="Everything sent by you and the specialist." action={<button type="button" className="room-settings-link" onClick={() => { onClose?.(); onOpenFiles?.(); }}>Open</button>} /> : null}
+                <SettingRow icon={<SettingIcon type="window" />} title="Archive this room" copy="Hides it from the room list. Files and history stay." action={<button type="button" className="room-settings-danger" onClick={archiveRoom} disabled={archiveState.busy}>{archiveState.busy ? 'Archiving…' : 'Archive'}</button>} />
+                {archiveState.error ? <div className="room-settings-note is-error">{archiveState.error}</div> : null}
               </div>
             </>
           ) : null}
