@@ -35,6 +35,10 @@
       "destination": "/dashboard.html"
     },
     {
+      "source": "/dashboard/:path*",
+      "destination": "/dashboard.html"
+    },
+    {
       "source": "/outreach-plan",
       "destination": "/outreach-plan.html"
     },
@@ -284,75 +288,75 @@
     },
     {
       "source": "/dashboard/agent/:slug",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/mission/:missionSlug",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/missions",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/checklist",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/checklist/:slug",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/megaboard",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/megaboard/agent/:slug",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/chat",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/chat/agent/:slug",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/v1",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/v2",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/project/:path*",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/projects/:path*",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/welcome",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/settings/invites",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/settings/:path*",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/cleo/workspaces",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/dashboard/cleo/workspaces/:slug",
-      "destination": "/index.html"
+      "destination": "/dashboard.html"
     },
     {
       "source": "/skills",

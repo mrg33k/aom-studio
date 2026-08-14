@@ -3234,6 +3234,97 @@ const roomColumnKey = (room) => {
   if (room?.isProject) return `project:${room.id}`;
   return `agent:${room?.id || room?.name || 'room'}`;
 };
+// ── URL-addressable rooms (2026-08-14, structural fix for TOP-20 #7 + B4/B5) ──
+// Every room has a canonical URL; opening pushes it, reload re-opens it, back pops.
+// Supported shapes:
+//   /dashboard/projects/:slug/chat  → project
+//   /dashboard/project/:slug/chat   → project (legacy singular)
+//   /dashboard/agent/:slug           → agent
+//   /dashboard/agents/:slug/chat     → agent (alt)
+//   /dashboard/chat/agent/:slug      → agent (alt)
+//   /dashboard/mission/:slug         → mission (slug may be "aom:outreach" encoded)
+//   /dashboard/missions/:slug/chat   → mission
+//   ?room=project:wolfpack | agent:director | mission:aom:outreach (fallback)
+//   ?project=slug | ?agent=slug | ?mission=slug (legacy)
+function parseRoomFromUrl() {
+  try {
+    const pathname = window.location.pathname || '';
+    const search = window.location.search || '';
+    let m;
+    if ((m = pathname.match(/^\/dashboard\/projects\/([^/?#]+)(?:\/chat)?\/?$/))) {
+      const slug = decodeURIComponent(m[1]);
+      if (slug) return { id: slug, name: slug, isProject: true };
+    }
+    if ((m = pathname.match(/^\/dashboard\/project\/([^/?#]+)(?:\/chat)?\/?$/))) {
+      const slug = decodeURIComponent(m[1]);
+      if (slug) return { id: slug, name: slug, isProject: true };
+    }
+    if ((m = pathname.match(/^\/dashboard\/agents?\/([^/?#]+)(?:\/chat)?\/?$/))) {
+      const slug = decodeURIComponent(m[1]);
+      if (slug) return { id: slug, name: slug };
+    }
+    if ((m = pathname.match(/^\/dashboard\/chat\/agent\/([^/?#]+)\/?$/))) {
+      const slug = decodeURIComponent(m[1]);
+      if (slug) return { id: slug, name: slug };
+    }
+    if ((m = pathname.match(/^\/dashboard\/missions?\/([^/?#]+)(?:\/chat)?\/?$/))) {
+      const raw = decodeURIComponent(m[1]);
+      if (raw) {
+        if (raw.includes(':')) {
+          const [projectSlug, ...rest] = raw.split(':');
+          const bare = rest.join(':');
+          return { id: bare, name: bare, isMission: true, missionSlug: raw, projectSlug };
+        }
+        return { id: raw, name: raw, isMission: true, missionSlug: raw, projectSlug: raw };
+      }
+    }
+    if ((m = pathname.match(/^\/dashboard\/mission\/([^/?#]+)\/?$/))) {
+      const raw = decodeURIComponent(m[1]);
+      if (raw) {
+        if (raw.includes(':')) {
+          const [projectSlug, ...rest] = raw.split(':');
+          const bare = rest.join(':');
+          return { id: bare, name: bare, isMission: true, missionSlug: raw, projectSlug };
+        }
+        return { id: raw, name: raw, isMission: true, missionSlug: raw, projectSlug: raw };
+      }
+    }
+    const params = new URLSearchParams(search);
+    const roomParam = params.get('room');
+    if (roomParam) {
+      if (roomParam.startsWith('project:')) { const slug = roomParam.slice(8); return { id: slug, name: slug, isProject: true }; }
+      if (roomParam.startsWith('agent:')) { const slug = roomParam.slice(6); return { id: slug, name: slug }; }
+      if (roomParam.startsWith('mission:')) {
+        const slug = roomParam.slice(8);
+        if (slug.includes(':')) {
+          const [projectSlug, ...rest] = slug.split(':');
+          const bare = rest.join(':');
+          return { id: bare, name: bare, isMission: true, missionSlug: slug, projectSlug };
+        }
+        return { id: slug, name: slug, isMission: true, missionSlug: slug, projectSlug: slug };
+      }
+    }
+    if (params.get('project')) { const slug = params.get('project'); return { id: slug, name: slug, isProject: true }; }
+    if (params.get('agent')) { const slug = params.get('agent'); return { id: slug, name: slug }; }
+    if (params.get('mission')) {
+      const slug = params.get('mission');
+      if (slug.includes(':')) {
+        const [projectSlug, ...rest] = slug.split(':');
+        const bare = rest.join(':');
+        return { id: bare, name: bare, isMission: true, missionSlug: slug, projectSlug };
+      }
+      return { id: slug, name: slug, isMission: true, missionSlug: slug, projectSlug: slug };
+    }
+  } catch { /* ignore malformed URL */ }
+  return null;
+}
+function urlForRoom(room) {
+  if (!room) return '/dashboard';
+  if (room.isProject) return `/dashboard/projects/${encodeURIComponent(room.id)}/chat`;
+  if (room.isMission) return `/dashboard/mission/${encodeURIComponent(room.missionSlug || room.id)}`;
+  return `/dashboard/agent/${encodeURIComponent(room.id || room.slug || room.name)}`;
+}
+function urlForHome() { return '/dashboard'; }
 const flattenDispatchMissions = (nodes, output = []) => {
   for (const node of nodes || []) {
     if (node && (node.slug || node.id)) output.push(node);
@@ -3360,18 +3451,31 @@ export default function CornerCV6() {
   // "continue" candidate — it is just no longer replayed as a column on boot.
   // Pop-out windows (chatWindowRoute) and explicit ?view= deep links still win.
   const routeSeed = chatWindowRoute ? { room: chatWindowRoute.room, worldId: null } : null;
+  // URL-addressable room (reload/back/bookmark) — takes precedence over lastRoom replay
+  const initialUrlRoom = (() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const hasPopout = new URLSearchParams(window.location.search).get('popout') === '1';
+      if (hasPopout) return null;
+      return parseRoomFromUrl();
+    } catch { return null; }
+  })();
   const [view, setView] = useState(() => {
     if (routeSeed || legacyEmailRequested) return 'home';
     const v = initialViewFromUrl();
     if (v !== 'home' || explicitView) return v;
     return 'home';
   }); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
-  const initialChatSeed = routeSeed;
+  const initialChatSeed = routeSeed || (initialUrlRoom ? { room: initialUrlRoom, worldId } : null);
   const [openedRoom, setOpenedRoom] = useState(null); // retained for legacy history entries; live rooms are workspace columns
   const [workspaceColumns, setWorkspaceColumns] = useState(() => {
     const columns = [];
     if (initialChatSeed?.room) columns.push({ id: `chat:${roomColumnKey(initialChatSeed.room)}`, type: 'chat', room: initialChatSeed.room, worldId: initialChatSeed.worldId || worldId });
     if (legacyEmailRequested) columns.push({ id: 'email', type: 'email' });
+    // If URL room differs from popout seed, ensure it is present (covers direct nav to /dashboard/projects/wolfpack/chat)
+    if (initialUrlRoom && !columns.some((c) => c.type === 'chat' && c.room && roomColumnKey(c.room) === roomColumnKey(initialUrlRoom))) {
+      columns.push({ id: `chat:${roomColumnKey(initialUrlRoom)}`, type: 'chat', room: initialUrlRoom, worldId });
+    }
     return columns;
   });
   // Bumped on every request to focus a column. Without it the scroll effect keys on
@@ -3379,7 +3483,12 @@ export default function CornerCV6() {
   // no state and nothing moves — which on mobile, after swiping back to Home, reads as
   // "I tap a chat and nothing happens" (Patrik 2026-08-06).
   const [columnFocusTick, setColumnFocusTick] = useState(0);
-  const [activeColumnId, setActiveColumnId] = useState(() => legacyEmailRequested ? 'email' : (initialChatSeed?.room ? `chat:${roomColumnKey(initialChatSeed.room)}` : ''));
+  const [activeColumnId, setActiveColumnId] = useState(() => {
+    if (legacyEmailRequested) return 'email';
+    if (initialUrlRoom) return `chat:${roomColumnKey(initialUrlRoom)}`;
+    if (initialChatSeed?.room) return `chat:${roomColumnKey(initialChatSeed.room)}`;
+    return '';
+  });
   const workspaceCanvasRef = useRef(null);
   const [restoredRoomPending, setRestoredRoomPending] = useState(() => Boolean(routeSeed));
   const [roomNotice, setRoomNotice] = useState('');
@@ -3608,18 +3717,30 @@ export default function CornerCV6() {
       next.delete(columnId);
       return next;
     });
+    // Compute fallback URL before state settles so back/reload lands correctly.
+    // Use current snapshot of columns/active rather than the updater's prev.
+    const cols = workspaceColumns;
+    const idx = cols.findIndex((column) => column.id === columnId);
+    const remaining = cols.filter((column) => column.id !== columnId);
+    const fallback = remaining[Math.min(Math.max(0, idx - 1), Math.max(0, remaining.length - 1))];
+    try {
+      const targetUrl = fallback?.room ? urlForRoom(fallback.room) : urlForHome();
+      if (window.location.pathname + window.location.search !== targetUrl) history.pushState({}, '', targetUrl);
+    } catch { /* ignore */ }
     setWorkspaceColumns((columns) => {
       const index = columns.findIndex((column) => column.id === columnId);
       const next = columns.filter((column) => column.id !== columnId);
-      const fallback = next[Math.min(Math.max(0, index - 1), Math.max(0, next.length - 1))];
-      setActiveColumnId(fallback?.id || '');
+      const fb = next[Math.min(Math.max(0, index - 1), Math.max(0, next.length - 1))];
+      setActiveColumnId(fb?.id || '');
       return next;
     });
-  }, []);
+  }, [workspaceColumns]);
 
   // A room is a page-owned column, never a browser window or a route takeover.
   // Reopening an existing room focuses its live column; opening another room
   // appends a new independent chat with its own hook/composer state.
+  // URL-addressable: every open pushes its canonical URL so reload, back and
+  // bookmark/share work (fix for TOP-20 #7 root, B4/B5).
   const onOpenRoom = useCallback((room, wid) => {
     if (!room?.id && !room?.name) return false;
     setRestoredRoomPending(false);
@@ -3633,6 +3754,10 @@ export default function CornerCV6() {
     // into the chat you just opened (and ← walks straight back out).
     setKnavZone(id);
     try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
+    try {
+      const targetUrl = urlForRoom(room);
+      if (window.location.pathname + window.location.search !== targetUrl) history.pushState({ room: roomColumnKey(room) }, '', targetUrl);
+    } catch { /* ignore */ }
     return true;
   }, [worldId]);
 
@@ -3654,6 +3779,7 @@ export default function CornerCV6() {
     const canvas = workspaceCanvasRef.current;
     if (canvas) canvas.scrollTo({ left: 0, behavior: 'smooth' });
     setActiveColumnId('');
+    try { if (window.location.pathname + window.location.search !== urlForHome()) history.pushState({}, '', urlForHome()); } catch { /* ignore */ }
   }, []);
 
   const swipeNextChat = useCallback(() => {
@@ -3762,6 +3888,26 @@ export default function CornerCV6() {
     window.addEventListener('cv6:airpods-ui-effect', applyEffect);
     return () => window.removeEventListener('cv6:airpods-ui-effect', applyEffect);
   }, [onNav, onOpenRoom, closeWorkspaceColumn, activeColumnId, workspaceColumns, worldId]);
+  // URL-addressable rooms: back/forward and direct nav keep the room in sync.
+  useEffect(() => {
+    const onPopState = () => {
+      try {
+        const hasPopout = new URLSearchParams(window.location.search).get('popout') === '1';
+        if (hasPopout) return;
+        const room = parseRoomFromUrl();
+        if (room) {
+          const id = `chat:${roomColumnKey(room)}`;
+          setWorkspaceColumns((cols) => cols.some((c) => c.id === id) ? cols : [...cols, { id, type: 'chat', room, worldId }]);
+          setActiveColumnId(id);
+          setKnavZone(id);
+        } else {
+          setActiveColumnId((cur) => cur && cur.startsWith('chat:') ? '' : cur);
+        }
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [worldId]);
   // Open a project's home (missions + general chat) on the Home surface.
   const onOpenProject = useCallback((proj) => {
     const id = proj?.id || proj;
@@ -3772,7 +3918,10 @@ export default function CornerCV6() {
   const onOpenNav = useCallback(() => setNavOpen(true), []);
   const onSearch = useCallback(() => setSearchOpen(true), []);
   const closeNav = useCallback(() => setNavOpen(false), []);
-  const goHome = useCallback(() => { setHistory([]); setOpenedRoom(null); setView('home'); }, []);
+  const goHome = useCallback(() => {
+    setHistory([]); setOpenedRoom(null); setView('home');
+    try { if (window.location.pathname + window.location.search !== urlForHome()) history.pushState({}, '', urlForHome()); } catch { /* ignore */ }
+  }, []);
 
   // ?demo=blocks — render the full chat-element preview through the real renderer and stop.
   // (After all hooks above, so hook order stays stable; the flag is constant per load.)
