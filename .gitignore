@@ -25,6 +25,9 @@ test-screenshots/
 supabase/.temp/
 scripts/.enrich-progress.json
 
+# Generated at build time — do not commit (prebuild generates)
+src/dashboard/data/missions-registry.json
+
 # Local fixture dumps (npm run snapshot) -- never commit; refresh on demand.
 src/dashboard/__fixtures__/
 /corner/missions/*

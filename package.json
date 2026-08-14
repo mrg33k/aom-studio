@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "node scripts/generate-briefs-index.js && node scripts/build-missions-registry.cjs && node scripts/sync-cv4-static.cjs",
     "prebuild": "node scripts/generate-briefs-index.js && node scripts/build-missions-registry.cjs && node scripts/sync-cv4-static.cjs",
     "build": "vite build && node scripts/emit-dashboard-html.mjs",
     "ios:sync": "node scripts/verify-native-env.mjs && npm run build && npx cap sync ios",
