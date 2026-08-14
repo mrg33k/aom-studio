@@ -46,18 +46,11 @@ export const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-// Per-chat model selection. The normal dashboard offers the automatic Claude
-// tool lane, explicit Claude models, and an AOM-managed hosted OpenAI lane.
-// /cvg still owns its Gemini picker separately (localStorage 'cvgModel').
-export const MODEL_OPTIONS = [
-  { id: 'default',          label: 'Auto (Claude → Codex)', desc: 'Codex fallback when Corner Runner is online' },
-  { id: 'opus',             label: 'Claude Opus',          desc: 'Deepest reasoning' },
-  { id: 'sonnet',           label: 'Claude Sonnet',        desc: 'Fast + capable' },
-  { id: 'haiku',            label: 'Claude Haiku',         desc: 'Fastest, light' },
-  { id: 'muse-spark',       label: 'Muse Spark',          desc: 'Muse Code · Meta' },
-  { id: 'openai-gpt-5.6',   label: 'OpenAI GPT-5.6',       desc: 'Hosted reasoning · AOM managed' },
-  { id: 'codex-local',       label: 'Codex on this computer', desc: 'Your ChatGPT subscription · local runner' },
-]
+// Per-chat model selection. Single source: src/dashboard/data/models.json
+// (gut-pruning-ship). Import is canonical; ALLOWED_MODELS in
+// api/dashboard/agent-model.js validates against the same JSON.
+import modelsJson from '../../data/models.json' with { type: 'json' }
+export const MODEL_OPTIONS = modelsJson
 
 // Per-surface model (corner:gemini-workers step 6). Model is decided by which
 // door you came in: /cvg -> Gemini (its 'cvgModel' pick or flash), every other

@@ -16,15 +16,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const PREF_KEY = 'agent_models';
-const ALLOWED_MODELS = new Set([
-  'default',
-  'opus',
-  'sonnet',
-  'haiku',
-  'muse-spark',
-  'openai-gpt-5.6',
-  'codex-local',
-]);
+import modelsJson from '../../src/dashboard/data/models.json' with { type: 'json' }
+const ALLOWED_MODELS = new Set(modelsJson.map(m => m.id));
 
 async function getModels(clientId, headers) {
   const r = await fetch(
