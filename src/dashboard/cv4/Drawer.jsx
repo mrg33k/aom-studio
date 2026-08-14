@@ -1236,10 +1236,9 @@ import modelsJson from '../data/models.json'
 const GLOBAL_MODEL_CHOICES = modelsJson.map(m => ({ id: m.id, label: m.label }))
 
 function GlobalModelSwitch({ worldId }) {
-  const [globalModel, setGlobalModel] = useState('default')
+  const [globalModel, setGlobalModel] = useState('muse-spark')
   const [open, setOpen] = useState(false)
   const [justApplied, setJustApplied] = useState('')
-  const isIOS = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() === true
 
   useEffect(() => {
     if (!worldId) return
@@ -1248,8 +1247,8 @@ function GlobalModelSwitch({ worldId }) {
       .then(({ models }) => {
         const pref = models && models._all ? String(models._all) : ''
         if (pref) setGlobalModel(pref)
-        else if (isIOS) {
-          // iOS default is Muse Spark — apply once, next turns use it
+        else {
+          // Default for now is Muse Spark — apply once, next turns use it
           setGlobalModel('muse-spark')
           authFetch('/api/dashboard/agent-model', {
             method: 'PATCH',
@@ -1259,7 +1258,7 @@ function GlobalModelSwitch({ worldId }) {
         }
       })
       .catch(() => {})
-  }, [worldId, isIOS])
+  }, [worldId])
 
   const pick = (id) => {
     setGlobalModel(id)
