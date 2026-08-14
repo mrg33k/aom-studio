@@ -118,8 +118,6 @@ export const NAV = {
         {
           kick: 'And the rest',
           links: [
-            { t: 'The ads',     s: 'Paid at cost, in your account.',     href: '#math' },
-            { t: 'The reviews', s: 'Answered in your voice.',            href: '#proof' },
             { t: 'A crew for a day', s: 'Filmed, edited, back in two days.', href: '#one-thing' },
           ],
         },
