@@ -94,7 +94,10 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   const isInfra = (slug) => {
     if (!slug) return false;
     const s = String(slug).toLowerCase();
-    return s === 'bridge-smoke' || s === 'daily-research' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-');
+    // Also check the bare tail for colon-prefixed mission slugs
+    // (e.g. 'aom:daily-research' — metadata.mission_slug carries the prefix).
+    const bare = s.includes(':') ? s.split(':').pop() : s;
+    return bare === 'bridge-smoke' || bare === 'daily-research' || bare.startsWith('lab-') || bare.startsWith('qa-') || bare.startsWith('smoke-') || bare.startsWith('proj-tool-') || bare.startsWith('loop-test-');
   };
   const filteredRooms = (projectRooms || []).filter((p) => !isInfra(p.slug));
   // Generic archived/hidden gate: supabase-status already drops archived
