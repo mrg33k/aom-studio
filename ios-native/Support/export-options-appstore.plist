@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Store export for build 6+ (corner:native-ios R22 resubmission).
+	     Lives in the repo because /tmp/export-options.plist got wiped on
+	     reboot during the R8 run (testflight-runbook.md). -->
+	<key>method</key>
+	<string>app-store</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.aheadofmarket.corner</key>
+		<string>Corner App Store Distribution</string>
+		<key>com.aheadofmarket.corner.CornerWidgets</key>
+		<string>Corner Widgets App Store</string>
+	</dict>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+</dict>
+</plist>
