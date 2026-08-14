@@ -55,6 +55,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/r38",
+      "destination": "/index.html"
+    },
+    {
       "source": "/r5",
       "destination": "/index.html"
     },
