@@ -66,8 +66,30 @@ export function fallbackRoomColor(room) {
   return PALETTE[Math.abs(hash) % PALETTE.length];
 }
 
-export function isActiveRoomStatus(status) {
-  return ['active', 'online', 'live', 'working', 'running', 'building', 'executing'].includes(String(status || '').toLowerCase());
+const PRESENCE_FRESH_MS = 10 * 60 * 1000; // 10 min — raw agent_status forever = stale-forever bug (PARITY #4)
+
+export function isActiveRoomStatus(status, at) {
+  // Single truth + freshness window — one derivation, one renderer kills two-dots everywhere.
+  // Without this, any status='working' binds forever and renders 2-3x per room across surfaces.
+  let s = status;
+  let ts = at;
+  // Overload: isActiveRoomStatus(room) where room = {status, status_set_at}
+  if (s && typeof s === 'object' && !Array.isArray(s) && at === undefined) {
+    ts = s.status_set_at || s.statusSetAt || s.updated_at || s.updatedAt || null;
+    s = s.status;
+  }
+  const v = String(s || '').toLowerCase();
+  if (!['active', 'online', 'live', 'working', 'running', 'building', 'executing'].includes(v)) return false;
+  if (!ts) return false; // no timestamp → stale by construction (fix open leak)
+  const t = new Date(ts).getTime();
+  if (Number.isNaN(t)) return false;
+  const age = Date.now() - t;
+  return age >= 0 && age < PRESENCE_FRESH_MS;
+}
+
+export function isRoomActive(room) {
+  if (!room) return false;
+  return isActiveRoomStatus(room.status, room.status_set_at || room.statusSetAt || room.updated_at || room.updatedAt);
 }
 
 export function resolveRoomIdentity(room, identities = {}) {

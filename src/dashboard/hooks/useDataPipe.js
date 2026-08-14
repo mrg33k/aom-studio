@@ -462,6 +462,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
           tasks: [],
           isClient: false,
           status: p.status ? p.status.toUpperCase() : 'IDLE',
+          status_set_at: p.status_set_at || p.updated_at || null,
         }))
         const fromAgentsSlugs = new Set(fromAgents.map(p => p.slug))
         const fromDefs = (data.projectDefs || [])

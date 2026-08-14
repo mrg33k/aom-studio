@@ -5,7 +5,7 @@ import { isActiveRoomStatus, useRoomIdentity } from './data/roomIdentity.js';
 export default function RoomAvatar({ room, worldId, size = 40, editable = true, className = '' }) {
   const { identity, saving, save } = useRoomIdentity(room, worldId);
   const [open, setOpen] = useState(false);
-  const active = isActiveRoomStatus(room?.status);
+  const active = isActiveRoomStatus(room);
 
   const avatarStyle = {
     width: size,

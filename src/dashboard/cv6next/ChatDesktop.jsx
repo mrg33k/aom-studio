@@ -471,7 +471,7 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
             const on = selectedMissionSlug === missionSlug;
             return (
               <div key={missionSlug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7, paddingLeft: depth * 14 }}>
-                {isActiveRoomStatus(m.status) ? <span className="sdot is-live" style={{ flex: 'none' }} aria-label="Active" /> : null}
+                {isActiveRoomStatus(m) ? <span className="sdot is-live" style={{ flex: 'none' }} aria-label="Active" /> : null}
                 <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{titleOverrides[`m:${missionSlug}`] || missionLabelClean(m.name || m.slug)}</span>
                 <NeedsBadge count={needsByMission[missionSlug] || needsByMission[String(missionSlug).split(':').pop()] || 0} />
               </div>
