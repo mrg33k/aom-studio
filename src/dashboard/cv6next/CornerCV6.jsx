@@ -41,6 +41,7 @@ import IntakeComposer from './IntakeComposer.jsx';
 import { playNotifyChime } from './notifyChime.js';
 import AlertsPanel from './AlertsPanel.jsx';
 import { useChatSwipe } from './useChatSwipe.js';
+import { useRoomSwipeArchive } from './useRoomSwipeArchive.js';
 import { registerPushWorker } from './pushNotifications.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
 import { useIntakeRoute } from './data/useIntakeRoute.js';
@@ -610,6 +611,18 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // never needs re-binding — same pattern as curCardRef).
   homeProjectsRef.current = data.projects || [];
   missionsByProjectRef.current = missionsByProject || {};
+  // TOP-20 #8 swipe-to-clean: left-swipe a room row to archive it via the same
+  // PATCH /api/dashboard/project-update is_active false that RoomSettingsDialog
+  // and TreeContextMenu use. filteredRooms in useHomeData then hides it because
+  // activeProjectSlugs drops the slug. Far swipe auto-archives; snapped-open
+  // reveals an Archive button. Undo toast restores is_active true.
+  const { toast: swipeToast, dismissToast: dismissSwipeToast, undoArchive: undoSwipeArchive } = useRoomSwipeArchive({
+    wrapRef: homeWrapRef,
+    worldId,
+    resolveHit: resolveHomeHit,
+    refetch: refetchHomeData,
+    setMissionReload,
+  });
 
   // Desktop Home: which project folders are fanned open to their missions, and which have
   // had "show N more" tapped. Matches the Chat rail tree.
@@ -1776,6 +1789,78 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       ) : null}
       {trackerOverlay}
       {composerOverlay}
+      {swipeToast ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'absolute',
+            left: 16,
+            right: 16,
+            bottom: 'max(16px, env(safe-area-inset-bottom, 0px))',
+            zIndex: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 14px 12px 16px',
+            borderRadius: 14,
+            background: 'var(--surface-2, #1a1f2e)',
+            border: '1px solid var(--hair, rgba(255,255,255,0.08))',
+            boxShadow: '0 16px 40px -12px rgba(0,0,0,.6)',
+            color: 'var(--fg, #fff)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {swipeToast.kind === 'error'
+              ? (swipeToast.error || 'Could not archive')
+              : `Archived ${swipeToast.name || 'room'}`}
+          </span>
+          {swipeToast.kind !== 'error' ? (
+            <button
+              type="button"
+              onClick={undoSwipeArchive}
+              style={{
+                flex: 'none',
+                height: 32,
+                padding: '0 14px',
+                borderRadius: 999,
+                border: 'none',
+                background: 'var(--accent, #6366f1)',
+                color: '#fff',
+                fontFamily: 'var(--font-sans)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Undo
+            </button>
+          ) : null}
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={dismissSwipeToast}
+            style={{
+              flex: 'none',
+              width: 32,
+              height: 32,
+              borderRadius: 9,
+              border: '1px solid var(--hair)',
+              background: 'transparent',
+              color: 'var(--muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

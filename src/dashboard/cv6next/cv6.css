@@ -3957,6 +3957,97 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
+
+/* ── Swipe-to-clean (TOP-20 #8) — archive a room via left-swipe ──────────
+   Mirrors ChatLifecycle's SwipeFileRow mechanics (width shrink, not translate)
+   but delegated from homeWrapRef because TemplateScreen rows are innerHTML.
+   Wrap clips the 88px Archive panel behind the row; inner width drives the
+   reveal so the filename stays anchored and legible. Panel is only ever seen
+   because the inner shrinks from its right edge — at rest inner is 100% and
+   the row's own solid background hides the panel completely (Patrik 2026-08-07
+   save-panel fix: the covering layer must be opaque-geometrically, not just
+   the row's background — here inner is 100% wide so it geometrically covers
+   the panel even though its background is transparent and the row's background
+   does the visual covering). */
+.cv6-room-swipe-wrap {
+  position: relative;
+  overflow: hidden;
+  /* keep the list's own gap (mresumelist gap 8px) as the spacing, not the wrap */
+  touch-action: pan-y;
+}
+.cv6-room-swipe-archive-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 88px;
+  background: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+.cv6-room-swipe-archive-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font: 700 11px var(--font-sans, Inter, sans-serif);
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  padding: 0;
+}
+.cv6-room-swipe-archive-btn svg { display: block; }
+.cv6-room-swipe-archive-btn span { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+.cv6-room-swipe-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  box-sizing: border-box;
+  will-change: width;
+  touch-action: pan-y;
+  transition: width 0.22s ease;
+  /* geometric cover: even though background is transparent, the inner's
+     100% width div geometrically hides the panel behind it; the row inside
+     provides the visual opaque cover. */
+  background: transparent;
+}
+.cv6-room-swipe-wrap.is-open .cv6-room-swipe-inner {
+  width: calc(100% - 88px) !important;
+  box-shadow: 8px 0 16px -8px rgba(0,0,0,.45);
+}
+.cv6-room-swipe-wrap.is-dragging .cv6-room-swipe-inner {
+  transition: none !important;
+}
+.cv6-room-swipe-wrap.is-open .mresumecard,
+.cv6-room-swipe-wrap.is-open .recentrow,
+.cv6-room-swipe-wrap.is-open .restrow,
+.cv6-room-swipe-wrap.is-open .projrow,
+.cv6-room-swipe-wrap.is-open .missrow {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.cv6-room-swipe-wrap.is-archiving {
+  pointer-events: none;
+}
+/* Mobile cards ride the same wrap, but the wrap itself should carry the card's
+   radius so the panel's right edge is clipped to the same shape when closed.
+   At rest the row's own radius does the clipping; when open the wrap's radius
+   on the right side is still 12px, but the inner's right edge is square to mate
+   with the panel — the panel provides the right-side radius. */
+[data-cv6][data-screen="home-mobile"] .cv6-room-swipe-wrap {
+  border-radius: 12px;
+}
+[data-cv6][data-screen="home-mobile"] .cv6-room-swipe-archive-panel {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
 /* Saved confirmation pill — the receipt that the save actually happened */
 [data-cv6] .cv6-fs-toast {
   position: absolute;
