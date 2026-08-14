@@ -1059,7 +1059,13 @@ class RoomThreadEngine {
     this.lastSentText = body;
     this.lastSentOptions = { interactionMode, agent: roomAgent };
     this.silentTurn = false;
-    this.commit({ awaiting: true, turnHealth: { state: 'accepted', cause: null, repaired: false }, liveSteps: [], draft: null });
+    // FIX: progress bar vanishing on 2nd+ message — `lastSentId` was left stale (previous turn's server id)
+    // while `awaiting:true` was already set for the new turn. `startLiveStepPoll`/`startStewardPoll`
+    // then polled the *old* `parent_message_id` and saw its `settled` sentinel, clearing `awaiting`
+    // after ~1.5s (the exact "disappears after first few seconds on second message" you just reported).
+    // Set `lastSentId` optimistically to the pending `optId` so the poll filters for a non-existent
+    // parent (empty `mine`, no `settled`) until `project()` flips it to the real server id.
+    this.commit({ lastSentId: optId, awaiting: true, turnHealth: { state: 'accepted', cause: null, repaired: false }, liveSteps: [], draft: null });
     // A failed send KEEPS its bubble (corner:bridge frontend-visibility D3). Deleting it
     // was the single most alarming failure on the surface: your words flashed into the
     // thread and then vanished with no reason given and nothing to tap. Now the bubble
