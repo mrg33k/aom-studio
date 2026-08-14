@@ -97,6 +97,11 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     return s === 'bridge-smoke' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-');
   };
   const filteredRooms = (projectRooms || []).filter((p) => !isInfra(p.slug) && p.slug !== 'daily-research');
+  // Generic archived/hidden gate: supabase-status already drops archived
+  // (is_active=false) + hidden rows from the rail, but recentMap is
+  // message-driven (6000-row room-activity window) and would re-inject
+  // them. This set is the canonical allow-list for recents.
+  const activeProjectSlugs = new Set(filteredRooms.map((p) => p.slug).filter(Boolean));
   const projects = [...filteredRooms].sort((a, b) => {
     const ta = !isRoomActivityNoise({ text: a.last_message_text }) && a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
     const tb = !isRoomActivityNoise({ text: b.last_message_text }) && b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
@@ -127,6 +132,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   };
   const cards = (inboxItems || []).filter((it) => {
     if (isInfra(it.project) || it.project === 'daily-research') return false;
+    if (it.project && !activeProjectSlugs.has(it.project)) return false;
     if (it.missionSlug && isInfra(it.missionSlug.split(':').pop())) return false;
     if (isMachinery(it.text)) return false;
     return true;
@@ -217,6 +223,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   for (const it of inboxItems || []) {
     if (isRoomActivityNoise(it)) continue;
     if (isInfra(it.project) || it.project === 'daily-research') continue;
+    if (it.project && !activeProjectSlugs.has(it.project)) continue;
     if (it.missionSlug && isInfra(String(it.missionSlug).split(':').pop())) continue;
     if (isMachinery(it.text)) continue;
     const ts = it.timestamp ? new Date(it.timestamp).getTime() : 0;
@@ -245,6 +252,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (isRoomActivityNoise({ text: mr.last_message_text })) continue;
     if (isInfra(mr.slug) || mr.slug === 'daily-research') continue;
     if (mr.project && (isInfra(mr.project) || mr.project === 'daily-research')) continue;
+    if (mr.project && !activeProjectSlugs.has(mr.project)) continue;
     const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
     const nm = missionLabel(mr.slug) || mr.slug;
     bump('m:' + missionRecencyKey(mr.slug), { key: 'm:' + missionRecencyKey(mr.slug), id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: rowPreview(mr.last_message_text, mr) });
@@ -277,6 +285,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     const ts = entry?.last_message_at ? new Date(entry.last_message_at).getTime() : 0;
     if (!slug || !ts) continue;
     if (isInfra(slug) || slug === 'daily-research') continue;
+    if (!activeProjectSlugs.has(slug)) continue;
     bump('p:' + slug, { key: 'p:' + slug, id: slug, kind: 'project', project: slug, name: projectNameBySlug[slug] || cap(slug), sub: 'Project chat', ts, preview: '' });
   }
   const activityMissions = roomActivity?.missions || {};
@@ -290,6 +299,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (!slug) continue;
     if (isInfra(slug) || slug === 'daily-research') continue;
     if (isInfra(project) || project === 'daily-research') continue;
+    if (project && !activeProjectSlugs.has(project)) continue;
     const pn = project ? (projectNameBySlug[project] || cap(project)) : '';
     const nm = missionLabel(slug) || slug;
     bump('m:' + missionRecencyKey(slug), { key: 'm:' + missionRecencyKey(slug), id: slug, kind: 'mission', missionSlug: slug, project, name: nm, sub: missionSub(pn, nm), ts, preview: '' });
