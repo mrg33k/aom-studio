@@ -3549,6 +3549,65 @@ export default function CornerCV6() {
     return () => { alive = false; };
   }, [restoredRoomPending, workspaceColumns, roomRegistry.state, roomRegistry.data, worldId]);
 
+  // URL-derived room must survive the post-data rebuild (R18 handoff fix).
+  // The initialUrlRoom seed fires before roomRegistry data lands; the
+  // restoredRoomPending effect above rebuilds from default home shape without
+  // consulting the URL and would otherwise stomp the seeded column after ~1s.
+  // Re-derive from the URL once the registry is ready and re-seed if missing.
+  useEffect(() => {
+    if (roomRegistry.state !== 'ready') return;
+    let urlRoom = null;
+    try {
+      const hasPopout = new URLSearchParams(window.location.search).get('popout') === '1';
+      if (!hasPopout) urlRoom = parseRoomFromUrl();
+    } catch { urlRoom = null; }
+    if (!urlRoom) return;
+    const id = `chat:${roomColumnKey(urlRoom)}`;
+    if (workspaceColumns.some((c) => c.id === id)) {
+      // Enrich display name if seeded as lowercase slug (complaint 8)
+      const col = workspaceColumns.find((c) => c.id === id);
+      const isSlugTitle = col && col.room && String(col.room.name).toLowerCase() === String(col.room.id).toLowerCase();
+      if (isSlugTitle) {
+        const proj = (roomRegistry.data?.projects || []).find((p) => p.slug === urlRoom.id || p.id === urlRoom.id);
+        const ag = (roomRegistry.data?.agents || []).find((a) => a.id === urlRoom.id);
+        let properName = null;
+        if (proj) properName = proj.name;
+        else if (ag) properName = ag.title || ag.name;
+        else if (urlRoom.isMission) {
+          const tree = roomRegistry.data?.projects || [];
+          // mission display name fallback: humanize slug
+          properName = urlRoom.id.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        }
+        if (properName && properName !== col.room.name) {
+          setWorkspaceColumns((cols) => cols.map((c) => c.id === id ? { ...c, room: { ...c.room, name: properName, initials: properName.slice(0, 2).toUpperCase() } } : c));
+        }
+      }
+      // Ensure it stays active (URL is the source of truth for reload/back)
+      if (activeColumnId !== id) {
+        setActiveColumnId(id);
+        setKnavZone(id);
+      }
+      return;
+    }
+    // URL room not in columns — re-seed it (handles the 1s stomp)
+    let enriched = urlRoom;
+    if (urlRoom.isProject) {
+      const proj = (roomRegistry.data?.projects || []).find((p) => p.slug === urlRoom.id || p.id === urlRoom.id);
+      if (proj) enriched = { ...urlRoom, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), status: proj.status, statusText: 'project chat' };
+    } else if (!urlRoom.isProject && !urlRoom.isMission) {
+      const ag = (roomRegistry.data?.agents || []).find((a) => a.id === urlRoom.id);
+      if (ag) enriched = { ...urlRoom, name: ag.title || ag.name, initials: (ag.title || ag.name || '?').slice(0, 2).toUpperCase(), status: ag.status, statusText: ag.statusLabel || 'conversation' };
+    } else if (urlRoom.isMission) {
+      const proj = (roomRegistry.data?.projects || []).find((p) => p.slug === urlRoom.projectSlug || p.id === urlRoom.projectSlug);
+      const baseName = urlRoom.id.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      enriched = { ...urlRoom, name: baseName, initials: baseName.slice(0, 2).toUpperCase(), status: 'ready', statusText: proj?.name || urlRoom.projectSlug };
+    }
+    const col = { id, type: 'chat', room: enriched, worldId };
+    setWorkspaceColumns((cols) => (cols.some((c) => c.id === id) ? cols : [...cols, col]));
+    setActiveColumnId(id);
+    setKnavZone(id);
+  }, [roomRegistry.state, roomRegistry.data, worldId, workspaceColumns, activeColumnId]);
+
   useEffect(() => {
     if (!activeColumnId) return;
     const canvas = workspaceCanvasRef.current;

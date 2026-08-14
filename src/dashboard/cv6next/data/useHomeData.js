@@ -401,7 +401,10 @@ export function useHome() {
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
-  const loading = (supabase && status === 'loading') || (supabase && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
+  // Honest counters (20): ALL ROOMS must not show 13 (agents-only) before projects load.
+  // While any of the counts is still null, keep 'loading' so the header doesn't flash a wrong total.
+  const stillLoadingCounts = agents == null || projectRooms == null;
+  const loading = (supabase && status === 'loading') || (supabase && !worldId) || stillLoadingCounts || (agents == null && projectRooms == null && inboxItems == null);
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 
