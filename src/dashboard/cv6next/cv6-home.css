@@ -1,0 +1,738 @@
+/* cv6-home.css -- Home screen (desktop + mobile) */
+
+/* ============================================================
+   PER-SCREEN STYLES — each tool's named classes, namespaced under its
+   [data-screen] so identical class names never collide across screens.
+   Inline styles in the fragments are the LOCKED visuals (tokens only) and
+   stay as-authored; only these named classes were lifted out of per-file
+   <style> blocks into this one bundle.
+   ============================================================ */
+
+/* ---- Home · desktop (3-column) ---- */
+[data-cv6][data-screen="home-desktop"] .av { width:38px; height:38px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:600; }[data-cv6][data-screen="home-desktop"] .topbar { flex:none; display:flex; align-items:center; gap:22px; padding:14px 24px; border-bottom:1px solid var(--divider); }[data-cv6][data-screen="home-desktop"] .tgreet { font-size:20px; font-weight:700; letter-spacing:-.02em; color:var(--fg); white-space:nowrap; }[data-cv6][data-screen="home-desktop"] .eyebrow { font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }[data-cv6][data-screen="home-desktop"] .toolnav { flex:1; display:flex; justify-content:center; gap:7px; }[data-cv6][data-screen="home-desktop"] .ctile { width:60px; flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; padding:7px 0 6px; border-radius:var(--radius-control); background:var(--surface); border:1px solid var(--hair); color:var(--muted); }[data-cv6][data-screen="home-desktop"] .ctile.on { background:var(--accent); border-color:transparent; color:#fff; }[data-cv6][data-screen="home-desktop"] .clab { font-size:10px; font-weight:600; }[data-cv6][data-screen="home-desktop"] .ib { width:38px; height:38px; border-radius:11px; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); display:flex; align-items:center; justify-content:center; position:relative; }[data-cv6][data-screen="home-desktop"] .barbtns { display:flex; align-items:center; gap:14px; }[data-cv6][data-screen="home-desktop"] .cols { display:flex; flex:1; min-height:0; border-top:1px solid var(--divider); }[data-cv6][data-screen="home-desktop"] .col { padding:18px 16px; }[data-cv6][data-screen="home-desktop"] .catch { width:336px; flex:none; border-right:1px solid var(--divider); overflow:hidden; display:flex; flex-direction:column; }[data-cv6][data-screen="home-desktop"] .rooms { width:300px; flex:none; min-width:0; display:flex; flex-direction:column; }[data-cv6][data-screen="home-desktop"] .convo { flex:1; min-width:0; border-left:1px solid var(--divider); display:flex; flex-direction:column; padding:0; position:relative; }[data-cv6][data-screen="home-desktop"] .home-files { display:contents; }[data-cv6][data-screen="home-desktop"] .card { background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:var(--shadow-card); }[data-cv6][data-screen="home-desktop"] .glyph { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6][data-screen="home-desktop"] .tag-pill { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; flex:none; }[data-cv6][data-screen="home-desktop"] .echk { display:flex; align-items:flex-start; gap:9px; font-size:13px; color:var(--fg); line-height:1.45; }[data-cv6][data-screen="home-desktop"] .echk .box { width:16px; height:16px; border-radius:5px; border:2px solid var(--accent); flex:none; margin-top:1px; }[data-cv6][data-screen="home-desktop"] .eact { display:flex; align-items:center; justify-content:center; gap:7px; height:40px; border-radius:10px; font-size:13px; font-weight:600; font-family:var(--font-sans); cursor:pointer; border:none; }[data-cv6][data-screen="home-desktop"] .attach { display:flex; align-items:center; gap:11px; padding:9px 11px; border:1px solid var(--hair); border-radius:11px; background:var(--surface-2); }[data-cv6][data-screen="home-desktop"] .athumb { width:40px; height:40px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6][data-screen="home-desktop"] .subhdr { font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin:0 0 8px; }[data-cv6][data-screen="home-desktop"] .room { display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:10px; }[data-cv6][data-screen="home-desktop"] .dot { width:8px; height:8px; border-radius:50%; flex:none; }[data-cv6][data-screen="home-desktop"] .rn { flex:1; min-width:0; font-size:14px; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }[data-cv6][data-screen="home-desktop"] .cvhdr { display:flex; align-items:center; gap:9px; padding:20px 20px 16px; border-bottom:1px solid var(--divider); }[data-cv6][data-screen="home-desktop"] .filesbtn { display:flex; align-items:center; gap:6px; height:34px; padding:0 12px; border-radius:9px; border:1px solid var(--hair); color:var(--muted); font-size:12.5px; font-weight:600; }[data-cv6][data-screen="home-desktop"] .composer { border-top:1px solid var(--divider); padding:12px 16px; display:flex; align-items:center; gap:9px; }[data-cv6][data-screen="home-desktop"] .cmd { width:40px; height:40px; border-radius:11px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:var(--ring-accent); }[data-cv6][data-screen="home-desktop"] .field { flex:1; height:40px; border-radius:11px; border:1px solid var(--hair); background:var(--surface-2); display:flex; align-items:center; gap:8px; padding:0 12px; color:var(--faint); font-size:14px; }[data-cv6][data-screen="home-desktop"] .mono { font-family:var(--font-mono); }[data-cv6][data-screen="home-desktop"] .scrollcap { position:relative; }[data-cv6][data-screen="home-desktop"] .scrollcap::after { content:''; position:absolute; left:0; right:0; bottom:0; height:36px; background:linear-gradient(transparent, var(--ground)); pointer-events:none; }
+
+/* FIX B-mod: open-room indicator on the rooms rail — bold name + 2px left accent bar.
+   No background tint. padding-left compensates for the 2px border so layout doesn't jump. */
+[data-cv6][data-screen="home-desktop"] .agentrow.is-open .rn,
+[data-cv6][data-screen="home-desktop"] .recentrow.is-open .rn { font-weight:600; }
+[data-cv6][data-screen="home-desktop"] .agentrow.is-open,
+[data-cv6][data-screen="home-desktop"] .recentrow.is-open { border-left:2px solid var(--accent); padding-left:10px; }
+
+/* ---- Home · mobile (catch-up + rooms, project-opened) ---- */
+[data-cv6][data-screen="home-mobile"] .bg1 { position:absolute; inset:0; z-index:0; background:
+    radial-gradient(55% 38% at 24% 14%,rgba(74,116,148,.5),transparent 62%),
+    radial-gradient(48% 32% at 84% 22%,rgba(206,148,70,.32),transparent 58%),
+    radial-gradient(42% 30% at 70% 72%,rgba(46,96,128,.4),transparent 62%),
+    linear-gradient(180deg,#0c1218 0%,#080b10 55%,#05080b 100%); }[data-app-theme="light"] [data-cv6][data-screen="home-mobile"] .bg1 { background:none; }[data-cv6][data-screen="home-mobile"] .bg2 { position:absolute; inset:0; z-index:0; background:linear-gradient(180deg,rgba(5,8,11,.32),rgba(5,8,11,.5)); }[data-app-theme="light"] [data-cv6][data-screen="home-mobile"] .bg2 { background:none; }/* Home's own baked wallpaper (.bg1 = a copy of the GLASS gradient) + dark scrim (.bg2) are absolute inset:0 layers inside the screen box. They're now fully superseded by the one body-painted wallpaper, so suppress them in EVERY theme (light already did). On glass they double-painted a darker offset box below the header; on DARK they leaked the glass gradient onto Home so it looked glassy while the rest of dark mode is flat (Patrik 2026-07-20). Suppressed = Home shows the single body wallpaper (flat dark in dark, gradient in glass, white in light), matching Chat/Files. */[data-app-theme="glass"] [data-cv6][data-screen="home-mobile"] .bg1,[data-app-theme="glass"] [data-cv6][data-screen="home-mobile"] .bg2,[data-app-theme="dark"] [data-cv6][data-screen="home-mobile"] .bg1,[data-app-theme="dark"] [data-cv6][data-screen="home-mobile"] .bg2 { background:none !important; }[data-cv6][data-screen="home-mobile"] .hlogo { height:22px; width:auto; display:block; }[data-cv6][data-screen="home-mobile"] .hbody { position:relative; z-index:2; flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding-top:8px; }[data-cv6][data-screen="home-mobile"] .secrow { padding:0 22px; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }[data-cv6][data-screen="home-mobile"] .roomshdr { padding:0 22px; display:flex; align-items:center; justify-content:space-between; margin:12px 0 10px; }[data-cv6][data-screen="home-mobile"] .rooms { margin:0 22px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; overflow:hidden; }[data-cv6][data-screen="home-mobile"] .room { display:flex; align-items:center; gap:12px; padding:0 15px; height:54px; border-bottom:1px solid var(--divider); }[data-cv6][data-screen="home-mobile"] .dot { width:9px; height:9px; border-radius:50%; flex:none; }[data-cv6][data-screen="home-mobile"] .rn { flex:1; font-size:14.5px; font-weight:600; color:var(--fg); }[data-cv6][data-screen="home-mobile"] .tag { font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; color:var(--faint); }[data-cv6][data-screen="home-mobile"] .miss { display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:10px; }[data-cv6][data-screen="home-mobile"] .stp { font-size:10px; font-weight:700; padding:3px 8px; border-radius:7px; flex:none; }
+/* ---- Catch Up deck dots (mobile home) ---- */
+[data-cv6][data-screen="home-mobile"] .cudot.is-on { background:var(--accent); }
+[data-cv6][data-screen="home-mobile"] .cudot.is-done { background:var(--success); }
+
+/* ---- Agents accordion (Home): one header row that expands its titled roster in place ---- */
+[data-cv6] .agentgrp { cursor:pointer; }
+[data-cv6] .agentgrp .agentppl { display:flex; align-items:center; justify-content:center; color:var(--muted); flex:none; }
+[data-cv6] .agentgrp .agentcaret { display:flex; align-items:center; justify-content:center; color:var(--faint); flex:none; transition:transform .22s cubic-bezier(.4,0,.2,1); }
+[data-cv6] .agentgrp.is-open .agentcaret { transform:rotate(180deg); }
+[data-cv6] .agentgrp.is-open .agentppl { color:var(--accent); }
+[data-cv6][data-screen="home-mobile"] .room.agentrow { height:46px; padding-left:30px; background:var(--surface-2); }
+[data-cv6][data-screen="home-mobile"] .room.agentrow .rn { font-weight:500; }
+[data-cv6][data-screen="home-mobile"] .room.agentgrp .tag { font-family:var(--font-sans); font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-weak); padding:1px 8px; border-radius:8px; letter-spacing:0; }
+/* Pick up where you left off (mobile) — desktop's recent digest, above All rooms.
+   The row styling itself lives in the M12 block further down (search .mresumelist);
+   the .mresumerow/.mresumetop/.mresumechev rules that used to sit here were dead —
+   no markup has referenced them since the deck rewrite — and were removed
+   2026-08-06 so this list has exactly one source. */
+[data-cv6][data-screen="home-mobile"] .mresume.is-none { display:none; }
+[data-cv6][data-screen="home-mobile"] .mresume .roomshdr { margin:8px 0 10px; }
+[data-cv6][data-screen="home-desktop"] .room.agentrow { padding-left:26px; }
+[data-cv6][data-screen="home-desktop"] .room.agentrow .rn { font-weight:500; }
+[data-cv6][data-screen="home-desktop"] .agentgrp { padding:9px 12px; }
+[data-cv6][data-screen="home-desktop"] .agentgrp .tag { margin-left:auto; font-family:var(--font-sans); font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-weak); padding:1px 8px; border-radius:8px; }
+/* ---- Desktop Home convo column: show the honest "No active goal" rest state when
+   there is no real goal (goal.has='none' => .convo-ready.is-none), instead of a goal
+   panel with blank checklist counts. Default (goal present) shows the goal body. */
+[data-cv6] .convo-ready .convo-rest2 { display:none; }
+[data-cv6] .convo-ready .convo-goalbody { display:flex; }
+[data-cv6] .convo-ready.is-none .convo-rest2 { flex:1; display:flex; align-items:center; justify-content:center; }
+[data-cv6] .convo-ready.is-none .convo-goalbody { display:none; }
+
+
+/* Mobile home Catch Up: when nothing needs you (colState 'none'), the whole section —
+   header row + swipe deck — does not render at all (Patrik 2026-07-06; the desktop
+   home already dropped its empty column). */
+[data-cv6] .mcatch.is-none { display:none !important; }
+/* Catch-up card: hide the "Action items" header + list when the item has no action
+   items (actionState='none'), so the card never shows a naked section header over dead
+   space (same hide-empty-surfaces principle as the pin bar above). Shows automatically
+   once a real action-item feed populates catchUp.current.actionItems. */
+[data-cv6] .caitems.is-none { display:none; }
+
+/* Catch-up card footer is a 3-way switch (catchUp.footerState): 'none' = caught up (nothing),
+   'actions' = the suggested-action buttons, 'reply' = the inline reply composer. The buttons
+   show only on 'actions'; the composer only on 'reply'. */
+[data-cv6] .csugg.is-none, [data-cv6] .csugg.is-reply, [data-cv6] .csugg.is-adding, [data-cv6] .csugg.is-added, [data-cv6] .csugg.is-working { display:none; }
+/* display lives here (NOT inline) so the is-none/is-actions hide can win — an inline
+   display:flex would override the stylesheet and the composer would never hide. */
+[data-cv6] .creply { display:flex; flex-direction:column; gap:9px; }
+[data-cv6] .creply.is-none, [data-cv6] .creply.is-actions, [data-cv6] .creply.is-adding, [data-cv6] .creply.is-added, [data-cv6] .creply.is-working { display:none; }
+[data-cv6] .creply-input::placeholder { color:var(--faint); }
+/* Add-to-Tracker status (Patrik 2026-06-25): the card itself reports the action — 'adding'
+   shows a spinner the instant the button is tapped (immediate feedback, no waiting on the
+   network), then 'added' flips to a check + "Added to <tracker>" before the card clears. Two
+   more footerState values join the 3-way switch; display lives in CSS so the is-* hide wins. */
+[data-cv6] .cstat { display:none; align-items:center; justify-content:center; gap:9px; }
+[data-cv6] .cstat.is-adding, [data-cv6] .cstat.is-added, [data-cv6] .cstat.is-working { display:flex; }
+[data-cv6] .cstat-spin { display:none; }
+[data-cv6] .cstat-spin.is-adding, [data-cv6] .cstat-spin.is-working { display:inline-flex; animation:spin 1.05s linear infinite; color:var(--accent); }
+[data-cv6] .cstat-check { display:none; }
+[data-cv6] .cstat-check.is-added { display:inline-flex; color:var(--success); }
+/* Recently active (Patrik 2026-06-25): hide the whole section when there is no recent activity. */
+[data-cv6] .recentsec.is-none { display:none; }
+
+/* Home resting digest (loop R4): replaces the dead "No active goal" void when no room /
+   goal is open. Reuses the rail's `recent` rows at reading size in a centered column.
+   Top 6 only — the pane is a springboard, not an archive. */
+[data-cv6] .restcol { width:min(560px, 86%); margin:auto; }
+[data-cv6] .restcol .restlist.is-none { display:none; }
+[data-cv6] .restcol .restempty.is-has { display:none; }
+[data-cv6] .restcol .restrow { height:auto; min-height:54px; border:1px solid var(--hair); border-radius:12px; background:var(--surface); margin-bottom:8px; padding:10px 16px; }
+[data-cv6] .restcol .restrow .rprev { display:block; margin-top:2px; font-size:11px; color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6] .restcol .restrow .rprev:empty { display:none; }
+[data-cv6] .restcol .restrow:hover { background:var(--surface-hover); }
+[data-cv6] .restcol .restrow .rsub { font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6] .restcol .restrow .rtype { flex:none; }
+[data-cv6] .rest-hint { font-size:12px; color:var(--faint); text-align:center; margin-top:16px; }
+
+/* col3 quick reply room: the "no messages yet" hint shows only when the thread is empty. */
+[data-cv6] .convo-empty.is-has { display:none; }
+
+/* Catch-up card: an attachment-delivery message (contentState='file') swaps the text
+   summary for the file chip + Review below, so hide the summary paragraph on file cards
+   (otherwise the filename shows twice). Text cards (is-text) keep the summary. */
+[data-cv6] .csum.is-file { display:none; }
+/* Desktop Catch Up as a swipeable card deck (Patrik, 2026-06-25): header arrows step through
+   the deck; faint backings peek behind the front card so it reads as a stack. Backings hide
+   when only one card remains (.custack.is-none). */
+[data-cv6] .cuarrow { width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; border:1px solid var(--hair); background:var(--surface-2); color:var(--fg);
+  cursor:pointer; flex:none; transition:background .12s ease, border-color .12s ease; }
+[data-cv6] .cuarrow:hover, [data-cv6] .cuarrow:active { background:var(--surface-3, var(--surface-2)); border-color:var(--accent); color:var(--accent); }
+[data-cv6] .custack { position:relative; }
+[data-cv6] .custack > .card { position:relative; z-index:3; }
+/* Full card-size backings offset DOWN (and a touch right) so their bottom edges step out
+   below the front card as two clear stepped lines, reading unmistakably as a deck. Darker
+   than the front card with a visible hairline + tight shadow so the steps read against the
+   dark ground. Down-dominant because the catch column clips horizontal overflow. */
+[data-cv6] .custack-back { position:absolute; inset:0; border-radius:16px;
+  background:var(--surface); border:1px solid var(--hair); box-shadow:0 5px 13px -3px rgba(0,0,0,.5); }
+[data-cv6] .custack .b1 { transform:translate(6px,16px); z-index:1; }
+[data-cv6] .custack .b2 { transform:translate(12px,32px); z-index:0; }
+[data-cv6] .custack.is-none .custack-back { display:none; }
+/* Catch Up column visibility (Patrik 2026-06-27): hide the whole column when nothing needs
+   you (colState='none') so Rooms + Conversation fill the space; slide it in once when the
+   first new item lands ('in'); 'has' = present and settled (no animation on later ticks).
+   The :is(.is-in,.is-has) display rule restores the column's flex layout when shown — it
+   must out-specify the base `.catch{display:flex}` and the .is-none hide. */
+[data-cv6][data-screen="home-desktop"] .catch.is-none { display:none; }
+[data-cv6][data-screen="home-desktop"] .catch.is-in,
+[data-cv6][data-screen="home-desktop"] .catch.is-has { display:flex; }
+[data-cv6][data-screen="home-desktop"] .catch.is-in { animation:catchcol-in .42s cubic-bezier(.22,1,.36,1) both; }
+@keyframes catchcol-in { from { opacity:0; transform:translateX(-24px); } to { opacity:1; transform:translateX(0); } }
+/* Home desktop: projects fan open to their missions (matches the Chat rail tree). */
+[data-cv6][data-screen="home-desktop"] .projrow { cursor:pointer; }
+[data-cv6][data-screen="home-desktop"] .projcaret { transition:transform .18s cubic-bezier(.4,0,.2,1); }
+[data-cv6][data-screen="home-desktop"] .projcaret.is-open { transform:rotate(90deg); }
+[data-cv6][data-screen="home-desktop"] .misslist { margin:0 0 4px 28px; border-left:1px solid var(--divider); padding-left:6px; }
+[data-cv6][data-screen="home-desktop"] .misslist.is-closed { display:none; }
+[data-cv6][data-screen="home-desktop"] .missmore.is-none { display:none; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow { padding-top:7px; padding-bottom:7px; cursor:pointer; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow .rn { font-size:13px; color:var(--muted); }
+/* Rail recent rows: the context label yields before the room name does — names were
+   truncating ("Ambition M...") while the label kept full width (loop R18). */
+/* The 300px rail is the one place a filled pill costs more than it gives: the chip is
+   ~20px wider than the plain "Agent room" text it replaced, and every pixel comes out
+   of the room NAME, which is the row's actual content (five of thirteen names started
+   truncating — the exact regression loop R18 fixed once already). So the rail states the
+   same word in the same tone at text weight: no fill, no padding, no letter-spacing tax.
+   The filled chip stays on the wide surfaces (mobile cards, the desktop digest). */
+[data-cv6][data-screen="home-desktop"] .recentrow .rtype-rail {
+  max-width:72px; flex:0 1 auto; overflow:hidden; text-overflow:clip;
+  margin-left:8px; padding:0; background:none; font-size:9.5px; letter-spacing:.04em;
+}
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on { background:var(--accent-weak); }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on .rn { color:var(--fg); font-weight:600; }
+[data-cv6][data-screen="home-desktop"] .missmore { padding:7px 12px; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d1 { padding-left:4px; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d2 { padding-left:16px; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow .projcaret.is-none { display:none; }
+/* Fix 1 (R-ROOMTREE-2): Caret hit zone -- 28x28px target, caret-only hover highlight */
+[data-cv6] .caretbtn { display:flex; align-items:center; justify-content:center; flex:none; width:28px; height:28px; border-radius:4px; cursor:pointer; }
+[data-cv6] .caretbtn:hover, [data-cv6] .caretbtn:active { background:rgba(255,255,255,.10); }
+[data-cv6] .caretbtn:has(.projcaret.is-none) { visibility:hidden; }
+[data-cv6] .caretbtn:has(.chev.is-none) { visibility:hidden; }
+[data-cv6][data-screen^="organize"] .trow.is-d1 .caretbtn { visibility:hidden; }
+/* Fix 2 (R-ROOMTREE-2): Depth rail on home d2 missrows */
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d2 { position:relative; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d2::before { content:''; position:absolute; left:4px; top:0; bottom:0; width:1px; background:rgba(255,255,255,.10); pointer-events:none; }
+/* Fix 3 (R-ROOMTREE-2): Folder dot tint colors (project tint passed as dot status for folder nodes) */
+[data-cv6] .sdot.is-violet { background:var(--violet-400); }
+[data-cv6] .sdot.is-pink   { background:var(--pink-400); }
+[data-cv6] .sdot.is-teal   { background:var(--teal-400); }
+[data-cv6] .sdot.is-lime   { background:var(--lime-400); }
+[data-cv6] .sdot.is-amber  { background:var(--amber-400); }
+[data-cv6] .sdot.is-accent { background:var(--accent); }
+[data-cv6] .sdot.is-blue   { background:var(--blue-400); }
+[data-cv6] .sdot.is-green  { background:var(--green-400); }
+
+/* CV6 quick-reply composer: Cv6FullComposer portals CV4's real ThreadInputBar
+   (pill + command menu + attach + mic/send + slash + voice) into this host. The
+   ThreadInputBar brings its own padding + top border, so the host is neutralized
+   to avoid a double frame. The pill's inline styles resolve through CV4's --c-*
+   tokens, so we re-skin to the CV6 vibe simply by remapping those tokens in scope
+   (no per-element overrides). */
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] {
+  display:block; padding:0; border-top:none;
+  --c-bg: transparent;
+  --c-bg2: var(--surface);
+  --c-s1: var(--surface-2);
+  --c-s2: var(--surface);
+  --c-s3: var(--chip);
+  --c-border: var(--divider);
+  --c-border2: var(--hair);
+  --c-text: var(--fg);
+  --c-text2: var(--muted);
+  --c-muted: var(--muted);
+  --c-dim: var(--faint);
+  --c-accent: var(--accent);
+  --c-accent2: var(--accent);
+  --c-accent-bg: var(--accent-weak);
+  --c-chip-bg: var(--chip);
+}
+/* Attachment to the LEFT of the pill (CV4 keeps it on the right). */
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] [data-role="composer-actions"] { order:-1; }
+/* The send / mic icon color is a literal (#000) in CV4; make it read on the CV6 accent. */
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] button[title="Send"],
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] button[title="Start voice"],
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] button[title="End voice"] { color:#fff !important; }
+/* Breathing room: the newest message was crammed against the composer. */
+[data-cv6][data-screen="home-desktop"] .convo-thread { padding-bottom:26px !important; }
+/* ============================================================
+   M12 · MOBILE VISUAL DIRECTION + CLEANUP
+   The first screen should feel like a workspace, not a settings table. Recents
+   become editorial snap cards; specialists and projects get distinct homes.
+   ============================================================ */
+[data-cv6][data-screen="home-mobile"] .hbody { padding-top:0; }
+[data-cv6][data-screen="home-mobile"] .mresume { padding:8px 0 4px; }
+[data-cv6][data-screen="home-mobile"] .mhome-intro { padding:0 22px 16px; }
+[data-cv6][data-screen="home-mobile"] .mhome-intro .eyebrow { color:var(--accent); }
+[data-cv6][data-screen="home-mobile"] .mhome-intro h1 {
+  margin:8px 0 0;
+  font-family:var(--font-serif);
+  font-size:34px;
+  line-height:.96;
+  font-weight:400;
+  letter-spacing:-.025em;
+  color:var(--fg);
+}
+[data-cv6][data-screen="home-mobile"] .mhome-intro h1 em { color:var(--muted); font-weight:400; }
+/* Vertical resume list (Patrik 2026-08-06) — replaces the horizontal snap deck.
+   Same row anatomy as the desktop digest (.restcol .restrow): clock glyph, name +
+   parent, last line, age, chevron. Mobile only changes the sizing: 44px+ touch
+   target, one clamped preview line, and the tint moved to a left edge bar because
+   a full-bleed row has no card top to hang it off. */
+[data-cv6][data-screen="home-mobile"] .mresumelist {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin:0;
+  padding:0 22px 5px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  overflow:visible;
+}
+[data-cv6][data-screen="home-mobile"] .mresumelist,
+[data-cv6][data-screen="home-mobile"] .mresumecard {
+  touch-action:pan-x pan-y;
+}
+/* 20 rows max on mobile. Desktop's digest caps at 6 the same way (nth-child(n+7)),
+   so the cap stays a display concern and the shared `recent` array is the source. */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:nth-child(n+21) { display:none; }
+[data-cv6][data-screen="home-mobile"] .mresumecard {
+  position:relative;
+  min-height:56px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px 10px 16px;
+  border:1px solid var(--hair);
+  border-radius:12px;
+  background:var(--surface);
+  color:var(--fg);
+  box-shadow:none;
+  text-align:left;
+  font-family:var(--font-sans);
+  cursor:pointer;
+  overflow:hidden;
+}
+/* Tint rides the left edge of the row (was a tab on the card's top edge). */
+[data-cv6][data-screen="home-mobile"] .mresumecard::before {
+  content:"";
+  position:absolute;
+  left:0;
+  top:10px;
+  bottom:10px;
+  width:3px;
+  border-radius:0 3px 3px 0;
+  background:var(--accent);
+}
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-violet::before { background:var(--violet-400); }
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-pink::before { background:var(--pink-400); }
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-teal::before { background:var(--teal-400); }
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-lime::before { background:var(--lime-400); }
+[data-cv6][data-screen="home-mobile"] .mresumecard.is-amber::before { background:var(--amber-400); }
+[data-cv6][data-screen="home-mobile"] .mresume-clock { flex:none; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .mresumebody { flex:1; min-width:0; }
+[data-cv6][data-screen="home-mobile"] .mresume-top { display:flex; align-items:baseline; gap:8px; min-width:0; }
+[data-cv6][data-screen="home-mobile"] .mresumecard .rn {
+  flex:0 1 auto;
+  min-width:0;
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:-.01em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+[data-cv6][data-screen="home-mobile"] .mresumecard .rsub {
+  flex:none;
+  max-width:42%;
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:0;
+  text-transform:none;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+[data-cv6][data-screen="home-mobile"] .mresumecard .rprev {
+  display:block;
+  margin-top:2px;
+  font-size:11.5px;
+  line-height:1.35;
+  color:var(--faint);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+/* An empty preview must not reserve a line, or short rows sit unevenly tall. */
+[data-cv6][data-screen="home-mobile"] .mresumecard .rprev:empty { display:none; }
+[data-cv6][data-screen="home-mobile"] .mresumeage { flex:none; font-size:10.5px; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .mresume-chev { flex:none; color:var(--faint); }
+
+/* ── HOME AMPLIFY RESKIN (R2a, task 8431e715) ─────────────────────────────────────
+   Tokens from kit-FINAL-2026-06-20/tokens/themes.css — never eyeballed.
+   Three themes (dark/light/glass): all use var() tokens so they adapt automatically.
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* Active count pill in header */
+[data-cv6][data-screen="home-mobile"] .mhome-active-pill {
+  /* inline-block (not inline-flex) so the " active" text-node space renders correctly.
+     Flexbox collapses leading whitespace on text nodes as anonymous flex items. */
+  display:inline-block;
+  margin-top:10px;
+  line-height:24px;
+  padding:0 10px;
+  border-radius:var(--radius-pill,50px);
+  background:var(--accent);
+  color:#fff;
+  font-size:11.5px;
+  font-weight:700;
+  font-family:var(--font-sans);
+  letter-spacing:.01em;
+  white-space:nowrap;
+}
+/* Hide pill when activeCount is empty (no recent rooms) */
+[data-cv6][data-screen="home-mobile"] .mhome-active-pill:empty { display:none; }
+
+/* ── Avatar circle (all cards) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-av {
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:var(--surface-2);
+  border:1px solid var(--hair);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+  font-weight:700;
+  color:var(--fg);
+  flex:none;
+  flex-shrink:0;
+  text-transform:uppercase;
+}
+
+/* ── Name-line (all cards) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-nameline {
+  display:flex;
+  align-items:baseline;
+  min-width:0;
+}
+/* Quiet cards: the type chip sits inline after the room name, baseline-aligned, and
+   the NAME yields first (it already ellipsizes) so the chip is never the thing that
+   gets cut — a half-rendered "MISSIO" would be worse than a shortened room name. */
+[data-cv6][data-screen="home-mobile"] .mresume-nameline .rtype {
+  margin-left:8px;
+  /* Optically centred against the name, not baseline-aligned: the chip's own 3px
+     padding drops a baseline-aligned box ~2px low against a 14px name. */
+  align-self:center;
+}
+/* Hero card: the chip becomes the eyebrow ABOVE the display title — the same
+   eyebrow-over-headline move .mhome-intro uses. Inline would collide with a title
+   that wraps at 22px, and with the absolutely-positioned time at the top right. */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-nameline {
+  flex-direction:column;
+  align-items:flex-start;
+}
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-nameline .rtype {
+  order:-1;
+  margin:0 0 6px;
+  /* The nameline is a COLUMN on the hero, so the quiet rows' align-self:center
+     centres the chip horizontally — it floated to the middle of the card instead of
+     sitting flush with the title it labels. */
+  align-self:flex-start;
+  /* The hero card's own fill IS --accent-weak, which is exactly the AGENT chip's
+     background — so on an agent hero (the common case) the chip all but disappeared.
+     The tone stays in the TEXT; the box takes the neutral card surface so it reads in
+     every theme. Same reason the hero progress track below is a neutral, not accent. */
+  background:var(--surface);
+}
+
+/* ── Status row: hero only ── */
+[data-cv6][data-screen="home-mobile"] .mresume-statusrow {
+  display:none; /* hidden on quiet cards; hero overrides below */
+  align-items:center;
+  gap:5px;
+  margin-top:4px;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-herodot {
+  width:7px;
+  height:7px;
+  background:var(--status-working, var(--lime-400, #A3E635));
+  flex:none;
+  animation:statPulse 1.7s infinite;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-statusword {
+  font-size:11.5px;
+  font-weight:600;
+  color:var(--status-working, var(--lime-400, #A3E635));
+  text-transform:lowercase;
+}
+
+/* ── Progress bar: hero only, indeterminate (§5) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-bar {
+  display:none; /* hidden on quiet cards; hero overrides below */
+  height:5px;
+  border-radius:3px;
+  /* Track: semi-opaque white so it reads against the accent-weak hero background */
+  background:rgba(255,255,255,.12);
+  overflow:hidden;
+  margin-top:8px;
+}
+[data-cv6][data-screen="home-mobile"] .mresume-bar-fill {
+  height:100%;
+  border-radius:3px;
+  background:var(--accent);
+  /* Indeterminate shimmer: no percentage, no proportional fill — §5 */
+  width:40%;
+  animation:mresumeBarShimmer 1.8s ease-in-out infinite;
+}
+@keyframes mresumeBarShimmer {
+  0%   { transform:translateX(-200%); }
+  100% { transform:translateX(350%); }
+}
+/* Respect prefers-reduced-motion — keep bar visible but static */
+@media (prefers-reduced-motion:reduce) {
+  [data-cv6][data-screen="home-mobile"] .mresume-bar-fill { animation:none; width:60%; opacity:.6; }
+}
+
+/* ── Trail (time + unread dot, right side) ── */
+[data-cv6][data-screen="home-mobile"] .mresume-trail {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:4px;
+  flex:none;
+}
+/* Quiet cards: trail is row (dot + time side by side) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresume-trail {
+  flex-direction:row;
+  align-items:center;
+  gap:5px;
+  align-self:flex-start; /* align with name row, not stretched */
+}
+
+/* ── HERO CARD — :first-child ── */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child {
+  background:var(--accent-weak);
+  border-color:transparent;
+  border-left:3px solid var(--accent);
+  border-radius:14px;
+  align-items:flex-start;
+  padding:14px 14px 14px 16px;
+  gap:12px;
+  min-height:96px;
+}
+/* Suppress the ::before tint bar on hero — the left accent border is the identity signal */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child::before {
+  display:none;
+}
+/* Hero avatar: accent-filled circle */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-av {
+  width:42px;
+  height:42px;
+  font-size:18px;
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  flex-shrink:0;
+}
+/* Hero name: display size */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .rn {
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:-.025em;
+  line-height:1.15;
+  white-space:normal; /* allow wrap at display size */
+  overflow:visible;
+  text-overflow:clip;
+}
+/* Hero status row: show */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-statusrow {
+  display:flex;
+}
+/* Hero preview: slightly more visible */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .rprev {
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+/* Hero progress bar: show (indeterminate — §5: no percentage, no proportional fill) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-bar {
+  display:block;
+}
+/* Hero trail: time at top only, smaller; dot hidden (status handled by mresume-statusrow) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-trail {
+  position:absolute;
+  top:14px;
+  right:14px;
+  flex-direction:column;
+  align-items:flex-end;
+}
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresume-trail .newdot {
+  display:none; /* status conveyed by the hero status row instead */
+}
+/* Hero body: takes full width under the avatar */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:first-child .mresumebody {
+  flex:1;
+  min-width:0;
+  /* Account for absolute-positioned trail so text does not overlap it */
+  padding-right:38px;
+}
+
+/* ── QUIET CARDS — :not(:first-child) ── */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) {
+  align-items:center;
+}
+/* Quiet card avatar: smaller, surface-2 (already the default, but explicit for clarity) */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresume-av {
+  width:32px;
+  height:32px;
+  font-size:12px;
+}
+/* Quiet card name: standard size */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .rn {
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:-.01em;
+}
+/* Quiet: body is a column flex taking remaining space */
+[data-cv6][data-screen="home-mobile"] .mresumelist .mresumecard:not(:first-child) .mresumebody {
+  flex:1;
+  min-width:0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+[data-cv6][data-screen="home-mobile"] .rooms-directory-head { margin:12px 0 12px; }
+[data-cv6][data-screen="home-mobile"] .rooms-directory-head > span { display:flex; flex-direction:column; gap:3px; }
+[data-cv6][data-screen="home-mobile"] .rooms-directory-head small { color:var(--faint); font-size:12px; }
+[data-cv6][data-screen="home-mobile"] .newroom-btn {
+  min-height:38px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:0 13px;
+  border:1px solid var(--accent-weak);
+  border-radius:12px;
+  background:var(--accent-weak);
+  color:var(--accent);
+  font-family:var(--font-sans);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+[data-cv6][data-screen="home-mobile"] .room-directory { margin:0 22px 26px; }
+[data-cv6][data-screen="home-mobile"] .rooms.agent-rooms {
+  margin:0;
+  border-radius:16px;
+  background:linear-gradient(135deg,var(--surface),var(--surface-2));
+  box-shadow:0 14px 34px -30px rgba(0,0,0,.9);
+}
+[data-cv6][data-screen="home-mobile"] .rooms.agent-rooms .room:last-child { border-bottom:0; }
+[data-cv6][data-screen="home-mobile"] .room.agentrow { background:transparent; }
+[data-cv6][data-screen="home-mobile"] .project-list-head {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:22px 2px 10px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+[data-cv6][data-screen="home-mobile"] .project-list-head .mono { font-size:10px; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .project-list { display:flex; flex-direction:column; gap:8px; }
+[data-cv6][data-screen="home-mobile"] .room.projectroom {
+  width:100%;
+  height:58px;
+  box-sizing:border-box;
+  border:1px solid var(--hair);
+  border-radius:15px;
+  background:var(--surface);
+  color:var(--fg);
+  font-family:var(--font-sans);
+  text-align:left;
+  cursor:pointer;
+}
+[data-cv6][data-screen="home-mobile"] .project-glyph {
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+  background:var(--chip);
+}
+[data-cv6][data-screen="home-mobile"] .project-count { font-size:10px; color:var(--faint); }
+[data-cv6][data-screen="home-mobile"] .project-chev { color:var(--faint); flex:none; }
+[data-cv6][data-screen="home-mobile"] .smore-btn {
+  width:100%;
+  min-height:42px;
+  margin-top:10px;
+  border-radius:12px;
+  border:1px dashed var(--hair);
+  background:transparent;
+  color:var(--accent);
+  font-size:12.5px;
+  font-weight:700;
+  font-family:var(--font-sans);
+  cursor:pointer;
+}
+/* ── Swipe-to-clean (TOP-20 #8) — archive a room via left-swipe ──────────
+   Mirrors ChatLifecycle's SwipeFileRow mechanics (width shrink, not translate)
+   but delegated from homeWrapRef because TemplateScreen rows are innerHTML.
+   Wrap clips the 88px Archive panel behind the row; inner width drives the
+   reveal so the filename stays anchored and legible. Panel is only ever seen
+   because the inner shrinks from its right edge — at rest inner is 100% and
+   the row's own solid background hides the panel completely (Patrik 2026-08-07
+   save-panel fix: the covering layer must be opaque-geometrically, not just
+   the row's background — here inner is 100% wide so it geometrically covers
+   the panel even though its background is transparent and the row's background
+   does the visual covering). */
+.cv6-room-swipe-wrap {
+  position: relative;
+  overflow: hidden;
+  /* keep the list's own gap (mresumelist gap 8px) as the spacing, not the wrap */
+  touch-action: pan-y;
+}
+.cv6-room-swipe-archive-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 88px;
+  background: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+.cv6-room-swipe-archive-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font: 700 11px var(--font-sans, Inter, sans-serif);
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  padding: 0;
+}
+.cv6-room-swipe-archive-btn svg { display: block; }
+.cv6-room-swipe-archive-btn span { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+.cv6-room-swipe-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  box-sizing: border-box;
+  will-change: width;
+  touch-action: pan-y;
+  transition: width 0.22s ease;
+  /* geometric cover: even though background is transparent, the inner's
+     100% width div geometrically hides the panel behind it; the row inside
+     provides the visual opaque cover. */
+  background: transparent;
+}
+.cv6-room-swipe-wrap.is-open .cv6-room-swipe-inner {
+  width: calc(100% - 88px) !important;
+  box-shadow: 8px 0 16px -8px rgba(0,0,0,.45);
+}
+.cv6-room-swipe-wrap.is-dragging .cv6-room-swipe-inner {
+  transition: none !important;
+}
+.cv6-room-swipe-wrap.is-open .mresumecard,
+.cv6-room-swipe-wrap.is-open .recentrow,
+.cv6-room-swipe-wrap.is-open .restrow,
+.cv6-room-swipe-wrap.is-open .projrow,
+.cv6-room-swipe-wrap.is-open .missrow {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.cv6-room-swipe-wrap.is-archiving {
+  pointer-events: none;
+}
+/* Mobile cards ride the same wrap, but the wrap itself should carry the card's
+   radius so the panel's right edge is clipped to the same shape when closed.
+   At rest the row's own radius does the clipping; when open the wrap's radius
+   on the right side is still 12px, but the inner's right edge is square to mate
+   with the panel — the panel provides the right-side radius. */
+[data-cv6][data-screen="home-mobile"] .cv6-room-swipe-wrap {
+  border-radius: 12px;
+}
+[data-cv6][data-screen="home-mobile"] .cv6-room-swipe-archive-panel {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}

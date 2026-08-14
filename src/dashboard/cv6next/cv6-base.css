@@ -1,0 +1,1330 @@
+/* cv6-base.css -- tokens, reset, shared primitives, keyframes, animations */
+
+/* Corner CV6 — single import bundle for wired/ fill-in templates.
+   tokens + frame.css + screen primitives, all scoped under [data-cv6].
+   Import ONCE. Put data-cv6 + data-theme on the mount wrapper. Do NOT add
+   per-screen CSS — every screen uses only these classes + token vars. */
+
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap");
+
+[data-cv6] {
+  
+  --blue-400: #5B9BFF;   
+  --blue-500: #3B82F6;   
+  --blue-600: #2563EB;
+  --blue-700: #1D4ED8;
+  --blue-vivid: #0066FF; 
+  --blue-900: #003D99;
+
+  --amber-400: #FBBF24;  
+  --amber-700: #B45309;
+  --green-400: #46E0A8;  
+  --green-500: #34D399;  
+  --green-600: #10B981;  
+  --lime-400: #A3E635;   
+  --violet-400: #A855F7; 
+  --pink-400: #F472B6;   
+  --teal-400: #2DD4BF;   
+
+  --ink-950: #05080b;
+  --ink-900: #0A0A0B;
+  --ink-850: #161619;
+  --ink-800: #1c1c21;
+  --paper-50: #F6F6F7;
+  --paper-0:  #FFFFFF;
+  --paper-100:#F0F0F2;
+
+  
+  --ground: var(--ink-900);          
+  --surface: var(--ink-850);         
+  --surface-2: #1c1c21;              
+  --composer-solid: #131317;
+  --composer-card-solid: #202026;
+  --composer-control-solid: #292930;
+  --fg: #E9E9EC;                     
+  --muted: #9a9aa2;                  
+  --faint: #62626b;                  
+  --divider: rgba(255,255,255,.07);  
+  --hair: rgba(255,255,255,.09);     
+  --chip: rgba(255,255,255,.06);     
+
+  --accent: var(--blue-500);
+  --accent-weak: rgba(59,130,246,.16);
+  --warn: var(--amber-400);
+  --error: #F87171;
+  --error-weak: rgba(248,113,113,.16);
+  --success: var(--green-500);
+  --success-weak: rgba(52,211,153,.16);
+
+  --avatar: linear-gradient(135deg, #3B82F6, #1D4ED8); 
+
+  
+  --status-online: var(--green-500);
+  --status-working: var(--lime-400);
+  --status-attention: var(--amber-400);
+  --status-ready: var(--faint);
+}
+
+[data-cv6][data-theme="dark"] {
+  --ground: #0A0A0B;
+  --surface: #161619;
+  --surface-2: #1c1c21;
+  --composer-solid: #131317;
+  --composer-card-solid: #202026;
+  --composer-control-solid: #292930;
+  --fg: #E9E9EC;
+  --muted: #9a9aa2;
+  --faint: #62626b;
+  --divider: rgba(255,255,255,.07);
+  --hair: rgba(255,255,255,.09);
+  --chip: rgba(255,255,255,.06);
+  --accent: #3B82F6;
+  --accent-weak: rgba(59,130,246,.16);
+  --warn: #FBBF24;
+  --error: #F87171;
+  --error-weak: rgba(248,113,113,.16);
+  --success: #34D399;
+  --success-weak: rgba(52,211,153,.16);
+  --avatar: linear-gradient(135deg, #3B82F6, #1D4ED8);
+  --media-tile: linear-gradient(135deg,#26303f,#13161c);
+}
+
+[data-cv6][data-theme="light"] {
+  --ground: #F6F6F7;
+  --surface: #FFFFFF;
+  --surface-2: #F0F0F2;
+  --composer-solid: #FFFFFF;
+  --composer-card-solid: #F3F3F5;
+  --composer-control-solid: #E9E9ED;
+  --fg: #18181B;
+  --muted: #6a6a72;
+  --faint: #a0a0a8;
+  --divider: rgba(0,0,0,.07);
+  --hair: rgba(0,0,0,.08);
+  --chip: rgba(0,0,0,.04);
+  --accent: #0066FF;
+  --accent-weak: rgba(0,102,255,.1);
+  --warn: #B45309;
+  --error: #DC2626;
+  --error-weak: rgba(220,38,38,.12);
+  --success: #10B981;
+  --success-weak: rgba(16,185,129,.12);
+  --avatar: linear-gradient(135deg, #0066FF, #003D99);
+  --media-tile: linear-gradient(135deg,#EDEEF1,#E1E4E8);
+}
+
+[data-app-theme="light"] [data-cv6] .mmenu { background:rgba(0,0,0,.08); border-color:rgba(0,0,0,.12); }
+[data-app-theme="light"] [data-cv6] .edgehint { background:rgba(0,0,0,.06); border-color:rgba(0,0,0,.08); }
+
+[data-cv6][data-theme="glass"] {
+  
+  --ground:
+    radial-gradient(54% 40% at 22% 12%, rgba(74,116,148,.55), transparent 62%),
+    radial-gradient(50% 34% at 86% 20%, rgba(206,148,70,.34), transparent 58%),
+    radial-gradient(46% 34% at 72% 86%, rgba(46,96,128,.45), transparent 64%),
+    linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%); 
+  --surface: rgba(22,26,33,.55);
+  --surface-2: rgba(255,255,255,.08);
+  --composer-solid: #111820;
+  --composer-card-solid: #1B242E;
+  --composer-control-solid: #273340;
+  --fg: #F3F4F6;
+  --muted: #c0c4cc;
+  --faint: #828690;
+  --divider: rgba(255,255,255,.1);
+  --hair: rgba(255,255,255,.16);
+  --chip: rgba(255,255,255,.1);
+  --accent: #5B9BFF;
+  --accent-weak: rgba(91,155,255,.22);
+  --warn: #FBBF24;
+  --error: #F87171;
+  --error-weak: rgba(248,113,113,.16);
+  --success: #46E0A8;
+  --success-weak: rgba(70,224,168,.16);
+  --avatar: linear-gradient(135deg, #5B9BFF, #2563EB); 
+}
+
+
+[data-cv6][data-theme="glass"] .glassy {
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+}
+
+[data-cv6] {
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-mono: 'Space Mono', ui-monospace, 'SF Mono', monospace;
+
+  
+  --text-display: 30px;   
+  --text-title: 26px;     
+  --text-h: 16px;         
+  --text-body: 14px;      
+  --text-sm: 13px;        
+  --text-xs: 12px;        
+  --text-label: 11px;     
+  --text-mono: 10.5px;    
+
+  
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  
+  --leading-tight: 1.1;   
+  --leading-snug: 1.4;
+  --leading-body: 1.55;   
+
+  
+  --tracking-display: -0.025em;
+  --tracking-title: -0.02em;
+  --tracking-label: 0.1em;  
+}
+
+[data-cv6] {
+  
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 14px;
+  --space-5: 18px;
+  --space-6: 20px;
+  --space-7: 22px;
+  --space-8: 28px;
+
+  
+  --radius-pill: 10px;   
+  --radius-control: 11px;
+  --radius-button: 13px; 
+  --radius-card: 16px;   
+  --radius-tile: 18px;   
+  --radius-window: 16px; 
+  --radius-phone: 46px;  
+  --radius-round: 50%;   
+
+  
+  --border-hair: 1px;
+
+  
+  --shadow-card: 0 14px 36px -14px rgba(0,0,0,.5);
+  --shadow-deck: 0 18px 44px -14px rgba(0,0,0,.6);
+  --shadow-window: 0 30px 70px -28px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.06);
+  --shadow-phone: 0 34px 70px -24px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.06);
+  --ring-accent: 0 0 0 4px var(--accent-weak); 
+  --glow-online: 0 0 8px rgba(52,211,153,.6);  
+
+  
+  --ease-out: cubic-bezier(.22, 1, .36, 1); 
+  --dur-press: .12s; 
+  --dur-move: .2s; 
+  --dur-card: .4s; 
+  --press-scale: .94;     
+  --press-scale-lg: .97;  
+}
+
+/* ---- shared shell + pattern classes (from frame.css) ---- */
+[data-cv6] { margin:0; font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }[data-cv6] .stage { min-width:100%; width:max-content; min-height:100vh; box-sizing:border-box; padding:48px; background:#e8e6e2; display:flex; gap:44px; align-items:flex-start; }[data-cv6] .frame { flex:none; }[data-cv6] .flbl { font-size:12px; font-weight:600; letter-spacing:.02em; color:#34322e; margin-bottom:10px; }[data-cv6] .desktop { width:1440px; height:840px; border-radius:var(--radius-window); overflow:hidden; background:var(--ground); box-shadow:var(--shadow-window); display:flex; flex-direction:column; }[data-cv6] .phone { width:390px; height:844px; border-radius:var(--radius-phone); overflow:hidden; background:var(--ground); box-shadow:var(--shadow-phone); position:relative; }[data-cv6] .topbar { flex:none; display:flex; align-items:center; gap:22px; padding:14px 24px; border-bottom:1px solid var(--divider); }[data-cv6] .tgreet { font-size:20px; font-weight:700; letter-spacing:-.02em; color:var(--fg); white-space:nowrap; }[data-cv6] .toolname { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; letter-spacing:-.01em; color:var(--fg); white-space:nowrap; padding-right:4px; }[data-cv6] .toolname::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--accent); flex:none; }[data-cv6] .toolnav { flex:1; display:flex; justify-content:center; gap:7px; }[data-cv6] .ctile { width:60px; flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; padding:7px 0 6px; border-radius:var(--radius-control); background:var(--surface); border:1px solid var(--hair); color:var(--muted); }[data-cv6] .ctile.on { background:var(--accent); border-color:transparent; color:#fff; }[data-cv6] .clab { font-size:10px; font-weight:600; }[data-cv6] .ib { width:38px; height:38px; border-radius:11px; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); display:flex; align-items:center; justify-content:center; position:relative; }[data-cv6] .av { width:38px; height:38px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:600; }[data-cv6] .eyebrow { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }[data-cv6] .dot { width:8px; height:8px; border-radius:50%; flex:none; }[data-cv6] .mono { font-family:var(--font-mono); }[data-cv6] .mstatus { height:50px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 24px 6px; color:var(--fg); }[data-cv6] .mhdr { flex:none; height:60px; box-sizing:border-box; display:flex; align-items:center; gap:11px; padding:0 14px; border-bottom:1px solid var(--divider); }[data-cv6] .mhdr .mhtitle { flex:1; min-width:0; }[data-cv6] .mhdr .mhactions { display:flex; align-items:center; gap:8px; flex:none; }[data-cv6] .mhdr .mhactions .ib, [data-cv6] .mhdr > .ib { width:36px; height:36px; border-radius:10px; }[data-cv6] .mhdr .mttl { font-size:17px; font-weight:700; letter-spacing:-.01em; color:var(--fg); line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }[data-cv6] .mhdr .msub { font-size:12px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }[data-cv6] .mback { width:36px; height:36px; border-radius:10px; border:1px solid var(--hair); background:var(--surface); color:var(--fg); display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }[data-cv6] .mcomposer { position:absolute; left:0; right:0; bottom:0; border-top:1px solid var(--divider); padding:12px 16px; display:flex; align-items:center; gap:9px; background:var(--ground); }[data-cv6] .mmenu { position:absolute; right:18px; bottom:26px; z-index:8; display:flex; align-items:center; gap:11px; height:54px; padding:0 9px 0 17px; border:1px solid rgba(255,255,255,.16); border-radius:27px; background:rgba(13,17,23,.74); backdrop-filter:blur(16px) saturate(1.2); -webkit-backdrop-filter:blur(16px) saturate(1.2); box-shadow:0 16px 36px -10px rgba(0,0,0,.7); cursor:pointer; }[data-cv6] .mmenu .lines { display:flex; flex-direction:column; gap:4px; }[data-cv6] .mmenu .lines i { display:block; width:20px; height:2px; border-radius:2px; background:var(--fg); }[data-cv6] .mmenu .lines i:nth-child(2) { width:13px; }[data-cv6] .mmenu .mav { position:relative; width:38px; height:38px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:700; flex:none; }[data-cv6] .mmenu .mdot { position:absolute; top:0; right:0; width:12px; height:12px; border-radius:50%; background:var(--accent); border:2.5px solid #0d1117; }[data-cv6] .edgehint { position:absolute; top:50%; right:0; transform:translateY(-50%); z-index:7; display:flex; align-items:center; gap:7px; height:46px; padding:0 11px 0 13px; border-radius:23px 0 0 23px; background:rgba(13,17,23,.72); border:1px solid rgba(255,255,255,.14); border-right:none; backdrop-filter:blur(14px) saturate(1.2); -webkit-backdrop-filter:blur(14px) saturate(1.2); color:var(--muted); box-shadow:-8px 0 24px -8px rgba(0,0,0,.6); }[data-cv6] .edgehint .grip { width:4px; height:22px; border-radius:3px; background:var(--faint); flex:none; }[data-cv6] .navscrim { position:absolute; inset:0; z-index:8; background:rgba(4,6,9,.55); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); }[data-cv6] .navdrawer { position:absolute; top:0; left:0; bottom:0; z-index:9; width:300px; max-width:85%; background:var(--ground); border-right:1px solid var(--hair); box-shadow:26px 0 64px -16px rgba(0,0,0,.72); display:flex; flex-direction:column; }[data-cv6] .navrow { display:flex; align-items:center; gap:13px; padding:10px 14px; border-radius:12px; cursor:pointer; }[data-cv6] .navrow.on { background:var(--accent-weak); }[data-cv6] .navrow .ni { width:38px; height:38px; border-radius:11px; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6] .navrow.on .ni { background:var(--accent); border-color:transparent; color:#fff; }[data-cv6] .navrow .nl { flex:1; font-size:15px; font-weight:600; color:var(--fg); }[data-cv6] .phone::after { content:""; position:absolute; top:50%; right:1px; transform:translateY(-50%); width:5px; height:58px; border-radius:5px; background:rgba(142,142,152,.5); z-index:7; pointer-events:none; }[data-cv6] .phone.no-edge::after { display:none; }[data-cv6] .actdock { display:flex; align-items:center; gap:11px; height:56px; padding:0 10px 0 13px; border-radius:14px; background:var(--surface); border:1px solid var(--hair); box-shadow:var(--shadow-card); }[data-cv6] .actdock .ad-ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6] .actdock .ad-body { flex:1; min-width:0; }[data-cv6] .actdock .ad-title { font-size:13px; font-weight:600; color:var(--fg); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }[data-cv6] .actdock .ad-sub { font-size:11px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }[data-cv6] .actdock.is-float { position:absolute; left:12px; right:12px; z-index:9; height:50px; backdrop-filter:blur(16px) saturate(1.2); -webkit-backdrop-filter:blur(16px) saturate(1.2); box-shadow:0 12px 30px -10px rgba(0,0,0,.6); }[data-cv6] .actrail { display:flex; gap:10px; overflow:hidden; }[data-cv6] .ad-spin { animation:spin 1.05s linear infinite; }[data-cv6] .astat { display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; letter-spacing:.02em; padding:3px 9px; border-radius:7px; white-space:nowrap; }[data-cv6] .astat .sd { width:6px; height:6px; border-radius:50%; flex:none; }[data-cv6] .astat.is-live { color:var(--success); background:var(--success-weak); }[data-cv6] .astat.is-live .sd { background:var(--success); animation:statPulse 1.7s infinite; }[data-cv6] .astat.is-blocked { color:var(--warn); background:var(--warn-weak,rgba(251,191,36,.16)); }[data-cv6] .astat.is-blocked .sd { background:var(--warn); }[data-cv6] .astat.is-ready { color:var(--muted); background:var(--chip); }[data-cv6] .astat.is-ready .sd { background:var(--faint); }[data-cv6] .astat.is-done { color:var(--accent); background:var(--accent-weak); }[data-cv6] .astat.is-done .sd { background:var(--accent); }[data-cv6] .sdot { width:8px; height:8px; border-radius:50%; flex:none; display:inline-block; }[data-cv6] .sdot.is-live { background:var(--success); box-shadow:var(--glow-online); animation:statPulse 1.7s infinite; }[data-cv6] .sdot.is-blocked { background:var(--warn); }[data-cv6] .sdot.is-ready { background:var(--faint); }[data-cv6] .aspin { animation:spin 1.05s linear infinite; }[data-cv6] .assign { display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border-radius:11px; border:none; background:var(--accent); color:#fff; font-size:13px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }[data-cv6] .assign.is-quiet { background:var(--surface-2); color:var(--accent); border:1px solid var(--hair); }[data-cv6] .needs { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-weak); padding:3px 9px; border-radius:8px; white-space:nowrap; }[data-cv6] .needs-count { min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }[data-cv6] .kbd { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; border-radius:6px; border:1px solid var(--hair); background:var(--surface-2); color:var(--muted); font-family:var(--font-mono); font-size:12px; }[data-cv6] .kbd-row { display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color:var(--faint); }[data-cv6] .knav-sel, [data-cv6] .room[data-knav="sel"] { box-shadow:0 0 0 2px var(--accent) inset; }[data-cv6] .empty { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:12px; padding:40px 24px; }[data-cv6] .empty .e-ico { width:56px; height:56px; border-radius:16px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--success); }[data-cv6] .empty .e-t { font-size:16px; font-weight:600; color:var(--fg); }[data-cv6] .empty .e-s { font-size:13px; color:var(--muted); max-width:280px; line-height:1.5; }
+
+[data-cv6] .cv6-logo-loader {
+  box-sizing: border-box;
+  font-family: var(--font-sans);
+  color: var(--fg);
+  background: var(--ground);
+  --cv6-loader-base: var(--fg);
+  --cv6-loader-accent: var(--accent);
+  --cv6-loader-label: var(--muted);
+  --cv6-loader-mask: url('/cv6/assets/corner-logo-white.svg');
+}
+[data-cv6][data-theme="light"] .cv6-logo-loader,
+[data-app-theme="light"] [data-cv6] .cv6-logo-loader {
+  --cv6-loader-mask: url('/cv6/assets/corner-logo.svg');
+}
+[data-cv6] .cv6-logo-loader.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + var(--space-8))
+    calc(env(safe-area-inset-right, 0px) + var(--space-6))
+    calc(env(safe-area-inset-bottom, 0px) + var(--space-8))
+    calc(env(safe-area-inset-left, 0px) + var(--space-6));
+  overflow: hidden;
+}
+[data-cv6] .cv6-logo-loader.is-inline {
+  position: relative;
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + var(--space-8))
+    calc(env(safe-area-inset-right, 0px) + var(--space-6))
+    calc(env(safe-area-inset-bottom, 0px) + var(--space-8))
+    calc(env(safe-area-inset-left, 0px) + var(--space-6));
+  overflow: hidden;
+}
+[data-cv6] .cv6-logo-loader__inner {
+  width: min(280px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  text-align: center;
+}
+[data-cv6] .cv6-logo-loader__mark {
+  position: relative;
+  display: block;
+  width: clamp(138px, 30vw, 184px);
+  aspect-ratio: 110.72 / 24;
+  flex: none;
+}
+[data-cv6] .cv6-logo-loader__mark.is-glyph {
+  width: 20px;
+}
+[data-cv6] .cv6-logo-loader__mark.cv6-upload-loader { width:24px; }
+[data-cv6] .cv6-logo-loader__base,
+[data-cv6] .cv6-logo-loader__fill {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: var(--cv6-loader-base);
+  -webkit-mask: var(--cv6-loader-mask) center / contain no-repeat;
+  mask: var(--cv6-loader-mask) center / contain no-repeat;
+}
+[data-cv6] .cv6-logo-loader__base {
+  opacity: .24;
+}
+[data-cv6] .cv6-logo-loader__fill {
+  background: var(--cv6-loader-accent);
+  clip-path: inset(100% 0 0 0);
+  animation: cv6LogoFill 2.2s var(--ease-out) infinite;
+}
+[data-cv6] .cv6-logo-loader__label {
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--cv6-loader-label);
+}
+[data-cv6] .cv6-logo-loader__detail {
+  max-width: 30ch;
+  font-size: var(--text-xs);
+  line-height: var(--leading-body);
+  color: var(--muted);
+}
+[data-cv6] .cv6-logo-loader.is-compact {
+  min-height: 88px;
+  padding: var(--space-3);
+}
+[data-cv6] .cv6-logo-loader.is-compact .cv6-logo-loader__inner {
+  width: min(180px, 100%);
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+[data-cv6] .cv6-logo-loader.is-compact .cv6-logo-loader__mark {
+  width: 72px;
+}
+[data-cv6] .cv6-logo-loader.is-compact .cv6-logo-loader__label {
+  font-size: var(--text-xs);
+}
+/* Document readers stay fixed-light in every app theme. Their loader therefore
+   uses fixed paper ink/blue instead of inheriting near-white shell tokens. */
+[data-cv6] .cv6-logo-loader.is-paper,
+[data-cv6][data-screen^="organize"] .doc:not(.is-image):not(.is-photo):not(.is-video):not(.is-audio):not(.is-siteshot):not(.is-sitefile):not(.is-sitelive) .cv6-logo-loader {
+  --cv6-loader-base: #1a1a1a;
+  --cv6-loader-accent: #0066ff;
+  --cv6-loader-label: #6a6a72;
+  background: transparent;
+}
+[data-cv6] .cv6-logo-loader.is-delayed .cv6-logo-loader__fill {
+  animation: none;
+  clip-path: inset(0);
+  opacity: .72;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] .cv6-logo-loader__fill {
+    animation: none;
+    clip-path: inset(0);
+  }
+}
+
+/* ---- keyframes (global) ---- */
+@keyframes statPulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes barGlow { 0%,100%{opacity:.85;} 50%{opacity:1;} }
+@keyframes cv6LogoFill {
+  0% { clip-path: inset(100% 0 0 0); opacity:.72; }
+  72%, 88% { clip-path: inset(0); opacity:1; }
+  100% { clip-path: inset(0); opacity:.3; }
+}
+
+/* ============================================================
+   SCREEN PRIMITIVES — promoted from per-screen inline styles so
+   the look lives in ONE sheet and can never drift screen to screen.
+   ============================================================ */
+[data-cv6] [hidden] { display:none !important; }
+
+/* screen container (replaces the stripped .phone body wrapper) */
+[data-cv6].cv6-screen { width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; background:var(--ground); color:var(--fg); }
+[data-cv6] .scr { width:100%; height:100%; display:flex; flex-direction:column; background:var(--ground); color:var(--fg); }
+[data-cv6] .scrbody { flex:1; min-height:0; overflow:auto; }
+[data-cv6] .smore-btn.is-none { display:none !important; }
+
+/* One shell-level entrance vocabulary for every tool change. The keyed stage
+   always occupies the same flex slot and paints the theme ground, preventing
+   both white flashes and the one-frame height collapse between sibling tools. */
+[data-cv6] .cv6-screen-stage {
+  flex:1;
+  min-width:0;
+  min-height:0;
+  width:100%;
+  display:flex;
+  align-items:stretch;
+  overflow:hidden;
+  background:var(--ground);
+  animation:cv6ScreenEnter var(--dur-move) var(--ease-out) both;
+}
+[data-cv6] .cv6-screen-stage > * { flex:1; min-width:0; min-height:0; }
+@keyframes cv6ScreenEnter {
+  from { opacity:.58; transform:translateX(7px); }
+  to { opacity:1; transform:translateX(0); }
+}
+[data-cv6] .navscrim { animation:cv6NavScrimIn var(--dur-press) ease-out both; backdrop-filter:none; -webkit-backdrop-filter:none; }
+[data-cv6] .navdrawer {
+  left:auto;
+  right:0;
+  border-right:none;
+  border-left:1px solid var(--hair);
+  box-shadow:-26px 0 64px -16px rgba(0,0,0,.72);
+  animation:cv6NavDrawerIn var(--dur-move) var(--ease-out) both;
+}
+@keyframes cv6NavScrimIn { from { opacity:0; } to { opacity:1; } }
+@keyframes cv6NavDrawerIn { from { transform:translateX(18px); } to { transform:translateX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] .cv6-screen-stage,
+  [data-cv6] .navscrim,
+  [data-cv6] .navdrawer { animation:none; }
+}
+
+/* "real people only" assurance banner */
+[data-cv6] .assure { display:flex; align-items:center; gap:8px; margin:12px 16px 2px; padding:9px 11px; border:1px solid var(--hair); border-radius:11px; background:var(--surface-2); }
+[data-cv6] .assure svg { flex:none; }
+[data-cv6] .assure-t { flex:1; font-size:11.5px; color:var(--muted); line-height:1.4; }
+
+/* section header (eyebrow + count) */
+[data-cv6] .sec { display:flex; align-items:center; gap:8px; padding:14px 16px 8px; }
+[data-cv6] .sec.is-watching { padding-top:14px; }
+[data-cv6] .sec-n { font-family:var(--font-mono); font-size:10.5px; color:var(--faint); }
+
+/* email / ask row */
+[data-cv6] .erow { display:flex; gap:12px; padding:12px 16px; border-bottom:1px solid var(--divider); cursor:pointer; }
+[data-cv6] .erow:active { background:var(--surface-2); }
+[data-cv6] .erow.is-active { background:var(--accent-weak); }
+[data-cv6] .erow.is-muted { opacity:.72; }
+
+/* avatar (initials or icon) + per-contact tints */
+[data-cv6] .ava { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6] .ava.is-pink   { background:rgba(244,114,182,.18); color:#F8A8D0; }
+[data-cv6] .ava.is-green  { background:rgba(52,211,153,.20); color:var(--success); }
+[data-cv6] .ava.is-violet { background:rgba(139,124,246,.22); color:var(--violet-400); }
+
+/* row body */
+[data-cv6] .einfo { flex:1; min-width:0; }
+[data-cv6] .etop { display:flex; align-items:center; gap:8px; }
+[data-cv6] .esubj { flex:1; font-size:14.5px; font-weight:600; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6] .etime { font-family:var(--font-mono); font-size:10px; color:var(--faint); flex:none; }
+[data-cv6] .esnip { font-size:12.5px; color:var(--muted); line-height:1.45; margin-top:3px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+[data-cv6] .etags { display:flex; gap:6px; margin-top:8px; }
+
+/* skeleton (shared loading state) */
+@keyframes cv6shimmer { 0%{opacity:.5;} 50%{opacity:1;} 100%{opacity:.5;} }
+[data-cv6] .sk { border-radius:8px; background:var(--surface-2); animation:cv6shimmer 1.4s ease-in-out infinite; }
+
+/* "agent is working" typing dots (live feedback after you send) */
+@keyframes cv6dotpulse { 0%,60%,100%{opacity:.25;transform:translateY(0);} 30%{opacity:1;transform:translateY(-2px);} }
+[data-cv6] .cv6dot { width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block; animation:cv6dotpulse 1.2s ease-in-out infinite; }
+
+/* Live work progress strip — ONE bar that cycles through the agent's real steps.
+   No inline width => indeterminate sweep (working, no step yet); inline width =>
+   determinate fill that advances as steps complete. */
+[data-cv6] .cv6progtrack { height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden; position:relative; }
+[data-cv6] .cv6progfill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--accent),#6366F1); transition:width .4s ease; }
+[data-cv6] .cv6progfill:not([style]) { width:42%; animation:cv6progslide 1.3s ease-in-out infinite; }
+@keyframes cv6progslide { 0%{margin-left:-42%;} 100%{margin-left:100%;} }
+@keyframes cv6stepin { from{opacity:0;transform:translateY(3px);} to{opacity:1;transform:translateY(0);} }
+[data-cv6] .sk-row { display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--divider); }
+
+/* shared activity-dock badge + icon tint (is-:job.kind) — used by Command */
+[data-cv6] .ad-badge { font-size:10px; font-weight:700; padding:3px 7px; border-radius:7px; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6] .ad-badge.is-rec    { color:var(--error);   background:var(--error-weak); }
+[data-cv6] .ad-badge.is-agent  { color:var(--accent);  background:var(--accent-weak); }
+[data-cv6] .ad-badge.is-build  { color:var(--violet-400); background:rgba(139,124,246,.16); }
+[data-cv6] .ad-badge.is-review { color:var(--success); background:var(--success-weak); }
+[data-cv6] .ad-ico.is-rec    { background:rgba(248,113,113,.16); }
+[data-cv6] .ad-ico.is-agent  { background:var(--accent-weak); }
+[data-cv6] .ad-ico.is-build  { background:rgba(139,124,246,.16); }
+[data-cv6] .ad-ico.is-review { background:rgba(52,211,153,.18); }
+
+/* Command work buckets (R-CMD-BUCKETS 2026-07-18): job.kind = the task's real
+   lifecycle bucket. Same color semantics as the ledger's astat chips —
+   in-progress rides accent (astat.is-working), needs-you rides warn
+   (is-blocked), failed rides error, done rides success, proposed is the
+   neutral queued gray. The dot inherits currentColor from .ad-ico; only
+   moving work pulses. */
+[data-cv6] .ad-badge.is-proposed   { color:var(--muted);   background:var(--chip); }
+[data-cv6] .ad-badge.is-inprogress { color:var(--accent);  background:var(--accent-weak); }
+[data-cv6] .ad-badge.is-done       { color:var(--success); background:var(--success-weak); }
+[data-cv6] .ad-badge.is-blocked    { color:var(--warn);    background:var(--warn-weak,rgba(251,191,36,.16)); }
+[data-cv6] .ad-badge.is-failed     { color:var(--error);   background:var(--error-weak); }
+[data-cv6] .ad-ico.is-proposed   { background:var(--chip); color:var(--faint); }
+[data-cv6] .ad-ico.is-inprogress { background:var(--accent-weak); color:var(--accent); }
+[data-cv6] .ad-ico.is-done       { background:var(--success-weak); color:var(--success); }
+[data-cv6] .ad-ico.is-blocked    { background:var(--warn-weak,rgba(251,191,36,.16)); color:var(--warn); }
+[data-cv6] .ad-ico.is-failed     { background:var(--error-weak); color:var(--error); }
+[data-cv6] .ad-ico .ad-dot { width:10px; height:10px; border-radius:50%; background:currentColor; flex:none; }
+[data-cv6] .ad-ico.is-inprogress .ad-dot { animation:recPulse 1.4s infinite; }
+[data-cv6] .ad-ico.is-blocked .ad-dot { animation:recPulse 1.4s infinite; }
+
+/* ============================================================
+   data-mod TARGETS — per-item variation is a class swap, never inline.
+   The engine toggles is-<value> on the element; these rules own the look.
+   Reuse the base class + add is-<value> to a screen's markup. No inline
+   color/stroke defaults on anything that varies by data.
+   ============================================================ */
+
+/* status dot — reuse .sdot (frame.css has is-live/is-blocked/is-ready) + working.
+   State system v6 (design-system-2026-06-23 item 8): "working" is an accent ring,
+   visually distinct from green "live" — an agent actively running vs online. */
+[data-cv6] .sdot.is-working { background:var(--accent); box-shadow:0 0 0 3px var(--accent-weak); }
+[data-cv6] .sdot.is-done { background:var(--accent); }
+/* FIX D-sharp: three-state agent status dots. active=green (solid, no pulse), idle=gray. */
+[data-cv6] .sdot.is-active { background:var(--success); }
+[data-cv6] .sdot.is-idle   { background:var(--faint); }
+
+/* project / room folder tint — class drives the SVG stroke */
+[data-cv6] .folder { stroke:var(--muted); flex:none; }
+/* Generic base for rooms-rail rows. The templates scope .room/.rn per data-screen, but
+   the React surfaces (ChatDesktop/SupportDesktop/Search) carry no data-screen, so without
+   a generic rule .room had no flex (folder/icon stacked above the name) and .rn no flex/
+   ellipsis (name + status jammed, long names wrapped). Scoped rules still override these. */
+[data-cv6] .room { display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:10px; min-width:0; }
+[data-cv6] .rn { flex:1; min-width:0; font-size:14px; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6] .folder.is-violet { stroke:var(--violet-400); }
+[data-cv6] .folder.is-accent { stroke:var(--accent); }
+[data-cv6] .folder.is-pink   { stroke:var(--pink-400); }
+[data-cv6] .folder.is-teal   { stroke:var(--teal-400); }
+[data-cv6] .folder.is-lime   { stroke:var(--lime-400); }
+[data-cv6] .folder.is-amber  { stroke:var(--amber-400); }
+
+/* catch-up source glyph — tile bg + icon color (inner svg uses stroke=currentColor) */
+[data-cv6] .glyph { display:flex; align-items:center; justify-content:center; flex:none; border-radius:9px; background:var(--chip); color:var(--muted); }
+[data-cv6] .glyph.is-email   { background:rgba(244,114,182,.16); color:var(--pink-400); }
+[data-cv6] .glyph.is-agent   { background:var(--accent-weak); color:var(--accent); }
+[data-cv6] .glyph.is-review  { background:rgba(139,124,246,.18); color:var(--violet-400); }
+[data-cv6] .glyph.is-support { background:var(--success-weak); color:var(--success); }
+[data-cv6] .glyph.is-tracker { background:var(--accent-weak); color:var(--accent); }
+
+/* catch-up kind chip */
+[data-cv6] .tag-pill { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6] .tag-pill.is-email   { color:var(--pink-400);   background:rgba(244,114,182,.16); }
+[data-cv6] .tag-pill.is-agent   { color:var(--accent);     background:var(--accent-weak); }
+[data-cv6] .tag-pill.is-review  { color:var(--violet-400); background:rgba(139,124,246,.18); }
+[data-cv6] .tag-pill.is-support { color:var(--success);    background:var(--success-weak); }
+[data-cv6] .tag-pill.is-tracker { color:var(--accent);     background:var(--accent-weak); }
+/* Room-row type chip (contract §1.4, 2026-08-10). Same .tag-pill metrics as every
+   other CV6 chip — no new scale. Tones follow the language the product already speaks:
+   PROJECT is the violet the project folder glyph and search's project glyph use; AGENT
+   is the accent the "Agent rooms" group tag uses; MISSION takes teal, the one identity
+   left that neither neighbour owns. */
+[data-cv6] .tag-pill.is-project { color:var(--violet-400); background:rgba(139,124,246,.16); }
+[data-cv6] .tag-pill.is-mission { color:var(--teal-400);   background:rgba(45,212,191,.16); }
+/* The chip never grows into the room name and never wraps. */
+[data-cv6] .rtype { flex:none; white-space:nowrap; align-self:center; }
+
+/* mission status pill (.stp) */
+[data-cv6] .stp { font-size:10px; font-weight:700; padding:3px 8px; border-radius:7px; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6] .stp.is-live  { color:var(--success); background:var(--success-weak); }
+[data-cv6] .stp.is-ready { color:var(--muted);   background:var(--chip); }
+[data-cv6] .stp.is-done  { color:var(--accent);  background:var(--accent-weak); }
+
+/* checklist row state (goal column) */
+[data-cv6] .chkrow.is-done .chk-label { text-decoration:line-through; color:var(--muted); }
+
+
+/* ============================================================
+   AGENT-CHAT ELEMENT KIT — the shared vocabulary for how an agent
+   speaks (turn/bubble, comm-blocks, summary, data, email, gallery,
+   media, code, choices, goal/step thread, review artifacts). GLOBAL
+   under [data-cv6] because these elements are reused across Chat,
+   Support, Command, Live Scribe. All is-<value> driven already.
+   Source: ui_kits/agent-chat/chat.css
+   ============================================================ */
+[data-cv6] .cc { background:var(--ground); border-radius:var(--radius-phone); border:1px solid var(--hair); padding:22px 20px; display:flex; flex-direction:column; gap:18px; box-sizing:border-box; }[data-cv6] .cc-cap { display:flex; align-items:baseline; gap:10px; margin-bottom:2px; }[data-cv6] .cc-cap .k { font-size:11px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); flex:none; }[data-cv6] .cc-cap .d { font-size:12.5px; color:var(--muted); line-height:1.5; }[data-cv6] .turn { display:flex; gap:11px; align-items:flex-start; }[data-cv6] .turn .tav { width:34px; height:34px; border-radius:10px; background:rgba(52,211,153,.2); color:var(--success); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6] .turn .tbody { flex:1; min-width:0; display:flex; flex-direction:column; gap:9px; }[data-cv6] .turn .tname { display:flex; align-items:center; gap:8px; }[data-cv6] .turn .tname b { font-size:13.5px; font-weight:600; color:var(--fg); }[data-cv6] .turn .tname .tt { font-family:var(--font-mono); font-size:10.5px; color:var(--faint); }[data-cv6] .bubble { background:var(--surface); border:1px solid var(--hair); border-radius:15px; border-top-left-radius:5px; padding:11px 14px; font-size:13.5px; line-height:1.55; color:var(--fg); max-width:64ch; }[data-cv6] .umsg { align-self:flex-end; max-width:min(62%,60ch); background:var(--accent); color:#fff; border-radius:15px; border-top-right-radius:5px; padding:10px 13px; font-size:13.5px; line-height:1.45; }[data-cv6] .cblk { border:1px solid var(--hair); border-radius:14px; padding:13px 14px; background:var(--surface); }[data-cv6] .cblk-h { display:flex; align-items:center; gap:8px; margin-bottom:9px; }[data-cv6] .cblk-h .ci { width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6] .cblk-h .ct { font-size:12px; font-weight:700; letter-spacing:.04em; }[data-cv6] .cblk-b { font-size:13.5px; line-height:1.55; color:var(--fg); }[data-cv6] .cblk.is-success { border-color:var(--success-weak); background:linear-gradient(180deg,var(--success-weak),transparent); }[data-cv6] .cblk.is-success .ci { background:var(--success-weak); color:var(--success); }[data-cv6] .cblk.is-success .ct { color:var(--success); }[data-cv6] .cblk.is-question { border-color:var(--accent-weak); background:linear-gradient(180deg,var(--accent-weak),transparent); }[data-cv6] .cblk.is-question .ci { background:var(--accent-weak); color:var(--accent); }[data-cv6] .cblk.is-question .ct { color:var(--accent); }[data-cv6] .cblk.is-snag { border-color:rgba(251,191,36,.28); background:linear-gradient(180deg,rgba(251,191,36,.12),transparent); }[data-cv6] .cblk.is-snag .ci { background:rgba(251,191,36,.18); color:var(--warn); }[data-cv6] .cblk.is-snag .ct { color:var(--warn); }[data-cv6] .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:11px; }[data-cv6] .chip-btn { height:34px; padding:0 13px; border-radius:9px; border:1px solid var(--accent-weak); background:var(--surface); color:var(--accent); font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }[data-cv6] .chip-btn.is-primary { background:var(--accent); border-color:transparent; color:#fff; }[data-cv6] .chip-btn.is-rec::after { content:"Recommended"; font-size:10px; font-weight:700; opacity:.7; margin-left:2px; }[data-cv6] .cpath { display:flex; align-items:center; gap:8px; margin-top:10px; padding:9px 11px; border:1px solid var(--hair); border-radius:10px; background:var(--surface-2); font-size:12px; color:var(--muted); }[data-cv6] .csum { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; }[data-cv6] .csum-h { display:flex; align-items:center; gap:8px; padding:13px 15px 0; }[data-cv6] .csum-h .se { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--accent); }[data-cv6] .csum-body { padding:12px 15px; display:flex; flex-direction:column; gap:9px; }[data-cv6] .sbullet { display:flex; gap:10px; align-items:flex-start; font-size:13px; line-height:1.5; color:var(--fg); }[data-cv6] .sbullet .sd { width:6px; height:6px; border-radius:50%; background:var(--accent); flex:none; margin-top:7px; }[data-cv6] .sbullet.is-warn { color:var(--warn); }[data-cv6] .sbullet.is-warn .sd { background:var(--warn); }[data-cv6] .cact { border-top:1px solid var(--divider); padding:12px 15px; }[data-cv6] .aitem { display:flex; align-items:flex-start; gap:9px; font-size:13px; color:var(--fg); line-height:1.4; padding:5px 0; }[data-cv6] .aitem .ck { width:18px; height:18px; border-radius:5px; border:2px solid var(--accent); flex:none; margin-top:1px; }[data-cv6] .aitem.is-done .ck { background:var(--accent); border-color:transparent; }[data-cv6] .cdata { border:1px solid var(--hair); border-radius:14px; background:var(--surface); padding:13px 14px; }[data-cv6] .cdata-h { display:flex; align-items:center; gap:8px; margin-bottom:11px; }[data-cv6] .cdata-h .dt { font-size:13.5px; font-weight:600; color:var(--fg); flex:1; }[data-cv6] .toggle { display:flex; gap:3px; background:var(--surface-2); border-radius:9px; padding:3px; }[data-cv6] .toggle button { height:26px; padding:0 12px; border-radius:6px; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }[data-cv6] .toggle button.on { background:var(--accent); color:#fff; }[data-cv6] .tbl { border:1px solid var(--hair); border-radius:10px; overflow:hidden; }[data-cv6] .tbl .tr { display:grid; gap:6px; padding:9px 12px; border-bottom:1px solid var(--divider); font-size:12.5px; color:var(--fg); }[data-cv6] .tbl .tr:last-child { border-bottom:none; }[data-cv6] .tbl .tr.th { background:var(--surface-2); font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }[data-cv6] .tbl .tr.tf { background:var(--surface-2); font-weight:700; }[data-cv6] .tbl .num { text-align:right; font-family:var(--font-mono); }[data-cv6] .tbl .pos { color:var(--accent); }[data-cv6] .bars { display:flex; align-items:flex-end; gap:10px; height:120px; padding:10px 4px 0; }[data-cv6] .bars .bar { flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; height:100%; justify-content:flex-end; }[data-cv6] .bars .bar i { width:100%; max-width:34px; border-radius:6px 6px 0 0; background:linear-gradient(180deg,var(--accent),#6366F1); display:block; }[data-cv6] .bars .bar span { font-size:10.5px; color:var(--muted); }[data-cv6] .cmail { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; }[data-cv6] .cmail-h { display:flex; align-items:center; gap:11px; padding:13px 14px; border-bottom:1px solid var(--divider); }[data-cv6] .cmail-h .ma { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:none; }[data-cv6] .cmail-h .mfrom { font-size:13px; font-weight:600; color:var(--fg); }[data-cv6] .cmail-h .msub { font-size:11.5px; color:var(--muted); margin-top:1px; }[data-cv6] .cmail-tag { font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; flex:none; color:var(--pink-400); background:rgba(244,114,182,.16); }[data-cv6] .cmail-q { padding:13px 14px; font-size:13px; line-height:1.6; color:var(--fg); border-left:2px solid var(--accent-weak); margin:13px 14px; background:var(--surface-2); border-radius:0 10px 10px 0; }[data-cv6] .cmail-f { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--divider); }[data-cv6] .cgal { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; border-radius:12px; overflow:hidden; max-width:340px; }[data-cv6] .cgal .ph { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--media-tile); display:flex; align-items:center; justify-content:center; }[data-cv6] .cgal .ph.span2 { grid-column:span 2; aspect-ratio:2; }[data-cv6] .cgal .ph .more { position:absolute; inset:0; background:rgba(4,6,9,.62); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:700; }[data-cv6] .gal-cap { display:flex; align-items:center; gap:7px; margin-top:9px; font-size:12px; color:var(--muted); }[data-cv6] .caudio { display:flex; align-items:center; gap:12px; border:1px solid var(--hair); border-radius:14px; background:var(--surface); padding:11px 13px; }[data-cv6] .caudio .play { width:40px; height:40px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; border:none; cursor:pointer; }[data-cv6] .wave { display:flex; align-items:center; gap:2.5px; height:30px; flex:1; }[data-cv6] .wave i { width:3px; border-radius:2px; background:var(--accent); opacity:.5; }[data-cv6] .wave i.on { opacity:1; }[data-cv6] .cvideo { position:relative; border-radius:14px; overflow:hidden; max-width:360px; border:1px solid var(--hair); background:var(--media-tile); aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; }[data-cv6] .cvideo .vplay { width:54px; height:54px; border-radius:50%; background:rgba(255,255,255,.16); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); border:1.5px solid rgba(255,255,255,.4); display:flex; align-items:center; justify-content:center; }[data-cv6] .cvideo .vmeta { position:absolute; left:12px; bottom:11px; right:12px; display:flex; align-items:center; gap:8px; }[data-cv6] .vchip { font-family:var(--font-mono); font-size:10.5px; color:#fff; background:rgba(4,6,9,.6); padding:3px 7px; border-radius:6px; }[data-cv6] .ccode { border:1px solid var(--hair); border-radius:12px; overflow:hidden; background:#0c0f14; }[data-cv6] .ccode-h { display:flex; align-items:center; gap:9px; padding:9px 12px; border-bottom:1px solid rgba(255,255,255,.07); }[data-cv6] .ccode-h .fn { font-family:var(--font-mono); font-size:11.5px; color:#cbd2dc; flex:1; }[data-cv6] .ccode-h .lang { font-family:var(--font-mono); font-size:10px; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; }[data-cv6] .ccode-h .cbtn { width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.04); color:#9aa3af; display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6] .ccode pre { margin:0; padding:13px 14px; overflow:hidden; font-family:var(--font-mono); font-size:11.5px; line-height:1.7; color:#c9d1d9; }[data-cv6] .ccode .cl { color:#8b949e; }[data-cv6] .ccode .kw { color:#ff7b72; }[data-cv6] .ccode .fnname { color:#d2a8ff; }[data-cv6] .ccode .st { color:#a5d6ff; }[data-cv6] .ccode .nm { color:#79c0ff; }[data-cv6] .codechip { display:flex; align-items:center; gap:10px; border:1px solid var(--hair); border-radius:11px; background:var(--surface); padding:10px 12px; cursor:pointer; }[data-cv6] .codechip .cg { width:32px; height:32px; border-radius:8px; background:var(--media-tile); border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6] .thinking { display:inline-flex; align-items:center; gap:8px; padding:9px 13px; border-radius:15px; border-top-left-radius:5px; background:var(--surface); border:1px solid var(--hair); }[data-cv6] .thinking .dot3 { display:flex; gap:4px; }[data-cv6] .thinking .dot3 i { width:6px; height:6px; border-radius:50%; background:var(--muted); animation:think 1.2s infinite; }[data-cv6] .thinking .dot3 i:nth-child(2) { animation-delay:.18s; }[data-cv6] .thinking .dot3 i:nth-child(3) { animation-delay:.36s; }[data-cv6] .frowm { display:flex; align-items:center; gap:11px; padding:9px 11px; border:1px solid var(--hair); border-radius:11px; background:var(--surface-2); }[data-cv6] .frowm .fg { width:36px; height:36px; border-radius:9px; background:var(--media-tile); display:flex; align-items:center; justify-content:center; flex:none; }[data-cv6] .pillbtn { height:30px; padding:0 12px; border-radius:8px; border:none; background:var(--accent-weak); color:var(--accent); font-size:11.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; flex:none; }[data-cv6] .cartifact { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; }[data-cv6] .cart-canvas { position:relative; aspect-ratio:16/10; background:var(--media-tile); display:flex; align-items:center; justify-content:center; }[data-cv6] .cart-canvas.is-shot { background:#fbfbfa; }[data-cv6] .cart-pin { position:absolute; width:24px; height:24px; border-radius:50% 50% 50% 3px; background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -4px rgba(0,0,0,.5); transform:rotate(0); }[data-cv6] .cart-bar { display:flex; align-items:center; gap:10px; padding:11px 13px; border-top:1px solid var(--divider); }[data-cv6] .cart-kind { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px; border-radius:6px; color:var(--accent); background:var(--accent-weak); flex:none; }[data-cv6] .review-btn { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:9px; border:none; background:var(--accent); color:#fff; font-size:12px; font-weight:600; font-family:var(--font-sans); cursor:pointer; flex:none; }[data-cv6] .cart-omni { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--divider); }[data-cv6] .cart-omni .lights { display:flex; gap:5px; }[data-cv6] .cart-omni .lights i { width:9px; height:9px; border-radius:50%; background:var(--hair); }[data-cv6] .cart-omni .url { flex:1; font-family:var(--font-mono); font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }[data-cv6] .replyto { display:flex; align-items:center; gap:9px; padding:8px 11px; border:1px dashed var(--hair); border-radius:11px; background:var(--surface-2); }[data-cv6] .replyto .q { width:3px; align-self:stretch; border-radius:2px; background:var(--accent); flex:none; }[data-cv6] .gthread { display:flex; flex-direction:column; }[data-cv6] .gthead { display:flex; align-items:center; gap:11px; padding-bottom:14px; margin-bottom:6px; border-bottom:1px solid var(--divider); }[data-cv6] .gthead .gtico { width:34px; height:34px; border-radius:10px; background:var(--accent-weak); display:flex; align-items:center; justify-content:center; flex:none; color:var(--accent); }[data-cv6] .gthead .gttitle { font-size:15px; font-weight:700; letter-spacing:-.01em; color:var(--fg); flex:1; min-width:0; }[data-cv6] .gthead .gttitle .gk { color:var(--muted); font-weight:600; }[data-cv6] .gtcount { font-family:var(--font-mono); font-size:11px; color:var(--muted); white-space:nowrap; }[data-cv6] .gtbar { display:flex; gap:3px; }[data-cv6] .gtbar i { width:18px; height:4px; border-radius:2px; background:var(--surface-2); transition:background .4s ease; }[data-cv6] .gtbar i.done { background:var(--success); }[data-cv6] .gtbar i.active { background:var(--accent); }[data-cv6] .gtprog { height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden; }[data-cv6] .gtprog > i { display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--accent),#6366F1); width:0; transition:width .6s cubic-bezier(.4,0,.2,1); }[data-cv6] .gstep { display:flex; gap:12px; align-items:flex-start; padding:9px 0; position:relative; }[data-cv6] .gstep .gsrail { display:flex; flex-direction:column; align-items:center; flex:none; align-self:stretch; }[data-cv6] .gstep .gsico { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); transition:background .3s, border-color .3s; }[data-cv6] .gstep .gsline { width:2px; flex:1; min-height:8px; background:var(--divider); margin:4px 0 -13px; }[data-cv6] .gstep:last-child .gsline { display:none; }[data-cv6] .gstep .gsbody { flex:1; min-width:0; padding-top:4px; }[data-cv6] .gstep .gstitle { font-size:13.5px; font-weight:600; color:var(--fg); }[data-cv6] .gstep .gssub { font-size:12px; color:var(--muted); line-height:1.45; margin-top:3px; }[data-cv6] .gstep.is-pending .gstitle { color:var(--muted); }[data-cv6] .gstep.is-pending .gsico { opacity:.7; }[data-cv6] .gstep.is-active .gsico { background:var(--accent-weak); border-color:transparent; color:var(--accent); }[data-cv6] .gstep.is-done .gsico { background:var(--success-weak); border-color:transparent; color:var(--success); }[data-cv6] .gstep.is-done .gstitle { color:var(--muted); }[data-cv6] .gstep .gschip { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; letter-spacing:.03em; padding:2px 7px; border-radius:6px; margin-left:8px; vertical-align:1px; }[data-cv6] .gstep .gsattach { margin-top:9px; }[data-cv6] .step-in { animation:stepIn .42s cubic-bezier(.2,.7,.2,1) both; }
+/* Work-done card — a finished goal thread, folded into a compact openable record. Matches
+   the canonical CV6 card (.csum): 1px hair border, 14px radius, surface fill. The header row
+   IS the toggle button; the done check uses the success token; the chevron rotates on open. */
+[data-cv6] .wdcard { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; }
+[data-cv6] .wdcard-h { display:flex; align-items:center; gap:10px; width:100%; padding:11px 13px; background:transparent; border:none; cursor:pointer; font-family:var(--font-sans); text-align:left; }
+[data-cv6] .wdcard-h:hover, [data-cv6] .wdcard-h:active { background:var(--surface-2); }
+[data-cv6] .wdcard-ico { width:22px; height:22px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--success-weak); color:var(--success); }
+[data-cv6] .wdcard-t { flex:1; min-width:0; font-size:13px; font-weight:600; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6] .wdcard-n { font-size:11.5px; font-weight:600; color:var(--muted); flex:none; }
+[data-cv6] .wdcard-chev { color:var(--muted); flex:none; display:flex; transition:transform .2s ease; }
+[data-cv6] .wdcard-chev.is-open { transform:rotate(180deg); }
+[data-cv6] .wdcard-body { padding:6px 13px 12px; border-top:1px solid var(--divider); }
+
+/* ---- step-thread state machine (icon/chip swap by .gstep.is-*) ---- */
+[data-cv6] .gsico .i-pend, [data-cv6] .gsico .i-work, [data-cv6] .gsico .i-done { display:none; }
+[data-cv6] .gstep.is-pending .gsico .i-pend { display:block; }
+[data-cv6] .gstep.is-active  .gsico .i-work { display:block; animation:spin 1.05s linear infinite; }
+[data-cv6] .gstep.is-done    .gsico .i-done { display:block; }
+[data-cv6] .gschip { display:none !important; }
+[data-cv6] .gstep.is-active .gschip.c-work { display:inline-flex !important; color:var(--accent); background:var(--accent-weak); }
+[data-cv6] .gstep.is-done   .gschip.c-done { display:inline-flex !important; color:var(--success); background:var(--success-weak); }
+[data-cv6] .gsattach { display:none; }
+[data-cv6] .gstep.is-done .gsattach.show-on-done { display:block; }
+
+/* ---- data element: table/chart toggle views ---- */
+[data-cv6] .cdata .view { display:none; }
+[data-cv6] .cdata .view.on { display:block; }
+[data-cv6] .cgal .phglyph { color:rgba(255,255,255,.34); }
+
+/* ---- keyframes from kit (global) ---- */
+@keyframes think { 0%,60%,100%{ opacity:.3; transform:translateY(0);} 30%{ opacity:1; transform:translateY(-3px);} }
+@keyframes stepIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+@keyframes livePulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
+@keyframes recPulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+[data-cv6] select.cv6-select {
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%238a8f98" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+  background-repeat:no-repeat; background-position:right 11px center; background-size:12px 12px;
+  color-scheme:dark;
+}
+[data-app-theme="light"] [data-cv6] select.cv6-select { color-scheme:light; }
+[data-cv6] .astat.is-idle { color:var(--muted); background:var(--chip); }
+[data-cv6] .astat.is-idle .sd { background:var(--faint); }
+/* R-trust (2026-07-13): FAILING loop chip -- red, pulsing, unmissable. */
+[data-cv6] .astat.is-error { color:var(--error); background:var(--error-weak); }
+[data-cv6] .astat.is-error .sd { background:var(--error); animation:statPulse 1.7s infinite; }
+/* ---- shared form primitives (new-mission · draft-reply · add-watcher · any picker form) ---- */
+[data-cv6] .finput { width:100%; box-sizing:border-box; background:var(--surface); border:1px solid var(--hair); border-radius:11px; color:var(--fg); font-size:14.5px; font-family:var(--font-sans); outline:none; }
+[data-cv6] .finput:focus { border-color:var(--accent); }
+[data-cv6] .pickrow { display:flex; align-items:center; gap:11px; padding:10px 12px; border:1px solid var(--hair); border-radius:11px; background:var(--surface); cursor:pointer; }
+[data-cv6] .pickrow.is-on { background:var(--accent-weak); border-color:var(--accent); }
+[data-cv6] .pickrow .pickchk { display:none; color:var(--accent); flex:none; }
+[data-cv6] .pickrow.is-on .pickchk { display:block; }
+[data-cv6] .fseg { color:var(--muted); background:var(--surface); }
+[data-cv6] .fseg.is-on { color:var(--fg); background:var(--accent-weak); border-color:var(--accent) !important; }
+
+
+/* ============================================================
+   STATE SYSTEM v6  (design-system-2026-06-23, item 8)
+   One vocabulary for status + one for selection. The rule that kills
+   "every row looks selected": selection != status. Exactly ONE row in a
+   list may be .is-selected; status (.astat / .sdot is-*) is independent;
+   hover is transient. Generic [data-cv6] scope so React surfaces inherit.
+   ============================================================ */
+/* working = accent spinner chip, distinct from green live */
+[data-cv6] .astat.is-working { color:var(--accent); background:var(--accent-weak); }
+[data-cv6] .astat.is-working .sd { width:11px; height:11px; border:1.6px solid var(--accent); border-top-color:transparent; background:none; border-radius:50%; animation:spin 1.05s linear infinite; }
+/* interaction state — every list row + card: rest / hover / selected */
+[data-cv6] .staterow { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .12s ease; }
+[data-cv6] .staterow:hover, [data-cv6] .staterow:active { background:var(--surface-2); }
+[data-cv6] .staterow.is-selected { background:var(--accent-weak); box-shadow:0 0 0 2px var(--accent) inset; }
+
+/* ============================================================
+   PAGE TRANSITION  (R-CDS6 polish)
+   A slight fade + rise when the screen swaps between tools. The shared desktop
+   bar sits outside the swap wrapper, so only the body animates -- the nav stays
+   put while the page changes under it. Keyed on viewKey in the shell.
+   ============================================================ */
+@keyframes cv6ScreenIn { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+[data-cv6] .cv6-screenswap { animation:cv6ScreenIn .2s cubic-bezier(.22,.61,.36,1) both; }
+@media (prefers-reduced-motion: reduce) { [data-cv6] .cv6-screenswap { animation:none; } }
+
+
+
+/* ---- Theme switcher (drop 7): same complete palettes, re-scoped under a single
+   [data-app-theme] on the app root so flipping it re-skins every screen WITHOUT
+   editing the per-screen data-theme="dark". Dark = no override (default unchanged). */
+[data-cv6][data-app-theme="light"], [data-app-theme="light"] [data-cv6] {
+  --ground: #F6F6F7;
+  --chat-bar: rgba(246,246,247,.92);
+  --surface: #FFFFFF;
+  --surface-2: #F0F0F2;
+  --composer-solid: #FFFFFF;
+  --composer-card-solid: #F3F3F5;
+  --composer-control-solid: #E9E9ED;
+  --fg: #18181B;
+  --muted: #6a6a72;
+  --faint: #a0a0a8;
+  --divider: rgba(0,0,0,.07);
+  --hair: rgba(0,0,0,.08);
+  --chip: rgba(0,0,0,.04);
+  --accent: #0066FF;
+  --accent-weak: rgba(0,102,255,.1);
+  --warn: #B45309;
+  --error: #DC2626;
+  --error-weak: rgba(220,38,38,.12);
+  --success: #10B981;
+  --success-weak: rgba(16,185,129,.12);
+  --avatar: linear-gradient(135deg, #0066FF, #003D99);
+}
+
+[data-cv6][data-app-theme="glass"], [data-app-theme="glass"] [data-cv6] {
+  --ground:
+    radial-gradient(54% 40% at 22% 12%, rgba(74,116,148,.55), transparent 62%),
+    radial-gradient(50% 34% at 86% 20%, rgba(206,148,70,.34), transparent 58%),
+    radial-gradient(46% 34% at 72% 86%, rgba(46,96,128,.45), transparent 64%),
+    linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%); 
+  --surface: rgba(22,26,33,.55);
+  --surface-2: rgba(255,255,255,.08);
+  --composer-solid: #111820;
+  --composer-card-solid: #1B242E;
+  --composer-control-solid: #273340;
+  --fg: #F3F4F6;
+  --muted: #c0c4cc;
+  --faint: #828690;
+  --divider: rgba(255,255,255,.1);
+  --hair: rgba(255,255,255,.16);
+  --chip: rgba(255,255,255,.1);
+  --accent: #5B9BFF;
+  --accent-weak: rgba(91,155,255,.22);
+  --warn: #FBBF24;
+  --error: #F87171;
+  --error-weak: rgba(248,113,113,.16);
+  --success: #46E0A8;
+  --success-weak: rgba(70,224,168,.16);
+  --avatar: linear-gradient(135deg, #5B9BFF, #2563EB);
+}
+
+[data-app-theme="glass"] .glassy { backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3); }
+
+/* GLASS bands: on dark/light --ground is a flat color, so a bar that grounds
+   itself blends invisibly. On glass --ground is the multi-radial gradient, and a
+   band that paints it re-renders the WHOLE gradient compressed into its own box
+   (the mobile header's bright seam + flat-strip clash, Patrik 2026-07-18). Every
+   ground-painted band goes translucent glass instead: the page paints the
+   gradient once, the band blurs what's behind it. The [style*=] arms catch the
+   templates' inline-styled bars (bottom decision bars, pin bars, composers);
+   the modal exception right below re-opaques the reading surfaces it would
+   otherwise catch. */
+[data-app-theme="glass"] [data-cv6] :is(.topbar, .mhdr, .mhsubactions, .mcomposer, .mpinbar),
+[data-cv6][data-app-theme="glass"] :is(.topbar, .mhdr, .mhsubactions, .mcomposer, .mpinbar),
+[data-app-theme="glass"] [data-cv6] [style*="background:var(--ground)"],
+[data-cv6][data-app-theme="glass"] [style*="background:var(--ground)"] {
+  background: rgba(10, 14, 20, .44) !important;
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+/* :is (not :where) on the band list is load-bearing: the R2 top-bar contract
+   below re-grounds .mhdr with !important at (0,2,0) — :where left this rule at
+   the same weight and later-in-file won, so glass headers silently painted the
+   whole wallpaper squished into a 60/80px bar (Patrik 2026-07-19). :is lifts
+   the band arms to (0,3,0) so translucent glass wins; the near-opaque modal
+   exception below still outranks it at (0,4,0). .topbar joins the list — the
+   desktop bar had the same squished-wallpaper defect. */
+
+/* On glass the wallpaper must paint ONCE (the shell root) and show through
+   everything above it. The stage + screen roots each repaint var(--ground) —
+   correct on flat dark/light, but on glass the desktop stage sits 80px below
+   the shell so its copy of the gradient lands offset: a visible seam at the
+   top-bar edge. Transparent here lets the one shell-painted wallpaper run
+   continuously behind the blurred bars. !important because composeScreen
+   writes background inline on mobile screen roots. */
+[data-app-theme="glass"] [data-cv6] .cv6-screen-stage,
+[data-cv6][data-app-theme="glass"] .cv6-screen-stage,
+[data-app-theme="glass"] [data-cv6].cv6-screen,
+[data-app-theme="glass"] [data-cv6] .cv6-screen,
+[data-app-theme="glass"] [data-cv6] .scr {
+  background: transparent !important;
+}
+/* ...except MODALS the [style*=] arm also catches (review 2026-07-18 defect 3):
+   the create-mission card and the injected bottom sheets (their inline literal
+   `border-top-left-radius:22px` is the sheet signature). A primary reading or
+   input surface at 44% alpha over a busy page is not legible — these go
+   near-opaque glass instead. Higher specificity than the band rule above, so
+   it wins at equal importance. */
+[data-app-theme="glass"] [data-cv6] :is(.cmp-card, [style*="border-top-left-radius:22px"][style*="background:var(--ground)"]),
+[data-cv6][data-app-theme="glass"] :is(.cmp-card, [style*="border-top-left-radius:22px"][style*="background:var(--ground)"]) {
+  background: rgba(13, 17, 23, .93) !important;
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+}
+
+/* Mobile header on glass gets NO fill at all — it inherits the one shell-painted
+   wallpaper so the gradient runs unbroken from the body up through the header
+   (Patrik 2026-07-19: the translucent band above still read as a separate bar; on
+   glass the homepage header + its nav row should be see-through). Safe because
+   .mhdr is flex:none at the TOP of the column — it never overlaps scrolling
+   content, so dropping the fill and blur costs no legibility. Supersedes both the
+   glass band rule and the R2 top-bar contract's `background:var(--ground)
+   !important` below: equal specificity to the band (0,3,0), later in file wins;
+   higher than the contract (0,2,0). */
+[data-app-theme="glass"] [data-cv6] .mhdr,
+[data-cv6][data-app-theme="glass"] .mhdr {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Desktop nav bar on glass: same treatment as .mhdr above — no fill so the one
+   shell-painted wallpaper shows through unbroken (Patrik 2026-07-19: homepage
+   header + nav background should be transparent on glass). The backdrop-filter
+   blur from the band rule is intentionally retained: the frosted diffusion reads
+   as navigation affordance and separates the bar from body without a dark band.
+   .topbar is flex:none at the TOP of the column on desktop, identical layout
+   safety to .mhdr. Equal specificity to the band (0,3,0), later in file wins. */
+[data-app-theme="glass"] [data-cv6] .topbar,
+[data-cv6][data-app-theme="glass"] .topbar {
+  background: transparent !important;
+}
+
+/* ---- Global action feedback + touch target baseline. The independent `scale`
+   property preserves controls that already use transform for positioning (pins,
+   drawers, centered glyphs). Template actions also carry data-cv6-pressed so a
+   held pointer remains visibly acknowledged until release. */
+[data-cv6] :where(
+  button, a[href], summary, [role="button"], [role="tab"], [role="option"], [role="switch"],
+  [data-action], .ctile, .navrow, .mmenu, .erow, .room, .rowopen,
+  .trk, .trow, .rrow, .qitem, .projrow, .missrow, .restrow, .grow, .frowm,
+  .ochip, .chip-btn, .pillbtn, .cuarrow, .caretbtn
+) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-cv6] :where(
+  button, a[href], summary, [role="button"], [role="tab"], [role="option"], [role="switch"],
+  [data-action], .ctile, .navrow, .mmenu, .erow, .room, .rowopen,
+  .trk, .trow, .rrow, .qitem, .projrow, .missrow, .restrow, .grow, .frowm,
+  .ochip, .chip-btn, .pillbtn, .cuarrow, .caretbtn
+):not(:disabled):not([aria-disabled="true"]):is(:active, .is-pressed, [data-cv6-pressed="true"]) {
+  opacity: .78;
+  scale: var(--press-scale-lg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-cv6] :where(
+    button, a[href], summary, [role="button"], [role="tab"], [role="option"], [role="switch"],
+    [data-action], .ctile, .navrow, .mmenu, .erow, .room, .rowopen,
+    .trk, .trow, .rrow, .qitem, .projrow, .missrow, .restrow, .grow, .frowm,
+    .ochip, .chip-btn, .pillbtn, .cuarrow, .caretbtn
+  ) {
+    transition: opacity var(--dur-press) ease, scale var(--dur-press) var(--ease-out), background var(--dur-press) ease;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] :where(button, a[href], summary, [role="button"], [role="tab"], [role="option"], [role="switch"], [data-action]):is(:active, .is-pressed, [data-cv6-pressed="true"]) {
+    scale:1;
+  }
+}
+@media (max-width:899px) {
+  [data-cv6] :where(
+    button, a[href], summary, [role="button"], [role="tab"], [role="option"], [role="switch"],
+    [data-action], .ctile, .navrow, .mmenu, .erow, .room, .rowopen,
+    .trk, .trow, .rrow, .qitem, .projrow, .missrow, .restrow, .grow, .frowm,
+    .ochip, .chip-btn, .pillbtn, .cuarrow, .caretbtn
+  ) {
+    min-inline-size:44px;
+    min-block-size:44px;
+    box-sizing:border-box;
+  }
+  /* The 44px floor above REPLACES flexbox's automatic min-content minimum
+     (spec: an explicit min-height wins over the auto minimum), so in an
+     overflowing .scrbody flex column every tappable row was free to
+     flex-shrink to exactly 44px — Tracker's mobile bug list crushed ~107
+     cards into the viewport, titles painting under the next card
+     (corner:corner-ui-cv6, 2026-07-18). A scrollable list must scroll,
+     never crush its rows. Stylesheet-level so an intentional inline
+     flex:1 filler still wins (inline beats sheet). */
+  [data-cv6] .scrbody > * { flex-shrink:0; }
+}
+
+/* ---- R2 shared top-bar contract. Desktop tool changes keep one shell-owned
+   80px bar; every mobile tool/detail screen gets one 60px header below the
+   shell safe-area inset. Inline specimen dimensions are intentionally
+   overridden here so raw templates and React headers cannot drift apart. */
+[data-cv6] {
+  --cv6-topbar-height:80px;
+  --cv6-mobile-header-height:60px;
+  --cv6-bar-control-size:44px;
+}
+[data-cv6] .topbar {
+  flex:0 0 var(--cv6-topbar-height);
+  width:100%;
+  height:var(--cv6-topbar-height);
+  min-height:var(--cv6-topbar-height);
+  box-sizing:border-box;
+  padding:0 24px;
+  gap:22px;
+  background:var(--ground);
+  border-bottom:1px solid var(--divider);
+}
+[data-cv6] .topbar .tgreet { flex:0 0 auto; }
+[data-cv6] .topbar .toolnav { min-width:0; }
+[data-cv6] .topbar .topbar-actions {
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+[data-cv6] .topbar :where(button, .ctile, .ib, .av) {
+  min-block-size:var(--cv6-bar-control-size);
+  box-sizing:border-box;
+  font-family:var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .topbar :where(.ib, .av) {
+  width:var(--cv6-bar-control-size);
+  height:var(--cv6-bar-control-size);
+  flex:none;
+  padding:0;
+}
+[data-cv6] .topbar .av { border:0; }
+
+[data-cv6] .mhdr {
+  flex:0 0 var(--cv6-mobile-header-height) !important;
+  width:100%;
+  height:var(--cv6-mobile-header-height) !important;
+  min-height:var(--cv6-mobile-header-height) !important;
+  max-height:var(--cv6-mobile-header-height);
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 12px !important;
+  background:var(--ground) !important;
+  border-bottom:1px solid var(--divider) !important;
+}
+[data-cv6] .mhdr .mhtitle {
+  flex:1 1 0%;
+  width:0;
+  min-width:0;
+  max-width:none;
+}
+[data-cv6] .mhdr .mhactions {
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+[data-cv6] .mhdr :where(.mback, .mhactions .ib),
+[data-cv6] .mhdr > .ib {
+  width:var(--cv6-bar-control-size) !important;
+  height:var(--cv6-bar-control-size) !important;
+  min-width:var(--cv6-bar-control-size);
+  min-height:var(--cv6-bar-control-size);
+  flex:0 0 var(--cv6-bar-control-size);
+  box-sizing:border-box;
+  padding:0;
+  border-radius:11px !important;
+}
+[data-cv6] .mhdr .mhcta {
+  height:var(--cv6-bar-control-size);
+  min-height:var(--cv6-bar-control-size);
+  box-sizing:border-box;
+}
+[data-cv6] .mhsubactions {
+  flex:0 0 53px;
+  min-height:53px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  padding:4px 12px;
+  border-bottom:1px solid var(--divider);
+  background:var(--ground);
+}
+[data-cv6] .mhsubactions .mhcta {
+  min-height:var(--cv6-bar-control-size);
+  box-sizing:border-box;
+}
+[data-cv6] .mhdr .mttl,
+[data-cv6] .mhdr .msub {
+  display:block;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+[data-cv6] .mhdr .mhname { width:100%; min-width:0; }
+[data-cv6] .mhdr .mhname .mttl { flex:1 1 auto; width:auto; }
+[data-cv6] .mhdr :where([aria-label="Back"], .mback) svg { width:17px; height:17px; }
+[data-cv6] .mhdr [aria-label="Search"] svg { width:16px; height:16px; }
+[data-cv6] .mhdr [aria-label="Menu"] svg { width:18px; height:18px; }
+
+/* The status is already repeated in the subtitle; at phone width, let the real
+   room name own that space before ellipsis instead of preserving a duplicate pill. */
+@media (max-width:480px) {
+  [data-cv6] .mhdr .mhname > .astat { display:none; }
+}
+
+/* Room/rail names and drawer labels yield only after consuming their flex slot.
+   This fixes short early ellipses without changing row geometry. */
+[data-cv6] :where(.room, .navrow) :where(.rn, .nl),
+[data-cv6] :where(.crow, .prow, .selrow) :where(.cname, .pname) {
+  flex:1 1 auto;
+  min-width:0;
+  max-width:none;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* One visible keyboard ring for every bar implementation, including div-based
+   template actions normalized by templateEngine. */
+[data-cv6] :where(.topbar, .mhdr) :where(
+  button, a[href], [role="button"], [role="switch"], [data-action]
+):focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+  box-shadow:0 0 0 4px var(--accent-weak);
+}
+[data-cv6] .mhdr input:focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:4px;
+}
+
+/* Keyboard focus must remain visible beyond the global bars too: file rows,
+   settings sections, review actions, and drawer entries are all real controls. */
+[data-cv6] :where(button, a[href], [role="button"]):focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+
+
+/* Tablet portrait (iPad 834 lands below the 900px desktop breakpoint): the phone home
+   stretched edge-to-edge reads as a blown-up phone app — room names far left, meta far
+   right, huge eye travel. Cap and center the content column (loop R3). */
+@media (min-width: 600px) and (max-width: 899px) {
+  [data-cv6][data-screen="home-mobile"] .hbody,
+  [data-cv6][data-screen="command-mobile"] .scrbody,
+  [data-cv6][data-screen="organize-mobile"] .scrbody,
+  [data-cv6][data-screen="organize-mobile"] .hbody { max-width: 680px; margin: 0 auto; width: 100%; }
+  /* pick-a-project rows sit in an unclassed wrapper — cap the rows themselves */
+  [data-cv6][data-screen="organize-mobile"] .prow { max-width: 680px; margin-left: auto; margin-right: auto; }
+}
+
+
+
+
+@media (max-width:560px){
+  [data-cv6] .tbl{ border:none; }
+  [data-cv6] .tbl .tr.th{ display:none; }
+  [data-cv6] .tbl .tr{ display:block; padding:12px 14px; border:1px solid var(--hair); border-radius:12px; background:var(--surface); }
+  [data-cv6] .tbl .tr + .tr{ margin-top:8px; }
+  [data-cv6] .tbl .tr > div{ display:block; text-align:left !important; font-family:var(--font-sans) !important; font-size:13px; line-height:1.5; color:var(--fg); padding:4px 0; }
+  [data-cv6] .tbl .tr > div + div{ border-top:1px solid var(--divider); }
+  [data-cv6] .tbl .tr > div[data-label]:not([data-label=""])::before{ content:attr(data-label); display:block; color:var(--muted); font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin-bottom:2px; }
+  [data-cv6] .tbl .tr > div:first-child{ font-weight:700; font-size:14.5px; padding-top:0; }
+  [data-cv6] .tbl .tr > div:first-child::before{ display:none; }
+  [data-cv6] .tbl .tr.tf{ background:var(--surface-2); }
+}
+
+[data-theme="light"] [data-cv6] .ccode{ background:#F6F8FA; }
+[data-theme="light"] [data-cv6] .ccode-h{ border-bottom-color:rgba(0,0,0,.08); }
+[data-theme="light"] [data-cv6] .ccode pre{ color:#1F2328; }
+[data-theme="light"] [data-cv6] .ccode .cl{ color:#6E7781; }
+[data-theme="light"] [data-cv6] .ccode .kw{ color:#CF222E; }
+[data-theme="light"] [data-cv6] .ccode .fnname{ color:#8250DF; }
+[data-theme="light"] [data-cv6] .ccode .st{ color:#0A3069; }
+[data-theme="light"] [data-cv6] .ccode .nm{ color:#0550AE; }
+
+/* Touch feedback (loop R8, parity audit): rows whose only pressed-state was :hover
+   now light up on :active so taps feel acknowledged on iPhone/iPad. */
+[data-cv6] .restrow:active, [data-cv6] .room:active, [data-cv6] .grow:active { background: var(--surface-hover, var(--surface-2)); }
+
+
+/* ── corner:cv6-polish R3: chat tap feedback ─────────────────────────────────
+   Chips and day-fold headers acknowledge the press with the shared press
+   vocabulary. On touch, chips extend their hit area to ~44px via an inset
+   pseudo-element (::before — ::after is taken by .is-rec) without changing
+   the 34px visual. */
+[data-cv6] .chip-btn, [data-cv6kit] .chip-btn {
+  transition: transform var(--dur-press, .12s) var(--ease-out, ease-out), opacity var(--dur-press, .12s);
+}
+[data-cv6] .chip-btn:active, [data-cv6kit] .chip-btn:active {
+  transform: scale(var(--press-scale, .94));
+  opacity: .82;
+}
+[data-cv6] .goalcard .gc-head { transition: opacity var(--dur-press, .12s); }
+[data-cv6] .goalcard .gc-head:active { opacity: .68; }
+@media (max-width: 899px), (pointer: coarse) {
+  [data-cv6] .chip-btn, [data-cv6kit] .chip-btn { position: relative; }
+  [data-cv6] .chip-btn::before, [data-cv6kit] .chip-btn::before {
+    content: "";
+    position: absolute;
+    /* -4px keeps ~42px targets without overlapping the 8px chip gap midline. */
+    inset: -4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] .chip-btn, [data-cv6kit] .chip-btn, [data-cv6] .goalcard .gc-head { transition: none; }
+  [data-cv6] .chip-btn:active, [data-cv6kit] .chip-btn:active { transform: none; }
+}
+
+
+
+/* M15 · room controls + airier chrome. The page itself never scrolls: each
+   screen owns its deliberate inner scroller, and the shell follows the visual
+   viewport pixel-for-pixel (the JS fallback covers iOS toolbar lag). */
+html.cv6-app-active,
+html.cv6-app-active body,
+html.cv6-app-active #root {
+  width:100%;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+[data-cv6].cv6-app-shell {
+  position:fixed;
+  top:var(--cv6-viewport-top, 0px);
+  bottom:0;
+  left:0;
+  right:0;
+  width:100%;
+  height:auto;
+  min-height:0;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+/* iOS standalone can report a `100dvh` shorter than the actual fixed-position
+   containing block, leaving a page-wide strip below every screen. At rest the
+   fixed shell therefore pins to both physical viewport edges. Only the focused
+   keyboard state uses VisualViewport's explicit top + height. */
+html.cv6-keyboard-open [data-cv6].cv6-app-shell {
+  bottom:auto;
+  height:var(--cv6-viewport-height, 100dvh);
+}
+
+/* Headers should read as open space, not a stack of bordered bands. */
+[data-cv6] .topbar,
+[data-cv6] .mhdr {
+  border-bottom:0 !important;
+  background:transparent !important;
+}
+[data-cv6] .topbar .ib {
+  border:0;
+  border-radius:50%;
+  background:var(--chip);
+}
+[data-cv6] .mhdr {
+  --cv6-mobile-header-height:72px;
+  gap:10px;
+  padding:8px 14px !important;
+}
+[data-cv6] .mhdr :where(.mback, .mhactions .ib),
+[data-cv6] .mhdr > .ib {
+  width:42px !important;
+  height:42px !important;
+  min-width:42px;
+  min-height:42px;
+  flex-basis:42px;
+  border:0 !important;
+  border-radius:50% !important;
+  background:var(--chip) !important;
+}
+[data-cv6] .mhdr .mh-av,
+[data-cv6] .mhdr .mh-av .mh-ring { border-radius:50%; }
+[data-cv6] .room-title-trigger {
+  min-width:0;
+  max-width:100%;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+[data-cv6] .room-title-trigger:hover .mttl,
+[data-cv6] .desktop-room-title:hover { color:var(--accent); }
+[data-cv6] .desktop-room-header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:20px 26px 18px;
+  border-bottom:0;
+}
+[data-cv6] .desktop-room-title {
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--fg);
+  font-size:18px;
+  font-weight:650;
+  line-height:1.2;
+  transition:color .14s ease;
+}
+
+/* corner:cv6-polish R10 — control geometry and composed surfaces. Text actions
+   are pills; icon controls are true circles on every CV6 page. */
+/* "They just messaged you" on a recents row (Patrik 2026-08-06). The unread flag was
+   already in the inbox feed and nothing ever rendered it. Same green pulse as a live
+   agent dot, so one mark means one thing across the whole interface. `is-none` is the
+   read state and takes no space — a permanent grey dot would train the eye to ignore
+   the green one. */
+@keyframes cv6DotIn { from { scale:0; } to { scale:1; } }
+[data-cv6] .sdot.newdot.is-new {
+  background:var(--success); box-shadow:var(--glow-online);
+  animation:cv6DotIn var(--dur-move) var(--ease-out) both, statPulse 1.7s .2s infinite;
+}
+/* HOLD THE SLOT, don't collapse it (2026-08-07). `display:none` let the dot
+   take zero width, so in a recent-room row the name started 10px further left
+   on every room WITHOUT a new-activity dot than on every room with one — a
+   visibly ragged left edge down the list. It was invisible while the row also
+   carried a clock icon (always present, so IT held the leading position); the
+   moment the clock came out — mobile in d9705fb0, desktop in c223d06d — the
+   raggedness surfaced. visibility:hidden keeps the 8px + gap reserved so every
+   name in the column starts on the same x. `newdot` is used ONLY by these
+   recent-room rows (2 in home-desktop, 1 in home-mobile), so this is scoped to
+   exactly the rows that need it. */
+[data-cv6] .sdot.newdot.is-none { visibility:hidden; }
+[data-cv6] .restcol .restrow .sdot.newdot.is-new,
+[data-cv6][data-screen="home-mobile"] .mresumecard .sdot.newdot.is-new { margin-right:2px; }
+
+/* The shell still tracks data-knav-zone so ←/→ knows which column owns the
+   keyboard, but selected rooms do not paint a persistent accent outline. The
+   shared :focus-visible rules below remain the visible keyboard affordance. */
+
+[data-cv6] button { border-radius:999px !important; }
+/* ...except the composer's secondary controls (Patrik 2026-08-06). Voice and Send
+   stay round primaries; commands / files / Work-Plan / checklists are rectangles,
+   and this blanket !important was overriding their inline radius. */
+[data-cv6] button.cv6-composer-util { border-radius:10px !important; }
+[data-cv6] button.cv6-command-row { border-radius:9px !important; }
+[data-cv6] button.cv6-command-mode { border-radius:8px !important; }
+[data-cv6] button.cv6-composer-attach { border-radius:11px !important; }
+@media (max-width:899px) {
+  [data-cv6] button.cv6-composer-attach { width:44px !important; height:44px !important; }
+}
+[data-cv6] :where(.ib,.mback,.room-settings-close,.fcv-step,.cv6-chat-popout,.chat-column-open,.room-options-trigger) { border-radius:50% !important; }
+[data-cv6] .ib.is-active { color:var(--accent); background:var(--accent-weak); border-color:var(--accent); }
+[data-cv6][data-screen="home-mobile"] .hlogo { width:96px; height:auto; margin-left:2px; flex:none; }
+[data-app-theme="light"] [data-cv6] .hlogo { filter:brightness(0); }
+[data-cv6] .cv6-agent-prose {
+  font-size:inherit;
+  line-height:inherit;
+  color:inherit;
+}
+[data-cv6] .cv6-agent-prose :where(p,ul,ol) { margin-bottom:.55em; }
+[data-cv6] .cv6-agent-prose :where(p,ul,ol):last-child { margin-bottom:0; }
+[data-cv6] :where(.cv6-agent-prose,.cmr-inline) strong { color:var(--fg); font-weight:780; }
+[data-cv6] .cv6-agent-prose :where(h1,h2,h3,h4,h5,h6) {
+  margin:.7em 0 .32em;
+  color:var(--fg);
+  font-weight:780;
+  letter-spacing:-.012em;
+}
+[data-cv6] .cv6-agent-prose :where(h1,h2,h3,h4,h5,h6):first-child { margin-top:0; }
+[data-cv6][data-screen="home-desktop"] .chat-column-open { width:34px; height:34px; padding:0; flex:none; cursor:pointer; }
+[data-cv6] .cv6-chat-popout { width:38px; height:38px; padding:0 !important; display:flex; align-items:center; justify-content:center; flex:none; }
+
+
+
+
+
+
+/* Unknown, ready, and idle are an absence of presence — never a gray online dot. */
+[data-cv6] .sdot.is-ready,
+[data-cv6] .sdot.is-idle { display:none; }
+
+
+/* ---- SMOOTHNESS: motion that makes the app feel alive (R29) ---- */
+
+/* #1 Room transition — workspace columns slide in from right on mount */
+@keyframes cv6ColIn { from { opacity:0; transform:translateX(8px); } to { opacity:1; transform:translateX(0); } }
+[data-cv6] .cv6-workspace-column { animation: cv6ColIn var(--dur-move) var(--ease-out) both; }
+
+/* #2 New-message entrance — last group slides up when thread count grows */
+@keyframes cv6MsgIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] .grp:last-child { animation: cv6MsgIn var(--dur-press) var(--ease-out) both; }
+[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] > [data-cv6-message-turn]:last-child { animation: cv6MsgIn var(--dur-press) var(--ease-out) both; }
+
+/* #3 Content fade-in — message thread + file list appear with a soft crossfade */
+@keyframes cv6ContentIn { from { opacity:0; } to { opacity:1; } }
+[data-cv6] .pconv { animation: cv6ContentIn 100ms ease both; }
+
+/* #4 Theme switch — background + text crossfade when toggling dark/light/glass */
+[data-cv6],
+[data-cv6] .cv6-workspace-column,
+[data-cv6] .cv6-workspace-base,
+[data-cv6] .cv6-screen-stage,
+[data-cv6] .mhdr,
+[data-cv6] .topbar { transition: background-color var(--dur-move) ease, color var(--dur-move) ease; }
+
+/* #5 Send-button pop — brief launch after successful send */
+@keyframes cv6SendPop { 0% { transform:translateY(0) scale(1); } 40% { transform:translateY(-2px) scale(1.05); } 100% { transform:translateY(0) scale(1); } }
+[data-cv6] .cv6-composer-primary[data-cv6-sent] { animation: cv6SendPop var(--dur-move) var(--ease-out); }
+
+/* Suggested-response chips stagger in */
+@keyframes cv6ChipIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+[data-cv6] .chip-btn { animation: cv6ChipIn var(--dur-press) var(--ease-out) both; }
+[data-cv6] .chip-btn:nth-child(2) { animation-delay: 50ms; }
+[data-cv6] .chip-btn:nth-child(3) { animation-delay: 100ms; }
+[data-cv6] .chip-btn:nth-child(4) { animation-delay: 150ms; }
+[data-cv6] .chip-btn:nth-child(5) { animation-delay: 200ms; }
+
+/* Header progress bar — animated sweep below room header while agent works */
+[data-cv6] .cv6-header-progress {
+  height:3px; flex:none; background:var(--surface-2); overflow:hidden; position:relative;
+}
+[data-cv6] .cv6-header-progress > i {
+  display:block; position:absolute; top:0; bottom:0; left:0; width:38%;
+  border-radius:2px; background:linear-gradient(90deg,var(--accent),#6366F1);
+  animation:cv6HeaderSweep 1.15s cubic-bezier(.45,0,.55,1) infinite;
+}
+@keyframes cv6HeaderSweep { 0%{left:-40%;} 100%{left:100%;} }
+
+/* Specialist handoff divider — marks when a different agent takes the thread */
+[data-cv6] .cv6-handoff-divider {
+  display:flex; align-items:center; gap:10px; padding:14px 0 6px;
+}
+[data-cv6] .cv6-handoff-line { flex:1; height:1px; background:var(--divider); }
+[data-cv6] .cv6-handoff-label {
+  font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--muted); white-space:nowrap;
+}
+
+/* ---- end SMOOTHNESS ---- */
+
+/* One motion contract: quick input feedback, short spatial movement, no competing
+   navigation while an accessibility setting asks for stillness. */
+[data-cv6] :is(.cv6-room-avatar-button, .cv6-chat-header-button, .cv6-composer-util, .cv6-composer-primary, .cv6-composer-attach) {
+  transition:color var(--dur-press) ease, background-color var(--dur-press) ease, border-color var(--dur-press) ease, box-shadow var(--dur-press) ease, scale var(--dur-press) var(--ease-out);
+}
+[data-cv6] .cv6-composer-wrap {
+  transition:max-height var(--dur-move) var(--ease-out), opacity var(--dur-press) ease, transform var(--dur-move) var(--ease-out), border-color var(--dur-press) ease, box-shadow var(--dur-move) var(--ease-out);
+}
+@media (prefers-reduced-motion:reduce) {
+  [data-cv6], [data-cv6] * { scroll-behavior:auto !important; }
+  [data-cv6] *, [data-cv6] *::before, [data-cv6] *::after {
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+
+/* Checklists read as a compact work surface: progress stays visible when a list
+   collapses, rows have steady touch geometry, and focus never relies on color. */
+[data-cv6] .cv6-checklist-panel { overscroll-behavior:contain; }
+[data-cv6] .cv6-checklist-list { transition:border-color var(--dur-press) ease, box-shadow var(--dur-move) var(--ease-out); }
+[data-cv6] .cv6-checklist-list:focus-within { border-color:color-mix(in srgb, var(--accent) 52%, var(--hair)); box-shadow:0 12px 32px -24px rgba(0,0,0,.9), 0 0 0 2px var(--accent-weak); }
+[data-cv6] .cv6-checklist-progress { height:3px; margin:0 12px 4px; overflow:hidden; border-radius:2px; background:var(--chip); }
+[data-cv6] .cv6-checklist-progress > span { display:block; height:100%; min-width:0; border-radius:inherit; background:var(--success); transition:width var(--dur-card) var(--ease-out); }
+[data-cv6] .cv6-checklist-body { animation:cv6ChecklistOpen var(--dur-move) var(--ease-out) both; }
+@keyframes cv6ChecklistOpen { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:none; } }
+[data-cv6] .cv6-checklist-body input:focus,
+[data-cv6] .cv6-checklist-heading input:focus { border-color:var(--accent) !important; box-shadow:0 2px 0 -1px var(--accent); }
+@media (max-width:640px) {
+  [data-cv6] .cv6-checklist-heading { gap:6px !important; padding-inline:8px !important; }
+  [data-cv6] .cv6-checklist-body { padding-inline:9px !important; }
+}

@@ -1,0 +1,1024 @@
+/* cv6-chat.css -- Chat screen (messages, composer, bubbles, working turn) */
+
+/* ---- Chat tool screen (Goal thread · desktop + mobile) ---- */
+/* mission-goals checklist (drawer) — is-:item.state drives the mark + strike */
+[data-cv6][data-screen^="chat"] .room.is-open { background:var(--accent-weak); }
+[data-cv6][data-screen^="chat"] .gchk-mark { width:17px; height:17px; border-radius:50%; flex:none; border:2px solid var(--divider); box-sizing:border-box; display:flex; align-items:center; justify-content:center; }
+[data-cv6][data-screen^="chat"] .gchk-label { color:var(--muted); }
+[data-cv6][data-screen^="chat"] .gchk.is-done .gchk-mark { border-color:var(--success); background:var(--success); }
+[data-cv6][data-screen^="chat"] .gchk.is-done .gchk-label { color:var(--muted); text-decoration:line-through; }
+[data-cv6][data-screen^="chat"] .gchk.is-active .gchk-mark { border-color:var(--accent); }
+[data-cv6][data-screen^="chat"] .gchk.is-active .gchk-mark::after { content:''; width:6px; height:6px; border-radius:50%; background:var(--accent); }
+[data-cv6][data-screen^="chat"] .gchk.is-active .gchk-label { color:var(--fg); font-weight:500; }
+[data-cv6][data-screen^="chat"] .room { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; }[data-cv6][data-screen^="chat"] .rn { flex:1; font-size:14px; color:var(--fg); }[data-cv6][data-screen^="chat"] .thread-head { display:flex; align-items:center; gap:11px; margin-bottom:22px; }[data-cv6][data-screen^="chat"] .thread-title { font-size:17px; font-weight:700; letter-spacing:-.01em; color:var(--fg); }[data-cv6][data-screen^="chat"] .new-badge { font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#fff; background:linear-gradient(135deg,var(--accent),#6366F1); padding:4px 9px; border-radius:7px; box-shadow:0 4px 12px -3px rgba(59,130,246,.5); }[data-cv6][data-screen^="chat"] .step { position:relative; padding-left:50px; padding-bottom:16px; }[data-cv6][data-screen^="chat"] .step::before { content:''; position:absolute; left:18px; top:38px; bottom:-4px; width:2px; background:var(--divider); }[data-cv6][data-screen^="chat"] .step:last-child::before { display:none; }[data-cv6][data-screen^="chat"] .step-ico { position:absolute; left:0; top:0; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; z-index:1; }[data-cv6][data-screen^="chat"] .step-card { border-radius:14px; padding:13px 16px; }[data-cv6][data-screen^="chat"] .step-title { font-size:14.5px; font-weight:600; color:var(--fg); }[data-cv6][data-screen^="chat"] .step-sub { font-size:13px; line-height:1.5; color:var(--muted); margin-top:3px; }[data-cv6][data-screen^="chat"] .pill-chip { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; }[data-cv6][data-screen^="chat"] .choice { display:flex; gap:10px; margin-top:13px; }[data-cv6][data-screen^="chat"] .choice-card { flex:1; border-radius:12px; padding:12px 13px; cursor:pointer; transition:transform .12s ease; }[data-cv6][data-screen^="chat"] .choice-card:active { transform:scale(.98); }[data-cv6][data-screen^="chat"] .choice-rec { background:var(--accent); }[data-cv6][data-screen^="chat"] .choice-alt { background:var(--surface-2); border:1px solid var(--hair); }[data-cv6][data-screen^="chat"] .choice-h { display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:600; }[data-cv6][data-screen^="chat"] .choice-s { font-size:11.5px; line-height:1.4; margin-top:4px; }
+
+/* ============================================================
+   CHAT LIFECYCLE  (design-system-2026-06-23, item 1)
+   The conversation over its whole life: settled history collapses into day
+   groups under dividers; the latest stays open; a glowing "live tail" pins the
+   active thread. Ported from agent-chat/chat.css. Generic [data-cv6] scope.
+   ============================================================ */
+[data-cv6] .daydiv { display:flex; align-items:center; gap:12px; margin:18px 0 14px; }
+[data-cv6] .daydiv::before, [data-cv6] .daydiv::after { content:""; height:1px; flex:1; background:var(--divider); }
+[data-cv6] .daydiv span { font-family:var(--font-mono); font-size:10.5px; letter-spacing:.04em; color:var(--faint); white-space:nowrap; }
+[data-cv6] .goalcard { border:none; border-radius:0; background:transparent; overflow:visible; display:flex; flex-direction:column; gap:8px; margin:16px 0 12px; }
+[data-cv6] .goalcard .gc-head { display:flex; align-items:center; gap:11px; padding:0; cursor:pointer; height:24px; }
+[data-cv6] .goalcard .gc-head::before { content:""; flex:0 1 1fr; height:1px; background:var(--divider); }
+[data-cv6] .goalcard .gc-head::after { content:""; flex:0 1 1fr; height:1px; background:var(--divider); }
+[data-cv6] .goalcard .gc-check { width:24px; height:24px; border-radius:50%; background:var(--success-weak); color:var(--success); display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6] .goalcard .gc-title { flex:none; font-size:11px; font-weight:600; color:var(--muted); white-space:nowrap; letter-spacing:.04em; text-transform:uppercase; font-family:var(--font-mono); }
+[data-cv6] .goalcard .gc-title .gk { color:var(--muted); font-weight:600; }
+[data-cv6] .goalcard .gc-meta { font-family:var(--font-mono); font-size:10.5px; color:var(--faint); white-space:nowrap; flex:none; }
+[data-cv6] .goalcard .gc-chev { color:transparent; flex:none; transition:transform .2s; width:0; }
+[data-cv6] .goalcard.is-open .gc-chev { transform:rotate(90deg); }
+[data-cv6] .goalcard .gc-body { display:none; padding:12px 0 0; }
+[data-cv6] .goalcard.is-open .gc-body { display:block; }
+[data-cv6] .livediv { position:sticky; top:0; z-index:4; display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 0; margin-bottom:4px; }
+[data-cv6] .livediv .lv { display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--success); background:var(--success-weak); border:1px solid var(--success-weak); border-radius:13px; padding:4px 11px; backdrop-filter:blur(8px); }
+[data-cv6] .livediv .lv .sd { width:7px; height:7px; border-radius:50%; background:var(--success); animation:statPulse 1.7s infinite; }
+[data-cv6] .livewrap { border:1px solid var(--success-weak); border-radius:16px; background:linear-gradient(180deg,rgba(52,211,153,.06),transparent 60%); padding:14px; }
+[data-cv6] .longmsg { position:relative; max-height:168px; overflow:hidden; }
+[data-cv6] .longmsg.is-clamped::after { content:""; position:absolute; left:0; right:0; bottom:0; height:64px; background:linear-gradient(transparent,var(--surface)); pointer-events:none; }
+[data-cv6] .longmsg-more { display:inline-flex; align-items:center; gap:6px; margin-top:9px; font-size:12px; font-weight:600; color:var(--accent); background:none; border:none; cursor:pointer; font-family:var(--font-sans); }
+[data-cv6] .jumplive { position:absolute; left:50%; transform:translateX(-50%); bottom:84px; z-index:9; display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border-radius:18px; background:var(--accent); color:#fff; font-size:12.5px; font-weight:600; border:none; box-shadow:0 10px 26px -8px rgba(0,0,0,.5); cursor:pointer; }
+
+/* Agent Chat · File Collection (design drop 7, agent-chat/collection.html). A big batch of
+   files folds to ONE card: preview grid (images) or doc list, a count, and Review all. Tap
+   opens a look-only swipe viewer that hands off to the Review tool for comments. */
+[data-cv6] .filecoll { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; max-width:340px; }
+[data-cv6] .fc-head { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--divider); }
+[data-cv6] .fc-head .fc-ic { width:30px; height:30px; border-radius:9px; background:var(--accent-weak); color:var(--accent); display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6] .fc-head .fc-t { font-size:13.5px; font-weight:600; color:var(--fg); }
+[data-cv6] .fc-head .fc-s { font-family:var(--font-mono); font-size:10.5px; color:var(--faint); margin-top:1px; }
+[data-cv6] .fc-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:10px; }
+[data-cv6] .fc-tile { position:relative; aspect-ratio:1; border-radius:7px; overflow:hidden; background:linear-gradient(135deg,#2a3340,#171b22); display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.4); cursor:pointer; }
+[data-cv6] .fc-tile.is-doc { background:var(--surface-2); color:var(--muted); }
+[data-cv6] .fc-tile img { width:100%; height:100%; object-fit:cover; }
+[data-cv6] .fc-tile .more { position:absolute; inset:0; background:rgba(4,6,9,.66); display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:700; }
+[data-cv6] .fc-list { padding:6px; }
+[data-cv6] .fc-lrow { display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:8px; cursor:pointer; }
+[data-cv6] .fc-lrow:not(:last-child) { border-bottom:1px solid var(--divider); }
+[data-cv6] .fc-lrow .lg { width:28px; height:28px; border-radius:7px; background:var(--surface-2); color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none; }
+/* files-in-app R79-f24 — the file itself is the open affordance; download is a quiet icon button */
+[data-cv6] .fc-foot { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--divider); }
+[data-cv6] .fc-foot .fc-rev,
+[data-cv6] .fcv-foot .fc-rev { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:10px; border:none; background:var(--accent); color:#fff; font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6] .fcviewer { position:absolute; inset:0; z-index:30; display:flex; flex-direction:column; justify-content:center; background:rgba(4,6,9,.82); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+/* R-CHAT-FILE-MODAL (2026-07-18): the chat file viewer is a READING surface,
+   not a thumbnail box. Patrik: "small modal, never loads the preview" — the old
+   card was width:min(92%,360px) with a 4:3 glyph stage. Now it takes the room:
+   ~94% x 92% of the chat screen (capped for ultra-wide), flex column so the
+   stage owns the leftover height and scrolls. */
+[data-cv6] .fcviewer-card { margin:auto; width:min(94%,1200px); height:min(92%,1100px); display:flex; flex-direction:column; border:1px solid var(--hair); border-radius:16px; background:var(--ground); overflow:hidden; box-shadow:0 28px 70px -28px rgba(0,0,0,.7); }
+[data-cv6] .fcv-top { display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--divider); flex:none; }
+[data-cv6] .fcv-stage { position:relative; aspect-ratio:4/3; background:#fbfbfa; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+[data-cv6] .fcv-stage img { width:100%; height:100%; object-fit:contain; }
+[data-cv6] .fcv-stage.is-dark { background:linear-gradient(135deg,#26303f,#13161c); }
+/* The reading stage: no forced aspect ratio, fills the card, scrolls its
+   content (pdf pages, docx paper, long text). Injected media keeps its natural
+   size inside the column instead of being letterboxed. */
+[data-cv6] .fcv-stage.is-read { aspect-ratio:auto; flex:1; min-height:0; display:block; overflow:auto; -webkit-overflow-scrolling:touch; padding:14px 16px; background:var(--surface); }
+[data-cv6] .fcv-stage.is-read img { width:auto; max-width:100%; height:auto; }
+/* Documents/text read on the same light .doc paper as Review/Files — paper-locked
+   ink (#1a1a1a / #6a6a72), NEVER theme tokens (the paper stays light in every
+   theme; var(--fg) resolves near-white there = invisible ink). Media types flip
+   the paper transparent so images/video/pages sit directly on the ground. */
+[data-cv6] .fcv-stage.is-read .doc { background:#fbfbfa; border-radius:8px; color:#1a1a1a; padding:20px 22px; max-width:860px; margin:0 auto; box-shadow:0 14px 44px rgba(0,0,0,.4); }
+[data-cv6] .fcv-stage.is-read .doc code { background:rgba(0,0,0,.06); padding:1px 6px; border-radius:5px; font-family:var(--font-mono); font-size:.85em; }
+[data-cv6] .fcv-stage.is-read .doc h1, [data-cv6] .fcv-stage.is-read .doc h2, [data-cv6] .fcv-stage.is-read .doc h3 { color:#1a1a1a; line-height:1.3; margin:0 0 10px; }
+[data-cv6] .fcv-stage.is-read .doc h1 { font-size:19px; }
+[data-cv6] .fcv-stage.is-read .doc h2 { font-size:16px; margin-top:18px; }
+[data-cv6] .fcv-stage.is-read .doc h3 { font-size:14px; margin-top:14px; }
+[data-cv6] .fcv-stage.is-read .doc p, [data-cv6] .fcv-stage.is-read .doc li { font-size:13.5px; line-height:1.65; color:#2a2a2e; }
+[data-cv6] .fcv-stage.is-read .doc pre { color:#1a1a1a; }
+[data-cv6] .fcv-stage.is-read .doc a { color:#0066FF; }
+[data-cv6] .fcv-stage.is-read .doc.is-image,
+[data-cv6] .fcv-stage.is-read .doc.is-photo,
+[data-cv6] .fcv-stage.is-read .doc.is-video,
+[data-cv6] .fcv-stage.is-read .doc.is-audio,
+[data-cv6] .fcv-stage.is-read .doc.is-siteshot,
+[data-cv6] .fcv-stage.is-read .doc.is-sitefile,
+[data-cv6] .fcv-stage.is-read .doc.is-sitelive { background:transparent; box-shadow:none; padding:0; color:var(--fg); max-width:960px; }
+/* Short media centers in the frame instead of hugging the top-left with a slab
+   of dead ground under it (min-height:100% resolves against the stage's
+   content box, so the padding stays honest — no phantom scroll). */
+[data-cv6] .fcv-stage.is-read .doc.is-image,
+[data-cv6] .fcv-stage.is-read .doc.is-photo,
+[data-cv6] .fcv-stage.is-read .doc.is-video { display:flex; flex-direction:column; justify-content:center; min-height:100%; box-sizing:border-box; }
+[data-cv6] .fcv-stage.is-read .doc.is-image img,
+[data-cv6] .fcv-stage.is-read .doc.is-photo img,
+[data-cv6] .fcv-stage.is-read .doc.is-video video { margin-left:auto; margin-right:auto; }
+/* Footer flip controls (prev / count / next) — the old floating .fcv-arrow
+   circles sat ON TOP of the reading copy. */
+[data-cv6] .fcv-foot { flex:none; }
+[data-cv6] .fcv-foot .fcv-step { width:30px; height:30px; border-radius:9px; border:1px solid var(--hair); background:var(--surface-2); color:var(--muted); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+[data-cv6] .fcv-foot .fcv-step:hover { color:var(--fg); border-color:var(--muted); }
+[data-cv6] .fcv-arrow { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(13,17,23,.7); border:1px solid rgba(255,255,255,.16); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+[data-cv6] .fcv-count { position:absolute; bottom:11px; left:50%; transform:translateX(-50%); font-family:var(--font-mono); font-size:10.5px; color:#fff; background:rgba(4,6,9,.6); padding:3px 9px; border-radius:11px; }
+[data-cv6] .fcv-foot { display:flex; align-items:center; gap:10px; padding:12px 14px; border-top:1px solid var(--divider); }
+
+/* ---- Mobile header redesign (drop 7): alive + actionable. Additive over the
+   base .mhdr/.mttl/.msub already in this bundle. Lifted verbatim from the design
+   system frame.css, scoped [data-cv6]. statPulse keyframe already defined above. */
+[data-cv6] .mhname { display:flex; align-items:center; gap:8px; min-width:0; }
+[data-cv6] .mhdr .mh-av { position:relative; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex:none; }
+[data-cv6] .mhdr .mh-av .mh-ring { position:absolute; inset:-3px; border-radius:14px; border:2px solid transparent; }
+[data-cv6] .mhdr .mh-av.is-live .mh-ring { border-color:var(--success); animation:statPulse 1.7s infinite; }
+[data-cv6] .mhdr .mh-av.is-working .mh-ring { border-color:var(--accent); }
+[data-cv6] .mhdr .mh-av .mh-dot { position:absolute; bottom:-1px; right:-1px; width:12px; height:12px; border-radius:50%; border:2.5px solid var(--ground); }
+[data-cv6] .mhcta { display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border-radius:11px; border:none; background:var(--accent); color:#fff; font-size:13px; font-weight:600; font-family:var(--font-sans); cursor:pointer; flex:none; white-space:nowrap; }
+[data-cv6] .mhcta.is-quiet { background:var(--surface-2); border:1px solid var(--hair); color:var(--fg); }
+[data-cv6] .mhchips { display:flex; align-items:center; gap:7px; padding:0 16px 12px; overflow:hidden; border-bottom:1px solid var(--divider); }
+[data-cv6] .mhchip { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:16px; border:1px solid var(--hair); background:var(--surface); color:var(--muted); font-size:12.5px; font-weight:600; font-family:var(--font-sans); white-space:nowrap; cursor:pointer; flex:none; }
+[data-cv6] .mhchip.on { background:var(--accent); border-color:transparent; color:#fff; }
+/* data-mod emits is-<value>; mirror .on as .is-on so chips can be driven from data (is-on/is-off). */
+/* DEF-14: active chip is non-interactive — cursor:default, no pointer affordance. */
+[data-cv6] .mhchip.is-on { background:var(--accent); border-color:transparent; color:#fff; cursor:default; }
+[data-cv6] .mhchip .ct { font-family:var(--font-mono); font-size:10.5px; opacity:.8; }
+/* section header hidden when its filtered list is empty (chat-list filter chips). */
+[data-cv6] .sec.is-hidden { display:none; }
+/* ── Chat bubbles (ported verbatim from the CV6 design system: ui_kits/chat/
+   plain-conversation.html). Agent text sits in a surface bubble on the left,
+   your text in an accent bubble on the right; consecutive messages group under
+   one avatar + name with a single timestamp. Used by the Home quick-reply thread
+   (Cv6QuickThread) and the Chat tool (PlainThread / MsgRow). Was: full-width blobs. */
+[data-cv6] .pconv { display:flex; flex-direction:column; gap:3px; }
+[data-cv6] .grp { display:flex; gap:10px; align-items:flex-start; margin-top:13px; position:relative; }
+/* Link the agent's messages with a vertical rail line under the avatar — same connector
+   the step thread uses (.gstep .gsline) — so a turn's bubbles read as one linked thread.
+   Scoped to agent groups (a user group carries .pb-me); the line runs from below the avatar
+   down to just above the timestamp. (Patrik 2026-06-30: link messages like the steps.) */
+[data-cv6] .grp:has(.pb)::before { content:""; position:absolute; left:14px; top:36px; bottom:16px; width:2px; border-radius:2px; background:var(--divider); }
+[data-cv6] .grp .gav { width:30px; height:30px; border-radius:9px; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; color:#fff; }
+[data-cv6] .grp .stack { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1; }
+[data-cv6] .pb { background:var(--surface); border:1px solid var(--hair); border-radius:14px; border-top-left-radius:5px; padding:11px 14px; font-size:13.5px; line-height:1.5; color:var(--fg); max-width:100%; align-self:flex-start; white-space:pre-wrap; word-break:break-word; }
+/* On the light theme the agent bubble keeps a surface card, just darker text. */
+[data-app-theme="light"] [data-cv6] .pb { background:var(--surface); border-color:var(--hair); color:rgba(0,0,0,.87); }
+/* Markdown rendered inside a message (ChatMessageRenderer): match the message's type
+   scale and inherit the message's text colour instead of the renderer default. */
+[data-cv6] .pb .cmr-content, [data-cv6] .pb-me .cmr-content { font-size:13.5px; line-height:1.5; color:inherit; }
+[data-cv6] .grp .stack .pb:first-of-type { border-top-left-radius:0; }
+[data-cv6] .me { display:flex; flex-direction:column; gap:4px; align-items:flex-start; margin-top:13px; }
+[data-cv6] .pb-me { background:var(--surface); color:var(--fg); border:1px solid var(--hair); border-radius:12px; padding:11px 13px; font-size:13.5px; line-height:1.5; max-width:100%; white-space:pre-wrap; word-break:break-word; }
+[data-cv6] .me .pb-me:first-of-type { border-top-right-radius:12px; }
+[data-cv6] .ts { font-size:10.5px; color:var(--faint); font-family:var(--font-mono); margin-top:2px; }
+[data-cv6] .gname { font-size:12.5px; font-weight:600; color:var(--fg); margin-bottom:2px; }
+
+/* The Corner wordmark ships as a white SVG so it reads on the dark + glass themes.
+   On the light theme it would disappear against the pale header, so flip it to ink. */
+[data-app-theme="light"] img[src*="corner-logo-white"] { filter: invert(1); }
+
+/* Working indicator: the moving progress bar shown while the agent is working this turn
+   (WorkingTurn, driven by `awaiting`). Indeterminate accent segment slides across a thin
+   track — the "progress movement indicator" (Patrik 2026-06-28, R-LIVE-THREAD). */
+[data-cv6] .gworking { position:relative; height:4px; border-radius:2px; background:var(--surface-2); overflow:hidden; }
+[data-cv6] .gworking .gworking-fill { position:absolute; top:0; bottom:0; left:0; width:38%; border-radius:2px; background:var(--accent); animation:gworking-slide 1.15s cubic-bezier(.45,0,.55,1) infinite; }
+@keyframes gworking-slide { 0% { left:-40%; } 100% { left:100%; } }
+@media (prefers-reduced-motion: reduce) { [data-cv6] .gworking .gworking-fill { animation-duration:2.4s; } }
+/* M13 · desktop chat windows. The main room keeps one explicit pop-out action;
+   the dedicated window drops the room rail but preserves chat + Files/Goals. */
+[data-cv6] .cv6-chat-popout {
+  min-height:36px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  flex:none;
+  padding:0 12px;
+  border:1px solid var(--hair);
+  border-radius:11px;
+  background:var(--surface-2);
+  color:var(--fg);
+  font-family:var(--font-sans);
+  font-size:12px;
+  font-weight:650;
+  cursor:pointer;
+  transition:border-color .14s ease,background .14s ease,color .14s ease;
+}
+[data-cv6] .cv6-chat-popout:hover { border-color:var(--accent); background:var(--accent-weak); color:var(--accent); }
+[data-cv6] .cv6-chat-popout:active { transform:scale(var(--press-scale)); }
+[data-cv6] .cv6-chat-window-label {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:var(--accent);
+  font-size:10.5px;
+  font-weight:750;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+[data-cv6] .cv6-chat-window-label::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--accent); }
+[data-cv6].is-chat-window { border:1px solid var(--hair); }
+@media (max-width:1020px) {
+  [data-cv6].is-chat-window .cv6-chat-drawer { width:276px !important; padding:16px !important; }
+}
+/* The composer floats clear of the physical viewport edge and uses one rounded
+   two-row card. Do not add safe-area-inset-bottom here: the action row already
+   keeps its controls well above the card edge, and reserving the full inset
+   stranded the whole card roughly one extra toolbar-height above Patrik's iPhone
+   home indicator. Twenty pixels matches the requested visual landing line. */
+[data-cv6] .cv6-floating-composer { box-sizing:border-box; }
+[data-cv6] .mcomposer { left:12px !important; right:12px !important; bottom:20px !important; padding:0 !important; border-top:none !important; background:transparent !important; z-index:10; }
+/* Defect A fix: the transcript reserve tracks the composer's real measured height
+   via --cv6-composer-h (set by ResizeObserver in ChatLifecycle.jsx), so textarea
+   autogrow, chip rows, paste bar, and /clear confirm never occlude the progress bar. */
+[data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important; }
+/* WebKit keeps safe-area-inset-bottom populated after the software keyboard
+   opens. The focused visual viewport is already rectangular, so retaining that
+   inset creates the white moat visible in the iPhone capture. */
+html.cv6-keyboard-open [data-cv6] .mcomposer { bottom:8px !important; }
+html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important; }
+[data-cv6] .jumplive { bottom:calc(var(--cv6-composer-h, 108px) + 44px) !important; }
+[data-cv6] .cv6-mode-toggle { min-width:62px; }
+
+/* Real bridge activity only: the moving segment exists only while WorkingTurn is
+   mounted. Determinate tool progress stays numeric; heartbeat-only work glides. */
+[data-cv6] .cv6-live-progress.is-indeterminate > i { animation:cv6-live-sweep 0.85s cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes cv6-live-sweep { from { transform:translateX(-105%); } to { transform:translateX(280%); } }
+@media (prefers-reduced-motion:reduce) { [data-cv6] .cv6-live-progress.is-indeterminate > i { animation:none; transform:translateX(80%); } }
+
+/* Room history / reset lives inside the three-dot options panel. */
+[data-cv6] .room-history-message { padding:11px 0; border-bottom:1px solid var(--divider); }
+[data-cv6] .room-history-message:last-child { border-bottom:none; }
+[data-cv6] .room-history-message > div { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+[data-cv6] .room-history-message strong { font-size:12.5px; color:var(--fg); }
+[data-cv6] .room-history-message span { font-size:10.5px; color:var(--faint); }
+[data-cv6] .room-history-message p { margin:5px 0 0; color:var(--muted); font-size:12.5px; line-height:1.45; white-space:pre-wrap; }
+[data-cv6] .room-clear-card { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+[data-cv6] .room-clear-card > div:first-child { flex:1 1 220px; }
+[data-cv6] .room-clear-card strong { color:var(--fg); font-size:13px; }
+[data-cv6] .room-clear-card p { color:var(--muted); font-size:12px; line-height:1.45; margin:4px 0 0; }
+[data-cv6] .room-settings-danger { min-height:36px; padding:0 14px; border:1px solid rgba(248,113,113,.42); background:transparent; color:var(--error,#f87171); font:600 12.5px var(--font-sans); cursor:pointer; }
+
+/* Chat headers expose only the two stable actions. Everything else lives in
+   the shared overflow, keeping mobile and desktop muscle memory identical. */
+[data-cv6] .mhactions { position:relative; }
+[data-cv6] .desktop-room-header { position:relative; }
+[data-cv6] .cv6-chat-header-button {
+  width:38px;
+  min-width:38px;
+  height:38px;
+  padding:0;
+  border:1px solid var(--hair);
+  background:var(--chip);
+  color:var(--fg);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50% !important;
+  cursor:pointer;
+}
+[data-cv6] .cv6-chat-header-button[aria-expanded="true"] { color:var(--accent); background:var(--accent-weak); }
+[data-cv6] .cv6-chat-more-scrim { position:fixed; inset:0; z-index:48; border:0; background:transparent; }
+[data-cv6] .cv6-chat-more-menu {
+  position:absolute;
+  z-index:49;
+  top:calc(100% + 8px);
+  right:0;
+  width:210px;
+  padding:6px;
+  border:1px solid var(--hair);
+  border-radius:14px;
+  /* Menus sit on top of message text, so they need an opaque reading plane even
+     when the surrounding app is using the translucent glass theme. The existing
+     composer token is solid in dark, light, and glass palettes. */
+  background:var(--composer-solid, #131317);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  isolation:isolate;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+[data-cv6] .cv6-chat-more-menu > button {
+  min-height:38px;
+  padding:0 11px;
+  border:0;
+  background:transparent;
+  color:var(--fg);
+  font:550 12.5px var(--font-sans);
+  text-align:left;
+  cursor:pointer;
+}
+[data-cv6] .cv6-chat-more-menu > button:hover { background:var(--surface-2); }
+
+/* Work-indicator dropdown — anchored to .desktop-room-header (position:relative)
+   on desktop, and to .mhactions (position:relative) on mobile via fixed positioning.
+   Matches the More menu visual language exactly; wider to fit the work list. */
+[data-cv6] .cv6-work-dropdown {
+  position:absolute;
+  z-index:49;
+  top:calc(100% + 8px);
+  right:0;
+  width:300px;
+  border:1px solid var(--hair);
+  border-radius:14px;
+  background:var(--composer-solid, #131317);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  isolation:isolate;
+  overflow:hidden;
+}
+/* The RoomWorkList inside the dropdown owns its own padding/margins; strip the
+   outer margin that assumes it lives in the scroll body. */
+[data-cv6] .cv6-work-dropdown [data-testid="cv6-room-work-list"] {
+  margin:0 !important;
+}
+
+/* Spin animation for the work indicator dot on the header icon.
+   Matches cv6WorklistSpin in RoomWorkList's inline <style>; keeping both so the
+   icon animates even before the dropdown has mounted RoomWorkList. */
+@keyframes cv6WorklistSpin { to { transform:rotate(360deg); } }
+[data-cv6] .cv6-worklist-spin { animation:cv6WorklistSpin .45s linear infinite; }
+
+@media (max-width:640px) {
+  /* Match the shared mobile 44px touch floor on both axes so the icon actions
+     stay true circles instead of becoming 36 x 44 rounded rectangles. */
+  [data-cv6] .cv6-chat-header-button { width:44px; min-width:44px; height:44px; }
+  [data-cv6] .cv6-chat-more-menu { position:fixed; top:calc(env(safe-area-inset-top,0px) + 66px); right:12px; }
+  /* On mobile the dropdown uses fixed positioning to escape the mhdr clip area. */
+  [data-cv6] .cv6-work-dropdown { position:fixed; top:calc(env(safe-area-inset-top,0px) + 66px); right:12px; }
+}
+
+/* ── ACTION ITEMS RESKIN (R2c, task 42021fa1) ──────────────────────────────────────
+   Three states clearly different at a glance: active (hero), todo (quiet), done (dimmed).
+   Tokens from kit-FINAL-2026-06-20/tokens/themes.css — never eyeballed. No gold in Corner.
+   All three themes (dark/light/glass) adapt automatically via var() tokens.
+   §5 compliance: progress bar is indeterminate (no percentage, no proportional fill).
+   Typography: Inter var(--font-sans), normal-width, sentence case — NOT condensed, NOT uppercase.
+   Applies to both inline RoomWorkList and the .cv6-work-dropdown placement (same component).
+   ─────────────────────────────────────────────────────────────────────────────────────── */
+
+/* Header title */
+[data-cv6] .cv6-wl-title {
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:-.015em;
+  color:var(--fg);
+  font-family:var(--font-sans);
+}
+
+/* "N running" pill badge */
+[data-cv6] .cv6-wl-running-badge {
+  display:inline-flex;
+  align-items:center;
+  padding:2px 9px;
+  border-radius:var(--radius-pill,50px);
+  background:var(--accent);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  font-family:var(--font-sans);
+  letter-spacing:.01em;
+  white-space:nowrap;
+  line-height:18px;
+}
+
+/* ── Item card wrapper ── */
+[data-cv6] .cv6-wl-item {
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  border-radius:11px;
+  padding:10px 11px;
+  margin-bottom:5px;
+  background:var(--surface);
+  border:1px solid var(--hair);
+}
+[data-cv6] .cv6-wl-item:last-child { margin-bottom:0; }
+
+/* Active / hero card: accent-weak fill + solid accent left edge */
+[data-cv6] .cv6-wl-item--active {
+  background:var(--accent-weak);
+  border-color:transparent;
+  border-left:3px solid var(--accent);
+  padding-left:9px; /* compensate for 2px wider border so content stays aligned */
+}
+
+/* Done card: dimmed, no border */
+[data-cv6] .cv6-wl-item--done {
+  background:transparent;
+  border-color:transparent;
+  opacity:0.6;
+}
+
+/* ── Content column ── */
+[data-cv6] .cv6-wl-content {
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── Label (item text) ──
+   Normal-width Inter, sentence case. Typography is not a preference (MOBILE-BUILD-SPEC §3).
+   Active: 15px/600 — quiet items: 13px/500. Never condensed, never uppercase. */
+[data-cv6] .cv6-wl-label {
+  font-size:13px;
+  font-weight:500;
+  line-height:1.35;
+  color:var(--fg);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-label {
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:-.01em;
+  white-space:normal; /* allow wrap at hero size */
+  overflow:visible;
+  text-overflow:clip;
+}
+[data-cv6] .cv6-wl-item--done .cv6-wl-label {
+  text-decoration:line-through;
+  color:var(--faint);
+}
+
+/* ── Owner subtitle ── */
+[data-cv6] .cv6-wl-owner {
+  font-size:11px;
+  font-weight:400;
+  color:var(--muted);
+  margin-top:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-family:var(--font-sans);
+}
+
+/* ── Progress bar: active items only, indeterminate (§5) ──
+   No percentage. No proportional fill. A shimmer passes through a fixed-width chunk.
+   Reported: real per-task progress is unavailable from the checklist / useRunningTasks
+   data model — items have no completion percentage. Indeterminate is the correct fallback. */
+[data-cv6] .cv6-wl-bar {
+  height:3px;
+  border-radius:2px;
+  /* Track: semi-opaque white readable on accent-weak background */
+  background:rgba(255,255,255,.14);
+  overflow:hidden;
+  margin:8px 0 2px;
+}
+[data-cv6] .cv6-wl-bar-fill {
+  height:100%;
+  border-radius:2px;
+  background:var(--accent);
+  width:38%;
+  animation:cv6WlBarShimmer 1.8s ease-in-out infinite;
+}
+@keyframes cv6WlBarShimmer {
+  0%   { transform:translateX(-220%); }
+  100% { transform:translateX(380%); }
+}
+@media (prefers-reduced-motion:reduce) {
+  [data-cv6] .cv6-wl-bar-fill { animation:none; width:55%; opacity:.5; }
+}
+
+/* ── Status row: state-word + elapsed time ── */
+[data-cv6] .cv6-wl-status {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin-top:5px;
+}
+
+/* Lime pulse dot — active state only */
+[data-cv6] .cv6-wl-dot {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--status-working, #A3E635);
+  flex:none;
+  animation:statPulse 1.7s infinite; /* reuses statPulse already defined in this file */
+}
+
+/* State word: "running" / "to do" / "done" */
+[data-cv6] .cv6-wl-state-word {
+  font-size:11px;
+  font-weight:500;
+  color:var(--muted);
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-state-word {
+  font-weight:600;
+  color:var(--status-working, #A3E635); /* lime to match the dot */
+}
+
+/* Elapsed time — right-aligned via margin-left:auto */
+[data-cv6] .cv6-wl-time {
+  margin-left:auto;
+  font-size:11px;
+  font-family:var(--font-mono);
+  color:var(--muted);
+  font-variant-numeric:tabular-nums;
+  flex:none;
+}
+[data-cv6] .cv6-wl-item--active .cv6-wl-time { color:var(--accent); }
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/* ── Long-text choice buttons: stop overflow, read as clean cards ─────────────
+   Base .chip-btn has a fixed 34px height + centered single line, so a long
+   choice label spilled above and below the pill (IMG_2144). Make chip-btn grow
+   with its content, and give multi-word choice buttons a stacked, full-width,
+   left-aligned card treatment. Short quick-reply chips are visually unchanged
+   (single line still resolves to 34px via min-height). */
+[data-cv6] .chip-btn, [data-cv6kit] .chip-btn {
+  height:auto;
+  min-height:34px;
+  padding:8px 13px;
+  line-height:1.4;
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+/* ── Decision cards ──────────────────────────────────────────────────────────
+   A ChoiceBlock is a "pick one" moment, not a chat bubble. Each option renders
+   as a full-width card with a leading select-dot, roomy padding, and a clear
+   recommended-vs-alternate hierarchy — never a heavy solid-blue block that
+   mimics a sent message. Scoped to .is-choice so quick-reply chips stay tiny. */
+[data-cv6] .chips.is-choice, [data-cv6kit] .chips.is-choice {
+  flex-direction:column;
+  align-items:stretch;
+  gap:9px;
+}
+[data-cv6] .chips.is-choice .chip-btn,
+[data-cv6kit] .chips.is-choice .chip-btn {
+  width:100%;
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:11px;
+  min-height:0;
+  padding:13px 15px;
+  /* a global touch/PWA sheet pill-shapes every .chip-btn with radius:999px
+     !important — decision cards must defeat it to read as cards, not pills. */
+  border-radius:14px !important;
+  border:1px solid var(--hair);
+  background:var(--surface);
+  color:var(--fg);
+  font-size:13.5px;
+  font-weight:500;
+  line-height:1.45;
+  text-align:left;
+  transition:border-color .16s ease, background .16s ease, transform .12s ease;
+}
+[data-cv6] .chips.is-choice .chip-btn:hover,
+[data-cv6kit] .chips.is-choice .chip-btn:hover { border-color:var(--accent); }
+[data-cv6] .chips.is-choice .chip-btn:active,
+[data-cv6kit] .chips.is-choice .chip-btn:active { transform:scale(.99); }
+
+/* leading select-dot */
+[data-cv6] .chips.is-choice .chip-dot,
+[data-cv6kit] .chips.is-choice .chip-dot {
+  width:18px; height:18px; border-radius:50%;
+  border:2px solid var(--hair); background:transparent;
+  flex:none; margin-top:1px;
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .16s ease, background .16s ease;
+}
+/* text column — badge stacks ABOVE the text so a long label keeps full width */
+[data-cv6] .chips.is-choice .chip-main,
+[data-cv6kit] .chips.is-choice .chip-main {
+  flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; align-items:flex-start;
+}
+[data-cv6] .chips.is-choice .chip-txt,
+[data-cv6kit] .chips.is-choice .chip-txt { min-width:0; overflow-wrap:anywhere; }
+
+/* recommended tag */
+[data-cv6] .chips.is-choice .chip-badge,
+[data-cv6kit] .chips.is-choice .chip-badge {
+  flex:none;
+  font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  padding:3px 8px; border-radius:20px;
+  color:var(--accent); background:var(--accent-weak); white-space:nowrap;
+}
+
+/* recommended card — accent-tinted, not solid blue */
+[data-cv6] .chips.is-choice .chip-btn.is-recommended,
+[data-cv6kit] .chips.is-choice .chip-btn.is-recommended {
+  border-color:var(--accent);
+  background:linear-gradient(180deg,var(--accent-weak),transparent);
+  font-weight:600;
+}
+[data-cv6] .chips.is-choice .chip-btn.is-recommended .chip-dot,
+[data-cv6kit] .chips.is-choice .chip-btn.is-recommended .chip-dot {
+  border-color:var(--accent); background:var(--accent);
+}
+
+/* Summary headline (2026-08-06): the BLUF bottom line. The card already had
+   bullets and tickable actions; it had nowhere to put the one sentence that
+   IS the answer, so that sentence lived in loose prose above the thread. */
+[data-cv6] .sheadline { font-size:14.5px; font-weight:650; line-height:1.45; color:var(--fg); letter-spacing:-.01em; padding-bottom:3px; }
+[data-cv6] .sheadline + .sbullet { margin-top:2px; }
+/* ── In-chat composer: collapses to a FAB after send (task 24452dfa, 2026-08-07) ──────────
+   The composer wrapper animates shut on send (slides + fades DOWN, 220ms ease-in).
+   A floating action button springs in at the same moment (scale+fade, spring curve).
+   Tapping the FAB re-opens the composer and focuses the input.
+   The collapse button (chevron-down in the wrapper top-right, or the mobile header)
+   lets Patrik collapse manually at any time. On room entry the composer always starts open.
+   ──────────────────────────────────────────────────────────────────────────────────────── */
+
+/* Wrapper that collapses the composer area */
+[data-cv6] .cv6-composer-wrap {
+  overflow: hidden;
+  max-height: 220px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: max-height 0.22s cubic-bezier(0.4,0,1,1),
+              opacity 0.18s ease,
+              transform 0.2s cubic-bezier(0.4,0,1,1);
+}
+[data-cv6] .cv6-composer-wrap.is-collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+/* Small chevron-down collapse button, rendered above the composer border */
+[data-cv6] .cv6-composer-collapse-btn {
+  width: 28px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+[data-cv6] .cv6-composer-collapse-btn:hover,
+[data-cv6] .cv6-composer-collapse-btn:focus-visible {
+  color: var(--muted);
+  background: var(--surface-2);
+  outline: none;
+}
+
+/* Floating action button — appears bottom-right of the chat column after collapse */
+[data-cv6] .cv6-chat-fab {
+  position: absolute;
+  bottom: 20px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 28px -8px rgba(0,0,0,.72), 0 2px 8px -2px rgba(0,0,0,.38);
+  transform: scale(0.5);
+  opacity: 0;
+  transition: transform 0.24s cubic-bezier(0.34,1.56,0.64,1), opacity 0.16s ease;
+  z-index: 12;
+  pointer-events: none;
+}
+[data-cv6] .cv6-chat-fab.is-visible {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: all;
+}
+[data-cv6] .cv6-chat-fab:hover { filter: brightness(1.12); }
+[data-cv6] .cv6-chat-fab:active { transform: scale(0.94); }
+
+/* Mobile: FAB anchors just above the safe-area so it sits where the composer was */
+@media (max-width: 899px) {
+  [data-cv6] .cv6-chat-fab {
+    right: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+  }
+}
+
+/* Mobile composer host — transition class for smooth collapse */
+[data-cv6] .cv6-mcomposer-host {
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.4,0,1,1);
+}
+[data-cv6] .cv6-mcomposer-host.is-collapsed {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+/* When composer is collapsed, jumplive moves up (no composer to clear) */
+[data-cv6].cv6-chat-composer-collapsed .jumplive { bottom: 80px !important; }
+/* ── R2b: Mobile chat CHAT screen reskin ──────────────────────────────────── */
+/* §2 + §9c: one fixed-height working card + rounded message bubbles.          */
+/* Tokens copied exactly from kit-FINAL-2026-06-20. No hex invented.           */
+
+/* ── Step card (inline chat placement, expandable=false) ──── */
+/* §9c structural-change exception: RoomWorkList renders this when expandable=false.
+   The card is fixed-height — cross-fading step text means no accumulated vertical space. */
+[data-cv6] .cv6-step-card {
+  margin: 8px 0 10px;
+  padding: 12px 14px 10px;
+  border-radius: 0 14px 14px 0;
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  font-family: var(--font-sans);
+}
+/* Header row: spinner + state title + step counter */
+[data-cv6] .cv6-sc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+/* Small circular spinner — 14px, accent color */
+[data-cv6] .cv6-sc-spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  flex: none;
+  animation: cv6ScSpin .8s linear infinite;
+}
+@keyframes cv6ScSpin { to { transform: rotate(360deg); } }
+/* State title: "Thinking it through" */
+[data-cv6] .cv6-sc-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+  flex: 1;
+  letter-spacing: -.01em;
+}
+/* Step counter: "Step 3 of 4" — right-aligned, tabular nums */
+[data-cv6] .cv6-sc-counter {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+/* Current step text — fades in when step changes (key-driven remount) */
+[data-cv6] .cv6-sc-current {
+  font-size: 13px;
+  color: var(--fg);
+  line-height: 1.4;
+  animation: cv6ScFadeIn .22s ease;
+}
+@keyframes cv6ScFadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* Ghost previous-step line — fades out, then JSX unmounts it */
+[data-cv6] .cv6-sc-prev {
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.4;
+  margin-top: 2px;
+  animation: cv6ScFadeOut .45s ease forwards;
+}
+@keyframes cv6ScFadeOut { from { opacity: 0.32; } to { opacity: 0; } }
+/* Progress bar row: slim bar + percentage */
+[data-cv6] .cv6-sc-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+[data-cv6] .cv6-sc-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,.10);
+  border-radius: 2px;
+  overflow: hidden;
+}
+[data-app-theme="light"] [data-cv6] .cv6-sc-bar { background: rgba(0,0,0,.10); }
+[data-cv6] .cv6-sc-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .45s ease;
+}
+/* Indeterminate shimmer — §5: no % on this path, no proportional fill */
+[data-cv6] .cv6-sc-bar.is-indeterminate .cv6-sc-bar-fill {
+  width: 38% !important;
+  transition: none;
+  animation: cv6ScShimmer 1.6s ease-in-out infinite;
+}
+@keyframes cv6ScShimmer {
+  0%   { transform: translateX(-210%); }
+  100% { transform: translateX(360%); }
+}
+[data-cv6] .cv6-sc-pct {
+  font-size: 11px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: right;
+  flex: none;
+}
+/* prefers-reduced-motion: instant text swap, keep bar width transition only */
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] .cv6-sc-spin    { animation: none; border-top-color: var(--accent); opacity: .7; }
+  [data-cv6] .cv6-sc-current { animation: none; }
+  [data-cv6] .cv6-sc-prev    { animation: none; opacity: 0; }
+  [data-cv6] .cv6-sc-bar.is-indeterminate .cv6-sc-bar-fill { animation: none; width: 50% !important; }
+  /* bar width transition is kept — spec says "keep only the bar width transition" */
+}
+
+/* ── Mobile chat message bubbles ──────────────────────────── */
+/* User: right-aligned accent bubble. Agent: dark surface card with avatar.
+   §8a: small JSX restructure in MobileMessageTurn required (CSS cannot reorder
+   the time label from header-above to footer-below the bubble without JSX change). */
+
+/* Shared bubble base */
+[data-cv6] .cv6-mob-bubble {
+  position: relative;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  max-height: 168px;
+  overflow: hidden;
+}
+[data-cv6] .cv6-mob-bubble.is-clamped::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 64px;
+  pointer-events: none;
+}
+
+/* User bubble */
+[data-cv6] .cv6-mob-bubble--user {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 18px 18px 4px 18px;
+  align-self: flex-end;
+}
+[data-cv6] .cv6-mob-bubble--user.is-clamped::after {
+  background: linear-gradient(transparent, var(--accent));
+}
+[data-cv6] .cv6-mob-bubble--user * { color: #fff !important; }
+/* Show more button for user bubbles — white text on accent bg */
+[data-cv6] .longmsg-more.cv6-mob-more-user { color: rgba(255,255,255,.8); }
+
+/* Agent bubble */
+[data-cv6] .cv6-mob-bubble--agent {
+  background: var(--surface-2);
+  border: 1px solid var(--hair);
+  color: var(--fg);
+  padding: 10px 14px;
+  border-radius: 4px 18px 18px 18px;
+}
+[data-cv6] .cv6-mob-bubble--agent.is-clamped::after {
+  background: linear-gradient(transparent, var(--surface-2));
+}
+
+/* Timestamp — small, below the bubble */
+[data-cv6] .cv6-mob-ts {
+  display: block;
+  font-size: 10.5px;
+  color: var(--faint);
+  font-family: var(--font-mono);
+}
+
+/* Agent name above the bubble — same treatment as .gname */
+[data-cv6] .cv6-mob-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+/* Visually shorter chat controls keep generous invisible hit slop for touch. */
+[data-cv6] .cv6-chat-header-button,
+[data-cv6] button.cv6-composer-util,
+[data-cv6] button.cv6-composer-primary,
+[data-cv6] button.cv6-composer-attach { position:relative; isolation:isolate; }
+[data-cv6] .cv6-chat-header-button { width:34px; min-width:34px; height:34px; min-height:34px; min-block-size:34px; }
+[data-cv6] button.cv6-composer-util { height:32px !important; min-height:32px; min-block-size:32px; }
+[data-cv6] button.cv6-composer-primary { width:38px !important; height:38px !important; min-width:38px; min-height:38px; min-block-size:38px; }
+[data-cv6] button.cv6-composer-attach { width:34px !important; height:34px !important; min-width:34px; min-height:34px; min-block-size:34px; }
+[data-cv6] :is(.cv6-chat-header-button, button.cv6-composer-util, button.cv6-composer-primary, button.cv6-composer-attach)::before {
+  content:"";
+  position:absolute;
+  inset:-5px -4px;
+  border-radius:inherit;
+}
+[data-cv6] [data-role="composer-actions"] { gap:7px !important; margin-top:8px !important; }
+[data-cv6] .cv6-composer-wrap:has(.cv6-floating-composer.is-checklist-open) { max-height:min(620px, 72vh); }
+
+@media (max-width:640px) {
+  [data-cv6] .cv6-chat-header-button { width:var(--cv6-bar-control-size); min-width:var(--cv6-bar-control-size); height:var(--cv6-bar-control-size); min-height:var(--cv6-bar-control-size); min-block-size:var(--cv6-bar-control-size); }
+  [data-cv6] .mhdr .mhactions { gap:6px; }
+  [data-cv6] .cv6-room-identity-layer { align-items:flex-end; padding:10px; }
+  [data-cv6] .cv6-room-identity-card { width:100%; max-height:calc(100dvh - env(safe-area-inset-top, 0px) - 18px); padding:17px; border-radius:22px; }
+  /* iOS auto-zoom prevention: inputs below 16px trigger Safari zoom on focus */
+  [data-cv6] .finput { font-size:16px; }
+  [data-cv6] .cv6-autoreply-grid :where(input,select,textarea) { font-size:16px; }
+}
+/* R24: one centered conversation lane on phone, iPad, and desktop. The room identity
+   already lives in the sticky header, so the repeated one-sided agent avatar gutter
+   only shifts the visual center of bubbles and structured cards. Remove it everywhere
+   this lifecycle thread renders and let the named lane own responsive width. */
+[data-cv6][data-screen="chat-room"] .cv6-mobile-turn-avatar { display:none !important; }
+[data-cv6][data-screen="chat-room"] .cv6-chat-reading-lane {
+  width:100%;
+  max-width:760px;
+  margin-inline:auto;
+}
+
+@media (max-width:899px) {
+  /* Compact chat chrome preserves more of the iPad's vertical canvas while the
+     invisible ::before hit areas retain comfortable touch targets. */
+  [data-cv6] .cv6-floating-composer { padding:8px !important; border-radius:13px !important; }
+  [data-cv6] .cv6-composer-input-shell { min-height:40px !important; border-radius:8px !important; }
+  [data-cv6] button.cv6-composer-util { height:30px !important; min-height:30px; min-block-size:30px; border-radius:7px !important; }
+  [data-cv6] button.cv6-composer-primary { width:34px !important; height:34px !important; min-width:34px; min-height:34px; min-block-size:34px; border-radius:8px !important; }
+  [data-cv6] button.cv6-composer-attach { width:32px !important; height:32px !important; min-width:32px; min-height:32px; min-block-size:32px; border-radius:7px !important; }
+  [data-cv6] [data-role="composer-actions"] { gap:6px !important; margin-top:7px !important; }
+  [data-cv6] :is(button.cv6-composer-util, button.cv6-composer-primary, button.cv6-composer-attach)::before { inset:-6px -4px; }
+}
+
+@media (max-width:640px) {
+  [data-cv6][data-screen="chat-room"] > .scrbody { padding-left:12px !important; padding-right:12px !important; padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important; }
+}
+
+/* iPad portrait/split-view gets a deliberate desktop-derived canvas: a 720px
+   centered reading surface, aligned header and composer, and a contained Files
+   drawer. It remains the touch/swipe composition instead of forcing the 3-column
+   desktop rail into a viewport that cannot hold it. */
+@media (min-width:641px) and (max-width:899px) {
+  [data-cv6][data-screen="chat-room"] > .mhdr {
+    padding-left:max(24px, calc((100% - 720px) / 2)) !important;
+    padding-right:max(24px, calc((100% - 720px) / 2)) !important;
+  }
+  [data-cv6][data-screen="chat-room"] > .scrbody {
+    padding-left:max(24px, calc((100% - 720px) / 2)) !important;
+    padding-right:max(24px, calc((100% - 720px) / 2)) !important;
+    padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important;
+  }
+  [data-cv6][data-screen="chat-room"] > .mcomposer {
+    left:24px !important;
+    right:24px !important;
+    width:auto;
+    max-width:720px;
+    margin-inline:auto;
+    bottom:16px !important;
+  }
+  [data-cv6][data-screen="chat-room"] .cv6-fs-sheet {
+    left:24px;
+    right:24px;
+    width:auto;
+    max-width:720px;
+    height:min(820px, 88vh);
+    margin-inline:auto;
+    border:1px solid var(--hair);
+    border-bottom:0;
+  }
+}
+
+@media (min-width:641px) {
+  [data-cv6] .cv6-composer-input-shell textarea { font-size:14px !important; }
+}
+/* corner:truth-contracts R8 — exact-turn self-repair receipt. */
+.cv6-room-recovery{display:flex;align-items:flex-start;gap:9px;margin:8px 14px;padding:9px 11px;border:1px solid color-mix(in srgb,var(--accent) 34%,var(--hair));border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,var(--surface));color:var(--muted);font-size:11.5px;line-height:1.42}
+.cv6-room-recovery strong{display:block;margin-bottom:1px;color:var(--fg);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.cv6-room-recovery-mark{display:grid;place-items:center;flex:0 0 22px;height:22px;border-radius:50%;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);font-size:13px;font-weight:800}
+.cv6-room-recovery.is-recovering .cv6-room-recovery-mark{animation:cv6-room-repair-spin 1.4s linear infinite}
+.cv6-room-recovery.is-attention{border-color:color-mix(in srgb,#e6a14b 38%,var(--hair));background:color-mix(in srgb,#e6a14b 8%,var(--surface))}
+.cv6-room-recovery.is-attention .cv6-room-recovery-mark{color:#e6a14b;background:rgba(230,161,75,.12)}
+@keyframes cv6-room-repair-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.cv6-room-recovery.is-recovering .cv6-room-recovery-mark{animation:none}}
+
+/* corner:bridge frontend-visibility (2026-08-09) — failure states borrow the recovery
+   strip's language rather than inventing a second one: same slim card, same amber for
+   "needs a look", same accent for "working on it". Only the actions are new. */
+.cv6-room-recovery-body{flex:1;min-width:0}
+.cv6-room-recovery-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cv6-room-recovery-act{padding:5px 11px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--hair));border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--fg);font:inherit;font-size:11px;font-weight:650;letter-spacing:.01em;cursor:pointer}
+.cv6-room-recovery-act:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
+.cv6-room-recovery-act.is-quiet{border-color:var(--hair);background:transparent;color:var(--muted)}
+.cv6-room-recovery-act.is-quiet:hover{color:var(--fg);border-color:color-mix(in srgb,var(--accent) 30%,var(--hair))}
+
+/* The whole thread failed to load: the honest version of the empty room. */
+.cv6-thread-error{margin:24px auto;max-width:420px;padding:18px 18px 16px;border:1px solid color-mix(in srgb,#e6a14b 30%,var(--hair));border-radius:14px;background:color-mix(in srgb,#e6a14b 6%,var(--surface));text-align:center}
+.cv6-thread-error-title{color:var(--fg);font-size:14px;font-weight:650;margin-bottom:4px}
+.cv6-thread-error-body{color:var(--muted);font-size:12.5px;line-height:1.45;margin-bottom:12px}
+
+/* A message that did not send keeps its bubble, dimmed and outlined, with the reason
+   and one tap to send it again. It never disappears on its own. */
+[data-cv6] .pb-me.is-failed,[data-cv6] .cv6-mob-bubble--user.is-failed{opacity:.62;border:1px dashed color-mix(in srgb,#e6a14b 55%,transparent)}
+.cv6-msg-failed{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:5px;color:#e6a14b;font-size:11px;line-height:1.35}
+.cv6-msg-failed-text{opacity:.92}
+.cv6-msg-failed-retry{padding:3px 10px;border:1px solid color-mix(in srgb,#e6a14b 45%,transparent);border-radius:999px;background:rgba(230,161,75,.12);color:#e6a14b;font:inherit;font-size:11px;font-weight:650;cursor:pointer}
+.cv6-msg-failed-retry:hover{background:rgba(230,161,75,.2)}
+
+/* Composer-side cause line: sits directly above the box you typed in. */
+.cv6-send-error{display:flex;align-items:flex-start;gap:10px;margin:0 14px 8px;padding:8px 11px;border:1px solid color-mix(in srgb,#e6a14b 34%,var(--hair));border-radius:10px;background:color-mix(in srgb,#e6a14b 9%,var(--surface));color:#e6a14b;font-size:11.5px;line-height:1.42}
+.cv6-send-error span{flex:1;min-width:0}
+.cv6-send-error button{flex:none;border:none;background:none;color:inherit;font-size:15px;line-height:1;padding:0 2px;cursor:pointer;opacity:.7}
+.cv6-send-error button:hover{opacity:1}
+
+/* R-SMOOTHNESS Round D: live draft caret (theme-safe, uses currentColor) */
+.cv6-draft-cursor{display:inline-block;width:7px;height:14px;margin-left:3px;vertical-align:-2px;background:currentColor;opacity:.55;animation:cv6DraftBlink 1s steps(1) infinite}
+@keyframes cv6DraftBlink{50%{opacity:.12}}

@@ -1,0 +1,169 @@
+/* cv6-nav.css -- workspace canvas, columns, mobile navigation */
+
+/* R11 one-page workspace. Home/tools stay mounted as the base column while
+   every room and Email appends an independent, fixed-width sibling. The page
+   never navigates away; overflow belongs to this horizontal canvas. */
+[data-cv6] .cv6-workspace-canvas {
+  flex:1;
+  min-width:0;
+  min-height:0;
+  display:flex;
+  align-items:stretch;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  scrollbar-width:thin;
+  background:transparent;
+}
+[data-cv6] .cv6-workspace-base {
+  flex:1 0 100%;
+  width:auto;
+}
+[data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base {
+  flex:0 0 clamp(560px,50vw,760px);
+}
+[data-cv6] .cv6-workspace-column {
+  position:relative;
+  flex:0 0 400px;
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  border-left:1px solid var(--divider);
+  background:var(--ground);
+  box-shadow:none;
+}
+[data-cv6] .cv6-column-close { background:transparent; border-color:transparent; }
+[data-cv6] .cv6-column-close:hover { background:var(--surface-2); border-color:var(--hair); }
+[data-cv6] .cv6-column-expand { background:transparent; border-color:transparent; }
+[data-cv6] .cv6-column-expand:hover { background:var(--surface-2); border-color:var(--hair); }
+[data-cv6] .cv6-column-expand[aria-pressed="true"] { color:var(--accent); }
+/* Two controls now share the email tab bar's end slot. */
+[data-cv6] .cv6-email-side.is-end { gap:4px; }
+/* Widen to double (Patrik 2026-08-06: "expand to twice their width with an expansion
+   icon next to the close icon"). 400 -> 800, matching the base flex-basis above. Only
+   at desktop width — the narrow media query below makes every column 100%, where there
+   is nothing to widen INTO, and CornerCV6 passes no toggle there so the button is
+   absent too. Declared before that query so the 100% rule still wins on phone. */
+@media (min-width:900px) {
+  [data-cv6] .cv6-workspace-column[data-column-expanded="1"] { flex:0 0 800px; }
+}
+/* On glass the workspace column must read as frosted glass, not a solid panel:
+   at .72 the fill sat as an opaque dark box over the wallpaper, so the chat
+   column had a hard seam against the gradient showing beside it (Patrik
+   2026-07-22 "weird dark background, not seamless with the glass behind it").
+   Drop the fill so the one body-painted wallpaper flows through the column and
+   the blur carries legibility. .34 (vs the .44 thin-band value) because a
+   full-height reading column reads heavier than a bar at the same alpha. */
+[data-app-theme="glass"] [data-cv6] .cv6-workspace-column { background:rgba(10,14,20,.34); backdrop-filter:blur(26px) saturate(1.2); -webkit-backdrop-filter:blur(26px) saturate(1.2); }
+@media (min-width:900px) {
+  /* corner:front-door: at the FRONT DOOR (no room columns open) Home is full
+     width and the convo column hosts the intake composer. The moment any room
+     column opens (data-column-count >= 1) Home collapses to the 340px rail and
+     the room takes center — the shipped One Page behavior, unchanged. */
+  [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base[data-cv6-view="home"] {
+    flex:0 0 340px;
+    width:340px;
+  }
+  [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base[data-cv6-view="home"] [data-screen="home-desktop"] .rooms {
+    width:100%;
+    box-sizing:border-box;
+  }
+  [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base[data-cv6-view="home"] [data-screen="home-desktop"] .convo {
+    display:none;
+  }
+}
+[data-cv6] [data-cv6-intake] { display:block; width:100%; margin-bottom:22px; }
+@keyframes cv6IntakeSpin { to { transform:rotate(360deg); } }
+[data-cv6] .cv6-intake-spin { animation:cv6IntakeSpin .7s linear infinite; }
+
+/* ---- Front door, composer at the BOTTOM (Patrik 2026-08-06) --------------
+   It used to sit at the top with the recents digest under it, and the digest
+   slid away the moment you typed — so the two halves of the front door were
+   never on screen together. Now the column is a chat shape: "Pick up where you
+   left off" fills the space and SCROLLS (all 30, not the old 6-row cap), the
+   composer is docked under it, and neither one hides the other. The collapse-on-
+   compose rule is gone with it. */
+/* min-height:0 is load-bearing: as a flex item its default min-height:auto let the
+   column grow to the full 30-row content height (2094px in a 733px pane), which
+   pushed the docked composer clean off the bottom of the screen. */
+[data-cv6] .convo-ready.is-none .convo-rest2 { align-items:stretch; min-height:0; }
+[data-cv6] .convo-ready.is-none .restcol {
+  display:flex; flex-direction:column; min-height:0; height:100%;
+  margin:0 auto; padding:20px 0 4px; box-sizing:border-box;
+}
+[data-cv6] .convo-ready.is-none .restcol > [data-cv6-intake] {
+  order:2; flex:none; margin:14px 0 0;
+}
+[data-cv6] .convo-ready.is-none .restcol > .restlist,
+[data-cv6] .convo-ready.is-none .restcol > .restempty {
+  order:1; flex:1 1 auto; min-height:0;
+}
+[data-cv6] .convo-ready.is-none .restcol > .restlist { display:flex; flex-direction:column; }
+[data-cv6] .convo-ready.is-none .restcol > .restlist.is-none { display:none; }
+/* the heading stays put; only the rows scroll */
+[data-cv6] .convo-ready.is-none .restcol > .restlist > .subhdr { flex:none; }
+[data-cv6] .convo-ready.is-none .restcol .restrows {
+  flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+  padding-right:4px;
+}
+[data-cv6] .convo-ready.is-none .restcol > .restempty { display:flex; align-items:center; justify-content:center; }
+/* must out-specify the rule above, or the empty state shows while rows exist */
+[data-cv6] .convo-ready.is-none .restcol > .restempty.is-has { display:none; }
+
+/* Mobile front door: the same move. The composer is docked over the bottom of the
+   screen (outside the scroller in the template) and .hbody reserves room for it so
+   the last "All rooms" row is always reachable.
+   --cv6-intake-h is published by the ResizeObserver in CornerCV6.jsx (same pattern
+   as --cv6-composer-h on the chat screen). It tracks the intake host's real height
+   so the reserve stays correct when IntakeConfirm appears and the box grows. */
+[data-cv6][data-screen="home-mobile"] { position:relative; }
+[data-cv6][data-screen="home-mobile"] .mintake {
+  position:absolute; left:22px; right:22px; bottom:20px; z-index:6;
+  margin-bottom:0;
+  width:auto; /* override [data-cv6-intake]{width:100%} — let left+right control width */
+}
+/* The list scrolls UNDER the floating box, so it needs both room to stop and a
+   scrim — without it a half-row peeked out beside and below the card.
+   Reserve = intake height + 20px bottom offset + 34px scrim above + 12px breathing room. */
+[data-cv6][data-screen="home-mobile"] .hbody { padding-bottom:calc(var(--cv6-intake-h, 120px) + 66px); }
+[data-cv6][data-screen="home-mobile"] .mintake::before {
+  content:''; position:absolute; left:-22px; right:-22px; bottom:-20px; top:-34px;
+  background:linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--ground) 34%, var(--ground) 100%);
+  pointer-events:none; z-index:-1;
+}
+html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8px; }
+/* Corner-logo thinking mark in the routing modal. */
+[data-cv6] .cv6-intake-thinking-mark { width:40px; height:40px; flex:none; }
+@media (max-width:899px) {
+  /* Native snap-paging is OFF on mobile (Patrik 2026-08-06): it walks the opposite way
+     to the swipe he asked for (left = Home, right = next chat), and two mechanisms
+     fighting over one gesture is worse than either. JS-driven swipe handles navigation;
+     overflow-x:hidden prevents the anti-hijack walk from bailing on the canvas. */
+  [data-cv6] .cv6-workspace-canvas { scroll-snap-type:none; scrollbar-width:none; overflow-x:hidden; scroll-behavior:smooth; }
+  [data-cv6] .cv6-workspace-canvas::-webkit-scrollbar { display:none; }
+  [data-cv6] .cv6-workspace-base,
+  [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base,
+  [data-cv6] .cv6-workspace-column {
+    flex:0 0 100%;
+    width:100%;
+    scroll-snap-align:none;
+  }
+  [data-cv6] .cv6-workspace-column { border-left:0; box-shadow:none; }
+}
+
+/* R11 mobile context actions: a held room row opens Corner's menu without
+   selecting its label or invoking Safari's touch-callout. Keep vertical pan
+   available so the room/project lists still scroll naturally. */
+[data-cv6] :where(.recentrow,.projrow,.missrow,.mresumecard,.restrow) {
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+  touch-action:pan-y;
+}
+
+/* The pan-x carve-out that used to live here is gone with the horizontal rail
+   (Patrik 2026-08-06): the recent list is a vertical stack now, so `.mresumecard`
+   wants the plain pan-y from the rule above. Leaving pan-x on a vertical list
+   makes iOS hesitate on the first scroll frame before it commits to the axis. */

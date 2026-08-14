@@ -1,0 +1,640 @@
+/* cv6-screens.css -- Other screens (email, command, tracker, settings, organize, review, scribe, search, onboarding) */
+
+/* ---- Command tool screen (ledger · activity dock · goal detail) ---- */
+[data-cv6][data-screen^="command"] code { font-family:var(--font-mono); background:var(--chip); padding:1px 6px; border-radius:5px; font-size:.85em; color:var(--fg); }[data-cv6][data-screen^="command"] .thead { display:flex; align-items:center; height:34px; border-bottom:1px solid var(--hair); font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }[data-cv6][data-screen^="command"] .grow { display:flex; align-items:center; height:64px; border-bottom:1px solid var(--divider); }[data-cv6][data-screen^="command"] .stat { width:fit-content; display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:6px; }[data-cv6][data-screen^="command"] .pdot { width:8px; height:8px; border-radius:50%; }
+
+/* command per-item helpers: pdot tints · open row · checklist · watcher toggle */
+[data-cv6][data-screen^="command"] .grow.is-open { background:var(--accent-weak); }
+[data-cv6][data-screen^="command"] .pdot.is-violet { background:var(--violet-400); }
+[data-cv6][data-screen^="command"] .pdot.is-accent { background:var(--accent); }
+[data-cv6][data-screen^="command"] .pdot.is-pink   { background:var(--pink-400); }
+[data-cv6][data-screen^="command"] .pdot.is-faint  { background:var(--faint); }
+[data-cv6][data-screen^="command"] .pdot.is-success { background:var(--success); }
+[data-cv6][data-screen^="command"] .cstep-mark { width:19px; height:19px; border-radius:50%; flex:none; box-sizing:border-box; border:2px solid var(--divider); display:flex; align-items:center; justify-content:center; }
+[data-cv6][data-screen^="command"] .cstep-label { color:var(--muted); }
+[data-cv6][data-screen^="command"] .cstep-tag { font-size:11px; color:var(--faint); flex:none; }
+[data-cv6][data-screen^="command"] .cstep.is-done .cstep-mark { border-color:var(--success); background:var(--success); }
+[data-cv6][data-screen^="command"] .cstep.is-done .cstep-label { text-decoration:line-through; }
+[data-cv6][data-screen^="command"] .cstep.is-done .cstep-tag { color:var(--success); }
+[data-cv6][data-screen^="command"] .cstep.is-queued .cstep-mark { border-color:var(--warn); }
+[data-cv6][data-screen^="command"] .cstep.is-queued .cstep-mark::after { content:''; width:7px; height:7px; border-radius:1px; background:var(--warn); }
+[data-cv6][data-screen^="command"] .cstep.is-queued .cstep-label { color:var(--fg); font-weight:500; }
+[data-cv6][data-screen^="command"] .cstep.is-queued .cstep-tag { color:var(--warn); background:var(--warn-weak,rgba(251,191,36,.16)); padding:3px 9px; border-radius:6px; }
+[data-cv6][data-screen^="command"] .cstep.is-active .cstep-mark { border-color:var(--success); }
+[data-cv6][data-screen^="command"] .cstep.is-active .cstep-mark::after { content:''; width:7px; height:7px; border-radius:50%; background:var(--success); animation:livePulse 1.6s infinite; }
+[data-cv6][data-screen^="command"] .cstep.is-active .cstep-label { color:var(--fg); font-weight:500; }
+[data-cv6][data-screen^="command"] .cstep.is-active .cstep-tag { color:var(--success); }
+[data-cv6][data-screen^="command"] .wtog { width:38px; height:22px; border-radius:11px; position:relative; flex:none; background:var(--chip); border:1px solid var(--hair); transition:background .15s; cursor:pointer; }
+[data-cv6][data-screen^="command"] .wtog-knob { position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--faint); transition:left .15s,background .15s; }
+[data-cv6][data-screen^="command"] .wtog.is-on { background:var(--accent); border-color:transparent; }
+[data-cv6][data-screen^="command"] .wtog.is-on .wtog-knob { left:18px; background:#fff; }
+/* R-trust (2026-07-13): a room whose loop is FAILING reads red at a glance --
+   a broken loop must never look like a healthy one. */
+[data-cv6][data-screen^="command"] .wtog.is-error { background:var(--error-weak); border-color:var(--error); }
+[data-cv6][data-screen^="command"] .wtog.is-error .wtog-knob { left:18px; background:var(--error); }
+/* Checklist round (2026-07-13): the cadence select, kit-dressed. The element carries
+   appearance:none inline; this adds the chevron + keeps the native popup on-theme.
+   Closes the GAP-LIST select primitive for the command screen. */
+/* Checklist round (2026-07-13): scroll cue for the goal detail panel. Base state is
+   hidden; when the panel actually overflows, the scroll-driven animation takes over --
+   visible at the top of the scroll range, gone by the bottom. Browsers without
+   scroll-timeline simply never show it (same as before the cue existed). */
+[data-cv6][data-screen^="command"] .gd-more {
+  position:sticky; bottom:0; align-self:stretch; flex:none;
+  display:flex; justify-content:center; padding:22px 0 8px; margin-top:-10px;
+  /* Steffen gate note (2026-07-13): steeper ramp so the scrim reads as a visible
+     fade band on the Dark ground too, not only on Light/Glass. */
+  background:linear-gradient(180deg, transparent, var(--ground, #0A0A0B) 52%);
+  pointer-events:none; opacity:0;
+}
+[data-cv6][data-screen^="command"] .gd-more-pill {
+  display:flex; align-items:center; gap:6px; padding:5px 12px;
+  border-radius:999px; background:var(--surface-2); border:1px solid var(--hair);
+  color:var(--muted); font-size:11px; font-weight:600; font-family:var(--font-sans);
+  box-shadow:0 6px 18px -8px rgba(0,0,0,.45);
+}
+@supports (animation-timeline: scroll()) {
+  [data-cv6][data-screen^="command"] .gd-more {
+    animation:gdMoreFade linear both;
+    animation-timeline:scroll(nearest);
+  }
+}
+@keyframes gdMoreFade { 0%,55% { opacity:1; } 85%,100% { opacity:0; } }
+/* Goal ledger rebuild (corner:corner-ui-cv6 2026-07-06): IDLE status chip + the
+   per-row "Open room" action that only shows when a row is stepped into. */
+[data-cv6][data-screen^="command"] .rowopen { display:none; }
+[data-cv6][data-screen^="command"] .rowopen.is-expanded { display:flex; align-items:center; }
+
+/* ---- Tracker tool screen (switcher · bug table · detail · mobile A/B/C) ---- */
+[data-cv6][data-screen^="tracker"] code { font-family:var(--font-mono); background:var(--chip); padding:1px 6px; border-radius:5px; font-size:.85em; color:var(--fg); }[data-cv6][data-screen^="tracker"] .trk { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; }[data-cv6][data-screen^="tracker"] .thead { display:flex; align-items:center; height:34px; border-bottom:1px solid var(--hair); font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }[data-cv6][data-screen^="tracker"] .trow { display:flex; align-items:center; height:60px; border-bottom:1px solid var(--divider); }[data-cv6][data-screen^="tracker"] .bid { font-family:var(--font-mono); font-size:11px; color:var(--faint); margin-top:2px; }[data-cv6][data-screen^="tracker"] .chip { font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:13px; }[data-cv6][data-screen^="tracker"] .ava { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; }[data-cv6][data-screen^="tracker"] .pdot { width:7px; height:7px; border-radius:50%; }
+
+/* tracker per-item helpers */
+[data-cv6][data-screen^="tracker"] .trk.is-open { background:var(--accent-weak); }
+[data-cv6][data-screen^="tracker"] .trow.is-open { background:var(--accent-weak); }
+/* tracker dot tints (switcher + priority) */
+[data-cv6][data-screen^="tracker"] .pdot.is-success { background:var(--success); }
+[data-cv6][data-screen^="tracker"] .pdot.is-faint   { background:var(--faint); }
+[data-cv6][data-screen^="tracker"] .pdot.is-high { background:#F87171; }
+[data-cv6][data-screen^="tracker"] .pdot.is-med  { background:var(--warn); }
+[data-cv6][data-screen^="tracker"] .pdot.is-low  { background:var(--accent); }
+/* bug status chip (.bchip) */
+[data-cv6][data-screen^="tracker"] .bchip { font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:13px; flex:none; }
+[data-cv6][data-screen^="tracker"] .bchip.is-open     { color:#F87171; background:rgba(248,113,113,.16); }
+[data-cv6][data-screen^="tracker"] .bchip.is-openlow  { color:var(--accent); background:var(--accent-weak); }
+[data-cv6][data-screen^="tracker"] .bchip.is-progress { color:var(--warn); background:var(--warn-weak,rgba(251,191,36,.16)); }
+[data-cv6][data-screen^="tracker"] .bchip.is-done     { color:var(--success); background:var(--success-weak); }
+/* assignee avatar tints (.ava reused; add tints) */
+[data-cv6][data-screen^="tracker"] .ava.is-green  { background:rgba(52,211,153,.2); color:var(--success); }
+[data-cv6][data-screen^="tracker"] .ava.is-lime   { background:rgba(163,230,53,.2); color:#A3E635; }
+[data-cv6][data-screen^="tracker"] .ava.is-amber  { background:rgba(251,191,36,.2); color:var(--warn); }
+[data-cv6][data-screen^="tracker"] .ava.is-violet { background:rgba(139,124,246,.22); color:var(--violet-400); }
+[data-cv6][data-screen^="tracker"] .av.is-green  { background:rgba(52,211,153,.22); color:var(--success); }
+[data-cv6][data-screen^="tracker"] .av.is-lime   { background:rgba(163,230,53,.2); color:#A3E635; }
+/* bug checklist (.bchk) — is-done | is-active (live) | is-pending */
+[data-cv6][data-screen^="tracker"] .bchk-mark { width:17px; height:17px; border-radius:5px; flex:none; box-sizing:border-box; border:2px solid var(--divider); display:flex; align-items:center; justify-content:center; }
+[data-cv6][data-screen^="tracker"] .bchk-label { color:var(--fg); }
+[data-cv6][data-screen^="tracker"] .bchk.is-done .bchk-mark { border-color:var(--success); background:var(--success); }
+[data-cv6][data-screen^="tracker"] .bchk.is-done .bchk-label { color:var(--muted); text-decoration:line-through; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-mark { border:none; border-radius:50%; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-mark::after { content:''; width:16px; height:16px; border-radius:50%; border:2.4px solid var(--accent); border-top-color:transparent; animation:spin 1.05s linear infinite; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-label { font-weight:600; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-detail { display:block !important; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-log { display:block !important; }
+[data-cv6][data-screen^="tracker"] .bchk.is-pending .bchk-mark { border-radius:50%; }
+[data-cv6][data-screen^="tracker"] .bchk.is-pending .bchk-label { color:var(--muted); }
+[data-cv6][data-screen^="tracker"] .bchk-detail { color:var(--muted); }
+/* new-tracker form · type segmented control */
+[data-cv6][data-screen^="tracker"] .tkseg { color:var(--muted); background:var(--surface); }
+[data-cv6][data-screen^="tracker"] .tkseg.is-on { color:var(--fg); background:var(--accent-weak); border-color:var(--accent) !important; }
+/* new-issue form · assignee pick row */
+[data-cv6][data-screen^="tracker"] .trk.is-on { background:var(--accent-weak); }
+[data-cv6][data-screen^="tracker"] .trk.is-on .tkcheck { display:block !important; }
+
+/* ---- Organize tool (tree · file list · preview · mobile browse/move/view) ---- */
+[data-cv6][data-screen^="organize"] .trow { display:flex; align-items:center; gap:9px; padding:8px; border-radius:8px; font-size:14px; color:var(--fg); cursor:pointer; }
+[data-cv6][data-screen^="organize"] .trow.is-open { background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen^="organize"] .trow.is-d1 { padding-left:30px; box-shadow:inset 1px 0 0 rgba(255,255,255,.09); }
+[data-cv6][data-screen^="organize"] .trow.is-d2 { padding-left:52px; box-shadow:inset 1px 0 0 rgba(255,255,255,.09); }
+[data-cv6][data-screen^="organize"] .file { display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:9px; cursor:pointer; }
+[data-cv6][data-screen^="organize"] .file.is-open { background:var(--accent-weak); }
+[data-cv6][data-screen^="organize"] .fn { font-size:13.5px; font-weight:600; color:var(--fg); }
+[data-cv6][data-screen^="organize"] .fm { font-family:var(--font-mono); font-size:11px; color:var(--faint); margin-top:1px; }
+[data-cv6][data-screen^="organize"] .ochip { height:30px; padding:0 13px; border-radius:15px; border:1px solid var(--hair); background:transparent; color:var(--muted); font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="organize"] .ochip.is-on { border:none; background:var(--accent); color:#fff; }
+/* Mission chip row: right-edge fade signals horizontal scroll without a visible scrollbar */
+[data-cv6][data-screen^="organize"] .ochip-row-fade { mask-image:linear-gradient(to right, black 78%, transparent 100%); -webkit-mask-image:linear-gradient(to right, black 78%, transparent 100%); }
+/* Filter chip row: lighter active state — secondary axis (type filter) vs primary (mission scope) */
+[data-cv6][data-screen^="organize"] .ochip-filter-row .ochip.is-on { background:var(--accent-weak); color:var(--accent); border:1px solid var(--accent); }
+[data-cv6][data-screen^="organize"] .obar { display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--muted); font-family:var(--font-sans); font-size:10px; font-weight:600; cursor:pointer; }
+[data-cv6][data-screen^="organize"] .selrow { display:flex; align-items:center; gap:12px; padding:0 14px; height:58px; border-bottom:1px solid var(--divider); cursor:pointer; }
+[data-cv6][data-screen^="organize"] .selrow.is-on { background:var(--accent-weak); }
+[data-cv6][data-screen^="organize"] .selbox { width:21px; height:21px; border-radius:7px; border:2px solid var(--hair); flex:none; display:flex; align-items:center; justify-content:center; }
+[data-cv6][data-screen^="organize"] .selrow.is-on .selbox { border:none; background:var(--accent); }
+[data-cv6][data-screen^="organize"] .selrow.is-on .selbox .ck { display:block; }
+[data-cv6][data-screen^="organize"] .selbox .ck { display:none; }
+[data-cv6][data-screen^="organize"] .destrow { display:flex; align-items:center; gap:12px; padding:0 12px; height:54px; border-radius:11px; cursor:pointer; }
+[data-cv6][data-screen^="organize"] .destrow.is-on { background:var(--accent-weak); }
+[data-cv6][data-screen^="organize"] .radio { width:21px; height:21px; border-radius:50%; border:2px solid var(--hair); flex:none; display:flex; align-items:center; justify-content:center; }
+[data-cv6][data-screen^="organize"] .destrow.is-on .radio { border-color:var(--accent); }
+[data-cv6][data-screen^="organize"] .destrow.is-on .radio::after { content:''; width:11px; height:11px; border-radius:50%; background:var(--accent); }
+
+/* ---- Review tool (queue · deliverable viewer + pins · decision) ---- */
+/* project → mission tree in the queue column — same rows as Organize's left rail.
+   ONE is-* class per row (engine rule): d0 | d0on | d1 | d1on = depth + selection. */
+[data-cv6][data-screen^="review"] .trow { display:flex; align-items:center; gap:9px; padding:8px; border-radius:8px; font-size:14px; color:var(--fg); cursor:pointer; }
+[data-cv6][data-screen^="review"] .trow.is-d0on, [data-cv6][data-screen^="review"] .trow.is-d1on { background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen^="review"] .trow.is-d1, [data-cv6][data-screen^="review"] .trow.is-d1on { padding-left:30px; box-shadow:inset 1px 0 0 rgba(255,255,255,.09); }
+/* type filter chips under the Files heading — same recipe as Organize's ochip */
+[data-cv6][data-screen^="review"] .ochip { height:30px; padding:0 13px; border-radius:15px; border:1px solid var(--hair); background:transparent; color:var(--muted); font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="review"] .ochip.is-on { border:none; background:var(--accent); color:#fff; }
+[data-cv6][data-screen^="review"] .qitem { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:11px; cursor:pointer; }
+[data-cv6][data-screen^="review"] .qitem.is-on { background:var(--accent-weak); }
+[data-cv6][data-screen^="review"] .qglyph { width:34px; height:34px; border-radius:10px; background:var(--chip); display:flex; align-items:center; justify-content:center; flex:none; color:var(--muted); }
+[data-cv6][data-screen^="review"] .qitem.is-on .qglyph { color:var(--accent); }
+[data-cv6][data-screen^="review"] .qtitle { font-size:13.5px; font-weight:600; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6][data-screen^="review"] .qmeta { font-size:11.5px; color:var(--muted); margin-top:2px; }
+[data-cv6][data-screen^="review"] .qcount { min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--accent); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6][data-screen^="review"] .qcount.is-zero { background:var(--chip); color:var(--faint); }
+[data-cv6][data-screen^="review"] .rseg { flex:1; height:30px; border-radius:8px; border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="review"] .rseg.is-on { background:var(--accent); color:#fff; }
+[data-cv6][data-screen^="review"] .typechip { flex:none; display:flex; align-items:center; gap:5px; height:30px; padding:0 11px; border-radius:15px; border:1px solid var(--hair); background:var(--surface); color:var(--muted); font-size:11.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="review"] .typechip.is-on { border-color:transparent; background:var(--accent); color:#fff; }
+[data-cv6][data-screen^="review"] .pin { position:absolute; width:26px; height:26px; border-radius:50% 50% 50% 3px; background:var(--accent); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px -3px rgba(0,0,0,.5); cursor:pointer; transform:translate(-50%,-100%); }
+[data-cv6][data-screen^="review"] .doc { background:#fbfbfa; border-radius:6px; box-shadow:0 16px 50px rgba(0,0,0,.5); color:#1a1a1a; position:relative; }
+/* Viewer zoom (useDocZoom). The whole .doc is scaled so pins and red circle markup
+   travel with the artwork instead of drifting off it. The markers must NOT grow with
+   it — a 26px pin at 6x is a 156px blob covering what it points at — so .doc carries
+   --pz-inv (1/scale) and the marker counter-scales about its drop-tip (origin
+   50% 100%), keeping the tip on the exact pixel it was placed on at every zoom level.
+   No transition: the transform is driven frame-by-frame from the pinch. */
+[data-cv6][data-screen^="review"] .doc[data-pz-zoomed] .pin { transform:translate(-50%,-100%) scale(var(--pz-inv,1)); transform-origin:50% 100%; }
+[data-cv6][data-screen^="review"] .doc code { background:rgba(0,0,0,.06); padding:1px 6px; border-radius:5px; font-family:var(--font-mono); font-size:.85em; }
+
+/* ---- Support tool (inbox · email-review · talk-to-agent · thread) ---- */
+[data-cv6][data-screen^="support"] .ask { display:flex; align-items:center; gap:13px; padding:13px 14px; border-radius:10px; cursor:pointer; }
+[data-cv6][data-screen^="support"] .ask.is-open { background:var(--accent-weak); }
+[data-cv6][data-screen^="support"] .pill { font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:5px; flex:none; }
+[data-cv6][data-screen^="support"] .pill.is-email { color:var(--pink-400); background:rgba(244,114,182,.16); }
+[data-cv6][data-screen^="support"] .pill.is-waiting { color:var(--warn); background:var(--warn-weak,rgba(251,191,36,.16)); }
+[data-cv6][data-screen^="support"] .pill.is-new { color:var(--accent); background:var(--accent-weak); }
+[data-cv6][data-screen^="support"] .ifilter { height:32px; padding:0 13px; border-radius:16px; border:1px solid var(--hair); background:transparent; color:var(--muted); font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="support"] .ifilter.is-on { border:none; background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen^="support"] .schip { display:inline-flex; align-items:center; gap:5px; height:32px; padding:0 13px; border-radius:16px; border:1px solid var(--hair); background:var(--surface-2); color:var(--fg); font-size:12px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="support"] .schip.is-primary { border:none; background:var(--accent); color:#fff; }
+/* thread (mobile): honest-state modifiers — a note line that only renders when there is
+   something to say, and the reply button's held look (raw scan rows: assign first). */
+[data-cv6][data-screen^="support"] .sthr-note.is-none { display:none !important; }
+[data-cv6][data-screen^="support"] .sthr-reply.is-held { opacity:.55; }
+
+/* ---- Live Scribe tool (transcript · meeting helper · extracted · record dock) ---- */
+@keyframes scWave { 0%,100%{transform:scaleY(.4);} 50%{transform:scaleY(1);} }
+@keyframes scCaret { 0%,100%{opacity:1;} 50%{opacity:0;} }
+[data-cv6][data-screen^="livescribe"] .rec { width:10px; height:10px; border-radius:50%; background:var(--faint); flex:none; opacity:.55; }
+[data-cv6][data-screen^="livescribe"] .rec.is-on { background:#F87171; opacity:1; animation:recPulse 1.4s infinite; }
+[data-cv6][data-screen^="livescribe"] .wave { display:flex; align-items:center; gap:3px; }
+[data-cv6][data-screen^="livescribe"] .wave span { width:3px; border-radius:2px; background:var(--accent); display:inline-block; transform-origin:center; }
+[data-cv6][data-screen^="livescribe"] .wave.is-off span { background:var(--faint); opacity:.45; animation:none !important; transform:scaleY(.35); }
+[data-cv6][data-screen^="livescribe"] .sc-statusbar.is-off { background:var(--surface-2) !important; }
+[data-cv6][data-screen^="livescribe"] .speakerlive.is-off { color:var(--muted) !important; }
+[data-cv6][data-screen^="livescribe"] .speakerlive.is-off > span:first-child { background:var(--faint) !important; box-shadow:none !important; opacity:.55; }
+[data-cv6][data-screen^="livescribe"] .turn-name { font-size:14px; font-weight:600; color:var(--accent); }
+[data-cv6][data-screen^="livescribe"] .turn-name.is-success { color:var(--success); }
+[data-cv6][data-screen^="livescribe"] .turn-name.is-violet { color:var(--violet-400); }
+[data-cv6][data-screen^="livescribe"] .scav { width:28px; height:28px; border-radius:50%; background:var(--accent-weak); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex:none; }
+[data-cv6][data-screen^="livescribe"] .scav.is-success { background:rgba(52,211,153,.2); color:var(--success); }
+[data-cv6][data-screen^="livescribe"] .scav.is-violet { background:rgba(168,85,247,.2); color:var(--violet-400); }
+
+/* ---- Global search (⌘K palette · grouped results) ---- */
+[data-cv6][data-screen^="search"] .sgrp { display:flex; align-items:center; gap:8px; padding:12px 18px 6px; }
+[data-cv6][data-screen^="search"] .sres { display:flex; align-items:center; gap:13px; padding:10px 14px; margin:0 8px; border-radius:11px; cursor:pointer; }
+[data-cv6][data-screen^="search"] .sres.is-sel { background:var(--accent-weak); }
+[data-cv6][data-screen^="search"] .mres { display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid var(--divider); cursor:pointer; }
+[data-cv6][data-screen^="search"] .sgly { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6][data-screen^="search"] .sgly.is-room { background:rgba(52,211,153,.2); color:var(--success); }
+[data-cv6][data-screen^="search"] .sgly.is-project { background:rgba(139,124,246,.16); color:var(--violet-400); }
+[data-cv6][data-screen^="search"] .sgly.is-mission { background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen^="search"] .sgly.is-file { background:var(--chip); color:var(--muted); }
+[data-cv6][data-screen^="search"] .sgly.is-image { background:rgba(139,124,246,.16); color:var(--violet-400); }
+[data-cv6][data-screen^="search"] .sgly.is-person { background:rgba(244,114,182,.18); color:#F8A8D0; }
+[data-cv6][data-screen^="search"] .stitle { font-size:14px; font-weight:600; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6][data-screen^="search"] .smeta { font-size:12px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6][data-screen^="search"] .hl { color:var(--accent); background:var(--accent-weak); border-radius:3px; padding:0 2px; }
+
+/* ---- Chat list (mobile conversations: agents + projects) ---- */
+[data-cv6][data-screen="chat-list"] .sec { display:flex; align-items:center; gap:8px; padding:14px 16px 6px; }
+[data-cv6][data-screen="chat-list"] .crow { display:flex; align-items:center; gap:12px; padding:10px 16px; cursor:pointer; }
+[data-cv6][data-screen="chat-list"] .cav { position:relative; flex:none; }
+[data-cv6][data-screen="chat-list"] .cav .sdot { position:absolute; bottom:-1px; right:-1px; border:2px solid var(--ground); }
+[data-cv6][data-screen="chat-list"] .cname { font-size:15px; font-weight:600; color:var(--fg); white-space:nowrap; flex:none; }
+[data-cv6][data-screen="chat-list"] .csnip { font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+[data-cv6][data-screen="chat-list"] .gly { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--chip); color:var(--violet-400); }
+[data-cv6][data-screen="chat-list"] .gly.is-violet { background:rgba(139,124,246,.16); color:var(--violet-400); }
+[data-cv6][data-screen="chat-list"] .gly.is-accent { background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen="chat-list"] .gly.is-pink { background:rgba(244,114,182,.16); color:var(--pink-400); }
+
+/* ---- Settings / Environment (nav · connections · permissions · appearance) ---- */
+[data-cv6][data-screen^="settings"] .navitem { display:flex; align-items:center; gap:11px; height:42px; padding:0 12px; border-radius:10px; cursor:pointer; color:var(--muted); font-size:13.5px; font-weight:500; }
+[data-cv6][data-screen^="settings"] .navitem.is-on { background:var(--accent-weak); color:var(--accent); font-weight:600; }
+[data-cv6][data-screen^="settings"] .card { border:1px solid var(--hair); border-radius:14px; background:var(--surface); }
+[data-cv6][data-screen^="settings"] .srow { display:flex; align-items:center; gap:13px; padding:13px 15px; border-bottom:1px solid var(--divider); }
+[data-cv6][data-screen^="settings"] .srow:last-child { border-bottom:none; }
+[data-cv6][data-screen^="settings"] .ico { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--chip); }
+[data-cv6][data-screen^="settings"] .ico.is-pink { background:rgba(244,114,182,.16); }
+[data-cv6][data-screen^="settings"] .ico.is-violet { background:rgba(139,124,246,.16); }
+[data-cv6][data-screen^="settings"] .ico.is-accent { background:var(--accent-weak); }
+[data-cv6][data-screen^="settings"] .ico.is-success { background:rgba(52,211,153,.16); }
+[data-cv6][data-screen^="settings"] .ico.is-warn { background:rgba(251,191,36,.16); }
+[data-cv6][data-screen^="settings"] .nm { font-size:14px; font-weight:600; color:var(--fg); }
+[data-cv6][data-screen^="settings"] .ds { font-size:11.5px; color:var(--muted); }
+[data-cv6][data-screen^="settings"] .conn { height:32px; padding:0 13px; border-radius:9px; border:1px solid var(--hair); background:var(--surface-2); color:var(--fg); font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; flex:none; }
+[data-cv6][data-screen^="settings"] .conn.is-on { background:var(--success-weak); color:var(--success); border-color:transparent; }
+[data-cv6][data-screen^="settings"] .sw { width:42px; height:24px; border-radius:12px; background:var(--surface-2); border:1px solid var(--hair); position:relative; cursor:pointer; flex:none; }
+[data-cv6][data-screen^="settings"] .sw i { position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--faint); transition:left .15s, background .15s; }
+[data-cv6][data-screen^="settings"] .sw.is-on { background:var(--accent); border-color:transparent; }
+[data-cv6][data-screen^="settings"] .sw.is-on i { left:20px; background:#fff; }
+[data-cv6][data-screen^="settings"] .scopepill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; border-radius:9px; border:1px solid var(--accent-weak); background:var(--accent-weak); color:var(--accent); font-size:11.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; flex:none; }
+[data-cv6][data-screen^="settings"] .scopepill.is-private { border-color:var(--hair); background:var(--surface-2); color:var(--muted); }
+[data-cv6][data-screen^="settings"] .theme-opt { flex:1; border:2px solid var(--hair); border-radius:16px; overflow:hidden; cursor:pointer; background:var(--surface); }
+[data-cv6][data-screen^="settings"] .theme-opt.is-sel { border-color:var(--accent); }
+[data-cv6][data-screen^="settings"] .theme-prev { height:84px; padding:12px; display:flex; flex-direction:column; gap:7px; }
+[data-cv6][data-screen^="settings"] .theme-prev .tl { height:9px; border-radius:3px; }
+[data-cv6][data-screen^="settings"] .theme-foot { display:flex; align-items:center; gap:8px; padding:11px 13px; border-top:1px solid var(--divider); font-size:13px; font-weight:600; color:var(--fg); }
+[data-cv6][data-screen^="settings"] .theme-check { margin-left:auto; width:18px; height:18px; border-radius:50%; border:2px solid var(--hair); display:flex; align-items:center; justify-content:center; color:#fff; }
+[data-cv6][data-screen^="settings"] .theme-opt.is-sel .theme-check { border-color:var(--accent); background:var(--accent); }
+[data-cv6][data-screen^="settings"] .theme-opt .theme-check .ck { display:none; }
+[data-cv6][data-screen^="settings"] .theme-opt.is-sel .theme-check .ck { display:block; }
+[data-cv6][data-screen^="settings"] .mrow { display:flex; align-items:center; gap:12px; padding:14px; border-bottom:1px solid var(--divider); cursor:pointer; }
+[data-cv6][data-screen^="settings"] .mrow:last-child { border-bottom:none; }
+
+/* ---- Onboarding (guided Environment setup → Home) ---- */
+[data-cv6][data-screen^="onboarding"] .ob-eyebrow { font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin-bottom:12px; }
+[data-cv6][data-screen^="onboarding"] .ob-title { font-size:30px; font-weight:700; letter-spacing:-.025em; color:var(--fg); line-height:1.12; margin-bottom:12px; }
+[data-cv6][data-screen^="onboarding"] .ob-sub { font-size:15px; line-height:1.6; color:var(--muted); max-width:520px; }
+[data-cv6][data-screen^="onboarding"] .pdots { display:flex; gap:8px; }
+[data-cv6][data-screen^="onboarding"] .pdot { width:26px; height:5px; border-radius:3px; background:var(--surface-2); }
+[data-cv6][data-screen^="onboarding"] .pdot.is-on { background:var(--accent); }
+[data-cv6][data-screen^="onboarding"] .pdot.is-done { background:var(--success); }
+[data-cv6][data-screen^="onboarding"] .btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:46px; padding:0 22px; border-radius:12px; border:none; background:var(--accent); color:#fff; font-size:14.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="onboarding"] .btn-ghost { display:inline-flex; align-items:center; justify-content:center; height:46px; padding:0 18px; border-radius:12px; border:1px solid var(--hair); background:transparent; color:var(--fg); font-size:14px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="onboarding"] .btn-text { background:none; border:none; color:var(--muted); font-size:13.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6][data-screen^="onboarding"] .int-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+[data-cv6][data-screen^="onboarding"] .int { display:flex; align-items:center; gap:13px; padding:14px 15px; border:1px solid var(--hair); border-radius:13px; background:var(--surface); }
+[data-cv6][data-screen^="onboarding"] .int .ico { width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--chip); }
+[data-cv6][data-screen^="onboarding"] .int .ico.is-pink { background:rgba(244,114,182,.16); }
+[data-cv6][data-screen^="onboarding"] .int .ico.is-violet { background:rgba(139,124,246,.16); }
+[data-cv6][data-screen^="onboarding"] .int .ico.is-accent { background:var(--accent-weak); }
+[data-cv6][data-screen^="onboarding"] .int .ico.is-success { background:rgba(52,211,153,.16); }
+[data-cv6][data-screen^="onboarding"] .int .ico.is-warn { background:rgba(251,191,36,.16); }
+[data-cv6][data-screen^="onboarding"] .int .nm { font-size:14px; font-weight:600; color:var(--fg); }
+[data-cv6][data-screen^="onboarding"] .int .ds { font-size:11.5px; color:var(--muted); }
+[data-cv6][data-screen^="onboarding"] .conn { height:32px; padding:0 13px; border-radius:9px; border:1px solid var(--hair); background:var(--surface-2); color:var(--fg); font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; flex:none; }
+[data-cv6][data-screen^="onboarding"] .conn.is-on { background:var(--success-weak); color:var(--success); border-color:transparent; }
+[data-cv6][data-screen^="onboarding"] .mbar { height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
+[data-cv6][data-screen^="onboarding"] .mbar i { display:block; height:100%; border-radius:3px; background:var(--accent); }
+
+/* ---- Organize mobile · project switcher + inside-a-folder ---- */
+[data-cv6][data-screen^="organize"] .prow { display:flex; align-items:center; gap:13px; padding:14px 16px; border-bottom:1px solid var(--divider); cursor:pointer; }
+[data-cv6][data-screen^="organize"] .pgly { width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen^="organize"] .pgly.is-violet { background:rgba(139,124,246,.16); color:var(--violet-400); }
+[data-cv6][data-screen^="organize"] .pgly.is-pink { background:rgba(244,114,182,.16); color:var(--pink-400); }
+[data-cv6][data-screen^="organize"] .pgly.is-success { background:rgba(52,211,153,.16); color:var(--success); }
+[data-cv6][data-screen^="organize"] .pgly.is-accent { background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen^="organize"] .pname { font-size:15px; font-weight:600; color:var(--fg); }
+[data-cv6][data-screen^="organize"] .pmeta { font-size:12px; color:var(--muted); margin-top:2px; }
+[data-cv6][data-screen^="organize"] .crumb { display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); padding:12px 16px 4px; }
+[data-cv6][data-screen^="organize"] .frow { display:flex; align-items:center; gap:12px; padding:0 16px; height:56px; border-bottom:1px solid var(--divider); cursor:pointer; }
+
+/* ---- Review mobile · pick-what-to-review list ---- */
+[data-cv6][data-screen^="review"] .rrow { display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--divider); cursor:pointer; }
+[data-cv6][data-screen^="review"] .rrow.is-building { opacity:.5; }
+[data-cv6][data-screen^="review"] .rgly { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6][data-screen^="review"] .rgly.is-doc { background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen^="review"] .rgly.is-photo { background:rgba(244,114,182,.16); color:var(--pink-400); }
+[data-cv6][data-screen^="review"] .rgly.is-video { background:rgba(139,124,246,.16); color:var(--violet-400); }
+[data-cv6][data-screen^="review"] .rgly.is-siteshot { background:rgba(52,211,153,.16); color:var(--success); }
+[data-cv6][data-screen^="review"] .rgly.is-sitelive { background:rgba(52,211,153,.16); color:var(--success); }
+[data-cv6][data-screen^="review"] .rttl { font-size:14.5px; font-weight:600; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6][data-screen^="review"] .rmeta { font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6][data-screen^="review"] .rseg { height:30px; padding:0 14px; border-radius:15px; font-size:12.5px; font-weight:600; font-family:var(--font-sans); border:1px solid var(--hair); background:transparent; color:var(--muted); cursor:pointer; }
+[data-cv6][data-screen^="review"] .rseg.is-on { background:var(--accent); border-color:transparent; color:#fff; }
+
+
+/* new-issue form · assignee pick check (revealed when the agent is picked) — kept from our wiring */
+[data-cv6][data-screen^="tracker"] .tkcheck { opacity:0; display:flex; align-items:center; transition:opacity .12s ease; }
+[data-cv6][data-screen^="tracker"] .tkcheck.is-on { opacity:1; }
+[data-cv6][data-screen^="tracker"] .trk.is-on { border-color:var(--accent) !important; background:var(--accent-weak); }
+
+/* Email's Inbox/Campaign switch is subordinate navigation, never a competing
+   top bar. On phones it sits immediately below the canonical 60px header; the
+   content reserves its fixed slot so neither the header nor the first row jumps. */
+@media (max-width:899px) {
+  [data-cv6] .cv6-email-shell { --cv6-mobile-header-height:72px; --cv6-email-tabs-height:76px; }
+  [data-cv6] .cv6-email-tabs {
+    position:absolute;
+    z-index:4;
+    top:var(--cv6-mobile-header-height);
+    left:0;
+    right:0;
+    height:var(--cv6-email-tabs-height);
+    box-sizing:border-box;
+  }
+  [data-cv6] .cv6-email-shell[data-email-tab="campaign"] .cv6-email-body {
+    padding-top:var(--cv6-email-tabs-height);
+  }
+  [data-cv6] .cv6-email-shell[data-email-tab="inbox"] .cv6-email-body [data-screen^="support"] .mhdr {
+    margin-bottom:var(--cv6-email-tabs-height);
+  }
+  /* Mobile: these header rows are absolute overlays above scrolling content —
+     they need a backing here (desktop keeps the seamless transparent header). */
+  [data-cv6] .cv6-email-tabs { background:var(--ground); }
+}
+/* Review mobile pin-comments bar: hide the whole bar when there are zero pins so the
+   decision buttons (Assign/Approve/Changes) stay the hero, instead of a ghost "0
+   pin-comments" bar (Steffen design-gate call, 2026-06-25 — matches Linear/GitHub/Figma
+   hiding empty feedback surfaces). Flex lives here, not inline, so .is-none can hide it. */
+[data-cv6] .mpinbar { display:flex; align-items:center; gap:10px; }
+[data-cv6] .mpinbar.is-none { display:none; }
+/* Command ledger: a fallback line (last activity / no goal) reads muted so it can't
+   impersonate a real goal (loop R8) */
+[data-cv6] .gcell.is-fallback { color: var(--muted); }
+/* Mobile ledger preview: clamp to two lines WITH ellipsis — the old 48-char data
+   slice hard-cut words ("mid-tur", "queu") (loop R13). */
+[data-cv6] .gclamp { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* Tracker detail: meta rows with no real value do not render (loop R5) */
+[data-cv6] .bmeta.is-none { display:none !important; }
+/* ── Review R6 — viewer switches by deliverable.type (wired/tools/review.json viewerRule).
+   Browser chrome ported verbatim from the design system (ui_kits/tools/review.html);
+   media types (image/photo/video/siteshot/sitefile/sitelive) render full-bleed on the dark stage
+   instead of inside the white document paper — !important because the .doc width/padding
+   ride the template's inline style. */
+[data-cv6][data-screen^="review"] .browser { width:100%; max-width:100%; border-radius:10px; overflow:hidden; box-shadow:0 18px 54px rgba(0,0,0,.55); background:#fff; position:relative; }
+[data-cv6][data-screen^="review"] .bchrome { height:42px; background:#e9e7e4; display:flex; align-items:center; gap:9px; padding:0 14px; border-bottom:1px solid #d9d6d2; }
+[data-cv6][data-screen^="review"] .bdot { width:11px; height:11px; border-radius:50%; flex:none; }
+[data-cv6][data-screen^="review"] .burl { flex:1; height:24px; border-radius:7px; background:#fff; border:1px solid #d9d6d2; display:flex; align-items:center; gap:7px; padding:0 10px; font-size:11.5px; color:#888; font-family:var(--font-mono); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+[data-cv6][data-screen^="review"] .doc.is-image,
+[data-cv6][data-screen^="review"] .doc.is-photo,
+[data-cv6][data-screen^="review"] .doc.is-video,
+[data-cv6][data-screen^="review"] .doc.is-siteshot,
+[data-cv6][data-screen^="review"] .doc.is-sitefile,
+/* A media .doc hugs its artwork instead of holding a fixed 760px column. It is the
+   pin/circle coordinate space AND the element zoom scales, so a box wider than the
+   picture means you can drop a comment — or draw a red circle — in empty air beside
+   it. Seen on a tall contact sheet: an 80px-wide image inside a 760px box. */
+[data-cv6][data-screen^="review"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:fit-content !important; max-width:min(760px, 100%) !important; }
+[data-cv6][data-screen^="review"] .doc.is-image [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-photo [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-video [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-siteshot [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-sitefile [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-sitelive [data-bind="deliverable.file"] { color:#7a7a82 !important; }
+[data-cv6][data-screen^="review"] .doc.is-image h1,
+[data-cv6][data-screen^="review"] .doc.is-photo h1,
+[data-cv6][data-screen^="review"] .doc.is-video h1,
+[data-cv6][data-screen^="review"] .doc.is-siteshot h1,
+[data-cv6][data-screen^="review"] .doc.is-sitefile h1,
+[data-cv6][data-screen^="review"] .doc.is-sitelive h1 { color:#e6e8ea !important; font-size:16px !important; margin:0 0 12px !important; }
+
+/* ---- Files tool (Review merged into Organize, corner:one-corner 2026-07-13) ----
+   The review viewer + pin layer now render INSIDE the organize screens (the file
+   detail pane is the review viewer). These are the review primitives, re-scoped —
+   values verbatim from the review-scoped rules above, no new visual language. */
+[data-cv6][data-screen^="organize"] .pin { position:absolute; width:26px; height:26px; border-radius:50% 50% 50% 3px; background:var(--accent); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px -3px rgba(0,0,0,.5); cursor:pointer; transform:translate(-50%,-100%); }
+[data-cv6][data-screen^="organize"] .doc { background:#fbfbfa; border-radius:6px; box-shadow:0 16px 50px rgba(0,0,0,.5); color:#1a1a1a; position:relative; }
+/* Viewer zoom in Files — see the matching review rule above. The whole .doc scales
+   so pins and red circle markup travel with the artwork; the markers counter-scale
+   about their drop-tip so they stay 26px on screen and keep pointing at the same pixel. */
+[data-cv6][data-screen^="organize"] .doc[data-pz-zoomed] .pin { transform:translate(-50%,-100%) scale(var(--pz-inv,1)); transform-origin:50% 100%; }
+[data-cv6][data-screen^="organize"] .doc code { background:rgba(0,0,0,.06); padding:1px 6px; border-radius:5px; font-family:var(--font-mono); font-size:.85em; }
+[data-cv6][data-screen^="organize"] .browser { width:100%; max-width:100%; border-radius:10px; overflow:hidden; box-shadow:0 18px 54px rgba(0,0,0,.55); background:#fff; position:relative; }
+[data-cv6][data-screen^="organize"] .bchrome { height:42px; background:#e9e7e4; display:flex; align-items:center; gap:9px; padding:0 14px; border-bottom:1px solid #d9d6d2; }
+[data-cv6][data-screen^="organize"] .bdot { width:11px; height:11px; border-radius:50%; flex:none; }
+[data-cv6][data-screen^="organize"] .burl { flex:1; height:24px; border-radius:7px; background:#fff; border:1px solid #d9d6d2; display:flex; align-items:center; gap:7px; padding:0 10px; font-size:11.5px; color:#888; font-family:var(--font-mono); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+[data-cv6][data-screen^="organize"] .doc.is-image,
+[data-cv6][data-screen^="organize"] .doc.is-photo,
+[data-cv6][data-screen^="organize"] .doc.is-video,
+[data-cv6][data-screen^="organize"] .doc.is-audio,
+[data-cv6][data-screen^="organize"] .doc.is-siteshot,
+[data-cv6][data-screen^="organize"] .doc.is-sitefile,
+[data-cv6][data-screen^="organize"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:fit-content !important; max-width:min(760px, 100%) !important; }
+[data-cv6][data-screen^="organize"] .doc.is-image [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-photo [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-video [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-audio [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-siteshot [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-sitefile [data-bind="deliverable.file"],
+[data-cv6][data-screen^="organize"] .doc.is-sitelive [data-bind="deliverable.file"] { color:#7a7a82 !important; }
+[data-cv6][data-screen^="organize"] .doc.is-image h1,
+[data-cv6][data-screen^="organize"] .doc.is-photo h1,
+[data-cv6][data-screen^="organize"] .doc.is-video h1,
+[data-cv6][data-screen^="organize"] .doc.is-audio h1,
+[data-cv6][data-screen^="organize"] .doc.is-siteshot h1,
+[data-cv6][data-screen^="organize"] .doc.is-sitefile h1,
+[data-cv6][data-screen^="organize"] .doc.is-sitelive h1 { color:#e6e8ea !important; font-size:16px !important; margin:0 0 12px !important; }
+/* The audio viewer keeps the paper card readable width but the file-line/title colors
+   above flip for the dark ground — the <audio> element carries its own chrome. */
+/* Needs-review chip count: amber = "waiting on you" (never the destructive red);
+   flips to white when the chip itself is the active accent fill. */
+[data-cv6][data-screen^="organize"] .needsn { color:var(--warn); font-family:var(--font-mono); font-weight:700; font-size:11px; }
+[data-cv6][data-screen^="organize"] .ochip.is-on .needsn { color:#fff; }
+/* in-column empty-state action: shown only when there is somewhere to go */
+[data-cv6][data-screen^="organize"] .lebtn.is-no { display:none; }
+[data-cv6][data-screen^="organize"] .lebtn.is-yes { display:inline-flex; align-items:center; }
+
+/* Campaign tool (corner:campaign-tool R6): amber/red health lights breathe so
+   "waiting on you" and "problem" are visible at a glance on a phone. */
+@keyframes campaignPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.campaign-light-pulse { animation: campaignPulse 1.6s ease-in-out infinite; }
+/* Email navigation and automation policy now have explicit, non-overlapping
+   geometry. The status reads as a compact control plane instead of a banner. */
+[data-cv6] .cv6-email-tabs {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:12px 24px;
+  border-bottom:1px solid var(--divider);
+  flex-shrink:0;
+  background:transparent;
+}
+[data-cv6] .cv6-email-tabs[data-layout="mobile"] { padding:11px 14px 12px; }
+/* Persistent close (×) for the email column. Equal-width flex side zones keep the
+   tab pills centered while the close button pins to the right edge; the left zone
+   is an invisible spacer of matching width. Reuses the chat column's close look. */
+[data-cv6] .cv6-email-side { flex:1 1 0; min-width:38px; display:flex; align-items:center; }
+[data-cv6] .cv6-email-side.is-end { justify-content:flex-end; }
+[data-cv6] .cv6-email-tablist {
+  display:inline-flex;
+  margin:0 auto;
+  gap:2px;
+  padding:4px;
+  border:1px solid var(--hair);
+  border-radius:25px;
+  background:var(--surface);
+}
+[data-cv6] .cv6-email-tab {
+  min-width:0;
+  height:42px;
+  padding:0 16px;
+  border:0;
+  border-radius:21px;
+  background:transparent;
+  color:var(--muted);
+  font-family:var(--font-sans);
+  font-size:13.5px;
+  font-weight:600;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  transition:background .15s ease,color .15s ease;
+}
+[data-cv6] .cv6-email-tab.is-active { background:var(--surface-2); color:var(--fg); }
+[data-cv6] .cv6-email-tab-label { white-space:nowrap; }
+[data-cv6] .cv6-email-tab-status {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  flex:none;
+  padding:3px 6px;
+  border-radius:9px;
+  background:var(--chip);
+  color:var(--faint);
+  font-size:9px;
+  font-weight:850;
+  line-height:1;
+  letter-spacing:.02em;
+}
+[data-cv6] .cv6-email-tab-status i { width:5px; height:5px; border-radius:50%; background:currentColor; }
+[data-cv6] .cv6-email-tab-status[data-tone="on"] { background:var(--success-weak); color:var(--success); }
+[data-cv6] .cv6-email-tab-status[data-tone="off"] { color:var(--muted); }
+[data-cv6] .cv6-autoreply-strip {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:9px 24px;
+  border-bottom:1px solid var(--divider);
+  flex-shrink:0;
+  font-family:var(--font-sans);
+}
+[data-cv6] .cv6-autoreply-primary { display:contents; }
+[data-cv6] .cv6-autoreply-status {
+  order:1;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex:none;
+  padding:4px 8px;
+  border-radius:8px;
+  background:var(--chip);
+  color:var(--muted);
+  font-size:10.5px;
+  font-weight:800;
+}
+[data-cv6] .cv6-autoreply-status i { width:7px; height:7px; border-radius:50%; background:currentColor; }
+[data-cv6] .cv6-autoreply-status[data-tone="live"] { background:var(--success-weak); color:var(--success); }
+[data-cv6] .cv6-autoreply-status[data-tone="stale"] { background:var(--warn-weak); color:var(--warn); }
+[data-cv6] .cv6-autoreply-copy {
+  order:2;
+  flex:1;
+  min-width:0;
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+  color:var(--faint);
+  font-size:11.5px;
+  line-height:1.35;
+}
+[data-cv6] .cv6-autoreply-copy strong { color:var(--fg); font-size:12px; font-weight:650; }
+[data-cv6] .cv6-autoreply-copy [data-stale="1"] { color:var(--warn); }
+[data-cv6] .cv6-autoreply-copy [data-state="pending"] { color:var(--accent); }
+[data-cv6] .cv6-autoreply-copy [data-state="error"] { color:var(--error); }
+[data-cv6] .cv6-autoreply-action {
+  order:3;
+  min-height:34px;
+  padding:0 12px;
+  border:1px solid var(--hair);
+  border-radius:11px;
+  background:var(--surface-2);
+  color:var(--muted);
+  font-family:var(--font-sans);
+  font-size:11.5px;
+  font-weight:700;
+  cursor:pointer;
+}
+[data-cv6] .cv6-autoreply-action[data-tone="danger"] { color:var(--error); }
+[data-cv6] .cv6-autoreply-action[data-tone="success"] { color:var(--success); }
+[data-cv6] .cv6-autoreply-action:disabled { cursor:not-allowed; opacity:.55; }
+[data-cv6] .cv6-autoreply-no-restore { order:3; color:var(--faint); font-size:11px; }
+
+/* Email list: one source of counts (filters), one quiet trust line, less chrome. */
+[data-cv6][data-screen="support-inbox"] .mhchips { padding-top:9px; padding-bottom:10px; }
+[data-cv6][data-screen="support-inbox"] .assure {
+  gap:7px;
+  margin:7px 16px 2px;
+  padding:7px 1px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+[data-cv6][data-screen="support-inbox"] .assure-t { font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6][data-screen="support-inbox"] .assure-t i { display:inline-block; width:3px; height:3px; margin:0 6px 2px; border-radius:50%; background:var(--faint); }
+[data-cv6][data-screen="support-inbox"] .sec { padding:12px 16px 7px; }
+[data-cv6][data-screen="support-inbox"] .sec.is-watching { padding-top:18px; }
+[data-cv6][data-screen="support-inbox"] .erow { align-items:flex-start; gap:11px; padding:13px 16px; }
+[data-cv6][data-screen="support-inbox"] .ava { width:38px; height:38px; }
+[data-cv6][data-screen="support-inbox"] .esubj { font-size:14px; }
+[data-cv6][data-screen="support-inbox"] .esnip { margin-top:4px; font-size:12px; -webkit-line-clamp:1; }
+[data-cv6][data-screen="support-inbox"] .email-assign {
+  width:42px;
+  min-width:42px;
+  height:42px;
+  padding:0;
+  justify-content:center;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:var(--faint);
+}
+[data-cv6][data-screen="support-inbox"] .email-assign:active { background:var(--surface-2); color:var(--fg); }
+
+@media (max-width:899px) {
+  [data-cv6] .cv6-email-shell { --cv6-mobile-header-height:72px; --cv6-email-tabs-height:76px; }
+  [data-cv6] .cv6-email-tablist { width:min(100%, 390px); box-sizing:border-box; }
+  [data-cv6] .cv6-email-tab { flex:1 1 0; height:46px; padding:0 8px; font-size:14px; }
+  [data-cv6] .cv6-email-tab.has-status { gap:4px; padding-inline:4px; font-size:13.5px; }
+}
+
+/* Auto-reply is a full Email section, not a switch hidden inside the inbox. */
+[data-cv6] .cv6-autoreply-settings { flex:1; min-height:0; overflow-y:auto; width:min(880px,100%); margin:0 auto; padding:28px; box-sizing:border-box; }
+[data-cv6] .cv6-autoreply-settings-head { display:flex; align-items:flex-start; gap:20px; margin-bottom:24px; }
+[data-cv6] .cv6-autoreply-settings-head > div { flex:1; }
+[data-cv6] .cv6-autoreply-settings-head h2 { margin:6px 0; color:var(--fg); font-size:24px; letter-spacing:-.025em; }
+[data-cv6] .cv6-autoreply-settings-head p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+[data-cv6] .cv6-autoreply-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+[data-cv6] .cv6-autoreply-grid label { display:flex; flex-direction:column; gap:7px; padding:15px; border:1px solid var(--hair); border-radius:18px; background:var(--surface); }
+[data-cv6] .cv6-autoreply-grid label.is-wide { grid-column:1/-1; }
+[data-cv6] .cv6-autoreply-grid label > span { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+[data-cv6] .cv6-autoreply-grid :where(input,select,textarea) { width:100%; box-sizing:border-box; border:1px solid var(--hair); border-radius:13px; background:var(--surface-2); color:var(--fg); padding:10px 12px; font:13.5px var(--font-sans); outline:none; }
+[data-cv6] .cv6-autoreply-grid textarea { min-height:96px; resize:vertical; }
+[data-cv6] .cv6-autoreply-number { display:flex; align-items:center; gap:8px; }
+[data-cv6] .cv6-autoreply-number em { color:var(--muted); font-size:12px; font-style:normal; }
+
+[data-cv6] .cv6-urgency { display:inline-flex; align-items:center; justify-content:center; min-height:20px; padding:0 7px; border-radius:10px; border:1px solid var(--hair); color:var(--muted); background:var(--surface-2); font-size:10px; font-weight:750; white-space:nowrap; }
+[data-cv6] .cv6-urgency[data-score="medium"] { color:var(--warn,#fbbf24); background:var(--warn-weak,rgba(251,191,36,.12)); border-color:rgba(251,191,36,.28); }
+[data-cv6] .cv6-urgency[data-score="high"] { color:var(--error,#f87171); background:rgba(248,113,113,.1); border-color:rgba(248,113,113,.3); }
+[data-cv6] .cv6-urgency.is-detail { min-height:28px; padding:0 10px; font-size:11px; }
+
+[data-cv6] .review-default-check { width:100%; min-height:40px; padding:7px 11px; border:1px solid var(--hair); background:var(--surface); color:var(--muted); display:flex; align-items:center; gap:10px; text-align:left; font:600 12.5px var(--font-sans); cursor:pointer; }
+[data-cv6] .review-default-check > span { width:22px; height:22px; border-radius:50%; border:1px solid var(--hair); display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6] .review-default-check.is-on { color:var(--fg); border-color:var(--accent); background:var(--accent-weak); }
+[data-cv6] .review-default-check.is-on > span { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+@media (max-width:639px) {
+  [data-cv6] .cv6-autoreply-settings { padding:18px 14px 110px; }
+  [data-cv6] .cv6-autoreply-settings-head { flex-direction:column; }
+  [data-cv6] .cv6-autoreply-grid { grid-template-columns:1fr; }
+  [data-cv6] .cv6-autoreply-grid label.is-wide { grid-column:auto; }
+}
+

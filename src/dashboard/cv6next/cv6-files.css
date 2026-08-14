@@ -1,0 +1,638 @@
+/* cv6-files.css -- Files panel (shelf, grid/list, cards, kind glyphs) */
+
+[data-cv6] .mfile-open .mfile-name { transition:color .12s ease; }
+[data-cv6] .mfile-open:hover .mfile-name { color:var(--fg); text-decoration:underline; text-underline-offset:2px; }
+[data-cv6] .mfile-dl { transition:background .12s ease, color .12s ease, border-color .12s ease; }
+[data-cv6] .mfile-dl:hover { background:var(--chip); color:var(--fg); border-color:var(--muted); }
+/* ── Mobile Files Sheet — ADD design (task dae1720a, 2026-08-06) ────────────
+   Full-width bottom sheet: filter chips, date-grouped preview grid/compact list,
+   real resized thumbnails, and a "New" chip for session arrivals.
+   Three themes via var() tokens. Tap targets ≥44pt throughout.
+   Design gate: Corner — dark ground, accent blue, Inter, no gold.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Sheet panel */
+[data-cv6] .cv6-fs-sheet {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 88vh;
+  max-height: calc(100% - 44px);
+  background: var(--ground);
+  border-top: 1px solid var(--hair);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 -22px 54px -22px rgba(0,0,0,.65);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(22px, env(safe-area-inset-bottom, 0px));
+}
+
+/* Header: "Files [20]  [☐] [✕]" */
+[data-cv6] .cv6-fs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  flex: none;
+}
+[data-cv6] .cv6-fs-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-cv6] .cv6-fs-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  color: var(--fg);
+}
+[data-cv6] .cv6-fs-count-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--hair);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: var(--font-sans);
+}
+[data-cv6] .cv6-fs-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Icon buttons in header — 44pt target */
+[data-cv6] .cv6-fs-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--hair);
+  background: var(--surface-2);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+  font-family: var(--font-sans);
+}
+[data-cv6] .cv6-fs-icon-btn:active { opacity: .7; }
+
+/* Filter chips row — horizontally scrollable if many chips */
+[data-cv6] .cv6-fs-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 12px;
+  flex: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+[data-cv6] .cv6-fs-filters::-webkit-scrollbar { display: none; }
+/* Individual filter chip */
+[data-cv6] .cv6-fs-fchip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  min-width: 44px; /* ≥44pt tap target */
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hair);
+  background: transparent;
+  color: var(--muted);
+  font: 600 13px var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+[data-cv6] .cv6-fs-fchip--active {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+[data-cv6] .cv6-fs-fchip:active { opacity: .8; }
+
+/* Content area: filter chips (fixed) + scrollable list */
+[data-cv6] .cv6-fs-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Containing block for the ⋮ sheet and the save receipt. */
+  position: relative;
+}
+/* Scrollable file list */
+[data-cv6] .cv6-fs-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px;
+}
+
+/* Date section headers: "TODAY" / "EARLIER" */
+[data-cv6] .cv6-fs-section-hdr {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 16px 0 8px;
+}
+/* First header in the list shouldn't push a 16px hole under the filter row. */
+[data-cv6] .cv6-fs-section:first-child .cv6-fs-section-hdr { padding-top: 4px; }
+
+/* ── Swipe-to-save gesture ──────────────────────────────────────────────── */
+/* Container — clips the save panel until swiped */
+[data-cv6] .cv6-fs-swipe-wrap {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+/* Save panel revealed on left-swipe (dx < 0 = finger moves left) */
+[data-cv6] .cv6-fs-save-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+[data-cv6] .cv6-fs-save-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font: 700 11px var(--font-sans);
+  cursor: pointer;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+}
+/* Translating content layer — JS drives transform directly during gesture.
+   MUST be opaque and stacked above the panel. Without a background this layer is
+   transparent, so the accent Save panel behind it shows on EVERY row at rest —
+   Patrik 2026-08-07: "the save is always there, but it needs to be a swipe over
+   interaction". Measured on the live app before the fix: computed background of
+   .cv6-fs-swipe-inner was rgba(0,0,0,0), panel painted at x 294-374 on all 41 rows. */
+[data-cv6] .cv6-fs-swipe-inner {
+  position: relative;
+  z-index: 1;
+  background: var(--ground);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* The gesture drives WIDTH, not transform — the layer shrinks from its right edge so
+     the filename stays anchored and legible while the Save panel is revealed behind it. */
+  width: 100%;
+  box-sizing: border-box;
+  will-change: width;
+  /* Allow vertical scroll to still work while enabling horizontal swipe detection */
+  touch-action: pan-y;
+}
+/* Recent files sit in cards, older files in a plain list — the hierarchy in the
+   approved corner-files-add.png frame. The card fill is what the swipe reveals from. */
+[data-cv6] .cv6-fs-section--recent .cv6-fs-swipe-wrap {
+  border-radius: 16px;
+  margin-bottom: 12px;
+}
+[data-cv6] .cv6-fs-section--recent .cv6-fs-swipe-inner {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  padding: 0 12px;
+}
+/* Open state: the shrunk layer keeps the card's rounded right corners squared off
+   against the Save panel so the two read as one card, and casts a lip onto it. */
+[data-cv6] .cv6-fs-swipe-wrap.is-open .cv6-fs-swipe-inner {
+  box-shadow: 8px 0 16px -8px rgba(0,0,0,.55);
+}
+[data-cv6] .cv6-fs-section--recent .cv6-fs-swipe-wrap.is-open .cv6-fs-swipe-inner {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Saved confirmation pill — the receipt that the save actually happened */
+[data-cv6] .cv6-fs-toast {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--hair);
+  box-shadow: 0 12px 32px -12px rgba(0,0,0,.7);
+  color: var(--fg);
+  font: 600 13px var(--font-sans);
+}
+
+[data-cv6] .cv6-fs-toast--err { color: #fca5a5; }
+[data-cv6] .cv6-fs-toast-name {
+  color: var(--muted);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* ── File row ─────────────────────────────────────────────────────────────── */
+[data-cv6] .cv6-fs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  /* Sibling of the ⋮ button now, not its parent — a <button> may not contain a
+     <button>. Flexing keeps the name column ending before the ⋮ instead of
+     running under it. */
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  min-height: 56px; /* ≥44pt vertical target */
+  border-radius: 12px;
+}
+[data-cv6] .cv6-fs-row:active { opacity: .8; }
+
+/* Type chip: 40×40 rounded square — extension monogram or thumbnail */
+[data-cv6] .cv6-fs-type {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: hidden;
+  position: relative;
+}
+[data-cv6] .cv6-fs-type--img {
+  background: var(--chip);
+  color: var(--muted);
+}
+/* Extension monogram inside the chip. 10px rendered as a smudge on a 40px tile; the
+   approved frame's "MD" measures ~15px cap-to-tile. */
+[data-cv6] .cv6-fs-type-lbl {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: inherit;
+  line-height: 1;
+}
+/* Placeholder icon — hidden once thumbnail loads */
+[data-cv6] .cv6-fs-img-ph {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 18px;
+  height: 18px;
+  transition: opacity .2s;
+  color: var(--muted);
+}
+[data-cv6] .cv6-fs-type--thumb-ready .cv6-fs-img-ph { opacity: 0; pointer-events: none; }
+/* Real image thumbnail — fades in when loaded, does not block sheet open */
+[data-cv6] .cv6-fs-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .25s;
+}
+[data-cv6] .cv6-fs-thumb--loaded { opacity: 1; }
+
+/* Row body: name + meta */
+[data-cv6] .cv6-fs-row-body {
+  flex: 1;
+  min-width: 0;
+}
+/* 17/12 = a 1.42 name:meta ratio. It was 15/12 (1.25) — close enough that neither line
+   led and every row read as one grey block. The approved frame runs ~1.7. */
+[data-cv6] .cv6-fs-row-name {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-cv6] .cv6-fs-row-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "New" chip — OUTLINED accent, not a solid fill. Solid made it compete with the Save
+   panel (the only other accent-filled thing in the sheet) for the same eye; the approved
+   frame draws it as a hollow blue pill so it labels without shouting. */
+[data-cv6] .cv6-fs-new-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font: 600 12px var(--font-sans);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* Overflow icon button — 44×44pt tap target */
+[data-cv6] .cv6-fs-overflow {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+  border-radius: 10px;
+}
+[data-cv6] .cv6-fs-overflow:active { background: var(--chip); }
+
+/* ⋮ action sheet — the overflow control used to be a dead button (onClick was a
+   bare stopPropagation). It now opens the same three things the row can do. */
+[data-cv6] .cv6-fs-menu-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: flex-end;
+}
+[data-cv6] .cv6-fs-menu {
+  width: 100%;
+  background: var(--surface);
+  border-top: 1px solid var(--hair);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  padding: 8px 12px max(20px, env(safe-area-inset-bottom, 0px));
+}
+[data-cv6] .cv6-fs-menu-title {
+  padding: 12px 12px 8px;
+  font: 600 13px var(--font-sans);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-cv6] .cv6-fs-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: 600 15px var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 12px;
+}
+[data-cv6] .cv6-fs-menu-item:active { background: var(--chip); }
+
+/* ── R21: centered mobile chat + compact composer + file overview ────────── */
+
+/* A transient Files action menu is another reading plane, not a large glass
+   panel. Reuse the solid menu contract established for chat-header menus. */
+[data-cv6] .cv6-fs-menu {
+  background:var(--composer-solid, #131317);
+  box-shadow:0 -18px 44px -20px rgba(0,0,0,.82);
+}
+
+/* The sheet now has a real 44px drag target. JS drives translateY during the
+   gesture; the settled state snaps back or closes after the threshold. */
+[data-cv6] .cv6-fs-sheet {
+  background:var(--composer-solid, #131317);
+  border-top-left-radius:16px;
+  border-top-right-radius:16px;
+  transition:transform var(--dur-move) var(--ease-out);
+  will-change:transform;
+}
+[data-cv6] .cv6-fs-sheet.is-dragging { transition:none; }
+[data-cv6] button.cv6-fs-drag-zone {
+  width:100%;
+  height:34px;
+  min-height:34px;
+  padding:0;
+  border:0;
+  border-radius:0 !important;
+  background:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:none;
+  cursor:grab;
+  flex:none;
+}
+[data-cv6] button.cv6-fs-drag-zone:active { cursor:grabbing; }
+[data-cv6] .cv6-fs-drag-zone > span { width:38px; height:3px; border-radius:2px; background:var(--hair); }
+[data-cv6] .cv6-fs-header { padding:4px 14px 10px; }
+[data-cv6] .cv6-fs-title { font-size:18px; }
+[data-cv6] .cv6-fs-count-chip { height:22px; border-radius:7px; }
+[data-cv6] button.cv6-fs-icon-btn { width:34px; height:34px; border-radius:8px !important; }
+[data-cv6] button.cv6-fs-icon-btn.is-active { color:var(--accent); border-color:var(--accent); background:var(--accent-weak); }
+
+/* Compact layout selector, filter rail, and functional selection controls. */
+[data-cv6] .cv6-fs-view-row {
+  min-height:32px;
+  padding:0 14px 8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+[data-cv6] .cv6-fs-view-row > span { flex:1; color:var(--faint); font:650 10px var(--font-mono); letter-spacing:.055em; text-transform:uppercase; }
+[data-cv6] .cv6-fs-view-toggle {
+  padding:2px;
+  border:1px solid var(--hair);
+  border-radius:8px;
+  background:var(--composer-card-solid, var(--surface-2));
+  display:flex;
+  align-items:center;
+  gap:2px;
+}
+[data-cv6] .cv6-fs-view-toggle > button {
+  height:26px;
+  min-width:43px;
+  padding:0 8px;
+  border:0;
+  border-radius:6px !important;
+  background:transparent;
+  color:var(--muted);
+  font:650 10.5px var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .cv6-fs-view-toggle > button.is-active { background:var(--accent); color:#fff; cursor:default; }
+[data-cv6] .cv6-fs-filters { gap:6px; padding:0 14px 10px; }
+[data-cv6] button.cv6-fs-fchip { height:30px; min-width:42px; padding:0 10px; border-radius:8px !important; font-size:12px; }
+[data-cv6] .cv6-fs-selection-bar {
+  min-height:38px;
+  margin:0 14px 8px;
+  padding:4px;
+  border:1px solid var(--hair);
+  border-radius:9px;
+  background:var(--composer-card-solid, var(--surface-2));
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+[data-cv6] .cv6-fs-selection-bar > span { flex:1; color:var(--muted); font:600 11px var(--font-sans); text-align:center; }
+[data-cv6] .cv6-fs-selection-bar > button {
+  height:28px;
+  padding:0 9px;
+  border:0;
+  border-radius:6px !important;
+  background:transparent;
+  color:var(--muted);
+  font:650 11px var(--font-sans);
+  cursor:pointer;
+}
+[data-cv6] .cv6-fs-selection-bar > button.is-primary { background:var(--accent); color:#fff; }
+[data-cv6] .cv6-fs-selection-bar > button:disabled { opacity:.42; cursor:default; }
+
+/* Two columns are a high-level overview: each file owns one compact card and the
+   overflow action sits on that card, with no concealed Save layer underneath. */
+[data-cv6] .cv6-fs-list { padding:0 14px; }
+[data-cv6] .cv6-fs-section { padding-bottom:12px; }
+[data-cv6] .cv6-fs-section-hdr { padding:13px 0 7px; font-size:10px; }
+[data-cv6] .cv6-fs-section:first-child .cv6-fs-section-hdr { padding-top:2px; }
+[data-cv6] .cv6-fs-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+[data-cv6] .cv6-fs-grid.is-list { grid-template-columns:minmax(0,1fr); gap:7px; }
+[data-cv6] .cv6-fs-card {
+  position:relative;
+  min-width:0;
+  overflow:hidden;
+  border:1px solid var(--hair);
+  border-radius:11px;
+  background:var(--composer-card-solid, var(--surface));
+  transition:border-color var(--dur-press) ease, background-color var(--dur-press) ease, transform var(--dur-press) var(--ease-out);
+}
+[data-cv6] .cv6-fs-card:active { transform:scale(.985); }
+[data-cv6] .cv6-fs-card.is-selected { border-color:var(--accent); background:color-mix(in srgb, var(--accent-weak) 58%, var(--composer-card-solid, var(--surface))); }
+[data-cv6] button.cv6-fs-card-main {
+  width:100%;
+  border:0;
+  border-radius:10px !important;
+  background:transparent;
+  color:var(--fg);
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  text-align:left;
+  cursor:pointer;
+  font-family:var(--font-sans);
+}
+[data-cv6] button.cv6-fs-card-main.is-grid { min-height:172px; padding:0; }
+[data-cv6] button.cv6-fs-card-main.is-list { min-height:68px; padding:10px 38px 10px 10px; flex-direction:row; align-items:center; }
+[data-cv6] .cv6-fs-card .cv6-fs-type { width:42px; height:42px; border-radius:8px; }
+[data-cv6] .cv6-fs-card-preview {
+  position:relative;
+  width:100%;
+  height:96px;
+  overflow:hidden;
+  border-bottom:1px solid var(--divider);
+  background:var(--surface-2);
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+[data-cv6] .cv6-fs-preview-img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:color-mix(in srgb, var(--ground) 82%, transparent);
+  opacity:0;
+  transition:opacity var(--dur-move) ease;
+}
+[data-cv6] .cv6-fs-card-preview.is-ready .cv6-fs-preview-img { opacity:1; }
+[data-cv6] .cv6-fs-card-preview.is-ready .cv6-fs-img-ph { opacity:0; }
+[data-cv6] .cv6-fs-card-document {
+  min-width:54px;
+  height:54px;
+  padding:0 9px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  font:750 13px var(--font-sans);
+  letter-spacing:.025em;
+}
+[data-cv6] .cv6-fs-card-body { width:100%; min-width:0; }
+[data-cv6] .cv6-fs-card.is-grid .cv6-fs-card-body { padding:10px 11px 11px; box-sizing:border-box; }
+[data-cv6] .cv6-fs-card.is-list .cv6-fs-card-body { margin-left:10px; }
+[data-cv6] .cv6-fs-card-name {
+  min-height:34px;
+  overflow:hidden;
+  color:var(--fg);
+  font:650 13px/1.28 var(--font-sans);
+  letter-spacing:-.005em;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+}
+[data-cv6] .cv6-fs-card.is-list .cv6-fs-card-name { min-height:0; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+[data-cv6] .cv6-fs-card-meta { margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font:500 10px var(--font-sans); display:flex; align-items:center; gap:5px; }
+[data-cv6] .cv6-fs-card-meta > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6] .cv6-fs-list-new { flex:none; height:16px; padding:0 4px; border:1px solid var(--accent); border-radius:4px; color:var(--accent); display:inline-flex; align-items:center; font:750 8px var(--font-sans); text-transform:uppercase; letter-spacing:.04em; }
+[data-cv6] .cv6-fs-card-new { position:absolute; z-index:2; top:7px; left:7px; height:20px; padding:0 6px; border:1px solid var(--accent); border-radius:5px; background:var(--composer-solid, #131317); color:var(--accent); display:flex; align-items:center; font:700 9px var(--font-sans); text-transform:uppercase; letter-spacing:.04em; pointer-events:none; }
+[data-cv6] button.cv6-fs-card-menu {
+  position:absolute;
+  top:6px;
+  right:5px;
+  width:34px;
+  height:34px;
+  padding:0;
+  border:0;
+  border-radius:7px !important;
+  background:transparent;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  z-index:2;
+}
+[data-cv6] .cv6-fs-card.is-grid button.cv6-fs-card-menu { background:color-mix(in srgb, var(--composer-solid, #131317) 88%, transparent); color:var(--fg); }
+[data-cv6] button.cv6-fs-card-menu:active { background:var(--chip); }
+[data-cv6] .cv6-fs-card-check { position:absolute; top:9px; right:8px; width:22px; height:22px; border:1.5px solid var(--hair); border-radius:6px; background:var(--composer-solid, #131317); color:#fff; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+[data-cv6] .cv6-fs-card.is-selected .cv6-fs-card-check { border-color:var(--accent); background:var(--accent); }
+
