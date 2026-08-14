@@ -32,10 +32,10 @@ const useCornerPageMeta = () => {
     if (faviconLink) {
       faviconLink.href = '/brand/corner-c-mark.svg'
     }
-    document.title = 'corner — book your intro call'
+ document.title = 'corner, book your intro call'
 
     const ogTitle = document.querySelector('meta[property="og:title"]')
-    if (ogTitle) ogTitle.content = 'corner — book your intro call'
+ if (ogTitle) ogTitle.content = 'corner, book your intro call'
 
     const ogDesc = document.querySelector('meta[property="og:description"]')
     if (ogDesc) ogDesc.content = 'Schedule your free 20–30 minute discovery call.'

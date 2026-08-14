@@ -202,7 +202,7 @@ export default function S9RangeBand({ onOpenBrief }) {
           }}
         >
           {foot.lead}
-          {/* Was href="#the-range" — a link to the section it already sits in, under copy
+ {/* Was href="#the-range", a link to the section it already sits in, under copy
               promising "a different page". The linked phrase now does the real thing. */}
           <button
             type="button"

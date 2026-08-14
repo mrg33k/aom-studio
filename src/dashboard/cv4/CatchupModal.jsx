@@ -452,7 +452,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
-          {/* Image — stop propagation so clicking on the image doesn't close */}
+ {/* Image, stop propagation so clicking on the image doesn't close */}
           <img
             src={lightboxUrl}
             alt="Preview"

@@ -190,7 +190,7 @@ export function MissionContextMenu({
       testId: `mission-ctx-movefolder-${f.slug}`,
       onSelect: () => onMoveToFolder?.(mission, f),
     }))
-    items.unshift({ key: '__root', label: '(no folder — top level)', icon: I.move,
+    items.unshift({ key: '__root', label: '(no folder, top level)', icon: I.move,
       testId: 'mission-ctx-movefolder-root',
       onSelect: () => onMoveToFolder?.(mission, null),
     })
@@ -204,7 +204,7 @@ export function MissionContextMenu({
         'Brief me on the mission ' + ref + ' (project: ' + (mission.projectSlug || mission.project || 'corner') + ').\n\n' +
         'Read its mission home in plain English. Look at CONTEXT.md (current state), BUILD.md (round ledger), the most recent dated file in research/, and last-conversation.md.\n\n' +
         'Tell me: (1) one sentence on what this mission is about, (2) what is in flight right now, (3) what is blocked, (4) what the obvious next move is.\n\n' +
-        'Work in this chat with me /007 — narrate steps as you read.'
+        'Work in this chat with me using /007 and narrate steps as you read.'
       ) },
     { key: 'whats-next', label: "What's next", icon: I.open, testId: 'mission-ctx-whats-next',
       onSelect: () => onAgentPrompt?.(
@@ -242,7 +242,7 @@ export function ProjectContextMenu({ open, x, y, project, folders = [], mobile =
       testId: `project-ctx-movefolder-${f.slug}`,
       onSelect: () => onMoveToFolder?.(project, f),
     }))
-    items.unshift({ key: '__root', label: '(no folder — top level)', icon: I.move,
+    items.unshift({ key: '__root', label: '(no folder, top level)', icon: I.move,
       testId: 'project-ctx-movefolder-root',
       onSelect: () => onMoveToFolder?.(project, null),
     })
@@ -339,7 +339,7 @@ export function FileContextMenu({ open, x, y, file, mobile = false, onClose, onA
     { key: 'pull-quotes', label: 'Pull quotes', icon: I.copy, testId: 'file-ctx-pull-quotes',
       onSelect: () => onAgentPrompt?.(
         'Pull the 3-5 most load-bearing or most-cited lines from the file ' + ref + ' and quote them back to me verbatim.\n\n' +
-        'Open with the Read tool. Pick lines that capture a decision, a constraint, or a load-bearing fact — not boilerplate. Use markdown blockquote (>) per line. Add a one-sentence why-each-matters under the quote block.\n\n' +
+ 'Open with the Read tool. Pick lines that capture a decision, a constraint, or a load-bearing fact, not boilerplate. Use markdown blockquote (>) per line. Add a one-sentence why-each-matters under the quote block.\n\n' +
         'Work /007 in this chat.'
       ) },
     { key: 'copy-path', label: 'Copy path', icon: I.copy, testId: 'file-ctx-copy-path',

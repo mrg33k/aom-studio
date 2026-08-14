@@ -117,7 +117,7 @@ export default function HubScreen({
       id: 'continue',
       icon: '▶',
       title: 'CONTINUE INVESTIGATION',
-      description: 'Advance to the next site. Travel burns food, power — and spare parts on region hops.',
+ description: 'Advance to the next site. Travel burns food, power, and spare parts on region hops.',
       free: true,
       primary: true,
       action: onContinue,
@@ -144,8 +144,8 @@ export default function HubScreen({
       title: 'CHANGE INVESTIGATION PACE',
       description:
         pace === 'thorough'
-          ? 'THOROUGH — deep analysis: +5 CR per region, but +1 extra food at each site analysis.'
-          : 'EFFICIENT — fast scan: normal rations, no region bonus.',
+ ? 'THOROUGH, deep analysis: +5 CR per region, but +1 extra food at each site analysis.'
+ : 'EFFICIENT, fast scan: normal rations, no region bonus.',
       free: true,
       action: () => { if (typeof onTogglePace === 'function') onTogglePace(); },
     },
@@ -171,7 +171,7 @@ export default function HubScreen({
         ? `Spend 1 sampling kit + 1 tools to run a water quality analysis. (${samplingTokens} kit${samplingTokens === 1 ? '' : 's'}, ${toolsSupply} tools left)`
         : samplingTokens <= 0
           ? 'No sampling kits remaining.'
-          : 'No tools left — restock at the Supply Store.',
+ : 'No tools left, restock at the Supply Store.',
       free: false,
       tokenType: 'sampling_kits',
       tokenCost: 1,
@@ -245,7 +245,7 @@ export default function HubScreen({
             transform:  headerReady ? 'translateY(0)' : 'translateY(-8px)',
             transition: 'opacity 350ms ease, transform 350ms ease',
           }}>
-            <div style={styles.headerKicker}>MISSION WATER — INVESTIGATION CHECKPOINT</div>
+ <div style={styles.headerKicker}>MISSION WATER, INVESTIGATION CHECKPOINT</div>
             <div style={styles.headerTitle}>MISSION HUB</div>
             <div style={styles.headerContext}>{phaseContext}</div>
             <div style={styles.headerAccentLineFull} />
@@ -464,7 +464,7 @@ function MissionMap({ completedPhaseIds, nextPhaseId, onClose }) {
         {/* Header */}
         <div style={styles.mapHeaderRow}>
           <div>
-            <div style={styles.mapKicker}>ORBITAL TRACKING — CHAPTER 01</div>
+ <div style={styles.mapKicker}>ORBITAL TRACKING, CHAPTER 01</div>
             <div style={styles.mapTitle}>MISSION MAP</div>
           </div>
           <button onClick={onClose} style={styles.mapCloseBtn}>CLOSE</button>
@@ -582,7 +582,7 @@ function SupplyStore({ supplies, credits, onBuySupply, onClose }) {
         {/* Header */}
         <div style={styles.mapHeaderRow}>
           <div>
-            <div style={styles.mapKicker}>QUARTERMASTER — BETWEEN-LEG RESUPPLY</div>
+ <div style={styles.mapKicker}>QUARTERMASTER, BETWEEN-LEG RESUPPLY</div>
             <div style={styles.mapTitle}>SUPPLY STORE</div>
           </div>
           <button onClick={onClose} style={styles.mapCloseBtn}>CLOSE</button>

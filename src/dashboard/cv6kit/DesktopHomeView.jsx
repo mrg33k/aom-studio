@@ -303,7 +303,7 @@ export function DesktopHomeView({
   projectTotal = 84,
   roomTotal = 95,
   catchTotal = 5,
-  roomsLoading = false,  // first data fetch still in flight — show honest loading, not "0"
+ roomsLoading = false, // first data fetch still in flight, show honest loading, not "0"
   activeTool = 'home',
   onNav,
   onSelectRoom,

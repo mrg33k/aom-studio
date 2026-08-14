@@ -16,7 +16,7 @@ function Dot({ s = '0.5em', c = C.orange }) {
 /* IG Post — 1:1. Type-forward brand poster. No photo placeholder. */
 export default function TemplateSocialIGPost({
   headline = 'CONTENT THAT CONVERTS',
-  body = 'We turned posting into pipeline — real strategy, real results.',
+  body = 'We turned posting into pipeline with real strategy and real results.',
   category = 'CASE STUDY',
   stat = null,
   statLabel = null,

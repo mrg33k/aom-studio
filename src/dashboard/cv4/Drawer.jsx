@@ -748,7 +748,7 @@ function DrawerBody({
         )}
       </TreeSection>
 
-      {/* corner:skills-picker R1 — purple "Browse skills" CTA above the
+ {/* corner:skills-picker R1, purple "Browse skills" CTA above the
           Agents section. Click opens the Skills shelf takeover. */}
       {onToggleSkillsShelf && (
         <SkillsBadge open={skillsShelfOpen} onToggle={onToggleSkillsShelf} />
@@ -812,7 +812,7 @@ function DrawerBody({
             between Claude and Gemini in one tap. Per-chat picks (chat settings
             → Model) still win over this. The bridge reads the '_all' key. */}
         <GlobalModelSwitch worldId={worldId} />
-        {/* "Reset to AOM" is a super-admin backdoor — wipes world override +
+ {/* "Reset to AOM" is a super-admin backdoor, wipes world override +
             force-reloads. Useful when the super-admin is debugging tenant
             world-switcher state; harmful (and confusing) for any other user,
             since it would force-reset *their* world to AOM (which they

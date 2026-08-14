@@ -464,7 +464,7 @@ function StatsStrip({ meta, filtered, total }) {
             {s.label}
           </div>
           <div className="md-stats-tile-val" style={{ fontWeight: 900, fontFamily: V.syne, color: s.color }}>
-            {s.value ?? '—'}
+ {s.value ?? '·'}
           </div>
         </div>
       ))}
@@ -991,7 +991,7 @@ export default function MunicipalDirectory() {
                       {p.contact_title && <div style={{ fontSize: 10, color: V.dim, fontFamily: V.mono }}>{p.contact_title}</div>}
                     </div>
                   ) : (
-                    <span style={{ fontSize: 11, color: V.dim }}>—</span>
+ <span style={{ fontSize: 11, color: V.dim }}>·</span>
                   )}
                 </td>
                 <td className="md-phone-col md-row-td" style={{ padding: '10px 14px' }}>
@@ -1009,12 +1009,12 @@ export default function MunicipalDirectory() {
                       )}
                     </div>
                   ) : (
-                    <span style={{ fontSize: 11, color: V.dim }}>—</span>
+ <span style={{ fontSize: 11, color: V.dim }}>·</span>
                   )}
                 </td>
                 <td className="md-area-col md-row-td" style={{ padding: '10px 14px' }}>
                   <span style={{ fontSize: 13, fontFamily: V.mono, color: V.muted }}>
-                    {p.land_area_sqmi ? p.land_area_sqmi.toFixed(1) + ' mi²' : '—'}
+ {p.land_area_sqmi ? p.land_area_sqmi.toFixed(1) + ' mi²' : '·'}
                   </span>
                 </td>
               </tr>

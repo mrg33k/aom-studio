@@ -116,11 +116,11 @@ function useAutoReplyTabStatus(enabled) {
       .then((response) => response.ok ? response.json() : null)
       .then((data) => {
         const mode = data?.file_state?.mode;
-        if (!mode) setStatus({ label: '—', tone: 'unavailable' });
+ if (!mode) setStatus({ label: '·', tone: 'unavailable' });
         else if (mode === 'live' || mode === 'test') setStatus({ label: 'On', tone: 'on' });
         else setStatus({ label: 'Off', tone: 'off' });
       })
-      .catch(() => setStatus({ label: '—', tone: 'unavailable' }));
+ .catch(() => setStatus({ label: '·', tone: 'unavailable' }));
   }, [enabled]);
   useEffect(() => {
     if (!enabled) return undefined;

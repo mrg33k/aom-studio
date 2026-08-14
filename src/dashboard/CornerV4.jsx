@@ -519,7 +519,7 @@ export default function CornerV4() {
     if (selectedAgent || conversationTarget) return
     if (routeProjectId) return
     const kind = defaultView?.kind
-    if (!kind || kind === 'home') return  // home is the default — let HomeView render
+ if (!kind || kind === 'home') return // home is the default, let HomeView render
     if (kind === 'agent' && defaultView.slug) {
       const target = agents.find(a => a.slug === defaultView.slug)
       if (target) {
@@ -661,7 +661,7 @@ export default function CornerV4() {
   // dedup to avoid re-checking on every render within the same tab session.
   useEffect(() => {
     if (!authReady || !worldId || !currentUser) return
-    if (worldId === 'aom') return  // Patrik's world — never auto-start
+ if (worldId === 'aom') return // Patrik's world, never auto-start
     // Find the EA agent specifically — not just agents[0] which may be a project room
     const eaAgent = agents?.find(a => a.is_ea && a.is_terminal)
       || agents?.find(a => a.is_ea)
@@ -695,7 +695,7 @@ export default function CornerV4() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             agent: eaAgent.slug,
-            text: "Hey, welcome! I'm your EA — I help you stay organized and get things done. What kind of work do you do? Give me a quick rundown and I'll get your workspace set up.",
+ text: "Hey, welcome! I'm your EA, I help you stay organized and get things done. What kind of work do you do? Give me a quick rundown and I'll get your workspace set up.",
             role: 'assistant',
             source: 'corner-onboarding-auto',
             client_id: worldId,
@@ -2542,7 +2542,7 @@ export default function CornerV4() {
           )}
 
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}>
-            {/* corner:notifications-catchup R3 — "Catch up" REPLACES the bell
+ {/* corner:notifications-catchup R3, "Catch up" REPLACES the bell
                 when unread ≥ 3 (instead of sitting beside it). The bell is the
                 low-traffic surface; the catch-up pill is the high-traffic one
                 and earns the slot on its own when there's that much to catch

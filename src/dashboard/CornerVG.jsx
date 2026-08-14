@@ -19,7 +19,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 // The CV5 sheet defined [data-cv5] tokens (serif font, emerald accent, CV5 ground) on the
 // same root as CV6 and was a drift source. CV6 screens are self-scoped ([data-cv6kit]) so
 // they do not need it.
-import './cv6.css'  // CV6 design tokens — needed when cv6 mode is on (?cv6=1). Scoped to [data-cv6], inert otherwise.
+import './cv6.css' // CV6 design tokens, needed when cv6 mode is on (?cv6=1). Scoped to [data-cv6], inert otherwise.
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import skillsData from '../data/skills.json'
 import { supabase } from './lib/supabase.js'
@@ -199,7 +199,7 @@ export default function CornerVG() {
   const [authReady, setAuthReady]       = useState(false)
   const [worldId, setWorldId]           = useState(null)
   const [tab, setTab]                   = useState('chat')
-  const [deckTab, setDeckTab]           = useState('chat') // 'chat' | 'deck' — Command Deck in Elon's room (ported from CornerV4)
+ const [deckTab, setDeckTab] = useState('chat') // 'chat' | 'deck', Command Deck in Elon's room (ported from CornerV4)
   // /cvg IS the CV6 surface. No cv4, no toggle (Patrik: "no more cv4 anymore that's the point").
   const cv6Mode = true
   const [unreadChat, setUnreadChat]     = useState(0)
@@ -209,7 +209,7 @@ export default function CornerVG() {
   // anywhere (notification, catchup, command tracker, room links) instead opens the in-page
   // Chat tool. This carries the room to HomeView, which opens the Chat tool preselected.
   const [cv6ChatRequest, setCv6ChatRequest] = useState(null) // { kind, slug, name, missionSlug?, nonce }
-  const [cv6ToolRequest, setCv6ToolRequest] = useState(null) // R82: { tool, nonce } — agent opens a tool on the user's screen
+ const [cv6ToolRequest, setCv6ToolRequest] = useState(null) // R82: { tool, nonce }, agent opens a tool on the user's screen
   const [prefillMessage, setPrefillMessage] = useState(null)
   // R6.2: mission clicked from the drawer is "attached" to the composer
   // and rendered as a context chip. Cleared on send by useChatSend.
@@ -693,7 +693,7 @@ export default function CornerVG() {
     if (selectedAgent || conversationTarget) return
     if (routeProjectId) return
     const kind = defaultView?.kind
-    if (!kind || kind === 'home') return  // home is the default — let HomeView render
+ if (!kind || kind === 'home') return // home is the default, let HomeView render
     if (kind === 'agent' && defaultView.slug) {
       const target = agents.find(a => a.slug === defaultView.slug)
       if (target) {
@@ -835,7 +835,7 @@ export default function CornerVG() {
   // dedup to avoid re-checking on every render within the same tab session.
   useEffect(() => {
     if (!authReady || !worldId || !currentUser) return
-    if (worldId === 'aom') return  // Patrik's world — never auto-start
+ if (worldId === 'aom') return // Patrik's world, never auto-start
     // Find the EA agent specifically — not just agents[0] which may be a project room
     const eaAgent = agents?.find(a => a.is_ea && a.is_terminal)
       || agents?.find(a => a.is_ea)
@@ -869,7 +869,7 @@ export default function CornerVG() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             agent: eaAgent.slug,
-            text: "Hey, welcome! I'm your EA — I help you stay organized and get things done. What kind of work do you do? Give me a quick rundown and I'll get your workspace set up.",
+ text: "Hey, welcome! I'm your EA, I help you stay organized and get things done. What kind of work do you do? Give me a quick rundown and I'll get your workspace set up.",
             role: 'assistant',
             source: 'corner-onboarding-auto',
             client_id: worldId,
@@ -2595,7 +2595,7 @@ export default function CornerVG() {
           color: #2A2620;
         }
         /* Surfaces (page bg, drawer bg, cards) → NEUTRAL grey tiers (Patrik 2026-06-19:
-           "neutral for sure, not warm" — was warm paper/beige, which still peeked behind
+ "neutral for sure, not warm", was warm paper/beige, which still peeked behind
            containers in CV6 light mode). Same light→dark tiering, just neutralized. */
         [data-shell="cv4"][data-theme="light"] [style*="#06090F"],
         [data-shell="cv4"][data-theme="light"] [style*="rgb(6, 9, 15)"] {

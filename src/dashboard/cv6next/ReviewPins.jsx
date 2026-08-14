@@ -474,7 +474,7 @@ function CircleToggle({ on, onToggle }) {
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       aria-pressed={on}
-      title={on ? 'Circle mode on — drag to circle, then comment' : 'Circle something in red'}
+ title={on ? 'Circle mode on, drag to circle, then comment' : 'Circle something in red'}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: on ? '0 12px' : '0 9px',
         borderRadius: 12, cursor: 'pointer', userSelect: 'none',

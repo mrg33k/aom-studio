@@ -734,7 +734,7 @@ export function useOrganize(worldId = null, opts = {}) {
     const kind = f.kind;
     switch (eff) {
       case 'needs':   return !!f.needsReview; // needs-review triage (files-tool merge)
-      case 'uploads': return !!f.uploaded; // "My uploads" — the files Patrik dropped into chats
+ case 'uploads': return !!f.uploaded; // "My uploads", the files Patrik dropped into chats
       case 'links':  return kind === 'link';
       case 'pdfs':   return kind === 'pdf';
       case 'images': return kind === 'image';

@@ -149,7 +149,7 @@ export default function ProjectChatHeader() {
             </span>
             <span
               data-testid="model-badge"
-              title="The AI model answering this room — change it in Settings → Model"
+ title="The AI model answering this room, change it in Settings → Model"
               style={{
                 fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
                 padding: '2px 6px', borderRadius: 999, flexShrink: 0,

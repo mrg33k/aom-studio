@@ -19,7 +19,7 @@ const MISSIONS = [
   {
     slug: 'mission-rooms',
     title: 'Mission Rooms',
-    summary: 'The mission about this work — persistent per-mission agents, sleep+wake daemon, mission-as-clickable-unit. Canary for the migration.',
+    summary: 'The mission about this work with persistent per mission agents, sleep and wake daemon and mission as clickable unit. Canary for the migration.',
   },
   {
     slug: 'mission-corner-files-in-app',

@@ -394,11 +394,11 @@ export default function RoomSettingsDialog({
               <div className="room-settings-card">
                 <label htmlFor="room-settings-model">Model</label>
                 <select id="room-settings-model" value={prefs.model} disabled={prefs.loading || prefs.saving === 'model'} onChange={(event) => savePreference('model', event.target.value)}>
-                  {MODEL_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label} — {option.desc}</option>)}
+ {MODEL_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}, {option.desc}</option>)}
                 </select>
                 <label htmlFor="room-settings-voice">Voice</label>
                 <select id="room-settings-voice" value={prefs.voice} disabled={prefs.loading || prefs.saving === 'voice'} onChange={(event) => savePreference('voice', event.target.value)}>
-                  {VOICE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label} — {option.desc}</option>)}
+ {VOICE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}, {option.desc}</option>)}
                 </select>
                 <div className="room-settings-note">{prefs.loading ? 'Loading room preferences…' : prefs.saving ? 'Saving preference…' : 'Preferences are saved automatically.'}</div>
               </div>

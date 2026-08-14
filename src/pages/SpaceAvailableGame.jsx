@@ -57,13 +57,13 @@ function buildHubContext(nextPhaseId, history) {
     return `Entering ${label} learning module. Briefing in progress.`;
   }
   if (nextPhaseId === 'sa_life_support') {
-    return `Outpost construction begins. Designing ${label} — the crew's first lifeline.`;
+ return `Outpost construction begins. Designing ${label}, the crew's first lifeline.`;
   }
   if (nextPhaseId === 'sa_habitat') {
     return `${systemsCompleted} system${systemsCompleted !== 1 ? 's' : ''} complete. Designing ${label} next.`;
   }
   if (nextPhaseId === 'sa_food_systems') {
-    return `${systemsCompleted} system${systemsCompleted !== 1 ? 's' : ''} complete. Final outpost system — ${label}.`;
+ return `${systemsCompleted} system${systemsCompleted !== 1 ? 's' : ''} complete. Final outpost system, ${label}.`;
   }
   return 'Mission checkpoint.';
 }
@@ -261,9 +261,9 @@ export default function SpaceAvailableGame() {
     const cadet = (playerName || 'Cadet').trim();
     switch (screenKey) {
       case 'welcome':
-        return 'Ready, Cadet? This is your launchpad to the Moon — press BEGIN MISSION.';
+ return 'Ready, Cadet? This is your launchpad to the Moon, press BEGIN MISSION.';
       case 'name':
-        return 'Log your name, Cadet — the Conrad Foundation records every astronaut who signs up.';
+ return 'Log your name, Cadet, the Conrad Foundation records every astronaut who signs up.';
       case 'role':
         return `Choose your specialty, ${cadet}. Every great mission needs the right crew.`;
       case 'budget':
@@ -271,13 +271,13 @@ export default function SpaceAvailableGame() {
       case 'hub': {
         const s = runState.supplies || {};
         if (isWeakened(runState)) {
-          return 'We are running on empty, Cadet — hit the SUPPLY STORE before you push on, or the next leg costs us.';
+ return 'We are running on empty, Cadet, hit the SUPPLY STORE before you push on, or the next leg costs us.';
         }
         if ((s.food ?? 5) <= 2 || (s.power ?? 5) <= 2) {
           return 'Supplies are getting thin. Restock at the SUPPLY STORE, then CONTINUE.';
         }
         const done = countRegionsCompleted(runState.history || []);
-        if (done >= 2) return 'Final module ahead — use the tokens you have left, then CONTINUE.';
+ if (done >= 2) return 'Final module ahead, use the tokens you have left, then CONTINUE.';
         if (done >= 1) return 'Tokens run out fast. Spend them where they count, then CONTINUE.';
         return 'This is your checkpoint. Pick an action card or hit CONTINUE when ready.';
       }
@@ -289,7 +289,7 @@ export default function SpaceAvailableGame() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = 'SpaceAvailable — A Voyage to the Moon';
+ document.title = 'SpaceAvailable, A Voyage to the Moon';
     return () => { document.title = prev; };
   }, []);
 

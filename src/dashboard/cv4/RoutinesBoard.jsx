@@ -220,7 +220,7 @@ function RoutineCard({ r, system = false, busy, onPause, onResume, onRunNow, onD
       <div style={{
         fontSize: 12.5, color: C.text2, lineHeight: 1.45, flex: 1,
         display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-      }}>{description || '—'}</div>
+ }}>{description || ', '}</div>
 
       {r.last_error && (
         <div style={{ fontSize: 10.5, color: '#FCA5A5', fontFamily: FONT.mono }}>

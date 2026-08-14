@@ -338,7 +338,7 @@ function TasksPanelBody() {
                 to the R24 modal for power users who want direct input. */}
             <button
               data-testid="start-new-project-recipe"
-              title="Create project — guided by your EA"
+              title="Create project guided by your EA"
               onClick={(e) => {
                 if (e.shiftKey || e.altKey) { toggleCreateProjectModal(); return }
                 startConversationalProjectCreation()

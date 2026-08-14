@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const NEW_PROJECT = '__new_project__';
 const NEW_MISSION = '__new_mission__';
-const UNSET = '__unset__'; // No project matched — user must pick before proceeding.
+const UNSET = '__unset__'; // No project matched, user must pick before proceeding.
 const bareSlug = (s) => (s && String(s).includes(':') ? String(s).split(':').pop() : String(s || ''));
 
 // Flatten a (possibly nested) missions tree into {slug(bare), name} rows.
@@ -101,7 +101,7 @@ export default function IntakeConfirm({ proposal, projects = [], missionsByProje
 
   return (
     <div className="cv6-intake-confirm" style={cardStyle}>
-      <div style={eyebrow}>{unset ? 'Not sure where this goes — pick a room below to continue.' : routingToExisting ? "Corner will send this into an existing mission. Change it if that's wrong." : `Corner will start a new ${creatingProject ? 'project' : 'mission'}. Edit anything that's off.`}</div>
+ <div style={eyebrow}>{unset ? 'Not sure where this goes, pick a room below to continue.' : routingToExisting ? "Corner will send this into an existing mission. Change it if that's wrong." : `Corner will start a new ${creatingProject ? 'project' : 'mission'}. Edit anything that's off.`}</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -113,7 +113,7 @@ export default function IntakeConfirm({ proposal, projects = [], missionsByProje
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>in</span>
         <select value={projectSlug} onChange={(e) => setProjectSlug(e.target.value)} style={selectStyle}>
-          {unset && <option value={UNSET} disabled>— pick a room —</option>}
+ {unset && <option value={UNSET} disabled>pick a room</option>}
           {projects.map((p) => (
             <option key={p.slug || p.id} value={p.slug || p.id}>{p.name || p.slug || p.id}</option>
           ))}

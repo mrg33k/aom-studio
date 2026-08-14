@@ -13,16 +13,16 @@ const TICKER = ["Skylar", "PA'LA", 'Ambition Mechanical', 'ISA Energy', 'Brandon
 const STORIES = [
   {
     client: 'ISA Energy', tag: 'Energy · Film', media: 'slate',
-    big: '3', bigLabel: 'films — demo, validation, brand',
+ big: '3', bigLabel: 'films, demo, validation, brand',
     slate: { title: 'ISA ENERGY', roll: 'A THREE-FILM SERIES', scene: '3 ACTS · 9 BEATS · 4 SUBJECTS', take: 'LIVE IN INVESTOR MEETINGS' },
     headline: 'A three-video series, now in every investor meeting',
-    body: `We launched a three-video series with the ISA team — a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
+ body: `We launched a three-video series with the ISA team, a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
     stat: 'Helped raise a substantial round.',
   },
   {
     client: 'Space Rising', tag: 'Tech · Platform', media: 'site', src: '/hero-sites/space-rising.jpg',
     big: '1,000+', bigLabel: 'in one room at Space Congress',
-    headline: 'SpaceOS — and 1,000 people in one room',
+ headline: 'SpaceOS, and 1,000 people in one room',
     body: `We built SpaceOS, their platform for the space industry to gather online with shared resources and insider information. Then we ran heavy sprints to get them ready for big moments like Space Congress.`,
     stat: 'Drove a wave of traffic to the new platform.',
   },
@@ -31,14 +31,14 @@ const STORIES = [
     big: 'Top-5', bigLabel: 'US insurer by size',
     slate: { title: 'INCLUDED HEALTH', roll: 'A FILM SERIES', scene: 'HEALTHCARE · NATIONWIDE', take: 'SCREENED AT INSPIRE SUMMIT' },
     headline: 'Films for one of the largest insurers in the US',
-    body: `We finished a series of videos for Included Health — one of the largest insurance providers in the country — and were proud to work alongside them at their Inspire Summit.`,
+ body: `We finished a series of videos for Included Health, one of the largest insurance providers in the country, and were proud to work alongside them at their Inspire Summit.`,
     stat: 'Produced for the Inspire Summit.',
   },
   {
     client: 'Ambition Mechanical', tag: 'Trades · Web + Ads', media: 'site', src: '/hero-sites/ambition.jpg',
     big: '4 / mo', bigLabel: 'organic leads from the new site alone',
     headline: 'Four solid leads a month, organically',
-    body: `We've been running Ambition Mechanical's Google Ads — but the new website we built is already pulling in four solid leads a month on its own, organically, before the ad spend even counts.`,
+ body: `We've been running Ambition Mechanical's Google Ads, but the new website we built is already pulling in four solid leads a month on its own, organically, before the ad spend even counts.`,
     stat: 'Before paid spend even counts.',
   },
 ];
@@ -60,13 +60,13 @@ const PORTFOLIO = [
 
 const VOICES = [
   { q: 'The video was a huge tool in recruiting our first 3 cohorts. Every sponsor meeting we played it. It did the selling for us.', n: 'Brandon Clarke', c: 'Startup AZ Foundation', m: '3 cohorts recruited' },
-  { q: 'Before AOM we posted randomly. Now we have a repeatable system — the content actually brings people in.', n: 'Sumit Seth', c: 'Naamly SaaS', m: 'Repeatable content engine' },
+ { q: 'Before AOM we posted randomly. Now we have a repeatable system, the content actually brings people in.', n: 'Sumit Seth', c: 'Naamly SaaS', m: 'Repeatable content engine' },
   { q: 'They did not just shoot beautiful footage. They understood who we are and made sure every frame said it.', n: 'Gio Osso', c: 'Virtu Hospitality Group', m: 'Brand story on screen' },
 ];
 
 const CHAPTERS = ['The hook', 'Who we are', 'What we do', 'The billboard', 'The team', 'The work', 'Voices', 'The conversation'];
 
-const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee — strongest horizontal doc footage
+const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee, strongest horizontal doc footage
 
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
 const poster = (id, w = 800) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
@@ -660,8 +660,8 @@ export default function HomeR5Preview() {
 
   const sendBrief = e => {
     e.preventDefault();
-    const subject = `New project — ${brief.name}${brief.co ? ' (' + brief.co + ')' : ''}`;
-    const body = `Hi AOM,%0D%0A%0D%0A${encodeURIComponent(brief.msg)}%0D%0A%0D%0A— ${encodeURIComponent(brief.name)}${brief.co ? ', ' + encodeURIComponent(brief.co) : ''}`;
+ const subject = `New project, ${brief.name}${brief.co ? ' (' + brief.co + ')' : ''}`;
+ const body = `Hi AOM,%0D%0A%0D%0A${encodeURIComponent(brief.msg)}%0D%0A%0D%0A, ${encodeURIComponent(brief.name)}${brief.co ? '·' + encodeURIComponent(brief.co) : ''}`;
     window.location.href = `mailto:hello@aheadofmarket.com?subject=${encodeURIComponent(subject)}&body=${body}`;
   };
 
@@ -765,7 +765,7 @@ export default function HomeR5Preview() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: EASE, delay: 0.15 }}
             >
-              <span className="boxed">Phoenix, AZ — Since 2020</span>
+ <span className="boxed">Phoenix, AZ, Since 2020</span>
             </motion.div>
             <h1 className="hero-h dp">
               <span className="row row-kick">
@@ -797,8 +797,8 @@ export default function HomeR5Preview() {
             </motion.div>
           </div>
           <div className="hero-foot">
-            <span>00 — The hook</span>
-            <span className="hero-credit">Now playing: Journey to Gary Vee — our documentary work</span>
+ <span>00, The hook</span>
+ <span className="hero-credit">Now playing: Journey to Gary Vee, our documentary work</span>
             <span className="blink">Scroll to meet us ↓</span>
           </div>
         </header>
@@ -841,15 +841,15 @@ export default function HomeR5Preview() {
 
         <Scene ch={1} tone="sc-ink">
           <div className="scene-inner">
-            <Rise><span className="beat-eyebrow">So — who are we, exactly?</span></Rise>
+ <Rise><span className="beat-eyebrow">So, who are we, exactly?</span></Rise>
             <p className="statement">
               <Kinetic sq segments={[{ t: 'Many companies around Phoenix know us as a ', cls: 'dim' }, { t: 'video company' }]} />
             </p>
             <Rise delay={0.35}>
               <div className="proof">
-                <span className="proof-cell"><img src={poster('698a6296fc23d3d76fa8d992', 480)} alt="Journey to Gary Vee — film still" loading="lazy" /></span>
-                <span className="proof-cell"><img src={poster('698a5ef5fc23d3d76fa87ef4', 480)} alt="Virtu Hospitality — film still" loading="lazy" /></span>
-                <span className="proof-cell"><img src={poster('698a5fcdfc23d3d76fa893b8', 480)} alt="United Food Bank — film still" loading="lazy" /></span>
+ <span className="proof-cell"><img src={poster('698a6296fc23d3d76fa8d992', 480)} alt="Journey to Gary Vee, film still" loading="lazy" /></span>
+ <span className="proof-cell"><img src={poster('698a5ef5fc23d3d76fa87ef4', 480)} alt="Virtu Hospitality, film still" loading="lazy" /></span>
+ <span className="proof-cell"><img src={poster('698a5fcdfc23d3d76fa893b8', 480)} alt="United Food Bank, film still" loading="lazy" /></span>
               </div>
               <span className="proof-cap">Frames from our films</span>
             </Rise>
@@ -863,9 +863,9 @@ export default function HomeR5Preview() {
             </p>
             <Rise delay={0.35}>
               <div className="proof">
-                <span className="proof-cell"><img src="/hero-sites/ambition.jpg" alt="Ambition Mechanical — site by AOM" loading="lazy" /></span>
-                <span className="proof-cell"><img src="/hero-sites/space-rising.jpg" alt="Space Rising — site by AOM" loading="lazy" /></span>
-                <span className="proof-cell"><img src="/hero-sites/valor.jpg" alt="Valor to Victory — site by AOM" loading="lazy" /></span>
+ <span className="proof-cell"><img src="/hero-sites/ambition.jpg" alt="Ambition Mechanical, site by AOM" loading="lazy" /></span>
+ <span className="proof-cell"><img src="/hero-sites/space-rising.jpg" alt="Space Rising, site by AOM" loading="lazy" /></span>
+ <span className="proof-cell"><img src="/hero-sites/valor.jpg" alt="Valor to Victory, site by AOM" loading="lazy" /></span>
               </div>
               <span className="proof-cap">Sites we've built</span>
             </Rise>
@@ -903,7 +903,7 @@ export default function HomeR5Preview() {
               <Kinetic sq segments={[{ t: "We're a ", cls: 'dim' }, { t: 'storytelling company', cls: 'gold' }]} />
             </p>
             <Rise delay={0.9}>
-              <p className="payoff-tail">— we just happen to make videos and web apps often.</p>
+ <p className="payoff-tail">, we just happen to make videos and web apps often.</p>
             </Rise>
           </div>
         </Scene>
@@ -963,7 +963,7 @@ export default function HomeR5Preview() {
             </p>
             <Rise delay={0.5}>
               <p className="bill-body">
-                A website or a video is the same — it doesn't help if you don't have a strategy to get it out.
+ A website or a video is the same, it doesn't help if you don't have a strategy to get it out.
                 That's where we come in. We make the marketing materials, but <em>first</em> we figure out exactly how they'll get distributed most effectively.
               </p>
             </Rise>
@@ -1004,7 +1004,7 @@ export default function HomeR5Preview() {
               </Rise>
               <Rise className="stat" data-i="02" delay={0.15}>
                 <span className="stat-n"><Counter value="3" /></span>
-                <span className="stat-l">Industries — Tech, Construction, Nonprofits</span>
+ <span className="stat-l">Industries, Tech, Construction, Nonprofits</span>
               </Rise>
               <Rise className="stat" data-i="03" delay={0.25}>
                 <span className="stat-n"><Counter value="8+" /></span>
@@ -1014,7 +1014,7 @@ export default function HomeR5Preview() {
             <Rise delay={0.2}>
               <p className="team-note">
                 Our team comes from commercial film production, local news, national media, and creative agencies.
-                We've worked across Phoenix, nationally, and internationally — always story-first.
+ We've worked across Phoenix, nationally, and internationally, always story-first.
               </p>
             </Rise>
             <Rise delay={0.3}>
@@ -1034,7 +1034,7 @@ export default function HomeR5Preview() {
           <div className="bloom-light" aria-hidden="true" />
           <div className="scene-inner bloom-copy">
             <Rise>
-              <span className="idx">Enough about us — here's what that looks like</span>
+ <span className="idx">Enough about us, here's what that looks like</span>
               <div className="bloom-head">
                 <Kinetic sq segments={[{ t: 'Now, the ' }, { t: 'work', cls: 'gold' }]} />
               </div>
@@ -1056,7 +1056,7 @@ export default function HomeR5Preview() {
                           <span className="frame-url">{s.client}</span>
                         </div>
                         <div className="frame-shot">
-                          <img src={s.src} alt={`${s.client} — website by Ahead of Market`} loading="lazy" />
+ <img src={s.src} alt={`${s.client}, website by Ahead of Market`} loading="lazy" />
                         </div>
                       </div>
                     ) : (
@@ -1079,7 +1079,7 @@ export default function HomeR5Preview() {
                   <span className="story-metric-l">{s.bigLabel}</span>
                 </div>
                 <div className="story-idx">
-                  <span className="idx">{i === 0 ? 'Some recent work — ' : ''}{String(i + 1).padStart(2, '0')} / {String(STORIES.length).padStart(2, '0')}</span>
+ <span className="idx">{i === 0 ? 'Some recent work, ' : ''}{String(i + 1).padStart(2, '0')} / {String(STORIES.length).padStart(2, '0')}</span>
                   <span className="bar" />
                   <span className="idx">{s.tag}</span>
                 </div>
@@ -1127,7 +1127,7 @@ export default function HomeR5Preview() {
             </h2>
             <Rise delay={0.4}>
               <p className="cta-body">
-                By now you know us a little. We'd love to learn about what you're working on — and how we might be able to help.
+ By now you know us a little. We'd love to learn about what you're working on, and how we might be able to help.
               </p>
             </Rise>
             <Rise delay={0.55}>
@@ -1199,7 +1199,7 @@ export default function HomeR5Preview() {
               ))}
             </div>
             <Rise className="reels-head">
-              <span className="idx">Reels — made for the feed</span>
+ <span className="idx">Reels, made for the feed</span>
               <span className="bar" />
             </Rise>
             <div className="reels-grid">

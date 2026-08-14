@@ -46,7 +46,7 @@ const S7_CSS = `
    border-left and the bronze verticals would render as a ladder of ticks instead of the
    reference's two continuous rules. Padding on the cell makes the rule span the whole row. */
 /* v2: a FOURTH column, WHO DOES IT HERE. The left column names five people you would have to
-   hire, which provokes "so who is my marketing manager?" — and v1 never answered it. Reading
+ hire, which provokes "so who is my marketing manager?", and v1 never answered it. Reading
    US seven times straight down the right edge assembles the department the table already made
    the reader imagine. The repetition IS the argument, so it is set as a stamp, not a sentence. */
 .s7-row {

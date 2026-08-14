@@ -17,7 +17,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SESSION_KEY = 'support-admin-session'
-const PW_KEY = 'support-admin-pw' // sessionStorage only — authorizes inbox reads
+const PW_KEY = 'support-admin-pw' // sessionStorage only, authorizes inbox reads
 
 const INK = '#0A0E1C'
 const INK_PANEL = '#10162A'
@@ -447,7 +447,7 @@ function CardDetail({ wish, onClose, onChanged }) {
 
         <label style={lbl}>Write a response (emails the client + marks Resolved)</label>
         <textarea value={response} onChange={(e) => setResponse(e.target.value)} rows={5}
-          placeholder="Got that all taken care of — let me know if you hit any issues with…"
+ placeholder="Got that all taken care of, let me know if you hit any issues with…"
           style={detailTextarea} />
         {error && <p style={{ color: '#F0A07A', fontSize: 13 }}>{error}</p>}
         <button disabled={busy || !response.trim()} onClick={() => patch({ response: response.trim(), status: 'resolved' })}

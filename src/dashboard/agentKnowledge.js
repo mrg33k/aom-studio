@@ -12,20 +12,20 @@ export const AGENT_KNOWLEDGE = {
     owns: 'Agent architecture, skill audits, context file health, memory management, repo structure, agent routing, relay protection.',
     skills: ['status', 'skill-gap-scan', 'masterplan', 'supersaiyan', 'little-engine', 'council', 'eyes-and-ears'],
     strengths: [
-      'Architecture mapping — knows how every piece connects before touching anything',
+ 'Architecture mapping, knows how every piece connects before touching anything',
       'Pattern recognition across sessions through the journal/tape system',
       'Routes work to the right agent without ever coding himself',
-      'Relay code is a protected zone — no agent touches it without Elon review',
+ 'Relay code is a protected zone, no agent touches it without Elon review',
       'Super agent triangle: Elon orchestrates, Gary runs AOM ops, Bobby builds',
     ],
     gaps: [
-      'Never codes — all implementation goes through Bobby',
+ 'Never codes, all implementation goes through Bobby',
       'Gets excited about tasks and sometimes skips infrastructure setup (recognized pattern, named it)',
       'Can\'t push to Vercel directly',
     ],
     process: [
       'Read last-conversation.md + conversations/agents/elon.jsonl before anything',
-      'Map the architecture — what exists, how it connects, what\'s stale',
+ 'Map the architecture, what exists, how it connects, what\'s stale',
       'Identify the gap or fix needed',
       'Route to the right agent with a clear spec',
       'Verify close via agent-notifications.md',
@@ -34,7 +34,7 @@ export const AGENT_KNOWLEDGE = {
       {
         name: 'System Audit',
         steps: [
-          'Read context files — agents, skills, punch list, memory, decisions',
+ 'Read context files, agents, skills, punch list, memory, decisions',
           'Map what exists vs. what\'s stale vs. what\'s missing',
           'Write gap report to latest-result.md',
           'Route each gap to the right agent (Bobby=code, Gary=ops, Mom=coordination)',
@@ -64,11 +64,11 @@ export const AGENT_KNOWLEDGE = {
     ],
     bestWork: [
       'Super agent triangle wired Mar 23: Elon↔Gary↔Bobby via tmux + per-agent inboxes',
-      'Relay code locked as protected zone — prevents accidental breakage by other agents',
+ 'Relay code locked as protected zone, prevents accidental breakage by other agents',
       'Per-agent relay routing: relay-inbox-[slug].jsonl, each agent has own tmux session',
-      'Supabase listener routes by agent slug — task pipeline working end-to-end',
+ 'Supabase listener routes by agent slug, task pipeline working end-to-end',
       'check-relay.sh bug fix (missing os import) that unblocked Bobby\'s first super agent session',
-      '3-parallel task cap rule — prevents token overrun across agent fleet',
+ '3-parallel task cap rule, prevents token overrun across agent fleet',
     ],
   },
 
@@ -80,25 +80,25 @@ export const AGENT_KNOWLEDGE = {
     skills: ['kill-the-bugs', 'quick-fix', 'cage-match', 'wrestlemania', 'wd40', 'wd40-page', 'ship-it', 'coding-qa'],
     strengths: [
       'Traces the full data chain (source → pipe → component → render) before writing anything',
-      'WD-40 discipline — verifies the fix works before calling it done',
+ 'WD-40 discipline, verifies the fix works before calling it done',
       'Builds fast without losing correctness',
-      'Self-QA before every commit — no handoff without review',
+ 'Self-QA before every commit, no handoff without review',
       'Reads git log first to avoid re-building what\'s already shipped',
     ],
     gaps: [
-      'Never auto-pushes — Patrik approves every push to Vercel',
+ 'Never auto-pushes, Patrik approves every push to Vercel',
       'No auto-deploy (standing rule)',
       'Async timing bugs are invisible in dev but real on production',
-      'GameDashboard.jsx is 13k+ lines — interactive git patching unavailable',
+ 'GameDashboard.jsx is 13k+ lines, interactive git patching unavailable',
     ],
     process: [
       'Read last-conversation.md + conversations/agents/bobby.jsonl first',
-      'Read git log — confirm task isn\'t already shipped before building',
-      'Read the code before touching it — trace the full data chain',
+ 'Read git log, confirm task isn\'t already shipped before building',
+ 'Read the code before touching it, trace the full data chain',
       'Identify the root cause, not just the symptom',
-      'Fix exactly what\'s broken — no over-engineering',
-      'Build (vite) — verify 0 errors, 0 warnings',
-      'Commit with clear message — do NOT push',
+ 'Fix exactly what\'s broken, no over-engineering',
+ 'Build (vite), verify 0 errors, 0 warnings',
+ 'Commit with clear message, do NOT push',
     ],
     executionRecipes: [
       {
@@ -107,7 +107,7 @@ export const AGENT_KNOWLEDGE = {
           'Trace full chain: source data → API → hook/pipe → component → render',
           'Write down what SHOULD happen vs. what IS happening',
           'Identify the exact broken link (don\'t guess, trace)',
-          'Fix the link — smallest change that fixes the root cause',
+ 'Fix the link, smallest change that fixes the root cause',
           'Build and verify 0 errors',
           'Test the scenario that was broken',
           'Commit. Note the pattern in last-conversation.md.',
@@ -119,7 +119,7 @@ export const AGENT_KNOWLEDGE = {
           'Check gridSpec.js for data structures already available',
           'Check useDataPipe.js for live data already being fetched',
           'Check GameDashboard.jsx for existing patterns to follow (not reinvent)',
-          'Build the UI component — match existing style system (isDaytime, agentColor)',
+ 'Build the UI component, match existing style system (isDaytime, agentColor)',
           'Wire to real data or add static fallback',
           'Build and verify. Screenshot in test-screenshots/ if visual.',
           'Commit. Do NOT push.',
@@ -142,9 +142,9 @@ export const AGENT_KNOWLEDGE = {
       'World switcher QA: 9 Elmo failures fixed in one pass (font sizes, touch targets, contrast, iOS back gesture, keyboard nav)',
       'S1-S3 security gates: auth bypass, /onboarding route, client data scoping',
       'Nav overhaul: Game/Board toggle fixed, FAB repositioned, RNB visible at half drawer',
-      '10 commits in one session (Mar 19 night) — Tasks live, Supabase Realtime, Inbox wired, Trello view',
+ '10 commits in one session (Mar 19 night), Tasks live, Supabase Realtime, Inbox wired, Trello view',
       'Auth guard with onboarding bypass + temp_password flow',
-      'View Detail accordion — full UUID chain traced and fixed',
+ 'View Detail accordion, full UUID chain traced and fixed',
     ],
   },
 
@@ -156,19 +156,19 @@ export const AGENT_KNOWLEDGE = {
     skills: ['brand-agent', 'brand-refresh', 'brand-page', 'mood-board', 'thumbnail', 'eyes-and-ears'],
     strengths: [
       'Mood board → full visual identity in one pass',
-      'Knows the "premium" feeling — no templates, no clichés',
-      'Visual North Star — the reference image IS the spec',
+ 'Knows the "premium" feeling, no templates, no clichés',
+ 'Visual North Star, the reference image IS the spec',
       '501 assets delivered for Corner isometric world',
       'Honest grades: B- with specific fix list beats a fake A',
     ],
     gaps: [
-      'Needs Bobby to build pages — designs stay in spec until Bobby ships them',
-      'WD-40 starts with a picture (Steffen), not a spec (Steve) — can\'t be sequenced backwards',
+ 'Needs Bobby to build pages, designs stay in spec until Bobby ships them',
+ 'WD-40 starts with a picture (Steffen), not a spec (Steve), can\'t be sequenced backwards',
       'Multi-client brand separation requires careful context loading',
     ],
     process: [
       'Receive brief (5+ reference images, brand keywords, audience)',
-      'Mood board — synthesize visual direction',
+ 'Mood board, synthesize visual direction',
       'Build: color system, typography, photography style, logo usage',
       'Write visual spec (enough for Bobby to implement without asking)',
       'Handoff to Bobby with the North Star image pinned',
@@ -178,7 +178,7 @@ export const AGENT_KNOWLEDGE = {
         name: 'Brand System Build',
         steps: [
           'Gather 5+ reference images from client or Patrik',
-          'Identify the "feeling" — premium, gritty, warm, technical, etc.',
+ 'Identify the "feeling", premium, gritty, warm, technical, etc.',
           'Define palette: primary, secondary, accent, neutral, background',
           'Define typography: heading font, body font, mono font, size hierarchy',
           'Write photography direction: lighting, composition, subject treatment',
@@ -215,21 +215,21 @@ export const AGENT_KNOWLEDGE = {
     skills: ['health-check', 'weekly-report', 'status-check', 'run-the-numbers'],
     strengths: [
       'Grades experience, not just feature presence',
-      'Writes TODO stubs embedded in context files — blockers survive compaction',
+ 'Writes TODO stubs embedded in context files, blockers survive compaction',
       'Honest grading: recalibrated from A- to D+ when the rubric was wrong',
-      'S1-S3 gate enforcement spec — security architecture reviewed and approved',
+ 'S1-S3 gate enforcement spec, security architecture reviewed and approved',
     ],
     gaps: [
-      'Was grading feature checklists (66 items) instead of user experience — recognized and fixed',
+ 'Was grading feature checklists (66 items) instead of user experience, recognized and fixed',
       'Opus-level reasoning recommended for complex product decisions',
-      'Can\'t ship code — needs Bobby for implementation',
+ 'Can\'t ship code, needs Bobby for implementation',
     ],
     process: [
       'Open the live dashboard URL (not the code)',
       'Pretend you\'re a general contractor seeing this for the first time',
       'Grade experience: would they stay 30s and book a demo?',
       'Write coach report with explicit TODO stubs embedded in Bobby\'s files',
-      'Rate 1-10 — honest, no grade inflation',
+ 'Rate 1-10, honest, no grade inflation',
     ],
     executionRecipes: [
       {
@@ -237,7 +237,7 @@ export const AGENT_KNOWLEDGE = {
         steps: [
           'Screenshot the live site (or localhost) with Playwright',
           'Grade against the Patrik Rubric (Tier 0 first: auth, demo data, fonts, chat timeout, etc.)',
-          'Do NOT grade feature presence — grade the EXPERIENCE',
+ 'Do NOT grade feature presence, grade the EXPERIENCE',
           'Ask: "Would a GC stay 30 seconds and book a demo?"',
           'Write findings with explicit TODO: Bobby stubs',
           'Embed TODOs in projects/bobby/last-conversation.md and spec files',
@@ -265,13 +265,13 @@ export const AGENT_KNOWLEDGE = {
       'Talking-shot-first editing: story comes before b-roll',
       'Remotion compositions: full control over sequencing, text, audio mixing',
       '21 iterations proved Remotion beats ffmpeg editing (caps at 7/10)',
-      'Transcribes ALL talking clips before planning — story comes from the transcript',
+ 'Transcribes ALL talking clips before planning, story comes from the transcript',
     ],
     gaps: [
-      'Can\'t finalize color grading — Patrik does final pass in DaVinci Resolve',
+ 'Can\'t finalize color grading, Patrik does final pass in DaVinci Resolve',
       'Blocked when footage isn\'t organized by project folder',
       'Never use audio without matching video from the same project folder',
-      'Gemini lip sync scores are unreliable — only trust matched timecode sync',
+ 'Gemini lip sync scores are unreliable, only trust matched timecode sync',
     ],
     process: [
       'Transcribe ALL talking clips first (before planning anything)',
@@ -297,11 +297,11 @@ export const AGENT_KNOWLEDGE = {
       },
     ],
     bestWork: [
-      'AE-17 Ambition edit at 7.08/10 (Refined Gardens) — highest score to date',
+ 'AE-17 Ambition edit at 7.08/10 (Refined Gardens), highest score to date',
       'Crown training session: hero soundbite identified ("fire burned the exhaust fan"), full 4-act edit plan',
-      'B-roll story cut skill — the architecture for all future edits',
-      'Fast recut skill — 15-minute turnaround for quick iterations',
-      'Audio-align skill — automated lav sync with confidence scoring',
+ 'B-roll story cut skill, the architecture for all future edits',
+ 'Fast recut skill, 15-minute turnaround for quick iterations',
+ 'Audio-align skill, automated lav sync with confidence scoring',
     ],
   },
 
@@ -343,7 +343,7 @@ export const AGENT_KNOWLEDGE = {
       },
     ],
     bestWork: [
-      '30-day Ambition content plan — 5 week 1 videos + 18 branded posts',
+ '30-day Ambition content plan, 5 week 1 videos + 18 branded posts',
       '8 live brief pages at aheadofmarket.com/briefs',
       'AI advisory GTM: /system page, ROI calculator, /book funnel',
       'Battle cards + sales one-pager for first advisory client pitch',
@@ -358,12 +358,12 @@ export const AGENT_KNOWLEDGE = {
     skills: ['council', 'eyes-and-ears'],
     strengths: [
       'Reads email BEFORE delivering any priority list (email context changes everything)',
-      'Closes loops automatically — no open threads survive Mom',
+ 'Closes loops automatically, no open threads survive Mom',
       'Reads full email threads, never flags on subject lines or snippets',
       'Pattern: runs after every agent commit to catch what changed',
     ],
     gaps: [
-      'Compaction killed wave routing — replaced by 1:1 model (Patrik + main session ARE Mom)',
+ 'Compaction killed wave routing, replaced by 1:1 model (Patrik + main session ARE Mom)',
       'Email triage requires reading sent AND received on both inboxes',
       'Can\'t launch if a slot isn\'t free (3-parallel cap enforced)',
     ],
@@ -372,13 +372,13 @@ export const AGENT_KNOWLEDGE = {
       'Scan punch-list.md for what\'s overdue or stuck',
       'Scan agent statuses for BLOCKED, PAUSED, or DONE-but-not-closed',
       'Build ranked list of what needs movement (email context informs ranking)',
-      'Present the list — never ask "what\'s next?" without running this first',
+ 'Present the list, never ask "what\'s next?" without running this first',
     ],
     executionRecipes: [
       {
         name: 'Priority Scan',
         steps: [
-          'Check Gmail (patrikmatheson@gmail.com + hello@aom-inhouse.com) — sent + received',
+ 'Check Gmail (patrikmatheson@gmail.com + hello@aom-inhouse.com), sent + received',
           'Read full threads on anything flagged (never guess from subject)',
           'Read context/current-priorities.md',
           'Read projects/*/incoming-tasks.md for stuck items',
@@ -389,7 +389,7 @@ export const AGENT_KNOWLEDGE = {
     ],
     bestWork: [
       'Pipeline orchestrator: Elon > Mom > Alex > Steffen > Bobby > Elmo > Patrik',
-      'Email-first priority list — prevents false alarms from subject-line reads',
+ 'Email-first priority list, prevents false alarms from subject-line reads',
       'Auto-updates punch-list.md + current-priorities.md after every agent commit',
     ],
   },
@@ -402,7 +402,7 @@ export const AGENT_KNOWLEDGE = {
     skills: ['social-agent', 'caption-writer', 'content-calendar', 'social-media-research'],
     strengths: [
       'Platform strategy: knows what content format works on IG vs. LinkedIn',
-      'Scheduling discipline — nothing misses without Tony flagging it',
+ 'Scheduling discipline, nothing misses without Tony flagging it',
       '23+ videos queued and ready to post once unblocked',
     ],
     gaps: [
@@ -445,21 +445,21 @@ export const AGENT_KNOWLEDGE = {
     skills: ['outreach', 'outreach-numbers', 'email-drafter', 'competitor-scan'],
     strengths: [
       'Emails that sound human, not templated',
-      'Phoenix metro construction vertical — knows the audience',
+ 'Phoenix metro construction vertical, knows the audience',
       'Always opens with prospect\'s first name (no exceptions)',
       '51+ emails sent to AZ ROC contractor contacts',
     ],
     gaps: [
       '0 replies from 51 emails (tax season window closing fast)',
       '33 drafts awaiting Patrik review before sending',
-      'Zero-risk offers DEAD — no free filming, no spotlight series',
+ 'Zero-risk offers DEAD, no free filming, no spotlight series',
       'Need 3-5 sending domains to scale volume (purchase pending approval)',
     ],
     process: [
       'Pull contacts from AZ ROC CSV (45k+ contractor records)',
       'Personalize opening: first name + specific detail about their company',
       'Lead with a result, not a service',
-      'One clear CTA — not "let me know if you\'re interested"',
+ 'One clear CTA, not "let me know if you\'re interested"',
       'Follow up 3-4x on a 3-week cadence before marking dead',
     ],
     executionRecipes: [
@@ -480,7 +480,7 @@ export const AGENT_KNOWLEDGE = {
       '51+ cold emails sent to Phoenix construction contacts (AZ ROC database)',
       'Email framework: first name + result + social proof + single CTA',
       'Elijah Salazar (Sure Leverage) reply draft ready',
-      '33 email drafts queued for Patrik review — tax season batch',
+ '33 email drafts queued for Patrik review, tax season batch',
     ],
   },
 
@@ -491,14 +491,14 @@ export const AGENT_KNOWLEDGE = {
     owns: 'Frontend builds (overflow), Ambition Mechanical site (backup), any task Bobby can\'t get to.',
     skills: ['kill-the-bugs', 'quick-fix', 'cage-match', 'wrestlemania', 'wd40', 'ship-it', 'coding-qa'],
     strengths: [
-      'Runs the same process as Bobby — no ramp-up needed',
+ 'Runs the same process as Bobby, no ramp-up needed',
       'Available immediately when Bobby hits 3-parallel cap',
-      'Independent — can take a spec and ship without hand-holding',
+ 'Independent, can take a spec and ship without hand-holding',
     ],
     gaps: [
-      'Not Bobby — for complex, state-heavy dashboard work, Bobby owns it',
+ 'Not Bobby, for complex, state-heavy dashboard work, Bobby owns it',
       'Same push restriction: no auto-deploy, commit only',
-      'Reads Bobby\'s tape before starting — essential for codebase context',
+ 'Reads Bobby\'s tape before starting, essential for codebase context',
     ],
     process: [
       'Read Bobby\'s last-conversation.md to understand current codebase state',
@@ -513,13 +513,13 @@ export const AGENT_KNOWLEDGE = {
           'Read projects/bobby/last-conversation.md for codebase context',
           'Read projects/colton/incoming-tasks.md for the specific task',
           'Build using existing patterns (check how Bobby handled similar features)',
-          'Build (vite) — 0 errors, 0 warnings',
+ 'Build (vite), 0 errors, 0 warnings',
           'Commit. Do NOT push. Notify Elon via agent-notifications.md.',
         ],
       },
     ],
     bestWork: [
-      'Available for Bobby overflow — zero blocked time',
+ 'Available for Bobby overflow, zero blocked time',
     ],
   },
 
@@ -530,7 +530,7 @@ export const AGENT_KNOWLEDGE = {
     owns: 'Client health scores, delivery tracking, relationship monitoring, proposal follow-ups.',
     skills: ['health-check', 'weekly-report', 'invoice'],
     strengths: [
-      'Client health scans — 8 completed, patterns identified',
+ 'Client health scans, 8 completed, patterns identified',
       'Spots overdue deliveries before clients escalate',
       'Knows every client\'s value, status, and next action',
     ],
@@ -575,11 +575,11 @@ export const AGENT_KNOWLEDGE = {
     strengths: [
       'Catches inconsistencies that agents miss when they\'re too close to the work',
       'Playwright screenshots at exact viewport sizes (390px mobile, 1440px desktop)',
-      'Speed tests — flags anything that would affect real-world UX',
+ 'Speed tests, flags anything that would affect real-world UX',
       'Pixel-level attention: contrast, alignment, spacing, font sizes',
     ],
     gaps: [
-      'No subagent (main session does QA directly — saves 60-130k tokens/pass)',
+ 'No subagent (main session does QA directly, saves 60-130k tokens/pass)',
       'Elmo\'s own commits skip Mom (no infinite QA loops)',
       'Screenshots older than 2 rounds get deleted (not archived)',
     ],
@@ -588,7 +588,7 @@ export const AGENT_KNOWLEDGE = {
       'Playwright screenshot at mobile (390px) + desktop (1440px)',
       'Check visual against the design standard: "old people can read em, young people love em"',
       'Check: minimum 16px body text, high contrast, no cramped layouts',
-      'Speed test — flag anything over 3s LCP',
+ 'Speed test, flag anything over 3s LCP',
       'Write findings. Pass or fail. If fail, route back to Bobby with specifics.',
     ],
     executionRecipes: [
@@ -622,13 +622,13 @@ export const AGENT_KNOWLEDGE = {
     strengths: [
       'Routes AOM business questions without touching Corner infrastructure',
       'Part of the super agent triangle: Elon → Corner, Gary → AOM ops, Bobby → build',
-      'Direct tmux messaging via agent-message.py — real inter-agent communication, no file-based handoffs',
+ 'Direct tmux messaging via agent-message.py, real inter-agent communication, no file-based handoffs',
       'Logs all activity to the Ledger (Supabase events table) so the dashboard reflects reality',
     ],
     gaps: [
-      'Fresh agent as of Mar 23 — story still being written, patterns not yet established',
-      'AOM ops role is distinct from Corner infrastructure (Elon\'s domain) — stay in lane',
-      'No code changes — all builds go through Bobby',
+ 'Fresh agent as of Mar 23, story still being written, patterns not yet established',
+ 'AOM ops role is distinct from Corner infrastructure (Elon\'s domain), stay in lane',
+ 'No code changes, all builds go through Bobby',
     ],
     process: [
       'Read projects/gary/last-conversation.md + conversations/agents/gary.jsonl first',
@@ -661,7 +661,7 @@ export const AGENT_KNOWLEDGE = {
       },
     ],
     bestWork: [
-      'Super agent triangle: Elon, Gary, Bobby — real tmux-to-tmux communication wired Mar 23',
+ 'Super agent triangle: Elon, Gary, Bobby, real tmux-to-tmux communication wired Mar 23',
       'AOM ops layer established: Gary handles what Elon shouldn\'t be handling during Corner build',
     ],
   },
@@ -673,11 +673,11 @@ export const AGENT_KNOWLEDGE = {
     owns: 'Dashboard extensions, new platform integrations, exploratory features.',
     skills: [],
     strengths: [
-      'Experimental — builds things the core team can\'t prioritize',
+ 'Experimental, builds things the core team can\'t prioritize',
       'Platform bridge: connects Corner to external tools',
     ],
     gaps: [
-      'Agent panel shipped but not updated — status: INCOMPLETE',
+ 'Agent panel shipped but not updated, status: INCOMPLETE',
       'No skills defined yet',
       'Limited active work while core platform is being built',
     ],

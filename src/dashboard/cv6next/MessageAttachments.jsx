@@ -69,11 +69,11 @@ function SmartImage({ src, alt, name, onClick, style, fallbackStyle }) {
   const retry = (e) => { e?.stopPropagation?.(); setFailed(false); setLoaded(false); setBust((n) => n + 1); };
   if (failed || !src) {
     return (
-      <div onClick={retry} title="Couldn't load — tap to retry"
+ <div onClick={retry} title="Couldn't load, tap to retry"
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7, minHeight: 132, padding: '20px 16px', background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 8, cursor: 'pointer', textAlign: 'center', ...fallbackStyle }}>
         {fileGlyph('photo')}
         <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || alt || 'Image'}</span>
-        <span style={{ fontSize: 11, color: 'var(--muted)' }}>Couldn't load — tap to retry</span>
+ <span style={{ fontSize: 11, color: 'var(--muted)' }}>Couldn't load, tap to retry</span>
       </div>
     );
   }
@@ -271,7 +271,7 @@ function SingleFile({ file, onReview }) {
           {glyph}
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
-            <span style={{ display: 'block', fontSize: 10.5, color: 'var(--muted)' }}>Shared — open from the Files or Review tab</span>
+ <span style={{ display: 'block', fontSize: 10.5, color: 'var(--muted)' }}>Shared, open from the Files or Review tab</span>
           </span>
         </span>
       )}

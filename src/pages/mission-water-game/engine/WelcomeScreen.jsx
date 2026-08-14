@@ -247,7 +247,7 @@ function MissionCard({ active, locked, title, icon, subtitle, missionNum, visibl
           {title}
         </div>
 
-        {/* Description — active card only; locked cards stay compact "coming soon" bars */}
+ {/* Description, active card only; locked cards stay compact "coming soon" bars */}
         {!locked && (
           <div style={{
             fontFamily: 'Rajdhani, sans-serif',
@@ -542,7 +542,7 @@ export default function WelcomeScreen({ onStart }) {
                   active
                   locked={false}
                   title="WATER"
-                  subtitle="Earth is running out of fresh water. Investigate the crisis — then take the mission to the Moon."
+ subtitle="Earth is running out of fresh water. Investigate the crisis, then take the mission to the Moon."
                   icon={MISSION_ICONS.water}
                   missionNum="01"
                   visible={card0Ready}
@@ -579,4 +579,3 @@ export default function WelcomeScreen({ onStart }) {
     </div>
   );
 }
-

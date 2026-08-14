@@ -360,7 +360,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     if (!safe || !sessionReadyRef.current || wsRef.current?.readyState !== WebSocket.OPEN) return false
     wsRef.current.send(JSON.stringify({
       clientContent: {
-        turns: [{ role: 'user', parts: [{ text: `[CORNER SYSTEM CONTROL — not spoken by the user]\n${safe}` }] }],
+ turns: [{ role: 'user', parts: [{ text: `[CORNER SYSTEM CONTROL, not spoken by the user]\n${safe}` }] }],
         turnComplete: true,
       },
     }))

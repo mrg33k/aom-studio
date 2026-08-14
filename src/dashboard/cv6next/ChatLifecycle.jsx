@@ -402,7 +402,7 @@ function GoalTurn({ m, goal, blocks }) {
         </div>
         <GoalThreadBody goal={goal} blocks={blocks || m.blocks} header={false} />
         {/* A completion message renders as a goal-thread note (injectWorkSteps), so its
-            shipped-link card must ride HERE too — Message's card never runs for it. */}
+ shipped-link card must ride HERE too, Message's card never runs for it. */}
         {!m.isUser && m.linkCards?.length ? <ResultLinkCards cards={m.linkCards} /> : null}
       </div>
     </div>
@@ -611,7 +611,7 @@ function mfsHumanSize(bytes) {
   return `${(b / 1048576).toFixed(1)} MB`;
 }
 function mfsMeta(f) {
-  return [f.who, mfsRelAgo(f.ts), mfsHumanSize(f.size)].filter(Boolean).join(' — ');
+ return [f.who, mfsRelAgo(f.ts), mfsHumanSize(f.size)].filter(Boolean).join('·');
 }
 
 // ── SwipeFileRow — touch gesture: left-swipe reveals 80px Save panel ────────
@@ -1577,7 +1577,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
             mComposerHost?.querySelector('input:not([type="file"]):not([type="hidden"]), textarea')?.focus();
           }, 60);
         }}
-        aria-label="Open composer — type a message"
+ aria-label="Open composer, type a message"
         title="Type a message"
       >
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

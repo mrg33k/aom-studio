@@ -293,7 +293,7 @@ export default function FailedTasksSection() {
                       <div>
                         <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>QA Score</div>
                         <div style={{ fontSize: 13, fontWeight: 800, color: '#EF4444', fontFamily: "'JetBrains Mono', monospace" }}>
-                          {insightsData[t.id].qaScore != null ? `${insightsData[t.id].qaScore}/10` : '—'}
+ {insightsData[t.id].qaScore != null ? `${insightsData[t.id].qaScore}/10` : '·'}
                         </div>
                       </div>
                       <div>

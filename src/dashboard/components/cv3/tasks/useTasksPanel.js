@@ -584,7 +584,7 @@ export function useTasksPanel() {
     if (!task) return
     setTaskVerifyIds(prev => { const next = new Set(prev); next.add(task.id); return next })
     try {
-      const body = `Verify task "${task.title || task.id}" output.\n\nParent task id: ${task.id}\nProject: ${task.project || '—'}\n\nRead the parent's completion payload and confirm it matches expectations.`
+ const body = `Verify task "${task.title || task.id}" output.\n\nParent task id: ${task.id}\nProject: ${task.project || '·'}\n\nRead the parent's completion payload and confirm it matches expectations.`
       const row = {
         title: `Verify: ${snippetOfTitle(task.title || task.id)}`,
         text: body,
@@ -613,7 +613,7 @@ export function useTasksPanel() {
   const handleTaskResearch = useCallback(async (task) => {
     if (!task) return
     try {
-      const body = `Research follow-up for task "${task.title || task.id}".\n\nParent task id: ${task.id}\nProject: ${task.project || '—'}\n\nWrite a brief in docs/briefs/ and attach it to the ${task.project || 'relevant'} project's Files section.`
+ const body = `Research follow-up for task "${task.title || task.id}".\n\nParent task id: ${task.id}\nProject: ${task.project || '·'}\n\nWrite a brief in docs/briefs/ and attach it to the ${task.project || 'relevant'} project's Files section.`
       const row = {
         title: `Research: ${snippetOfTitle(task.title || task.id)}`,
         text: body,
@@ -782,7 +782,7 @@ export function useTasksPanel() {
       '/new-project',
       '',
       'Let\'s start a new project together. Ask me one question at a time:',
-      '1. What\'s this project about — a sentence is fine.',
+ '1. What\'s this project about, a sentence is fine.',
       '2. What\'s the first concrete thing we should build or learn?',
       '3. Who\'s involved?',
       '',

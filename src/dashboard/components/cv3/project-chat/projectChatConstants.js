@@ -4,7 +4,7 @@
 
 export const formatFileSize = (bytes) => {
   const value = Number(bytes)
-  if (!Number.isFinite(value) || value <= 0) return '—'
+ if (!Number.isFinite(value) || value <= 0) return '·'
   if (value < 1024) return `${value} B`
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(value >= 1024 * 100 ? 0 : 1)} KB`
   if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(value >= 1024 * 1024 * 100 ? 0 : 1)} MB`

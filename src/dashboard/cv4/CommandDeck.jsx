@@ -428,7 +428,7 @@ function PreloadedMessage({ message, seconds = DEFAULT_FIRE_SECONDS, autoSend = 
         fontSize: 10.5, fontFamily: FONT.mono, letterSpacing: '0.04em',
         textTransform: 'uppercase', color: C.muted,
       }}>
-        <span>EA's answer{held ? '' : ' — sending'}</span>
+ <span>EA's answer{held ? '' : ', sending'}</span>
         <span style={{
           color: held ? C.muted : (urgent ? C.s1 : AMBER), fontWeight: 700,
           animation: urgent ? 'cmddeck-pulse 1s ease-in-out infinite' : 'none',
@@ -730,7 +730,7 @@ function SteeringQuestionCard({ room, question, options = [], onChanged, onDismi
 // Default decide-moves for a room status card until the loop computes per-room
 // moves. Carry `.status` so the chip handler routes to set_room_status.
 const ROOM_STATUS_DEFAULT_CHIPS = [
-  { label: 'Looks good — keep going', status: 'active', note: 'Looks good, keep going' },
+ { label: 'Looks good, keep going', status: 'active', note: 'Looks good, keep going' },
   { label: 'Pause this room for now', status: 'parked', note: 'Paused from the deck' },
 ]
 
@@ -1023,7 +1023,7 @@ function HeroCard({ decisionsWaiting, roomsMoving, heartbeat, loopRunning, stale
         )}
       </div>
 
-      {/* The plain-English read — the main line, promoted above the count's label */}
+ {/* The plain-English read, the main line, promoted above the count's label */}
       <p style={{
         margin: '14px 0 0', fontFamily: FONT.display, fontSize: 16, fontWeight: 700,
         color: C.text, lineHeight: 1.4, letterSpacing: '-0.01em',
@@ -1074,7 +1074,7 @@ function WorkerPane({ workers, loopRunning, alarm = false }) {
         color: alarm ? AMBER : C.muted, fontWeight: alarm ? 600 : 400,
       }}>
         {alarm ? 'Loop is running but no agents are working. Check for stuck tasks.' :
-          loopRunning ? 'No agents working right now — loop is watching.' : 'Loop is paused.'}
+ loopRunning ? 'No agents working right now, loop is watching.' : 'Loop is paused.'}
       </div>
     )
   }
@@ -1266,9 +1266,9 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
       setNameMap(map)
 
       const steering = openQuestions
-        .filter((q) => !answeredQuestions.some((a) => a.text.includes(q.text.split(' — ')[0])))
+ .filter((q) => !answeredQuestions.some((a) => a.text.includes(q.text.split('·')[0])))
         .map((item) => {
-          const [room, question] = item.text.split(' — ')
+ const [room, question] = item.text.split('·')
           const slug = room.trim()
           const g = (goals.rooms || {})[slug] || {}
           const options = Array.isArray(g.options) ? g.options.filter((o) => o && o.label) : []
@@ -1378,12 +1378,12 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
             Command Deck<span style={{ color: AMBER }}>.</span>
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* R4 master switch — "do nothing and it sends" on/off, in plain words. */}
+ {/* R4 master switch, "do nothing and it sends" on/off, in plain words. */}
             <button
               onClick={toggleAutoSend}
               title={autoSend
                 ? 'Auto-send is on: each answer sends on its timer unless you hold or edit it'
-                : 'Auto-send is off: nothing sends on its own — answers wait for your tap'}
+ : 'Auto-send is off: nothing sends on its own, answers wait for your tap'}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, height: 30, padding: '0 11px',
                 borderRadius: 8, cursor: 'pointer', fontFamily: FONT.mono, fontSize: 11,
@@ -1493,7 +1493,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
               )
             )}
 
-            {/* ── ROOMS VIEW — every room's goal + status, all actionable ── */}
+ {/* ── ROOMS VIEW, every room's goal + status, all actionable ── */}
             {view === 'rooms' && (
               roomEntries.length > 0 ? (
                 <section style={{ marginBottom: 16 }}>
@@ -1546,7 +1546,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
                   </section>
                 )}
 
-                {/* Since you last looked — the loop's clean what-changed feed */}
+ {/* Since you last looked, the loop's clean what-changed feed */}
                 {activity.length > 0 && (
                   <section style={{ marginBottom: 28 }}>
                     <SectionLabel>Since you last looked ({activity.length})</SectionLabel>
@@ -1596,7 +1596,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
               </section>
             )}
 
-                {/* Housekeeping — the Keeper's tidy-up proposals */}
+ {/* Housekeeping, the Keeper's tidy-up proposals */}
                 {visibleKeeper.length > 0 && (
                   <section>
                     <SectionLabel>Housekeeping ({visibleKeeper.length})</SectionLabel>

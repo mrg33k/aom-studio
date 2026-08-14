@@ -145,7 +145,7 @@ const REGISTRY = [
         label: 'Long name (truncation)',
         render: () => (
           <MissionChip
-            mission={{ name: 'Brandon Wiley documentary — LBX launch film cut review', path: 'corner:brandon-wiley:lbx' }}
+            mission={{ name: 'Brandon Wiley documentary for LBX launch film cut review', path: 'corner:brandon-wiley:lbx' }}
             onClear={() => {}}
           />
         ),
@@ -356,7 +356,7 @@ const SCREENS = [
   {
     id: 'screen-home',
     name: 'Home',
-    purpose: 'The dashboard home — projects, agents, and where you left off.',
+    purpose: 'The dashboard home with projects, agents and where you left off.',
     wide: true,
     states: [
       { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Home · Dark"><HomeView {...SCREEN_PROPS} /></ScreenFrame> },
@@ -436,7 +436,7 @@ const SCREENS = [
   {
     id: 'screen-command',
     name: 'Command Deck',
-    purpose: 'Live response deck — one card per thing needing you, best-guess reply preloaded with a countdown that auto-sends.',
+    purpose: 'Live response deck with one card per thing needing you and a best guess reply preloaded with a countdown that auto sends.',
     wide: true,
     states: [
       { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Command · CV6"><HomeView {...SCREEN_PROPS} initialTool="command" /></ScreenFrame> },
@@ -446,7 +446,7 @@ const SCREENS = [
   {
     id: 'screen-scribe',
     name: 'Live Scribe',
-    purpose: 'Call companion in the CV6 shell — live transcript with tap-to-name speakers + a living brief.',
+    purpose: 'Call companion in the CV6 shell with live transcript and tap to name speakers plus a living brief.',
     wide: true,
     states: [
       { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Live Scribe · CV6"><HomeView {...SCREEN_PROPS} initialTool="scribe" /></ScreenFrame> },
@@ -533,7 +533,7 @@ export default function CV6Gallery() {
     )
     const text = blocks.length
       ? `CV6 gallery feedback\n\n${blocks.join('\n\n')}`
-      : 'No notes yet — type some under a piece first.'
+      : 'No notes yet. Type some under a piece first.'
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text).then(() => {
         setCopied(true)
@@ -563,7 +563,7 @@ export default function CV6Gallery() {
         whiteSpace: 'nowrap',
       }}
     >
-      {copied ? 'Copied — paste it to me' : `Copy my feedback${notedCount ? ` (${notedCount})` : ''}`}
+ {copied ? 'Copied, paste it to me' : `Copy my feedback${notedCount ? ` (${notedCount})` : ''}`}
     </button>
   )
 
@@ -729,7 +729,7 @@ export default function CV6Gallery() {
           id="cv6-note"
           value={feedback[active.id] || ''}
           onChange={(e) => saveNote(active.id, e.target.value)}
-          placeholder="What should change here? Be as rough as you like — it saves as you type."
+ placeholder="What should change here? Be as rough as you like, it saves as you type."
           rows={4}
           style={{
             width: '100%',

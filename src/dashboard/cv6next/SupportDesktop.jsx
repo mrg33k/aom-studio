@@ -373,7 +373,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
                         </span>
                         {suggestState === 'loading' && <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>thinking…</span>}
                       </div>
-                      {/* the worker's structured read — who / ask / state / did / next */}
+ {/* the worker's structured read, who / ask / state / did / next */}
                       {readRows.length > 0 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: (summary.length || recommendation.length) ? 12 : 0 }}>
                           {readRows.map(([label, value]) => (
@@ -441,8 +441,8 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                           {autoSendAt && new Date(autoSendAt) > Date.now()
-                            ? `Draft ready — sends itself ${autoSendLabel} unless you step in`
-                            : 'Draft ready — waiting on you'}
+ ? `Draft ready, sends itself ${autoSendLabel} unless you step in`
+ : 'Draft ready, waiting on you'}
                         </div>
                         {suggest?.worker_note?.body && (
                           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -461,7 +461,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
                     <Star />
                     <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested actions</span>
                     {options.length === 0 && suggestState === 'loading' && <span style={{ fontSize: 12, color: 'var(--muted)' }}>drafting…</span>}
-                    {options.length === 0 && (suggestState === 'error' || suggestState === 'ready') && <span style={{ fontSize: 12, color: 'var(--muted)' }}>No suggestions came back — write your reply below.</span>}
+ {options.length === 0 && (suggestState === 'error' || suggestState === 'ready') && <span style={{ fontSize: 12, color: 'var(--muted)' }}>No suggestions came back, write your reply below.</span>}
                     {options.filter(o => o.text).map((o, i) => (
                       // aria-pressed marks the suggestion currently loaded into the composer —
                       // a real, readable state (this reply is staged), not a fire-and-forget click.
@@ -496,7 +496,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail, worldI
                       </button>
                     </div>
                   )}
-                  {sendState === 'error' && <div style={{ fontSize: 12.5, color: 'var(--warn)' }}>Send failed: {sendError}. Nothing went out — try again.</div>}
+ {sendState === 'error' && <div style={{ fontSize: 12.5, color: 'var(--warn)' }}>Send failed: {sendError}. Nothing went out, try again.</div>}
                 </div>
               ) : (
                 <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>

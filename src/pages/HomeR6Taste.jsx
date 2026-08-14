@@ -59,11 +59,11 @@ const RECORD = [
 
 const VOICES = [
   { q: 'The video was a huge tool in recruiting our first 3 cohorts. Every sponsor meeting we played it. It did the selling for us.', n: 'Brandon Clarke', c: 'Startup AZ Foundation', m: '3 cohorts recruited' },
-  { q: 'Before AOM we posted randomly. Now we have a repeatable system — the content actually brings people in.', n: 'Sumit Seth', c: 'Naamly SaaS', m: 'Repeatable content engine' },
+ { q: 'Before AOM we posted randomly. Now we have a repeatable system, the content actually brings people in.', n: 'Sumit Seth', c: 'Naamly SaaS', m: 'Repeatable content engine' },
   { q: 'They did not just shoot beautiful footage. They understood who we are and made sure every frame said it.', n: 'Gio Osso', c: 'Virtu Hospitality Group', m: 'Brand story on screen' },
 ];
 
-const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee — strongest horizontal doc footage
+const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee, strongest horizontal doc footage
 
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
 const poster = (id, w = 800) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
@@ -360,8 +360,8 @@ export default function HomeR6Taste() {
 
   const sendBrief = e => {
     e.preventDefault();
-    const subject = `New project — ${brief.name}${brief.co ? ' (' + brief.co + ')' : ''}`;
-    const body = `Hi AOM,%0D%0A%0D%0A${encodeURIComponent(brief.msg)}%0D%0A%0D%0A— ${encodeURIComponent(brief.name)}${brief.co ? ', ' + encodeURIComponent(brief.co) : ''}`;
+ const subject = `New project, ${brief.name}${brief.co ? ' (' + brief.co + ')' : ''}`;
+ const body = `Hi AOM,%0D%0A%0D%0A${encodeURIComponent(brief.msg)}%0D%0A%0D%0A, ${encodeURIComponent(brief.name)}${brief.co ? '·' + encodeURIComponent(brief.co) : ''}`;
     window.location.href = `mailto:hello@aheadofmarket.com?subject=${encodeURIComponent(subject)}&body=${body}`;
   };
 
@@ -426,8 +426,8 @@ export default function HomeR6Taste() {
               <LazyGumlet id={HERO_REEL} eager filter="none" bleed={1.14} offsetY={-28} />
             </motion.div>
             <div className="hero-note">
-              <span>Now playing — Journey to Gary Vee</span>
-              <span>Phoenix, AZ — Since 2020</span>
+ <span>Now playing, Journey to Gary Vee</span>
+ <span>Phoenix, AZ, Since 2020</span>
             </div>
           </Fade>
           <h1 className="hero-h dp">
@@ -481,16 +481,16 @@ export default function HomeR6Taste() {
             <Fade><span className="mlb">Mission</span></Fade>
             <div className="mission-col">
               <Fade delay={0.1}>
-                <p className="mission-pull">We're a <em>storytelling company</em> — we just happen to make videos and web apps often<span className="sq" style={{ background: 'var(--gold-deep)' }} /></p>
+ <p className="mission-pull">We're a <em>storytelling company</em>, we just happen to make videos and web apps often<span className="sq" style={{ background: 'var(--gold-deep)' }} /></p>
               </Fade>
               <Fade delay={0.2}>
                 <p><b>"A billboard does no good in your basement."</b></p>
               </Fade>
               <Fade delay={0.3}>
-                <p>A website or a video is the same — it doesn't help if you don't have a strategy to get it out. That's where we come in.</p>
+ <p>A website or a video is the same, it doesn't help if you don't have a strategy to get it out. That's where we come in.</p>
               </Fade>
               <Fade delay={0.4}>
-                <p>We make the marketing materials, but <b>first</b> we figure out exactly how they'll get distributed most effectively. So the work doesn't just look right — it lands where it moves the business.</p>
+ <p>We make the marketing materials, but <b>first</b> we figure out exactly how they'll get distributed most effectively. So the work doesn't just look right, it lands where it moves the business.</p>
               </Fade>
             </div>
           </div>
@@ -499,7 +499,7 @@ export default function HomeR6Taste() {
         {/* STACK — everything we make, two cards */}
         <section className="stack">
           <div className="stack-inner">
-            <Fade><span className="mlb">Everything we make — across the stack</span></Fade>
+ <Fade><span className="mlb">Everything we make, across the stack</span></Fade>
             <div className="stack-cards">
               <Fade className="card" delay={0.1} y={20}>
                 <div className="card-strip" aria-hidden="true">
@@ -516,7 +516,7 @@ export default function HomeR6Taste() {
                   <li>Photography &amp; creative assets</li>
                 </ul>
                 <div className="card-cta">
-                  <span className="k">01 — Make it</span>
+ <span className="k">01, Make it</span>
                   <a className="btn-line" href="#contact">Get in touch</a>
                 </div>
               </Fade>
@@ -535,7 +535,7 @@ export default function HomeR6Taste() {
                   <li>SEO &amp; content distribution</li>
                 </ul>
                 <div className="card-cta">
-                  <span className="k">02 — Move it</span>
+ <span className="k">02, Move it</span>
                   <a className="btn-line" href="#contact">Get in touch</a>
                 </div>
               </Fade>
@@ -554,13 +554,13 @@ export default function HomeR6Taste() {
               <Fade delay={0.2}>
                 <p className="record-note">
                   Our team comes from commercial film production, local news, national media, and creative
-                  agencies. We've worked across Phoenix, nationally, and internationally — always story-first.
+ agencies. We've worked across Phoenix, nationally, and internationally, always story-first.
                 </p>
               </Fade>
               <Fade delay={0.3}>
                 <div className="record-stats">
                   <div className="record-stat"><b>100+</b><span>Projects shipped since 2020</span></div>
-                  <div className="record-stat"><b>3</b><span>Industries — tech, construction, nonprofits</span></div>
+ <div className="record-stat"><b>3</b><span>Industries, tech, construction, nonprofits</span></div>
                   <div className="record-stat"><b>8+</b><span>Years in commercial film, news &amp; media</span></div>
                 </div>
               </Fade>
@@ -598,7 +598,7 @@ export default function HomeR6Taste() {
               <Fade><span className="mlb">Voices</span></Fade>
               <Fade delay={0.1}><h2 className="voices-h"><SqText text="What clients say" /></h2></Fade>
               <Fade delay={0.2}>
-                <p className="voices-sub">Real outcomes, in their words — not ours.</p>
+ <p className="voices-sub">Real outcomes, in their words, not ours.</p>
               </Fade>
             </div>
             <div className="voice-grid">
@@ -627,7 +627,7 @@ export default function HomeR6Taste() {
                   <Fade delay={0.25}><span className="row"><SqText text="Play favorites" /></span></Fade>
                 </h2>
               </div>
-              <Fade delay={0.3}><span className="mlb">100+ projects — here are a few</span></Fade>
+ <Fade delay={0.3}><span className="mlb">100+ projects, here are a few</span></Fade>
             </div>
             <div className="work-grid">
               {PORTFOLIO.filter(p => !p.v).map((p, i) => (
@@ -650,7 +650,7 @@ export default function HomeR6Taste() {
               ))}
             </div>
             <Fade className="reels-head">
-              <span className="mlb">Reels — made for the feed</span>
+ <span className="mlb">Reels, made for the feed</span>
               <span className="bar" />
             </Fade>
             <div className="reels-grid">
@@ -686,7 +686,7 @@ export default function HomeR6Taste() {
             </Fade>
             <Fade delay={0.25}>
               <p className="contact-sub">
-                By now you know us a little. We'd love to learn about what you're working on — and how we might be able to help.
+ By now you know us a little. We'd love to learn about what you're working on, and how we might be able to help.
               </p>
             </Fade>
             <Fade delay={0.4}>
@@ -746,7 +746,7 @@ export default function HomeR6Taste() {
               </div>
               <div className="foot-col">
                 <span className="mlb">Location</span>
-                <span>Phoenix, AZ — USA</span>
+ <span>Phoenix, AZ, USA</span>
                 <span>Since 2020</span>
               </div>
             </div>

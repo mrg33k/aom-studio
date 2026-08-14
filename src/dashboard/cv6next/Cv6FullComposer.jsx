@@ -98,7 +98,7 @@ function mapRoom(room, agents) {
 // Why the message did not go out, in the user's words. The thread keeps the bubble
 // with its own retry; this line names the cause once, next to the box they typed in.
 const SEND_ERROR_COPY = {
-  offline: "You're offline — the message is still in the conversation, tap it to try again.",
+ offline: "You're offline, the message is still in the conversation, tap it to try again.",
   signed_out: 'Your session expired. Refresh the page to sign back in, then tap the message to send it.',
   timeout: 'That took too long to send. The message is still in the conversation, tap it to try again.',
   server: 'Corner could not accept that message. It is still in the conversation, tap it to try again.',

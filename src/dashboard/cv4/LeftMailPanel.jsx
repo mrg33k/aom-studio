@@ -228,7 +228,7 @@ function ConnectHero({ state, oauthReason }) {
         }}>
           <MailIcon />
         </div>
-        {/* R20 — "Mail" label dropped because the parent TreeSection's
+ {/* R20, "Mail" label dropped because the parent TreeSection's
             chevron header provides the section title. The hero is now
             a Connect Gmail CTA with the reason subline. */}
         <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0, flex: 1 }}>
@@ -285,7 +285,7 @@ function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading,
   const handleReply = useCallback((t) => handleAgentPrompt(
     'Draft a reply to this mail thread.\n\n' + tEnvelope(t) + '\n\n' +
     'Read the full thread first via `scripts/mail-read.py --id ' + (t.id || '<gmail-id>') + '` (and `mail-search.py` if you need more history with this sender).\n\n' +
-    'Then draft the reply in plain English. Show it to me here in this chat before sending — do NOT call mail-send.py until I say "send it".\n\n' +
+ 'Then draft the reply in plain English. Show it to me here in this chat before sending, do NOT call mail-send.py until I say "send it".\n\n' +
     'Work /007 in this chat.'
   ), [handleAgentPrompt, tEnvelope])
   const handleForward = useCallback((t) => handleAgentPrompt(
@@ -331,7 +331,7 @@ function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading,
 
   return (
     <div data-cv4-left-mail style={{ margin: '2px 2px 12px' }}>
-      {/* R20 — internal "Mail" label removed because the parent
+ {/* R20, internal "Mail" label removed because the parent
           TreeSection ("MAIL" chevron header) IS the section title now.
           What remains: the active account email + "Add another" button. */}
       <div style={{
@@ -564,7 +564,7 @@ function MailRow({ email, active, onClick, onContextMenu, onLongPress }) {
         <span style={{
           flex: 1, minWidth: 0,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{from || '—'}</span>
+ }}>{from || ', '}</span>
         {email?.hasAttachments && (
           <span
             title="Has attachment"

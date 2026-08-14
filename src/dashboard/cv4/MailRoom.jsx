@@ -177,7 +177,7 @@ export default function MailRoom({ email, onBack }) {
           </div>
         )}
 
-        {/* R16 — Attachments above the body so they're never hidden below
+ {/* R16, Attachments above the body so they're never hidden below
             a tall HTML email. Patrik missed the xlsx on the first pass
             because the body iframe pushed the strip off-screen. */}
         {allAttachments.length > 0 && (

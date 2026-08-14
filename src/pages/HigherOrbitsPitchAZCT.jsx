@@ -15,7 +15,7 @@ import React, { useEffect } from 'react';
 
 function useSEO() {
   useEffect(() => {
-    document.title = 'Higher Orbits — A Campaign for the 100th Go For Launch!';
+ document.title = 'Higher Orbits, A Campaign for the 100th Go For Launch!';
     const setMeta = (name, content, property = false) => {
       const attr = property ? 'property' : 'name';
       let el = document.querySelector(`meta[${attr}="${name}"]`);
@@ -23,7 +23,7 @@ function useSEO() {
       el.setAttribute('content', content);
     };
     setMeta('robots', 'noindex, nofollow');
-    setMeta('description', 'A documentary campaign proposal for Higher Orbits — the 100th Go For Launch! and the decade that made it possible.');
+ setMeta('description'·'A documentary campaign proposal for Higher Orbits, the 100th Go For Launch! and the decade that made it possible.');
     setMeta('og:title', 'Higher Orbits Campaign Proposal', true);
     setMeta('og:description', 'Ten years. One hundred events. Three thousand students. Twenty-four experiments in orbit.', true);
   }, []);
@@ -598,7 +598,7 @@ export default function HigherOrbitsPitchAZCT() {
         <div className="ho-eyebrow">Core Elements · One of Three</div>
         <HeroBucketTitle>The Hero Piece</HeroBucketTitle>
         <HeroBodyP>
-          The centerpiece. A TV-quality documentary built around the 100th Go For Launch! event — the same Deerfield, Illinois high school where the first event happened in 2016, with the same astronaut who was there on day one. Michelle's origin story, the students who made it real, the full-circle moment that ten years of work was always building toward. This film lives in donor meetings, grant proposals, board presentations, and school assemblies for years after June.
+ The centerpiece. A TV-quality documentary built around the 100th Go For Launch! event, the same Deerfield, Illinois high school where the first event happened in 2016, with the same astronaut who was there on day one. Michelle's origin story, the students who made it real, the full-circle moment that ten years of work was always building toward. This film lives in donor meetings, grant proposals, board presentations, and school assemblies for years after June.
         </HeroBodyP>
       </HeroSection>
 
@@ -616,7 +616,7 @@ export default function HigherOrbitsPitchAZCT() {
         <div className="ho-eyebrow">Core Elements · Two of Three</div>
         <HeroBucketTitle>The Campaign Pack</HeroBucketTitle>
         <HeroBodyP>
-          Everything that lives around the hero piece and keeps the story moving. A 30-second pre-event teaser before Chicago. A 60–75 second recap ready within 48 hours of the event closing — while it's still news. Eight to ten short social cuts that let Higher Orbits' alumni, sponsors, and audience share the story on every channel they use. <em>We work together to select what goes out and when — nothing posts without Michelle's sign-off.</em> The campaign pack is what turns a June event into a months-long content engine.
+ Everything that lives around the hero piece and keeps the story moving. A 30-second pre-event teaser before Chicago. A 60–75 second recap ready within 48 hours of the event closing, while it's still news. Eight to ten short social cuts that let Higher Orbits' alumni, sponsors, and audience share the story on every channel they use. <em>We work together to select what goes out and when, nothing posts without Michelle's sign-off.</em> The campaign pack is what turns a June event into a months-long content engine.
         </HeroBodyP>
       </HeroSection>
 
@@ -634,7 +634,7 @@ export default function HigherOrbitsPitchAZCT() {
         <div className="ho-eyebrow" style={{ marginBottom: 18 }}>Core Elements · Three of Three</div>
         <HeroBucketTitle>The Living Archive</HeroBucketTitle>
         <HeroBodyP>
-          One hundred edited stills from the event and production. Eight to twelve terabytes of organized raw footage. A sponsor recognition package — credits, branded social templates, a thank-you clip — that Michelle can put in front of Chevron, BRPH, and board-level sponsors immediately after Chicago. The archive is Higher Orbits' permanent visual record of its most important milestone.
+ One hundred edited stills from the event and production. Eight to twelve terabytes of organized raw footage. A sponsor recognition package, credits, branded social templates, a thank-you clip, that Michelle can put in front of Chevron, BRPH, and board-level sponsors immediately after Chicago. The archive is Higher Orbits' permanent visual record of its most important milestone.
         </HeroBodyP>
       </HeroSection>
 
@@ -670,14 +670,14 @@ export default function HigherOrbitsPitchAZCT() {
           Michelle's story bookends. The event is the meat.
         </p>
         <StructureTable rows={[
-          ['Act 1 — The Root (Past)',
-            "Open on Michelle Lucas — but frame her for someone who may be meeting her for the first time. Establish her credibility and humanity in the same breath: who she was before Higher Orbits, the defining moments that drove her to build something, and the mission she's been quietly executing for a decade. A simple day in her life grounds the viewer before the scale of the story lands. Weave in one alumni, staff member, or student whose background adds texture — a real face that shows funders and press who this program actually reaches."
+ ['Act 1, The Root (Past)',
+ "Open on Michelle Lucas, but frame her for someone who may be meeting her for the first time. Establish her credibility and humanity in the same breath: who she was before Higher Orbits, the defining moments that drove her to build something, and the mission she's been quietly executing for a decade. A simple day in her life grounds the viewer before the scale of the story lands. Weave in one alumni, staff member, or student whose background adds texture, a real face that shows funders and press who this program actually reaches."
           ],
-          ['Act 2 — The Moment (Present)',
-            "Place the viewer inside the 10th Anniversary and 100th Go For Launch! session. For press, this is the news hook — a milestone worth covering. For sponsors, this is proof of concept — a decade of execution in one room. Highlight Alexis's story or a standout project or upcoming event to show the program has velocity, not just history."
+ ['Act 2, The Moment (Present)',
+ "Place the viewer inside the 10th Anniversary and 100th Go For Launch! session. For press, this is the news hook, a milestone worth covering. For sponsors, this is proof of concept, a decade of execution in one room. Highlight Alexis's story or a standout project or upcoming event to show the program has velocity, not just history."
           ],
-          ['Act 3 — The Ripple (Future)',
-            "Make the case for why this matters beyond the milestone. For funders, this is the investment thesis — Michelle's influence on students is compounding. For media, this is the larger cultural story — what happens when someone builds something that genuinely works? Close with forward momentum and a clear sense that the next 10 years are just beginning."
+ ['Act 3, The Ripple (Future)',
+ "Make the case for why this matters beyond the milestone. For funders, this is the investment thesis, Michelle's influence on students is compounding. For media, this is the larger cultural story, what happens when someone builds something that genuinely works? Close with forward momentum and a clear sense that the next 10 years are just beginning."
           ],
         ]} />
         <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid rgba(255,255,255,0.1)', maxWidth: 860 }}>
@@ -691,7 +691,7 @@ export default function HigherOrbitsPitchAZCT() {
             marginBottom: 12,
           }}>Distribution Strategy</div>
           <p className="ho-body" style={{ fontSize: 16.5, color: CREAM_DIM, lineHeight: 1.7, margin: 0 }}>
-            Premier at the Deerfield event itself — the room where it all started. Post to YouTube for search visibility and permanent reach. Share on LinkedIn, where donors, sponsors, and aerospace professionals actually watch. Distribute in every Higher Orbits grant proposal, donor meeting, and board presentation going forward. The hero piece doesn't expire — it earns its keep for years.
+ Premier at the Deerfield event itself, the room where it all started. Post to YouTube for search visibility and permanent reach. Share on LinkedIn, where donors, sponsors, and aerospace professionals actually watch. Distribute in every Higher Orbits grant proposal, donor meeting, and board presentation going forward. The hero piece doesn't expire, it earns its keep for years.
           </p>
         </div>
       </DataSection>
@@ -707,7 +707,7 @@ export default function HigherOrbitsPitchAZCT() {
         <div className="ho-eyebrow">The Through-Line</div>
         <HeroTitle italic size="lg">Meet the Alumni</HeroTitle>
         <HeroBodyP>
-          Put real student and alumni voices at the center of the story. Higher Orbits' difference isn't the curriculum — it's the result: experiments that actually flew, students who actually built them, STEM careers and paths that actually changed. The alumni are the proof. This section of the film is the through-line Michelle explicitly asked for.
+ Put real student and alumni voices at the center of the story. Higher Orbits' difference isn't the curriculum, it's the result: experiments that actually flew, students who actually built them, STEM careers and paths that actually changed. The alumni are the proof. This section of the film is the through-line Michelle explicitly asked for.
         </HeroBodyP>
       </HeroSection>
 
@@ -718,7 +718,7 @@ export default function HigherOrbitsPitchAZCT() {
         </DataTitle>
         <StructureTable rows={[
           ['Specifics', 'Student and alumni interview segments woven throughout the hero piece and available as standalone cuts for grant and donor use.'],
-          ['Focus', 'The journey — from a Go For Launch! workshop to a STEM career, a university engineering program, ongoing involvement in spaceflight, or simply the confidence that comes from having built something real and watched it leave the atmosphere.'],
+ ['Focus'·'The journey, from a Go For Launch! workshop to a STEM career, a university engineering program, ongoing involvement in spaceflight, or simply the confidence that comes from having built something real and watched it leave the atmosphere.'],
           ['Visuals', 'Alumni in their environments today: labs, research settings, workplaces. Students mid-build and mid-presentation. Archival moments from past events cut against present-day Chicago coverage. The astronaut mentor layer: professionals who give their time because the mission genuinely matters, captured in a way that shows it.'],
         ]} />
         <div style={{ marginTop: 36, paddingTop: 28, borderTop: '1px solid rgba(255,255,255,0.1)', maxWidth: 860 }}>
@@ -732,7 +732,7 @@ export default function HigherOrbitsPitchAZCT() {
             marginBottom: 12,
           }}>Distribution Strategy</div>
           <p className="ho-body" style={{ fontSize: 16.5, color: CREAM_DIM, lineHeight: 1.7, margin: 0 }}>
-            Alumni and mentors sharing their own cuts through their own networks — the reach multiplier that no amount of Higher Orbits' own posting could replicate. Recruitment content for future Go For Launch! participants: a student watching another student's story is the most powerful pitch for the program that exists. Sponsor and grant presentations showing real outcomes, not projected ones.
+ Alumni and mentors sharing their own cuts through their own networks, the reach multiplier that no amount of Higher Orbits' own posting could replicate. Recruitment content for future Go For Launch! participants: a student watching another student's story is the most powerful pitch for the program that exists. Sponsor and grant presentations showing real outcomes, not projected ones.
           </p>
         </div>
       </DataSection>
@@ -748,7 +748,7 @@ export default function HigherOrbitsPitchAZCT() {
         <div className="ho-eyebrow">Partnership</div>
         <HeroTitle italic size="lg">Empowering Impact Through Partnership</HeroTitle>
         <HeroBodyP>
-          Higher Orbits' existing sponsor relationships are one of the strongest assets it has. Chevron, BRPH, and board-level donors are already part of this story. The campaign gives Michelle a vehicle to deepen those relationships and open the door to new ones — because sponsors gain something real: recognition inside a film that will be watched for years, not a logo on a banner that disappears after the event.
+ Higher Orbits' existing sponsor relationships are one of the strongest assets it has. Chevron, BRPH, and board-level donors are already part of this story. The campaign gives Michelle a vehicle to deepen those relationships and open the door to new ones, because sponsors gain something real: recognition inside a film that will be watched for years, not a logo on a banner that disappears after the event.
         </HeroBodyP>
         <HeroBodyP>
           Higher Orbits invites corporate sponsors to join the story being told at its most powerful moment. For sponsors in the STEM education and aerospace space, being named inside a film about the 100th Go For Launch! event is not just a marketing placement — it is a credible, mission-driven alignment that corporate social responsibility programs are actively looking for.
@@ -772,7 +772,7 @@ export default function HigherOrbitsPitchAZCT() {
             <ul className="ho-body" style={{ paddingLeft: 22, margin: 0, color: CREAM_DIM, fontSize: 16, lineHeight: 1.7, listStyleType: 'disc' }}>
               <li style={{ marginBottom: 8 }}>Prominent logo placement in the film credits and opening sequence.</li>
               <li style={{ marginBottom: 8 }}>Named mention in promotional materials, donor email communications, and press outreach.</li>
-              <li>Every time the hero piece is screened — at a board meeting, a school assembly, a grant panel — the sponsor's name is in the room.</li>
+ <li>Every time the hero piece is screened, at a board meeting, a school assembly, a grant panel, the sponsor's name is in the room.</li>
             </ul>
           </div>
 
@@ -785,7 +785,7 @@ export default function HigherOrbitsPitchAZCT() {
               </h3>
             </div>
             <p className="ho-body" style={{ color: CREAM_DIM, fontSize: 16.5, lineHeight: 1.7, margin: '0 0 14px' }}>
-              If any sponsor wants their own version of the film, AOM produces a branded cut for them — their logo, their angle, their voice woven in. If a sponsor's representatives are at the Deerfield event, we coordinate on-site interviews so the branded version includes their team directly. Easy logistical lift on our end; meaningful asset on theirs.
+ If any sponsor wants their own version of the film, AOM produces a branded cut for them, their logo, their angle, their voice woven in. If a sponsor's representatives are at the Deerfield event, we coordinate on-site interviews so the branded version includes their team directly. Easy logistical lift on our end; meaningful asset on theirs.
             </p>
             <p className="ho-body" style={{ color: 'rgba(244,237,226,0.55)', fontSize: 14.5, lineHeight: 1.7, margin: 0, fontStyle: 'italic' }}>
               Perfect for the sponsor's own website, board presentations, donor outreach, and corporate social platforms.
@@ -803,7 +803,7 @@ export default function HigherOrbitsPitchAZCT() {
             <ul className="ho-body" style={{ paddingLeft: 22, margin: 0, color: CREAM_DIM, fontSize: 16, lineHeight: 1.7, listStyleType: 'disc' }}>
               <li style={{ marginBottom: 8 }}>Featured in social media posts, event-day social graphics, and campaign email content throughout the run-up and post-event window.</li>
               <li style={{ marginBottom: 8 }}>Co-branded recognition at the Deerfield event and across the online presence.</li>
-              <li>Inclusion in the sponsor recognition package AOM builds from the Chicago footage — credits integration, branded social post templates, and a 60–90 second thank-you highlight clip for donor email campaigns.</li>
+ <li>Inclusion in the sponsor recognition package AOM builds from the Chicago footage, credits integration, branded social post templates, and a 60–90 second thank-you highlight clip for donor email campaigns.</li>
             </ul>
           </div>
         </div>
@@ -821,12 +821,12 @@ export default function HigherOrbitsPitchAZCT() {
         <DataTable
           headers={['Project Deliverable', 'Amount', 'Timeline']}
           rows={[
-            ['Hero Documentary', '1', "End of July 2026 — 3–5 min final cut. Opening (Michelle's NASA origin + 2016 Deerfield gym) → Middle (alumni voices + 24 ISS experiments) → End (100th event, full circle)."],
-            ['Pre-Event Teaser', '1', '7 days before the June event — 30 sec, built from pre-production material and early Chicago footage.'],
-            ['48-Hour Recap', '1', 'Within 48 hours of event close — 60–75 sec, share-ready for social, email, and press while the moment is still news.'],
-            ['Social Cuts Pack', '8–10 short verticals', 'End of July 2026 — 4 alumni/student voice reels (15–30 sec), 2 Michelle highlights (30–45 sec), 2 event-day energy cuts (15–20 sec), 1–2 Dorothy/astronaut moments (20–30 sec).'],
-            ['Hero Photo Set', '100 edited stills', 'End of July 2026 — 50 event-day (ceremony, presentations, crowd), 25 interview/portrait (Michelle, Dorothy, student subjects), 25 B-roll and production documentation.'],
-            ['Raw Footage Archive', '8–12 TB', 'At final delivery — all raw Chicago footage organized by shoot day and subject, delivered on a portable hard drive. Higher Orbits owns this archive permanently.'],
+ ['Hero Documentary'·'1', "End of July 2026, 3–5 min final cut. Opening (Michelle's NASA origin + 2016 Deerfield gym) → Middle (alumni voices + 24 ISS experiments) → End (100th event, full circle)."],
+ ['Pre-Event Teaser'·'1'·'7 days before the June event, 30 sec, built from pre-production material and early Chicago footage.'],
+ ['48-Hour Recap'·'1'·'Within 48 hours of event close, 60–75 sec, share-ready for social, email, and press while the moment is still news.'],
+ ['Social Cuts Pack'·'8–10 short verticals'·'End of July 2026, 4 alumni/student voice reels (15–30 sec), 2 Michelle highlights (30–45 sec), 2 event-day energy cuts (15–20 sec), 1–2 Dorothy/astronaut moments (20–30 sec).'],
+ ['Hero Photo Set'·'100 edited stills'·'End of July 2026, 50 event-day (ceremony, presentations, crowd), 25 interview/portrait (Michelle, Dorothy, student subjects), 25 B-roll and production documentation.'],
+ ['Raw Footage Archive'·'8–12 TB'·'At final delivery, all raw Chicago footage organized by shoot day and subject, delivered on a portable hard drive. Higher Orbits owns this archive permanently.'],
             ['Sponsor Recognition Package', 'Included', 'Logo in film credits and opening sequence. One branded social post template for Chevron, BRPH, and board sponsors. One 60–90 sec thank-you highlight clip for donor communications.'],
           ]}
         />
@@ -841,12 +841,12 @@ export default function HigherOrbitsPitchAZCT() {
           headers={['Phase', 'Duration', 'Team', 'Details']}
           rows={[
             ['Pre-Production', '10–12 planning days', '3', 'Alignment sessions with Michelle; subject selection and interview outlines; shot list; alumni intro calls; access and logistics coordination with Higher Orbits; travel booking; teaser material prep.'],
-            ['Chicago — Travel', '2 days', '3', 'PHX → Chicago (day in), Chicago → PHX (day out).'],
-            ['Chicago — Production', '4 days on-ground', '3', 'Two cameras running simultaneously throughout. Full event-day coverage. Michelle documentary interview. Dorothy Metcalf-Lindenburger interview. Student team interviews and B-roll. Stills throughout every day.'],
-            ['Post — 48-Hour Recap', '1.5–2 days', '1–2', 'Urgency-mode edit from event footage. Hard 48-hour delivery window from event close.'],
-            ['Post — Hero Piece', '6–8 days', '1–2', 'Rough assembly → assembly cut → fine cut (Michelle review round) → revisions → final master. One revision round included.'],
-            ['Post — Social Cuts', '3–4 days', '1', '8–10 verticals, batched from hero footage selects.'],
-            ['Post — Photos + Sponsor Package', '3 days', '1', 'Photo culling (400–600 raws → 100 finals) + grading; credits integration, social template, thank-you clip.'],
+ ['Chicago, Travel'·'2 days'·'3'·'PHX → Chicago (day in), Chicago → PHX (day out).'],
+ ['Chicago, Production'·'4 days on-ground'·'3'·'Two cameras running simultaneously throughout. Full event-day coverage. Michelle documentary interview. Dorothy Metcalf-Lindenburger interview. Student team interviews and B-roll. Stills throughout every day.'],
+ ['Post, 48-Hour Recap'·'1.5–2 days'·'1–2'·'Urgency-mode edit from event footage. Hard 48-hour delivery window from event close.'],
+ ['Post, Hero Piece'·'6–8 days'·'1–2'·'Rough assembly → assembly cut → fine cut (Michelle review round) → revisions → final master. One revision round included.'],
+ ['Post, Social Cuts'·'3–4 days'·'1'·'8–10 verticals, batched from hero footage selects.'],
+ ['Post, Photos + Sponsor Package'·'3 days'·'1'·'Photo culling (400–600 raws → 100 finals) + grading; credits integration, social template, thank-you clip.'],
             ['Collaborative Review', '2 sessions', '2–3', 'Rough cut review with Michelle (session 1). Final approval before delivery (session 2). One revision round included.'],
             ['Total', '~10 weeks (May–July 2026)', '', 'Full delivery by end of July 2026.'],
           ]}
@@ -865,12 +865,12 @@ export default function HigherOrbitsPitchAZCT() {
           rows={[
             ['Shooting Labor', '4 production days in Chicago × 3 people', '3', '$5,600'],
             ['Travel Labor', '2 travel days × 3 people (full working rate)', '3', '$2,800'],
-            ['Post Production Labor', '13.5 days — hero piece, recap, teaser, social cuts, photo edit, sponsor package', '1–2', '$7,250'],
+ ['Post Production Labor'·'13.5 days, hero piece, recap, teaser, social cuts, photo edit, sponsor package'·'1–2'·'$7,250'],
             ['Pre-Production & Wrap', 'Planning, logistics, shot list, interview prep', '3', '$1,400'],
             ['Travel + Accommodations', 'PHX ↔ Chicago RT × 3 + Deerfield hotel 4.5 nights × 3 rooms + rideshares', '3', '$4,110'],
             ['Per Diems', '$75/day × 3 people × 5 days', '3', '$1,125'],
-            ['Music & Rights', 'Sync licensing — hero, recap, teaser, and social cuts', '—', '$700'],
-            ['Storage, Archive & Gear', '12TB archive drive + cloud backup + production insurance + overhead', '—', '$1,950'],
+ ['Music & Rights'·'Sync licensing, hero, recap, teaser, and social cuts'·', '·'$700'],
+ ['Storage, Archive & Gear'·'12TB archive drive + cloud backup + production insurance + overhead'·', '·'$1,950'],
             ['Contingency', '', '', '$3,065'],
             ['Total', '', '', '$28,000'],
           ]}
@@ -945,7 +945,7 @@ export default function HigherOrbitsPitchAZCT() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
               <p className="ho-body" style={{ fontSize: 19, color: CREAM, lineHeight: 1.55, fontWeight: 500, margin: 0 }}>
-                Reach the donors, sponsors, and institutions who should be funding Higher Orbits — but haven't found it yet. The 100th event is the moment this story earns its largest possible audience.
+ Reach the donors, sponsors, and institutions who should be funding Higher Orbits, but haven't found it yet. The 100th event is the moment this story earns its largest possible audience.
               </p>
               <p className="ho-body" style={{ fontSize: 19, color: CREAM, lineHeight: 1.55, fontWeight: 500, margin: 0 }}>
                 Establish Higher Orbits as the most visible student spaceflight program in the country, at the moment it has earned that position. Twenty-four experiments flown. Three thousand alumni. A hundred events. The credibility is already there. The story just needs to be told at scale.
@@ -1002,7 +1002,7 @@ export default function HigherOrbitsPitchAZCT() {
         </div>
       </DataSection>
 
-      {/* ── S14: CTA — Let's Bring This Vision To Life ─────
+ {/* ── S14: CTA, Let's Bring This Vision To Life ─────
             Solid black with cover-hero as callback at low opacity
       */}
       <section

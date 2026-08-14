@@ -88,13 +88,13 @@ export default function HomeClassic({ openBrief }) {
         </div>
       </section>
 
-      {/* 9a. SERVICES CHART — chart-led "what we do" above the timeline */}
+ {/* 9a. SERVICES CHART, chart-led "what we do" above the timeline */}
       <ServicesChartSection />
 
       {/* 9b. ARTICLES — projects in plain language, mixed video and non-video */}
       <ArticlesSection />
 
-      {/* 10. LET'S MAKE SOMETHING — the closing banner */}
+ {/* 10. LET'S MAKE SOMETHING, the closing banner */}
       <section className="py-32 md:py-40 px-6 md:px-12 border-t border-white/[0.06] text-center bg-gradient-to-b from-[#0C0C0C] to-[#1a0d05]">
         <div className="max-w-[1440px] mx-auto">
           <h2 className="font-display-serif text-[60px] md:text-[140px] leading-[0.85] tracking-[-0.03em]">

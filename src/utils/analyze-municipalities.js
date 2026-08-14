@@ -32,6 +32,6 @@ console.log(
   'Data loading confirmation: src/pages/MunicipalityDirectory.jsx fetches ' +
   'public/arsenal-municipality-data.json dynamically at runtime via ' +
   "`fetch('/arsenal-municipality-data.json')` inside a useEffect hook (line 504). " +
-  'There is no static import — the file is served as a public asset and loaded ' +
+ 'There is no static import, the file is served as a public asset and loaded ' +
   'after the component mounts, with the parsed `.places` array stored in component state.'
 );

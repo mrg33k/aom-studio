@@ -517,7 +517,7 @@ export function MissionScaffoldSection() {
       project: activeMissionPath,
       filename: entry.filename,
       source: 'scaffold',
-      title: `${entry.label} — ${activeMissionPath}`,
+ title: `${entry.label}, ${activeMissionPath}`,
     })
   }
 
@@ -922,7 +922,7 @@ export function ProjectCanonSection() {
       project: activeProject,
       filename: entry.filename,
       source: 'canon',
-      title: `${entry.label} — ${activeProject}`,
+ title: `${entry.label}, ${activeProject}`,
     })
   }
 

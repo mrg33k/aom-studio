@@ -1993,7 +1993,7 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
     const btn = ev?.target?.closest?.('button');
     const text = (ta?.value || '').trim();
     const say = (msg) => { if (note) { note.textContent = msg; note.classList.remove('is-none'); note.classList.add('is-has'); } };
-    if (!text) { say('Write the reply first — the box above is empty.'); return; }
+ if (!text) { say('Write the reply first, the box above is empty.'); return; }
     if (!openedEmail?.wishId || btn?.disabled) return;
     if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
     try {
@@ -2018,7 +2018,7 @@ function SupportInbox({ onNav, onOpenNav, onSearch, onAssignEmail, worldId }) {
       setSentNote('Sent as you, on the same thread.'); setHeldNote('');
       setTimeout(() => { reload(); }, 800);
     } catch (err) {
-      say(`Send failed: ${String(err.message || err).slice(0, 120)}. Nothing went out — try again.`);
+ say(`Send failed: ${String(err.message || err).slice(0, 120)}. Nothing went out, try again.`);
       if (btn) { btn.disabled = false; btn.style.opacity = ''; }
     }
   }, [openedEmail, suggest, reload]);
@@ -4025,7 +4025,7 @@ export default function CornerCV6() {
     body = <ChatDesktop worldId={worldId}
       initialRoom={null}
       onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoomColumn={onOpenRoom} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} windowMode={false} persistSelection
-      onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })}
+ onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? `, ${item.snippet}` : ''}` : '' })}
       onReviewFile={(f, proj, mission) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('organize', files?.length ? { files, project: proj || '', missionSlug: mission || '', needsReview: true } : null); }} />;
     viewKey = 'chatdesktop:list';
   }
@@ -4113,7 +4113,7 @@ export default function CornerCV6() {
             ) : column.type === 'email' ? (
               <EmailShell
                 isDesktop={false}
-                inbox={<SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Dispatch email', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' })} worldId={worldId} />}
+ inbox={<SupportInbox onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignEmail={(emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Dispatch email', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? `, ${item.snippet}` : ''}` : '' })} worldId={worldId} />}
                 onClose={() => closeWorkspaceColumn(column.id)}
                 expanded={expanded}
                 onToggleWidth={onToggleWidth}

@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 // ── Config — flip this when a class is airing ─────────────────────────────────
 const LIVE = {
   status: 'preview',     // 'live' | 'preview' | 'standby'
-  embedUrl: '',          // YouTube Live unlisted embed URL — paste when airing
+ embedUrl: '', // YouTube Live unlisted embed URL, paste when airing
   classNumber: '01',
   title: 'What happens when water is no more?',
   speaker: 'Nancy Conrad',
@@ -25,14 +25,14 @@ const SPEAKER_IMG   = '/ConradFoundation/nancy-expert-masterclass.jpg';
 // ── SEO ───────────────────────────────────────────────────────────────────────
 function useSEO() {
   useEffect(() => {
-    document.title = 'Watch Live | Mission Water — Conrad Foundation';
+ document.title = 'Watch Live | Mission Water, Conrad Foundation';
     const set = (name, content, prop = false) => {
       const attr = prop ? 'property' : 'name';
       let el = document.querySelector(`meta[${attr}="${name}"]`);
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    set('description', 'Watch Mission Water live classes — Conrad Foundation');
+ set('description'·'Watch Mission Water live classes, Conrad Foundation');
     set('robots', 'noindex, nofollow');
   }, []);
 }
@@ -103,14 +103,14 @@ export default function MissionWaterLive() {
           {isLive ? (
             <iframe
               src={LIVE.embedUrl}
-              title={`Mission Water — Class ${LIVE.classNumber}`}
+ title={`Mission Water, Class ${LIVE.classNumber}`}
               className="absolute inset-0 w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
           ) : (
             <>
-              {/* Nancy's video as preview — muted autoplay loop */}
+ {/* Nancy's video as preview, muted autoplay loop */}
               <video
                 src={PREVIEW_VIDEO}
                 className="absolute inset-0 w-full h-full object-cover"

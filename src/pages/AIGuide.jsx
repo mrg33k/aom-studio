@@ -53,7 +53,7 @@ const PROMPTS = {
   'client-comms': (answers) => [
     {
       label: 'Project Update Email',
-      prompt: `Write a professional project update email for my ${answers.business_type || 'business'} to send to a client. The email should be warm but concise — summarize progress, name any blockers, and give a realistic timeline for next steps. Keep it under 150 words and end with a clear next action.`,
+ prompt: `Write a professional project update email for my ${answers.business_type || 'business'} to send to a client. The email should be warm but concise, summarize progress, name any blockers, and give a realistic timeline for next steps. Keep it under 150 words and end with a clear next action.`,
     },
     {
       label: 'Follow-Up Email',
@@ -73,13 +73,13 @@ const PROMPTS = {
     },
     {
       label: 'Client Check-In Message',
-      prompt: `Write a short, genuine check-in message I can send to a current client of my ${answers.business_type || 'business'} who I haven't heard from in a while. The goal is to stay top of mind, show I care, and open the door for future work — without being salesy. Keep it under 75 words.`,
+ prompt: `Write a short, genuine check-in message I can send to a current client of my ${answers.business_type || 'business'} who I haven't heard from in a while. The goal is to stay top of mind, show I care, and open the door for future work, without being salesy. Keep it under 75 words.`,
     },
   ],
   'hiring': (answers) => [
     {
       label: 'Job Posting',
-      prompt: `Write a compelling job posting for a ${answers.role_hiring || 'team member'} at my ${answers.business_type || 'business'}. Make it feel real — describe what the role actually does day-to-day, what kind of person thrives here, and why someone would want to work for us. Avoid corporate jargon.`,
+ prompt: `Write a compelling job posting for a ${answers.role_hiring || 'team member'} at my ${answers.business_type || 'business'}. Make it feel real, describe what the role actually does day-to-day, what kind of person thrives here, and why someone would want to work for us. Avoid corporate jargon.`,
     },
     {
       label: 'Interview Questions',
@@ -87,7 +87,7 @@ const PROMPTS = {
     },
     {
       label: 'Offer Letter',
-      prompt: `Write a warm, professional job offer letter for a ${answers.role_hiring || 'new hire'} at my ${answers.business_type || 'business'}. Include placeholders for salary, start date, and benefits. Keep it legally neutral — just a professional offer, not a contract.`,
+ prompt: `Write a warm, professional job offer letter for a ${answers.role_hiring || 'new hire'} at my ${answers.business_type || 'business'}. Include placeholders for salary, start date, and benefits. Keep it legally neutral, just a professional offer, not a contract.`,
     },
     {
       label: 'Rejection Email',
@@ -113,19 +113,19 @@ const PROMPTS = {
     },
     {
       label: 'Objection Response',
-      prompt: `I run a ${answers.business_type || 'business'} and a prospect said our price is too high. Write me 3 different ways to respond — one that reframes value, one that offers options, and one that digs deeper into their hesitation. Keep each under 75 words.`,
+ prompt: `I run a ${answers.business_type || 'business'} and a prospect said our price is too high. Write me 3 different ways to respond, one that reframes value, one that offers options, and one that digs deeper into their hesitation. Keep each under 75 words.`,
     },
     {
       label: 'Proposal Introduction',
-      prompt: `Write the opening section of a business proposal for my ${answers.business_type || 'business'}. Open by mirroring back what the prospect told us they need, then transition into how we solve it. Keep it punchy — this should be 2 tight paragraphs that make them want to read more.`,
+ prompt: `Write the opening section of a business proposal for my ${answers.business_type || 'business'}. Open by mirroring back what the prospect told us they need, then transition into how we solve it. Keep it punchy, this should be 2 tight paragraphs that make them want to read more.`,
     },
     {
       label: 'Meeting Prep Brief',
-      prompt: `I have a sales meeting with a potential client for my ${answers.business_type || 'business'}. Write me a pre-meeting brief template I can fill out in 10 minutes — their business, what problem they want to solve, what objections I might face, and the one outcome I'm driving toward in this meeting.`,
+ prompt: `I have a sales meeting with a potential client for my ${answers.business_type || 'business'}. Write me a pre-meeting brief template I can fill out in 10 minutes, their business, what problem they want to solve, what objections I might face, and the one outcome I'm driving toward in this meeting.`,
     },
     {
       label: 'Referral Request Script',
-      prompt: `Write a script or message template I can use to ask happy clients of my ${answers.business_type || 'business'} for a referral. Make it feel natural — not transactional. Give me a version I can send by text or email, and a version I can say in person. The goal is to make asking feel like a normal, easy conversation.`,
+ prompt: `Write a script or message template I can use to ask happy clients of my ${answers.business_type || 'business'} for a referral. Make it feel natural, not transactional. Give me a version I can send by text or email, and a version I can say in person. The goal is to make asking feel like a normal, easy conversation.`,
     },
   ],
   'operations': (answers) => [
@@ -135,7 +135,7 @@ const PROMPTS = {
     },
     {
       label: 'Weekly Team Update',
-      prompt: `Write a weekly team update template for my ${answers.business_type || 'business'}. Include: what we accomplished this week, what's in progress, what's blocked, key priorities for next week, and any decisions that need to be made. Keep it scannable — this should take 5 minutes to read.`,
+ prompt: `Write a weekly team update template for my ${answers.business_type || 'business'}. Include: what we accomplished this week, what's in progress, what's blocked, key priorities for next week, and any decisions that need to be made. Keep it scannable, this should take 5 minutes to read.`,
     },
     {
       label: 'Delegation Brief',
@@ -165,7 +165,7 @@ const PROMPTS = {
     },
     {
       label: 'Case Study Write-Up',
-      prompt: `Write a short case study for my ${answers.business_type || 'business'} using this format: Problem → What we did → Result. I'll fill in the specifics — just give me the structure and example language. Keep it punchy, under 250 words, and written in a way I can post online or send to prospects.`,
+ prompt: `Write a short case study for my ${answers.business_type || 'business'} using this format: Problem → What we did → Result. I'll fill in the specifics, just give me the structure and example language. Keep it punchy, under 250 words, and written in a way I can post online or send to prospects.`,
     },
     {
       label: 'Email Newsletter',
@@ -177,7 +177,7 @@ const PROMPTS = {
     },
     {
       label: 'Google Review Request',
-      prompt: `Write a short, natural message I can send to happy clients of my ${answers.business_type || 'business'} asking them to leave a Google review. Give me 3 versions — one for text, one for email, and one for in-person. Make it easy to say yes and include a placeholder where I'll put the direct review link.`,
+ prompt: `Write a short, natural message I can send to happy clients of my ${answers.business_type || 'business'} asking them to leave a Google review. Give me 3 versions, one for text, one for email, and one for in-person. Make it easy to say yes and include a placeholder where I'll put the direct review link.`,
     },
   ],
   'finance': (answers) => [
@@ -187,7 +187,7 @@ const PROMPTS = {
     },
     {
       label: 'Cash Flow Forecast Prompt',
-      prompt: `I run a ${answers.business_type || 'business'} and I'm trying to get a handle on my cash flow. Give me a list of the 10 questions I should be able to answer cold about my business finances — the ones that separate business owners who have control from those who are guessing.`,
+ prompt: `I run a ${answers.business_type || 'business'} and I'm trying to get a handle on my cash flow. Give me a list of the 10 questions I should be able to answer cold about my business finances, the ones that separate business owners who have control from those who are guessing.`,
     },
     {
       label: 'Pricing Script',
@@ -195,7 +195,7 @@ const PROMPTS = {
     },
     {
       label: 'Expense Review Prompt',
-      prompt: `I want to review my business expenses for my ${answers.business_type || 'business'} and find where I'm overspending. Give me a structured process to audit my last 3 months of expenses — what to look for, what categories to question, and what questions to ask about each line item.`,
+ prompt: `I want to review my business expenses for my ${answers.business_type || 'business'} and find where I'm overspending. Give me a structured process to audit my last 3 months of expenses, what to look for, what categories to question, and what questions to ask about each line item.`,
     },
     {
       label: 'Financial Report Summary',
@@ -203,7 +203,7 @@ const PROMPTS = {
     },
     {
       label: 'Price Increase Letter',
-      prompt: `I need to raise my prices at my ${answers.business_type || 'business'}. Write a professional but warm email to send to existing clients announcing the change. Acknowledge the relationship, explain the reason briefly without over-apologizing, give them enough notice, and make it feel respectful — not like a form letter.`,
+ prompt: `I need to raise my prices at my ${answers.business_type || 'business'}. Write a professional but warm email to send to existing clients announcing the change. Acknowledge the relationship, explain the reason briefly without over-apologizing, give them enough notice, and make it feel respectful, not like a form letter.`,
     },
   ],
 };
@@ -218,24 +218,24 @@ const AOM_INSIGHTS = {
     const rawChallenge = (answers.main_challenge || '').trim();
 
     if (challenge.includes('follow')) {
-      return `At your ${biz}, a missed follow-up isn't just a lost opportunity — it's a signal to the client that they're not a priority. The businesses that keep clients longest communicate consistently, not just when there's a problem. The prompts below help you build that habit without it taking over your day. Looking ahead, AOM`;
+ return `At your ${biz}, a missed follow-up isn't just a lost opportunity, it's a signal to the client that they're not a priority. The businesses that keep clients longest communicate consistently, not just when there's a problem. The prompts below help you build that habit without it taking over your day. Looking ahead, AOM`;
     }
     if (challenge.includes('difficult') || challenge.includes('complaint') || challenge.includes('unhappy') || challenge.includes('angry') || challenge.includes('upset')) {
       return `Difficult client conversations reveal more about a ${biz} than any of the easy ones. The way you respond in those moments shapes your reputation more than your work quality does. The prompts below give you the right words so you never have to improvise when someone's upset. Looking ahead, AOM`;
     }
     if (challenge.includes('update') || challenge.includes('progress') || challenge.includes('status') || challenge.includes('communication')) {
-      return `Clients don't need to hear from you every day — they need to feel like they know what's happening. At your ${biz}, regular proactive updates prevent the anxious check-ins and last-minute texts that break your focus. The prompts below help you communicate on your schedule, not theirs. Looking ahead, AOM`;
+ return `Clients don't need to hear from you every day, they need to feel like they know what's happening. At your ${biz}, regular proactive updates prevent the anxious check-ins and last-minute texts that break your focus. The prompts below help you communicate on your schedule, not theirs. Looking ahead, AOM`;
     }
     if (challenge.includes('scope') || challenge.includes('boundary') || challenge.includes('extra') || challenge.includes('change')) {
-      return `Scope creep at a ${biz} is almost never about the work itself — it's about what was and wasn't made clear at the start. Clients push past boundaries when the boundaries were never clearly drawn. The prompts below help you set expectations the right way from day one. Looking ahead, AOM`;
+ return `Scope creep at a ${biz} is almost never about the work itself, it's about what was and wasn't made clear at the start. Clients push past boundaries when the boundaries were never clearly drawn. The prompts below help you set expectations the right way from day one. Looking ahead, AOM`;
     }
     if (challenge.includes('welcome') || challenge.includes('new client') || challenge.includes('onboard') || challenge.includes('first')) {
-      return `The first 48 hours after signing a new client sets the tone for everything that follows at your ${biz}. Most client anxiety that surfaces months into a project traces back to that first moment — what you said, how quickly you responded, how clearly you laid out the plan. The prompts below help you nail that first impression every time. Looking ahead, AOM`;
+ return `The first 48 hours after signing a new client sets the tone for everything that follows at your ${biz}. Most client anxiety that surfaces months into a project traces back to that first moment, what you said, how quickly you responded, how clearly you laid out the plan. The prompts below help you nail that first impression every time. Looking ahead, AOM`;
     }
     if (rawChallenge) {
-      return `"${rawChallenge}" is a problem most ${biz} owners hit — and the fix is almost always about communication habits, not the work itself. When clients feel informed and valued, the relationship takes care of itself. The prompts below give you the words to make that happen consistently. Looking ahead, AOM`;
+ return `"${rawChallenge}" is a problem most ${biz} owners hit, and the fix is almost always about communication habits, not the work itself. When clients feel informed and valued, the relationship takes care of itself. The prompts below give you the words to make that happen consistently. Looking ahead, AOM`;
     }
-    return `At your ${biz}, client relationships are the foundation everything else is built on. The businesses that get this right communicate with intention — not more often, just smarter. The prompts below give you the words to do exactly that. Looking ahead, AOM`;
+ return `At your ${biz}, client relationships are the foundation everything else is built on. The businesses that get this right communicate with intention, not more often, just smarter. The prompts below give you the words to do exactly that. Looking ahead, AOM`;
   },
 
   'hiring': (answers) => {
@@ -244,21 +244,21 @@ const AOM_INSIGHTS = {
     const rawRole = (answers.role_hiring || '').trim();
 
     if (role.includes('sales') || role.includes('rep') || role.includes('business development') || role.includes('bd')) {
-      return `Hiring a sales rep for your ${biz} is one of the highest-stakes decisions you'll make — the wrong person can cost you clients, not just time. The prompts below help you screen for the right mindset, not just the right resume, so you hire someone who'll actually close and protect the business you've built. Looking ahead, AOM`;
+ return `Hiring a sales rep for your ${biz} is one of the highest-stakes decisions you'll make, the wrong person can cost you clients, not just time. The prompts below help you screen for the right mindset, not just the right resume, so you hire someone who'll actually close and protect the business you've built. Looking ahead, AOM`;
     }
     if (role.includes('admin') || role.includes('office') || role.includes('assistant') || role.includes('coordinator')) {
-      return `A great admin or office person can give you back hours every week at your ${biz} — but only if they're set up to succeed from day one. The prompts below help you define exactly what you need, attract the right candidates, and get them productive fast without it falling all on you. Looking ahead, AOM`;
+ return `A great admin or office person can give you back hours every week at your ${biz}, but only if they're set up to succeed from day one. The prompts below help you define exactly what you need, attract the right candidates, and get them productive fast without it falling all on you. Looking ahead, AOM`;
     }
     if (role.includes('manager') || role.includes('supervisor') || role.includes('lead') || role.includes('director')) {
-      return `Bringing in a manager at your ${biz} isn't just filling a role — it's building a layer of leadership that reflects your standards every single day. The prompts below help you hire someone who'll protect the culture you've worked to build and make the team run better than it does without them. Looking ahead, AOM`;
+ return `Bringing in a manager at your ${biz} isn't just filling a role, it's building a layer of leadership that reflects your standards every single day. The prompts below help you hire someone who'll protect the culture you've worked to build and make the team run better than it does without them. Looking ahead, AOM`;
     }
     if (role.includes('driver') || role.includes('delivery') || role.includes('field') || role.includes('tech') || role.includes('technician') || role.includes('installer')) {
-      return `At your ${biz}, field and technical roles are the face of the business — every job site, every service call is a direct reflection of your standard. The prompts below help you hire for the qualities that actually matter in those roles, not just the ones that look good on paper. Looking ahead, AOM`;
+ return `At your ${biz}, field and technical roles are the face of the business, every job site, every service call is a direct reflection of your standard. The prompts below help you hire for the qualities that actually matter in those roles, not just the ones that look good on paper. Looking ahead, AOM`;
     }
     if (rawRole) {
-      return `Finding the right ${rawRole} for your ${biz} isn't just about filling a seat — it's about finding someone who raises the standard of everything they touch. The prompts below cover the full hiring process so you can bring the right person in with confidence the first time. Looking ahead, AOM`;
+ return `Finding the right ${rawRole} for your ${biz} isn't just about filling a seat, it's about finding someone who raises the standard of everything they touch. The prompts below cover the full hiring process so you can bring the right person in with confidence the first time. Looking ahead, AOM`;
     }
-    return `A ${biz} rises or falls on the team behind it. Finding the right person isn't just about filling a seat — it's about protecting the standard you've built. The prompts below cover every stage of the process so you can hire with confidence. Looking ahead, AOM`;
+ return `A ${biz} rises or falls on the team behind it. Finding the right person isn't just about filling a seat, it's about protecting the standard you've built. The prompts below cover every stage of the process so you can hire with confidence. Looking ahead, AOM`;
   },
 
   'sales': (answers) => {
@@ -267,27 +267,27 @@ const AOM_INSIGHTS = {
     const rawChallenge = (answers.sales_challenge || '').trim();
 
     if (challenge.includes('close') || challenge.includes('convert') || challenge.includes('close rate')) {
-      return `For your ${biz}, the problem isn't getting in front of people — it's converting warm conversations into paid work. That gap between interest and commitment almost always comes down to trust, timing, and the right words at the right moment. The prompts below help you close that gap consistently, not just occasionally. Looking ahead, AOM`;
+ return `For your ${biz}, the problem isn't getting in front of people, it's converting warm conversations into paid work. That gap between interest and commitment almost always comes down to trust, timing, and the right words at the right moment. The prompts below help you close that gap consistently, not just occasionally. Looking ahead, AOM`;
     }
     if (challenge.includes('lead') || challenge.includes('prospect') || challenge.includes('not enough') || challenge.includes('pipeline')) {
-      return `The challenge for your ${biz} isn't that people don't want what you offer — it's that they're not finding you consistently enough. Lead generation isn't magic, it's a repeatable system, and once it's running it works whether you're thinking about it or not. The prompts below will help you build that system from the ground up. Looking ahead, AOM`;
+ return `The challenge for your ${biz} isn't that people don't want what you offer, it's that they're not finding you consistently enough. Lead generation isn't magic, it's a repeatable system, and once it's running it works whether you're thinking about it or not. The prompts below will help you build that system from the ground up. Looking ahead, AOM`;
     }
     if (challenge.includes('follow') || challenge.includes('follow-up')) {
-      return `Most deals at a ${biz} are lost in the follow-up — not because prospects aren't interested, but because life gets in the way and nobody reconnected. The right follow-up sequence turns a cold trail into a closed deal. The prompts below give you that sequence, start to finish. Looking ahead, AOM`;
+ return `Most deals at a ${biz} are lost in the follow-up, not because prospects aren't interested, but because life gets in the way and nobody reconnected. The right follow-up sequence turns a cold trail into a closed deal. The prompts below give you that sequence, start to finish. Looking ahead, AOM`;
     }
     if (challenge.includes('ghost') || challenge.includes('ghosted') || challenge.includes('ignored') || challenge.includes('no reply') || challenge.includes('no response')) {
-      return `Getting ghosted after a proposal at your ${biz} usually means the prospect left the conversation before fully understanding the value — not that they weren't interested. The fix isn't chasing harder, it's re-engaging with something worth responding to. The prompts below help you do that. Looking ahead, AOM`;
+ return `Getting ghosted after a proposal at your ${biz} usually means the prospect left the conversation before fully understanding the value, not that they weren't interested. The fix isn't chasing harder, it's re-engaging with something worth responding to. The prompts below help you do that. Looking ahead, AOM`;
     }
     if (challenge.includes('price') || challenge.includes('expensive') || challenge.includes('budget') || challenge.includes('cost') || challenge.includes('too much')) {
-      return `When prospects at your ${biz} push back on price, they're usually not comparing numbers — they're questioning whether the outcome is real for them specifically. The businesses that win on price don't discount, they reframe. The prompts below give you the language to do that without flinching. Looking ahead, AOM`;
+ return `When prospects at your ${biz} push back on price, they're usually not comparing numbers, they're questioning whether the outcome is real for them specifically. The businesses that win on price don't discount, they reframe. The prompts below give you the language to do that without flinching. Looking ahead, AOM`;
     }
     if (challenge.includes('referral') || challenge.includes('word of mouth') || challenge.includes('networking')) {
-      return `Referral-based businesses like your ${biz} have the highest close rates and the most loyal clients — but most owners leave a huge portion of that pipeline untapped because they never built a system for asking. The prompts below help you make referrals a reliable, repeatable part of your growth. Looking ahead, AOM`;
+ return `Referral-based businesses like your ${biz} have the highest close rates and the most loyal clients, but most owners leave a huge portion of that pipeline untapped because they never built a system for asking. The prompts below help you make referrals a reliable, repeatable part of your growth. Looking ahead, AOM`;
     }
     if (rawChallenge) {
-      return `"${rawChallenge}" is one of the most common sticking points for a ${biz} — and it almost always has a cleaner fix than it looks like from the inside. The prompts below will help you diagnose the gap and give you the exact language to close it. Looking ahead, AOM`;
+ return `"${rawChallenge}" is one of the most common sticking points for a ${biz}, and it almost always has a cleaner fix than it looks like from the inside. The prompts below will help you diagnose the gap and give you the exact language to close it. Looking ahead, AOM`;
     }
-    return `Most ${biz}s don't have a sales problem — they have a consistency problem. Whatever's breaking down in your pipeline is fixable with the right words and the right sequence. The prompts below give you both. Looking ahead, AOM`;
+ return `Most ${biz}s don't have a sales problem, they have a consistency problem. Whatever's breaking down in your pipeline is fixable with the right words and the right sequence. The prompts below give you both. Looking ahead, AOM`;
   },
 
   'operations': (answers) => {
@@ -299,19 +299,19 @@ const AOM_INSIGHTS = {
       return `When scheduling is eating your time at your ${biz}, you're spending energy on logistics instead of the work that actually moves the business forward. Every hour you get back from calendar chaos is an hour you can put into growth. The prompts below help you systematize that so it stops running your day. Looking ahead, AOM`;
     }
     if (pain.includes('paper') || pain.includes('admin') || pain.includes('document') || pain.includes('forms')) {
-      return `Paperwork and admin are the invisible tax on every ${biz} — they don't feel productive, but they can't be ignored. The owners who break free don't eliminate admin, they systematize it so it takes minutes instead of hours. The prompts below will help you build that system. Looking ahead, AOM`;
+ return `Paperwork and admin are the invisible tax on every ${biz}, they don't feel productive, but they can't be ignored. The owners who break free don't eliminate admin, they systematize it so it takes minutes instead of hours. The prompts below will help you build that system. Looking ahead, AOM`;
     }
     if (pain.includes('team') || pain.includes('staff') || pain.includes('manag') || pain.includes('employee') || pain.includes('people')) {
-      return `Managing people is one of the hardest parts of running a ${biz} — and it's rarely what you signed up for. The owners who get it right build clear communication habits and systems that let the team function without constant input from you. The prompts below help you build those habits. Looking ahead, AOM`;
+ return `Managing people is one of the hardest parts of running a ${biz}, and it's rarely what you signed up for. The owners who get it right build clear communication habits and systems that let the team function without constant input from you. The prompts below help you build those habits. Looking ahead, AOM`;
     }
     if (pain.includes('invoice') || pain.includes('billing') || pain.includes('payment') || pain.includes('collect')) {
-      return `Billing and invoicing at your ${biz} shouldn't be a second job — but for most owners it becomes one. The fix is building a process where money follows a clear path, not one where you have to chase it down every time. The prompts below help you set that up. Looking ahead, AOM`;
+ return `Billing and invoicing at your ${biz} shouldn't be a second job, but for most owners it becomes one. The fix is building a process where money follows a clear path, not one where you have to chase it down every time. The prompts below help you set that up. Looking ahead, AOM`;
     }
     if (pain.includes('email') || pain.includes('message') || pain.includes('respond') || pain.includes('inbox')) {
-      return `When communication is eating your day at your ${biz}, the issue is usually a lack of structure, not a lack of time. The owners who tame their inbox build habits around when and how they respond — not just how fast. The prompts below help you take back control of that. Looking ahead, AOM`;
+ return `When communication is eating your day at your ${biz}, the issue is usually a lack of structure, not a lack of time. The owners who tame their inbox build habits around when and how they respond, not just how fast. The prompts below help you take back control of that. Looking ahead, AOM`;
     }
     if (rawPain) {
-      return `"${rawPain}" is one of the most common places ${biz} owners get stuck — and it's almost always a systems problem disguised as a time problem. The prompts below will help you diagnose it and build a process that works without you having to babysit it. Looking ahead, AOM`;
+ return `"${rawPain}" is one of the most common places ${biz} owners get stuck, and it's almost always a systems problem disguised as a time problem. The prompts below will help you diagnose it and build a process that works without you having to babysit it. Looking ahead, AOM`;
     }
     return `When day-to-day operations are taking over your time at your ${biz}, you're running the business instead of building it. The owners who break out of that cycle build systems that work without them. The prompts below are your starting point. Looking ahead, AOM`;
   },
@@ -322,27 +322,27 @@ const AOM_INSIGHTS = {
     const rawPlatform = (answers.content_platform || '').trim();
 
     if (platform.includes('instagram') || platform.includes('ig') || platform.includes('reels')) {
-      return `Instagram rewards consistency and real storytelling — which makes it one of the best channels for a ${biz} that does visible work. The secret isn't posting every day, it's posting with a clear point each time. The prompts below help you build a content system that looks effortless even when it isn't. Looking ahead, AOM`;
+ return `Instagram rewards consistency and real storytelling, which makes it one of the best channels for a ${biz} that does visible work. The secret isn't posting every day, it's posting with a clear point each time. The prompts below help you build a content system that looks effortless even when it isn't. Looking ahead, AOM`;
     }
     if (platform.includes('linkedin')) {
-      return `LinkedIn is where buyers and referral partners decide whether to trust a ${biz} before they ever make contact. The businesses that win there aren't the loudest — they're the most credible. The prompts below help you build that presence without sounding like everyone else on the platform. Looking ahead, AOM`;
+ return `LinkedIn is where buyers and referral partners decide whether to trust a ${biz} before they ever make contact. The businesses that win there aren't the loudest, they're the most credible. The prompts below help you build that presence without sounding like everyone else on the platform. Looking ahead, AOM`;
     }
     if (platform.includes('google') || platform.includes('seo') || platform.includes('search') || platform.includes('website')) {
-      return `Google is where your future clients go when they're ready to buy — which makes it the highest-intent channel for your ${biz}. Getting found there isn't about gaming an algorithm, it's about showing up consistently with content that answers the questions your clients are already asking. The prompts below help you do that. Looking ahead, AOM`;
+ return `Google is where your future clients go when they're ready to buy, which makes it the highest-intent channel for your ${biz}. Getting found there isn't about gaming an algorithm, it's about showing up consistently with content that answers the questions your clients are already asking. The prompts below help you do that. Looking ahead, AOM`;
     }
     if (platform.includes('facebook') || platform.includes('fb')) {
-      return `Facebook still reaches a wide local audience — especially for a ${biz} where community trust and word-of-mouth are the main drivers. The prompts below help you show up there in a way that feels authentic to your business and your market, not like a corporate broadcast. Looking ahead, AOM`;
+ return `Facebook still reaches a wide local audience, especially for a ${biz} where community trust and word-of-mouth are the main drivers. The prompts below help you show up there in a way that feels authentic to your business and your market, not like a corporate broadcast. Looking ahead, AOM`;
     }
     if (platform.includes('tiktok') || platform.includes('video') || platform.includes('youtube')) {
-      return `Short-form video is the fastest way for a ${biz} to build trust with people who've never heard of you. The barrier isn't production quality — it's showing up consistently with content that demonstrates your expertise in real ways. The prompts below help you plan and create that content without it becoming a second job. Looking ahead, AOM`;
+ return `Short-form video is the fastest way for a ${biz} to build trust with people who've never heard of you. The barrier isn't production quality, it's showing up consistently with content that demonstrates your expertise in real ways. The prompts below help you plan and create that content without it becoming a second job. Looking ahead, AOM`;
     }
     if (platform.includes('email') || platform.includes('newsletter')) {
-      return `Email marketing for a ${biz} is the one channel you actually own — no algorithm shifts, no account bans, no declining reach. A consistent newsletter builds a warm audience that's ready to buy when you ask them. The prompts below help you write one that people actually open and read. Looking ahead, AOM`;
+ return `Email marketing for a ${biz} is the one channel you actually own, no algorithm shifts, no account bans, no declining reach. A consistent newsletter builds a warm audience that's ready to buy when you ask them. The prompts below help you write one that people actually open and read. Looking ahead, AOM`;
     }
     if (rawPlatform) {
-      return `For a ${biz}, showing up consistently on ${rawPlatform} is the difference between being found and being invisible. The businesses that win at content don't post more — they post with a clear purpose every single time. The prompts below help you build that discipline. Looking ahead, AOM`;
+ return `For a ${biz}, showing up consistently on ${rawPlatform} is the difference between being found and being invisible. The businesses that win at content don't post more, they post with a clear purpose every single time. The prompts below help you build that discipline. Looking ahead, AOM`;
     }
-    return `For a ${biz}, consistent content is the difference between being found and being invisible. The businesses that win online don't post more — they post with intention. The prompts below give you a full system to do the same. Looking ahead, AOM`;
+ return `For a ${biz}, consistent content is the difference between being found and being invisible. The businesses that win online don't post more, they post with intention. The prompts below give you a full system to do the same. Looking ahead, AOM`;
   },
 
   'finance': (answers) => {
@@ -351,27 +351,27 @@ const AOM_INSIGHTS = {
     const rawChallenge = (answers.finance_challenge || '').trim();
 
     if (challenge.includes('invoice') || challenge.includes('collect') || challenge.includes('chasing') || challenge.includes('paid') || challenge.includes('overdue')) {
-      return `Chasing invoices at your ${biz} isn't just frustrating — it's a cash flow problem that compounds over time. The real fix isn't just better follow-up; it's setting the right payment expectations before work begins so the awkward chase never has to happen. The prompts below help you get paid faster with less friction. Looking ahead, AOM`;
+ return `Chasing invoices at your ${biz} isn't just frustrating, it's a cash flow problem that compounds over time. The real fix isn't just better follow-up; it's setting the right payment expectations before work begins so the awkward chase never has to happen. The prompts below help you get paid faster with less friction. Looking ahead, AOM`;
     }
     if (challenge.includes('cash') || challenge.includes('flow') || challenge.includes('runway') || challenge.includes('tight')) {
-      return `Cash flow uncertainty is one of the most stressful parts of running a ${biz} — it makes every decision feel risky when it doesn't need to. The owners who manage it well don't predict the future, they build enough visibility to see problems coming in time to act. The prompts below help you build that clarity. Looking ahead, AOM`;
+ return `Cash flow uncertainty is one of the most stressful parts of running a ${biz}, it makes every decision feel risky when it doesn't need to. The owners who manage it well don't predict the future, they build enough visibility to see problems coming in time to act. The prompts below help you build that clarity. Looking ahead, AOM`;
     }
     if (challenge.includes('forecast') || challenge.includes('predict') || challenge.includes('plan') || challenge.includes('budget')) {
-      return `Forecasting for a ${biz} doesn't have to be complicated — it just needs to be consistent. A simple monthly snapshot is enough to spot patterns, catch problems early, and make better decisions before you're backed into a corner. The prompts below help you build that habit. Looking ahead, AOM`;
+ return `Forecasting for a ${biz} doesn't have to be complicated, it just needs to be consistent. A simple monthly snapshot is enough to spot patterns, catch problems early, and make better decisions before you're backed into a corner. The prompts below help you build that habit. Looking ahead, AOM`;
     }
     if (challenge.includes('number') || challenge.includes('understand') || challenge.includes('profit') || challenge.includes('margin')) {
-      return `You don't need to be a finance expert to run a profitable ${biz} — you just need to understand the three or four numbers that actually drive everything else. Margin, cash position, and revenue trend are what separate owners who feel in control from those who are guessing. The prompts below get you there. Looking ahead, AOM`;
+ return `You don't need to be a finance expert to run a profitable ${biz}, you just need to understand the three or four numbers that actually drive everything else. Margin, cash position, and revenue trend are what separate owners who feel in control from those who are guessing. The prompts below get you there. Looking ahead, AOM`;
     }
     if (challenge.includes('price') || challenge.includes('pricing') || challenge.includes('rate') || challenge.includes('charge') || challenge.includes('undercharge')) {
-      return `Pricing is one of the hardest things to get right at a ${biz} — undercharge and you're trading time for nothing, but charging what you're worth without confidence and you lose deals you should win. The prompts below help you develop the language and the logic to price with conviction and defend it when you're challenged. Looking ahead, AOM`;
+ return `Pricing is one of the hardest things to get right at a ${biz}, undercharge and you're trading time for nothing, but charging what you're worth without confidence and you lose deals you should win. The prompts below help you develop the language and the logic to price with conviction and defend it when you're challenged. Looking ahead, AOM`;
     }
     if (challenge.includes('overhead') || challenge.includes('expense') || challenge.includes('cost') || challenge.includes('spending') || challenge.includes('overspend')) {
-      return `At your ${biz}, expenses tend to grow alongside revenue — which means profit doesn't always keep up with sales. The owners who stay profitable are the ones who review costs with intention, not just when something feels off. The prompts below help you build that discipline before it becomes a problem. Looking ahead, AOM`;
+ return `At your ${biz}, expenses tend to grow alongside revenue, which means profit doesn't always keep up with sales. The owners who stay profitable are the ones who review costs with intention, not just when something feels off. The prompts below help you build that discipline before it becomes a problem. Looking ahead, AOM`;
     }
     if (rawChallenge) {
-      return `"${rawChallenge}" is a challenge most ${biz} owners hit at some point — and it almost always has a cleaner fix than it first appears. Financial clarity is closer than it seems. The prompts below will help you get there one concrete step at a time. Looking ahead, AOM`;
+ return `"${rawChallenge}" is a challenge most ${biz} owners hit at some point, and it almost always has a cleaner fix than it first appears. Financial clarity is closer than it seems. The prompts below will help you get there one concrete step at a time. Looking ahead, AOM`;
     }
-    return `The most successful ${biz} owners aren't finance experts — they're people who understand their numbers well enough to make confident decisions. Financial clarity is closer than you think, and the prompts below will get you there. Looking ahead, AOM`;
+ return `The most successful ${biz} owners aren't finance experts, they're people who understand their numbers well enough to make confident decisions. Financial clarity is closer than you think, and the prompts below will get you there. Looking ahead, AOM`;
   },
 };
 

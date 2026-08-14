@@ -20,7 +20,7 @@ const V4 = {
 
 function formatAmount(usd, display) {
   if (display) return display
-  if (typeof usd !== 'number' || !Number.isFinite(usd)) return '—'
+ if (typeof usd !== 'number' || !Number.isFinite(usd)) return '·'
   if (usd >= 1e9) return `$${(usd / 1e9).toFixed(usd % 1e9 === 0 ? 0 : 1)}B`
   if (usd >= 1e6) return `$${Math.round(usd / 1e6)}M`
   if (usd >= 1e3) return `$${Math.round(usd / 1e3)}K`
@@ -28,9 +28,9 @@ function formatAmount(usd, display) {
 }
 
 function formatDate(iso) {
-  if (!iso) return '—'
+ if (!iso) return '·'
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+ if (Number.isNaN(d.getTime())) return '·'
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
@@ -169,7 +169,7 @@ export default function Blacknight() {
           </span>
         </div>
         <p style={{ color: V4.textSecondary, fontSize: 14, lineHeight: 1.6, maxWidth: 720, marginTop: 14 }}>
-          All publicly announced space-industry funding rounds since January 1, 2026 — aggregated from{' '}
+ All publicly announced space-industry funding rounds since January 1, 2026, aggregated from{'·'}
           <a href="https://payloadspace.com" target="_blank" rel="noreferrer"
              style={{ color: V4.textPrimary, textDecoration: 'underline', textDecorationColor: V4.border }}>Payload</a>
           {', '}
@@ -283,9 +283,9 @@ export default function Blacknight() {
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '12px 14px', color: V4.textSecondary, fontSize: 12 }}>{r.sector || '—'}</td>
+ <td style={{ padding: '12px 14px', color: V4.textSecondary, fontSize: 12 }}>{r.sector || ', '}</td>
                     <td style={{ padding: '12px 14px', color: V4.textSecondary, fontSize: 12 }}>
-                      {investors.length === 0 ? '—' : investors.join(', ')}
+ {investors.length === 0 ? '·' : investors.join('·')}
                     </td>
                     <td style={{ padding: '12px 14px', color: V4.textSecondary, fontSize: 12, whiteSpace: 'nowrap' }}>
                       {formatDate(r.announced_date)}
@@ -295,7 +295,7 @@ export default function Blacknight() {
                         <a href={r.post_url || r.source_url} target="_blank" rel="noreferrer"
                           style={{ color: V4.accent, fontSize: 12, textDecoration: 'none', fontWeight: 600 }}
                         >open ↗</a>
-                      ) : '—'}
+ ) : '·'}
                     </td>
                   </tr>
                 )
@@ -322,7 +322,7 @@ function MobileList({ loading, rounds, filtered, sortCol, sortDir, onSort }) {
   ]
   return (
     <div>
-      {/* Sort chips — replaces clickable th's on mobile */}
+ {/* Sort chips, replaces clickable th's on mobile */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 4 }}>
         {sortOptions.map(opt => {
           const active = sortCol === opt.key

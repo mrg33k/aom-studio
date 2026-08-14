@@ -228,7 +228,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     const isImage = it.kind === 'photo' && !!it.url;
     return (
       <button type="button" key={`${it.url || it.name}-${i}`} onClick={() => openItem(it)}
-        aria-label={`${waiting ? 'Review' : onReview ? 'Preview' : 'Open'} ${it.name}`} title={`${it.name}${itemMeta(it) ? ` — ${itemMeta(it)}` : ''}`}
+ aria-label={`${waiting ? 'Review' : onReview ? 'Preview' : 'Open'} ${it.name}`} title={`${it.name}${itemMeta(it) ? `, ${itemMeta(it)}` : ''}`}
         style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 0, border: 'none', background: 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)', cursor: 'pointer', minWidth: 0 }}>
         <span style={{ position: 'relative', display: 'block', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', background: 'var(--media-tile, var(--surface-2))', border: '1px solid var(--divider)' }}>
           {isImage ? (
@@ -260,7 +260,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   };
   if (!fromAgent.length && !youSent.length) {
     if (status === 'error') {
-      return <div style={{ color: 'var(--muted)', fontSize: 12.5 }}>Couldn't load this chat's files right now. They're safe — it retries automatically.</div>;
+ return <div style={{ color: 'var(--muted)', fontSize: 12.5 }}>Couldn't load this chat's files right now. They're safe, it retries automatically.</div>;
     }
     return <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>{status === 'loading' ? 'Loading files…' : 'No files have crossed this chat yet.'}</div>;
   }
@@ -429,7 +429,7 @@ export function useRoomCrossings(worldId, room) {
 // A project in the rail is a folder that fans open to its missions. The row itself opens the
 // project's general chat; the chevron toggles the mission list; a mission row opens that
 // mission's own thread on the right. Mirrors the mobile project screen, here as a tree.
-const MISSION_CAP = 8; // a fanned-open project shows this many missions, then "show N more" — keeps the rail scannable when a project has dozens.
+const MISSION_CAP = 8; // a fanned-open project shows this many missions, then "show N more", keeps the rail scannable when a project has dozens.
 // missions-tree hands back a NESTED tree (roots carry their sub-missions in `children`).
 // Flatten it depth-first into one indented list so missions living in a subfolder
 // actually show in the rail — the old code mapped only the roots and dropped every
@@ -708,7 +708,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   }, [send, onReviewFile, reviewProject, reviewMission]);
 
   // Right column: Goals view (the agent's goal/steps) or Files view (this conversation's files + links).
-  const [drawerView, setDrawerView] = useState('files'); // Files default — Patrik's must-have order put files third and goals nowhere (plan item 23)
+ const [drawerView, setDrawerView] = useState('files'); // Files default, Patrik's must-have order put files third and goals nowhere (plan item 23)
 
   // "Following along" is real, user-owned state: which rooms surface on Home + notify you.
   // Persisted locally per room so the toggle sticks across visits without a new backend.
@@ -1169,7 +1169,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   type="button"
                   className={`cv6-chat-fab${composerCollapsed ? ' is-visible' : ''}`}
                   onClick={expandComposer}
-                  aria-label="Open composer — type a message"
+ aria-label="Open composer, type a message"
                   title="Type a message"
                 >
                   {/* Pen / compose icon */}
@@ -1274,7 +1274,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     {controlBusy ? 'Working…' : 'Add a file'}
                   </button>
                 </div>
-                {/* Bottom anchor — closes drawer composition so quick actions don't float in a void */}
+ {/* Bottom anchor, closes drawer composition so quick actions don't float in a void */}
                 {lastActiveLabel ? (
                   <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--divider)', display: 'flex', alignItems: 'center', gap: 7 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', flex: 'none', display: 'inline-block' }} />
@@ -1301,7 +1301,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         quickSend={sendAndCollapse}
         onOpenFiles={() => setDrawerView('files')}
       />
-      {/* "+ New" — the one shared creation flow (NewComposer), rehomed to the rail. */}
+ {/* "+ New", the one shared creation flow (NewComposer), rehomed to the rail. */}
       {composerOpen ? (
         <NewComposer worldId={worldId} projects={projects} agents={agents} initialMode="mission"
           onClose={() => setComposerOpen(false)} onCreated={() => setComposerOpen(false)} />

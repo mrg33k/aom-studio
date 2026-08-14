@@ -454,7 +454,7 @@ function SupportToolOverlay({ worldId }) {
           </button>
         )}
 
-        {/* Section label — matches the design's OPEN ASKS / WAITING / ANSWERED heading */}
+ {/* Section label, matches the design's OPEN ASKS / WAITING / ANSWERED heading */}
         <div style={{ padding: '14px 18px 4px', fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-tertiary)' }}>
           {filterStatus === 'open' ? 'Open asks' : filterStatus === 'waiting' ? 'Waiting on you' : 'Answered'}
         </div>
@@ -1140,7 +1140,7 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
     onDragOver: (e) => {
       if (!dragMission) return
       if (dragMission.fromSlug !== p.slug) { e.preventDefault(); setDropProj(p.slug); setInvalidDrop(null) }
-      else { setInvalidDrop(p.slug); setDropProj(null) }   // dnd-1: hovering the source project — show "can't drop here"
+ else { setInvalidDrop(p.slug); setDropProj(null) } // dnd-1: hovering the source project, show "can't drop here"
     },
     onDragLeave: () => { setDropProj(d => (d === p.slug ? null : d)); setInvalidDrop(d => (d === p.slug ? null : d)) },
     onDrop: (e) => { e.preventDefault(); if (dragMission && dragMission.fromSlug !== p.slug) { const fromProj = projects.find(x => x.slug === dragMission.fromSlug); setConfirmMove({ mission: dragMission.mission, fromProj, toProj: p }) } setDragMission(null); setDropProj(null); setInvalidDrop(null) },
@@ -1178,7 +1178,7 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
             <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
           <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--cv6-text-primary)', letterSpacing: '-0.01em' }}>{selMission.name || selMission.slug}</div>
-          {/* R48: never "Idle" — show last visited instead */}
+ {/* R48: never "Idle", show last visited instead */}
           <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '5px' }}>
             in {selProj.name || selProj.slug} · last visited {selMission.last_message_at ? relativeTime(selMission.last_message_at) : 'recently'}
           </div>
@@ -1623,7 +1623,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
             </div>
             {/* R-MATCH-KIT 2026-06-20: kit mobile review action bar (review.html line 123) is
                 Approve (flex-1 green) + Changes (surface-2). Changes jumps to the request-changes
-                input below — "never approve blind". The checklist stays the real mechanism. */}
+ input below, "never approve blind". The checklist stays the real mechanism. */}
             <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
               <button onClick={() => { if (!openItem || !onReplyToRoom) return; const s = roomSlugFor(openItem); if (s) { onReplyToRoom(s, `Approved "${openItem.item}".`); setDone(prev => ({ ...prev, [openItem.id]: true })); setOpenItem(null) } }} style={{ flex: 1, height: '48px', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-success)', color: '#06281c', fontSize: '14.5px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve
@@ -1773,7 +1773,7 @@ function TrackerToolOverlay({ projects, missionsByProject, agents, user }) {
           Area: t.area || '',
           Owner: t.owner || '',
         }))
-        const srTracker = { id: 'sr-tickets', name: 'Space Rising — Tickets', scope: 'Space Rising', template: 'bugs', columns: ['Item', 'Priority', 'Status', 'Area', 'Owner'], rows, on: false, live: true }
+ const srTracker = { id: 'sr-tickets', name: 'Space Rising, Tickets', scope: 'Space Rising', template: 'bugs', columns: ['Item'·'Priority'·'Status'·'Area'·'Owner'], rows, on: false, live: true }
         // STABLE SORT FIX: update Space Rising tracker in place to preserve list order (no re-insert on refresh)
         setTrackers(prev => {
           const hasSR = prev.some(t => t.id === 'sr-tickets')
@@ -2182,7 +2182,7 @@ function TrackerToolOverlay({ projects, missionsByProject, agents, user }) {
               // then a wrapped meta line — the way the Command ledger reflows. Tap to
               // expand the full Expected text.
               const titleColM = sel.id === 'cv6-bugs' ? 'Bug' : sel.columns[0]
-              const titleM = row[titleColM] || '—'
+ const titleM = row[titleColM] || '·'
               const cv6idM = sel.id === 'cv6-bugs' && row.__id ? `CV6-${(String(row.__id).charCodeAt(0) * 137) % 999}` : null
               const sValM = row[statusCol] || 'Open'
               const metaColsM = sel.columns.filter(c => c !== titleColM && c !== statusCol && c !== 'Expected')
@@ -2219,7 +2219,7 @@ function TrackerToolOverlay({ projects, missionsByProject, agents, user }) {
               {sel.columns.length > 0 && (
                 <>
                   <div key={sel.columns[0]} style={{ flex: 1, minWidth: 0, paddingRight: '12px', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
-                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row[sel.columns[0]] || '—'}</div>
+ <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row[sel.columns[0]] || ', '}</div>
                     {sel.id === 'cv6-bugs' && row.__id && (
                       <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>CV6-{(String(row.__id).charCodeAt(0) * 137) % 999}</div>
                     )}
@@ -2278,17 +2278,17 @@ function TrackerToolOverlay({ projects, missionsByProject, agents, user }) {
                         // Time-ago format
                         return (
                           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>
-                            {row[c] || '—'}
+ {row[c] || '·'}
                           </div>
                         )
                       } else {
                         // Generic content
                         return sel.live ? (
                           <div style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', overflow: 'hidden', display: inlineExpand ? 'block' : '-webkit-box', WebkitLineClamp: inlineExpand ? 'none' : 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
-                            {row[c] || '—'}
+ {row[c] || '·'}
                           </div>
                         ) : (
-                          <input value={row[c] || ''} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} placeholder="—" style={{ border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', color: 'var(--cv6-text-primary)', outline: 'none', width: '100%' }} />
+ <input value={row[c] || ''} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} placeholder=", " style={{ border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', color: 'var(--cv6-text-primary)', outline: 'none', width: '100%' }} />
                         )
                       }
                     }
@@ -2318,7 +2318,7 @@ function TrackerToolOverlay({ projects, missionsByProject, agents, user }) {
     if (!row) return null
     const isBug = sel.id === 'cv6-bugs'
     const titleCol = isBug ? 'Bug' : sel.columns[0]
-    const title = row[titleCol] || '—'
+ const title = row[titleCol] || '·'
     const cv6id = isBug && row.__id ? `CV6-${(String(row.__id).charCodeAt(0) * 137) % 999}` : null
     const statusVal = row[statusCol] || 'Open'
     const fieldCols = sel.columns.filter(c => c !== titleCol && c !== statusCol)
@@ -3678,8 +3678,8 @@ export default function HomeView({
   onChatSend, // real send for the CV6 Chat tool (agent/project routing + Gemini lane on /cvg). Omit → optimistic only (gallery).
   onReplyToRoom, // real reply function for Review tool (posts notes to rooms). Omit → review notes are optimistic only.
   commandDeckSlot, // real goal-ledger CommandDeck element (passed from CornerVG). When present the Command tool renders the LIVE ledger instead of the sample deck (gallery has none → sample).
-  openChatRequest, // R62: { kind:'agent'|'project'|'mission', slug, name, missionSlug?, nonce } — opens the in-page Chat tool preselected (replaces the old full-screen chat).
-  openToolRequest, // R82: { tool, nonce } — an agent (via the cv6-view channel) opens a tool on the user's screen.
+ openChatRequest, // R62: { kind:'agent'|'project'|'mission', slug, name, missionSlug?, nonce }, opens the in-page Chat tool preselected (replaces the old full-screen chat).
+ openToolRequest, // R82: { tool, nonce }, an agent (via the cv6-view channel) opens a tool on the user's screen.
   catchupNotifications = [], // R64: unread items for the home Catch-up column (CornerVG builds them).
   onCatchupOpenRoom, // R64: open a catch-up item's room (routes to the in-page Chat tool via CornerVG handleSelect*).
   onCatchupViewAll, // R75: open the full Catch Up modal (the home column is a 5-card quick tool; overflow lives here).
@@ -4794,8 +4794,8 @@ export default function HomeView({
                           </div>
                           {ask && <span style={{ flex: 'none', fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cv6-accent-primary)', background: 'var(--cv6-accent-weak)', borderRadius: '6px', padding: '3px 8px' }}>Ask</span>}
                         </div>
-                        {/* Summary block — the message gist in the design's inset card (no border,
-                            surface-2 fill). Real message text; the AI "Summary —" lead is the wiring gap. */}
+ {/* Summary block, the message gist in the design's inset card (no border,
+ surface-2 fill). Real message text; the AI "Summary , " lead is the wiring gap. */}
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', background: 'var(--cv6-surface2)', borderRadius: '10px', padding: '11px 12px', marginBottom: '14px' }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--cv6-accent-primary)" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l1.6 4.9L18.5 9l-4.9 1.6L12 15l-1.6-4.4L5.5 9l4.9-1.1Z"/></svg>
                           <div style={{ fontSize: '12.5px', lineHeight: 1.5, color: 'var(--cv6-text-primary)', maxHeight: '84px', overflowY: 'auto' }}>
@@ -4831,7 +4831,7 @@ export default function HomeView({
                           </div>
                         )}
                       </div>
-                      {/* Suggested actions — in the design's divided footer section. Draft reply opens
+ {/* Suggested actions, in the design's divided footer section. Draft reply opens
                           the room; Add to Tracker opens the tracker. Real handlers; mark-handled = swipe. */}
                       <div style={{ borderTop: '1px solid var(--cv6-divider)', padding: '12px 14px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)', marginBottom: '10px' }}>Suggested actions</div>
@@ -5305,7 +5305,7 @@ export default function HomeView({
                     <span style={{ position: 'absolute', top: '7px', right: '8px', width: '7px', height: '7px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '2px solid var(--cv6-ground)' }} />
                   )}
                 </button>
-                {/* Avatar — gradient circle with the user's initial. On mobile (R-MOBILE-NAV,
+ {/* Avatar, gradient circle with the user's initial. On mobile (R-MOBILE-NAV,
                     Patrik) it's the menu trigger: tap opens the right side-nav drawer. Desktop
                     keeps it as the settings link. */}
                 <button
@@ -5726,7 +5726,7 @@ export default function HomeView({
               }}>
               {/* R-MATCH-KIT 2026-06-20: keep the Final frame's button SHAPE (60px circle, --avatar
                   gradient, white-ring shadow, 15px accent dot) but the glyph is a MENU icon, not the
-                  profile "P" — Patrik override 2026-06-20: "the menu button being a p it should be a
+ profile "P", Patrik override 2026-06-20: "the menu button being a p it should be a
                   menu icon." It still opens the rail. Do NOT switch this back to a P. */}
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
               {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '1px', right: '1px', width: '15px', height: '15px', borderRadius: '50%', background: '#5B9BFF', border: '2.5px solid var(--cv6-ground)' }} />)}
@@ -6095,7 +6095,7 @@ export default function HomeView({
                               <span style={{ flex: 1, fontSize: '14.5px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>
                                 {a.name || a.slug}
                               </span>
-                              {/* Type tag — "AGENT" (mono faint), distinguishing agent rows from project rows
+ {/* Type tag, "AGENT" (mono faint), distinguishing agent rows from project rows
                                   in the one All Rooms list; live status stays on hover via the dot title. */}
                               <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', color: 'var(--cv6-text-tertiary)', flexShrink: 0 }}>AGENT</span>
                             </button>
@@ -6369,8 +6369,8 @@ export default function HomeView({
                         </svg>
                       </button>
 
-                      {/* Input field — design: placeholder "Message {name}…" + a single paperclip (attach) on the right.
-                          (Was a refresh-glyph "attach" on the left + a second refresh "master-loop" icon — neither matched the design.) */}
+ {/* Input field, design: placeholder "Message {name}…" + a single paperclip (attach) on the right.
+ (Was a refresh-glyph "attach" on the left + a second refresh "master-loop" icon, neither matched the design.) */}
                       <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <input
                           ref={replyInputRef}
@@ -6428,7 +6428,7 @@ export default function HomeView({
                             setReplyText('')
                           } else {
                             // Voice chat mode — TODO: wire to real Gemini voice on /cvg
-                            console.log('[voice-chat button clicked — would start Gemini voice]')
+ console.log('[voice-chat button clicked, would start Gemini voice]')
                           }
                         }}
                         style={{
@@ -6463,7 +6463,7 @@ export default function HomeView({
                 </div>
               )}
             </div>
-            {/* (Corner lockup moved into the catch-up column's bottom — Patrik 2026-06-19.) */}
+ {/* (Corner lockup moved into the catch-up column's bottom, Patrik 2026-06-19.) */}
           </div>
           </>)}
 

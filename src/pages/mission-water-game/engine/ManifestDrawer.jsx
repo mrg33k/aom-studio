@@ -50,7 +50,7 @@ const CHAPTER_DATA = [
   {
     n: 2,
     title: 'The Journey to the Moon',
-    subtitle: 'Shuttle mission — charting a path to lunar water',
+ subtitle: 'Shuttle mission, charting a path to lunar water',
     startPhase: 'ch2_intro',
     badgeCount: 4,
     milestones: ['Light Side traversal', 'Terminator crossing', 'Far Dark navigation', 'Water Ice discovery'],
@@ -58,7 +58,7 @@ const CHAPTER_DATA = [
   {
     n: 3,
     title: 'The Moon Holds the Answer',
-    subtitle: 'Lunar base — extraction and settlement',
+ subtitle: 'Lunar base, extraction and settlement',
     startPhase: null, // locked
     badgeCount: 0,
     milestones: ['Lunar landing', 'Ice extraction', 'Base established', 'Mission complete'],
@@ -212,7 +212,7 @@ export default function ManifestDrawer({
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
           <div>
-            <div style={S.kicker}>MISSION MANIFEST{preFlight ? ' — PRE-FLIGHT' : ''}</div>
+ <div style={S.kicker}>MISSION MANIFEST{preFlight ? ', PRE-FLIGHT' : ''}</div>
             <div style={S.title}>SUPPLIES &amp; PROGRESS</div>
           </div>
           <button onClick={onClose} style={S.closeBtn}>CLOSE</button>
@@ -224,7 +224,7 @@ export default function ManifestDrawer({
         <div>
           <div style={S.sectionLabel}>
             SURVIVAL SUPPLIES
-            {weakened && <span style={S.weakenedFlag}>⚠ RUNNING ON EMPTY — RESTOCK AT THE SUPPLY STORE</span>}
+ {weakened && <span style={S.weakenedFlag}>⚠ RUNNING ON EMPTY, RESTOCK AT THE SUPPLY STORE</span>}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {SUPPLY_DEFS.map(({ key, label }) => {
@@ -267,7 +267,7 @@ export default function ManifestDrawer({
 
         {/* ── FIELD TOKENS ── */}
         <div>
-          <div style={S.sectionLabel}>FIELD TOKENS — SKILLS</div>
+ <div style={S.sectionLabel}>FIELD TOKENS, SKILLS</div>
           {tokens ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {TOKEN_DEFS.map(({ key, label, color }) => {
@@ -292,7 +292,7 @@ export default function ManifestDrawer({
               })}
             </div>
           ) : (
-            <div style={S.emptyNote}>Tokens are assigned at deployment — confirm your loadout to see them here.</div>
+ <div style={S.emptyNote}>Tokens are assigned at deployment, confirm your loadout to see them here.</div>
           )}
         </div>
 
@@ -300,7 +300,7 @@ export default function ManifestDrawer({
 
         {/* ── BADGES ── */}
         <div>
-          <div style={S.sectionLabel}>DISCOVERY BADGES — {discoveryIds.length}/{allBadgeIds.length}</div>
+ <div style={S.sectionLabel}>DISCOVERY BADGES, {discoveryIds.length}/{allBadgeIds.length}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))', gap: 10 }}>
             {allBadgeIds.map((id) => {
               const earned = discoveryIds.includes(id);
@@ -377,7 +377,7 @@ export default function ManifestDrawer({
                     color: isActive || isDone ? CYAN : isAvailable ? AMBER : 'rgba(255,255,255,0.3)',
                     flexShrink: 0,
                   }}>
-                    {isActive ? '— ACTIVE' : isDone ? '— REPLAY' : isAvailable ? '— START' : '— SOON'}
+ {isActive ? ', ACTIVE' : isDone ? ', REPLAY' : isAvailable ? ', START' : ', SOON'}
                   </div>
                 </div>
 

@@ -813,18 +813,18 @@ export function useReview(worldId = null, injected = null) {
         // The server queued a real fix task — tell the reviewer it's tracked.
         try {
           const d = await r.json();
-          if (d?.task_id) flashNotice(`Tracked as task ${String(d.task_id).slice(0, 8)} — the agent will pick it up.`);
+ if (d?.task_id) flashNotice(`Tracked as task ${String(d.task_id).slice(0, 8)}, the agent will pick it up.`);
         } catch { /* body optional */ }
         load();
         return true;
       } else {
         console.error('[Review request-changes] response not ok:', await r?.text());
-        flashNotice('Could not send the changes — nothing was recorded. Try again.');
+ flashNotice('Could not send the changes, nothing was recorded. Try again.');
         return false;
       }
     } catch (e) {
       console.error('[Review request-changes] exception:', e);
-      flashNotice('Could not send the changes — nothing was recorded. Try again.');
+ flashNotice('Could not send the changes, nothing was recorded. Try again.');
       return false;
     }
   }, [load, decisionBody, removeFromQueue, flashNotice]);

@@ -297,7 +297,7 @@ const CSS = `
   .sr-ucard ul { list-style: none; margin-top: 8px; }
   .sr-ucard ul li { font-size: 12px; color: var(--gray); padding: 3px 0; border-bottom: 1px solid var(--border); }
   .sr-ucard ul li:last-child { border-bottom: none; }
-  .sr-ucard ul li::before { content: '— '; color: var(--orange); }
+ .sr-ucard ul li::before { content: '·'; color: var(--orange); }
 
   /* Spec Sheet */
   .sr-spec-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 28px 0; border-bottom: 1px solid var(--border); }
@@ -432,7 +432,7 @@ export default function SpaceRisingBrand() {
       {/* LOGO */}
       <div className="sr-section">
         <div className="sr-wrap">
-          <div className="sr-label">01 — Logo</div>
+ <div className="sr-label">01, Logo</div>
           <div className="sr-h2">Brand Marks</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
             <div style={{ background: 'var(--surface)', border: '1px solid #222', borderRadius: 8, padding: '24px 32px', height: 200, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
@@ -457,12 +457,12 @@ export default function SpaceRisingBrand() {
       {/* PALETTE */}
       <div className="sr-section">
         <div className="sr-wrap">
-          <div className="sr-label">02 — Color</div>
+ <div className="sr-label">02, Color</div>
           <div className="sr-h2">Palette</div>
           <div className="sr-pal">
             {[
               { color: '#080808', name: 'Void Black', hex: '#080808', rgb: 'RGB 8, 8, 8', usage: 'Page background, primary surface', outlined: true },
-              { color: '#E5451F', name: 'Launch Orange', hex: '#E5451F', rgb: 'RGB 229, 69, 31', usage: 'CTA buttons, highlights, key callouts — one per layout' },
+ { color: '#E5451F', name: 'Launch Orange', hex: '#E5451F', rgb: 'RGB 229, 69, 31', usage: 'CTA buttons, highlights, key callouts, one per layout' },
               { color: '#141414', name: 'Deep Space', hex: '#141414', rgb: 'RGB 20, 20, 20', usage: 'Section backgrounds, card surfaces' },
               { color: '#0D0D1F', name: 'Cosmos Navy', hex: '#0D0D1F', rgb: 'RGB 13, 13, 31', usage: 'Depth gradients, section backgrounds' },
               { color: '#FFFFFF', name: 'Star White', hex: '#FFFFFF', rgb: 'RGB 255, 255, 255', usage: 'Headlines on dark, icon fills', outlined: true },
@@ -491,7 +491,7 @@ export default function SpaceRisingBrand() {
       {/* TYPOGRAPHY */}
       <div className="sr-section">
         <div className="sr-wrap">
-          <div className="sr-label">03 — Typography</div>
+ <div className="sr-label">03, Typography</div>
           <div className="sr-h2">Type System</div>
 
           <div className="sr-font-families">
@@ -578,12 +578,12 @@ export default function SpaceRisingBrand() {
       <div className="sr-divider" />
       <div className="sr-bg-section">
         <div className="sr-wrap">
-          <div className="sr-label">04 — Background Rules</div>
+ <div className="sr-label">04, Background Rules</div>
           <div className="sr-h2">Imagery + Overlays</div>
           <p className="sr-p">All imagery must be treated with a dark overlay before text placement. Minimum contrast: 4.5:1 for body copy, 3:1 for large display text.</p>
           <div className="sr-img-row">
             <div>
-              <div className="sr-badge do" style={{ marginBottom: 8 }}>DO — 70–90% overlay</div>
+ <div className="sr-badge do" style={{ marginBottom: 8 }}>DO, 70–90% overlay</div>
               <div className="sr-img-card">
                 <img src="/images/space-rising/hero-phoenix-cosmos.jpg" alt="Correct overlay example" />
                 <div className="sr-img-overlay ok" />
@@ -595,7 +595,7 @@ export default function SpaceRisingBrand() {
               </div>
             </div>
             <div>
-              <div className="sr-badge dont" style={{ marginBottom: 8 }}>AVOID — under 40% overlay</div>
+ <div className="sr-badge dont" style={{ marginBottom: 8 }}>AVOID, under 40% overlay</div>
               <div className="sr-img-card">
                 <img src="/images/space-rising/hero-desert-cosmos.jpg" alt="Incorrect overlay example" />
                 <div className="sr-img-overlay bad" />
@@ -617,7 +617,7 @@ export default function SpaceRisingBrand() {
       {/* COMPONENTS */}
       <div className="sr-section">
         <div className="sr-wrap">
-          <div className="sr-label">05 — Components</div>
+ <div className="sr-label">05, Components</div>
           <div className="sr-h2">UI Specs</div>
 
           <div style={{ marginBottom: 32 }}>
@@ -701,7 +701,7 @@ export default function SpaceRisingBrand() {
       {/* IMAGE DIRECTION */}
       <div className="sr-section">
         <div className="sr-wrap">
-          <div className="sr-label">06 — Image Direction</div>
+ <div className="sr-label">06, Image Direction</div>
           <div className="sr-h2">Visual Language</div>
           <p className="sr-p" style={{ fontSize: 14 }}>Cinematic, dramatic lighting. Arizona geography meets cosmic space. Warm orange/amber highlights on dark. These 4 hero images are the visual reference.</p>
 
@@ -711,7 +711,7 @@ export default function SpaceRisingBrand() {
               <div className="sr-dir-body">
                 <div className="sr-dir-fn">hero-astronaut-arizona.jpg</div>
                 <span className="sr-badge do">DO</span>
-                <p>Human figure, Arizona scale. Orange suit against deep blue-black. Single horizon light source. Practical lighting logic — not generically "space".</p>
+ <p>Human figure, Arizona scale. Orange suit against deep blue-black. Single horizon light source. Practical lighting logic, not generically "space".</p>
               </div>
             </div>
             <div className="sr-dir-card">
@@ -735,7 +735,7 @@ export default function SpaceRisingBrand() {
               <div className="sr-dir-body">
                 <div className="sr-dir-fn">hero-phoenix-cosmos.jpg</div>
                 <span className="sr-badge do">DO</span>
-                <p>City grid at night, cosmic overlay. Orange city lights echo the brand naturally. Compositing grounded — the city IS the light source. Arizona identity locked.</p>
+ <p>City grid at night, cosmic overlay. Orange city lights echo the brand naturally. Compositing grounded, the city IS the light source. Arizona identity locked.</p>
               </div>
             </div>
           </div>
@@ -768,7 +768,7 @@ export default function SpaceRisingBrand() {
       {/* SOCIAL MEDIA TEMPLATES */}
       <div className="sr-section">
         <div className="sr-wrap">
-          <div className="sr-label">07 — Social Media Templates</div>
+ <div className="sr-label">07, Social Media Templates</div>
           <div className="sr-h2">Campaign Assets</div>
           <p className="sr-p">Campaign-ready graphics for Arizona Space Congress. Vertical posts for Instagram, TikTok, and Stories. Banners and lower thirds for livestream and stage.</p>
 
@@ -778,15 +778,15 @@ export default function SpaceRisingBrand() {
             <span className="sr-badge" style={{ background: 'transparent', border: '1px solid var(--orange)', color: 'var(--orange)', borderRadius: 2, padding: '5px 14px' }}>Apr 29 · Phoenix</span>
           </div>
 
-          <div className="sr-label" style={{ marginTop: 0, marginBottom: 8 }}>Vertical Posts — 9:16</div>
+ <div className="sr-label" style={{ marginTop: 0, marginBottom: 8 }}>Vertical Posts, 9:16</div>
           <p style={{ fontSize: 14, color: 'var(--gray-l)', marginBottom: 20 }}>Instagram, TikTok, and Stories-ready. 1080×1920. Dark bg, orange accent, bold Oswald type.</p>
           <div className="sr-social-scroll">
             {[
               { file: 'v1-event-announcement', num: '01', title: 'Event Announcement', note: 'Arizona Space Congress · Apr 29 reveal' },
               { file: 'v2-speaker-spotlight', num: '02', title: 'Speaker Spotlight', note: 'Repeatable template per speaker' },
-              { file: 'v3-countdown', num: '03', title: 'Countdown Post', note: 'X days until Congress — daily series' },
+ { file: 'v3-countdown', num: '03', title: 'Countdown Post', note: 'X days until Congress, daily series' },
               { file: 'v4-quote-card', num: '04', title: 'Quote Card', note: 'Inspirational space / Arizona quote' },
-              { file: 'v5-registration-cta', num: '05', title: 'Registration CTA', note: 'Register Now — direct response post' },
+ { file: 'v5-registration-cta', num: '05', title: 'Registration CTA', note: 'Register Now, direct response post' },
             ].map(({ file, num, title, note }) => (
               <div key={file} className="sr-vcard">
                 <img src={`/images/space-rising/social/${file}.png`} alt={title} loading="lazy" />
@@ -801,7 +801,7 @@ export default function SpaceRisingBrand() {
 
           <div className="sr-banner-list">
             <div>
-              <div className="sr-label" style={{ marginBottom: 8 }}>Lower Thirds &amp; Banners — 16:9</div>
+ <div className="sr-label" style={{ marginBottom: 8 }}>Lower Thirds &amp; Banners, 16:9</div>
               <p style={{ fontSize: 14, color: 'var(--gray-l)', marginBottom: 20 }}>Live stream, recorded sessions, and stage displays. Dark overlay panels with orange accent bar.</p>
             </div>
             {[
@@ -883,11 +883,11 @@ export default function SpaceRisingBrand() {
             <p style={{ fontSize: 14, color: 'var(--gray-l)', marginBottom: 28 }}>Technical reference for production and handoff.</p>
           </div>
           {[
-            { label1: 'Vertical Format', val1: '9:16 — 1080 × 1920px — Instagram / TikTok / Stories', label2: 'Horizontal Format', val2: '16:9 — 1920 × 1080px — YouTube / Livestream / Stage' },
-            { label1: 'Primary Font', val1: 'Oswald — 700 Bold — All headlines and display text', label2: 'Body Font', val2: 'Inter — 400/500 — Supporting text, captions, labels' },
-            { label1: 'Accent Color', val1: '#E5451F — Orange — CTAs, accent bars, labels, highlights', label2: 'Background', val2: '#080808 to #121212 — Near-black — Never white' },
-            { label1: 'Text Primary', val1: '#FFFFFF — White — Headlines, CTA text', label2: 'Text Secondary', val2: '#CCCCCC — Light gray — Supporting copy' },
-            { label1: 'Lower Third Safe Zone', val1: 'Bottom 25% of frame — stays below 270px from bottom on 1080p', label2: 'Delivery Format', val2: 'PNG-24 with transparency (lower thirds) / JPG 90% (social posts)' },
+ { label1: 'Vertical Format', val1: '9:16, 1080 × 1920px, Instagram / TikTok / Stories', label2: 'Horizontal Format', val2: '16:9, 1920 × 1080px, YouTube / Livestream / Stage' },
+ { label1: 'Primary Font', val1: 'Oswald, 700 Bold, All headlines and display text', label2: 'Body Font', val2: 'Inter, 400/500, Supporting text, captions, labels' },
+ { label1: 'Accent Color', val1: '#E5451F, Orange, CTAs, accent bars, labels, highlights', label2: 'Background', val2: '#080808 to #121212, Near-black, Never white' },
+ { label1: 'Text Primary', val1: '#FFFFFF, White, Headlines, CTA text', label2: 'Text Secondary', val2: '#CCCCCC, Light gray, Supporting copy' },
+ { label1: 'Lower Third Safe Zone', val1: 'Bottom 25% of frame, stays below 270px from bottom on 1080p', label2: 'Delivery Format', val2: 'PNG-24 with transparency (lower thirds) / JPG 90% (social posts)' },
           ].map(({ label1, val1, label2, val2 }) => (
             <div key={label1} className="sr-spec-row">
               <div>

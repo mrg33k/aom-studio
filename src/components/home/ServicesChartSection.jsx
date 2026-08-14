@@ -174,7 +174,7 @@ function VariantB() {
                 return (
                   <td key={sc} className="align-top p-4 border-b border-white/[0.06]">
                     {items.length === 0 ? (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/20">—</span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/20">·</span>
                     ) : (
                       <div className="flex flex-col gap-2">
                         {items.map((it) => (
@@ -284,7 +284,7 @@ function VariantD() {
                 </div>
               ))}
               {items.length === 0 && (
-                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/25">—</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/25">·</p>
               )}
             </div>
           </div>

@@ -277,7 +277,7 @@ export const ARTICLES = [
     publishedAt: '2026-03-18', month: 'Mar 2026', readTime: '6 min',
     type: 'brand', industry: 'B2B & trade coalitions', discipline: 'Brand + Platform',
     headline: 'Branded a trade coalition and built their member platform.',
-    dek: "S3C is the Semiconductor Services & Supply Coalition — Arizona shops working with Intel and TSMC. We made the brand identity and built the member platform on the sourcing-directory architecture.",
+    dek: "S3C is the Semiconductor Services and Supply Coalition for Arizona shops working with Intel and TSMC. We made the brand identity and built the member platform on the sourcing directory architecture.",
     forAudience: 'Good for industry associations, trade coalitions, and B2B membership groups that need a real brand and a place for members to live.',
     aspect: 'horizontal', client: 'S3C',
     image: '/projects/s3c.jpg',
@@ -309,7 +309,7 @@ export const ARTICLES = [
     publishedAt: '2026-03-08', month: 'Mar 2026', readTime: '6 min',
     type: 'website', industry: 'B2B platform', discipline: 'Platform build',
     headline: 'Built a multi-tenant directory for industrial buyers.',
-    dek: 'Sourcing Directory is a B2B marketplace for procurement. Member auth, search, jobs, articles, and admin — built so multiple trade groups and coalitions can run on the same architecture.',
+    dek: 'Sourcing Directory is a B2B marketplace for procurement. Member auth, search, jobs, articles and admin built so multiple trade groups and coalitions can run on the same architecture.',
     forAudience: 'Good for trade groups, industry coalitions, and procurement organizations that need a directory their members actually use.',
     aspect: 'horizontal', client: 'Sourcing Directory',
     image: '/projects/brands-hub.jpg',
@@ -331,7 +331,7 @@ export const ARTICLES = [
     publishedAt: '2026-02-24', month: 'Feb 2026', readTime: '6 min',
     type: 'video', industry: 'Service & B2B', discipline: 'Documentary',
     headline: 'Followed a disaster recovery crew through a real recovery.',
-    dek: 'A 3-minute documentary for Tree Guardian USA. We filmed during actual recovery work — cranes, wind damage, calls coming in. Cut for the homepage and the sales team.',
+    dek: 'A 3-minute documentary for Tree Guardian USA. We filmed during actual recovery work with cranes, wind damage and calls coming in. Cut for the homepage and the sales team.',
     forAudience: 'Good for service businesses where buyers want to see how you handle the hard days, not just the easy ones.',
     reel: '698a5e91873071aec5c9fc36', aspect: 'horizontal', client: 'Tree Guardian USA',
     keywords: ['service business video', 'b2b documentary', 'emergency response marketing'],
@@ -469,7 +469,7 @@ export const CUSTOMER_STORIES = [
     client: 'Ambition Mechanical',
     eyebrow: 'Project · HVAC',
     title: 'A short brand video for an HVAC company.',
-    body: 'A 35-second piece for Ambition Mechanical Services. We filmed during an emergency hospital install — the crew swapping a 75-ton chiller on the roof.',
+    body: 'A 35-second piece for Ambition Mechanical Services. We filmed during an emergency hospital install while the crew swapped a 75-ton chiller on the roof.',
     reel: '698a58aefc23d3d76fa7cdd6',
     tags: ['Brand film', 'Trades'],
     duration: '2 weeks',
@@ -496,7 +496,7 @@ export const CUSTOMER_STORIES = [
     client: 'Tree Guardian USA',
     eyebrow: 'Project · Service business',
     title: 'A documentary for a disaster recovery company.',
-    body: 'A 3-minute piece for Tree Guardian USA. We filmed during actual recovery work — cranes, wind damage, calls coming in.',
+    body: 'A 3-minute piece for Tree Guardian USA. We filmed during actual recovery work with cranes, wind damage and calls coming in.',
     reel: '698a5e91873071aec5c9fc36',
     tags: ['Documentary', 'B2B'],
     duration: '6 weeks',
@@ -540,7 +540,7 @@ export const PLATFORM_FEATURES = [
   },
   {
     title: 'Built-in brand intelligence.',
-    body: 'Your brand lives in our system. Every deliverable comes back consistent — no drift.',
+ body: 'Your brand lives in our system. Every deliverable comes back consistent, no drift.',
   },
   {
     title: 'Workflow that keeps up.',
@@ -553,8 +553,8 @@ export const PLATFORM_FEATURES = [
 ];
 
 export const PILLARS = [
-  { title: 'Scalable',  body: 'Three lanes — subscription, project, walk-in — used together or apart.' },
+ { title: 'Scalable', body: 'Three lanes, subscription, project, walk-in, used together or apart.' },
   { title: 'Flexible',  body: 'Swap services month to month. The retainer flexes with the season.' },
   { title: 'Responsive', body: 'Reply within 24 hours. Always. We hold ourselves to it.' },
-  { title: 'Seamless',  body: 'Brand, story, motion, web — one team, no handoffs.' },
+ { title: 'Seamless', body: 'Brand, story, motion, web, one team, no handoffs.' },
 ];

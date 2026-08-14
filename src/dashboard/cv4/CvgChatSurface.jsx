@@ -861,7 +861,7 @@ export default function CvgChatSurface({
           )
         })}
 
-        {/* Step indicator — shows the assistant's current step while it works */}
+ {/* Step indicator, shows the assistant's current step while it works */}
         {awaitingReply && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, marginBottom: 14 }}>
             <div

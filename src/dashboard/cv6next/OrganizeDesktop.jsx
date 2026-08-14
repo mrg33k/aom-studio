@@ -38,7 +38,7 @@ const ORG_ALIASES = {
 
 // Loading placeholder for the review viewer body while a file's bytes are in flight.
 const VIEWER_LOADING_HTML = cornerLogoLoaderMarkup('Preparing the file', { minHeight: 220 });
-const VIEWER_NONE_HTML = '<div style="padding:14px 0;color:#888;font-size:13.5px;">No file selected — pick one from the list.</div>';
+const VIEWER_NONE_HTML = '<div style="padding:14px 0;color:#888;font-size:13.5px;">No file selected, pick one from the list.</div>';
 
 function composeOrganize(raw, screenName) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -259,7 +259,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
   const resolveHit = useCallback((rowEl) => {
     if (!rowEl.classList.contains('trow')) return null;
     const id = rowEl.getAttribute('data-cv6-arg') || '';
-    if (!id || id === '__all' || id === '__personal') return null; // Personal is synthetic — nothing to rename/move
+ if (!id || id === '__all' || id === '__personal') return null; // Personal is synthetic, nothing to rename/move
     if (!id.includes(':')) {
       return { kind: 'project', projectSlug: id, name: projectName(id) };
     }
@@ -277,7 +277,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onSearch, onAssignFi
     };
   }, [missionTree, projectName]);
   const broadcastRegistryChange = useCallback(() => {
-    try { window.dispatchEvent(new CustomEvent('cv6:data-refresh')); } catch { /* SSR — non-fatal */ }
+ try { window.dispatchEvent(new CustomEvent('cv6:data-refresh')); } catch { /* SSR, non-fatal */ }
   }, []);
   const { overlay: ctxOverlay } = useTreeContextMenu({
     wrapRef,

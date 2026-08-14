@@ -47,12 +47,12 @@ const SESSIONS = [
     goal: 'Understand the client\'s world. Get Claude running. Land the first win.',
     duration: '2 hours',
     leaveWith: 'Claude installed, one working tool, the mental model',
-    description: `The first session is about orientation — yours and theirs. You're learning their business; they're learning that AI isn't scary. Your job is to make them feel a win before the session ends.`,
-    clientNotes: `We'll start by mapping out how you work today — the tools, the workflows, the moments that eat your time. Then we'll get Claude set up on your machine and build your first working tool together. You'll leave with something you can actually use tomorrow.`,
+ description: `The first session is about orientation, yours and theirs. You're learning their business; they're learning that AI isn't scary. Your job is to make them feel a win before the session ends.`,
+ clientNotes: `We'll start by mapping out how you work today, the tools, the workflows, the moments that eat your time. Then we'll get Claude set up on your machine and build your first working tool together. You'll leave with something you can actually use tomorrow.`,
     facilitatorNotes: {
       prep: [
         'Review any onboarding questionnaire they completed',
-        'Research their industry for 15 minutes — know the vocabulary',
+ 'Research their industry for 15 minutes, know the vocabulary',
         'Have Claude ready to demonstrate',
         'Prepare 2-3 example prompts relevant to their business type',
       ],
@@ -65,7 +65,7 @@ const SESSIONS = [
       commonStalls: [
         {
           stall: 'They\'re skeptical about AI hype',
-          handle: 'Validate it. "The hype is real — and most of it doesn\'t apply to you. Here\'s what actually helps." Then demo something specific to their work.',
+ handle: 'Validate it. "The hype is real, and most of it doesn\'t apply to you. Here\'s what actually helps." Then demo something specific to their work.',
         },
         {
           stall: 'They want to talk strategy before doing anything',
@@ -73,7 +73,7 @@ const SESSIONS = [
         },
         {
           stall: 'Their first tool attempt fails or looks wrong',
-          handle: 'Make it a teaching moment, not a failure. "This is actually great — it\'s showing us exactly what we need to adjust. Here\'s why..."',
+ handle: 'Make it a teaching moment, not a failure. "This is actually great, it\'s showing us exactly what we need to adjust. Here\'s why..."',
         },
       ],
       homework: [
@@ -89,11 +89,11 @@ const SESSIONS = [
     goal: 'Map every workflow. Build their CLAUDE.md brain doc. Rank the top 3 tools to build.',
     duration: '2 hours',
     leaveWith: 'Full workflow map, working CLAUDE.md, Tool 1+2 specs',
-    description: `Session 2 is the architecture session. You're building the map of their business — every workflow, every pain point, every repeating task. The output is a CLAUDE.md document that becomes their AI operating system's brain: context about the business that Claude will reference on every interaction.`,
-    clientNotes: `We're building your AI's brain today. This is a document that tells Claude everything it needs to know about your business — your voice, your processes, your clients, your shortcuts. Once it's built, every Claude interaction gets smarter because it already knows the context.`,
+ description: `Session 2 is the architecture session. You're building the map of their business, every workflow, every pain point, every repeating task. The output is a CLAUDE.md document that becomes their AI operating system's brain: context about the business that Claude will reference on every interaction.`,
+ clientNotes: `We're building your AI's brain today. This is a document that tells Claude everything it needs to know about your business, your voice, your processes, your clients, your shortcuts. Once it's built, every Claude interaction gets smarter because it already knows the context.`,
     facilitatorNotes: {
       prep: [
-        'Review homework from Session 1 — what did they actually use?',
+ 'Review homework from Session 1, what did they actually use?',
         'Have a CLAUDE.md template ready to build live with them',
         'Prepare workflow mapping framework (sticky notes or digital whiteboard)',
         'Know their homework responses before the session',
@@ -107,7 +107,7 @@ const SESSIONS = [
       commonStalls: [
         {
           stall: 'They haven\'t done the homework',
-          handle: 'Don\'t skip it — improvise. "Let\'s do the usage review right now, live. Tell me about the last 3 things you worked on this week."',
+ handle: 'Don\'t skip it, improvise. "Let\'s do the usage review right now, live. Tell me about the last 3 things you worked on this week."',
         },
         {
           stall: 'The workflow map becomes overwhelming',
@@ -119,9 +119,9 @@ const SESSIONS = [
         },
       ],
       homework: [
-        'Read through the CLAUDE.md you built together — add anything that feels missing',
+ 'Read through the CLAUDE.md you built together, add anything that feels missing',
         'Start every Claude session this week with your CLAUDE.md as context',
-        'Come back with your real reaction to Tool 1 and 2 specs — is this actually what you want built?',
+ 'Come back with your real reaction to Tool 1 and 2 specs, is this actually what you want built?',
       ],
     },
   },
@@ -131,8 +131,8 @@ const SESSIONS = [
     goal: 'Build the first real business tool together. Document it.',
     duration: '2 hours',
     leaveWith: 'Working Tool 1 with Tool Card documentation, confidence to run it solo',
-    description: `Session 3 is where the OS starts coming to life. You're building Tool 1 — the highest-impact, most immediately useful AI workflow for their specific business. You're also introducing Tool Cards: simple documentation that lets them run (and eventually teach) each tool without you.`,
-    clientNotes: `We're building Tool 1 today — your highest-priority AI workflow, built specifically for how you work. By the end of this session, you'll have something running that you can use on your own, plus a simple one-page reference so you never forget how to run it.`,
+ description: `Session 3 is where the OS starts coming to life. You're building Tool 1, the highest-impact, most immediately useful AI workflow for their specific business. You're also introducing Tool Cards: simple documentation that lets them run (and eventually teach) each tool without you.`,
+ clientNotes: `We're building Tool 1 today, your highest-priority AI workflow, built specifically for how you work. By the end of this session, you'll have something running that you can use on your own, plus a simple one-page reference so you never forget how to run it.`,
     facilitatorNotes: {
       prep: [
         'Have the Tool 1 spec from Session 2 ready to reference',
@@ -141,7 +141,7 @@ const SESSIONS = [
         'Know the likely failure modes of this specific tool type',
       ],
       keyQuestions: [
-        'Before we build — did the spec from last session still feel right, or has anything changed?',
+ 'Before we build, did the spec from last session still feel right, or has anything changed?',
         'When you imagine using this daily, what does the input look like? Let\'s start real.',
         'What would make this tool feel like cheating?',
         'Who else in your team or life might use this?',
@@ -162,8 +162,8 @@ const SESSIONS = [
       ],
       homework: [
         'Run Tool 1 at least 5 times before we meet again',
-        'Note anything that breaks or feels wrong — we\'ll refine in Session 5',
-        'Try explaining the tool to one person in your life — teaching locks in learning',
+ 'Note anything that breaks or feels wrong, we\'ll refine in Session 5',
+ 'Try explaining the tool to one person in your life, teaching locks in learning',
       ],
     },
   },
@@ -173,11 +173,11 @@ const SESSIONS = [
     goal: 'Second tool, first connected workflow, OS starting to take shape.',
     duration: '2 hours',
     leaveWith: 'Tool 2 complete, first workflow sequence running, OS sketch',
-    description: `Session 4 is where individual tools become a system. You're building Tool 2 and — for the first time — connecting tools into a workflow sequence. The client starts to see what an AI Operating System actually looks like when the parts work together.`,
+ description: `Session 4 is where individual tools become a system. You're building Tool 2 and, for the first time, connecting tools into a workflow sequence. The client starts to see what an AI Operating System actually looks like when the parts work together.`,
     clientNotes: `Today we build Tool 2 and start connecting your tools into actual workflows. Instead of individual tricks, you'll start to see the bigger picture: a sequence of AI-powered steps that runs the parts of your business that used to run you.`,
     facilitatorNotes: {
       prep: [
-        'Review Tool 1 usage since Session 3 — where did it work, where did it break?',
+ 'Review Tool 1 usage since Session 3, where did it work, where did it break?',
         'Have Tool 2 spec ready',
         'Think through the connection point between Tool 1 and Tool 2',
         'Sketch a simple OS diagram to show visually at the end',
@@ -186,7 +186,7 @@ const SESSIONS = [
         'Tell me everything about using Tool 1 this week. Good and bad.',
         'Does Tool 2 still feel like the right next priority?',
         'Where do these two tools naturally connect in your actual workflow?',
-        'When you imagine your AI OS being "done" — what does it look like? How many tools, roughly?',
+ 'When you imagine your AI OS being "done", what does it look like? How many tools, roughly?',
       ],
       commonStalls: [
         {
@@ -198,14 +198,14 @@ const SESSIONS = [
           handle: 'Work backwards from their actual workflow. "Show me what you do with Tool 1\'s output. What\'s the next step after that?" The connection usually becomes obvious.',
         },
         {
-          stall: 'Ambition spike — they want to plan 10 more tools',
+ stall: 'Ambition spike, they want to plan 10 more tools',
           handle: 'Great sign. Capture the ideas, stay focused. "I\'m writing all of this down. Let\'s finish Tool 2 and the workflow, then we\'ll do the big planning in Session 5."',
         },
       ],
       homework: [
         'Run the full workflow sequence at least 3 times',
-        'Start a list of Tool 3, 4, 5 — what\'s the ideal next layer?',
-        'Bring real examples of work from this week to Session 5 — we\'ll review the OS in action',
+ 'Start a list of Tool 3, 4, 5, what\'s the ideal next layer?',
+ 'Bring real examples of work from this week to Session 5, we\'ll review the OS in action',
       ],
     },
   },
@@ -215,12 +215,12 @@ const SESSIONS = [
     goal: 'Take stock of everything. Make a clear path forward recommendation.',
     duration: '2 hours',
     leaveWith: 'Full OS review doc, clear next step (more sessions / retainer / Corner / solo)',
-    description: `Session 5 is the graduation session. You're reviewing what was built, celebrating progress, identifying gaps, and making an honest recommendation for what comes next — whether that's more sessions, a retainer arrangement, Corner access, or flying solo. The client leaves with a complete picture and a clear path.`,
+ description: `Session 5 is the graduation session. You're reviewing what was built, celebrating progress, identifying gaps, and making an honest recommendation for what comes next, whether that's more sessions, a retainer arrangement, Corner access, or flying solo. The client leaves with a complete picture and a clear path.`,
     clientNotes: `Today we review everything you've built and where you want to take it. You'll leave with a complete picture of your AI Operating System: what's working, what's next, and a honest recommendation from us on the best way to keep building on what we started.`,
     facilitatorNotes: {
       prep: [
         'Compile a full summary of what was built across all 5 sessions',
-        'Review the CLAUDE.md for completeness — fill any gaps',
+ 'Review the CLAUDE.md for completeness, fill any gaps',
         'Have the OS Review document template ready',
         'Prepare your honest next-step recommendation (more sessions / retainer / Corner / solo)',
         'Know current Corner pricing and what a retainer looks like',
@@ -229,7 +229,7 @@ const SESSIONS = [
         'Walk me through your week. Where did the AI OS show up? Where was it absent?',
         'What surprised you most about these 5 sessions?',
         'If you had 5 more sessions, what would you build?',
-        'What would "done" feel like for you — and what does your business need to get there?',
+ 'What would "done" feel like for you, and what does your business need to get there?',
       ],
       commonStalls: [
         {
@@ -242,7 +242,7 @@ const SESSIONS = [
         },
         {
           stall: 'They want to decide on next steps later',
-          handle: 'That\'s fine — but give them the framework to decide. Send the OS review doc after the session with clear options. Follow up in one week.',
+ handle: 'That\'s fine, but give them the framework to decide. Send the OS review doc after the session with clear options. Follow up in one week.',
         },
       ],
       homework: null,
@@ -1210,7 +1210,7 @@ function TeamView({ user, onLogout }) {
                 textAlign: 'center',
                 color: INK_MUTED,
               }}>
-                <div style={{ fontSize: 32, marginBottom: 16 }}>—</div>
+ <div style={{ fontSize: 32, marginBottom: 16 }}>·</div>
                 <div style={{ fontSize: 15 }}>No clients yet. Add your first AI Hours client above.</div>
               </div>
             ) : (
@@ -1241,7 +1241,7 @@ function TeamView({ user, onLogout }) {
                               {client.email}
                             </a>
                           ) : (
-                            <span style={{ color: LOCK_GRAY, fontSize: 13 }}>—</span>
+ <span style={{ color: LOCK_GRAY, fontSize: 13 }}>·</span>
                           )}
                         </td>
                         <td style={styles.td}>
@@ -1346,7 +1346,7 @@ function TeamView({ user, onLogout }) {
                           </button>
                         </td>
                         <td style={{ ...styles.td, fontSize: 13, color: INK_MUTED, maxWidth: 200 }}>
-                          {client.notes || '—'}
+ {client.notes || '·'}
                         </td>
                       </tr>
                     ))}

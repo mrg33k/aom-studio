@@ -1974,7 +1974,7 @@ export default function BrandGuidelinesV4() {
       <DarkSection style={{ position: 'relative' }}>
         <div id="typography" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
-          <SectionHeader num={3} title="Typography" subtitle="Three faces, one system. Syne sets the mark and the headlines. Fraunces carries the editorial voice. Hanken Grotesk does the work — body, labels, and spec. No mono." dark />
+ <SectionHeader num={3} title="Typography" subtitle="Three faces, one system. Syne sets the mark and the headlines. Fraunces carries the editorial voice. Hanken Grotesk does the work, body, labels, and spec. No mono." dark />
 
           <div style={{
             display: 'grid',
@@ -2059,7 +2059,7 @@ export default function BrandGuidelinesV4() {
                 Fraunces
               </div>
               <div style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 14, color: C.textLightMuted, lineHeight: 1.65, marginBottom: 24 }}>
-                The voice in the room. Used sparingly — pull quotes, statements, the line a section opens on. Its optical contrast against Syne's geometry is what keeps the system feeling crafted instead of generated.
+ The voice in the room. Used sparingly, pull quotes, statements, the line a section opens on. Its optical contrast against Syne's geometry is what keeps the system feeling crafted instead of generated.
               </div>
               <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 24 }}>
                 <p style={{
@@ -2130,7 +2130,7 @@ export default function BrandGuidelinesV4() {
             </div>
             <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 24 }}>
               {[
-                { label: 'Body / 16px / 400', size: 16, weight: 400, tracking: '0', sample: 'We make things that impact. Video, web, brand, social, and AI-powered workflows — every piece looks like it came from the same team, because it did.', transform: 'none', color: C.textLight },
+ { label: 'Body / 16px / 400', size: 16, weight: 400, tracking: '0', sample: 'We make things that impact. Video, web, brand, social, and AI-powered workflows, every piece looks like it came from the same team, because it did.', transform: 'none', color: C.textLight },
                 { label: 'Label / 12px / 600', size: 12, weight: 600, tracking: '0.18em', sample: 'CREATIVE PRODUCTION + AI SYSTEMS', transform: 'uppercase', color: C.sage },
                 { label: 'Spec / 12px / 500 (replaces mono)', size: 12, weight: 500, tracking: '0.14em', sample: 'SECTION 01 · STATUS: ACTIVE · #E85D26', transform: 'uppercase', color: C.textLightMuted, note: 'Tracked uppercase carries the spec role. No monospace anywhere in the system.' },
               ].map(t => (

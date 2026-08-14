@@ -159,7 +159,7 @@ export default function HigherOrbitsPitch() {
               Ten years ago, a room full of high schoolers in Deerfield, Illinois built science experiments and presented them to a space shuttle astronaut. That was the first Go For Launch! Those students' experiments actually flew to the International Space Station.
             </p>
             <p className="font-body text-[17px] md:text-[19px] text-[#F0ECE6]/80 leading-[1.7]">
-              You've done that 99 more times since then. Three thousand students. Twenty-four experiments in orbit. Twenty-three states. The same astronaut who was in that Deerfield room in 2016 — Dorothy Metcalf-Lindenburger — is coming back for number 100.
+ You've done that 99 more times since then. Three thousand students. Twenty-four experiments in orbit. Twenty-three states. The same astronaut who was in that Deerfield room in 2016, Dorothy Metcalf-Lindenburger, is coming back for number 100.
             </p>
             <p className="font-display-serif text-[26px] md:text-[32px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6] pt-2">
               That's not a milestone. <em className="font-display-italic italic text-[#E85D26]">That's a story.</em>
@@ -209,7 +209,7 @@ export default function HigherOrbitsPitch() {
                 />
                 <Deliverable
                   title="A pre-event teaser."
-                  desc="Thirty seconds, delivered before the event. Built from pre-production and the first day on the ground. Drive anticipation — social, email, donor outreach the week of the event."
+ desc="Thirty seconds, delivered before the event. Built from pre-production and the first day on the ground. Drive anticipation, social, email, donor outreach the week of the event."
                 />
                 <Deliverable
                   title="A 48-hour recap."
@@ -241,10 +241,10 @@ export default function HigherOrbitsPitch() {
 
           <div className="md:col-span-8 md:col-start-6">
             {[
-              { title: 'Two of us fly to Chicago.', body: 'Four days on the ground. Tight crew, full coverage — directing, two cameras, stills, producing.' },
+ { title: 'Two of us fly to Chicago.', body: 'Four days on the ground. Tight crew, full coverage, directing, two cameras, stills, producing.' },
               { title: 'We cover the full story.', body: "Michelle's story, the students' story, the astronaut, the event itself, the full-circle moment. The whole arc, captured in one window." },
               { title: 'Edit in Phoenix.', body: 'We come back and edit in-house. You get a rough cut of the main film for feedback. One revision round included.' },
-              { title: 'Delivered by end of July.', body: 'Final delivery in every format you need — broadcast, web, vertical, photos, the press-ready pack.' },
+ { title: 'Delivered by end of July.', body: 'Final delivery in every format you need, broadcast, web, vertical, photos, the press-ready pack.' },
             ].map((s, i) => (
               <ProcessStep key={i} n={i} title={s.title} body={s.body} />
             ))}
@@ -261,7 +261,7 @@ export default function HigherOrbitsPitch() {
               One decision <em className="font-display-italic italic font-medium text-[#E85D26]">today.</em>
             </h2>
             <p className="font-body text-[17px] md:text-[19px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
-              The only decision in front of you is the June piece. Everything else is optional — each its own decision, independently scoped, whenever you're ready.
+ The only decision in front of you is the June piece. Everything else is optional, each its own decision, independently scoped, whenever you're ready.
             </p>
           </motion.div>
 
@@ -316,7 +316,7 @@ export default function HigherOrbitsPitch() {
                   Alumni and mentor <em className="font-display-italic italic text-[#E85D26]">interviews.</em>
                 </h3>
                 <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/70 leading-[1.65] mb-6">
-                  One dedicated trip for a pre-event interview with a key voice — an alumni who went on to a STEM career, an astronaut mentor, someone whose story adds depth the event footage can't capture on its own. We fly to them, spend a day filming, and weave it into the final cut.
+ One dedicated trip for a pre-event interview with a key voice, an alumni who went on to a STEM career, an astronaut mentor, someone whose story adds depth the event footage can't capture on its own. We fly to them, spend a day filming, and weave it into the final cut.
                 </p>
                 <p className="font-display-serif text-[24px] md:text-[28px] tracking-[-0.015em] text-[#F0ECE6]">
                   $7,500–$8,500 <span className="font-body text-[14px] text-[#F0ECE6]/55 not-italic"> · per interview trip</span>
@@ -343,8 +343,8 @@ export default function HigherOrbitsPitch() {
           <motion.div className="rounded-2xl border border-[#F0ECE6]/[0.06] bg-[#F0ECE6]/[0.015] p-7 md:p-10" {...fadeUp(0.2)}>
             <Kicker className="!text-[#F0ECE6]/55">The full picture</Kicker>
             <p className="font-body text-[15px] md:text-[17px] text-[#F0ECE6]/70 leading-[1.7] mt-4 max-w-[78ch]">
-              If Higher Orbits wanted to do all of the above — the June kickoff piece, two interview trips, and one future chapter — the total investment would land in the{' '}
-              <span className="text-[#F0ECE6] font-medium">$58,000–$70,000</span> range over twelve to eighteen months. That's not one check — it's three separate decisions over a year or more.
+ If Higher Orbits wanted to do all of the above, the June kickoff piece, two interview trips, and one future chapter, the total investment would land in the{'·'}
+ <span className="text-[#F0ECE6] font-medium">$58,000–$70,000</span> range over twelve to eighteen months. That's not one check, it's three separate decisions over a year or more.
               The reason we're showing the whole picture is so you're not surprised later.
             </p>
             <p className="font-display-serif text-[20px] md:text-[24px] tracking-[-0.015em] text-[#F0ECE6] mt-6">

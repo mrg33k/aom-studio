@@ -283,7 +283,7 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
       closeAll();
     } catch (e) {
       setBusy(false);
-      setError(e?.message || 'Could not archive the project — try again.');
+ setError(e?.message || 'Could not archive the project, try again.');
     }
   }, [rename, busy, onArchive, closeAll]);
 
@@ -298,7 +298,7 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
         closeAll();
       } catch (e) {
         setBusy(false);
-        setError(e?.message || 'Could not create the subfolder — try again.');
+ setError(e?.message || 'Could not create the subfolder, try again.');
       }
       return;
     }
@@ -309,7 +309,7 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
       closeAll();
     } catch (e) {
       setBusy(false);
-      setError(e?.message || 'Rename failed — try again.');
+ setError(e?.message || 'Rename failed, try again.');
     }
   }, [rename, busy, onRename, onCreate, closeAll]);
 
@@ -322,7 +322,7 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
       closeAll();
     } catch (e) {
       setBusy(false);
-      setError(e?.message || 'Move failed — try again.');
+ setError(e?.message || 'Move failed, try again.');
     }
   }, [menu, busy, onMove, closeAll]);
 

@@ -158,7 +158,7 @@ export default function HomeAOM2026() {
   const onOpenBrief = () => setBriefOpen(true);
 
   useEffect(() => {
-    document.title = 'Ahead of Market — the marketing department for companies that don’t have one';
+ document.title = 'Ahead of Market, the marketing department for companies that don’t have one';
     const desc = 'We photograph your jobs, build the site, and run the ads. One department, one monthly fee, for contractors in Phoenix, Arizona.';
     let tag = document.querySelector('meta[name="description"]');
     if (!tag) {

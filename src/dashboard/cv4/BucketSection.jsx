@@ -27,7 +27,7 @@ export default function BucketSection({ slug, label, count, open, onToggle, load
           <span>{label}</span>
         </span>
         <span style={{ fontSize: 11, color: 'inherit', opacity: 0.7 }}>
-          {loading ? '—' : count}
+ {loading ? '·' : count}
         </span>
       </button>
       {open && <div>{children}</div>}

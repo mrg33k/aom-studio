@@ -101,7 +101,7 @@ export default function SupportWish() {
                 What do you need?
               </h1>
               <p style={{ fontSize: 17, lineHeight: 1.5, color: INK_DIM, margin: '0 0 36px', maxWidth: 520 }}>
-                Tell us what you're after or what's bugging you — in your own words. We read every one,
+ Tell us what you're after or what's bugging you, in your own words. We read every one,
                 fix what we can, and get back to you.
               </p>
 

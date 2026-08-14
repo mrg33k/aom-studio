@@ -338,7 +338,7 @@ export default function CommandDeckHome({
                 value={cmd}
                 onChange={e => setCmd(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && onOpenSearch) onOpenSearch(cmd) }}
-                placeholder="Command your world  —  @room, /new, or just ask"
+ placeholder="Command your world , @room, /new, or just ask"
               />
               <button className="go" onClick={() => onOpenSearch && onOpenSearch(cmd)}>&#8593;</button>
             </div>

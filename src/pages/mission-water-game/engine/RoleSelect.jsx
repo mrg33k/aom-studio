@@ -245,7 +245,7 @@ export default function RoleSelect({ rolesData, playerName = '', onConfirm }) {
         }}>
           {/* header */}
           <div style={styles.header}>
-            <div style={styles.headerKicker}>MISSION WATER — INVESTIGATOR SELECTION</div>
+ <div style={styles.headerKicker}>MISSION WATER, INVESTIGATOR SELECTION</div>
             <h1 style={styles.headerTitle}>
               SELECT YOUR ROLE, {cadet.toUpperCase()}
             </h1>

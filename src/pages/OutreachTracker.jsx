@@ -61,11 +61,11 @@ const CHANNELS = ['call', 'text', 'email', 'walk-in']
 const GOAL = 12
 const MAPS_ORIGIN = '1128 W Dunbar Dr, Tempe, AZ'
 const DAY_LABELS = {
-  1: 'Day 1 — Tempe + Chandler',
-  2: 'Day 2 — Gilbert / San Tan Valley / Mesa',
-  3: 'Day 3 — Phoenix Central + South',
-  4: 'Day 4 — Phoenix North + Scottsdale',
-  5: 'Day 5 — Glendale + Peoria',
+ 1: 'Day 1, Tempe + Chandler',
+ 2: 'Day 2, Gilbert / San Tan Valley / Mesa',
+ 3: 'Day 3, Phoenix Central + South',
+ 4: 'Day 4, Phoenix North + Scottsdale',
+ 5: 'Day 5, Glendale + Peoria',
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -229,8 +229,8 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
       if (noteInput.trim()) {
         const existing = lead.notes || ''
         const appended = existing
-          ? `${existing}\n${today} — ${noteInput.trim()}`
-          : `${today} — ${noteInput.trim()}`
+ ? `${existing}\n${today}, ${noteInput.trim()}`
+ : `${today}, ${noteInput.trim()}`
         await updateLead(lead.id, 'notes', appended)
       }
       await sb.from('outreach_touchpoints').insert([{
@@ -245,14 +245,14 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
       // Every logged call gets a payoff line, not a database receipt — the job
       // has to feel light or the reps stop dialing
       const TOAST_LINES = {
-        'Booked':     "BOOKED — that's the whole job. Patrik takes it from here.",
-        'No answer':  'No answer. Costs you nothing — next.',
+ 'Booked': "BOOKED, that's the whole job. Patrik takes it from here.",
+ 'No answer': 'No answer. Costs you nothing, next.',
         'Left VM':    'Voicemail left. Seed planted.',
-        'Spoke':      "A real conversation — that's the hard part done.",
-        'Not a fit':  'Not a fit. Their loss — next lead.',
+ 'Spoke': "A real conversation, that's the hard part done.",
+ 'Not a fit': 'Not a fit. Their loss, next lead.',
         'Sent email': "Email away. Ball's in their court.",
       }
-      setToastText(`${lead.company} — ${TOAST_LINES[outcome] || outcome}${noteInput.trim() ? ' · note saved' : ''}`)
+ setToastText(`${lead.company}, ${TOAST_LINES[outcome] || outcome}${noteInput.trim() ? ' · note saved' : ''}`)
       toastTimer.current = setTimeout(() => setToastText(''), 2200)
     }
     const newLogged = new Set(loggedIds)
@@ -346,11 +346,11 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
   const repName   = repSession?.display_name || 'the team'
 
   const fullSteps = [
-    { num: 1, label: 'Front desk — first words',         text: lead.intro_line,   bullets: false, highlight: false },
+ { num: 1, label: 'Front desk, first words', text: lead.intro_line, bullets: false, highlight: false },
     { num: 2, label: 'When the owner picks up',          text: lead.hook,         bullets: false, highlight: false },
     { num: 3, label: 'Why we\'re calling',               text: lead.why_calling,  bullets: false, highlight: false },
     { num: 4, label: 'Questions to ask',                 text: lead.questions,    bullets: true,  highlight: false },
-    { num: 5, label: 'The ask — permission to stop by',  text: lead.meeting_ask,  bullets: false, highlight: true  },
+ { num: 5, label: 'The ask, permission to stop by', text: lead.meeting_ask, bullets: false, highlight: true },
   ]
   // Rep view renders the visual setter flow (SAY cards + IF branches) inline below;
   // the generic steps array is the admin script only.
@@ -358,7 +358,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
 
   const emailTo      = lead.owner_email || lead.email || ''
   const emailSubject = lead.company || ''
-  const emailBody    = `Hi ${firstName || 'there'},\n\n${repName} from Ahead of Market — we spoke earlier. The one thing worth repeating: ${hookLine}\n\nPatrik would like 15 minutes to walk you through what we found and see if we can help. Reply with a day that works.\n\n${repName}\naheadofmarket.com`
+ const emailBody = `Hi ${firstName || 'there'},\n\n${repName} from Ahead of Market, we spoke earlier. The one thing worth repeating: ${hookLine}\n\nPatrik would like 15 minutes to walk you through what we found and see if we can help. Reply with a day that works.\n\n${repName}\naheadofmarket.com`
 
   const linkBtnStyle = {
     fontFamily: 'Inter,sans-serif',
@@ -600,7 +600,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                     <div style={{ background: '#FBF4E4', borderLeft: '2px solid #B58A38', padding: 16, marginBottom: 24 }}>
                       <span style={{ ...stepLbl, color: '#8A6828', marginBottom: 4 }}>You're asking for</span>
                       <p style={{ margin: 0, fontFamily: 'Inter,sans-serif', fontSize: 17, fontWeight: 600, color: '#17170F', lineHeight: 1.4 }}>
-                        {lead.contact_name || 'The owner'}{lead.title ? ` — ${lead.title}` : ''}
+ {lead.contact_name || 'The owner'}{lead.title ? `, ${lead.title}` : ''}
                       </p>
                       <p style={{ margin: 0, marginTop: 8, fontFamily: 'Inter,sans-serif', fontSize: 15, lineHeight: 1.6, color: '#17170F' }}>
                         Your whole job: get Patrik 15 minutes with {firstName || 'them'}. Every no
@@ -611,10 +611,10 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                       <div style={numeral}>1</div>
                       <div>
                         <span style={stepLbl}>Ask for {firstName || 'the owner'}</span>
-                        <p style={sayCard}>"Hi, this is {repName} with Ahead of Market, out here in Phoenix — is {firstName || 'the owner'} around?"</p>
+ <p style={sayCard}>"Hi, this is {repName} with Ahead of Market, out here in Phoenix, is {firstName || 'the owner'} around?"</p>
                         <div style={{ ...ifCard('#B58A38', '#FBF4E4'), marginTop: 8, marginBottom: 0 }}>
                           <span style={ifLabel('#8A6828')}>"What's this about?"</span>
-                          <p style={ifSay}>"We took a look at {spokenCompany}'s website and Patrik found something he wanted to run by {firstName || 'the owner'}. It's quick — is {firstName || 'the owner'} around?"</p>
+ <p style={ifSay}>"We took a look at {spokenCompany}'s website and Patrik found something he wanted to run by {firstName || 'the owner'}. It's quick, is {firstName || 'the owner'} around?"</p>
                           <p style={ifDo}>Not available? Ask when's better, log Left VM or No answer.</p>
                         </div>
                       </div>
@@ -622,35 +622,35 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                     <div style={row}>
                       <div style={numeral}>2</div>
                       <div>
-                        <span style={stepLbl}>They're on — break the ice, they talk first</span>
+ <span style={stepLbl}>They're on, break the ice, they talk first</span>
                         <p style={sayCard}>"{firstName ? `${firstName}!` : 'Hey!'} {repName} with Ahead of Market."</p>
-                        <span style={{ ...stepLbl, marginTop: 16 }}>Then pick one — make it yours</span>
+ <span style={{ ...stepLbl, marginTop: 16 }}>Then pick one, make it yours</span>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                           <p style={{ ...sayCard, fontSize: 15, flex: '1 1 240px' }}>"Hope it's finally cooling down out your way?"</p>
                           <p style={{ ...sayCard, fontSize: 15, flex: '1 1 240px' }}>"You out on a job in this heat?"</p>
                         </div>
-                        <p style={coach}>Then STOP and listen. They talk first — now it's a conversation, not a pitch.</p>
+ <p style={coach}>Then STOP and listen. They talk first, now it's a conversation, not a pitch.</p>
                       </div>
                     </div>
                     <div style={row}>
                       <div style={numeral}>3</div>
                       <div>
-                        <span style={stepLbl}>The reason — one fact, one ask</span>
+ <span style={stepLbl}>The reason, one fact, one ask</span>
                         <p style={sayCard}>"{hookLine}"</p>
-                        <p style={{ ...sayCard, marginTop: 8 }}>"We don't want to assume, but we think there might be something there — Patrik would like 15 minutes to walk you through it and see if we can help. Would Tuesday or Thursday work?"</p>
+ <p style={{ ...sayCard, marginTop: 8 }}>"We don't want to assume, but we think there might be something there, Patrik would like 15 minutes to walk you through it and see if we can help. Would Tuesday or Thursday work?"</p>
                       </div>
                     </div>
                     <div style={row}>
                       <div style={numeral}>4</div>
                       <div>
-                        <span style={stepLbl}>Then — whatever they say next</span>
+ <span style={stepLbl}>Then, whatever they say next</span>
                         <div style={ifCard('#4A6B4A', '#F0F4EE')}>
                           <span style={ifLabel('#4A6B4A')}>They pick a day</span>
-                          <p style={ifSay}>"Perfect. Patrik will call you then — what's the best number for him?"</p>
+ <p style={ifSay}>"Perfect. Patrik will call you then, what's the best number for him?"</p>
                           <p style={ifDo}>Log Booked. That's the whole job.</p>
                         </div>
                         <div style={ifCard('#B58A38', '#FBF4E4')}>
-                          <span style={ifLabel('#8A6828')}>They ask anything — price, what, who</span>
+ <span style={ifLabel('#8A6828')}>They ask anything, price, what, who</span>
                           <p style={ifSay}>"Honestly, that's Patrik's side, I just book his time. Tuesday or Thursday?"</p>
                           <p style={ifDo}>Every question gets this same answer.</p>
                         </div>
@@ -799,7 +799,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                 )}
               </div>
 
-              {/* Follow-up email — preset, merge fields filled; "send me an email" is the
+ {/* Follow-up email, preset, merge fields filled; "send me an email" is the
                   most common positive exit and speed is the whole impression */}
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#77746A', fontWeight: 600, marginBottom: 8 }}>
@@ -810,7 +810,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                   onClick={() => {
                     navigator.clipboard.writeText(`Subject: ${emailSubject}\n\n${emailBody}`).then(() => {
                       clearTimeout(toastTimer.current)
-                      setToastText('Email copied — paste it into your mail app')
+ setToastText('Email copied, paste it into your mail app')
                       toastTimer.current = setTimeout(() => setToastText(''), 2200)
                     })
                   }}
@@ -905,7 +905,7 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
                 <dl style={{ margin: 0 }}>
                   {[
                     ['Status', loggedIds.has(lead.id) ? '✓ Logged this session' : (lead.status || 'Not contacted')],
-                    ['Assigned to', lead.assigned_to || '—'],
+ ['Assigned to', lead.assigned_to || '·'],
                     ['Last touch', lead.last_touch || 'Never'],
                   ].map(([k, v]) => (
                     <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderBottom: '1px solid #E4E2DB', fontFamily: 'Inter,sans-serif', fontSize: 13 }}>
@@ -1083,14 +1083,14 @@ const ONBOARDING_SLIDES = [
   {
     step: '02 / 05',
     title: 'What we\'re selling.',
-    body: 'Most contractors are invisible online and losing jobs because of it. We fix that. $3,000/mo gets them a full marketing department — what it would cost $10k+ to staff on their own. The entry point is a $1,500 Foundation Sprint that puts the first month toward the retainer.',
+ body: 'Most contractors are invisible online and losing jobs because of it. We fix that. $3,000/mo gets them a full marketing department, what it would cost $10k+ to staff on their own. The entry point is a $1,500 Foundation Sprint that puts the first month toward the retainer.',
     script: null,
     howTo: null,
   },
   {
     step: '03 / 05',
     title: 'Why we\'re calling.',
-    body: 'We\'re not pitching ads. We\'re calling to offer a real solution to a real problem these business owners have. The goal of the call is not a sale — it\'s booking a 20-minute walk-through with the owner. That\'s it.',
+ body: 'We\'re not pitching ads. We\'re calling to offer a real solution to a real problem these business owners have. The goal of the call is not a sale, it\'s booking a 20-minute walk-through with the owner. That\'s it.',
     script: null,
     howTo: null,
   },
@@ -1100,10 +1100,10 @@ const ONBOARDING_SLIDES = [
     body: 'Every lead card shows the full script broken into 5 numbered blocks. Here\'s how to read them:',
     script: [
       { num: '1', label: 'Front desk opener', desc: 'When a receptionist answers. Get through to the owner. Short, sounds like you belong.' },
-      { num: '2', label: 'Hook — owner picks up', desc: 'Why you\'re calling, delivered in 10 seconds. Mention something real about their business.' },
+ { num: '2', label: 'Hook, owner picks up', desc: 'Why you\'re calling, delivered in 10 seconds. Mention something real about their business.' },
       { num: '3', label: 'Why we\'re calling', desc: 'Frame the problem: they\'re losing jobs to contractors who show up online. You noticed theirs.' },
       { num: '4', label: 'Questions', desc: 'Get them talking. How they get clients. What\'s working. You\'re listening, not pitching.' },
-      { num: '5', label: 'The ask', desc: 'Book a 20-minute walk-through. That\'s the whole call. Not a sale — just a meeting.' },
+ { num: '5', label: 'The ask', desc: 'Book a 20-minute walk-through. That\'s the whole call. Not a sale, just a meeting.' },
     ],
     howTo: null,
   },
@@ -2507,20 +2507,20 @@ function CallKit({ lead, columns }) {
       )}
       {hasKit ? (
         <>
-          <CallBlock num={1} label="Front desk — first words" text={lead.intro_line} />
+ <CallBlock num={1} label="Front desk, first words" text={lead.intro_line} />
           <CallBlock num={2} label="When the owner picks up" text={lead.hook} />
           <CallBlock num={3} label="Why we're calling" text={lead.why_calling} />
           {lead.questions
             ? <CallBlock num={4} label="Questions to ask" text={lead.questions} bullets />
             : <CallBlock num={4} label="Proof we did our homework" text={lead.proof_points} bullets />}
-          <CallBlock num={5} label="The ask — permission to stop by" text={lead.meeting_ask} wide />
+ <CallBlock num={5} label="The ask, permission to stop by" text={lead.meeting_ask} wide />
         </>
       ) : (
         <CallBlock label="Opener" text={lead.hook} wide />
       )}
-      <MutedBlock label="If they ask what you'd do — reference, not a script" text={lead.gaps} />
+ <MutedBlock label="If they ask what you'd do, reference, not a script" text={lead.gaps} />
       {lead.questions && (
-        <MutedBlock label="Context for you — don't recite this at them" text={lead.proof_points} />
+ <MutedBlock label="Context for you, don't recite this at them" text={lead.proof_points} />
       )}
       {lead.notes && !lead.proof_points && (
         <div style={{
@@ -2655,7 +2655,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                   >
                     {lead.employees
                       ? lead.employees.replace(/\s*\(.*$/, '')
-                      : <span style={{ color: '#A5A29A' }}>—</span>}
+ : <span style={{ color: '#A5A29A' }}>·</span>}
                   </td>
                   {/* Website column */}
                   <td style={{ ...td, fontSize: '0.72rem' }}>
@@ -2686,7 +2686,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       ? <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} style={{ color: '#8A6828', textDecoration: 'none', whiteSpace: 'nowrap', display: 'block', fontSize: '0.72rem' }}>
                           <span style={{ color: '#77746A', fontSize: '0.58rem', marginRight: '0.2rem' }}>Office</span>{lead.phone}
                         </a>
-                      : <span style={{ color: '#A5A29A' }}>—</span>}
+ : <span style={{ color: '#A5A29A' }}>·</span>}
                     {/* Owner cell — emphasized */}
                     {lead.owner_phone && (
                       <a
@@ -2753,7 +2753,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                           title="Open drive route from Dunbar Dr"
                           style={{ color: '#43423A', textDecoration: 'none' }}
                         >{lead.street_address} <span style={{ color: '#8A6828', fontSize: '0.65rem' }}>↗</span></a>
-                      : '—'}
+ : '·'}
                   </td>
                   <td style={{ ...td, verticalAlign: 'middle' }}>
                     <select
@@ -2772,7 +2772,7 @@ function LeadTable({ leads, expandedId, onToggle, onUpdate }) {
                       onChange={e => onUpdate(lead.id, 'assigned_to', e.target.value || null)}
                       style={sel}
                     >
-                      <option value="">—</option>
+ <option value="">·</option>
                       {REPS.map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </td>
@@ -2824,7 +2824,7 @@ function CriteriaStrip() {
           textTransform: 'uppercase',
         }}
       >
-        <span>How this list is built — what the NEED number means</span>
+ <span>How this list is built, what the NEED number means</span>
         <span style={{ color: '#77746A' }}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
@@ -2913,7 +2913,7 @@ function FilterBar({ filterDay, setFilterDay, filterStatus, setFilterStatus, fil
             onClick={() => setFilterDay(d)}
             style={filterDay === d ? activeChip : inactiveChip}
           >
-            {d === 'all' ? 'All Days' : DAY_LABELS[Number(d)].split(' — ')[0]}
+ {d === 'all' ? 'All Days' : DAY_LABELS[Number(d)].split('·')[0]}
           </button>
         ))}
 
@@ -3040,7 +3040,7 @@ function AdminTeamView({ leads }) {
         }))
         await sb.from('outreach_rep_assignments').insert(rows)
       }
-      showToast(`${rep.display_name}: batch #${nextBatch} — ${batch.length} leads assigned`)
+ showToast(`${rep.display_name}: batch #${nextBatch}, ${batch.length} leads assigned`)
       await loadTeamData()
     } catch (e) {
       showToast(`Error: ${e.message}`)

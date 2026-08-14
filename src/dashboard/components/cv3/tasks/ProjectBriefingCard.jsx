@@ -24,7 +24,7 @@ export default function ProjectBriefingCard() {
   const ageSecs = rowMs ? Math.max(0, Math.round((Date.now() - rowMs) / 1000)) : null
   void summaryNowTick
   const ageLabel = ageSecs == null
-    ? '—'
+ ? '·'
     : ageSecs < 5   ? 'just now'
     : ageSecs < 60  ? `${ageSecs}s ago`
     : ageSecs < 3600 ? `${Math.round(ageSecs / 60)}m ago`

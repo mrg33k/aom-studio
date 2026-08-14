@@ -68,7 +68,7 @@ export default function useChatRecording({
           const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
           stream.getTracks().forEach(t => t.stop())
           if (!blob.size) {
-            console.warn('[Telephone] empty recording — no audio captured')
+ console.warn('[Telephone] empty recording, no audio captured')
             setMicError('Empty recording. Try again.')
             return
           }
@@ -122,7 +122,7 @@ export default function useChatRecording({
                 setMicError('Transcribed, but failed to send to project.')
               }
             } else {
-              console.warn('[Telephone] no send target — selectedAgent:', !!selectedAgent, 'agentRef:', !!agentRef, 'selectedProject:', !!selectedProject, 'projectRef:', !!projectRef)
+ console.warn('[Telephone] no send target, selectedAgent:', !!selectedAgent, 'agentRef:', !!agentRef, 'selectedProject:', !!selectedProject, 'projectRef:', !!projectRef)
               setMicError('Transcribed, but no chat is open to receive it.')
             }
           } catch (err) {

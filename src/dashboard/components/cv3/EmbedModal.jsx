@@ -25,12 +25,12 @@ const FONT_OPTIONS = [
 
 function defaultOpening({ project, mission }) {
   if (mission) {
-    return `Hi — I'm the ${mission} EA. What are we working on?`
+    return `Hi, I am the ${mission} EA. What are we working on?`
   }
   if (project) {
-    return `Hi — I'm the ${project} EA. What can I help with?`
+    return `Hi, I am the ${project} EA. What can I help with?`
   }
-  return 'Hi — how can I help?'
+  return 'Hi, how can I help?'
 }
 
 function copyText(text) {
@@ -126,7 +126,7 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
     const missionName = selectedProject?.missionName || null
     const projectName = selectedProject?.name || project
     return {
-      agent: 'elon', // For R0 — every embed routes through elon. Future: per-project EA.
+ agent: 'elon', // For R0, every embed routes through elon. Future: per-project EA.
       project,
       projectName,
       missionSlug,
@@ -427,7 +427,7 @@ function FormScreen({
           textTransform: 'uppercase',
           color: C.fgMuted || '#9aa3ad',
           marginBottom: 8,
-        }}>Routing — from this room</div>
+        }}>Routing from this room</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           <Chip>agent: {ctx.agent}</Chip>
           {ctx.project && <Chip>project: {ctx.project}</Chip>}
@@ -590,8 +590,8 @@ function ResultScreen({
             </div>
             <div style={{ fontSize: 12, color: C.fgMuted || '#9aa3ad', marginTop: 2 }}>
               {isShipped
-                ? 'Paste the script tag on your page — no redeploy needed.'
-                : 'One-click deploy. Goes live in Supabase immediately — no terminal step required.'}
+                ? 'Paste the script tag on your page. No redeploy needed.'
+                : 'One click deploy. Goes live in Supabase immediately with no terminal step required.'}
             </div>
           </div>
           {!isShipped && (
@@ -698,7 +698,7 @@ function ResultScreen({
           <li>Open the host page's HTML (or template).</li>
           <li>Paste the script tag just before <code style={{ background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>&lt;/body&gt;</code>.</li>
           <li>Save and deploy your site.</li>
-          <li>Refresh — a floating chat bubble appears in the bottom-right. (For an inline-centered chat, drop <code style={{ background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>&lt;div id="corner-embed"&gt;&lt;/div&gt;</code> where you want it.)</li>
+          <li>Refresh and a floating chat bubble appears in the bottom right. (For an inline-centered chat, drop <code style={{ background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>&lt;div id="corner-embed"&gt;&lt;/div&gt;</code> where you want it.)</li>
         </ol>
       </div>
 
@@ -729,7 +729,7 @@ function ResultScreen({
             }}>Copy</button>
         </div>
         <p style={{ fontSize: 12, color: C.fgMuted || '#9aa3ad', margin: '0 0 8px 0' }}>
-          Only needed if you want the config checked into git (for code review, parallel branches, or a redeploy-safe ship). Most cases — just click "Ship it" above.
+ Only needed if you want the config checked into git (for code review, parallel branches, or a redeploy-safe ship). Most cases, just click "Ship it" above.
         </p>
         <pre style={{
           background: '#06090d',

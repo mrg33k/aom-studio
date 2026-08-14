@@ -63,7 +63,7 @@ export default function PrivacyPolicy() {
           <li style={listItem}>
             <strong style={{ color: INK_TEXT, fontWeight: 600 }}>Content you provide.</strong>{' '}
             Messages you send to your assistants, files you share, and the projects and
-            tasks you create. This content is the product — it's how your assistants
+ tasks you create. This content is the product, it's how your assistants
             know what to work on.
           </li>
           <li style={listItem}>

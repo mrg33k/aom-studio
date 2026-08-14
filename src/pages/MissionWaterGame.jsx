@@ -311,23 +311,23 @@ export default function MissionWaterGame() {
       case 'welcome':
         return 'Ready, Cadet? Pick your mission and press BEGIN.';
       case 'name':
-        return 'Type your name and hit CONFIRM — the Council logs every cadet who flies.';
+ return 'Type your name and hit CONFIRM, the Council logs every cadet who flies.';
       case 'role':
-        return `Choose your role, ${cadet} — each investigator sees the problem differently.`;
+ return `Choose your role, ${cadet}, each investigator sees the problem differently.`;
       case 'budget':
-        return 'Tokens are your skills — supplies keep you alive out there. Spend every point, then hit DEPLOY MISSION.';
+ return 'Tokens are your skills, supplies keep you alive out there. Spend every point, then hit DEPLOY MISSION.';
       case 'hub': {
         const s = runState.supplies || {};
         if (isWeakened(runState)) {
-          return 'We are running on empty, Cadet — hit the SUPPLY STORE before you push on, or the next leg costs us.';
+ return 'We are running on empty, Cadet, hit the SUPPLY STORE before you push on, or the next leg costs us.';
         }
         if ((s.food ?? 5) <= 2 || (s.power ?? 5) <= 2) {
           return 'Supplies are getting thin. Spend some credits at the SUPPLY STORE, then CONTINUE.';
         }
         const done = countRegionsCompleted(runState.history || []);
-        if (done >= 2) return 'Final region ahead — use the tokens you have left, then CONTINUE to face the Council.';
+ if (done >= 2) return 'Final region ahead, use the tokens you have left, then CONTINUE to face the Council.';
         if (done >= 1) return 'Tokens run out fast. Spend them where they count, then hit CONTINUE INVESTIGATION.';
-        return 'This is your checkpoint. Pick an action card — or hit CONTINUE INVESTIGATION when you are ready.';
+ return 'This is your checkpoint. Pick an action card, or hit CONTINUE INVESTIGATION when you are ready.';
       }
       case 'game':
       default:
@@ -338,7 +338,7 @@ export default function MissionWaterGame() {
   // Mount-time: set <title> for browser tab.
   useEffect(() => {
     const prev = document.title;
-    document.title = 'Mission Water — Conrad Foundation';
+ document.title = 'Mission Water, Conrad Foundation';
     return () => { document.title = prev; };
   }, []);
 

@@ -98,7 +98,7 @@ export default function S2TradesBand() {
             </Display>
           </WipeIn>
 
-          {/* Portrait solve only — on the wide band the section's own bronze edges carry the accent. */}
+ {/* Portrait solve only, on the wide band the section's own bronze edges carry the accent. */}
           <div className="s2tb-rule">
             <Rule tone="ink" style={{ background: C.bronze }} />
           </div>

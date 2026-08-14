@@ -235,7 +235,7 @@ export default function Gemma4BriefDeepseek() {
             <div className="grid md:grid-cols-2 gap-12">
               <div>
                 <p className="text-lg text-[#57534E] mb-6 leading-relaxed">
-                  Gemma 4 is Google's most capable open-weight language model family, released on April 2, 2026. The family includes four variants: E2B (2B parameters), E4B (4B), 26B MoE (Mixture of Experts), and 31B Dense—covering the full spectrum from edge devices to high-performance servers.
+ Gemma 4 is Google's most capable open-weight language model family, released on April 2, 2026. The family includes four variants: E2B (2B parameters), E4B (4B), 26B MoE (Mixture of Experts), and 31B Dense, covering the full spectrum from edge devices to high-performance servers.
                 </p>
                 <p className="text-lg text-[#57534E] mb-6 leading-relaxed">
                   Unlike Gemini which requires API access, Gemma 4 weights are freely downloadable under Apache 2.0 license. This enables zero per-token costs, complete data privacy, and on-premises inference across cloud, on-device, and edge deployments.

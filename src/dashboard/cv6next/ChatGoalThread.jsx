@@ -135,12 +135,12 @@ function normalizeData(b) {
 export function actionGlyph(text) {
   const t = String(text || '').toLowerCase();
   const svg = (children) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
-  if (/\b(ship|shipped|deploy|deployed|live|launch|launched|release|released|push|pushed|publish|published)\b/.test(t)) return svg(<><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></>); // up — shipped/live
+ if (/\b(ship|shipped|deploy|deployed|live|launch|launched|release|released|push|pushed|publish|published)\b/.test(t)) return svg(<><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></>); // up, shipped/live
   if (/\b(search|find|found|look|looking|scan|scanned|explore|explored|grep|hunt|locate)\b/.test(t)) return svg(<><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></>); // search
-  if (/\b(read|reading|review|reviewed|inspect|inspected|check|checked|view|viewed|look over)\b/.test(t)) return svg(<><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></>); // eye — read/review
-  if (/\b(write|wrote|edit|edited|updat|chang|fix|fixed|add|added|remov|creat|made|build|built|rename|renamed|refactor|implement|implemented|wire|wired)\b/.test(t)) return svg(<><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>); // pencil — make a change
-  if (/\b(run|ran|test|tested|compile|compiled|verif|verified|confirm|confirmed|deploy check)\b/.test(t)) return svg(<path d="M8 5v14l11-7Z" />); // play — run/test
-  if (/\b(send|sent|email|emailed|message|messaged|reply|replied|respond|responded|share|shared)\b/.test(t)) return svg(<path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />); // plane — send/reply
+ if (/\b(read|reading|review|reviewed|inspect|inspected|check|checked|view|viewed|look over)\b/.test(t)) return svg(<><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></>); // eye, read/review
+ if (/\b(write|wrote|edit|edited|updat|chang|fix|fixed|add|added|remov|creat|made|build|built|rename|renamed|refactor|implement|implemented|wire|wired)\b/.test(t)) return svg(<><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>); // pencil, make a change
+ if (/\b(run|ran|test|tested|compile|compiled|verif|verified|confirm|confirmed|deploy check)\b/.test(t)) return svg(<path d="M8 5v14l11-7Z" />); // play, run/test
+ if (/\b(send|sent|email|emailed|message|messaged|reply|replied|respond|responded|share|shared)\b/.test(t)) return svg(<path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />); // plane, send/reply
   if (/\?|\b(question|confirm|should i|which|want me|choose|decide|prefer)\b/.test(t)) return svg(<><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.8.4-1 .8-1 1.6" /><path d="M12 17h.01" /></>); // question
   return svg(<path d="m5 13 4 4L19 7" />); // check (default)
 }
@@ -186,7 +186,7 @@ function StepRow({ step }) {
           <div className="gsnote" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}><ChatMessageRenderer content={step.title} className="cv6-agent-prose" /></div>
         ) : (
           <div>
-            {/* Suppress the title when it's trivially "Done" — the chip already says so; showing
+ {/* Suppress the title when it's trivially "Done", the chip already says so; showing
                 both produces "Done. Done" which reads as escaped text, not a finished step. */}
             {!/^done\.?$/i.test((step.title || '').trim()) && (
               <span className="gstitle"><ChatInlineRenderer content={step.title || 'Step'} /></span>

@@ -13,7 +13,7 @@ export const UI_COMMANDS = [
   {
     name: '/clear',
     alias: null,
-    description: 'Start this chat fresh — your history stays in History',
+ description: 'Start this chat fresh, your history stays in History',
     category: 'corner',
     categoryLabel: 'Corner',
     kind: 'modal',

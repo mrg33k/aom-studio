@@ -22,7 +22,7 @@ function useSEO() {
       }
       el.setAttribute('content', content);
     };
-    setMeta('description', 'Mission Water — three pieces (Game, Platform, Marketing) with plain deliverables, pricing, and add-ons.');
+ setMeta('description'·'Mission Water, three pieces (Game, Platform, Marketing) with plain deliverables, pricing, and add-ons.');
     setMeta('robots', 'noindex, nofollow');
   }, []);
 }
@@ -128,11 +128,11 @@ const PILLARS = [
     summary:
       'The story-driven, branching water-science game students play start to finish. Live today and built to grow.',
     deliverables: [
-      'Preproduction — Story outline, character design, science consultant alignment',
-      'Development — Branching narrative engine, NASA visual system, interactive mechanics',
-      'Editing & Polish — Animation refinement, difficulty balancing, audio/visual quality assurance',
-      'Testing & Launch — Full QA cycle, teacher onboarding materials, live hosting setup',
-      'Ongoing Support — Mobile/desktop optimization, performance monitoring, feature updates',
+ 'Preproduction, Story outline, character design, science consultant alignment',
+ 'Development, Branching narrative engine, NASA visual system, interactive mechanics',
+ 'Editing & Polish, Animation refinement, difficulty balancing, audio/visual quality assurance',
+ 'Testing & Launch, Full QA cycle, teacher onboarding materials, live hosting setup',
+ 'Ongoing Support, Mobile/desktop optimization, performance monitoring, feature updates',
     ],
     costs: [6500, 3000, 1800, 2200, 1500],
     addons: [
@@ -148,13 +148,13 @@ const PILLARS = [
     priceNum: 12000,
     tagline: 'The masterclass, online',
     summary:
-      'Everything around the game that turns it into a real program — live classes, an archive, coursework, and dashboards. One window, everything inside.',
+ 'Everything around the game that turns it into a real program, live classes, an archive, coursework, and dashboards. One window, everything inside.',
     deliverables: [
-      'Preproduction — Architecture design, database schema, user flow mapping',
-      'Development — Student portal, live broadcast system, educator dashboard',
-      'Content & Archive — Self-paced modules, searchable session archive, progress tracking',
-      'Testing & Deployment — Security audit, full QA cycle, production deployment',
-      'Ongoing Support — Parent/educator dashboards, grading tools, submission tracking',
+ 'Preproduction, Architecture design, database schema, user flow mapping',
+ 'Development, Student portal, live broadcast system, educator dashboard',
+ 'Content & Archive, Self-paced modules, searchable session archive, progress tracking',
+ 'Testing & Deployment, Security audit, full QA cycle, production deployment',
+ 'Ongoing Support, Parent/educator dashboards, grading tools, submission tracking',
     ],
     costs: [3500, 1800, 3000, 2200, 1500],
     addons: [
@@ -172,11 +172,11 @@ const PILLARS = [
     summary:
       'The brand, the story, and the campaign that gets Mission Water in front of students, schools, and funders.',
     deliverables: [
-      'Preproduction — Brand audit, audience research, messaging framework',
-      'Strategy & Planning — Campaign planning, content calendar, SEO strategy',
-      'Creative Development — Video production, landing pages, ad-ready assets',
-      'Testing & Launch — Campaign optimization, A/B testing, launch coordination',
-      'Ongoing Promotion — Email sequences, social content, funder one-pager, grant deck',
+ 'Preproduction, Brand audit, audience research, messaging framework',
+ 'Strategy & Planning, Campaign planning, content calendar, SEO strategy',
+ 'Creative Development, Video production, landing pages, ad-ready assets',
+ 'Testing & Launch, Campaign optimization, A/B testing, launch coordination',
+ 'Ongoing Promotion, Email sequences, social content, funder one-pager, grant deck',
     ],
     costs: [2000, 2200, 1800, 2500, 1500],
     addons: [
@@ -373,7 +373,7 @@ export default function MissionWaterOffering() {
                             <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#071530]/30">
                               {p.deliverables.length} deliverables
                             </span>
-                            <span className="font-mono text-[8px] text-[#071530]/20">—</span>
+ <span className="font-mono text-[8px] text-[#071530]/20">·</span>
                             <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#071530]/30">adds up to</span>
                           </div>
                           <span className="font-mono text-[10px] tracking-[0.06em]" style={{ color: 'rgba(7,21,48,0.50)' }}>
@@ -382,7 +382,7 @@ export default function MissionWaterOffering() {
                         </motion.div>
                       )}
                     </AnimatePresence>
-                    <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-3">Add-ons &amp; options <span className="text-[#071530]/30 normal-case tracking-normal font-body" style={{ fontSize: '9px' }}>— tap to see pricing</span></p>
+ <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-3">Add-ons &amp; options <span className="text-[#071530]/30 normal-case tracking-normal font-body" style={{ fontSize: '9px' }}>, tap to see pricing</span></p>
                     <div className="flex flex-wrap gap-2 mb-8">
                       {p.addons.map((a, ai) => {
                         const key = `${i}-${ai}`;
@@ -447,7 +447,7 @@ export default function MissionWaterOffering() {
             {[
               { k: 'Start small', t: 'One piece', d: 'Begin with the Game ($15K, already live), the Platform ($12K), or the Marketing ($10K). Each stands on its own.', price: 'from $10,000' },
               { k: 'Most popular', t: 'Two pieces', d: 'Game + Platform makes the full learning experience. Or pair any two to fit your moment.', price: 'from $22,000' },
-              { k: 'The whole program', t: 'All three', d: 'Game, Platform, and Marketing together — the complete Mission Water build, end to end.', price: '$37,000', feature: true },
+ { k: 'The whole program', t: 'All three', d: 'Game, Platform, and Marketing together, the complete Mission Water build, end to end.', price: '$37,000', feature: true },
             ].map((b, i) => (
               <motion.div
                 key={b.t}
@@ -472,7 +472,7 @@ export default function MissionWaterOffering() {
             {[
               { t: 'Phase it over time', d: 'No need to do everything at once. Start with one piece, prove it, and add the next when you are ready.' },
               { t: 'Swap deliverables', d: 'Every line item is a starting point. Trade something you do not need for something you do, and the price holds.' },
-              { t: 'Add on anytime', d: 'New chapters, more video, paid ads, integrations — bolt them on as the program grows. Quoted as you go.' },
+ { t: 'Add on anytime', d: 'New chapters, more video, paid ads, integrations, bolt them on as the program grows. Quoted as you go.' },
             ].map((c) => (
               <div key={c.t} className="p-6 rounded-xl bg-[#F4F2EF]" style={{ border: '1px solid rgba(7,21,48,0.08)' }}>
                 <p className="font-display-serif text-[19px] tracking-[-0.01em] text-[#071530] mb-2">{c.t}</p>
@@ -493,12 +493,12 @@ export default function MissionWaterOffering() {
                 Add a managed ad budget.
               </h2>
               <p className="font-body text-[16px] text-[#071530]/65 leading-[1.65] max-w-[560px] mb-5">
-                A separate package on top of any piece — not baked into the build fees. A managed paid-media budget of <span className="text-[#071530] font-semibold">$5,000 to $10,000</span> puts Mission Water in front of students, parents, and educators across Meta, Google, and YouTube.
+ A separate package on top of any piece, not baked into the build fees. A managed paid-media budget of <span className="text-[#071530] font-semibold">$5,000 to $10,000</span> puts Mission Water in front of students, parents, and educators across Meta, Google, and YouTube.
               </p>
               <ul className="space-y-2.5">
                 {[
                   'Add it to any piece, or run it on its own',
-                  'Fully managed by AOM — strategy, creative, targeting, optimization',
+ 'Fully managed by AOM, strategy, creative, targeting, optimization',
                   'Transparent reporting on every dollar and what it returns',
                   'Scales up or down month to month',
                 ].map((t, i) => (
@@ -541,7 +541,7 @@ export default function MissionWaterOffering() {
               <a href="mailto:hello@aheadofmarket.com?subject=Mission%20Water%20%E2%80%94%20Scope%20%26%20Investment" className="inline-flex items-center gap-2 bg-[#E85D26] hover:bg-[#E85D26]/90 text-white font-mono text-[10.5px] uppercase tracking-[0.2em] px-8 py-4 rounded-full transition-colors">
                 Let&apos;s talk &rarr;
               </a>
-              <p className="font-body text-[13px] text-white/40 italic">Confidential — for Nancy Conrad</p>
+ <p className="font-body text-[13px] text-white/40 italic">Confidential, for Nancy Conrad</p>
             </div>
           </motion.div>
         </div>

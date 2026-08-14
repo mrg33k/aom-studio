@@ -25,11 +25,11 @@ const PORTFOLIO = [
   { t: 'United Food Bank', id: '698a5fcdfc23d3d76fa893b8', tag: 'Nonprofit' },
 ];
 
-const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee — strongest doc footage
+const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee, strongest doc footage
 const FILM_REEL = '698a5ef5fc23d3d76fa87ef4'; // Virtu Hospitality
-const BILL_REEL = '698a5fcdfc23d3d76fa893b8'; // United Food Bank — under the billboard line
+const BILL_REEL = '698a5fcdfc23d3d76fa893b8'; // United Food Bank, under the billboard line
 const PALA_REEL = '698a5391fc23d3d76fa7306c'; // PA'LA x HARUMI
-const NOOK_REEL = '698a5a8b873071aec5c99c6f'; // Nook 10 Year — clean frame for small screens
+const NOOK_REEL = '698a5a8b873071aec5c99c6f'; // Nook 10 Year, clean frame for small screens
 
 const N_SLIDES = 14;
 
@@ -266,7 +266,7 @@ const LEFT_PANELS = [
 const RIGHT_PANELS = [
   <>
     <div className="vid"><LazyGumlet id={FILM_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
-    {/* Virtu's first frame is its title card — use the Nook frame as the small-screen poster */}
+ {/* Virtu's first frame is its title card, use the Nook frame as the small-screen poster */}
     <img className="pstr" src={poster(NOOK_REEL)} alt="" />
   </>,
   <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
@@ -377,20 +377,20 @@ export default function HomeR5Preview() {
             <span className="row rv d3">impossible</span>
             <span className="row rv d4">to ignore<i className="sq" /></span>
           </h1>
-          <p className="sub rv d4">Hi. We're Ahead of Market — a storytelling company from <span style={{ whiteSpace: 'nowrap' }}>Phoenix, AZ.</span></p>
-          <span className="stat rv d4">Phoenix, AZ — Since 2020 · Scroll ↓</span>
+ <p className="sub rv d4">Hi. We're Ahead of Market, a storytelling company from <span style={{ whiteSpace: 'nowrap' }}>Phoenix, AZ.</span></p>
+ <span className="stat rv d4">Phoenix, AZ, Since 2020 · Scroll ↓</span>
         </div>
       </Slide>
 
       {/* 01 — STORY BEAT: the video company */}
       <Slide id="story">
         <div className="stack">
-          <div className="tags rv"><span>So — who are we, exactly?</span><span>Many companies around Phoenix know us as</span></div>
+ <div className="tags rv"><span>So, who are we, exactly?</span><span>Many companies around Phoenix know us as</span></div>
           <h2 className="title">
             <span className="row rv d1">A video</span>
             <span className="row rv d2">company<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">Frames from our films — playing behind this.</p>
+ <p className="sub rv d3">Frames from our films, playing behind this.</p>
         </div>
       </Slide>
 
@@ -402,7 +402,7 @@ export default function HomeR5Preview() {
             <span className="row rv d1">A web dev</span>
             <span className="row rv d2">company<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">Sites we've built — standing behind this.</p>
+ <p className="sub rv d3">Sites we've built, standing behind this.</p>
         </div>
       </Slide>
 
@@ -427,7 +427,7 @@ export default function HomeR5Preview() {
             <span className="row rv d1 gold">A storytelling</span>
             <span className="row rv d2 gold">company<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">— we just happen to make videos and web apps often.</p>
+ <p className="sub rv d3">, we just happen to make videos and web apps often.</p>
         </div>
       </Slide>
 
@@ -447,12 +447,12 @@ export default function HomeR5Preview() {
       {/* 06 — CASE: Space Rising */}
       <Slide>
         <div className="stack">
-          <div className="tags rv"><span>Tech · Platform</span><span>SpaceOS — built and launched</span></div>
+ <div className="tags rv"><span>Tech · Platform</span><span>SpaceOS, built and launched</span></div>
           <h2 className="title">
             <span className="row rv d1">Space</span>
             <span className="row rv d2">Rising<i className="sq" /></span>
           </h2>
-          <p className="sub rv d3">SpaceOS — and 1,000 people in one room at Space Congress.</p>
+ <p className="sub rv d3">SpaceOS, and 1,000 people in one room at Space Congress.</p>
           <span className="stat rv d4">Drove a wave of traffic to the new platform</span>
         </div>
       </Slide>
@@ -486,7 +486,7 @@ export default function HomeR5Preview() {
       {/* 09 — TWO PARTS */}
       <Slide className="slide-parts">
         <div className="parts-col l rv">
-          <div className="parts-head">Marketing — the materials your message stands on</div>
+ <div className="parts-head">Marketing, the materials your message stands on</div>
           <ul className="parts-list">
             <li>Websites &amp; web applications</li>
             <li>Brand films &amp; video series</li>
@@ -495,7 +495,7 @@ export default function HomeR5Preview() {
           </ul>
         </div>
         <div className="parts-col r rv">
-          <div className="parts-head">Promotion — how it gets out into the world</div>
+ <div className="parts-head">Promotion, how it gets out into the world</div>
           <ul className="parts-list">
             <li>Google &amp; Meta ad campaigns</li>
             <li>Influencer posts &amp; partnerships</li>

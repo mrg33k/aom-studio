@@ -322,7 +322,7 @@ export default function IntegrationsModal({ open, onClose }) {
                         <span style={{ fontSize: 13, fontWeight: 600, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.name}</span>
                         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted }}>{i.category}</span>
                         {isSystem && (
-                          <span title={i.system_note || conn?.system_note || 'System integration — wired at the AOM platform level.'} style={{
+ <span title={i.system_note || conn?.system_note || 'System integration, wired at the AOM platform level.'} style={{
                             fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
                             color: '#93c5fd', background: 'rgba(59,130,246,0.18)',
                             border: '1px solid rgba(59,130,246,0.35)',
@@ -357,7 +357,7 @@ export default function IntegrationsModal({ open, onClose }) {
                           <button
                             type="button"
                             disabled
-                            title="Real OAuth not wired yet — coming in a follow-up round."
+ title="Real OAuth not wired yet, coming in a follow-up round."
                             style={{
                               fontSize: 11, padding: '4px 10px', borderRadius: 8,
                               background: 'rgba(148,163,184,0.10)', color: '#94a3b8',

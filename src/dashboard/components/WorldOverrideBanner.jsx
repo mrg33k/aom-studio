@@ -77,7 +77,7 @@ export default function WorldOverrideBanner() {
         Viewing
       </span>
       <span>
-        You are viewing <strong>{viewing}</strong> — this is not your world.
+ You are viewing <strong>{viewing}</strong>, this is not your world.
       </span>
       <button
         onClick={handleReturn}

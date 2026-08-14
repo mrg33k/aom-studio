@@ -103,14 +103,14 @@ const SCRIPTS = {
     breatheAnim: 'breathe-yellow',
     query: 'What does the phonebook say about Corner?',
     steps: [
-      { id: 'a1', label: 'Reading context',    Icon: BookOpen,  detail: 'projects/corner/VISION.md — 4 KB' },
-      { id: 'a2', label: 'Searching the web',  Icon: Globe,     detail: 'manny.chat, claude.ai — 3 pages scanned' },
+ { id: 'a1', label: 'Reading context', Icon: BookOpen, detail: 'projects/corner/VISION.md, 4 KB' },
+ { id: 'a2', label: 'Searching the web', Icon: Globe, detail: 'manny.chat, claude.ai, 3 pages scanned' },
       { id: 'a3', label: 'Analyzing patterns', Icon: Cpu,       detail: '7 UI patterns matched across sources' },
-      { id: 'a4', label: 'Composing response', Icon: Pen,       detail: 'Draft v1 ready — 180 words' },
+ { id: 'a4', label: 'Composing response', Icon: Pen, detail: 'Draft v1 ready, 180 words' },
     ],
     timing:   [1300, 2700, 4200, 5500],
     settleAt: 6400,
-    answer: "Corner uses a **live-thread model** where every thinking step is visible as it happens.\n\nThe key insight from Manny and Claude Coworker: visible steps create trust. The chain should breathe — active steps pulse while completed ones recede quietly.",
+ answer: "Corner uses a **live-thread model** where every thinking step is visible as it happens.\n\nThe key insight from Manny and Claude Coworker: visible steps create trust. The chain should breathe, active steps pulse while completed ones recede quietly.",
   },
   medium: {
     label: 'Medium',
@@ -120,15 +120,15 @@ const SCRIPTS = {
     breatheAnim: 'breathe',
     query: 'Review the R65 proposal and recommend a connector style.',
     steps: [
-      { id: 'b1', label: 'Reading phonebook',  Icon: BookOpen,  detail: 'AOM-EA/phonebook.md — 247 agents indexed' },
-      { id: 'b2', label: 'Opening files',       Icon: FileText,  detail: 'projects/corner/R65.md — 26 KB, architecture ratified' },
-      { id: 'b3', label: 'Searching the web',  Icon: Globe,     detail: 'Claude Coworker, Manny.chat — step-chain patterns' },
+ { id: 'b1', label: 'Reading phonebook', Icon: BookOpen, detail: 'AOM-EA/phonebook.md, 247 agents indexed' },
+ { id: 'b2', label: 'Opening files', Icon: FileText, detail: 'projects/corner/R65.md, 26 KB, architecture ratified' },
+ { id: 'b3', label: 'Searching the web', Icon: Globe, detail: 'Claude Coworker, Manny.chat, step-chain patterns' },
       { id: 'b4', label: 'Running analysis',   Icon: Cpu,       detail: '3 connector styles evaluated against 6 criteria' },
       { id: 'b5', label: 'Writing draft',      Icon: Pen,       detail: 'Recommendation: pulsing connector as default' },
     ],
     timing:   [1100, 2400, 3900, 5400, 7100],
     settleAt: 8300,
-    answer: "**Recommendation: pulsing connector** as default with fade settle.\n\nDotted lines carry a TCP/IP 'waiting' signal that conflicts with agentic flow. Solid lines read as finished/static. The pulsing segment maps to how computation actually feels — signal flowing through a circuit.",
+ answer: "**Recommendation: pulsing connector** as default with fade settle.\n\nDotted lines carry a TCP/IP 'waiting' signal that conflicts with agentic flow. Solid lines read as finished/static. The pulsing segment maps to how computation actually feels, signal flowing through a circuit.",
   },
   long: {
     label: 'Long',
@@ -138,16 +138,16 @@ const SCRIPTS = {
     breatheAnim: 'breathe-purple',
     query: 'Full audit of the Corner live-thread proposal. Give me a design brief.',
     steps: [
-      { id: 'c1', label: 'Reading project brief',        Icon: BookOpen,  detail: 'R65.md — architecture: message_steps + Supabase realtime' },
-      { id: 'c2', label: 'Scanning codebase',            Icon: FileText,  detail: 'src/dashboard/components/cv3/ — 18 files, 4 200 lines' },
-      { id: 'c3', label: 'Searching web',                Icon: Globe,     detail: 'openai.com, linear.app, manny.chat — competitor UX' },
+ { id: 'c1', label: 'Reading project brief', Icon: BookOpen, detail: 'R65.md, architecture: message_steps + Supabase realtime' },
+ { id: 'c2', label: 'Scanning codebase', Icon: FileText, detail: 'src/dashboard/components/cv3/, 18 files, 4 200 lines' },
+ { id: 'c3', label: 'Searching web', Icon: Globe, detail: 'openai.com, linear.app, manny.chat, competitor UX' },
       { id: 'c4', label: 'Analyzing competitor patterns',Icon: Search,    detail: 'Manny: 4px dot + 1px line; Claude: fade-in cards; Linear: pills' },
-      { id: 'c5', label: 'Cross-referencing vision',     Icon: Cpu,       detail: 'VISION.md ¶7 — "Chat is a live thread with visible thinking steps"' },
-      { id: 'c6', label: 'Writing design brief',         Icon: Pen,       detail: '3 connectors + 2 settle variants + mobile spec — complete' },
+ { id: 'c5', label: 'Cross-referencing vision', Icon: Cpu, detail: 'VISION.md ¶7, "Chat is a live thread with visible thinking steps"' },
+ { id: 'c6', label: 'Writing design brief', Icon: Pen, detail: '3 connectors + 2 settle variants + mobile spec, complete' },
     ],
     timing:   [900, 2000, 3500, 5600, 7800, 10200],
     settleAt: 11500,
-    answer: "**Full design brief — ready for R65-impl.**\n\n- **Connector:** pulsing as primary — most 'alive' feel, avoids waiting-signal confusion\n- **Settle:** fade as default; collapse for dense analytical threads\n- **Mobile:** vertical connectors stay vertical, tighten step height to 36 px\n- **Working dot:** 8 px, agent color, 2 s breathe cycle\n- **Done steps:** dim to 45% with checkmark; tap expands inline detail",
+ answer: "**Full design brief, ready for R65-impl.**\n\n- **Connector:** pulsing as primary, most 'alive' feel, avoids waiting-signal confusion\n- **Settle:** fade as default; collapse for dense analytical threads\n- **Mobile:** vertical connectors stay vertical, tighten step height to 36 px\n- **Working dot:** 8 px, agent color, 2 s breathe cycle\n- **Done steps:** dim to 45% with checkmark; tap expands inline detail",
   },
 }
 
@@ -979,7 +979,7 @@ export default function R65LiveThread() {
             active={isRunning && !isSettled}
           />
           <InfoCard
-            title={`Settled — ${settleStyle}`}
+ title={`Settled, ${settleStyle}`}
             desc={
               settleStyle === 'fade'
                 ? 'Steps fade to 38% opacity. Final answer becomes the visual anchor below the chain.'
@@ -990,7 +990,7 @@ export default function R65LiveThread() {
           />
           <InfoCard
             title="Tap a settled step"
-            desc="Tap any completed step to reveal inline detail — file path, URL, or data note. Expands in-place, no modal."
+ desc="Tap any completed step to reveal inline detail, file path, URL, or data note. Expands in-place, no modal."
             highlight={C.blue}
             active={false}
           />

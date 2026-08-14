@@ -224,7 +224,7 @@ function parseSupportWish(text) {
 // the full message body — the same principle as parseSupportWish for [SUPPORT
 // WISH ...] messages (corner:support-desk, post-M18 follow-up).
 function parseMailRoomContext(text) {
-  if (!text || !text.startsWith('[Mail Room context — ')) return null
+ if (!text || !text.startsWith('[Mail Room context, ')) return null
   // The first line is the bracket header, e.g.
   // '[Mail Room context — the user wants to reply to this email]'
   // '[Mail Room context — discuss this support email]'
@@ -323,7 +323,7 @@ function MailContextCard({ ctx, onOpen }) {
         role="button"
         tabIndex={0}
         data-testid="mail-context-card"
-        title={`Open email context — ${ctx.fromName}`}
+ title={`Open email context, ${ctx.fromName}`}
         onClick={onOpen}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
         style={{
@@ -1492,7 +1492,7 @@ function MessageList({ roomType = 'agent' }) {
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                         }}>
-                          {replyToData.snippet || (replyOriginal?.text ? replyOriginal.text.slice(0, 100) : null) || (replyToData.attachment_kind ? `[${replyToData.attachment_kind}]` : '—')}
+ {replyToData.snippet || (replyOriginal?.text ? replyOriginal.text.slice(0, 100) : null) || (replyToData.attachment_kind ? `[${replyToData.attachment_kind}]` : '·')}
                         </div>
                       </div>
                       {replyToData.attachment_kind === 'video' && replyToData.attachment_url && (
@@ -1522,7 +1522,7 @@ function MessageList({ roomType = 'agent' }) {
                       {msg.user_name}
                     </div>
                   )}
-                  {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. R12: dark-native card — cool-tinted surface elevation + subtle border so message + steps group without a "white box on dark" look. */}
+ {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. R12: dark-native card, cool-tinted surface elevation + subtle border so message + steps group without a "white box on dark" look. */}
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -1551,7 +1551,7 @@ function MessageList({ roomType = 'agent' }) {
                           <SupportEmailCard
                             wish={supportWish}
                             onOpen={() => setPreviewAtt({
-                              name: `${supportWish.code} — ${supportWish.fromName}`,
+ name: `${supportWish.code}, ${supportWish.fromName}`,
                               inlineText: `From: ${supportWish.from}\nSource: ${supportWish.source} · ${supportWish.code}\n\n${supportWish.body}`,
                             })}
                           />
@@ -1568,7 +1568,7 @@ function MessageList({ roomType = 'agent' }) {
                             ctx={mailCtx}
                             onOpen={() => setPreviewAtt({
                               name: mailCtx.contextType === 'discuss'
-                                ? `Email — ${mailCtx.fromName}`
+ ? `Email, ${mailCtx.fromName}`
                                 : `Reply to ${mailCtx.fromName}`,
                               inlineText: mailCtx.fullContext,
                             })}

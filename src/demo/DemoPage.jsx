@@ -26,15 +26,15 @@ const AGENTS = [
 const TASKS = [
   { label: 'Build product landing page', agent: 'Bobby',  status: 'active' },
   { label: 'CPA outreach wave 2',         agent: 'Jacob',  status: 'queued' },
-  { label: 'Crown video — final cut',     agent: 'Cleo',   status: 'done' },
+ { label: 'Crown video, final cut', agent: 'Cleo', status: 'done' },
 ];
 
 // Realistic chat messages for Step 4 (main) — Bobby answering a real question
 const CHAT_SEQUENCE = [
   { from: 'user',  text: "Hey, what are you working on right now?",           pause: 400 },
-  { from: 'agent', text: "Building the /corner product page. I'm about 60% through the hero — punchy headline, feature grid below it. Should be wrapped in ~20 min.",  pause: 1100, typing: 900 },
+ { from: 'agent', text: "Building the /corner product page. I'm about 60% through the hero, punchy headline, feature grid below it. Should be wrapped in ~20 min.", pause: 1100, typing: 900 },
   { from: 'user',  text: "Make the headline more aggressive.",                  pause: 600 },
-  { from: 'agent', text: "On it. 'Your AI back office. Always on.' — going bolder on the sub too. Pushing now.",  pause: 800, typing: 700 },
+ { from: 'agent', text: "On it. 'Your AI back office. Always on.', going bolder on the sub too. Pushing now.", pause: 800, typing: 700 },
   { from: 'user',  text: "Ship it.",                                           pause: 400 },
   { from: 'agent', text: "Done. Committed. Vercel picked it up.",               pause: 600, typing: 500 },
 ];
@@ -44,7 +44,7 @@ const STEPS_MAIN = [
   { id: 0, type: 'title',         caption: 'Every business starts somewhere.',   sub: null },
   { id: 1, type: 'room-single',   caption: 'This is your corner.',               sub: 'One room. One operation.' },
   { id: 2, type: 'room-name',     caption: 'Name it.',                           sub: 'Your business. Your rules.', hasInput: true },
-  { id: 3, type: 'agent-first',   caption: 'Meet your first hire.',              sub: 'An AI agent — always on.' },
+ { id: 3, type: 'agent-first', caption: 'Meet your first hire.', sub: 'An AI agent, always on.' },
   { id: 4, type: 'chat',          caption: 'Talk to them.',                      sub: 'Real conversations. Real output.' },
   { id: 5, type: 'rooms-grow',    caption: 'Your team grows.',                   sub: 'Add agents as you scale.' },
   { id: 6, type: 'tasks',         caption: 'They get to work.',                  sub: 'Live task board. Always visible.' },

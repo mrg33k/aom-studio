@@ -254,7 +254,7 @@ function shapeCommand({
       // openJob routes by agent slug — a task card opens its worker's room.
       id: w.agent || '', kind: w.bucket, live: false,
       title, shortTitle: title.length > 26 ? title.slice(0, 25).trimEnd() + '…' : title,
-      sub: sub || '—', badge: w.label,
+ sub: sub || '·', badge: w.label,
     };
   });
   const jobs = [...liveJobs, ...taskJobs];
@@ -454,7 +454,7 @@ function shapeCommand({
       (session && session.task_text)
       || (boardStateIsBookkeeping ? '' : boardState)
       || (last && last.text) || ''
-    )).slice(0, 110) || '—';
+ )).slice(0, 110) || '·';
 
     const { list: steps, storeKey } = stepsEntryFor(key);
     const expanded = selectedKey && selectedKey === key;
@@ -477,7 +477,7 @@ function shapeCommand({
       missionSlug: missionSlugByKey[key] || '',
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
       goalSource, goalFull,
-      liveNow, age: lastActivity ? relTime(lastActivity) : '—', lastActivity,
+ liveNow, age: lastActivity ? relTime(lastActivity) : '·', lastActivity,
       status, statusLabel: statusTruth.statusLabel,
       statusSource: statusTruth.source,
       statusReason: statusTruth.reason,
@@ -565,7 +565,7 @@ function shapeCommand({
         addKey: focus.stepStoreKey || focus.key,
         status: focus.status, statusLabel: focus.statusLabel,
         title: focus.goalKind === 'goal' ? focus.goal : 'No goal set for this room yet',
-        driverLine: focus.liveNow !== '—' ? focus.liveNow
+ driverLine: focus.liveNow !== '·' ? focus.liveNow
           : (focus.status === 'working' ? 'Working now' : 'Nothing live right now'),
         checklist: focus.fullChecklist,
         // The full open question renders as an ANSWERABLE card (wd40 R2) — the

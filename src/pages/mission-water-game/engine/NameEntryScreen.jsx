@@ -74,7 +74,7 @@ export default function NameEntryScreen({ onConfirm }) {
 
   return (
     <div style={S.root}>
-      {/* Placeholder colour — can't do ::placeholder in inline styles */}
+ {/* Placeholder colour, can't do ::placeholder in inline styles */}
       <style>{`
         .ne-input::placeholder          { color: rgba(232,240,248,0.30); }
         .ne-input::-webkit-input-placeholder { color: rgba(232,240,248,0.30); }

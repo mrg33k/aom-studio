@@ -37,7 +37,7 @@ const STEPS = [
     id: 'name',
     sprite: 'thinking',
     heading: 'What should we call your workspace?',
-    body: "Your company, your team — whatever fits.\nYou can change this later.",
+ body: "Your company, your team, whatever fits.\nYou can change this later.",
     primary: 'Got it',
     input: true,
     placeholder: 'e.g. Acme Corp, AOM Studio...',

@@ -40,7 +40,7 @@ function EditableItem({ item, disabled, onEdit, onToggle, onDelete, onPlay, regi
       </button>
       {/* Enter walks DOWN the list (Patrik 2026-08-06): it used to blur, which saved the
           line but dumped you out of the list, so adding five items meant five clicks.
-          Now it hands focus to the next item — and past the last one, to the "add item"
+ Now it hands focus to the next item, and past the last one, to the "add item"
           field — so a list can be typed straight through. The save is unchanged: moving
           focus fires the same onBlur commit that blur() did. */}
       <input ref={registerInput} aria-label="Checklist item" aria-keyshortcuts="Enter Control+Enter Meta+Enter Escape" value={text} disabled={disabled} onChange={(event) => setText(event.target.value)} onBlur={commit}

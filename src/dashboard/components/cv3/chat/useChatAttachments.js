@@ -250,13 +250,13 @@ export default function useChatAttachments({
       return
     }
     if (!worldId) {
-      console.error('[ChatPanel] upload bailed: worldId not loaded — page still signing in')
+ console.error('[ChatPanel] upload bailed: worldId not loaded, page still signing in')
       try { showToast('Upload paused: still signing in. Try again in a second.', 'warning', 5000) } catch (_) {}
       return
     }
     const agentKey = selectedAgent ? selectedAgent.slug : (selectedProject ? `project:${selectedProject.slug}` : null)
     if (!agentKey) {
-      console.error('[ChatPanel] upload bailed: no agent or project — open a chat first')
+ console.error('[ChatPanel] upload bailed: no agent or project, open a chat first')
       try { showToast('Upload failed: open a chat first.', 'warning', 5000) } catch (_) {}
       return
     }
@@ -288,7 +288,7 @@ export default function useChatAttachments({
     setUploading(false)
 
     if (!uploaded.length) {
-      console.error('[ChatPanel] upload bailed: all', files.length, 'files failed — see prior errors')
+ console.error('[ChatPanel] upload bailed: all', files.length, 'files failed, see prior errors')
       try { showToast(`Upload failed: all ${files.length} files failed. Check console for the reason.`, 'error', 7000) } catch (_) {}
       return
     }

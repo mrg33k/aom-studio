@@ -678,7 +678,7 @@ export default function useChatMessages({
     const projIsShared = selectedProject?.isShared || false
 
     const timer = setTimeout(async () => {
-      console.debug('[useChatMessages] safety-net refetch — no response within 4s', { agentSlug, projSlug, worldId })
+ console.debug('[useChatMessages] safety-net refetch, no response within 4s', { agentSlug, projSlug, worldId })
       try {
         if (agentSlug) {
           const { data, error } = await supabase

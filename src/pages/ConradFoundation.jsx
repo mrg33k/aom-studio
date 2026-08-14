@@ -122,7 +122,7 @@ export default function ConradFoundation() {
             </div>
             <iframe
               src="https://aheadofmarket.com/missionwater"
-              title="Mission Water — interactive demo"
+ title="Mission Water, interactive demo"
               className="w-full h-[560px] md:h-[680px] border-0 block bg-[#0C0C0C]"
               loading="lazy"
             />
@@ -223,7 +223,7 @@ export default function ConradFoundation() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     {[
                       ['★ 14', 'Gold stars earned this week'],
-                      ['5 day', 'Streak — every day, in a row'],
+ ['5 day'·'Streak, every day, in a row'],
                       ['Report card', 'Modules done · time · fastest lesson'],
                     ].map(([value, label]) => (
                       <div key={label} className="border border-[#E85D26]/20 rounded-xl bg-[#E85D26]/[0.03] px-6 py-7">
@@ -242,7 +242,7 @@ export default function ConradFoundation() {
                     Argue your case. Upload your proof.
                   </h3>
                   <p className="font-body text-[14px] text-[#F0ECE6]/55 mb-8 max-w-[56ch] leading-[1.7]">
-                    Students research a local water issue, build a proposal, and submit it — a video, a doc, or a deck. The lesson doesn't advance until the work is in. That's how you know they actually learned it.
+ Students research a local water issue, build a proposal, and submit it, a video, a doc, or a deck. The lesson doesn't advance until the work is in. That's how you know they actually learned it.
                   </p>
                   <div className="border border-dashed border-[#F0ECE6]/[0.15] rounded-xl px-8 py-12 text-center">
                     <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/35 mb-2">Video, doc, or deck</p>

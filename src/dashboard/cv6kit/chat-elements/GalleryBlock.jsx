@@ -77,7 +77,7 @@ export function GalleryBlock({
         )}
       </div>
 
-      {/* Caption footer — "N images · X MB" */}
+ {/* Caption footer, "N images · X MB" */}
       {showCaption && (
         <div className="gal-cap">
           {galleryIconSVG}

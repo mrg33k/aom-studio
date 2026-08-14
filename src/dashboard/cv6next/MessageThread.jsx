@@ -31,10 +31,10 @@ export function groupMessagesBySender(list) {
 // send it again. `onRetry` rides on the message itself (it is a client-only outbox
 // entry, never a server row), so every thread renderer gets it for free.
 const FAIL_REASONS = {
-  offline: 'Not sent — you were offline',
-  signed_out: 'Not sent — your session expired, refresh to sign back in',
-  timeout: 'Not sent — the connection timed out',
-  server: 'Not sent — Corner could not accept it',
+ offline: 'Not sent, you were offline',
+ signed_out: 'Not sent, your session expired, refresh to sign back in',
+ timeout: 'Not sent, the connection timed out',
+ server: 'Not sent, Corner could not accept it',
 };
 export function MessageFailedNote({ message }) {
   if (!message?.failed) return null;

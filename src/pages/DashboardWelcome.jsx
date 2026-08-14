@@ -249,7 +249,7 @@ export default function DashboardWelcome() {
                 fontFamily: "'Inter', sans-serif",
               }}
             >
-              Skip — I'll type instead
+ Skip, I'll type instead
             </button>
           )}
           {welcomeState === 'first_agent' && (

@@ -181,7 +181,7 @@ function ProblemSection() {
     },
     {
       title: "Hiring is expensive.",
-      body: "A part-time office manager costs $30–40k a year. A marketing person costs $50k+. And they still need managing. You're not ready to hire — but you need the help now.",
+ body: "A part-time office manager costs $30–40k a year. A marketing person costs $50k+. And they still need managing. You're not ready to hire, but you need the help now.",
     },
   ];
 

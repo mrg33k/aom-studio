@@ -81,7 +81,7 @@ function VariantA() {
         <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
           <div>
             <h3 className="font-headline text-[28px] md:text-[44px] leading-[0.95] tracking-[-0.02em] max-w-xl mb-3 text-[#F0ECE6]">
-              <em className="text-[#E85D26]">{feature.client}</em> — {feature.title.replace(/\.$/, '')}
+              <em className="text-[#E85D26]">{feature.client}</em> {feature.title.replace(/\.$/, '')}
             </h3>
             <StoryMeta story={feature} light />
           </div>
@@ -132,7 +132,7 @@ function VariantB() {
               <CTAButton size="sm" variant="08" onClick={() => {}}>Read</CTAButton>
             </div>
             <h3 className="font-headline text-[26px] md:text-[32px] leading-[1.0] tracking-[-0.02em] mb-4 text-[#F0ECE6]">
-              <em className="text-[#E85D26]">{story.client}</em> — {story.title.replace(/\.$/, '')}.
+              <em className="text-[#E85D26]">{story.client}</em> {story.title.replace(/\.$/, '')}.
             </h3>
             <p className="font-body text-[14.5px] text-[#F0ECE6]/70 leading-[1.6] flex-1 mb-5">{story.body}</p>
             <StoryMeta story={story} />

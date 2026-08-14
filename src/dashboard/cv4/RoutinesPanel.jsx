@@ -334,7 +334,7 @@ function CreateForm({ worldId, projectRooms, agents, getMissions, onDone, onCanc
       <textarea
         style={{ ...fieldStyle, minHeight: 60, resize: 'vertical' }}
         value={prompt} onChange={e => setPrompt(e.target.value)}
-        placeholder="What should happen each run? Plain English — it runs in the room like a message from you."
+ placeholder="What should happen each run? Plain English, it runs in the room like a message from you."
       />
 
       <div style={{ display: 'flex', gap: 8 }}>

@@ -49,7 +49,7 @@ function buildMailContext(email) {
   const subject = email.subject || '(no subject)'
   const snippet = email.snippet || ''
   return [
-    '[Mail Room context — the user wants to reply to this email]',
+ '[Mail Room context, the user wants to reply to this email]',
     `From: ${from}`,
     `Subject: ${subject}`,
     `Gmail-ID: ${email.id}`,
@@ -57,7 +57,7 @@ function buildMailContext(email) {
     '',
     snippet ? `Preview: ${snippet}` : null,
     '',
-    'Draft a reply with the user. When they say "send it" or "looks good — send", call /api/dashboard/mail/send with the resulting body. Always end with their signature (the server appends it automatically).',
+ 'Draft a reply with the user. When they say "send it" or "looks good, send", call /api/dashboard/mail/send with the resulting body. Always end with their signature (the server appends it automatically).',
     '---',
     '',
   ].filter(v => v !== null).join('\n')

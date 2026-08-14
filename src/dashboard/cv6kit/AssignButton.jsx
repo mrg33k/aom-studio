@@ -693,7 +693,7 @@ function LegacyAssignButton({
       if (cancelled) return;
       console.error('[AssignButton] agent roster failed after retries:', lastErr);
       setAgentList([]);
-      setStatus('error'); // honest error state with a manual Retry — no spinner loop
+ setStatus('error'); // honest error state with a manual Retry, no spinner loop
     };
 
     run().finally(() => { fetchGuard.current = false; });

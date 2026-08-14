@@ -18,10 +18,10 @@ const useCornerPageMeta = () => {
     if (faviconLink) {
       faviconLink.href = '/brand/corner-c-mark.svg'
     }
-    document.title = 'corner — your business just got an upgrade'
+ document.title = 'corner, your business just got an upgrade'
 
     const ogTitle = document.querySelector('meta[property="og:title"]')
-    if (ogTitle) ogTitle.content = 'corner — your business just got an upgrade'
+ if (ogTitle) ogTitle.content = 'corner, your business just got an upgrade'
 
     const ogDesc = document.querySelector('meta[property="og:description"]')
     if (ogDesc) ogDesc.content = 'Managed AI agents that run your business in one organized system.'
@@ -822,7 +822,7 @@ function CornerFooter() {
           <span style={{ background: SURGE.gradient, backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} className="font-bold">
             corner
           </span>
-          {' — '}AI agents for ambitious operators
+ {'·'}AI agents for ambitious operators
         </div>
         <div className="flex items-center gap-4 sm:gap-6">
           <a href="#" style={{ color: '#b0b0b0' }} className="text-sm md:text-base hover:text-white transition-colors">

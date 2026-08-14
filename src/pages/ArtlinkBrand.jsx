@@ -342,7 +342,7 @@ export default function ArtlinkBrand() {
             <div className="al-lockup-frame">
               <img
                 src="/artlink/Artlink_Logo.png"
-                alt="Artlink primary lockup — black wordmark with red circular accent on white"
+ alt="Artlink primary lockup, black wordmark with red circular accent on white"
               />
             </div>
 

@@ -270,7 +270,7 @@ function CommandsMenu({
                   ? `Currently resolves to ${model.inheritedLabel}`
                   : option.id === 'codex-local'
                     ? runner.paired
-                      ? `${runner.online ? 'Online' : 'Offline — turns will wait'} · ${runner.device?.name}`
+ ? `${runner.online ? 'Online' : 'Offline, turns will wait'} · ${runner.device?.name}`
                       : 'Connect Corner Runner first'
                     : option.desc;
                 return (
@@ -491,7 +491,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
       ) : null}
       {clearFailed ? (
         <div aria-live="polite" style={{ marginBottom: 9, padding: '8px 12px', borderRadius: 12, background: 'rgba(229,72,77,.12)', color: '#e5484d', font: '600 12px var(--font-sans)' }}>
-          Couldn't clear this chat just now. Nothing changed — try again in a moment.
+ Couldn't clear this chat just now. Nothing changed, try again in a moment.
         </div>
       ) : null}
       <div style={{ position: 'relative' }}>

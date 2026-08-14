@@ -3,9 +3,9 @@
 // NOTHING in a section file may hardcode a colour, a font stack, or an off-scale space.
 
 export const C = {
-  ink: '#000000',        // obsidian — dark sections
+ ink: '#000000', // obsidian, dark sections
   inkSoft: '#0B0B0B',    // dark section wells
-  bone: '#F3EEE5',       // bone paper — light sections
+ bone: '#F3EEE5', // bone paper, light sections
   boneSoft: '#E8E1D5',   // bone rules / hairlines
   bronze: '#B58A38',     // THE single accent. Never a second accent colour.
   bronzeDim: '#8A6A2B',
@@ -32,7 +32,7 @@ export const SP = {
 
 // Type scale — clamp()ed, at most 8 steps in use across the whole page.
 export const T = {
-  d1: 'clamp(56px, 9.2vw, 148px)',   // hero headline — the loudest thing on the page
+ d1: 'clamp(56px, 9.2vw, 148px)', // hero headline, the loudest thing on the page
   d2: 'clamp(38px, 5.4vw, 84px)',    // section headlines
   d3: 'clamp(28px, 3.4vw, 52px)',    // band headlines / station titles
   d4: 'clamp(20px, 2.1vw, 30px)',    // sub-display

@@ -994,12 +994,12 @@ const PROGRAMS = [
   {
     num: '02',
     name: 'Art Detour',
-    desc: 'Phoenix\'s original art walk — a month-long self-guided tour every March connecting galleries, studios, and businesses across the downtown arts districts.',
+ desc: 'Phoenix\'s original art walk, a month-long self-guided tour every March connecting galleries, studios, and businesses across the downtown arts districts.',
   },
   {
     num: '03',
     name: 'TAFF',
-    desc: 'The Artist Forward Fund — three annual grants of $1,000 each to support artists in creating new exhibition concepts for the mood room.',
+ desc: 'The Artist Forward Fund, three annual grants of $1,000 each to support artists in creating new exhibition concepts for the mood room.',
   },
   {
     num: '04',
@@ -1009,12 +1009,12 @@ const PROGRAMS = [
   {
     num: '05',
     name: 'In Residence',
-    desc: 'Artist residency program across three downtown Phoenix properties — Portland on the Park, The Summit at Copper Square, and The Bower Willo.',
+ desc: 'Artist residency program across three downtown Phoenix properties, Portland on the Park, The Summit at Copper Square, and The Bower Willo.',
   },
   {
     num: '06',
     name: 'Art d\'Core Gala',
-    desc: 'The Arts and Culture Party of the Year — Artlink\'s signature gala celebrating the arts community and the philanthropists who sustain it.',
+ desc: 'The Arts and Culture Party of the Year, Artlink\'s signature gala celebrating the arts community and the philanthropists who sustain it.',
   },
 ]
 
@@ -1048,7 +1048,7 @@ export default function ArtlinkSitePitch() {
         ═══════════════════════════════════════════════════════ */}
         <div className="asp-splash">
           <div className="asp-splash-inner">
-            <div className="asp-splash-kicker">Artlink Phoenix — Brand Elevation Pitch</div>
+ <div className="asp-splash-kicker">Artlink Phoenix, Brand Elevation Pitch</div>
             <img
               className="asp-splash-logo"
               src="/artlink/Artlink_Logo_Rev.png"
@@ -1066,7 +1066,7 @@ export default function ArtlinkSitePitch() {
         ═══════════════════════════════════════════════════════ */}
         <div id="brand">
           <div className="asp-arc-divider-wide" style={{ background: 'var(--al-black)' }}>
-            <div className="asp-arc-divider-label">Arc 01 — Brand Standards</div>
+ <div className="asp-arc-divider-label">Arc 01, Brand Standards</div>
           </div>
 
           {/* THE MARK */}
@@ -1083,7 +1083,7 @@ export default function ArtlinkSitePitch() {
             />
             <div className="asp-wrap">
               <p className="asp-brand-mark-body">
-                One wordmark. A geometric sans-serif in two weights — Bold for "ART," Light for "LINK" — held together by a single circular arc. That circle is the only ornamental gesture in the entire mark. It reads as connection. It says everything without explaining anything.
+ One wordmark. A geometric sans-serif in two weights, Bold for "ART," Light for "LINK", held together by a single circular arc. That circle is the only ornamental gesture in the entire mark. It reads as connection. It says everything without explaining anything.
               </p>
             </div>
           </section>
@@ -1115,11 +1115,11 @@ export default function ArtlinkSitePitch() {
               <div className="asp-eyebrow">Typography</div>
               <h2>NeutraFace.</h2>
               <p style={{ marginTop: 24, maxWidth: '56ch' }}>
-                Designed by Christian Schwartz. Rooted in Richard Neutra's mid-century architectural lettering — considered, upright, geometric. The mark uses Bold and Light as direct contrast. The brand uses only those two weights. No exceptions.
+ Designed by Christian Schwartz. Rooted in Richard Neutra's mid-century architectural lettering, considered, upright, geometric. The mark uses Bold and Light as direct contrast. The brand uses only those two weights. No exceptions.
               </p>
 
               <div className="asp-type-giant">
-                <div className="asp-type-meta">NeutraFace<br />Bold — Display</div>
+ <div className="asp-type-meta">NeutraFace<br />Bold, Display</div>
                 <div>
                   <div className="asp-type-spec-bold">ART</div>
                   <div className="asp-type-abc">ABCDEFGHIJKLMNOPQRSTUVWXYZ · 0123456789</div>
@@ -1127,7 +1127,7 @@ export default function ArtlinkSitePitch() {
               </div>
 
               <div className="asp-type-giant">
-                <div className="asp-type-meta">NeutraFace<br />Light — Body</div>
+ <div className="asp-type-meta">NeutraFace<br />Light, Body</div>
                 <div>
                   <div className="asp-type-spec-light">LINK</div>
                   <div className="asp-type-abc" style={{ fontWeight: 300 }}>abcdefghijklmnopqrstuvwxyz · 0123456789</div>
@@ -1213,7 +1213,7 @@ export default function ArtlinkSitePitch() {
         <div id="homepage">
           <div className="asp-arc-divider" />
           <div className="asp-arc-divider-wide">
-            <div className="asp-arc-divider-label">Arc 02 — Reimagined Homepage</div>
+ <div className="asp-arc-divider-label">Arc 02, Reimagined Homepage</div>
           </div>
 
           {/* HERO */}
@@ -1277,7 +1277,7 @@ export default function ArtlinkSitePitch() {
               <div className="asp-stats-grid">
                 <div className="asp-stat-block">
                   <div className="asp-stat-num">1988<span className="asp-stat-red">.</span></div>
-                  <div className="asp-stat-label">Art Detour founded — Phoenix's first art walk</div>
+ <div className="asp-stat-label">Art Detour founded, Phoenix's first art walk</div>
                 </div>
                 <div className="asp-stat-block">
                   <div className="asp-stat-num">20<span className="asp-stat-red">K</span></div>
@@ -1341,7 +1341,7 @@ export default function ArtlinkSitePitch() {
         <div id="social">
           <div className="asp-arc-divider" style={{ background: 'var(--al-red)' }} />
           <div className="asp-arc-divider-wide">
-            <div className="asp-arc-divider-label">Arc 03 — Social Design System</div>
+ <div className="asp-arc-divider-label">Arc 03, Social Design System</div>
           </div>
 
           <section className="asp-social">
@@ -1362,7 +1362,7 @@ export default function ArtlinkSitePitch() {
                   <div className="asp-ig-overlay">
                     <div className="asp-ig-kicker">First Fridays · Monthly</div>
                     <div className="asp-ig-headline">Tonight.<br />Roosevelt Row.</div>
-                    <div className="asp-ig-sub">First Friday of the month — galleries open, streets alive</div>
+ <div className="asp-ig-sub">First Friday of the month, galleries open, streets alive</div>
                   </div>
                 </div>
 
@@ -1493,7 +1493,7 @@ export default function ArtlinkSitePitch() {
         <div id="applications">
           <div className="asp-arc-divider" style={{ background: 'rgba(255,255,255,0.06)' }} />
           <div className="asp-arc-divider-wide">
-            <div className="asp-arc-divider-label">Arc 04 — Brand Applications</div>
+ <div className="asp-arc-divider-label">Arc 04, Brand Applications</div>
           </div>
 
           <section className="asp-applications">
@@ -1536,10 +1536,10 @@ export default function ArtlinkSitePitch() {
                   Application 01
                 </div>
                 <h3 style={{ color: 'var(--al-white)', marginBottom: 24, fontSize: 28 }}>
-                  Event Poster —<br />Art Detour March
+ Event Poster , <br />Art Detour March
                 </h3>
                 <p style={{ color: 'rgba(255,255,255,0.50)', marginBottom: 32 }}>
-                  A vertical format event poster using the desert landscape as both canvas and context. The Sonoran desert and the Arizona sky aren't decoration — they are the frame that makes Phoenix art meaningful.
+ A vertical format event poster using the desert landscape as both canvas and context. The Sonoran desert and the Arizona sky aren't decoration, they are the frame that makes Phoenix art meaningful.
                 </p>
                 <p style={{ color: 'rgba(255,255,255,0.50)' }}>
                   NeutraFace Bold commands the headline. NeutraFace Light handles the logistics. Artlink Red anchors the mark and the rule above the program name. Nothing else is needed.

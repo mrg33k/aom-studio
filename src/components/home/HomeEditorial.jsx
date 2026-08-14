@@ -49,7 +49,7 @@ export default function HomeEditorial({ openBrief }) {
         </div>
       </section>
 
-      {/* 2. RECENT WORK — masthead "what shipped this month" */}
+ {/* 2. RECENT WORK, masthead "what shipped this month" */}
       <section className="border-b border-[#0C0C0C]/12 py-10 md:py-12 px-6 md:px-12 bg-[#0C0C0C] text-[#FDF6EC]">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between gap-6 flex-wrap mb-7 border-b border-[#FDF6EC]/15 pb-5">
@@ -301,7 +301,7 @@ export default function HomeEditorial({ openBrief }) {
               Your team deserves <em className="font-display-italic italic font-medium text-[#E85D26]">a partner</em>, not another tool.
             </h2>
             <p className="font-body text-[16.5px] text-[#FDF6EC]/80 mt-7 max-w-xl leading-[1.65]">
-              In-house creative teams ship the most when they have a partner to send the spillover to. We're built to be that partner — flexible, fast, and on-brand from day one.
+ In-house creative teams ship the most when they have a partner to send the spillover to. We're built to be that partner, flexible, fast, and on-brand from day one.
             </p>
             <button onClick={() => openBrief?.()}
               className="mt-9 bg-[#E85D26] text-[#0C0C0C] font-body font-semibold text-[14px] px-7 py-3.5 rounded-full hover:bg-[#FF6B2C] transition-colors flex items-center gap-2">

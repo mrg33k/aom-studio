@@ -6,7 +6,7 @@ import { useCleoWorkspaces } from '../../hooks/useCleoWorkspaces.js'
 const CLEO = agentColors.cleo  // #F472B6
 
 function timeAgo(iso) {
-  if (!iso) return '—'
+ if (!iso) return '·'
   const diff = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 60) return `${mins}m ago`
@@ -70,7 +70,7 @@ function WorkspaceCard({ workspace, onClick }) {
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>{workspace.name}</div>
           <div style={{ fontSize: 12, color: C.text2, marginTop: 3 }}>
-            {workspace.client_name || '—'}
+ {workspace.client_name || '·'}
           </div>
         </div>
         <StatusPill status={workspace.status} />

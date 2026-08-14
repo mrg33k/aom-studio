@@ -253,7 +253,7 @@ export default function SiteNav({ transparent = false, onStartProject }) {
           <div className="hidden md:flex items-center gap-5 flex-shrink-0">
             <a
               href="#"
-              title="Client portal — coming soon"
+              title="Client portal coming soon"
               className="text-[14px] font-body font-medium text-[#8A847C] hover:text-[#F0ECE6] transition-colors whitespace-nowrap"
             >
               Client portal

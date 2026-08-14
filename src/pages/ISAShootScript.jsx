@@ -21,10 +21,10 @@ const TIMELINE = [
     act: 1, beatNum: '1.1', id: 'beat-1-1',
     title: 'The Invisible Dependency', time: '0:00–0:30',
     shots: [
-      { t:'0:00–0:02', tp:'transition', v:'BLACK. Text fades in: "ISA Energy"', a:'Silence. Low ambient hum begins.', n:'Theater — let the room settle.' },
+ { t:'0:00–0:02', tp:'transition', v:'BLACK. Text fades in: "ISA Energy"', a:'Silence. Low ambient hum begins.', n:'Theater, let the room settle.' },
       { t:'0:02–0:04', tp:'broll', v:'City skyline at dusk. Buildings lighting up one by one. Wide, locked tripod.', a:'Hum builds.', n:'Tempe Town Lake or stock.' },
       { t:'0:04–0:06', tp:'broll', v:'Phone charging on nightstand. Close-up, handheld, shallow DOF.', a:'Narration: "Everything runs on electricity."', n:'Intimate, personal scale.' },
-      { t:'0:06–0:08', tp:'broll', v:'Hospital monitors. Green waveforms. Beeping. Macro lens.', a:'"Every light, every screen..."', n:'Stakes — lives depend on this.' },
+ { t:'0:06–0:08', tp:'broll', v:'Hospital monitors. Green waveforms. Beeping. Macro lens.', a:'"Every light, every screen..."', n:'Stakes, lives depend on this.' },
       { t:'0:08–0:10', tp:'broll', v:'Data center rack. LEDs blinking. Handheld tracking shot.', a:'"...every system keeping someone alive right now."', n:'Industrial scale.' },
       { t:'0:10–0:12', tp:'broll', v:"Slow push on a light switch. Someone's hand flips it. Light fills room.", a:'"And almost nobody thinks about where it comes from."', n:'The simplest gesture.' },
       { t:'0:12–0:14', tp:'transition', v:'Brief black or dark transition.', a:'Beat. Silence.', n:'Let the line land.' },
@@ -116,7 +116,7 @@ const TIMELINE = [
     shots: [
       { t:'3:55–3:58', tp:'broll', v:'Modern home at night. Warm light from windows. Inviting.', a:'Narration: "Imagine a home that powers itself."', n:'Arcadia neighborhood. Drive-by exterior.' },
       { t:'3:58–4:01', tp:'broll', v:'Office building. Fully powered. Night. Every floor lit.', a:'"A business that never worries about the grid going down."', n:'Scottsdale or Tempe office park.' },
-      { t:'4:01–4:04', tp:'broll', v:'Remote community. Small structures. Then — lights come on.', a:'"A community that was never connected to the grid in the first place..."', n:'Stock or composite. The contrast matters.' },
+ { t:'4:01–4:04', tp:'broll', v:'Remote community. Small structures. Then, lights come on.', a:'"A community that was never connected to the grid in the first place..."', n:'Stock or composite. The contrast matters.' },
       { t:'4:04–4:07', tp:'broll', v:"Close-up: child's face lit by a lamp turning on. Wonder.", a:'"...finally with reliable power."', n:'Stock. Emotional beat.' },
       { t:'4:07–4:10', tp:'broll', v:'Electric vehicle charging. Night. Clean energy flowing.', a:'Brief pause in narration.', n:'Visual punctuation.' },
       { t:'4:10–4:30', tp:'interview', s:'Hunter', v:'HUNTER talking head. Lab background. Warm.', a:'Hunter: "When this technology is fully deployed, what does the world look like?"', n:'20 sec. Grounded vision. Not "we\'ll change the world." Specific.' },
@@ -140,7 +140,7 @@ const TIMELINE = [
     shots: [
       { t:'4:55–4:57', tp:'transition', v:'Black. ISA Energy logo fades in. Clean. Centered.', a:'Music resolves to final note.', n:'Simple. Premium.' },
       { t:'4:57–4:59', tp:'transition', v:'Tagline appears below logo.', a:'Silence.', n:'Let it sit.' },
-      { t:'4:59–5:00', tp:'transition', v:'URL or contact info fades in below. Hold.', a:'Silence.', n:'Theater — the screen stays up.' },
+ { t:'4:59–5:00', tp:'transition', v:'URL or contact info fades in below. Hold.', a:'Silence.', n:'Theater, the screen stays up.' },
     ],
   },
 ];
@@ -162,7 +162,7 @@ const SUBJECTS = [
   {
     name: 'Harrison', role: 'Asst Lead Science', order: 1,
     beats: ['2.2', '2.3'],
-    description: 'The engineer. Brings credibility through competence — the quiet authority of someone who builds things that work.',
+ description: 'The engineer. Brings credibility through competence, the quiet authority of someone who builds things that work.',
     questions: [
       { q: 'In the simplest terms you can, explain what this system actually does and why it is different from anything else out there.', beat: '2.2', hope: 'Plainest, clearest explanation possible. 15 sec a non-engineer understands = gold standard.' },
       { q: 'What did the validation study actually show? Walk me through the moment you saw the results.', beat: '2.3', hope: 'Proof delivered with understatement.' },
@@ -174,7 +174,7 @@ const SUBJECTS = [
   {
     name: 'Skylar', role: 'Sales / Business Dev', order: 3,
     beats: ['1.2', '2.4'],
-    description: 'The translator. Connects the technology to the real world — market need, customer pain, commercial timing.',
+ description: 'The translator. Connects the technology to the real world, market need, customer pain, commercial timing.',
     questions: [
       { q: 'When you talk to potential customers and partners, what do they say about the current state of energy infrastructure?', beat: '1.2', hope: 'Specific, real-world pain points. Actual things people say in meetings.' },
       { q: 'Why does this technology matter right now, specifically? What has changed in the market that makes ISA\'s timing so critical?', beat: '2.4', hope: 'Urgency and specificity. AI demand, grid strain, electrification.' },
@@ -186,7 +186,7 @@ const SUBJECTS = [
   {
     name: 'Jared', role: 'Business / Background', order: 4,
     beats: [],
-    description: 'The operator. Business scale, funding, manufacturing. Safety net — only pull in if Hunter/Skylar cannot cover it.',
+ description: 'The operator. Business scale, funding, manufacturing. Safety net, only pull in if Hunter/Skylar cannot cover it.',
     questions: [
       { q: 'Where does ISA stand right now in terms of the business infrastructure needed to scale this technology?', beat: '2.4/3.1 flex', hope: 'Manufacturing, supply chain, or capital readiness. "We are not just a lab."' },
       { q: 'What does the funding landscape look like for a company like ISA right now?', beat: '2.4 flex', hope: 'Context on why the capital environment is favorable. Only use if Skylar does not cover this.' },
@@ -205,7 +205,7 @@ const SCHEDULE = [
   { time: '14:15', endTime: '14:35', label: 'Jared interview',           type: 'interview', note: '15–20 min' },
   { time: '14:35', endTime: '15:30', label: 'Office b-roll & team candids', type: 'broll', note: '55 min' },
   { time: '15:30', endTime: '17:00', label: 'Sedona exterior b-roll & drone', type: 'broll', note: '90 min' },
-  { time: '17:00', endTime: '18:30', label: 'Golden hour exteriors — PRIORITY', type: 'golden', note: '90 min' },
+ { time: '17:00', endTime: '18:30', label: 'Golden hour exteriors, PRIORITY', type: 'golden', note: '90 min' },
   { time: '18:30', endTime: '19:00', label: 'Wrap',                      type: 'setup',     note: '30 min' },
 ];
 
@@ -222,8 +222,8 @@ const BROLL_SHOOT = [
   { shot: 'Team working (candids)', location: 'ISA Sedona lab', beat: '2.1–2.3', notes: 'Between interviews. Real work, not posed.' },
   { shot: 'Device close-ups', location: 'ISA Sedona lab', beat: '2.2', notes: 'Transformer coil, oscilloscope, signal generator. Macro lens.' },
   { shot: 'Whiteboard / notebook details', location: 'ISA Sedona lab', beat: '2.1, 2.2', notes: 'Real equations and diagrams, not staged.' },
-  { shot: 'Lab exterior — slow push in', location: 'ISA Sedona lab entrance', beat: '2.1', notes: 'Establishes the "where." Golden light if afternoon.' },
-  { shot: 'Sedona landscape wide', location: 'Red rocks — Cathedral Rock / Airport Mesa', beat: '3.2', notes: 'Golden hour.' },
+ { shot: 'Lab exterior, slow push in', location: 'ISA Sedona lab entrance', beat: '2.1', notes: 'Establishes the "where." Golden light if afternoon.' },
+ { shot: 'Sedona landscape wide', location: 'Red rocks, Cathedral Rock / Airport Mesa', beat: '3.2', notes: 'Golden hour.' },
   { shot: 'Sedona dusk wide', location: 'Same viewpoints', beat: '3.2', notes: 'Final closing shot. Plan for 5:30–6:30 PM.' },
   { shot: 'Team walking together', location: 'Lab parking lot or nearby trail', beat: '3.2', notes: 'Casual, natural. End-of-day energy.' },
 ];
@@ -235,7 +235,7 @@ const BROLL_PICKUP = [
   { shot: 'Transmission lines in desert', location: 'US-60 or Loop 202 shoulder', beat: '1.2', notes: 'Wide lens. 10 minutes.' },
   { shot: 'Electrical substation', location: 'APS substations along major roads', beat: '1.2', notes: 'Telephoto from public road. Do not enter.' },
   { shot: 'Solar panels', location: 'Tempe / Mesa farms visible from Loop 202', beat: '1.3', notes: 'Shoot from road or overpass.' },
-  { shot: 'Wind turbines', location: 'Stock OR Painted Rock Dam area (I-8 west)', beat: '1.3', notes: 'If too far — stock footage library.' },
+ { shot: 'Wind turbines', location: 'Stock OR Painted Rock Dam area (I-8 west)', beat: '1.3', notes: 'If too far, stock footage library.' },
   { shot: 'EV charging station', location: 'Electrify America or Tesla Supercharger (Tempe)', beat: '2.4', notes: 'Walk up and shoot chargers + cars. 10 min.' },
   { shot: 'Construction cranes / growth', location: 'Downtown Phoenix or Rio Salado (Tempe)', beat: '2.4', notes: 'Shoot from sidewalk.' },
   { shot: 'Modern home at night', location: 'Arcadia neighborhood, Scottsdale', beat: '3.1', notes: 'Drive-by exterior. Shoot from street. Evening.' },
@@ -252,10 +252,10 @@ const BROLL_STOCK = [
 
 const EQUIPMENT = [
   { category: 'Camera', items: ['Cinema camera package (primary + backup body)', 'Interview lens: 50mm or 85mm (shallow DOF)', 'B-roll: 24mm wide, 100mm macro (device close-ups)'] },
-  { category: 'Support', items: ['Tripod + fluid head for interviews', 'Handheld rig or gimbal for lab b-roll', 'Drone (if permitted — check Sedona local regs)'] },
+ { category: 'Support', items: ['Tripod + fluid head for interviews'·'Handheld rig or gimbal for lab b-roll'·'Drone (if permitted, check Sedona local regs)'] },
   { category: 'Lighting', items: ['2x LED panel lights (key + fill for interviews)', '1x LED tube or edge light (hair / rim / separation)', 'Gaffer tape, clamps, extension cords'] },
   { category: 'Audio', items: ['Shotgun mic on camera for b-roll ambient', '2x lavalier mics (wired or wireless) for interviews', 'Boom mic + operator if crew allows', 'Audio recorder (backup to camera audio)'] },
-  { category: 'Media / Power', items: ['4+ memory cards — shoot heavy, do not run out', 'Batteries for everything, plus chargers', 'Laptop for on-set review'] },
+ { category: 'Media / Power', items: ['4+ memory cards, shoot heavy, do not run out'·'Batteries for everything, plus chargers'·'Laptop for on-set review'] },
   { category: 'Production', items: ['Release forms for all 4 interview subjects', 'Shot list printout (this document)', 'Room tone recording before first interview (30 sec silence each setup)'] },
 ];
 
@@ -501,7 +501,7 @@ function ScheduleVisual() {
                   opacity: item.type === 'break' ? 0.4 : 0.85,
                   borderRight: '1px solid rgba(0,0,0,0.3)',
                 }}
-                title={`${item.time} — ${item.label}`}
+ title={`${item.time}, ${item.label}`}
               >
                 {width > 5 && (
                   <span className="font-mono text-[8px] text-white/80 truncate leading-tight">
@@ -611,7 +611,7 @@ function SubjectCard({ subject, index }) {
       )}
       {subject.beats.length === 0 && (
         <div className="px-5 pb-4">
-          <span className="font-mono text-[9px] text-[#4A4A46]">Safety net — shoot last, may not appear in final cut</span>
+ <span className="font-mono text-[9px] text-[#4A4A46]">Safety net, shoot last, may not appear in final cut</span>
         </div>
       )}
 
@@ -857,10 +857,10 @@ export default function ISAShootScript() {
             className="mt-8 grid md:grid-cols-2 gap-4"
           >
             {[
-              { label: 'Framing', text: 'Medium close-up. Eyes in upper third. Slight off-center. Subject looks just off-camera — interviewer sits next to lens, not behind it.' },
+ { label: 'Framing', text: 'Medium close-up. Eyes in upper third. Slight off-center. Subject looks just off-camera, interviewer sits next to lens, not behind it.' },
               { label: 'Background', text: 'Lab environment for Hunter and Harrison. Equipment, whiteboards, workbenches visible but soft out of focus. Not a boardroom company.' },
               { label: 'Lighting', text: 'Warm key light, soft fill. Minimal shadows. Use Sedona natural light as starting point, supplement. Avoid sterile/corporate lighting.' },
-              { label: 'Audio', text: 'Lav mic on every subject. Boom as backup. Room tone recording before each setup — 30 seconds of silence in each location.' },
+ { label: 'Audio', text: 'Lav mic on every subject. Boom as backup. Room tone recording before each setup, 30 seconds of silence in each location.' },
             ].map(item => (
               <div key={item.label} className="p-4" style={{ background: '#111110', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-2" style={{ color: '#E85D26' }}>{item.label}</p>
@@ -882,7 +882,7 @@ export default function ISAShootScript() {
               <div className="w-[3px] h-6" style={{ background: '#C84B1E' }} />
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A847C]">Shoot Day</p>
-                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 2 — Sedona</p>
+ <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 2, Sedona</p>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -922,7 +922,7 @@ export default function ISAShootScript() {
               <div className="w-[3px] h-6" style={{ background: '#E85D26' }} />
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A847C]">Pickup Day</p>
-                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 7–8 — Phoenix Metro &nbsp;<span className="font-mono text-[10px] text-[#8A847C]">Public locations</span></p>
+ <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 7–8, Phoenix Metro &nbsp;<span className="font-mono text-[10px] text-[#8A847C]">Public locations</span></p>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -1032,10 +1032,10 @@ export default function ISAShootScript() {
           <SectionHeader label="Production" title="Theater Format Notes" />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Resolution', value: '4K minimum', note: 'Shoot in 4K. Deliver in 4K. Big screen ready — every frame holds up.' },
+ { label: 'Resolution', value: '4K minimum', note: 'Shoot in 4K. Deliver in 4K. Big screen ready, every frame holds up.' },
               { label: 'Camera Movement', value: 'Slow. Deliberate.', note: 'Slow camera reads better in a theater than fast cuts. Let shots breathe.' },
               { label: 'Sound Design', value: 'The room is the instrument.', note: 'Ambient lab sounds. Subtle music swells. Silence between beats. The extra runtime lives in audio.' },
-              { label: 'Color Grade', value: 'Sedona warmth is the anchor.', note: 'Every shot — Sedona or Phoenix — grades to match the warm Sedona palette. Consistent world.' },
+ { label: 'Color Grade', value: 'Sedona warmth is the anchor.', note: 'Every shot, Sedona or Phoenix, grades to match the warm Sedona palette. Consistent world.' },
             ].map((item, i) => (
               <motion.div
                 key={i}

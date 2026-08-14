@@ -215,7 +215,7 @@ function TasksPanelCv4Body() {
       )}
       <div data-cv4-tasks-scroll style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 20px' }}>
 
-        {/* SCOPE — what we're looking at, top-of-panel. */}
+ {/* SCOPE, what we're looking at, top-of-panel. */}
         <ScopeHeader label={scopeLabel} counts={{ missionCount: workingMissions.length }} />
 
         {/* Search + project pills. */}
@@ -785,7 +785,7 @@ function Cv4FileTree({ activeProject, searchQuery }) {
         title="Files"
         count={totalCount}
         summary={isAll
-          ? (totalCount === 0 ? 'No files yet' : 'All projects — grouped by project')
+ ? (totalCount === 0 ? 'No files yet' : 'All projects, grouped by project')
           : (totalCount === 0 ? 'No files in this project' : `Files in ${projectName(activeProject)}`)
         }
       />
@@ -866,7 +866,7 @@ function Cv4ProjectCanon({
       project: activeProject,
       filename: entry.filename,
       source: 'canon',
-      title: `${entry.label} — ${activeProject}`,
+ title: `${entry.label}, ${activeProject}`,
     })
   }
 
@@ -1239,7 +1239,7 @@ function Cv4BriefViewer({ brief, html, loading, onClose, onAskAboutFile }) {
           fontFamily: "'JetBrains Mono', monospace",
           letterSpacing: '0.05em', textTransform: 'uppercase',
         }}>
-          ↵ to send · referenced: {filename || '—'}
+ ↵ to send · referenced: {filename || '·'}
         </div>
       </div>
     </div>
@@ -1353,7 +1353,7 @@ function MissionRow({ missionEntry }) {
         }}>
           {proj && <span style={{ width: 5, height: 5, borderRadius: '50%', background: proj.color, flexShrink: 0 }} />}
           <span>{project.name}</span>
-          {/* corner:mission-rooms — "N in flight" / "N done" removed. Tasks retired 2026-05-17. */}
+ {/* corner:mission-rooms, "N in flight" / "N done" removed. Tasks retired 2026-05-17. */}
         </div>
       </div>
     </div>

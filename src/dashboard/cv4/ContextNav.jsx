@@ -215,7 +215,7 @@ export default function CV4ContextNav({
           {showModelBadge && (
             <span
               data-testid="model-badge"
-              title="The AI model answering this room — change it in chat settings or Account → AI model"
+ title="The AI model answering this room, change it in chat settings or Account → AI model"
               style={{
                 fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
                 padding: '2px 7px', borderRadius: 999, flexShrink: 0,
@@ -369,7 +369,7 @@ export default function CV4ContextNav({
           to `activeTool !== 'mail'` so the button is always present.
           Mail button only appears when activeTool === 'mail'. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
-        {/* command:deck — loop icon, Elon's room only. Opens the Command Deck
+ {/* command:deck, loop icon, Elon's room only. Opens the Command Deck
             (the loop's control surface) right here. Sits next to the tasks icon;
             amber tint when the deck is open. Replaces the old in-room tab row. */}
         {selectedAgent?.slug === 'elon' && activeTool !== 'mail' && onToggleDeck && (
@@ -489,4 +489,3 @@ export default function CV4ContextNav({
     </div>
   )
 }
-

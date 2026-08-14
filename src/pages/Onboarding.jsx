@@ -297,7 +297,7 @@ export default function Onboarding() {
       setIntegrationError('')
     } else if (intStatus === 'error') {
       const reason = params.get('reason') || 'unknown'
-      setIntegrationError(`Could not connect — ${reason}`)
+ setIntegrationError(`Could not connect, ${reason}`)
     }
 
     // Clean the URL so we don't re-process on refresh

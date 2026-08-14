@@ -55,7 +55,7 @@ export default function ForemanTasksSection() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok || data.error) throw new Error(data.error || `Pause failed (${res.status})`)
-      showPauseToast('Pause signal sent — foreman will stop after current round.')
+ showPauseToast('Pause signal sent, foreman will stop after current round.')
     } catch (err) {
       showPauseToast(err?.message || 'Could not send pause signal')
     } finally {

@@ -10,9 +10,9 @@ import { C } from '../../../lib/cv3Colors.js'
 //   no tool   → icon-only round button (matches Attach/Commands sizing)
 //   tool set  → pill chip with tool name + ✕ to clear
 export const IMAGE_TOOLS = [
-  { id: 'gemini',   name: 'Gemini',   detail: 'Imagen 4 / Nano Banana — photoreal, 4K' },
-  { id: 'ideogram', name: 'Ideogram', detail: '3.0 — typography, posters, in-image text' },
-  { id: 'openai',   name: 'OpenAI',   detail: 'gpt-image-1.5 — general, edits, transparent bg' },
+ { id: 'gemini', name: 'Gemini', detail: 'Imagen 4 / Nano Banana, photoreal, 4K' },
+ { id: 'ideogram', name: 'Ideogram', detail: '3.0, typography, posters, in-image text' },
+ { id: 'openai', name: 'OpenAI', detail: 'gpt-image-1.5, general, edits, transparent bg' },
 ]
 
 const TOOL_BY_ID = Object.fromEntries(IMAGE_TOOLS.map(t => [t.id, t]))

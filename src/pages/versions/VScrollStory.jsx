@@ -10,24 +10,24 @@ const TICKER = ["Skylar","PA'LA","Ambition Mechanical","ISA Energy","Brandon Wil
 
 const STORIES = [
   { client:'ISA Energy', tag:'Energy · Film', motif:'film',
-    big:'3', bigLabel:'video series — live in investor meetings',
+ big:'3', bigLabel:'video series, live in investor meetings',
     headline:`A three-video series, now in every investor meeting`,
-    body:`We launched a three-video series with the ISA team — a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
+ body:`We launched a three-video series with the ISA team, a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
     stat:`Helped raise a substantial round.` },
   { client:'Space Rising', tag:'Tech · Platform', motif:'grid',
     big:'1,000+', bigLabel:'in one room at Space Congress',
-    headline:`SpaceOS — and 1,000 people in one room`,
+ headline:`SpaceOS, and 1,000 people in one room`,
     body:`We built SpaceOS, their platform for the space industry to gather online with shared resources and insider information. Then we ran heavy sprints to get them ready for big moments like Space Congress.`,
     stat:`Drove a wave of traffic to the new platform.` },
   { client:'Included Health', tag:'Healthcare · Film', motif:'film',
-    big:'Top-5', bigLabel:'US insurer — films for their Inspire Summit',
+ big:'Top-5', bigLabel:'US insurer, films for their Inspire Summit',
     headline:`Films for one of the largest insurers in the US`,
-    body:`We finished a series of videos for Included Health — one of the largest insurance providers in the country — and were proud to work alongside them at their Inspire Summit.`,
+ body:`We finished a series of videos for Included Health, one of the largest insurance providers in the country, and were proud to work alongside them at their Inspire Summit.`,
     stat:`Produced for the Inspire Summit.` },
   { client:'Ambition Mechanical', tag:'Trades · Web + Ads', motif:'chart',
     big:'4 / mo', bigLabel:'organic leads from the new site alone',
     headline:`Four solid leads a month, organically`,
-    body:`We've been running Ambition Mechanical's Google Ads — but the new website we built is already pulling in four solid leads a month on its own, organically, before the ad spend even counts.`,
+ body:`We've been running Ambition Mechanical's Google Ads, but the new website we built is already pulling in four solid leads a month on its own, organically, before the ad spend even counts.`,
     stat:`Before paid spend even counts.` },
 ];
 
@@ -48,7 +48,7 @@ const PORTFOLIO = [
 
 const VOICES = [
   { q:'The video was a huge tool in recruiting our first 3 cohorts. Every sponsor meeting we played it. It did the selling for us.', n:'Brandon Clarke', c:'Startup AZ Foundation', m:'3 cohorts recruited' },
-  { q:'Before AOM we posted randomly. Now we have a repeatable system — the content actually brings people in.', n:'Sumit Seth', c:'Naamly SaaS', m:'Repeatable content engine' },
+ { q:'Before AOM we posted randomly. Now we have a repeatable system, the content actually brings people in.', n:'Sumit Seth', c:'Naamly SaaS', m:'Repeatable content engine' },
   { q:'They did not just shoot beautiful footage. They understood who we are and made sure every frame said it.', n:'Gio Osso', c:'Virtu Hospitality Group', m:'Brand story on screen' },
 ];
 
@@ -445,7 +445,7 @@ export default function HomeR5Preview() {
       {/* SCENE 2 — IDENTITY: video company */}
       <section className="scene scene-dark">
         <div className="scene-inner">
-          <Reveal><span className="scene-eyebrow">So — who are we, exactly?</span></Reveal>
+ <Reveal><span className="scene-eyebrow">So, who are we, exactly?</span></Reveal>
           <Reveal delay={120}><GlyphFilm /></Reveal>
           <Reveal delay={220}>
             <p className="statement">Many companies around Phoenix know us as a <strong>video company</strong>.</p>
@@ -478,7 +478,7 @@ export default function HomeR5Preview() {
         <div className="scene-inner">
           <Reveal><BrandMark kind="mono" className="scene-mark" /></Reveal>
           <Reveal delay={140}>
-            <p className="statement payoff">We're a <span className="gold">storytelling company</span> — we just happen to make videos and web apps often.</p>
+ <p className="statement payoff">We're a <span className="gold">storytelling company</span>, we just happen to make videos and web apps often.</p>
           </Reveal>
         </div>
       </section>
@@ -526,7 +526,7 @@ export default function HomeR5Preview() {
           </Reveal>
           <Reveal delay={220}>
             <p className="billboard-body">
-              A website or a video is the same — it doesn't help if you don't have a strategy to get it out.
+ A website or a video is the same, it doesn't help if you don't have a strategy to get it out.
               That's where we come in. We make the marketing materials, but <em>first</em> we figure out exactly how they'll get distributed most effectively.
             </p>
           </Reveal>
@@ -547,7 +547,7 @@ export default function HomeR5Preview() {
             </Reveal>
             <Reveal delay={100} className="who-stat">
               <span className="stat-n">3</span>
-              <span className="stat-l">industries — Tech, Construction, Nonprofits</span>
+ <span className="stat-l">industries, Tech, Construction, Nonprofits</span>
             </Reveal>
             <Reveal delay={200} className="who-stat">
               <span className="stat-n">8+</span>
@@ -557,7 +557,7 @@ export default function HomeR5Preview() {
           <Reveal delay={120}>
             <p className="who-note">
               Our team comes from commercial film production, local news, national media, and creative agencies.
-              We've worked across Phoenix, nationally, and internationally — always story-first.
+ We've worked across Phoenix, nationally, and internationally, always story-first.
             </p>
           </Reveal>
         </div>
@@ -615,7 +615,7 @@ export default function HomeR5Preview() {
             <span className="eyebrow">Ready when you are</span>
             <h2 className="cta-head">It all starts with<br />a conversation.</h2>
             <p className="cta-body">
-              By now you know us a little. We'd love to learn about what you're working on — and how we might be able to help.
+ By now you know us a little. We'd love to learn about what you're working on, and how we might be able to help.
             </p>
             <div className="cta-row">
               <a className="btn-gold" href="mailto:hello@aheadofmarket.com">Say hello ↗</a>

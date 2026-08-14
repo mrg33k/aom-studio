@@ -76,7 +76,7 @@ export default function HomeR4Preview() {
               Start a project
             </h3>
             <p className="font-body text-[#F0ECE6]/75 mb-6">
-              R4 preview — CTAs work but the real brief drawer isn't wired here.
+ R4 preview, CTAs work but the real brief drawer isn't wired here.
               Email <a href="mailto:hello@aom-inhouse.com" className="text-[#E85D26] underline">hello@aom-inhouse.com</a> to start a brief.
             </p>
             <button

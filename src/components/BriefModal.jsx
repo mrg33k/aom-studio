@@ -348,7 +348,7 @@ export default function BriefModal({ isOpen, onClose, intent = null }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...payload,
-          _subject: `New Lead: ${payload.trade || payload.intent} — ${payload.name}`,
+          _subject: `New Lead: ${payload.name} (${payload.trade || payload.intent})`,
         }),
       });
       if (!res.ok) throw new Error('Formspree rejected submission');

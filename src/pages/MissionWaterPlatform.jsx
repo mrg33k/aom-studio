@@ -13,7 +13,7 @@ const GAME_URL = 'https://aheadofmarket.com/missionwater';
 const LIVE = {
   status: 'scheduled',         // 'live' | 'scheduled' | 'standby'
   embedUrl: '',                // e.g. 'https://www.youtube.com/embed/VIDEO_ID'
-  title: 'Mission Water — Live Class 01',
+ title: 'Mission Water, Live Class 01',
   nextSession: 'August 14, 2026 · 4:00 PM ET',
 };
 
@@ -23,7 +23,7 @@ const SESSIONS = [
     id: 1,
     date: 'Aug 14, 2026',
     time: '4:00 PM ET',
-    title: 'Class 01 — What happens when water is no more?',
+ title: 'Class 01, What happens when water is no more?',
     desc: 'Nancy Conrad opens Mission Water. Where does water come from, where is it going, and what happens when it runs out?',
     registered: false,
   },
@@ -31,7 +31,7 @@ const SESSIONS = [
     id: 2,
     date: 'Aug 21, 2026',
     time: '4:00 PM ET',
-    title: 'Class 02 — Water on other worlds',
+ title: 'Class 02, Water on other worlds',
     desc: 'Ice on the Moon, oceans under Europa. We explore how water shapes the possibility of life beyond Earth.',
     registered: false,
   },
@@ -39,7 +39,7 @@ const SESSIONS = [
     id: 3,
     date: 'Aug 28, 2026',
     time: '4:00 PM ET',
-    title: 'Class 03 — Engineering solutions',
+ title: 'Class 03, Engineering solutions',
     desc: 'From desalination to closed-loop water systems for deep space. Students design a water plan for a Mars colony.',
     registered: false,
   },
@@ -47,7 +47,7 @@ const SESSIONS = [
     id: 4,
     date: 'Sep 4, 2026',
     time: '4:00 PM ET',
-    title: 'Class 04 — Student presentations',
+ title: 'Class 04, Student presentations',
     desc: 'Cadets present their water-crisis solutions. The best ideas go to the Conrad Foundation board.',
     registered: false,
   },
@@ -75,7 +75,7 @@ function useSEO() {
       }
       el.setAttribute('content', content);
     };
-    setMeta('description', 'Mission Water — the interactive learning platform for the Conrad Foundation masterclass. The future of water in space.');
+ setMeta('description'·'Mission Water, the interactive learning platform for the Conrad Foundation masterclass. The future of water in space.');
     setMeta('og:title', 'Mission Water | The future of water in space', true);
     setMeta('og:type', 'article', true);
     setMeta('robots', 'noindex, nofollow');
@@ -614,13 +614,13 @@ const PREVIEW_COURSES = [
     stage: 'Foundation',
     number: '01',
     title: 'Water Science Fundamentals',
-    intro: 'The starting point — how water moves, what it carries, and why every living system on Earth depends on it.',
+ intro: 'The starting point, how water moves, what it carries, and why every living system on Earth depends on it.',
     accent: '#2A6E9E',
     modules: [
-      { title: 'The Water Cycle', body: 'Evaporation, condensation, precipitation — tracking water as it moves across the planet' },
-      { title: 'Properties of Water', body: 'Why water is unique — polarity, surface tension, its unmatched dissolving power' },
+ { title: 'The Water Cycle', body: 'Evaporation, condensation, precipitation, tracking water as it moves across the planet' },
+ { title: 'Properties of Water', body: 'Why water is unique, polarity, surface tension, its unmatched dissolving power' },
       { title: 'Aquifers & Water Tables', body: 'Underground storage systems and how they connect to your community\'s water supply' },
-      { title: 'Water Quality Basics', body: 'What makes water safe or unsafe — physical, chemical, and biological factors' },
+ { title: 'Water Quality Basics', body: 'What makes water safe or unsafe, physical, chemical, and biological factors' },
       { title: 'Measuring Water', body: 'Tools and field techniques scientists use to monitor water in real environments' },
     ],
   },
@@ -629,13 +629,13 @@ const PREVIEW_COURSES = [
     stage: 'Applied Science',
     number: '02',
     title: 'Clean Water Technologies',
-    intro: 'How engineers solve the water problems communities face — from filtration to desalination to real-time monitoring.',
+ intro: 'How engineers solve the water problems communities face, from filtration to desalination to real-time monitoring.',
     accent: '#E85D26',
     modules: [
       { title: 'Filtration Systems', body: 'How sand, carbon, and membrane filters remove contaminants from water' },
       { title: 'Biological Treatment', body: 'Using microorganisms to break down pollutants the natural way' },
       { title: 'Chemical Treatment', body: 'Chlorination, pH control, and targeted interventions for safe water' },
-      { title: 'Desalination', body: 'Turning seawater into drinking water — the promise, the limits, the future' },
+ { title: 'Desalination', body: 'Turning seawater into drinking water, the promise, the limits, the future' },
       { title: 'Field Monitoring', body: 'Real-time sensors and remote systems for continuous water quality data' },
     ],
   },
@@ -644,14 +644,14 @@ const PREVIEW_COURSES = [
     stage: 'Systems Thinking',
     number: '03',
     title: 'Water as a Global Resource',
-    intro: 'Water security, agriculture, policy, and the choices that define the next 50 years — and the role students play in the solution.',
+ intro: 'Water security, agriculture, policy, and the choices that define the next 50 years, and the role students play in the solution.',
     accent: '#3A7D4F',
     modules: [
-      { title: 'Water Scarcity Today', body: 'Where the world is running dry — regional case studies and what\'s driving them' },
-      { title: 'Agriculture & Water', body: 'Farming uses 70% of the world\'s freshwater — how that changes with new approaches' },
+ { title: 'Water Scarcity Today', body: 'Where the world is running dry, regional case studies and what\'s driving them' },
+ { title: 'Agriculture & Water', body: 'Farming uses 70% of the world\'s freshwater, how that changes with new approaches' },
       { title: 'Industry & Pollution', body: 'Industrial water use, contamination pathways, and cleanup strategies' },
       { title: 'Policy & Governance', body: 'Water rights, international agreements, and who makes the decisions' },
-      { title: 'Your Water Action Project', body: 'Student capstone — identify a local issue, propose a solution, present it' },
+ { title: 'Your Water Action Project', body: 'Student capstone, identify a local issue, propose a solution, present it' },
     ],
   },
 ];
@@ -890,7 +890,7 @@ export default function MissionWaterPlatform() {
 
       <ConradNav />
 
-      {/* ─── Title page — "The future of water in space" ─────────────────────── */}
+ {/* ─── Title page, "The future of water in space" ─────────────────────── */}
       <section
         className="relative overflow-hidden px-6 md:px-12 pt-20 md:pt-28 pb-20 md:pb-24"
         style={{ background: 'radial-gradient(125% 85% at 50% -8%, #143b6e 0%, #0D2045 40%, #071530 100%)' }}
@@ -986,7 +986,7 @@ export default function MissionWaterPlatform() {
               {
                 kicker: 'Progress',
                 title: 'Weekly report cards',
-                desc: 'Real-time dashboards for educators to see where every student stands — no spreadsheets.',
+ desc: 'Real-time dashboards for educators to see where every student stands, no spreadsheets.',
                 icon: '◈',
               },
               {
@@ -1035,12 +1035,12 @@ export default function MissionWaterPlatform() {
               {
                 kicker: 'Admin Dashboard',
                 title: 'Educators & parents',
-                desc: 'Separate logins, same dashboard — different views. Educators see the full roster; parents see their student.',
+ desc: 'Separate logins, same dashboard, different views. Educators see the full roster; parents see their student.',
               },
               {
                 kicker: 'Live + Archive',
                 title: 'Stream then keep',
-                desc: 'Upcoming sessions previewed with set-a-reminder. Every recorded class kept indefinitely — and it all plays in the window above.',
+ desc: 'Upcoming sessions previewed with set-a-reminder. Every recorded class kept indefinitely, and it all plays in the window above.',
               },
             ].map((item, i) => (
               <motion.div

@@ -16,16 +16,16 @@ const TICKER = ["Skylar", "PA'LA", 'Ambition Mechanical', 'ISA Energy', 'Brandon
 const STORIES = [
   {
     client: 'ISA Energy', tag: 'Energy · Film', media: 'slate',
-    big: '3', bigLabel: 'films — demo, validation, brand',
+ big: '3', bigLabel: 'films, demo, validation, brand',
     slate: { title: 'ISA ENERGY', roll: 'A three-film series', scene: '3 acts · 9 beats · 4 subjects', take: 'Live in investor meetings' },
     headline: 'A three-video series, now in every investor meeting',
-    body: `We launched a three-video series with the ISA team — a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
+ body: `We launched a three-video series with the ISA team, a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
     stat: 'Helped raise a substantial round.',
   },
   {
     client: 'Space Rising', tag: 'Tech · Platform', media: 'site', src: '/hero-sites/space-rising.jpg',
     big: '1,000+', bigLabel: 'in one room at Space Congress',
-    headline: 'SpaceOS — and 1,000 people in one room',
+ headline: 'SpaceOS, and 1,000 people in one room',
     body: `We built SpaceOS, their platform for the space industry to gather online with shared resources and insider information. Then we ran heavy sprints to get them ready for big moments like Space Congress.`,
     stat: 'Drove a wave of traffic to the new platform.',
   },
@@ -34,14 +34,14 @@ const STORIES = [
     big: 'Top-5', bigLabel: 'US insurer by size',
     slate: { title: 'INCLUDED HEALTH', roll: 'A film series', scene: 'Healthcare · Nationwide', take: 'Screened at Inspire Summit' },
     headline: 'Films for one of the largest insurers in the US',
-    body: `We finished a series of videos for Included Health — one of the largest insurance providers in the country — and were proud to work alongside them at their Inspire Summit.`,
+ body: `We finished a series of videos for Included Health, one of the largest insurance providers in the country, and were proud to work alongside them at their Inspire Summit.`,
     stat: 'Produced for the Inspire Summit.',
   },
   {
     client: 'Ambition Mechanical', tag: 'Trades · Web + Ads', media: 'site', src: '/hero-sites/ambition.jpg',
     big: '4 / mo', bigLabel: 'organic leads from the new site alone',
     headline: 'Four solid leads a month, organically',
-    body: `We've been running Ambition Mechanical's Google Ads — but the new website we built is already pulling in four solid leads a month on its own, organically, before the ad spend even counts.`,
+ body: `We've been running Ambition Mechanical's Google Ads, but the new website we built is already pulling in four solid leads a month on its own, organically, before the ad spend even counts.`,
     stat: 'Before paid spend even counts.',
   },
 ];
@@ -63,15 +63,15 @@ const PORTFOLIO = [
 
 const VOICES = [
   { q: 'The video was a huge tool in recruiting our first 3 cohorts. Every sponsor meeting we played it. It did the selling for us.', n: 'Brandon Clarke', c: 'Startup AZ Foundation', m: '3 cohorts recruited' },
-  { q: 'Before AOM we posted randomly. Now we have a repeatable system — the content actually brings people in.', n: 'Sumit Seth', c: 'Naamly SaaS', m: 'Repeatable content engine' },
+ { q: 'Before AOM we posted randomly. Now we have a repeatable system, the content actually brings people in.', n: 'Sumit Seth', c: 'Naamly SaaS', m: 'Repeatable content engine' },
   { q: 'They did not just shoot beautiful footage. They understood who we are and made sure every frame said it.', n: 'Gio Osso', c: 'Virtu Hospitality Group', m: 'Brand story on screen' },
 ];
 
 const CHAPTERS = ['The hook', 'Who we are', 'What we do', 'The billboard', 'The team', 'The work', 'Voices', 'The conversation'];
 
-const HERO_REEL = '698a6296fc23d3d76fa8d992';   // Journey to Gary Vee — strongest horizontal doc footage
-const FILM_REEL = '698a5ef5fc23d3d76fa87ef4';   // Virtu Hospitality — the "video company" chapter plays under itself
-const BILL_REEL = '698a5fcdfc23d3d76fa893b8';   // United Food Bank — under the billboard line
+const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee, strongest horizontal doc footage
+const FILM_REEL = '698a5ef5fc23d3d76fa87ef4'; // Virtu Hospitality, the "video company" chapter plays under itself
+const BILL_REEL = '698a5fcdfc23d3d76fa893b8'; // United Food Bank, under the billboard line
 
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
 const poster = (id, w = 800) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
@@ -570,8 +570,8 @@ export default function VCinematicGlass() {
 
   const sendBrief = e => {
     e.preventDefault();
-    const subject = `New project — ${brief.name}${brief.co ? ' (' + brief.co + ')' : ''}`;
-    const body = `Hi AOM,%0D%0A%0D%0A${encodeURIComponent(brief.msg)}%0D%0A%0D%0A— ${encodeURIComponent(brief.name)}${brief.co ? ', ' + encodeURIComponent(brief.co) : ''}`;
+ const subject = `New project, ${brief.name}${brief.co ? ' (' + brief.co + ')' : ''}`;
+ const body = `Hi AOM,%0D%0A%0D%0A${encodeURIComponent(brief.msg)}%0D%0A%0D%0A, ${encodeURIComponent(brief.name)}${brief.co ? '·' + encodeURIComponent(brief.co) : ''}`;
     window.location.href = `mailto:hello@aheadofmarket.com?subject=${encodeURIComponent(subject)}&body=${body}`;
   };
 
@@ -675,7 +675,7 @@ export default function VCinematicGlass() {
             <div className="hero-grid">
               <div>
                 <Fade auto delay={0.15} dur={0.7}>
-                  <span className="chip lg"><i className="csq" />Phoenix, AZ — Since 2020</span>
+ <span className="chip lg"><i className="csq" />Phoenix, AZ, Since 2020</span>
                 </Fade>
                 <h1 className="hero-h dp" style={{ marginTop: '1.4rem' }}>
                   <Chars
@@ -689,7 +689,7 @@ export default function VCinematicGlass() {
                   />
                 </h1>
                 <Fade auto delay={0.8} dur={1}>
-                  <p className="hero-sub">Hi. We're Ahead of Market — a storytelling company from Phoenix, AZ.</p>
+ <p className="hero-sub">Hi. We're Ahead of Market, a storytelling company from Phoenix, AZ.</p>
                 </Fade>
                 <Fade auto delay={1.2} dur={1}>
                   <div className="hero-cta">
@@ -704,7 +704,7 @@ export default function VCinematicGlass() {
             </div>
             <Fade auto delay={1.6} dur={1}>
               <div className="hero-foot">
-                <span>Now playing: Journey to Gary Vee — our documentary work</span>
+ <span>Now playing: Journey to Gary Vee, our documentary work</span>
                 <span>Scroll to meet us ↓</span>
               </div>
             </Fade>
@@ -732,7 +732,7 @@ export default function VCinematicGlass() {
             </div>
             <div className="beat-inner">
               <Fade dur={0.7}>
-                <div className="beat-chip"><span className="chip lg"><i className="csq" />So — who are we, exactly?</span></div>
+ <div className="beat-chip"><span className="chip lg"><i className="csq" />So, who are we, exactly?</span></div>
               </Fade>
               <h2 className="beat-h dp">
                 <Chars
@@ -746,7 +746,7 @@ export default function VCinematicGlass() {
             </div>
             <div className="beat-side">
               <Fade delay={0.4} dur={0.8}>
-                <span className="chip lg"><i className="csq" />Frames from our films — playing behind this</span>
+ <span className="chip lg"><i className="csq" />Frames from our films, playing behind this</span>
               </Fade>
             </div>
           </section>
@@ -771,7 +771,7 @@ export default function VCinematicGlass() {
             </div>
             <div className="beat-side">
               <Fade delay={0.4} dur={0.8}>
-                <span className="chip lg"><i className="csq" />Sites we've built — standing behind this</span>
+ <span className="chip lg"><i className="csq" />Sites we've built, standing behind this</span>
               </Fade>
             </div>
           </section>
@@ -813,7 +813,7 @@ export default function VCinematicGlass() {
                 />
               </h2>
               <Fade delay={0.9} dur={1}>
-                <p className="payoff-tail">— we just happen to make videos and web apps often.</p>
+ <p className="payoff-tail">, we just happen to make videos and web apps often.</p>
               </Fade>
             </div>
           </section>
@@ -884,7 +884,7 @@ export default function VCinematicGlass() {
             <Fade delay={0.5} dur={0.9}>
               <div className="bill-card lg">
                 <span>
-                  A website or a video is the same — it doesn't help if you don't have a strategy to get it out.
+ A website or a video is the same, it doesn't help if you don't have a strategy to get it out.
                   That's where we come in. We make the marketing materials, but <em>first</em> we figure out exactly how they'll get distributed most effectively.
                 </span>
               </div>
@@ -926,7 +926,7 @@ export default function VCinematicGlass() {
               </Fade>
               <Fade className="stat lg" delay={0.15}>
                 <span className="stat-n"><Counter value="3" /></span>
-                <span className="stat-l">Industries — Tech, Construction, Nonprofits</span>
+ <span className="stat-l">Industries, Tech, Construction, Nonprofits</span>
               </Fade>
               <Fade className="stat lg" delay={0.25}>
                 <span className="stat-n"><Counter value="8+" /></span>
@@ -936,7 +936,7 @@ export default function VCinematicGlass() {
             <Fade delay={0.2}>
               <p className="team-note">
                 Our team comes from commercial film production, local news, national media, and creative agencies.
-                We've worked across Phoenix, nationally, and internationally — always story-first.
+ We've worked across Phoenix, nationally, and internationally, always story-first.
               </p>
             </Fade>
             <Fade delay={0.3}>
@@ -954,7 +954,7 @@ export default function VCinematicGlass() {
         <section className="sec" data-ch="5" style={{ textAlign: 'center' }}>
           <span className="ghost-word ghost-gold" aria-hidden="true">the work</span>
           <div className="sec-inner">
-            <Fade><span className="lb">Enough about us — here's what that looks like</span></Fade>
+ <Fade><span className="lb">Enough about us, here's what that looks like</span></Fade>
             <h2 className="sec-h" style={{ marginInline: 'auto' }}>
               <Chars sq lines={[[{ t: 'Now, the ' }, { t: 'work', cls: 'gold' }]]} />
             </h2>
@@ -974,7 +974,7 @@ export default function VCinematicGlass() {
                         <span className="frame-url">{s.client}</span>
                       </div>
                       <div className="frame-shot">
-                        <img src={s.src} alt={`${s.client} — website by Ahead of Market`} loading="lazy" />
+ <img src={s.src} alt={`${s.client}, website by Ahead of Market`} loading="lazy" />
                       </div>
                     </div>
                   ) : (
@@ -995,7 +995,7 @@ export default function VCinematicGlass() {
                   <span className="story-metric-l">{s.bigLabel}</span>
                 </div>
                 <div className="story-idx">
-                  <span className="lb">{i === 0 ? 'Some recent work — ' : ''}{String(i + 1).padStart(2, '0')} / {String(STORIES.length).padStart(2, '0')}</span>
+ <span className="lb">{i === 0 ? 'Some recent work, ' : ''}{String(i + 1).padStart(2, '0')} / {String(STORIES.length).padStart(2, '0')}</span>
                   <span className="bar" />
                   <span className="lb">{s.tag}</span>
                 </div>
@@ -1043,7 +1043,7 @@ export default function VCinematicGlass() {
             </h2>
             <Fade delay={0.4}>
               <p className="sec-sub">
-                By now you know us a little. We'd love to learn about what you're working on — and how we might be able to help.
+ By now you know us a little. We'd love to learn about what you're working on, and how we might be able to help.
               </p>
             </Fade>
             <Fade delay={0.55}>
@@ -1115,7 +1115,7 @@ export default function VCinematicGlass() {
               ))}
             </div>
             <Fade className="reels-head">
-              <span className="lb">Reels — made for the feed</span>
+ <span className="lb">Reels, made for the feed</span>
               <span className="bar" />
             </Fade>
             <div className="reels-grid">

@@ -116,9 +116,9 @@ export default function LivingParagraphCard({ world, activeProject }) {
   }, [expanded, usingFallback, fallbackDetail, world, scope])
 
   const showOverview = useMemo(() => {
-    if (error && !overview) return `(living paragraph unavailable — ${error})`
+ if (error && !overview) return `(living paragraph unavailable, ${error})`
     if (loading && !overview) return 'Loading…'
-    return overview || '—'
+ return overview || '·'
   }, [error, loading, overview])
 
   const hasDetails = (!usingFallback && !!details) || usingFallback
@@ -211,7 +211,7 @@ function FallbackDetailBlock({ detail }) {
         <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.muted, marginBottom: 4 }}>Recent messages</div>
         {detail.recent_messages.map((m, i) => (
           <div key={i} style={{ marginBottom: 4 }}>
-            <span style={{ color: C.muted, fontSize: 11 }}>{m.when}</span> — {m.preview || '(no preview)'}
+ <span style={{ color: C.muted, fontSize: 11 }}>{m.when}</span>, {m.preview || '(no preview)'}
           </div>
         ))}
       </section>
@@ -223,7 +223,7 @@ function FallbackDetailBlock({ detail }) {
         <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.muted, marginBottom: 4 }}>Recent activity</div>
         {detail.recent_activity.map((m, i) => (
           <div key={i} style={{ marginBottom: 4 }}>
-            <span style={{ color: C.muted, fontSize: 11 }}>{m.when} · {m.project}</span> — {m.preview || '(no preview)'}
+ <span style={{ color: C.muted, fontSize: 11 }}>{m.when} · {m.project}</span>, {m.preview || '(no preview)'}
           </div>
         ))}
       </section>
@@ -235,7 +235,7 @@ function FallbackDetailBlock({ detail }) {
         <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.muted, marginBottom: 4 }}>Scaffold changes</div>
         {detail.scaffold_events.map((e, i) => (
           <div key={i} style={{ marginBottom: 4 }}>
-            <span style={{ color: C.muted, fontSize: 11 }}>{e.when}</span> — {e.type}
+ <span style={{ color: C.muted, fontSize: 11 }}>{e.when}</span>, {e.type}
             {e.meta?.filename ? `: ${e.meta.filename}` : ''}
           </div>
         ))}
@@ -248,7 +248,7 @@ function FallbackDetailBlock({ detail }) {
         <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.muted, marginBottom: 4 }}>Open tasks</div>
         {detail.open_tasks.map((t, i) => (
           <div key={i} style={{ marginBottom: 4 }}>
-            <span style={{ color: C.muted, fontSize: 11 }}>{t.updated}</span> — {t.title}
+ <span style={{ color: C.muted, fontSize: 11 }}>{t.updated}</span>, {t.title}
           </div>
         ))}
       </section>

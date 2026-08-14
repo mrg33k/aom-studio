@@ -1,7 +1,8 @@
-// R38 homepage content — V6.1 LOCKED copy (2026-08-13), console tokens.
+// R38 homepage content, V6.1 LOCKED copy (2026-08-13), console tokens, R2 clarify 2026-08-14.
 // Voice law: positive, light, spelled-out plain talk. One flowing thought per
 // sentence. Money appears exactly once (THE MATH). Numbers live beside the
-// client's name only. CTA is "Tell us what you need" — "brief" is retired.
+// client's name only. CTA is "Tell us what you need" (brief is retired).
+// R2: every secondary line earns its place or is cut. No em dashes. Sentences rewritten.
 
 export const T = {
   paper: '#F5F3EE',
@@ -12,92 +13,92 @@ export const T = {
 };
 
 export const HERO = {
-  eyebrow: 'Phoenix, Arizona — One department, one fee',
+  eyebrow: 'Phoenix, Arizona',
   // Hand-placed lines; the last line renders in the italic body register.
   h1Lines: ["We're the marketing", 'department for companies'],
   h1Emphasis: "that don't have one.",
-  sub: "We run the marketing for companies that don't have a marketing department. Plan, film, build, run, answer — month after month, out of Phoenix.",
+  sub: 'We plan it, film it, build it, and run it every month out of Phoenix. Your jobs, your website, your ads, and your reviews.',
   cta: 'Tell us what you need',
   ctaSub: 'See the work',
 };
 
 export const DEPT = {
-  kick: 'The department',
+  kick: 'The five parts',
   open: "You've got a company to run. We handle the marketing.",
-  para: "We plan it, we film it, we build it, and we run it. We're out on your jobs through the month, we keep the website current, we run the ads, and we answer the reviews. At the end of the month you see all of it on one page.",
+  para: 'We plan it, we film it, we build it, and we run it. At the end of the month you get one page that shows what happened.',
   modules: [
-    { label: 'The plan',    body: 'Every 90 days we write out where this is going, on paper you can read. Then we meet every week or every other week — whatever works for you.' },
-    { label: 'The filming', body: 'We come film your jobs — photos, drone, and a plan for a good video. Whatever hour the work happens.' },
-    { label: 'The website', body: 'We build it and keep it current, and you can be as much a part of the process as you want.' },
-    { label: 'The ads',     body: 'We set them up and run them week by week. The account is yours and you pay Google directly.' },
+    { label: 'The plan',    body: 'Every 90 days we put the next three months on paper you can read. We meet every week or every other week, your call.' },
+    { label: 'The filming', body: 'We come to your jobs for photos, drone, and video. If the work is happening, we are there to film it.' },
+    { label: 'The website', body: 'We build it and keep it current. You are in the room as much as you want to be.' },
+    { label: 'The ads',     body: 'We set them up and manage them every week. The ad account is yours and you pay Google directly.' },
     { label: 'The reviews', body: 'When one comes in, we write back the way you would.' },
   ],
 };
 
 export const NINETY = {
   kick: 'The first 90 days',
-  body: "The first few weeks, we're setting things up and making everything look right. By the end of the first month, you start hearing about it — from customers, from the office, from people around town. From there, it's all wheels rolling and we get tactical.",
+  body: 'The first few weeks we set things up and make everything look right. By the end of the first month you hear it from customers and from people around town. After that the wheels are rolling and we get tactical.',
 };
 
 export const MONTH = {
   kick: 'A month with us',
   tail: "Then we do it again. That's what a department is.",
-  body: "Everything goes live as it's ready, and at the end of the month you get one page with the numbers on it.",
+  body: 'Work goes live as it is ready. At the end of the month you get one page that shows what ran and what it did.',
   weeks: [
-    { wk: 'Week 1', what: 'Plan.' },
-    { wk: 'Week 2', what: 'Shoot.' },
+    { wk: 'Week 1', what: 'Plan the month.' },
+    { wk: 'Week 2', what: 'Shoot on your jobs.' },
     { wk: 'Week 3', what: 'Build and launch.' },
     { wk: 'Week 4', what: 'Run and report.' },
   ],
 };
 
 export const FILMS = {
-  kick: 'Filmed by us',
+  kick: 'Two films',
   h2: 'Shot on our clients’ jobs.',
   items: [
     {
       reel: '698a58aefc23d3d76fa7cdd6',
-      label: 'Ambition Mechanical — Phoenix',
+      label: 'Ambition Mechanical, Phoenix',
       title: 'On the roof for an emergency hospital install.',
     },
     {
       reel: '698a5e91873071aec5c9fc36',
-      label: 'Tree Guardian USA — Documentary',
+      label: 'Tree Guardian USA, Documentary',
       title: 'A company story, told long-form.',
     },
   ],
 };
 
 export const WORK = {
-  kick: 'The work',
+  kick: 'By what we made',
   h2: 'Every industry. A soft spot for construction.',
-  lede: "Here's the work, sorted by what we made. We do this for everyone — construction just has our heart.",
+  lede: 'We do this for every industry. Construction just has our heart.',
 };
 
 export const ALACARTE = {
   kick: 'Just need one thing?',
-  body: "Not everybody needs the whole department. If you want a crew for a day, a website, or somebody to run your ads — we do that too.",
-  link: 'See what that looks like',
+  body: 'Not everybody needs the whole department. If you want a crew for a day, a website, or someone to run your ads, we do that too.',
+  link: 'Crew for a day, a website, or ads. You pick.',
 };
 
 export const MATH = {
-  kick: 'The math, in the open',
+  kick: 'In house versus us',
   h2: 'What it would cost you to do this yourself.',
-  body: "If you hired all of this yourself — a videographer, someone on the website, someone running the ads — it comes out around $12,000 a month. We're $3,000. There's no contract, and everything we make is yours to keep: the plan, the photos, the site, the ad account.",
+  body: 'If you hired this yourself, a videographer and someone on the website and someone running the ads, it comes out around $12,000 a month. We are $3,000. There is no contract and everything we make is yours to keep. The plan, the photos, the site, and the ad account.',
   punch: 'One month in-house buys four months of us.',
 };
 
 export const PROOF = {
   kick: 'One client, one year',
-  label: 'Ambition Mechanical — Phoenix',
-  body: 'Ambition Mechanical in Phoenix has been with us a year. 46 shoots, 399 photos — and after a few months, the phone started ringing. You’re welcome to ask them.',
-  aside: 'You can call the same person you started with, any time. They’ll answer, or they’ll call you back.',
+  label: 'Ambition Mechanical, Phoenix',
+  body: 'Ambition Mechanical in Phoenix has been with us a year. 46 shoots and 399 photos, and after a few months the phone started ringing. You are welcome to ask them.',
+  aside: 'You will talk to the same person you started with. If they miss you, they call you back.',
 };
 
 export const CLOSING = {
   h2: 'Ready when you are.',
   cta: 'Tell us what you need',
-  footnote: 'Looking for a video crew rather than a marketing department? Say so and tell us what you need.',
+  footnote: 'Just need a crew for a day? Tell us what you need.',
 };
 
 export const NAV = {
@@ -112,13 +113,13 @@ export const NAV = {
           links: [
             { t: 'The plan',    s: 'A 90-day plan you can read.',        href: '#department' },
             { t: 'The filming', s: 'Shot on your jobs. We come to you.', href: '#films' },
-            { t: 'The website', s: 'Yours — your domain, your name.',    href: '#work' },
+            { t: 'The website', s: 'Your domain and your name. You own it.', href: '#work' },
           ],
         },
         {
-          kick: 'And the rest',
+          kick: 'Just one thing',
           links: [
-            { t: 'A crew for a day', s: 'Filmed, edited, back in two days.', href: '#one-thing' },
+            { t: 'A crew for a day', s: 'Filmed and edited, back in two days.', href: '#one-thing' },
           ],
         },
       ],
@@ -127,16 +128,16 @@ export const NAV = {
       label: 'The work',
       cols: [
         {
-          kick: 'See it',
+          kick: 'Browse',
           links: [
-            { t: 'The reels',            s: 'Real jobs, real clients.',      href: '#work' },
-            { t: 'Filmed by us',         s: 'Two films worth your minute.',  href: '#films' },
+            { t: 'The reels',            s: 'Every reel is a real client job.', href: '#work' },
+            { t: 'Filmed by us',         s: 'Two films, one minute each.',      href: '#films' },
           ],
         },
         {
           kick: 'Proof',
           links: [
-            { t: 'One client, one year', s: 'Ambition Mechanical, Phoenix.', href: '#proof' },
+            { t: 'One client, one year', s: 'A year with Ambition Mechanical, Phoenix.', href: '#proof' },
           ],
         },
       ],

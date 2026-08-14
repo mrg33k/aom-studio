@@ -53,7 +53,7 @@ const STORY_SECTIONS = [
       { name: 'Scalable', desc: 'Mass-manufacturable, no rare materials' },
       { name: 'Sustainable', desc: 'Inherent built-in benefit' },
     ],
-    visual: 'Motion graphics — four attributes',
+ visual: 'Motion graphics, four attributes',
     stockLinks: [
       { label: 'Envato Elements', url: 'https://elements.envato.com/stock-video?q=energy+motion+graphics+infographic+attributes' },
       { label: 'Adobe Stock', url: 'https://stock.adobe.com/search?k=clean+energy+motion+graphics+infographic&filters%5Bcontent_type%3Avideo%5D=1' },

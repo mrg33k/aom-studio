@@ -685,7 +685,7 @@ function WishRow({ w, dim }) {
           <span style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
             <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_FAINT }}>{w.source || 'web'}</span>
             {w.soft_ack_at && !w.latest_response && (
-              <span title={`Holding note auto-sent ${timeAgo(w.soft_ack_at)} — real reply still pending`}
+ <span title={`Holding note auto-sent ${timeAgo(w.soft_ack_at)}, real reply still pending`}
                 style={{ fontFamily: MONO, fontSize: 9.5, color: ACCENT_EMERALD, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
                 <span style={{ fontSize: 7 }}>●</span> holding note sent
               </span>

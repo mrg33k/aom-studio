@@ -267,7 +267,7 @@ const CSS = `
     padding: 0;
   }
   .v2v-symbolism li { margin-bottom: 4px; }
-  .v2v-symbolism li::before { content: "— "; color: var(--gold); }
+ .v2v-symbolism li::before { content: "·"; color: var(--gold); }
 
   .v2v-mock-row {
     display: flex;
@@ -557,10 +557,10 @@ export default function V2VBrand() {
 
       {/* HEADER */}
       <div className="v2v-header">
-        <div className="v2v-header-label">Brand Identity — Round 2</div>
+ <div className="v2v-header-label">Brand Identity, Round 2</div>
         <h1>Valor to Victory</h1>
-        <p>Veteran homeownership. A new direction — patriotic warmth, not corporate institution.</p>
-        <span className="v2v-vs-badge">Green + Gold Edition — Not Navy + Copper</span>
+ <p>Veteran homeownership. A new direction, patriotic warmth, not corporate institution.</p>
+ <span className="v2v-vs-badge">Green + Gold Edition, Not Navy + Copper</span>
       </div>
 
       {/* PALETTE STRIP */}
@@ -582,7 +582,7 @@ export default function V2VBrand() {
           ))}
         </div>
         <div className="v2v-vs-note">
-          <strong>Not navy + copper.</strong> That's S3C territory — a trade coalition. V2V is a veteran's journey home. Green = growth + land + hope. Gold = honor + valor.
+ <strong>Not navy + copper.</strong> That's S3C territory, a trade coalition. V2V is a veteran's journey home. Green = growth + land + hope. Gold = honor + valor.
         </div>
       </div>
 
@@ -594,7 +594,7 @@ export default function V2VBrand() {
             <div className="v2v-section-title">
               Eagle + Key Shield <span className="v2v-recommended-tag">Recommended</span>
             </div>
-            <div className="v2v-section-sub">Eagle over ornate key, inside a pointed shield — most versatile mark</div>
+ <div className="v2v-section-sub">Eagle over ornate key, inside a pointed shield, most versatile mark</div>
           </div>
         </div>
         <div className="v2v-logo-row">
@@ -641,10 +641,10 @@ export default function V2VBrand() {
             <div className="v2v-info-block">
               <h4>Symbolism</h4>
               <ul className="v2v-symbolism">
-                <li>Eagle atop the mark — freedom, vigilance, American pride</li>
-                <li>Ornate key — unlocking homeownership, earned access</li>
-                <li>Shield form — protection through service honored</li>
-                <li>Green foundation — prosperity, growth, land ownership</li>
+ <li>Eagle atop the mark, freedom, vigilance, American pride</li>
+ <li>Ornate key, unlocking homeownership, earned access</li>
+ <li>Shield form, protection through service honored</li>
+ <li>Green foundation, prosperity, growth, land ownership</li>
               </ul>
             </div>
           </div>
@@ -657,7 +657,7 @@ export default function V2VBrand() {
           <div className="v2v-section-num">2</div>
           <div>
             <div className="v2v-section-title">The Threshold</div>
-            <div className="v2v-section-sub">Open door + eagle + sunlight — the veteran's journey home made visual</div>
+ <div className="v2v-section-sub">Open door + eagle + sunlight, the veteran's journey home made visual</div>
           </div>
         </div>
         <div className="v2v-logo-row">
@@ -704,10 +704,10 @@ export default function V2VBrand() {
             <div className="v2v-info-block">
               <h4>Symbolism</h4>
               <ul className="v2v-symbolism">
-                <li>Open door — the moment of arrival, new chapter beginning</li>
-                <li>Sunlight rays through door — hope, warmth after service</li>
-                <li>Eagle flying through — freedom meets homecoming</li>
-                <li>Trees at base — roots, stability, finally home</li>
+ <li>Open door, the moment of arrival, new chapter beginning</li>
+ <li>Sunlight rays through door, hope, warmth after service</li>
+ <li>Eagle flying through, freedom meets homecoming</li>
+ <li>Trees at base, roots, stability, finally home</li>
               </ul>
             </div>
           </div>
@@ -720,7 +720,7 @@ export default function V2VBrand() {
           <div className="v2v-section-num">3</div>
           <div>
             <div className="v2v-section-title">V2V Eagle Shield</div>
-            <div className="v2v-section-sub">Shield with eagle portrait + V2V monogram — cleanest digital mark</div>
+ <div className="v2v-section-sub">Shield with eagle portrait + V2V monogram, cleanest digital mark</div>
           </div>
         </div>
         <div className="v2v-logo-row">
@@ -766,10 +766,10 @@ export default function V2VBrand() {
             <div className="v2v-info-block">
               <h4>Symbolism</h4>
               <ul className="v2v-symbolism">
-                <li>Shield silhouette — protection, military honor, defense</li>
-                <li>Eagle portrait — strength, American pride, authority</li>
-                <li>V2V monogram — memorable shorthand, badge-ready</li>
-                <li>Key at base of shield — access, earned right to a home</li>
+ <li>Shield silhouette, protection, military honor, defense</li>
+ <li>Eagle portrait, strength, American pride, authority</li>
+ <li>V2V monogram, memorable shorthand, badge-ready</li>
+ <li>Key at base of shield, access, earned right to a home</li>
               </ul>
             </div>
           </div>
@@ -781,8 +781,8 @@ export default function V2VBrand() {
         <h3>Why This Is Not S3C</h3>
         <p className="v2v-compare-sub">Both are client brands. They need to feel completely different. Here's the separation.</p>
         <div className="v2v-compare-table">
-          <div className="v2v-col-header v2v-s3c-col">S3C — Trade Coalition</div>
-          <div className="v2v-col-header v2v-v2v-col">V2V — Veteran Nonprofit</div>
+ <div className="v2v-col-header v2v-s3c-col">S3C, Trade Coalition</div>
+ <div className="v2v-col-header v2v-v2v-col">V2V, Veteran Nonprofit</div>
 
           <div className="v2v-compare-cell s3c"><strong>Palette</strong>Navy blue + copper. Institutional, transactional.</div>
           <div className="v2v-compare-cell v2v-r"><strong>Palette</strong>Forest green + honor gold. Growth, prosperity, warmth.</div>
@@ -807,20 +807,20 @@ export default function V2VBrand() {
           <div className="v2v-section-num">+</div>
           <div>
             <div className="v2v-section-title">All Round 2 Concepts</div>
-            <div className="v2v-section-sub">9 concepts generated — green + gold, distinctly not navy + copper</div>
+ <div className="v2v-section-sub">9 concepts generated, green + gold, distinctly not navy + copper</div>
           </div>
         </div>
         <div className="v2v-concepts-grid">
           {[
-            { file: 'c01', label: 'C01 — Eagle Key Shield' },
-            { file: 'c02', label: 'C02 — Shield + House Keys' },
-            { file: 'c03', label: 'C03 — Eagle Wing V' },
-            { file: 'c04', label: 'C04 — Eagle Carries Key' },
-            { file: 'c05', label: 'C05 — The Threshold' },
-            { file: 'c06', label: 'C06 — Circular Badge' },
-            { file: 'c07', label: 'C07 — V2V Eagle Shield' },
-            { file: 'c08', label: 'C08 — Eagle + House Wings' },
-            { file: 'c09', label: 'C09 — V Wings + Shield Star' },
+ { file: 'c01', label: 'C01, Eagle Key Shield' },
+ { file: 'c02', label: 'C02, Shield + House Keys' },
+ { file: 'c03', label: 'C03, Eagle Wing V' },
+ { file: 'c04', label: 'C04, Eagle Carries Key' },
+ { file: 'c05', label: 'C05, The Threshold' },
+ { file: 'c06', label: 'C06, Circular Badge' },
+ { file: 'c07', label: 'C07, V2V Eagle Shield' },
+ { file: 'c08', label: 'C08, Eagle + House Wings' },
+ { file: 'c09', label: 'C09, V Wings + Shield Star' },
           ].map(c => (
             <div className="v2v-concept-card" key={c.file}>
               <img src={`/images/v2v/${c.file}.png`} alt={c.label} />

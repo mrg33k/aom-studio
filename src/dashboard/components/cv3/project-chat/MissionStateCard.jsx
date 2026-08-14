@@ -212,7 +212,7 @@ export default function MissionStateCard({
 
       {!loading && error && (
         <div style={{ fontSize: 12, color: '#f59e0b' }}>
-          State unavailable ({error}). The chat still works — ask the agent what's going on.
+ State unavailable ({error}). The chat still works, ask the agent what's going on.
         </div>
       )}
 

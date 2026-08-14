@@ -175,7 +175,7 @@ export function useLiveScribe(worldId = null) {
       console.error('[useLiveScribe] MediaRecorder init failed:', err);
       recordingActiveRef.current = false;
       setPhase('error');
-      setNotice('Could not start recording on this device — the browser blocked audio capture.');
+ setNotice('Could not start recording on this device, the browser blocked audio capture.');
       setErrorName('MediaRecorderUnsupported');
       return;
     }
@@ -193,7 +193,7 @@ export function useLiveScribe(worldId = null) {
       console.error('[useLiveScribe] recorder start failed:', err);
       recordingActiveRef.current = false;
       setPhase('error');
-      setNotice('Could not start recording on this device — the browser blocked audio capture.');
+ setNotice('Could not start recording on this device, the browser blocked audio capture.');
       setErrorName('RecorderStartFailed');
       return;
     }
@@ -242,11 +242,11 @@ export function useLiveScribe(worldId = null) {
       const name = (err && err.name) || '';
       setNotice(
         name === 'NotAllowedError' || name === 'PermissionDeniedError'
-          ? 'Microphone blocked — allow mic access in the browser and try again.'
+ ? 'Microphone blocked, allow mic access in the browser and try again.'
           : name === 'NotFoundError' || name === 'DevicesNotFoundError'
-            ? 'No microphone found — plug one in or pick an input in your sound settings, then try again.'
+ ? 'No microphone found, plug one in or pick an input in your sound settings, then try again.'
             : name === 'NotReadableError' || name === 'TrackStartError'
-              ? 'The microphone is busy in another app — close it and try again.'
+ ? 'The microphone is busy in another app, close it and try again.'
               : 'Could not start the microphone.'
       );
       setErrorName(name || 'unknown');
@@ -287,7 +287,7 @@ export function useLiveScribe(worldId = null) {
     // Clear the active flag FIRST so the current segment's onstop does NOT chain a new one.
     recordingActiveRef.current = false;
     if (segmentTimerRef.current) { clearTimeout(segmentTimerRef.current); segmentTimerRef.current = null; }
-    setNotice('Wrapping up — transcribing the last piece…');
+ setNotice('Wrapping up, transcribing the last piece…');
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       await new Promise((resolve) => {
         mediaRecorder.onstop = resolve; // ondataavailable fires before this; flag already false
@@ -305,8 +305,8 @@ export function useLiveScribe(worldId = null) {
     if (turnsRef.current.length) {
       const saved = await saveSession();
       setNotice(saved
-        ? 'Recording saved. Transcript below — send it when you are ready.'
-        : 'Recording stopped. Saving failed — the transcript is still here; try Send again.');
+ ? 'Recording saved. Transcript below, send it when you are ready.'
+ : 'Recording stopped. Saving failed, the transcript is still here; try Send again.');
     } else {
       setNotice('Recording stopped. Nothing was heard, so there is no transcript.');
     }
@@ -315,7 +315,7 @@ export function useLiveScribe(worldId = null) {
   // Save the session and copy a markdown summary to the clipboard.
   const sendSummary = useCallback(async () => {
     if (!turnsRef.current.length) {
-      setNotice('Nothing captured yet — record something first.');
+ setNotice('Nothing captured yet, record something first.');
       return false;
     }
     const saved = await saveSession();
@@ -335,8 +335,8 @@ export function useLiveScribe(worldId = null) {
     let copied = false;
     try { await navigator.clipboard.writeText(lines.join('\n')); copied = true; } catch { /* clipboard blocked */ }
     setNotice(saved
-      ? (copied ? 'Session saved · summary copied to your clipboard' : 'Session saved (clipboard blocked — copy manually)')
-      : 'Could not save the session — check your connection and try again');
+ ? (copied ? 'Session saved · summary copied to your clipboard' : 'Session saved (clipboard blocked, copy manually)')
+ : 'Could not save the session, check your connection and try again');
     return saved;
   }, [saveSession]);
 
@@ -378,7 +378,7 @@ export function useLiveScribe(worldId = null) {
       captureLabel: recording ? 'Stop & save' : 'Start capture',
       statusLine: notice
         || (recording
-          ? 'Capturing — transcribing every 15 seconds'
+ ? 'Capturing, transcribing every 15 seconds'
           : 'Ready to capture. Press Start and speak.'),
     },
     transcript: turns.map((turn) => ({
@@ -387,19 +387,19 @@ export function useLiveScribe(worldId = null) {
       at: turn.at,
       text: turn.text,
       textHtml: turn.text,
-      confidence: '', // Gemini returns no confidence — never fabricate one
+ confidence: '', // Gemini returns no confidence, never fabricate one
     })),
     helper: {
       initials: 'AI',
       tint: 'violet',
       answerHtml: recording
-        ? 'Listening — action items and decisions appear on the right as they are heard.'
+ ? 'Listening, action items and decisions appear on the right as they are heard.'
         : 'Start a capture and the transcript builds here, with action items and decisions pulled out automatically.',
     },
     actionItems: actionItems.map((ai) => ({
       text: ai.text,
       textHtml: ai.text,
-      owner: ai.owner || '—',
+ owner: ai.owner || '·',
     })),
     decisions: decisions.map((d) => ({ text: d.text })),
     // Per-list empty placeholders (rendered via data-each: one row when the list is

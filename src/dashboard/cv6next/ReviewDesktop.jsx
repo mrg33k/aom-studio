@@ -223,7 +223,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     const sel = viewerRef.current?.querySelector('.trow.is-d0on, .trow.is-d1on');
     if (!sel) { lastTreeSelRef.current = ''; return; }
     const key = sel.getAttribute('data-cv6-arg') || sel.textContent || '';
-    if (key === lastTreeSelRef.current) return; // already parked here — don't fight the user's scroll
+ if (key === lastTreeSelRef.current) return; // already parked here, don't fight the user's scroll
     lastTreeSelRef.current = key;
     sel.scrollIntoView({ block: 'nearest' });
   });
@@ -421,7 +421,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
         </div>
       )}
       {/* review-loop: transient verdict feedback. With an action attached (the
-          dismiss toast's Undo — R15b design gate) it's a real control. */}
+ dismiss toast's Undo, R15b design gate) it's a real control. */}
       {notice && (
         <div style={{
           position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',

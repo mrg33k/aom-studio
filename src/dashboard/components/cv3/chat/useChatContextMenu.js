@@ -104,7 +104,7 @@ export default function useChatContextMenu({
         projectSlug: selectedProject?.slug || msg.project || null,
         clientId: currentClientId,
       })
-      showToast('Research task queued — brief will land in Files')
+ showToast('Research task queued, brief will land in Files')
     } catch (err) {
       console.error('[ChatPanel] research error:', err)
       showToast('Could not queue research task')
@@ -151,7 +151,7 @@ export default function useChatContextMenu({
   const handleTaskNeedsVerification = useCallback(async (task) => {
     if (!task) return
     try {
-      const body = `Verify task "${task.title || task.id}" output.\n\nParent task id: ${task.id}\nProject: ${task.project || '—'}\n\nRead the parent's completion payload and confirm it matches expectations.`
+ const body = `Verify task "${task.title || task.id}" output.\n\nParent task id: ${task.id}\nProject: ${task.project || '·'}\n\nRead the parent's completion payload and confirm it matches expectations.`
       const row = {
         title: `Verify: ${snippetOf(task.title || task.id, 90)}`,
         text: body,
@@ -180,7 +180,7 @@ export default function useChatContextMenu({
   const handleTaskResearch = useCallback(async (task) => {
     if (!task) return
     try {
-      const body = `Research follow-up for task "${task.title || task.id}".\n\nParent task id: ${task.id}\nProject: ${task.project || '—'}\n\nWrite a brief in docs/briefs/ and attach it to the ${task.project || 'relevant'} project's Files section.`
+ const body = `Research follow-up for task "${task.title || task.id}".\n\nParent task id: ${task.id}\nProject: ${task.project || '·'}\n\nWrite a brief in docs/briefs/ and attach it to the ${task.project || 'relevant'} project's Files section.`
       const row = {
         title: `Research: ${snippetOf(task.title || task.id, 90)}`,
         text: body,

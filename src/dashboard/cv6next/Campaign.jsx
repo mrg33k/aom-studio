@@ -152,10 +152,10 @@ function GoalStrip({ campaign, stats }) {
         </>
       )}
       <div style={{ display: 'flex', gap: 18, fontSize: 12.5, color: 'var(--muted)', flexWrap: 'wrap' }}>
-        <span><b style={{ color: 'var(--fg)', fontSize: 15 }}>{stats?.sent ?? '—'}</b> sent</span>
-        <span><b style={{ color: 'var(--fg)', fontSize: 15 }}>{stats?.replies ?? '—'}</b> replies</span>
-        <span><b style={{ color: 'var(--fg)', fontSize: 15 }}>{stats?.calls ?? '—'}</b> calls</span>
-        <span><b style={{ color: 'var(--fg)', fontSize: 15 }}>{stats?.won ?? '—'}</b> won</span>
+ <span><b style={{ color: 'var(--fg)', fontSize: 15 }}>{stats?.sent ?? ', '}</b> sent</span>
+ <span><b style={{ color: 'var(--fg)', fontSize: 15 }}>{stats?.replies ?? ', '}</b> replies</span>
+ <span><b style={{ color: 'var(--fg)', fontSize: 15 }}>{stats?.calls ?? ', '}</b> calls</span>
+ <span><b style={{ color: 'var(--fg)', fontSize: 15 }}>{stats?.won ?? ', '}</b> won</span>
       </div>
     </div>
   );
@@ -647,7 +647,7 @@ function CreateWizard({ worldId, onClose, onCreated }) {
 
         {step === 4 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13.5, color: 'var(--fg)' }}>
-            <div><b>{f.name}</b>{f.goal_target ? ` — goal ${f.goal_target} ${f.goal_unit}` : ''}</div>
+ <div><b>{f.name}</b>{f.goal_target ? `, goal ${f.goal_target} ${f.goal_unit}` : ''}</div>
             <div style={{ color: 'var(--muted)' }}>
               Audience: {audType === 'csv'
                 ? `${csvInfo?.valid || 0} contacts from CSV`
@@ -658,7 +658,7 @@ function CreateWizard({ worldId, onClose, onCreated }) {
               {f.daily_cap}/day at {f.send_hour_local}:00 · {f.autopilot ? 'autopilot ON' : 'approve each batch'}
             </div>
             <div style={{ color: 'var(--muted)' }}>
-              From: {connections.find((c) => c.id === connId)?.email || '—'}
+ From: {connections.find((c) => c.id === connId)?.email || '·'}
             </div>
             {error && <div style={{ color: '#F87171', fontSize: 12.5 }}>{error}</div>}
           </div>

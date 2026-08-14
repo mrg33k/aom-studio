@@ -87,10 +87,10 @@ const SUPPLY_LABELS = {
 };
 
 const SUPPLY_DESCS = {
-  food: 'Rations — burned every mission day',
-  power: 'Battery cells — drained every phase',
-  spare_parts: 'Vehicle repairs — used on region travel',
-  tools: 'Field equipment — consumed by lab work',
+ food: 'Rations, burned every mission day',
+ power: 'Battery cells, drained every phase',
+ spare_parts: 'Vehicle repairs, used on region travel',
+ tools: 'Field equipment, consumed by lab work',
 };
 
 // ─── single resource allocation row (tokens OR supplies via `kind`) ──────────
@@ -335,7 +335,7 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
 
               {/* ── R18b SUPPLY LOADOUT — survival supplies ── */}
               <div style={styles.supplyHeader}>
-                <div style={styles.supplyHeaderLabel}>SUPPLY LOADOUT — SURVIVAL</div>
+ <div style={styles.supplyHeaderLabel}>SUPPLY LOADOUT, SURVIVAL</div>
                 <div style={styles.supplyHeaderRight}>
                   <span style={{ color: TEXT_SOFT, fontSize: 9, fontFamily: '"Orbitron", monospace', letterSpacing: '0.12em' }}>REMAINING&nbsp;</span>
                   <span style={{
@@ -402,7 +402,7 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
                 {remaining > 0 ? `${remaining} TOKEN POINT${remaining !== 1 ? 'S' : ''}` : ''}
                 {remaining > 0 && supplyRemaining > 0 ? ' + ' : ''}
                 {supplyRemaining > 0 ? `${supplyRemaining} SUPPLY POINT${supplyRemaining !== 1 ? 'S' : ''}` : ''}
-                {' '}UNALLOCATED — ASSIGN EVERYTHING BEFORE LAUNCH
+ {'·'}UNALLOCATED, ASSIGN EVERYTHING BEFORE LAUNCH
               </div>
             )}
           </div>
@@ -612,7 +612,7 @@ const styles = {
     flexDirection: 'column',
     gap: 10,
     flex: 1,
-    overflowY: 'auto', // two loadouts can exceed short windows — scroll inside the panel
+ overflowY: 'auto', // two loadouts can exceed short windows, scroll inside the panel
     paddingRight: 4,
   },
 

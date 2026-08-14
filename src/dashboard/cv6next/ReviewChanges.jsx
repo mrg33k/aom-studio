@@ -56,7 +56,7 @@ export function ReviewChangesOverlay({ pins = [], title = '', onSendBack = () =>
         </div>
       ))}
       {!pinCount && (
-        <div style={{ padding: '8px 0 4px', color: 'var(--muted)', fontSize: 12.5 }}>No pinned comments yet — type your notes below or pin directly on the deliverable.</div>
+ <div style={{ padding: '8px 0 4px', color: 'var(--muted)', fontSize: 12.5 }}>No pinned comments yet, type your notes below or pin directly on the deliverable.</div>
       )}
     </div>
   );

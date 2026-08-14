@@ -155,7 +155,7 @@ export default function SpaceRisingDealBankAdmin() {
       })
       const json = await res.json()
       if (res.ok && json.ok) {
-        setResult({ ok: true, message: `Added: ${form.company} — ${form.round}`, row: json.row })
+ setResult({ ok: true, message: `Added: ${form.company}, ${form.round}`, row: json.row })
         setForm(EMPTY_FORM)
       } else {
         // If unauthorized, clear the key
@@ -368,7 +368,7 @@ export default function SpaceRisingDealBankAdmin() {
               <div style={fieldWrap}>
                 <label style={labelStyle}>Segment</label>
                 <select value={form.segment} onChange={e => set('segment', e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-                  {SEGMENTS.map(s => <option key={s} value={s}>{s || '— select —'}</option>)}
+ {SEGMENTS.map(s => <option key={s} value={s}>{s || ', select , '}</option>)}
                 </select>
               </div>
 
@@ -481,7 +481,7 @@ export default function SpaceRisingDealBankAdmin() {
                     {d.company}
                   </div>
                   <div style={{ fontSize: 11, color: MUTED, fontFamily: MONO, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ color: ACCENT }}>{d.amount_usd_m ? `$${d.amount_usd_m}M` : d.amount_raised || '—'}</span>
+ <span style={{ color: ACCENT }}>{d.amount_usd_m ? `$${d.amount_usd_m}M` : d.amount_raised || ', '}</span>
                     <span>{d.round}</span>
                     {d.date && <span>{d.date.slice(0, 7)}</span>}
                     {d.segment && <span style={{ opacity: 0.6 }}>{d.segment}</span>}

@@ -55,7 +55,7 @@ export function recordRoutedHere({ room, messageId, text, worldId, confidence, r
       at: Date.now(),
     }));
     try { window.dispatchEvent(new CustomEvent(ROUTED_HERE_EVENT)); } catch { /* no window */ }
-  } catch { /* private mode — the bar just won't show */ }
+ } catch { /* private mode, the bar just won't show */ }
 }
 
 // Returns the record only if it is for THIS room, this world, and still fresh. Anything

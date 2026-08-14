@@ -42,10 +42,10 @@ const PACKAGES = [
         items: [
           'Three-chapter interactive narrative (Earth water crisis → Lunar journey → Moon surface operations)',
           'Role selection system: students choose a mission specialty (Engineer, Scientist, Commander, Communicator)',
-          'Resource allocation mechanic — students manage water, power, and oxygen budgets in real-time decisions',
+ 'Resource allocation mechanic, students manage water, power, and oxygen budgets in real-time decisions',
           'Discovery badge system with 12+ earned achievements tied to curriculum milestones',
           'Between-chapter Mission Hub with session recap, badge case, and next-chapter briefing',
-          'Blippy — custom animated mascot character with contextual guidance and encouragement',
+ 'Blippy, custom animated mascot character with contextual guidance and encouragement',
         ],
       },
       {
@@ -54,7 +54,7 @@ const PACKAGES = [
           'Full game UI design system: NASA instrument panel aesthetic, Conrad Foundation brand integration',
           'Custom background illustrations for all three chapters (Earth / transit / lunar surface)',
           'Animated entry sequences and chapter transitions',
-          'Mobile-responsive layout — plays on tablets and phones, not just desktop',
+ 'Mobile-responsive layout, plays on tablets and phones, not just desktop',
           'Accessibility: high contrast mode, reduced-motion support, screen reader labels',
         ],
       },
@@ -62,14 +62,14 @@ const PACKAGES = [
         category: 'Technical Delivery',
         items: [
           'Hosted and deployed on Conrad Foundation domain or subdomain of choice',
-          'Session persistence — students resume where they left off',
+ 'Session persistence, students resume where they left off',
           'Real-time progress tracking per student (view from instructor dashboard)',
-          'Source code delivered in full — Conrad Foundation owns the IP',
+ 'Source code delivered in full, Conrad Foundation owns the IP',
         ],
       },
     ],
     addons: [
-      { label: 'Chapter 4 expansion', desc: 'Additional mission chapter — Mars water discovery or deep-ocean research analog', price: '+$4,500' },
+ { label: 'Chapter 4 expansion', desc: 'Additional mission chapter, Mars water discovery or deep-ocean research analog', price: '+$4,500' },
       { label: 'Educator dashboard', desc: 'Instructor-facing view: class progress, individual student completion, export to CSV', price: '+$3,200' },
       { label: 'Cohort tracking', desc: 'Multi-class enrollment, separate leaderboards, cohort-vs-cohort reporting', price: '+$2,800' },
       { label: 'Blippy expression library', desc: '40 additional Blippy poses and reactions for custom prompts and celebrations', price: '+$1,500' },
@@ -81,7 +81,7 @@ const PACKAGES = [
     num: '02',
     eyebrow: 'Package Two',
     title: 'The Platform',
-    subtitle: 'A live broadcast and archive platform built around the program — not borrowed from YouTube.',
+ subtitle: 'A live broadcast and archive platform built around the program, not borrowed from YouTube.',
     price: '$15,000',
     adBudget: '+$5,000–$10,000 managed ad spend',
     accentLight: 'rgba(232,93,38,0.06)',
@@ -90,10 +90,10 @@ const PACKAGES = [
       {
         category: 'Live Broadcast Infrastructure',
         items: [
-          'Watch Live tab with embedded stream viewer — students watch in-platform, not redirected to YouTube',
+ 'Watch Live tab with embedded stream viewer, students watch in-platform, not redirected to YouTube',
           'Live Q&A widget: students submit questions during broadcast, instructor queue displayed on screen',
           'Session calendar: 4-session class schedule displayed with dates, times, and session topic',
-          'Countdown timer on session cards — students see time until next live event',
+ 'Countdown timer on session cards, students see time until next live event',
           '"Notify Me" bell system: students subscribe to reminders, receive browser notification at session start',
         ],
       },
@@ -103,24 +103,24 @@ const PACKAGES = [
           'Session archive: recorded past sessions indexed and searchable by topic',
           'Transcript summaries auto-generated for each session (key takeaways, vocabulary, discussion questions)',
           'Thumbnail generation system for each archived session card',
-          'Student re-watch tracking — completion indicators per session',
+ 'Student re-watch tracking, completion indicators per session',
         ],
       },
       {
         category: 'Platform Design & Brand',
         items: [
-          'Fully branded platform page at /missionwaterplatform — Conrad Foundation color system and typography',
+ 'Fully branded platform page at /missionwaterplatform, Conrad Foundation color system and typography',
           'Program overview: mission statement, partner logos, sponsor recognition section',
           'Student sign-up flow: registration with email confirmation and welcome sequence',
-          'Mobile-optimized — full Watch Live experience on phone and tablet',
+ 'Mobile-optimized, full Watch Live experience on phone and tablet',
           'Admin panel: session management, stream URL configuration, student list view',
         ],
       },
     ],
     addons: [
-      { label: 'Custom streaming embed', desc: 'Proprietary HLS embed replacing third-party player — no YouTube branding visible anywhere', price: '+$3,500' },
+ { label: 'Custom streaming embed', desc: 'Proprietary HLS embed replacing third-party player, no YouTube branding visible anywhere', price: '+$3,500' },
       { label: 'Email reminder automation', desc: '24hr and 1hr automated reminder emails to all registered students before each session', price: '+$1,800' },
-      { label: 'Multi-cohort support', desc: 'Separate enrollment groups — school A sees different session schedule than school B, same platform', price: '+$2,400' },
+ { label: 'Multi-cohort support', desc: 'Separate enrollment groups, school A sees different session schedule than school B, same platform', price: '+$2,400' },
       { label: 'Sponsor recognition section', desc: 'Branded sponsor wall with logo display, tier levels, and clickthrough to partner pages', price: '+$1,200' },
       { label: 'Live captioning integration', desc: 'Real-time closed captions pulled from stream and displayed in-platform for accessibility', price: '+$2,000' },
     ],
@@ -142,7 +142,7 @@ const PACKAGES = [
           'Standalone Conrad Foundation / Mission Water marketing landing page',
           'Hero video integration: 60-second program overview film (storyboard, script, and edit managed by AOM)',
           'Program details: session dates, what students learn, how to enroll, partner + sponsor block',
-          'Educator and school administrator outreach page — separate from student-facing content',
+ 'Educator and school administrator outreach page, separate from student-facing content',
           'SEO-optimized copy, structured data, and social preview cards (OG + Twitter meta)',
         ],
       },
@@ -163,13 +163,13 @@ const PACKAGES = [
           'Program one-pager: single-page leave-behind for school principals and district administrators',
           'Email sequence: 5-email enrollment drip for prospective students and parents (written, designed, deployed)',
           'Press kit: program announcement release, founder quotes, program fact sheet, downloadable photos',
-          'Paid media management: Google Display, Meta (Facebook/Instagram), and LinkedIn — managed spend with bi-weekly reporting',
+ 'Paid media management: Google Display, Meta (Facebook/Instagram), and LinkedIn, managed spend with bi-weekly reporting',
         ],
       },
     ],
     addons: [
       { label: 'Video production package', desc: 'Full production (shoot + edit) for 3–5 short-form program videos including astronaut interview and student testimonials', price: '+$6,000' },
-      { label: 'Influencer / astronaut content', desc: 'Coordinate one ambassador post or short collab with a STEM influencer or retired astronaut — scripted, filmed, delivered', price: '+$3,500' },
+ { label: 'Influencer / astronaut content', desc: 'Coordinate one ambassador post or short collab with a STEM influencer or retired astronaut, scripted, filmed, delivered', price: '+$3,500' },
       { label: 'School district outreach campaign', desc: 'Targeted email and LinkedIn campaign to 50 Phoenix-area K–12 administrators to drive enrollment referrals', price: '+$2,400' },
       { label: 'Podcast placement', desc: 'Identify and pitch 3 STEM / education podcasts for Conrad Foundation guest appearances', price: '+$1,800' },
       { label: 'Extended social retainer', desc: 'Month 2–4 social media management and content production following launch month', price: '+$2,800/mo' },
@@ -182,12 +182,12 @@ const CAPABILITIES = [
   {
     icon: '🎮',
     title: 'Interactive Learning',
-    desc: 'Immersive, curriculum-aligned games that put students inside the mission — not just reading about it. Oregon Trail meets NASA mission control.',
+ desc: 'Immersive, curriculum-aligned games that put students inside the mission, not just reading about it. Oregon Trail meets NASA mission control.',
   },
   {
     icon: '📡',
     title: 'Live Broadcast Platform',
-    desc: 'Custom streaming infrastructure built around the program. Live Q&A, session calendars, archive library — all under the Conrad brand.',
+ desc: 'Custom streaming infrastructure built around the program. Live Q&A, session calendars, archive library, all under the Conrad brand.',
   },
   {
     icon: '✍️',
@@ -197,7 +197,7 @@ const CAPABILITIES = [
   {
     icon: '🎨',
     title: 'Design & Brand',
-    desc: 'Full visual identity for the program — from the student-facing site to the game UI to instructor decks. Every pixel matches the mission.',
+ desc: 'Full visual identity for the program, from the student-facing site to the game UI to instructor decks. Every pixel matches the mission.',
   },
   {
     icon: '🤖',
@@ -207,7 +207,7 @@ const CAPABILITIES = [
   {
     icon: '📊',
     title: 'Measurement & Reporting',
-    desc: 'Student engagement metrics, completion rates, sponsor-ready impact reports. Evidence the program is working — and worth scaling.',
+ desc: 'Student engagement metrics, completion rates, sponsor-ready impact reports. Evidence the program is working, and worth scaling.',
   },
 ];
 
@@ -223,7 +223,7 @@ const PHASES = [
     num: '02',
     label: 'Build',
     title: 'We build, you review',
-    desc: 'AOM designs and develops the full experience — game, platform, live infrastructure. Conrad reviews at every milestone. Nothing ships without sign-off.',
+ desc: 'AOM designs and develops the full experience, game, platform, live infrastructure. Conrad reviews at every milestone. Nothing ships without sign-off.',
   },
   {
     num: '03',
@@ -371,9 +371,9 @@ function Hero() {
           style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}
         >
           {[
-            { label: '01 — The Game', href: '#scope-game' },
-            { label: '02 — The Platform', href: '#scope-platform' },
-            { label: '03 — The Marketing', href: '#scope-marketing' },
+ { label: '01, The Game', href: '#scope-game' },
+ { label: '02, The Platform', href: '#scope-platform' },
+ { label: '03, The Marketing', href: '#scope-marketing' },
           ].map((link) => (
             <a
               key={link.href}
@@ -998,7 +998,7 @@ function WhyItWorks() {
         {/* Right: pull stats */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {[
-            { num: '4–6', label: 'week turnaround to MVP platform', note: 'Fully functional — game, stream, calendar.' },
+ { num: '4–6', label: 'week turnaround to MVP platform', note: 'Fully functional, game, stream, calendar.' },
             { num: '100%', label: 'Conrad-owned brand & content', note: 'We build, you own it. Full IP transfer.' },
             { num: '1', label: 'point of contact', note: 'Patrik Matheson. No account managers, no handoffs.' },
           ].map((stat, i) => (
@@ -1356,7 +1356,7 @@ export default function LetsTalk() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = 'Scope & Pricing — Mission Water × AOM';
+ document.title = 'Scope & Pricing, Mission Water × AOM';
     return () => { document.title = prev; };
   }, []);
 

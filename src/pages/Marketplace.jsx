@@ -32,7 +32,7 @@ const PRODUCTS = [
     badge: 'FREE TOOL',
     title: 'The AI Business Guide',
     subtitle:
-      'Interactive guide to using AI prompts for your business — free to explore. Answer 2 questions, get personalized prompts you can use today.',
+ 'Interactive guide to using AI prompts for your business, free to explore. Answer 2 questions, get personalized prompts you can use today.',
     free: true,
     href: '/ai-guide',
     stats: [
@@ -41,14 +41,14 @@ const PRODUCTS = [
       { value: 'Free', label: 'Forever' },
     ],
     categories: [
-      { icon: MessageSquare, title: 'Client Communications', desc: 'Follow-ups, project updates, difficult client responses, and welcome emails — done in seconds.', count: 5 },
+ { icon: MessageSquare, title: 'Client Communications', desc: 'Follow-ups, project updates, difficult client responses, and welcome emails, done in seconds.', count: 5 },
       { icon: Users,         title: 'Hiring & Team',         desc: 'Job postings, interview questions, offer letters, and onboarding checklists.',               count: 5 },
       { icon: TrendingUp,    title: 'Sales & Outreach',      desc: 'Cold emails, follow-up sequences, objection responses, and proposal intros.',                count: 5 },
       { icon: LayoutGrid,    title: 'Operations',            desc: 'SOPs, delegation briefs, weekly agendas, and process audit prompts.',                        count: 5 },
       { icon: PenTool,       title: 'Content & Marketing',   desc: 'Social captions, content calendars, case studies, and bio copy.',                           count: 5 },
       { icon: BarChart2,     title: 'Finance & Reporting',   desc: 'Invoice follow-ups, pricing scripts, expense reviews, and cash flow questions.',             count: 5 },
     ],
-    callout: 'Answer 2 quick questions — walk away with prompts you can use today.',
+ callout: 'Answer 2 quick questions, walk away with prompts you can use today.',
   },
   {
     id: 'ai-prompt-playbook',
@@ -57,7 +57,7 @@ const PRODUCTS = [
     badge: 'DIGITAL DOWNLOAD',
     title: "The Business Owner's AI Playbook",
     subtitle:
-      '50 ready-to-use prompts that save real time every week — client emails, hiring posts, sales outreach, and more. Written for business owners, not tech people.',
+ '50 ready-to-use prompts that save real time every week, client emails, hiring posts, sales outreach, and more. Written for business owners, not tech people.',
     price: 47,
     gumroadUrl: 'https://aom-inhouse.gumroad.com/l/ai-prompt-playbook',
     stats: [
@@ -66,14 +66,14 @@ const PRODUCTS = [
       { value: '∞', label: 'Uses' },
     ],
     categories: [
-      { icon: FileText, title: 'Client Communications', desc: 'Follow-ups, proposals, scope changes, and update emails — done in 30 seconds.', count: 10 },
+ { icon: FileText, title: 'Client Communications', desc: 'Follow-ups, proposals, scope changes, and update emails, done in 30 seconds.', count: 10 },
       { icon: Users,    title: 'Hiring & Operations',   desc: 'Job posts, interview questions, onboarding docs, and team SOPs.',           count: 10 },
       { icon: Zap,      title: 'Sales & Outreach',      desc: 'Cold emails, follow-up sequences, objection responses, and meeting prep.',  count: 10 },
       { icon: Star,     title: 'Content & Social',      desc: 'Instagram captions, LinkedIn posts, project spotlights, and company updates.', count: 10 },
       { icon: Clock,    title: 'Strategy & Planning',   desc: 'Weekly reviews, goal setting, priority lists, and decision frameworks.',    count: 10 },
     ],
     includes: [
-      'Instant PDF download — use today',
+ 'Instant PDF download, use today',
       'Works with ChatGPT, Claude, or any AI tool',
       'Written for real businesses, not tech people',
       'Covers every part of running your operation',
@@ -89,7 +89,7 @@ const PRODUCTS = [
     badge: 'TEMPLATE BUNDLE',
     title: 'AI-Ready Templates',
     subtitle:
-      'Plug-and-play templates for proposals, SOPs, hiring docs, and client onboarding — pre-wired to work with your favorite AI tool.',
+ 'Plug-and-play templates for proposals, SOPs, hiring docs, and client onboarding, pre-wired to work with your favorite AI tool.',
     targetPrice: 97,
     eta: 'Q3 2026',
   },
@@ -100,7 +100,7 @@ const PRODUCTS = [
     badge: 'INTERACTIVE TOOL',
     title: 'AI Workflow Builder',
     subtitle:
-      'Map a repetitive task in your business, get a step-by-step AI workflow back — with prompts, tools, and the exact order of operations.',
+ 'Map a repetitive task in your business, get a step-by-step AI workflow back, with prompts, tools, and the exact order of operations.',
     targetPrice: 197,
     eta: 'Q3 2026',
   },
@@ -111,7 +111,7 @@ const PRODUCTS = [
     badge: 'COURSE',
     title: "The Business Owner's AI Course",
     subtitle:
-      'A 4-week course that takes you from AI-curious to running a leaner operation — the same playbook AOM used internally.',
+ 'A 4-week course that takes you from AI-curious to running a leaner operation, the same playbook AOM used internally.',
     targetPrice: 497,
     eta: 'Q4 2026',
   },
@@ -493,7 +493,7 @@ export default function Marketplace() {
                     </div>
                     <div>
                       <div className="font-headline text-sm text-white/85 leading-tight">{title}</div>
-                      <div className="font-body text-xs text-white/40 mt-0.5 leading-snug">{desc.split('—')[0].trim()}</div>
+ <div className="font-body text-xs text-white/40 mt-0.5 leading-snug">{desc.split(', ')[0].trim()}</div>
                     </div>
                   </div>
                 ))}
@@ -591,7 +591,7 @@ export default function Marketplace() {
                   <h2 className="font-headline text-2xl text-white/85">Coming soon</h2>
                 </div>
                 <p className="font-body text-sm text-white/40 mb-6">
-                  Product pipeline — not yet built. Flip <code className="text-white/60">status</code> to <code className="text-white/60">'soft-launch'</code> or <code className="text-white/60">'live'</code> when ready.
+ Product pipeline, not yet built. Flip <code className="text-white/60">status</code> to <code className="text-white/60">'soft-launch'</code> or <code className="text-white/60">'live'</code> when ready.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {comingSoonProducts.map((p) => (

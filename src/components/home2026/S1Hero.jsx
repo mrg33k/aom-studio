@@ -28,7 +28,7 @@ function splitStation(entry) {
   return i === -1 ? [entry, ''] : [entry.slice(0, i), entry.slice(i + 1)];
 }
 
-const [EB_1, EB_2] = splitAfterWord(S1_HERO.eyebrow, 3);       // 'PHOENIX, ARIZONA —' / rest
+const [EB_1, EB_2] = splitAfterWord(S1_HERO.eyebrow, 3); // 'PHOENIX, ARIZONA , ' / rest
 const [H1A_1, H1A_2] = splitAfterWord(S1_HERO.h1a, 2);         // 'YOUR WORK' / 'IS GOOD.'
 const [H1B_1, H1B_2] = splitAfterWord(S1_HERO.h1b, 4);         // 'NOBODY OUTSIDE THE JOB' / 'SITE HAS SEEN IT.'
 

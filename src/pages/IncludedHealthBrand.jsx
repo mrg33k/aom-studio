@@ -861,8 +861,8 @@ export default function IncludedHealthBrand() {
               <SpecsBox specs={[
                 { label: 'Font', value: 'Figtree 800' },
                 { label: 'Headline', value: '80px white #ffffff' },
-                { label: 'Sub', value: '20px Figtree 500 #CADCFF — tracked 0.18em' },
-                { label: 'Rule', value: '2px #0012E7 — 60% width center' },
+ { label: 'Sub', value: '20px Figtree 500 #CADCFF, tracked 0.18em' },
+ { label: 'Rule', value: '2px #0012E7, 60% width center' },
                 { label: 'BG', value: '#001048' },
               ]} />
             </motion.div>
@@ -921,7 +921,7 @@ export default function IncludedHealthBrand() {
                 </div>
               </div>
               <SpecsBox specs={[
-                { label: 'Method', value: 'Blue text DIRECTLY on frame — NO semi-transparent bar' },
+ { label: 'Method', value: 'Blue text DIRECTLY on frame, NO semi-transparent bar' },
                 { label: 'Name', value: 'Figtree 700 · 22px · #0012E7 (electric blue)' },
                 { label: 'Title/Company', value: 'Figtree 400 · 16px · #001048 (navy)' },
                 { label: 'Alignment', value: 'Right-aligned · Bottom-right quadrant' },
@@ -974,7 +974,7 @@ export default function IncludedHealthBrand() {
               </div>
               <SpecsBox specs={[
                 { label: 'BG', value: 'White #ffffff' },
-                { label: 'Accent bar', value: '6px wide #0012E7 — full left edge' },
+ { label: 'Accent bar', value: '6px wide #0012E7, full left edge' },
                 { label: 'Title', value: 'Figtree 800 · 48px · #001048 navy' },
                 { label: 'Subtitle', value: 'Figtree 400 · 20px · #95999F gray' },
                 { label: 'Left padding', value: '8% from edge' },
@@ -1019,7 +1019,7 @@ export default function IncludedHealthBrand() {
                 </div>
               </div>
               <SpecsBox specs={[
-                { label: 'BG', value: '#0012E7 electric blue — full bleed' },
+ { label: 'BG', value: '#0012E7 electric blue, full bleed' },
                 { label: 'Number', value: 'Figtree 800 · 96px · white #ffffff' },
                 { label: 'Label', value: 'Figtree 500 · 20px · rgba(255,255,255,0.75) · tracked 0.06em' },
                 { label: 'Alignment', value: 'Centered both axes' },
@@ -1203,7 +1203,7 @@ export default function IncludedHealthBrand() {
                     ['Font', 'Figtree only'],
                     ['Name color', '#0012E7 electric blue'],
                     ['Title color', '#001048 navy'],
-                    ['Style', 'Text on frame — NO bar'],
+ ['Style'·'Text on frame, NO bar'],
                   ],
                 },
               ].map(({ title, items }) => (

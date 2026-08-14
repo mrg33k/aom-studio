@@ -321,7 +321,7 @@ const colorGroups = {
       name: 'Honor Gold',
       hex: '#C9931A',
       role: 'Primary Accent',
-      usage: 'All key CTAs, logo accents, badge borders, highlight elements. This is the emotional anchor — honor, valor.',
+ usage: 'All key CTAs, logo accents, badge borders, highlight elements. This is the emotional anchor, honor, valor.',
     },
     {
       name: 'Bright Amber',
@@ -341,7 +341,7 @@ const colorGroups = {
       name: 'Warm Cream',
       hex: '#F5F0E8',
       role: 'Primary Light BG',
-      usage: 'Alternating sections, card surfaces, warm white alternative. Not clinical white — warm.',
+ usage: 'Alternating sections, card surfaces, warm white alternative. Not clinical white, warm.',
     },
     {
       name: 'Cream Dark',
@@ -353,7 +353,7 @@ const colorGroups = {
       name: 'Warm White',
       hex: '#FDFAF5',
       role: 'Page Background',
-      usage: 'Root background. Slightly warm — this brand is never cold.',
+ usage: 'Root background. Slightly warm, this brand is never cold.',
     },
   ],
   text: [
@@ -373,7 +373,7 @@ const typeScale = [
     size: 'clamp(3rem, 8vw, 5.5rem)',
     tracking: '-0.01em',
     lh: '1.0',
-    notes: 'Maximum dignity. Hero titles, campaign headlines. Sentence case — this is not industrial ALL CAPS.',
+ notes: 'Maximum dignity. Hero titles, campaign headlines. Sentence case, this is not industrial ALL CAPS.',
     sample: 'Valor to Victory',
   },
   {
@@ -453,7 +453,7 @@ const logoOptions = [
     num: 'C06',
     name: 'Eagle + Key Shield',
     tag: 'Chosen',
-    sub: 'Eagle over ornate key, inside a pointed shield — the primary mark',
+ sub: 'Eagle over ornate key, inside a pointed shield, the primary mark',
     src: '/images/v2v/nobg/c06-nobg.png',
     srcFull: '/images/v2v/nobg/c06.png',
     palette: [
@@ -462,18 +462,18 @@ const logoOptions = [
       { hex: '#F5F0E8', label: 'Cream' },
     ],
     symbolism: [
-      'Eagle atop the mark — freedom, vigilance, American pride',
-      'Ornate key — unlocking homeownership, earned access',
-      'Shield form — protection through service honored',
-      'Green foundation — prosperity, growth, land ownership',
+ 'Eagle atop the mark, freedom, vigilance, American pride',
+ 'Ornate key, unlocking homeownership, earned access',
+ 'Shield form, protection through service honored',
+ 'Green foundation, prosperity, growth, land ownership',
     ],
     typo: 'Playfair Display 900 + Source Sans 3',
   },
   {
     num: 'C01',
-    name: 'Eagle + Key Shield — Alt',
+ name: 'Eagle + Key Shield, Alt',
     tag: null,
-    sub: 'Alternate composition — more vertical, badge-friendly',
+ sub: 'Alternate composition, more vertical, badge-friendly',
     src: '/images/v2v/nobg/c01-nobg.png',
     palette: [
       { hex: '#1B4332', label: 'Forest' },
@@ -481,10 +481,10 @@ const logoOptions = [
       { hex: '#F5F0E8', label: 'Cream' },
     ],
     symbolism: [
-      'Shield silhouette — protection, military honor',
-      'Eagle portrait — strength, American pride, authority',
-      'Key at base — access, earned right to a home',
-      'Vertical stack — clean for social profile icons',
+ 'Shield silhouette, protection, military honor',
+ 'Eagle portrait, strength, American pride, authority',
+ 'Key at base, access, earned right to a home',
+ 'Vertical stack, clean for social profile icons',
     ],
     typo: 'Playfair Display 700 + Source Sans 3 600',
   },
@@ -492,7 +492,7 @@ const logoOptions = [
     num: 'C05',
     name: 'The Threshold',
     tag: null,
-    sub: 'Open door + eagle + sunlight — the veteran\'s journey home made visual',
+ sub: 'Open door + eagle + sunlight, the veteran\'s journey home made visual',
     src: '/images/v2v/nobg/c05-nobg.png',
     palette: [
       { hex: '#2D6A4F', label: 'Deep' },
@@ -500,10 +500,10 @@ const logoOptions = [
       { hex: '#F5F0E8', label: 'Light' },
     ],
     symbolism: [
-      'Open door — the moment of arrival, new chapter beginning',
-      'Sunlight rays through door — hope, warmth after service',
-      'Eagle flying through — freedom meets homecoming',
-      'Trees at base — roots, stability, finally home',
+ 'Open door, the moment of arrival, new chapter beginning',
+ 'Sunlight rays through door, hope, warmth after service',
+ 'Eagle flying through, freedom meets homecoming',
+ 'Trees at base, roots, stability, finally home',
     ],
     typo: 'Libre Baskerville 700 + Source Sans 3 300',
   },
@@ -657,7 +657,7 @@ export default function ValorBrand() {
           <div style={{ marginBottom: 48 }}>
             <img
               src="/images/v2v/nobg/c06-nobg.png"
-              alt="Valor to Victory — ValorC06 Logo"
+ alt="Valor to Victory, ValorC06 Logo"
               style={{
                 width: 'clamp(100px, 18vw, 180px)',
                 height: 'auto',
@@ -756,7 +756,7 @@ export default function ValorBrand() {
             <h3 style={{
               fontFamily: F.label, fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
               textTransform: 'uppercase', color: C.brightAmber, marginBottom: 24,
-            }}>Logo Options — ValorC06 Chosen</h3>
+ }}>Logo Options, ValorC06 Chosen</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
               {logoOptions.map((logo, idx) => (
@@ -901,7 +901,7 @@ export default function ValorBrand() {
                             color: 'rgba(245,240,232,0.70)', lineHeight: 1.6,
                             marginBottom: 4,
                           }}>
-                            <span style={{ color: C.honorGold, flexShrink: 0 }}>—</span>
+ <span style={{ color: C.honorGold, flexShrink: 0 }}>·</span>
                             {s}
                           </li>
                         ))}
@@ -1044,7 +1044,7 @@ export default function ValorBrand() {
                 fontFamily: F.body, fontSize: 13, color: 'rgba(245,240,232,0.65)',
                 lineHeight: 1.65, margin: 0,
               }}>
-                That's S3C territory — a trade coalition. V2V is a veteran's journey home. Navy = institutional. Green = growth, land, earned prosperity.
+ That's S3C territory, a trade coalition. V2V is a veteran's journey home. Navy = institutional. Green = growth, land, earned prosperity.
               </p>
             </div>
             <div>
@@ -1237,7 +1237,7 @@ export default function ValorBrand() {
           <SectionHeader
             num={3}
             title="Typography"
-            subtitle="Warm serif display. Clean humanist body. This combination reads dignified and approachable — earned authority, not cold institution."
+ subtitle="Warm serif display. Clean humanist body. This combination reads dignified and approachable, earned authority, not cold institution."
           />
 
           {/* Font families */}
@@ -1276,7 +1276,7 @@ export default function ValorBrand() {
               </div>
               <div style={{ borderTop: `1px solid rgba(255,255,255,0.10)`, paddingTop: 16 }}>
                 <div style={{ fontFamily: F.label, fontSize: 13, fontWeight: 600, color: C.brightAmber, marginBottom: 4 }}>Playfair Display</div>
-                <div style={{ fontFamily: F.body, fontSize: 12, color: 'rgba(245,240,232,0.50)' }}>Weights: 700, 900 — Roman + Italic</div>
+ <div style={{ fontFamily: F.body, fontSize: 12, color: 'rgba(245,240,232,0.50)' }}>Weights: 700, 900, Roman + Italic</div>
                 <div style={{ fontFamily: F.body, fontSize: 12, color: 'rgba(245,240,232,0.50)', marginTop: 2 }}>Use: headlines, hero titles, pull quotes</div>
               </div>
             </div>
@@ -1342,7 +1342,7 @@ export default function ValorBrand() {
               }}>VA LOANS · EDUCATION · GUIDANCE</div>
               <div style={{ borderTop: `1px solid ${C.creamBorder}`, paddingTop: 16, marginTop: 16 }}>
                 <div style={{ fontFamily: F.label, fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 4 }}>Libre Baskerville</div>
-                <div style={{ fontFamily: F.body, fontSize: 12, color: C.textLight }}>Weights: 400, 700 — Roman + Italic</div>
+ <div style={{ fontFamily: F.body, fontSize: 12, color: C.textLight }}>Weights: 400, 700, Roman + Italic</div>
                 <div style={{ fontFamily: F.body, fontSize: 12, color: C.textLight, marginTop: 2 }}>Use: pull quotes, bylines, elegant accents</div>
               </div>
             </div>
@@ -1450,7 +1450,7 @@ export default function ValorBrand() {
             }}>Typography Rules</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
               {[
-                { rule: 'Sentence case for Playfair', detail: 'Not all-caps. The warmth of this brand comes from dignified sentence case. ALL CAPS feels military and cold — not the register we want.' },
+ { rule: 'Sentence case for Playfair', detail: 'Not all-caps. The warmth of this brand comes from dignified sentence case. ALL CAPS feels military and cold, not the register we want.' },
                 { rule: 'Kickers always uppercase', detail: 'Source Sans 3 labels, section kickers, and metadata are ALWAYS uppercase with wide tracking (0.18em+). This is the only place caps live.' },
                 { rule: 'Never mix display fonts', detail: 'Playfair + Source Sans 3 is the pairing. Libre Baskerville is accent-only. Do not introduce additional typefaces.' },
                 { rule: 'Line length discipline', detail: 'Body text: max 60-65 characters per line (roughly 640px). Playfair display: can be wider. Long lines = harder to read.' },

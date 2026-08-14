@@ -126,12 +126,12 @@ const PIPELINE = [
   {
     label: 'Higher Orbits',
     type: 'Mini-documentary series',
-    detail: '100th event, Deerfield IL — June 2026',
+ detail: '100th event, Deerfield IL, June 2026',
     range: '$28,000 Tier 1 (proposal sent)',
     timing: 'June 2026',
   },
   {
-    label: 'Higher Orbits — Extended Series',
+ label: 'Higher Orbits, Extended Series',
     type: 'Interview trips + return event',
     detail: 'Add-on tiers after Tier 1 confirmation',
     range: '$15K–$45K optioned',
@@ -141,7 +141,7 @@ const PIPELINE = [
     label: 'Nonprofit Foundation',
     type: 'Educational video series',
     detail: 'Mission Water Master Classes proposal',
-    range: 'TBD — proposal in progress',
+ range: 'TBD, proposal in progress',
     timing: 'Q3 2026',
   },
   {
@@ -231,7 +231,7 @@ function StatCard({ value, prefix = '', suffix = '', label, note, delay = 0 }) {
 // ── Main component ─────────────────────────────────────────────────────────
 export default function AOMStats() {
   useEffect(() => {
-    document.title = 'AOM — Business Stats'
+ document.title = 'AOM, Business Stats'
     // noindex: this is an investor-facing page, not meant for Google
     const meta = document.createElement('meta')
     meta.name = 'robots'
@@ -1087,8 +1087,8 @@ export default function AOMStats() {
                 Active pipeline (not yet closed)
               </div>
               {[
-                { client: 'Higher Orbits — Tier 1', amount: '$28,000' },
-                { client: 'Higher Orbits — Tiers 2+', amount: 'Up to $45K' },
+ { client: 'Higher Orbits, Tier 1', amount: '$28,000' },
+ { client: 'Higher Orbits, Tiers 2+', amount: 'Up to $45K' },
                 { client: 'Nonprofit Foundation series', amount: 'TBD' },
                 { client: 'Wellness content platform', amount: 'TBD' },
               ].map((r, i) => (
@@ -1206,7 +1206,7 @@ export default function AOMStats() {
           </h2>
 
           <p style={{ fontSize: '16px', color: INK_MUTED, lineHeight: 1.6 }}>
-            Whether you're a client looking for the right creative partner, or a strategic partner interested in what AOM + Corner can become — the conversation starts here.
+ Whether you're a client looking for the right creative partner, or a strategic partner interested in what AOM + Corner can become, the conversation starts here.
           </p>
 
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>

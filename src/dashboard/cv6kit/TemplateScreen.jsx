@@ -92,7 +92,7 @@ export function TemplateScreen({ html, data, actions, state = 'ready', aliases, 
   propsRef.current = { html, data, state, aliases, sig, aliasSig };
 
   // Persistent per-instance engine state.
-  const scrollMemRef = useRef(new Map());   // scrollKey -> {top,left} — the user's latest scroll
+ const scrollMemRef = useRef(new Map()); // scrollKey -> {top,left}, the user's latest scroll
   const bindCleanupRef = useRef(null);      // teardown for the current bindTemplate listeners
   const lastDescRef = useRef(null);         // signature of the last APPLIED bind (short-circuit)
   const pendingRef = useRef(false);         // a rebind was skipped during a gesture — flush on end

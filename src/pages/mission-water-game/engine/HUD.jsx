@@ -187,7 +187,7 @@ export default function HUD({ phase, hud, onChoose, resources, playerName, missi
               })}
             </div>
           ) : (
-            <div style={styles.terminal}>■ END OF CHAPTER — NEXT PHASE INCOMING</div>
+ <div style={styles.terminal}>■ END OF CHAPTER, NEXT PHASE INCOMING</div>
           )}
         </div>
       </div>

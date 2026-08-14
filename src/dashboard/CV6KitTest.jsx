@@ -111,7 +111,7 @@ export const SAMPLE = {
 };
 
 export const SAMPLE_RECENT = [
-  { from: 'agent', author: 'Elon', initials: 'EL', time: '9:24', text: 'Pulled the latest numbers — the launch deck is ready for your review.' },
+  { from: 'agent', author: 'Elon', initials: 'EL', time: '9:24', text: 'Pulled the latest numbers. The launch deck is ready for your review.' },
   { from: 'me', time: '9:26', text: 'Looks good. Send it once the cover slide is updated.' },
   { from: 'agent', author: 'Elon', initials: 'EL', time: '9:27', text: 'On it. Cover swapped and out the door in five.' },
 ];

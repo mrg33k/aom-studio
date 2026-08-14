@@ -650,7 +650,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
   const [loading, setLoading] = useState(false)
   const [activeFile, setActiveFile] = useState(null)
   const [activeCat, setActiveCat] = useState('all')
-  const [query, setQuery] = useState('')  // R13 — name/path search filter
+ const [query, setQuery] = useState('') // R13, name/path search filter
   // R3 — right-click + long-press context menu
   const [ctxMenu, setCtxMenu] = useState(null) // { x, y, file } | null
   const isMobile = useIsMobile()

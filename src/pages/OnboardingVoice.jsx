@@ -51,8 +51,8 @@ async function scaffoldFirstProject({ firstThing, workspaceName, worldSlug }) {
   const name = firstThing.trim().slice(0, 80) || 'First project'
   const slug = slugify(name)
   const description = workspaceName
-    ? `${workspaceName}'s first project — created during voice onboarding.`
-    : 'First project — created during voice onboarding.'
+ ? `${workspaceName}'s first project, created during voice onboarding.`
+ : 'First project, created during voice onboarding.'
   try {
     const { error: insertErr } = await supabase
       .from('projects')
@@ -128,7 +128,7 @@ function narrate(text) {
 
 function openMic(onInterim, onFinal, onError) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-  if (!SR) { onError('Voice not supported — type below instead.'); return null }
+ if (!SR) { onError('Voice not supported, type below instead.'); return null }
   const rec = new SR()
   rec.continuous = false
   rec.interimResults = true
@@ -144,10 +144,10 @@ function openMic(onInterim, onFinal, onError) {
   }
   rec.onend = () => {
     if (finalText.trim()) onFinal(finalText.trim())
-    else onError('Nothing heard — tap mic to try again.')
+ else onError('Nothing heard, tap mic to try again.')
   }
   rec.onerror = (e) => {
-    onError(e.error === 'no-speech' ? 'Nothing heard — tap mic to try again.' : `Mic: ${e.error}`)
+ onError(e.error === 'no-speech' ? 'Nothing heard, tap mic to try again.' : `Mic: ${e.error}`)
   }
   rec.start()
   return rec
@@ -380,7 +380,7 @@ export default function OnboardingVoice() {
           <div>
             <div style={s.qlabel}>Question 1 of 3</div>
             <h2 style={s.h2}>What's your workspace called?</h2>
-            <p style={s.sub}>Your name, your business — whatever feels right.</p>
+ <p style={s.sub}>Your name, your business, whatever feels right.</p>
             {renderMicPanel(handleQ1)}
           </div>
         )}
@@ -396,7 +396,7 @@ export default function OnboardingVoice() {
           <div>
             <div style={s.qlabel}>Question 2 of 3</div>
             <h2 style={s.h2}>What kinds of work do you do?</h2>
-            <p style={s.sub}>Video, brand, code, sales, ops — or anything else.</p>
+ <p style={s.sub}>Video, brand, code, sales, ops, or anything else.</p>
             {renderMicPanel(handleQ2)}
           </div>
         )}
@@ -419,7 +419,7 @@ export default function OnboardingVoice() {
           <div>
             <div style={s.qlabel}>Question 3 of 3</div>
             <h2 style={s.h2}>What's the first thing you want help with?</h2>
-            <p style={s.sub}>A project, a task, a challenge — anything on your mind.</p>
+ <p style={s.sub}>A project, a task, a challenge, anything on your mind.</p>
             {renderMicPanel(handleQ3)}
           </div>
         )}

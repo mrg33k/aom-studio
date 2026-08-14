@@ -30,7 +30,7 @@ function statusCopy(mode, wakeSupported) {
   const mobile = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 700px)').matches;
   const labels = {
     off: 'Off',
-    armed: wakeSupported ? 'Ready for “Hey Corner”' : (mobile ? 'Ready — tap Start conversation' : 'Ready — ⌘⇧Space'),
+ armed: wakeSupported ? 'Ready for “Hey Corner”' : (mobile ? 'Ready, tap Start conversation' : 'Ready, ⌘⇧Space'),
     'attention-prompt': 'Updates are waiting',
     connecting: 'Connecting securely…',
     listening: 'Listening',

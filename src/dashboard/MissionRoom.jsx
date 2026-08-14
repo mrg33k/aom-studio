@@ -154,7 +154,7 @@ export default function MissionRoom() {
             }}>
               <span>{m.role || 'message'}</span>
               <span>·</span>
-              <span>{m.agent || '—'}</span>
+              <span>{m.agent || '·'}</span>
               {m.timestamp && (<>
                 <span>·</span>
                 <span>{new Date(m.timestamp).toLocaleString()}</span>

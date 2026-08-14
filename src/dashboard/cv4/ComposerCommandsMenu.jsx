@@ -232,7 +232,7 @@ export default function ComposerCommandsMenu({
                 }}
                 testid="cv4-commands-integrations"
               />
-              {/* 5. About <room name> — agent name in agent chat,
+ {/* 5. About <room name>, agent name in agent chat,
                    project name in project chat. Agents open the
                    AgentProfileOverlay; projects open the canon-files panel
                    (VISION/BUILD/CONTEXT/etc.) which is the canonical
@@ -300,7 +300,7 @@ export default function ComposerCommandsMenu({
                   />
                 )
               )}
-              {/* Make default room — pin the current room as the user's
+ {/* Make default room, pin the current room as the user's
                   first-paint default. Shows only when there IS a current room. */}
               {canMakeDefault && (
                 defaultRoomConfirm ? (

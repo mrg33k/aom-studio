@@ -129,19 +129,19 @@ export default function HomeConsoleR38({ openBrief }) {
           <div className="lg:col-span-5">
             <Kick dark>{DEPT.kick}</Kick>
             <H2 dark>{DEPT.open}</H2>
-            <p className="text-[17px] text-[#F5F3EE]/72 mt-7 leading-[1.6] max-w-lg">{DEPT.para}</p>
+            <p className="text-[19px] md:text-[20px] text-[#F5F3EE]/90 mt-6 leading-[1.65] max-w-lg">{DEPT.para}</p>
           </div>
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
             {DEPT.modules.map((m, i) => {
               const Icon = MODULE_ICONS[i];
               return (
               <div
                 key={m.label}
-                className={`border border-[#F5F3EE]/14 p-8 flex flex-col gap-3 hover:border-[#F04404]/60 transition-colors ${i % 2 === 1 ? 'sm:translate-y-10' : ''}`}
+                className={`border border-[#F5F3EE]/14 p-8 md:p-10 flex flex-col gap-4 hover:border-[#F04404]/60 transition-colors ${i % 2 === 1 ? 'sm:translate-y-10' : ''}`}
               >
                 <Icon size={20} strokeWidth={1.75} className="text-[#F04404] mb-1" aria-hidden="true" />
-                <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#F04404]">{m.label}</p>
-                <p className="text-[15px] text-[#F5F3EE]/85 leading-[1.6]">{m.body}</p>
+                <p className="font-mono text-[11px] font-medium uppercase tracking-[0.28em] text-[#F04404]">{m.label}</p>
+                <p className="text-[16px] md:text-[17px] text-[#F5F3EE]/92 leading-[1.65]">{m.body}</p>
               </div>
               );
             })}
@@ -155,12 +155,12 @@ export default function HomeConsoleR38({ openBrief }) {
           <div className="lg:col-span-6">
             <Kick>{MONTH.kick}</Kick>
             <H2>{MONTH.tail}</H2>
-            <p className="text-[17px] text-[#0A0A08]/60 mt-7 leading-[1.6] max-w-lg">{MONTH.body}</p>
+            <p className="text-[18px] md:text-[19px] text-[#0A0A08]/75 mt-7 leading-[1.65] max-w-lg">{MONTH.body}</p>
             <div className="mt-10">
               {MONTH.weeks.map((w) => (
                 <div key={w.wk} className="flex items-baseline gap-6 py-4 border-t border-[#0A0A08]/12 last:border-b">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#C43800] min-w-[76px]">{w.wk}</span>
-                  <span className="font-anton uppercase text-[22px] md:text-[30px] tracking-[0.01em] text-[#0A0A08]">{w.what}</span>
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.28em] text-[#C43800] min-w-[76px]">{w.wk}</span>
+                  <span className="font-anton uppercase text-[26px] md:text-[34px] leading-[0.98] tracking-[0.01em] text-[#0A0A08]">{w.what}</span>
                 </div>
               ))}
             </div>
@@ -170,9 +170,9 @@ export default function HomeConsoleR38({ openBrief }) {
               <img src="/aom-kit/img/welder.png" alt="Welder working a steel beam" className="absolute top-0 right-0 w-[62%] aspect-[3/4] object-cover" />
               <img src="/aom-kit/img/ridge.png" alt="Crew on a rooftop ridge line" className="absolute bottom-0 left-0 w-[46%] aspect-[4/5] object-cover border-8 border-[#F5F3EE]" />
             </div>
-            <div className="border-l border-[#0A0A08]/15 pl-8 py-2">
+            <div className="border-l-2 border-[#0A0A08]/15 pl-8 py-2">
               <Kick>{NINETY.kick}</Kick>
-              <p className="text-[17px] text-[#0A0A08]/85 leading-[1.6] max-w-xl">{NINETY.body}</p>
+              <p className="text-[18px] md:text-[19px] text-[#0A0A08]/88 leading-[1.65] max-w-xl">{NINETY.body}</p>
             </div>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function HomeConsoleR38({ openBrief }) {
         </div>
       </section>
 
-      {/* 8. THE MATH — carbon block, money's one appearance */}
+ {/* 8. THE MATH, carbon block, money's one appearance */}
       <section id="math" className="py-24 md:py-32 px-6 md:px-12 bg-[#0A0A08] text-[#F5F3EE]">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-7 lg:order-2">

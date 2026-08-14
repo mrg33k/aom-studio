@@ -26,10 +26,10 @@ function roomDisplay(slug, nameMap = {}) {
 }
 
 function relativeTime(timestamp) {
-  if (!timestamp) return '—'
+ if (!timestamp) return '·'
   const now = Date.now()
   const ts = new Date(timestamp).getTime()
-  if (isNaN(ts)) return '—'
+ if (isNaN(ts)) return '·'
   const secs = Math.max(0, Math.floor((now - ts) / 1000))
   if (secs < 90) return 'just now'
   if (secs < 3600) return `${Math.round(secs / 60)}m ago`
@@ -393,9 +393,9 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
 
           // Derive LIVE NOW: the worker's short current-status line (detail),
           // falling back to its intent. GOAL NOW carries the longer goal below.
-          let liveNow = '—'
+ let liveNow = '·'
           if (liveWorker) {
-            liveNow = liveWorker.detail || liveWorker.intent || '—'
+ liveNow = liveWorker.detail || liveWorker.intent || '·'
           }
 
           // Derive status from worker recency + staleness
@@ -492,7 +492,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           goal: (w.intent || w.detail || ''),
           goalSource: 'session', // cc-6: terminal-derived goal → LIVE chip
           status,
-          liveNow: w.detail || w.intent || '—',
+ liveNow: w.detail || w.intent || '·',
           lastActivity: workerLastActivity,
           routineId: null,
           isWorkerRow: true,
@@ -559,7 +559,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             // Recent message ⇒ the room is active (overrides a stale-ledger idle).
             if (hit.ts && (nowMs - hit.ts) < THIRTY && row.status === 'idle') row.status = 'active'
             // Surface the last user message as LIVE NOW when nothing live is set.
-            if ((!row.liveNow || row.liveNow === '—') && hit.lastUserText) row.liveNow = hit.lastUserText
+ if ((!row.liveNow || row.liveNow === '·') && hit.lastUserText) row.liveNow = hit.lastUserText
           })
 
           // Add ANY room with recent activity that the stale ledger doesn't list,
@@ -585,7 +585,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 display: roomDisplay(slug, map),
                 goal: '',
                 status: 'active',
-                liveNow: v.lastUserText || '—',
+ liveNow: v.lastUserText || '·',
                 lastActivity: new Date(v.ts).toISOString(),
                 routineId,
                 isWorkerRow: false,
@@ -893,7 +893,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             <div style={{ fontSize: 11, color: 'var(--cv6-text-tertiary)', marginTop: 1 }}>
               {mlShownOn
                 ? `Pushing every room forward${masterLoop.interval_minutes ? ` · every ${masterLoop.interval_minutes}m` : ''}${fmtAgo(masterLoop.last_run_at) ? ` · last ran ${fmtAgo(masterLoop.last_run_at)}` : ''}`
-                : 'Paused — rooms only move when you ask'}
+ : 'Paused, rooms only move when you ask'}
             </div>
           </div>
           <button
@@ -928,7 +928,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       <div style={{ display: 'flex', flex: 1, minHeight: 0, borderTop: '1px solid var(--cv6-divider)' }}>
         {/* Ledger column (left) */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Title header — "Command / Goal ledger · N rooms · N live" + live/idle/blocked pills (CV6 design) */}
+ {/* Title header, "Command / Goal ledger · N rooms · N live" + live/idle/blocked pills (CV6 design) */}
           {!isNarrow && (
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: '18px 24px 14px' }}>
               <div style={{ minWidth: 0 }}>
@@ -1092,11 +1092,11 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                   gridArea: isNarrow ? 'goal' : undefined,
                 }}
               >
-                {(row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) || '—'}
+ {(row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) || '·'}
               </div>
             )}
 
-            {/* SET BY — "Who · time ago". `last_touched_label` is whatever actually
+ {/* SET BY, "Who · time ago". `last_touched_label` is whatever actually
                 moved the goal (a person, "loop review", a commit subject). When the
                 ledger recorded nobody, the row says Unknown — it does not credit the
                 workspace owner for work that has no recorded author. */}
@@ -1110,7 +1110,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 minWidth: 0,
               }}
             >
-              {row.lastActivity ? `${row.last_touched_label || 'Unknown'} · ${relativeTime(row.lastActivity)}` : '—'}
+ {row.lastActivity ? `${row.last_touched_label || 'Unknown'} · ${relativeTime(row.lastActivity)}` : '·'}
             </div>
 
             {/* STATUS */}
@@ -1234,7 +1234,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
 
             {/* Goal text */}
             <div style={{ fontSize: 17, lineHeight: 1.4, fontWeight: 600, color: 'var(--cv6-text-primary)', marginBottom: 16 }}>
-              {(selectedRow.goalCurated ? cleanCell(selectedRow.goal) : synthGoal(selectedRow.goal)) || '—'}
+ {(selectedRow.goalCurated ? cleanCell(selectedRow.goal) : synthGoal(selectedRow.goal)) || '·'}
             </div>
 
             {/* Live activity indicator (if applicable) */}
@@ -1263,7 +1263,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 <path d="M12 16v-4M12 8v.5" />
               </svg>
               <span style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--cv6-text-tertiary)' }}>
-                Finished steps join the <strong style={{ color: 'var(--cv6-text-primary)', fontWeight: 600 }}>master-loop queue</strong> — the loop verifies each before it's marked done.
+ Finished steps join the <strong style={{ color: 'var(--cv6-text-primary)', fontWeight: 600 }}>master-loop queue</strong>, the loop verifies each before it's marked done.
               </span>
             </div>
 
@@ -1271,7 +1271,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
               <button
                 onClick={() => toggleAutopilot(selectedRow.slug, !selectedRow.autopilot)}
-                title={selectedRow.autopilot ? 'Autopilot on — the loop keeps pushing this room forward' : 'Autopilot off — this room moves only when you ask'}
+ title={selectedRow.autopilot ? 'Autopilot on, the loop keeps pushing this room forward' : 'Autopilot off, this room moves only when you ask'}
                 style={{
                   flex: 'none',
                   height: 42,

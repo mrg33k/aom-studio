@@ -323,7 +323,7 @@ export default function ConradFoundation2() {
               {
                 n: '01',
                 title: 'Platform',
-                desc: 'The full interactive experience — games, story, submissions, progress tracking.',
+ desc: 'The full interactive experience, games, story, submissions, progress tracking.',
               },
               {
                 n: '02',

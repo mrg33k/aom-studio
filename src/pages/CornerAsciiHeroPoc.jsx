@@ -116,7 +116,7 @@ function CornerAsciiHeroPoc() {
         } else if (computePhase < 0.4) {
           life = (computePhase - 0.2) / 0.2 // Brighten
         } else if (computePhase < 0.7) {
-          life = 1 // Sustain — LONG hold for readable "resolution"
+ life = 1 // Sustain, LONG hold for readable "resolution"
         } else if (computePhase < 0.9) {
           life = (0.9 - computePhase) / 0.2 // Fade
         } else {

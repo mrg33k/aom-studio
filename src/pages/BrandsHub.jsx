@@ -54,7 +54,7 @@ const brands = [
   {
     name: 'Corner',
     full: 'The agent workspace by AOM',
-    description: 'Editorial rhythm with amber on deep ink. Instrument Serif display, Hanken Grotesk body — the design system behind the Corner product.',
+ description: 'Editorial rhythm with amber on deep ink. Instrument Serif display, Hanken Grotesk body, the design system behind the Corner product.',
     accentColor: '#F59E0B',
     link: '/corner',
     fontOverride: "'Instrument Serif', Georgia, serif",
@@ -78,7 +78,7 @@ const brands = [
   {
     name: 'Space Rising',
     full: 'Arizona Space Congress',
-    description: "Arizona's space economy is launching. Visual identity for Space Rising and the Arizona Space Congress — dark, cosmic, and grounded in desert reality.",
+ description: "Arizona's space economy is launching. Visual identity for Space Rising and the Arizona Space Congress, dark, cosmic, and grounded in desert reality.",
     accentColor: '#E5451F',
     link: '/brands/space-rising',
     fontOverride: "'Oswald', sans-serif",

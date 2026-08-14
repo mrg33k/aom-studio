@@ -33,7 +33,7 @@ const PILLAR_VIEWS = [
     pillar: PILLARS[0], // Scalable
     Icon: Layers,
     stat: { value: '50+', label: 'Brands shipped' },
-    quote: TESTIMONIALS[1], // Brandon — "twice as fast"
+ quote: TESTIMONIALS[1], // Brandon, "twice as fast"
     reels: [
       { id: '698a596eaec3d4e420c22a9a', aspect: 'vertical' },   // Lagos White Party
       { id: '698a5d24aec3d4e420c2a0a0', aspect: 'horizontal' }, // Pretty Penny
@@ -45,7 +45,7 @@ const PILLAR_VIEWS = [
     pillar: PILLARS[1], // Flexible
     Icon: Repeat,
     stat: { value: '10+', label: 'Years doing this' },
-    quote: TESTIMONIALS[2], // Skylar — "creative team already on staff"
+ quote: TESTIMONIALS[2], // Skylar, "creative team already on staff"
     reels: [
       { id: '698a5d24aec3d4e420c2a0a0', aspect: 'horizontal' },
       { id: '698a581daec3d4e420c20b94', aspect: 'vertical' },
@@ -57,7 +57,7 @@ const PILLAR_VIEWS = [
     pillar: PILLARS[2], // Responsive
     Icon: Zap,
     stat: { value: '24h', label: 'Reply window' },
-    quote: TESTIMONIALS[3], // ISA Energy — "Tuesday → Thursday"
+ quote: TESTIMONIALS[3], // ISA Energy, "Tuesday → Thursday"
     reels: [
       { id: '698a64e5873071aec5ca99ac', aspect: 'horizontal' },
       { id: '698a5391873071aec5c8b654', aspect: 'vertical' },
@@ -69,7 +69,7 @@ const PILLAR_VIEWS = [
     pillar: PILLARS[3], // Seamless
     Icon: Workflow,
     stat: { value: '48h', label: 'First draft, most jobs' },
-    quote: TESTIMONIALS[0], // Patrick — "didn't just shoot a film"
+ quote: TESTIMONIALS[0], // Patrick, "didn't just shoot a film"
     reels: [
       { id: '698a6296fc23d3d76fa8d992', aspect: 'horizontal' },
       { id: '698a580bfc23d3d76fa7bd7c', aspect: 'vertical' },
@@ -316,7 +316,7 @@ function VariantB() {
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-12 gap-8">
           <p className="md:col-span-7 font-body text-[16px] md:text-[20px] text-[#F0ECE6]/70 leading-[1.55] first-letter:font-headline first-letter:text-[64px] first-letter:float-left first-letter:mr-3 first-letter:leading-[0.95] first-letter:text-[#E85D26]">
-            Four pillars. One scorecard. The thing under the hood. Read it the way you'd read a campaign book — top to bottom, no skimming.
+ Four pillars. One scorecard. The thing under the hood. Read it the way you'd read a campaign book, top to bottom, no skimming.
           </p>
           <div className="md:col-span-5 grid grid-cols-2 gap-3 md:gap-4">
             {PILLAR_VIEWS.map((v, i) => (
@@ -576,7 +576,7 @@ function VariantC() {
                   <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/45 mt-1 inline-flex items-center gap-2 flex-wrap">
                     <span style={{ color: accent }}>Operator quote ·</span>
                     <span className="text-[#F0ECE6]/75 italic">"{quote.quote}"</span>
-                    <span className="text-[#F0ECE6]/45">— {quote.author}</span>
+                    <span className="text-[#F0ECE6]/45">by {quote.author}</span>
                   </p>
                 </div>
                 {/* Performance metric */}

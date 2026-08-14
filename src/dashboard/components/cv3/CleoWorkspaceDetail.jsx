@@ -101,7 +101,7 @@ function SectionCard({ title, accent, children, defaultOpen = true }) {
 
 function EditingInstructions({ briefMd }) {
   const content = extractSection(briefMd, 'Editing Instructions')
-  if (!content || content === '' || content === '[Active constraints — every sequence operation in this workspace must respect these.\nEmpty at init; populated when Patrik gives specific editing rules during work.]') {
+ if (!content || content === '' || content === '[Active constraints, every sequence operation in this workspace must respect these.\nEmpty at init; populated when Patrik gives specific editing rules during work.]') {
     return null
   }
   return (

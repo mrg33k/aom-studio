@@ -45,7 +45,7 @@ function countUnread(msgs) {
     if (msgs[i].role === 'user') {
       unread++
     } else {
-      break // hit an agent reply — everything before is "answered"
+ break // hit an agent reply, everything before is "answered"
     }
   }
   return unread

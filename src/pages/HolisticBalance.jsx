@@ -40,7 +40,7 @@ const PATH_STAGES = [
     stage: 'Whole Life Integration',
     course: '10 Ways to Recharge Your Life',
     rationale:
-      'Expands beyond diet into lifestyle — sleep, movement, stress, alternative therapies. The sustainable layer: "long-term health changes rather than quick fixes."',
+ 'Expands beyond diet into lifestyle, sleep, movement, stress, alternative therapies. The sustainable layer: "long-term health changes rather than quick fixes."',
     color: '#4A7090',
   },
 ]
@@ -59,23 +59,23 @@ const COURSES = [
       },
       {
         title: 'Your Food Journal',
-        body: 'Tracking one week of eating to reveal your patterns — "Assess Your Current Diet — Keep a food journal for one week to identify patterns"',
+ body: 'Tracking one week of eating to reveal your patterns, "Assess Your Current Diet, Keep a food journal for one week to identify patterns"',
       },
       {
         title: 'Reading Your Body\'s Signals',
-        body: '"Listen to Your Body — Pay attention to individual responses; adjust accordingly"',
+ body: '"Listen to Your Body, Pay attention to individual responses; adjust accordingly"',
       },
       {
         title: 'Building Your Plate',
-        body: '"Focus on Whole Foods — Fill plates with unprocessed options; limit processed foods and unhealthy fats"',
+ body: '"Focus on Whole Foods, Fill plates with unprocessed options; limit processed foods and unhealthy fats"',
       },
       {
         title: 'Stress, Food & Your Body',
-        body: '"Mind-Body Connection — Acknowledges stress and emotional factors affect physical health"',
+ body: '"Mind-Body Connection, Acknowledges stress and emotional factors affect physical health"',
       },
       {
         title: 'Making Changes That Stick',
-        body: '"Sustainability — Focuses on long-term health changes rather than quick fixes"',
+ body: '"Sustainability, Focuses on long-term health changes rather than quick fixes"',
       },
     ],
   },
@@ -84,7 +84,7 @@ const COURSES = [
     name: 'Techniques for Gut Healing',
     stage: 'Targeted Healing',
     stageColor: TERRACOTTA,
-    intro: '"Gut Health — the gut\'s role in digestion, boost immunity, and even enhance mental well-being"',
+ intro: '"Gut Health, the gut\'s role in digestion, boost immunity, and even enhance mental well-being"',
     modules: [
       {
         title: 'Understanding Your Gut',
@@ -92,11 +92,11 @@ const COURSES = [
       },
       {
         title: 'Whole Foods as Medicine',
-        body: '"Whole Foods — emphasizes unprocessed foods that are nutrient-rich"',
+ body: '"Whole Foods, emphasizes unprocessed foods that are nutrient-rich"',
       },
       {
         title: 'Fermented Foods & Probiotics',
-        body: '"Prioritize Gut Health — Incorporate fermented foods containing probiotics"',
+ body: '"Prioritize Gut Health, Incorporate fermented foods containing probiotics"',
       },
       {
         title: 'Anti-Inflammatory Eating',
@@ -104,7 +104,7 @@ const COURSES = [
       },
       {
         title: 'Hydration for Healing',
-        body: '"Stay Hydrated — Drink water; herbal teas and infused water are alternatives"',
+ body: '"Stay Hydrated, Drink water; herbal teas and infused water are alternatives"',
       },
     ],
   },
@@ -153,7 +153,7 @@ const COURSES = [
       },
       {
         title: 'Food as Medicine',
-        body: 'Seasonal, heart-healthy, and whole-life eating — the full circle',
+ body: 'Seasonal, heart-healthy, and whole-life eating, the full circle',
       },
     ],
   },
@@ -333,7 +333,7 @@ function CourseCard({ course }) {
 
 export default function HolisticBalance() {
   useEffect(() => {
-    document.title = 'Holistic Balance — Course Path'
+ document.title = 'Holistic Balance, Course Path'
     // Prevent indexing — this is a client-facing proposal page
     const meta = document.createElement('meta')
     meta.name = 'robots'
@@ -523,7 +523,7 @@ export default function HolisticBalance() {
               margin: '0 0 56px 0',
             }}
           >
-            Based on the site's CTA structure, the services progression, and the blog content hierarchy — the three courses work in sequence. Each builds on the last.
+ Based on the site's CTA structure, the services progression, and the blog content hierarchy, the three courses work in sequence. Each builds on the last.
           </p>
 
           {/* Path stages */}

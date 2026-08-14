@@ -117,7 +117,7 @@ export default function FileAnnotator({ node, worldId, kind, url, text }) {
       <div>
         <div ref={surfRef} onClick={pinMode && vid.paused ? placePoint : undefined}
           style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', background: '#0c1118', cursor: pinMode && vid.paused ? 'crosshair' : 'default', lineHeight: 0 }}>
-          {/* controls stay unless we're actually pinning on a paused frame — hiding them
+ {/* controls stay unless we're actually pinning on a paused frame, hiding them
               while playing left mobile with no pause/scrub at all */}
           <video ref={videoRef} src={url} onTimeUpdate={onTime} onLoadedMetadata={onTime} onPlay={onTime} onPause={onTime}
             controls={!(pinMode && vid.paused)} playsInline style={{ width: '100%', display: 'block', borderRadius: '12px', maxHeight: '52vh', background: '#0c1118' }} />
@@ -138,7 +138,7 @@ export default function FileAnnotator({ node, worldId, kind, url, text }) {
           <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', borderRadius: '3px', background: 'var(--cv6-surface-hover)' }} />
           <div style={{ position: 'absolute', left: 0, height: '6px', borderRadius: '3px', background: 'var(--cv6-accent-primary)', width: pct + '%' }} />
           {timeline.map((c) => (
-            <button key={c.id} data-pin title={`${fmt(c.t)} — ${c.text}`} onClick={(e) => { e.stopPropagation(); setActiveId(c.id); seek(c.t) }}
+ <button key={c.id} data-pin title={`${fmt(c.t)}, ${c.text}`} onClick={(e) => { e.stopPropagation(); setActiveId(c.id); seek(c.t) }}
               style={{ position: 'absolute', top: '50%', left: (vid.dur ? (c.t / vid.dur) * 100 : 0) + '%', transform: 'translate(-50%,-50%)', width: '14px', height: '14px', borderRadius: '50%', background: AMBER, border: '2px solid var(--cv6-ground)', cursor: 'pointer', zIndex: 3, padding: 0 }} />
           ))}
         </div>
@@ -185,7 +185,7 @@ export default function FileAnnotator({ node, worldId, kind, url, text }) {
           <div style={{ fontSize: '12px', color: 'var(--cv6-text-tertiary)' }}>Click the {kind === 'image' ? 'image' : 'document'} to pin a comment.</div>
         )}
         {draft && draftEditor(draft.type === 'timeline' ? fmt(draft.t) : `#${points.length + 1}`)}
-        {/* empty state is carried by the "none yet" header + the click hint above —
+ {/* empty state is carried by the "none yet" header + the click hint above , 
             no separate "No comments yet." line (it read as redundant). */}
         {[...timeline, ...points].map((c) => {
           const isPoint = c.type === 'point'

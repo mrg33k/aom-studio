@@ -641,7 +641,7 @@ export default function S3CBrand() {
           <div className="s3c-masthead-label">Brand Identity Exploration</div>
           <div className="s3c-masthead-title">
             Semiconductor Services &amp; Supply Coalition<br />
-            <span>S3C — Logo Round 3</span>
+ <span>S3C, Logo Round 3</span>
           </div>
           <div className="s3c-masthead-meta">
             <div className="s3c-meta-item">
@@ -667,13 +667,13 @@ export default function S3CBrand() {
         <div className="s3c-option-section">
           <div className="s3c-option-header">
             <div className="s3c-option-number">Option 01</div>
-            <div className="s3c-option-name">C03 — Circular Seal</div>
+ <div className="s3c-option-name">C03, Circular Seal</div>
             <div className="s3c-favorite-badge">Recommended</div>
           </div>
 
           <div className="s3c-hero-logo s3c-hero-a">
             <img src={LOGO.seal} alt="S3C Circular Seal" />
-            <div className="s3c-hero-logo-label">C03 — Circular Seal</div>
+ <div className="s3c-hero-logo-label">C03, Circular Seal</div>
           </div>
 
           <div className="s3c-palette-section">
@@ -721,7 +721,7 @@ export default function S3CBrand() {
                 Semiconductor Services &amp; Supply Coalition
               </div>
               <div className="s3c-sample-body" style={{ fontFamily: "'Source Serif 4', serif", fontSize: 15, fontWeight: 300, color: 'rgba(238,234,228,0.65)' }}>
-                S3C is Arizona's premier coalition connecting semiconductor manufacturers, equipment suppliers, and industrial service providers. We facilitate the contracts, partnerships, and procurement relationships that keep the region's supply chain moving. Membership opens doors — to qualified buyers, pre-vetted suppliers, and the policy table.
+ S3C is Arizona's premier coalition connecting semiconductor manufacturers, equipment suppliers, and industrial service providers. We facilitate the contracts, partnerships, and procurement relationships that keep the region's supply chain moving. Membership opens doors, to qualified buyers, pre-vetted suppliers, and the policy table.
               </div>
             </div>
           </div>
@@ -743,12 +743,12 @@ export default function S3CBrand() {
         <div className="s3c-option-section">
           <div className="s3c-option-header">
             <div className="s3c-option-number">Option 02</div>
-            <div className="s3c-option-name">C01 — Angular Monogram</div>
+ <div className="s3c-option-name">C01, Angular Monogram</div>
           </div>
 
           <div className="s3c-hero-logo s3c-hero-b">
             <img src={LOGO.monogram} alt="S3C Angular Monogram" />
-            <div className="s3c-hero-logo-label">C01 — Angular Monogram</div>
+ <div className="s3c-hero-logo-label">C01, Angular Monogram</div>
           </div>
 
           <div className="s3c-palette-section">
@@ -796,7 +796,7 @@ export default function S3CBrand() {
                 Semiconductor Services &amp; Supply Coalition
               </div>
               <div className="s3c-sample-body" style={{ fontFamily: "'Lato', sans-serif", fontSize: 15, fontWeight: 300, color: 'rgba(238,234,228,0.65)', lineHeight: 1.7 }}>
-                S3C is Arizona's premier coalition connecting semiconductor manufacturers, equipment suppliers, and industrial service providers. We facilitate the contracts, partnerships, and procurement relationships that keep the region's supply chain moving. Membership opens doors — to qualified buyers, pre-vetted suppliers, and the policy table.
+ S3C is Arizona's premier coalition connecting semiconductor manufacturers, equipment suppliers, and industrial service providers. We facilitate the contracts, partnerships, and procurement relationships that keep the region's supply chain moving. Membership opens doors, to qualified buyers, pre-vetted suppliers, and the policy table.
               </div>
             </div>
           </div>
@@ -818,12 +818,12 @@ export default function S3CBrand() {
         <div className="s3c-option-section">
           <div className="s3c-option-header">
             <div className="s3c-option-number">Option 03</div>
-            <div className="s3c-option-name">C02 — Hexagonal Badge</div>
+ <div className="s3c-option-name">C02, Hexagonal Badge</div>
           </div>
 
           <div className="s3c-hero-logo s3c-hero-c">
             <img src={LOGO.badge} alt="S3C Hexagonal Badge" />
-            <div className="s3c-hero-logo-label">C02 — Hexagonal Badge</div>
+ <div className="s3c-hero-logo-label">C02, Hexagonal Badge</div>
           </div>
 
           <div className="s3c-palette-section">
@@ -871,7 +871,7 @@ export default function S3CBrand() {
                 Semiconductor Services &amp; Supply Coalition
               </div>
               <div className="s3c-sample-body" style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 300, color: 'rgba(238,234,228,0.65)', lineHeight: 1.75, letterSpacing: '0.01em' }}>
-                S3C is Arizona's premier coalition connecting semiconductor manufacturers, equipment suppliers, and industrial service providers. We facilitate the contracts, partnerships, and procurement relationships that keep the region's supply chain moving. Membership opens doors — to qualified buyers, pre-vetted suppliers, and the policy table.
+ S3C is Arizona's premier coalition connecting semiconductor manufacturers, equipment suppliers, and industrial service providers. We facilitate the contracts, partnerships, and procurement relationships that keep the region's supply chain moving. Membership opens doors, to qualified buyers, pre-vetted suppliers, and the policy table.
               </div>
             </div>
           </div>
@@ -905,8 +905,8 @@ export default function S3CBrand() {
 
         {/* FOOTER */}
         <div className="s3c-footer">
-          <div className="s3c-footer-left">S3C — Brand Identity Round 3</div>
-          <div className="s3c-footer-right">Prepared by AOM Studio — March 2026</div>
+ <div className="s3c-footer-left">S3C, Brand Identity Round 3</div>
+ <div className="s3c-footer-right">Prepared by AOM Studio, March 2026</div>
         </div>
 
       </div>
