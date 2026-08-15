@@ -756,9 +756,9 @@ private struct RoomRowCard: View {
 
     private var room: Room { entry.room }
     private var tint: Color { isHero ? Theme.accent : Theme.tint(for: room.title) }
-    /// Hero is "active" only when the room genuinely moved in the last hour — otherwise the
-    /// status word + progress bar would be a lie, so we show its timestamp instead.
-    private var heroActive: Bool { isHero && entry.hasActivity && (Date().timeIntervalSince1970 * 1000 - entry.ts) < 3_600_000 }
+    /// Loader only when work is actually happening — 5m window so an idle top row never shows a spinner.
+    /// Work = recent activity + preview present; the bar and live dot fade with the newest line.
+    private var heroActive: Bool { isHero && entry.hasActivity && !entry.preview.isEmpty && (Date().timeIntervalSince1970 * 1000 - entry.ts) < 300_000 }
     // Unread (contract §7): the room has activity (ts > 0) and its last message
     // is newer than when this device last opened it. ReadStateStore persists a
     // per-room epoch-ms in UserDefaults; ChatView.onAppear stamps it each visit.
@@ -785,17 +785,26 @@ private struct RoomRowCard: View {
                             Circle().fill(Theme.live).frame(width: 8, height: 8)
                             Text("active").font(.hkSubheadline.weight(.semibold)).foregroundStyle(Theme.live)
                         }
+                        .transition(.opacity)
                     } else if !entry.preview.isEmpty {
-                        Text(entry.preview).font(.hkSubheadline).foregroundStyle(Theme.inkSoft).lineLimit(1)
+                        Text(entry.preview)
+                            .font(.hkSubheadline).foregroundStyle(Theme.inkSoft).lineLimit(1)
+                            .id(entry.preview)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
                 }
                 Spacer(minLength: Theme.s2)
                 Text(RelTime.of(entry.ts)).font(.hkCaption.monospaced()).foregroundStyle(Theme.inkFaint)
             }
-            if heroActive { IndeterminateBar() }
+            if heroActive {
+                IndeterminateBar()
+                    .transition(.opacity)
+            }
         }
         .padding(Theme.s4)
-        .cardSurface(fill: Theme.accentWeak, border: Theme.accent.opacity(0.35), edge: Theme.accent)
+        .cardSurface(fill: heroActive ? Theme.accentWeak : Theme.raised.opacity(0.6), border: heroActive ? Theme.accent.opacity(0.35) : Theme.hairline, edge: heroActive ? Theme.accent : tint)
+        .animation(.easeOut(duration: 0.35), value: entry.preview)
+        .animation(.easeOut(duration: 0.25), value: heroActive)
     }
 
     // A quiet row, per the live web mobile home: edge, single-letter avatar, title,
@@ -807,6 +816,8 @@ private struct RoomRowCard: View {
                 Text(room.title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 if !entry.preview.isEmpty {
                     Text(entry.preview).font(.hkCaption).foregroundStyle(Theme.inkSoft).lineLimit(1)
+                        .id(entry.preview)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
             Spacer(minLength: Theme.s2)
