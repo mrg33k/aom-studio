@@ -420,10 +420,14 @@ final class ChatViewModel: ObservableObject {
     }
 
     /// Convex-backed send: `sendMessage(roomId, text)` → `messages:sendMessage`
+    /// Convex requires: roomId (id), worldId (id), userId (id), text (string)
     func sendMessage(roomId: String, text: String) async throws {
+        // TODO: derive from auth session once Convex Auth is wired for iOS
+        let worldId = "k1798fjd7haec6r0ywkqzv5j858cgahm"
+        let userId = "jx7bcbabmhdw78vvb62zs6yjk98chv3b"
         try await ConvexService.shared.mutation(
             "messages:sendMessage",
-            args: ["roomId": roomId, "text": text, "role": "user", "source": Config.messageSource]
+            args: ["roomId": roomId, "worldId": worldId, "userId": userId, "text": text]
         )
     }
 
