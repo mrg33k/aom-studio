@@ -36,6 +36,15 @@ struct MessageBubbleView: View {
         row.qualifiedDisplayName(room: room, roomAgent: roomAgent)
     }
 
+    /// The raw slug that authored this row, for color lookups.
+    private var resolvedSlug: String {
+        row.resolvedAgentSlug(roomAgent: roomAgent)
+    }
+
+    private var agentColor: Color {
+        row.isUser ? AgentColors.user : AgentColors.color(forSlug: resolvedSlug)
+    }
+
     @State private var previewing: Attachment?
     /// Measured natural height of the prose text (set on first appear by the ghost overlay).
     /// Starts at 0 so no clamp fires before measurement; updates atomically on main thread.
@@ -87,16 +96,16 @@ struct MessageBubbleView: View {
                     }
                 }
             } else {
-                // An agent turn: left 2-letter monogram avatar, the author name above
-                // the bubble (once per group), then the bubble and its files/blocks,
-                // then the time. Matches the web mobile agent turn anatomy.
+                // An agent turn: colored voice — left-edge bar, colored monogram,
+                // name in agent color. When a different agent speaks the color
+                // makes it immediate. Matches Team Room spec.
                 HStack(alignment: .top, spacing: Theme.s2) {
-                    TurnAvatar(name: resolvedName, visible: showsAuthor)
+                    TurnAvatar(name: resolvedName, color: agentColor, slug: resolvedSlug, visible: showsAuthor)
                     VStack(alignment: .leading, spacing: Theme.s2) {
                         if showsAuthor {
                             Text(resolvedName)
                                 .font(.hkSubheadline.weight(.semibold))
-                                .foregroundStyle(Theme.ink)
+                                .foregroundStyle(agentColor)
                         }
                         payload(content, alignment: .leading)
                         timeBelow(alignment: .leading)
@@ -154,59 +163,70 @@ struct MessageBubbleView: View {
                 // The web's .cv6-mob-bubble pair, verbatim: user = accent fill +
                 // white ink + a 4pt tail at the bottom-trailing corner; agent =
                 // surface-2 + hairline + the tail at the top-leading corner.
-                Text(MessageBubbleView.attributed(content.prose))
-                    .font(.hkBody)
-                    .foregroundStyle(row.isUser ? Theme.userBubbleInk : Theme.ink)
-                    .padding(.horizontal, Theme.s4)
-                    .padding(.vertical, 10)
-                    .frame(maxHeight: isCollapsed ? MessageBubbleView.clampThreshold : .infinity,
-                           alignment: .topLeading)
-                    .clipped()
-                    .background {
-                        if row.isUser {
-                            MessageBubbleView.bubbleShape(user: true)
-                                .fill(Theme.userBubble)
-                        } else {
-                            Theme.frostedSurface(
-                                fallback: Theme.agentBubble,
-                                tint: Color.white.opacity(0.035),
-                                in: MessageBubbleView.bubbleShape(user: false)
-                            )
-                        }
+                ZStack(alignment: .leading) {
+                    // Left-edge accent bar for agent bubbles — the room tint bar
+                    // language reused for Team Room voices.
+                    if !row.isUser {
+                        Rectangle()
+                            .fill(agentColor)
+                            .frame(width: 3)
                     }
-                    .overlay {
-                        if !row.isUser {
-                            MessageBubbleView.bubbleShape(user: false)
-                                .strokeBorder(Theme.hairline, lineWidth: 1)
-                        }
-                        // Fade gradient at the bottom edge when clamped.
-                        // allowsHitTesting(false) so text selection still works.
-                        if isCollapsed {
-                            VStack(spacing: 0) {
-                                Spacer()
-                                LinearGradient(
-                                    colors: [
-                                        .clear,
-                                        (row.isUser ? Theme.userBubble : Theme.agentBubble)
-                                            .opacity(0.96)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
+                    Text(MessageBubbleView.attributed(content.prose))
+                        .font(.hkBody)
+                        .foregroundStyle(row.isUser ? Theme.userBubbleInk : Theme.ink)
+                        .padding(.horizontal, Theme.s4)
+                        .padding(.vertical, 10)
+                        .frame(maxHeight: isCollapsed ? MessageBubbleView.clampThreshold : .infinity,
+                               alignment: .topLeading)
+                        .clipped()
+                        .background {
+                            if row.isUser {
+                                MessageBubbleView.bubbleShape(user: true)
+                                    .fill(Theme.userBubble)
+                            } else {
+                                Theme.frostedSurface(
+                                    fallback: Theme.agentBubble,
+                                    tint: Color.white.opacity(0.035),
+                                    in: MessageBubbleView.bubbleShape(user: false)
                                 )
-                                .frame(height: 52)
                             }
-                            .clipShape(MessageBubbleView.bubbleShape(user: row.isUser))
-                            .allowsHitTesting(false)
                         }
-                    }
-                    .textSelection(.enabled)
-                    .contextMenu {
-                        Button {
-                            UIPasteboard.general.string = content.prose
-                        } label: {
-                            Label("Copy", systemImage: "doc.on.doc")
+                        .overlay {
+                            if !row.isUser {
+                                MessageBubbleView.bubbleShape(user: false)
+                                    .strokeBorder(Theme.hairline, lineWidth: 1)
+                            }
+                            // Fade gradient at the bottom edge when clamped.
+                            // allowsHitTesting(false) so text selection still works.
+                            if isCollapsed {
+                                VStack(spacing: 0) {
+                                    Spacer()
+                                    LinearGradient(
+                                        colors: [
+                                            .clear,
+                                            (row.isUser ? Theme.userBubble : Theme.agentBubble)
+                                                .opacity(0.96)
+                                        ],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                    .frame(height: 52)
+                                }
+                                .clipShape(MessageBubbleView.bubbleShape(user: row.isUser))
+                                .allowsHitTesting(false)
+                            }
                         }
+                        .textSelection(.enabled)
+                        .contextMenu {
+                            Button {
+                                UIPasteboard.general.string = content.prose
+                            } label: {
+                                Label("Copy", systemImage: "doc.on.doc")
+                            }
+                        }
+                        .padding(.leading, row.isUser ? 0 : 3)
                     }
+                    .clipShape(MessageBubbleView.bubbleShape(user: row.isUser))
                     // ── Height measurement ghost ─────────────────────────────
                     // A hidden, fixedSize copy of the text sits in an overlay so
                     // it can report its natural (unclamped) height. fixedSize
@@ -334,26 +354,55 @@ struct MessageBubbleView: View {
         )
     }
 
-    static func attributed(_ raw: String) -> AttributedString {
+    @MainActor static func attributed(_ raw: String) -> AttributedString {
+        var base: AttributedString
         if let parsed = try? AttributedString(
             markdown: raw,
             options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         ) {
-            return parsed
+            base = parsed
+        } else {
+            base = AttributedString(raw)
         }
-        return AttributedString(raw)
+        // @mention pill foundation — color each @mention using the agent's color.
+        // Regex matches @Creative, @Bobby etc. Case-insensitive.
+        let plain = String(base.characters)
+        guard let regex = try? NSRegularExpression(pattern: "@([A-Za-z0-9_\\-]+)", options: []) else {
+            return base
+        }
+        let nsPlain = plain as NSString
+        let matches = regex.matches(in: plain, range: NSRange(location: 0, length: nsPlain.length))
+        // Apply from end to keep indices stable despite attribute mutation (length unchanged)
+        for match in matches.reversed() {
+            let full = match.range(at: 0)
+            let nameRange = match.range(at: 1)
+            guard full.location != NSNotFound, nameRange.location != NSNotFound else { continue }
+            let mention = nsPlain.substring(with: nameRange)
+            let color = AgentColors.color(forMention: mention)
+            // Guard against out-of-bounds from markdown stripping changing length.
+            guard full.location + full.length <= nsPlain.length else { continue }
+            let start = base.index(base.startIndex, offsetByCharacters: full.location)
+            let end = base.index(start, offsetByCharacters: full.length)
+            let r = start..<end
+            base[r].foregroundColor = color
+            base[r].backgroundColor = color.opacity(0.14)
+            // Keep link-like interactivity foundation without backend dispatch
+            if let url = URL(string: "corner://mention/\(mention.lowercased())") {
+                base[r].link = url
+            }
+        }
+        return base
     }
 }
 
 // MARK: - Turn avatar
 
-/// The 2-letter monogram beside an agent turn (room-row-contract §1 part 2: two
-/// letters, uppercased, never a face). Tinted from the author name with the same
-/// stable-hash palette the home timeline uses, so one agent keeps one colour across
-/// both surfaces. `visible: false` collapses it to a clear 30pt spacer that keeps
-/// grouped replies aligned under the first one's bubble.
+/// The 2-letter monogram beside an agent turn — now color-coded per Team Room.
+/// Filled with the agent's color, name in same color, so a new voice is instant.
 struct TurnAvatar: View {
     let name: String
+    var color: Color? = nil
+    var slug: String? = nil
     var visible: Bool = true
 
     private var glyph: String {
@@ -362,19 +411,29 @@ struct TurnAvatar: View {
         return String(name.prefix(2)).uppercased()
     }
 
+    /// Effective tint: agent color when provided, else legacy hash fallback.
+    private var tint: Color { color ?? Theme.tint(for: name) }
+
+    /// Glyph color: white on saturated tints, dark on the Corner neutral.
+    private var glyphColor: Color {
+        guard color != nil else { return Theme.ink }
+        if slug?.lowercased() == "corner" { return Theme.ground }
+        return Color.white
+    }
+
     var body: some View {
         Text(visible ? glyph : "")
             .font(.hkCaption.weight(.bold))
-            .foregroundStyle(Theme.tint(for: name))
+            .foregroundStyle(visible ? glyphColor : Color.clear)
             .frame(width: 30, height: 30)
             .background(
-                visible ? Theme.raised : Color.clear,
+                visible ? tint : Color.clear,
                 in: RoundedRectangle(cornerRadius: 9, style: .continuous)
             )
             .overlay {
                 if visible {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .strokeBorder(Theme.hairline, lineWidth: 1)
+                        .strokeBorder(tint.opacity(0.6), lineWidth: 1)
                 }
             }
             .accessibilityHidden(true)

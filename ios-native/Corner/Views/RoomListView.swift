@@ -45,7 +45,8 @@ struct RoomListView: View {
     @State private var filter: HomeFilter = .all
     /// Bumped by the top bar's voice chip; the home composer starts dictation on change.
     @State private var voiceTrigger = 0
-    /// The project the Projects carousel has open, by slug.
+    /// The project whose missions sheet is open, by slug. Selected tile stays
+    /// highlighted with a blue border while the sheet is up (Team Room spec).
     @State private var openProjectSlug: String?
     /// Rooms swiped out of the Recent feed — Patrik's fast feed cleanup. Local to this
     /// device (UserDefaults); the room stays in All / Projects / search, and a swipe in
@@ -141,6 +142,28 @@ struct RoomListView: View {
         .sheet(isPresented: $showingBackgroundWork) {
             BackgroundWorkView()
                 .environmentObject(ThemeManager.shared)
+        }
+        .sheet(isPresented: Binding(
+            get: { openProjectSlug != nil },
+            set: { if !$0 { openProjectSlug = nil } }
+        )) {
+            if let slug = openProjectSlug,
+               let group = store.projects.first(where: {
+                   if case .project(let s) = $0.room.kind { return s == slug }
+                   return false
+               }) {
+                ProjectMissionsSheet(
+                    group: group,
+                    recent: store.recent,
+                    onOpen: { room in
+                        openProjectSlug = nil
+                        router.open(room)
+                    },
+                    onClose: { openProjectSlug = nil }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
         }
         .task {
             intake.onOpen = { router.open($0) }
@@ -401,28 +424,11 @@ struct RoomListView: View {
         .padding(.vertical, Theme.s1)
         .plainCardRow()
 
-        if let slug = openProjectSlug,
-           let group = store.projects.first(where: {
-               if case .project(let s) = $0.room.kind { return s == slug }
-               return false
-           }) {
-            sectionLabel(group.room.title)
-            let tsByID = Dictionary(store.recent.map { ($0.room.roomID, $0) }, uniquingKeysWith: { a, _ in a })
-            ForEach([group.room] + group.missions, id: \.roomID) { room in
-                let entry = tsByID[room.roomID] ?? RoomStore.RecentRoom(room: room, ts: 0, preview: "")
-                Button { router.open(room) } label: {
-                    RoomRowCard(entry: RoomStore.RecentRoom(room: room, ts: entry.ts, preview: entry.preview), isHero: false)
-                }
-                .buttonStyle(CardButtonStyle())
-                .plainCardRow()
-            }
-        } else {
-            Text("Tap a project to see its rooms.")
-                .font(.hkFootnote)
-                .foregroundStyle(Theme.inkFaint)
-                .padding(.top, Theme.s2)
-                .plainCardRow()
-        }
+        Text("Tap a project to see its missions.")
+            .font(.hkFootnote)
+            .foregroundStyle(Theme.inkFaint)
+            .padding(.top, Theme.s2)
+            .plainCardRow()
     }
 
     // MARK: - The agent picker (2-column grid with icons & tints, per conversation)
@@ -976,6 +982,120 @@ private struct ProjectGridTile: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+// MARK: - Project missions sheet
+
+/// Sheet that slides up when a project tile is tapped — the clean reveal that
+/// avoids scroll-hunting past 46 tiles. .medium by default, pull to .large.
+/// Each row shows the room tint, title, last preview, and relative time.
+private struct ProjectMissionsSheet: View {
+    let group: RoomStore.ProjectGroup
+    let recent: [RoomStore.RecentRoom]
+    let onOpen: (Room) -> Void
+    let onClose: () -> Void
+
+    private var tsMap: [String: RoomStore.RecentRoom] {
+        Dictionary(recent.map { ($0.room.roomID, $0) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                // Project header row — tap to open the project itself
+                Section {
+                    Button { onOpen(group.room) } label: {
+                        HStack(spacing: Theme.s3) {
+                            Monogram(title: group.room.title, tint: Theme.tint(for: group.room.title), hero: false)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(group.room.title)
+                                    .font(.hkBody.weight(.semibold))
+                                    .foregroundStyle(Theme.ink)
+                                Text("Project · tap to open")
+                                    .font(.hkCaption)
+                                    .foregroundStyle(Theme.inkSoft)
+                            }
+                            Spacer(minLength: Theme.s2)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Theme.inkFaint)
+                        }
+                        .padding(.vertical, Theme.s1)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Section {
+                    if group.missions.isEmpty {
+                        Text("No missions in this project yet.")
+                            .font(.hkFootnote)
+                            .foregroundStyle(Theme.inkFaint)
+                            .padding(.vertical, Theme.s2)
+                    } else {
+                        ForEach(group.missions, id: \.roomID) { mission in
+                            let entry = tsMap[mission.roomID]
+                            let ts = entry?.ts ?? 0
+                            let preview = entry?.preview ?? ""
+                            Button { onOpen(mission) } label: {
+                                HStack(spacing: Theme.s3) {
+                                    // Tint bar is on the card surface — use the room's own tint
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(mission.title)
+                                            .font(.hanken(15).weight(.semibold))
+                                            .foregroundStyle(Theme.ink)
+                                            .lineLimit(1)
+                                        if !preview.isEmpty {
+                                            Text(preview)
+                                                .font(.hkCaption)
+                                                .foregroundStyle(Theme.inkSoft)
+                                                .lineLimit(2)
+                                        } else {
+                                            Text("No messages yet")
+                                                .font(.hkCaption)
+                                                .foregroundStyle(Theme.inkFaint)
+                                        }
+                                    }
+                                    Spacer(minLength: Theme.s2)
+                                    VStack(alignment: .trailing, spacing: 4) {
+                                        let age = RelTime.of(ts)
+                                        if !age.isEmpty {
+                                            Text(age)
+                                                .font(.hkCaption2.monospaced())
+                                                .foregroundStyle(Theme.inkFaint)
+                                        }
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 10, weight: .semibold))
+                                            .foregroundStyle(Theme.inkFaint)
+                                    }
+                                }
+                                .padding(.vertical, Theme.s1)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                } header: {
+                    Text("MISSIONS — \(group.missions.count)")
+                        .font(.hkCaption2.weight(.semibold))
+                        .foregroundStyle(Theme.inkFaint)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(Theme.ground)
+            .navigationTitle(group.room.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { onClose() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    .accessibilityLabel("Close")
+                }
+            }
+        }
     }
 }
 

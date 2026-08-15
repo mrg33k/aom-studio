@@ -343,3 +343,88 @@ extension Theme {
         }
     }
 }
+
+// MARK: - AgentColors (Team Room)
+
+/// Central mapping of agent → fixed distinct color.
+/// Creative→teal, Web→green, Content→cyan, Design→pink, Operations→amber,
+/// Systems→purple, Assistant→violet, Outreach→yellow, Social→emerald,
+/// Strategy→blue, Research→indigo, Corner→neutral, User→accent blue.
+@MainActor
+enum AgentColors {
+    static let creative  = Color(cv6: 0x2DD4BF)
+    static let web       = Color(cv6: 0x4ADE80)
+    static let content   = Color(cv6: 0x22D3EE)
+    static let design    = Color(cv6: 0xF472B6)
+    static let operations = Color(cv6: 0xFBBF24)
+    static let systems   = Color(cv6: 0xA78BFA)
+    static let assistant = Color(cv6: 0x8B5CF6)
+    static let outreach  = Color(cv6: 0xFACC15)
+    static let social    = Color(cv6: 0x34D399)
+    static let strategy  = Color(cv6: 0x60A5FA)
+    static let research  = Color(cv6: 0x818CF8)
+    static let corner    = Color(cv6: 0xE5E7EB)
+    static let user      = Color(cv6: 0x3B82F6)
+    static let qa        = Color(cv6: 0xF97316)
+    static let media     = Color(cv6: 0x38BDF8)
+
+    static func color(forSlug slug: String) -> Color {
+        let key = slug.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch key {
+        case "director": return creative
+        case "bobby":    return web
+        case "cleo":     return content
+        case "steffen":  return design
+        case "gary":     return operations
+        case "elon":     return systems
+        case "rex":      return assistant
+        case "jacob":    return outreach
+        case "tony":     return social
+        case "alex":     return strategy
+        case "steve":    return research
+        case "elmo":     return qa
+        case "pixel":    return media
+        case "corner", "studio": return corner
+        case "user", "you": return user
+        default:
+            return color(forTitle: key) ?? Theme.tint(for: key)
+        }
+    }
+
+    static func color(forTitle title: String) -> Color? {
+        let key = title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch key {
+        case "creative":  return creative
+        case "web":       return web
+        case "content":   return content
+        case "design":    return design
+        case "operations": return operations
+        case "systems":   return systems
+        case "assistant": return assistant
+        case "outreach":  return outreach
+        case "social":    return social
+        case "strategy":  return strategy
+        case "research", "advisory": return research
+        case "qa":        return qa
+        case "media":     return media
+        case "corner":    return corner
+        case "studio":    return corner
+        case "user", "you": return user
+        default: return nil
+        }
+    }
+
+    static func color(forMention mention: String) -> Color {
+        let raw = mention.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if let c = color(forTitle: raw) { return c }
+        return color(forSlug: raw)
+    }
+
+    static let mentionAliases: Set<String> = [
+        "creative", "director", "web", "bobby", "content", "cleo",
+        "design", "steffen", "operations", "gary", "systems", "elon",
+        "assistant", "rex", "outreach", "jacob", "social", "tony",
+        "strategy", "alex", "research", "advisory", "steve", "qa", "elmo",
+        "media", "pixel", "corner", "studio", "user", "you"
+    ]
+}
