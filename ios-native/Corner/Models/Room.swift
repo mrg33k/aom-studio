@@ -39,11 +39,17 @@ struct Room: Identifiable, Hashable {
     let title: String
     let subtitle: String
 
+    /// When populated from Convex, this holds the Convex document _id directly.
+    /// Convex queries and mutations use this instead of the computed roomID.
+    var convexID: String?
+
     var id: String { roomID }
 
     /// The canonical room_id rows in this room carry — also the realtime filter value
     /// and the key an APNs payload deep-links with.
+    /// When convexID is set (Convex backend), use that instead.
     var roomID: String {
+        if let cid = convexID, !cid.isEmpty { return cid }
         switch kind {
         case .agent(let slug):      return "\(world):agent:\(slug)"
         case .project(let slug):    return "\(world):project:\(slug)"

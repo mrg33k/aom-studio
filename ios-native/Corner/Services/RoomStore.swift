@@ -60,7 +60,21 @@ final class RoomStore: ObservableObject {
     func loadRooms() async throws -> [Room] {
         guard let world = api.world else { return [] }
         let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world])
-        return convexRooms.compactMap { Room.parse(roomID: $0.resolvedID, title: $0.resolvedTitle) }
+        return convexRooms.compactMap { cr -> Room? in
+            let id = cr.resolvedID
+            guard !id.isEmpty else { return nil }
+            let title = cr.resolvedTitle
+            // Build Room directly from Convex fields instead of parsing the ID format
+            let kind: Room.Kind
+            switch cr.kind ?? cr.type ?? "project" {
+            case "agent": kind = .agent(slug: cr.specialist ?? cr.slug ?? id)
+            case "mission": kind = .mission(slug: cr.slug ?? id, project: cr.project ?? "")
+            default: kind = .project(slug: cr.project ?? cr.slug ?? id)
+            }
+            var room = Room(world: world, kind: kind, title: title, subtitle: cr.subtitle ?? "")
+            room.convexID = id  // Store the Convex _id for queries
+            return room
+        }
     }
 
     func load() async {
@@ -258,26 +272,32 @@ final class RoomStore: ObservableObject {
 
     /// Raw room shape as Convex may return it (matches web response).
     struct ConvexRoom: Decodable {
+        let _id: String?           // Convex document ID (primary key)
         let roomId: String?
         let room_id: String?
         let name: String?
         let title: String?
         let type: String?
+        let kind: String?
         let slug: String?
         let project: String?
         let mission: String?
+        let specialist: String?
+        let subtitle: String?
+        let tint: String?
         let clientId: String?
         let worldId: String?
 
         enum CodingKeys: String, CodingKey {
-            case roomId, name, type, slug, project, mission
+            case _id, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
             case room_id = "room_id"
             case title
             case clientId = "clientId"
             case worldId = "worldId"
         }
 
-        var resolvedID: String { roomId ?? room_id ?? slug ?? name ?? "" }
+        /// Convex returns `_id` as the document ID — prefer it over all others
+        var resolvedID: String { _id ?? roomId ?? room_id ?? slug ?? name ?? "" }
         var resolvedTitle: String { title ?? name ?? Room.prettify(slug ?? resolvedID) }
     }
 
