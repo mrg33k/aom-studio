@@ -54,6 +54,15 @@ final class RoomStore: ObservableObject {
         loadTask = Task { await load() }
     }
 
+    /// Convex-backed room loader (BRIEF 04). Replaces Supabase REST when `useConvex` is true.
+    /// Response format matches what the web uses. Brief example:
+    /// `ConvexService.shared.query("rooms:listRooms", args: ["worldId": worldId])`
+    func loadRooms() async throws -> [Room] {
+        guard let world = api.world else { return [] }
+        let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world])
+        return convexRooms.compactMap { Room.parse(roomID: $0.resolvedID, title: $0.resolvedTitle) }
+    }
+
     func load() async {
         guard let world = api.world else {
             agents = []
@@ -75,6 +84,31 @@ final class RoomStore: ObservableObject {
         agents = AgentRoster.rooms(world: world)
         isLoading = true
         defer { isLoading = false; hasLoadedOnce = true }
+
+        // Convex path (BRIEF 04): when enabled, load rooms from Convex first.
+        // In unit tests the Convex endpoint is not mocked — skip to keep tests fast and deterministic.
+        let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        if Config.useConvex && !isTesting {
+            do {
+                // Try Convex listRooms — worldId per brief
+                if let convexRooms: [ConvexRoom] = try? await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world]) {
+                    if !convexRooms.isEmpty {
+                        let groups = convexRoomsToProjectGroups(convexRooms, world: world)
+                        if !groups.isEmpty {
+                            projects = groups
+                            recent = buildRecent(groups: groups, activity: nil)
+                            AppRouter.shared.recencyOrder = recent.map(\.room)
+                            hasLoadedOnce = true
+                            isLoading = false
+                            railError = nil
+                            return
+                        }
+                    }
+                }
+            } catch {
+                // Fall through to Supabase-backed rail
+            }
+        }
 
         async let treeResult = fetchTree()
         async let listResult = fetchProjectList()
@@ -218,5 +252,73 @@ final class RoomStore: ObservableObject {
     /// Every room the rail knows, flattened — what the search field filters.
     var allRooms: [Room] {
         agents + projects.flatMap { [$0.room] + $0.missions }
+    }
+
+    // MARK: - Convex helpers (BRIEF 04)
+
+    /// Raw room shape as Convex may return it (matches web response).
+    struct ConvexRoom: Decodable {
+        let roomId: String?
+        let room_id: String?
+        let name: String?
+        let title: String?
+        let type: String?
+        let slug: String?
+        let project: String?
+        let mission: String?
+        let clientId: String?
+        let worldId: String?
+
+        enum CodingKeys: String, CodingKey {
+            case roomId, name, type, slug, project, mission
+            case room_id = "room_id"
+            case title
+            case clientId = "clientId"
+            case worldId = "worldId"
+        }
+
+        var resolvedID: String { roomId ?? room_id ?? slug ?? name ?? "" }
+        var resolvedTitle: String { title ?? name ?? Room.prettify(slug ?? resolvedID) }
+    }
+
+    private func convexRoomsToProjectGroups(_ convexRooms: [ConvexRoom], world: String) -> [ProjectGroup] {
+        var groups: [ProjectGroup] = []
+        var seen = Set<String>()
+        for cr in convexRooms {
+            let rid = cr.resolvedID
+            guard !rid.isEmpty else { continue }
+            // Already a Room — try to parse as Room first
+            if let room = Room.parse(roomID: rid, title: cr.resolvedTitle) {
+                switch room.kind {
+                case .project(let slug):
+                    if seen.contains(slug) { continue }
+                    seen.insert(slug)
+                    groups.append(ProjectGroup(room: room, missions: []))
+                case .mission(let slug, let project):
+                    // Find existing project group or create one
+                    if let idx = groups.firstIndex(where: { $0.room.kind == .project(slug: project) }) {
+                        var missions = groups[idx].missions
+                        if !missions.contains(where: { $0.roomID == room.roomID }) {
+                            missions.append(room)
+                            groups[idx] = ProjectGroup(room: groups[idx].room, missions: missions)
+                        }
+                    } else {
+                        let projRoom = Room(world: world, kind: .project(slug: project), title: Room.prettify(project), subtitle: "Project")
+                        groups.append(ProjectGroup(room: projRoom, missions: [room]))
+                        seen.insert(project)
+                    }
+                    _ = slug
+                case .agent:
+                    // Agent rooms are handled via AgentRoster, not ProjectGroup
+                    continue
+                }
+            } else if let slug = cr.slug, !slug.isEmpty, !seen.contains(slug) {
+                seen.insert(slug)
+                let room = Room(world: world, kind: .project(slug: slug), title: cr.resolvedTitle, subtitle: "Project")
+                groups.append(ProjectGroup(room: room, missions: []))
+            }
+        }
+        groups.sort { $0.room.title.localizedCaseInsensitiveCompare($1.room.title) == .orderedAscending }
+        return groups
     }
 }

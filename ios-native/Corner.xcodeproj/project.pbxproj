@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		03633E17DD9097F16B3FC0E4 /* EmailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6485AD7BDCDB6B83FF83ABDC /* EmailStore.swift */; };
 		0488714B0ACA56A6F88863C2 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4E330537A94F6BCADAAAD4 /* SignInView.swift */; };
+		068C15BB396647F8FD1E742E /* ConvexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CCA195DB3CAFCF12889A9BB /* ConvexService.swift */; };
 		09C9ADE896667C4859CA462C /* RoomSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE3EAACFEA3E82CAEC19854 /* RoomSettingsView.swift */; };
 		0C660BE3353D043E19EF0DE5 /* TurnActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFA3E11D565975BCF1963E6 /* TurnActivityAttributes.swift */; };
 		0FBF4F77E469127A232146DA /* StewardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F1982A7FB4CC833E7B9019 /* StewardTests.swift */; };
@@ -19,6 +20,7 @@
 		2511737A965FB08574CE81B9 /* TurnActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFA3E11D565975BCF1963E6 /* TurnActivityAttributes.swift */; };
 		256F30250207446B2B8E8AC2 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 738107B73EFB279CB127593B /* Theme.swift */; };
 		25A6748FD4B611B4B17EC825 /* TrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F30FB88FFD022F2EE47866 /* TrackerTests.swift */; };
+		29927D73CA278D09E3F1EE00 /* AgentColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEF7FE0EBDF8ABD90A08461 /* AgentColor.swift */; };
 		2AC0BF1ADB5977E4643C2A9B /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8899E5EB7B22DB9ECBE0F3AD /* ChatViewModel.swift */; };
 		2B98AAF3B36FDA0762FFCB64 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 916A7D1153B518D56BC67226 /* RootView.swift */; };
 		2C1245D09A52FF6A8D76D6D8 /* ReviewItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC666C376DEDBBB91CD4B4A5 /* ReviewItem.swift */; };
@@ -183,6 +185,7 @@
 		714FB0F47259B6FE53E2B007 /* DeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkTests.swift; sourceTree = "<group>"; };
 		738107B73EFB279CB127593B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		78195C7CEC61A8E2A7C22582 /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
+		7CCA195DB3CAFCF12889A9BB /* ConvexService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConvexService.swift; sourceTree = "<group>"; };
 		7CF99DF9192383E26F1255FB /* IntegrationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsView.swift; sourceTree = "<group>"; };
 		80716889B1EAF64D5F4D475E /* AttachmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentTests.swift; sourceTree = "<group>"; };
 		81D8FE03F68E468709423ABF /* RoomStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomStore.swift; sourceTree = "<group>"; };
@@ -216,6 +219,7 @@
 		C5FB3FE961AAEFDE450F908E /* EmailModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailModels.swift; sourceTree = "<group>"; };
 		C62786309F50F5448B66011A /* FileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStore.swift; sourceTree = "<group>"; };
 		C9DA6E1D50DE52ED44D3041F /* Corner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Corner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CEEF7FE0EBDF8ABD90A08461 /* AgentColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentColor.swift; sourceTree = "<group>"; };
 		D108379E9EA1B083B564C0BA /* RoomStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomStatusTests.swift; sourceTree = "<group>"; };
 		D8CA935ACABC0C1E275A24EE /* ReviewDecisionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewDecisionSheet.swift; sourceTree = "<group>"; };
 		DA58C64409596C25343E0CE7 /* RoomChecklistStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomChecklistStore.swift; sourceTree = "<group>"; };
@@ -325,9 +329,11 @@
 		67DAA622703677F8F0BE8D76 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				CEEF7FE0EBDF8ABD90A08461 /* AgentColor.swift */,
 				AFB91EBAB88CC0CFBBD574FE /* AirPodsVoiceService.swift */,
 				E3984DE7AC39AFF032327719 /* AppRouter.swift */,
 				B278AB85C4B9477505810FB5 /* BackgroundWorkStore.swift */,
+				7CCA195DB3CAFCF12889A9BB /* ConvexService.swift */,
 				49FDC9EB2F5FB0CC8AF8FFF7 /* CornerAPI.swift */,
 				53452A91F35EB1FCB0A97D20 /* DebugAuth.swift */,
 				6485AD7BDCDB6B83FF83ABDC /* EmailStore.swift */,
@@ -584,6 +590,7 @@
 			files = (
 				6F95B95DBC7CD27B3132F7D7 /* ASCIIBackground.swift in Sources */,
 				312766B6F9DA582A0B9299E4 /* AccountView.swift in Sources */,
+				29927D73CA278D09E3F1EE00 /* AgentColor.swift in Sources */,
 				663E648B5E1B0C418B4E737E /* AirPodsVoiceService.swift in Sources */,
 				97D0B387A6639C5A5AB59DE3 /* AirPodsVoiceView.swift in Sources */,
 				74493D719E1C7DFEEB61A489 /* AppRouter.swift in Sources */,
@@ -597,6 +604,7 @@
 				2AC0BF1ADB5977E4643C2A9B /* ChatViewModel.swift in Sources */,
 				2FF41C56D373CB68724A6820 /* ChecklistModels.swift in Sources */,
 				E4993169B470D0B135C28721 /* Config.swift in Sources */,
+				068C15BB396647F8FD1E742E /* ConvexService.swift in Sources */,
 				5109FDB27364FB26A7243EBA /* CornerAPI.swift in Sources */,
 				8D12035D67DD5AF1CABB60A3 /* CornerApp.swift in Sources */,
 				8EC250D36A67090713DBA18C /* DebugAuth.swift in Sources */,

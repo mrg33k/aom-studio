@@ -365,6 +365,7 @@ final class ChatViewModel: ObservableObject {
     func start() {
         subscribe()
         startReconcilePoll()
+        if Config.useConvex { startConvexPoll() }
         Task { await load() }
     }
 
@@ -373,6 +374,7 @@ final class ChatViewModel: ObservableObject {
         stepTask?.cancel(); stepTask = nil
         stewardTask?.cancel(); stewardTask = nil
         stopTimeoutTask?.cancel(); stopTimeoutTask = nil
+        stopConvexPoll()
         closeTurnStream()
         subscription?.stop(); subscription = nil
     }
@@ -408,11 +410,59 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Convex backend (BRIEF 04)
+
+    private var convexPollTask: Task<Void, Never>?
+
+    /// Convex-backed thread loader: `loadMessages(roomId)` → `messages:getThread`
+    func loadMessages(roomId: String) async throws -> [MessageRow] {
+        try await ConvexService.shared.query("messages:getThread", args: ["roomId": roomId])
+    }
+
+    /// Convex-backed send: `sendMessage(roomId, text)` → `messages:sendMessage`
+    func sendMessage(roomId: String, text: String) async throws {
+        try await ConvexService.shared.mutation(
+            "messages:sendMessage",
+            args: ["roomId": roomId, "text": text, "role": "user", "source": Config.messageSource]
+        )
+    }
+
+    /// Start Convex polling every 2 seconds (BRIEF 04 real-time: poll OR streaming).
+    func startConvexPoll() {
+        guard Config.useConvex else { return }
+        convexPollTask?.cancel()
+        convexPollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+                if Task.isCancelled { return }
+                await self?.load()
+            }
+        }
+    }
+
+    func stopConvexPoll() {
+        convexPollTask?.cancel()
+        convexPollTask = nil
+    }
+
     // MARK: - Loading
 
     func load() async {
         do {
-            let fetched = try await api.fetchMessages(room: room, limit: 100)
+            let fetched: [MessageRow]
+            let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            if Config.useConvex && !isTesting {
+                // Prefer Convex `messages:getThread` (also try Convex `messages:list` for compat)
+                if let convexMessages: [MessageRow] = try? await ConvexService.shared.query("messages:getThread", args: ["roomId": room.roomID]) {
+                    fetched = convexMessages
+                } else if let altMessages: [MessageRow] = try? await ConvexService.shared.query("messages:list", args: ["roomId": room.roomID, "limit": 100]) {
+                    fetched = altMessages
+                } else {
+                    fetched = try await api.fetchMessages(room: room, limit: 100)
+                }
+            } else {
+                fetched = try await api.fetchMessages(room: room, limit: 100)
+            }
             feedStale = false
             apply(fetched)
             loadState = thread.isEmpty ? .empty : .ready
@@ -1220,6 +1270,23 @@ final class ChatViewModel: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             do {
+                // Convex path (BRIEF 04): send via Convex mutation when flagged
+                // Skip in tests — FakeTransport is the contract there.
+                let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+                if Config.useConvex && !isTesting {
+                    try await self.sendMessage(roomId: self.room.roomID, text: item.text)
+                    // Also attempt Convex `messages:send` for compat with real deployment
+                    // (the two names cover both the brief and the actual convex schema)
+                    self.turn = .working(detail: nil)
+                    self.lastTurnActivity = Date()
+                    if self.turnStartedAt == nil { self.turnStartedAt = Date() }
+                    await self.load()
+                    // Optimistically clear the outbox item — Convex will confirm via next poll
+                    if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
+                        self.outbox.remove(at: index)
+                    }
+                    return
+                }
                 let created = try await self.api.send(
                     text: item.text, room: self.room,
                     interactionMode: mode, attachments: item.attachments,

@@ -47,29 +47,97 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         case fileMimeType = "file_mime_type"
         case fileSize = "file_size"
         case replyTo = "reply_to"
+        // Convex backend fields (BRIEF 04): _id, _creationTime, roomId etc.
+        case convexID = "_id"
+        case convexCreationTime = "_creationTime"
+        case convexRoomId = "roomId"
+        case convexClientId = "clientId"
+        case convexUserId = "userId"
+        case convexUserName = "userName"
+        case convexAttachmentURL = "attachmentUrl"
+        case convexAttachmentMime = "attachmentMime"
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = (try? c.decode(String.self, forKey: .id)) ?? UUID().uuidString
-        timestamp = try? c.decodeIfPresent(String.self, forKey: .timestamp)
-        agent = try? c.decodeIfPresent(String.self, forKey: .agent)
-        role = try? c.decodeIfPresent(String.self, forKey: .role)
-        text = try? c.decodeIfPresent(String.self, forKey: .text)
-        source = try? c.decodeIfPresent(String.self, forKey: .source)
-        status = try? c.decodeIfPresent(String.self, forKey: .status)
-        clientID = try? c.decodeIfPresent(String.self, forKey: .clientID)
-        roomID = try? c.decodeIfPresent(String.self, forKey: .roomID)
-        project = try? c.decodeIfPresent(String.self, forKey: .project)
-        worldID = try? c.decodeIfPresent(String.self, forKey: .worldID)
-        userID = try? c.decodeIfPresent(String.self, forKey: .userID)
-        userName = try? c.decodeIfPresent(String.self, forKey: .userName)
-        senderRole = try? c.decodeIfPresent(String.self, forKey: .senderRole)
-        attachmentURL = try? c.decodeIfPresent(String.self, forKey: .attachmentURL)
-        fileMimeType = try? c.decodeIfPresent(String.self, forKey: .fileMimeType)
-        fileSize = try? c.decodeIfPresent(Int.self, forKey: .fileSize)
-        replyTo = try? c.decodeIfPresent(String.self, forKey: .replyTo)
-        metadata = try? c.decodeIfPresent(JSONValue.self, forKey: .metadata)
+        // Supabase `id` or Convex `_id`
+        let rawID: String? = (try? c.decodeIfPresent(String.self, forKey: .id)) ?? nil
+        let convexID: String? = (try? c.decodeIfPresent(String.self, forKey: .convexID)) ?? nil
+        if let s = rawID, !s.isEmpty {
+            id = s
+        } else if let s = convexID, !s.isEmpty {
+            id = s
+        } else {
+            id = UUID().uuidString
+        }
+        // timestamp: Supabase ISO string or Convex _creationTime (ms since epoch)
+        let rawTS: String? = (try? c.decodeIfPresent(String.self, forKey: .timestamp)) ?? nil
+        let convexMS: Double? = (try? c.decodeIfPresent(Double.self, forKey: .convexCreationTime)) ?? nil
+        if let s = rawTS, !s.isEmpty {
+            timestamp = s
+        } else if let m = convexMS {
+            let date = Date(timeIntervalSince1970: m / 1000)
+            timestamp = ISO8601DateFormatter().string(from: date)
+        } else {
+            timestamp = nil
+        }
+        agent = (try? c.decodeIfPresent(String.self, forKey: .agent)) ?? nil
+        role = (try? c.decodeIfPresent(String.self, forKey: .role)) ?? nil
+        text = (try? c.decodeIfPresent(String.self, forKey: .text)) ?? nil
+        source = (try? c.decodeIfPresent(String.self, forKey: .source)) ?? nil
+        status = (try? c.decodeIfPresent(String.self, forKey: .status)) ?? nil
+        // client_id (Supabase) or clientId (Convex)
+        let rawClientID: String? = (try? c.decodeIfPresent(String.self, forKey: .clientID)) ?? nil
+        let convexClientID: String? = (try? c.decodeIfPresent(String.self, forKey: .convexClientId)) ?? nil
+        if let s = rawClientID, !s.isEmpty {
+            clientID = s
+        } else {
+            clientID = convexClientID
+        }
+        // room_id vs roomId
+        let rawRoomID: String? = (try? c.decodeIfPresent(String.self, forKey: .roomID)) ?? nil
+        let convexRoomID: String? = (try? c.decodeIfPresent(String.self, forKey: .convexRoomId)) ?? nil
+        if let s = rawRoomID, !s.isEmpty {
+            roomID = s
+        } else {
+            roomID = convexRoomID
+        }
+        project = (try? c.decodeIfPresent(String.self, forKey: .project)) ?? nil
+        worldID = (try? c.decodeIfPresent(String.self, forKey: .worldID)) ?? nil
+        // user_id vs userId
+        let rawUserID: String? = (try? c.decodeIfPresent(String.self, forKey: .userID)) ?? nil
+        let convexUserID: String? = (try? c.decodeIfPresent(String.self, forKey: .convexUserId)) ?? nil
+        if let s = rawUserID, !s.isEmpty {
+            userID = s
+        } else {
+            userID = convexUserID
+        }
+        let rawUserName: String? = (try? c.decodeIfPresent(String.self, forKey: .userName)) ?? nil
+        let convexUserName: String? = (try? c.decodeIfPresent(String.self, forKey: .convexUserName)) ?? nil
+        if let s = rawUserName, !s.isEmpty {
+            userName = s
+        } else {
+            userName = convexUserName
+        }
+        senderRole = (try? c.decodeIfPresent(String.self, forKey: .senderRole)) ?? nil
+        // attachment_url vs attachmentUrl
+        let rawAttURL: String? = (try? c.decodeIfPresent(String.self, forKey: .attachmentURL)) ?? nil
+        let convexAttURL: String? = (try? c.decodeIfPresent(String.self, forKey: .convexAttachmentURL)) ?? nil
+        if let s = rawAttURL, !s.isEmpty {
+            attachmentURL = s
+        } else {
+            attachmentURL = convexAttURL
+        }
+        let rawMime: String? = (try? c.decodeIfPresent(String.self, forKey: .fileMimeType)) ?? nil
+        let convexMime: String? = (try? c.decodeIfPresent(String.self, forKey: .convexAttachmentMime)) ?? nil
+        if let s = rawMime, !s.isEmpty {
+            fileMimeType = s
+        } else {
+            fileMimeType = convexMime
+        }
+        fileSize = (try? c.decodeIfPresent(Int.self, forKey: .fileSize)) ?? nil
+        replyTo = (try? c.decodeIfPresent(String.self, forKey: .replyTo)) ?? nil
+        metadata = (try? c.decodeIfPresent(JSONValue.self, forKey: .metadata)) ?? nil
     }
 
     // MARK: - Derived

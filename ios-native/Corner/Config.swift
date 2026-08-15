@@ -92,6 +92,15 @@ enum Config {
         Bundle.main.bundleIdentifier ?? "com.aheadofmarket.corner"
     }
 
+    /// Convex deployment — same backend the web app uses. The iOS app talks to
+    /// Convex via raw HTTP (api/query + api/mutation) without an SDK dependency.
+    static let convexURL = URL(string: "https://neat-pony-216.convex.cloud")!
+
+    /// Feature flag to switch between Convex (true) and Supabase REST (false).
+    /// When true, RoomStore and ChatViewModel use ConvexService; when false they
+    /// fall back to the existing Supabase /api/* paths.
+    static let useConvex = true
+
     /// Which APNs environment this binary's tokens belong to. It must agree with the
     /// `aps-environment` entitlement (development in Debug, production in Release) —
     /// a sandbox token offered to the production APNs host is rejected as
