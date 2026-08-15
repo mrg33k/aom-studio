@@ -65,7 +65,11 @@ struct RoomListView: View {
                 noWorldNotice
             } else if query.isEmpty {
                 eyebrowRow
-                filterChips
+                if showFilterChips {
+                    filterChips
+                } else {
+                    standaloneNewButton
+                }
                 switch filter {
                 case .all:
                     if api.isEmailOwner { emailRow }
@@ -76,6 +80,16 @@ struct RoomListView: View {
                     agentRows
                 case .projects:
                     projectCarousel
+                }
+                // Inline composer — flows with content, no dead void.
+                if !searchOpen {
+                    HomeComposerBar(
+                        intake: intake, candidates: intakeCandidates,
+                        recentRooms: intakeRecentRooms, voiceTrigger: voiceTrigger
+                    )
+                    .listRowInsets(EdgeInsets(top: Theme.s5, leading: 0, bottom: Theme.s4, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
             } else {
                 searchRows
@@ -106,17 +120,8 @@ struct RoomListView: View {
                 .environmentObject(api)
                 .environmentObject(PushService.shared)
         }
-        // The front-door composer, pinned above the timeline (and above the keyboard).
-        // Hidden while searching — search is a different intent from starting work.
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if api.world != nil && query.isEmpty && !searchOpen {
-                HomeComposerBar(
-                    intake: intake, candidates: intakeCandidates,
-                    recentRooms: intakeRecentRooms, voiceTrigger: voiceTrigger
-                )
-                .background(Theme.ground)
-            }
-        }
+        // Composer is inline in the list (after content), not pinned to bottom —
+        // eliminates the dead void between the last card and the input when few rooms.
         .sheet(isPresented: $intake.showConfirm) {
             IntakeConfirmSheet(intake: intake, allRooms: store.allRooms)
         }
@@ -275,17 +280,12 @@ struct RoomListView: View {
     // MARK: - Eyebrow + filter chips (the web mobile home's top of list)
 
     private var eyebrowRow: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text("ALL ROOMS")
-                .font(.hanken(12).weight(.semibold))
-                .tracking(1.2)
-                .foregroundStyle(Theme.inkSoft)
-            Text("Projects and specialists")
-                .font(.hkFootnote)
-                .foregroundStyle(Theme.inkFaint)
-        }
-        .padding(.top, Theme.s2)
-        .plainCardRow()
+        Text("ALL ROOMS")
+            .font(.hanken(12).weight(.semibold))
+            .tracking(1.2)
+            .foregroundStyle(Theme.inkSoft)
+            .padding(.top, Theme.s2)
+            .plainCardRow()
     }
 
     private var chipCount: [HomeFilter: Int] {
@@ -294,6 +294,34 @@ struct RoomListView: View {
             .agents: store.agents.count,
             .projects: store.projects.count,
         ]
+    }
+
+    /// Whether enough rooms exist to make filtering useful — below 3 the chips are
+    /// premature and the + New button survives as a standalone action (P1.3).
+    private var showFilterChips: Bool { store.recent.count >= 3 }
+
+    /// The + New button extracted from the filter row so it survives when the full
+    /// chip row is hidden (fewer than 3 rooms).
+    private var standaloneNewButton: some View {
+        HStack {
+            Button { showingNewRoom = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("New")
+                        .font(.hanken(14).weight(.semibold))
+                }
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 14)
+                .frame(height: 44)
+                .background(Theme.accentWeak, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("New room")
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, Theme.s1)
+        .plainCardRow()
     }
 
     private var filterChips: some View {
@@ -371,7 +399,7 @@ struct RoomListView: View {
                         .frame(width: 92)
                         .padding(.vertical, Theme.s3)
                         .background(
-                            isOpen ? Theme.accentWeak : Theme.raised.opacity(0.6),
+                            isOpen ? Theme.accentWeak : Theme.raised,
                             in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                         )
                         .overlay(
@@ -555,6 +583,10 @@ struct RoomListView: View {
                     .tint(Theme.inkFaint)
                 }
             }
+            // Ghost "+ Create a room" when few rooms — avoids demo feel (P1.4).
+            if visible.count < 3 {
+                ghostCreateRoomRow
+            }
         }
     }
 
@@ -594,7 +626,7 @@ struct RoomListView: View {
     private var toolsRows: some View {
         sectionLabel("Tools")
         Button { router.open(.organize) } label: {
-            UtilityRow(title: "Files", subtitle: "Everything your crew produced", symbol: "folder")
+            UtilityRow(title: "Files", subtitle: "Your files and deliverables", symbol: "folder")
         }
         .buttonStyle(CardButtonStyle())
         .plainCardRow()
@@ -693,15 +725,68 @@ struct RoomListView: View {
     }
 
     private var emptyRow: some View {
-        VStack(alignment: .leading, spacing: Theme.s1) {
-            Text("No recent rooms").font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
-            Text("Search above to open a project, mission, or agent room.")
-                .font(.hkFootnote).foregroundStyle(Theme.inkSoft)
+        VStack(spacing: Theme.s3) {
+            Image(systemName: "bubble.left.and.bubble.right")
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(Theme.inkFaint)
+            VStack(spacing: 6) {
+                Text("No rooms yet")
+                    .font(.hanken(18).weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Text("Create a room to get started — your crew and tools will show up here.")
+                    .font(.hkFootnote)
+                    .foregroundStyle(Theme.inkSoft)
+                    .multilineTextAlignment(.center)
+            }
+            Button { showingNewRoom = true } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus").font(.system(size: 12, weight: .semibold))
+                    Text("Create a room").font(.hanken(14).weight(.semibold))
+                }
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 18)
+                .frame(height: 40)
+                .background(Theme.accent, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, Theme.s1)
         }
-        .padding(Theme.s3)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .cardSurface(fill: Theme.raised.opacity(0.6), border: Theme.hairline, edge: Theme.hairline)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Theme.s5)
+        .padding(.horizontal, Theme.s4)
+        .cardSurface(fill: Theme.raised, border: Theme.hairline, edge: Theme.hairline)
         .plainCardRow()
+    }
+
+    private var ghostCreateRoomRow: some View {
+        Button { showingNewRoom = true } label: {
+            HStack(spacing: Theme.s2) {
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Theme.inkFaint)
+                    .frame(width: 38, height: 38)
+                    .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
+                Text("+ Create a room")
+                    .font(.hanken(15).weight(.semibold))
+                    .foregroundStyle(Theme.inkSoft)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.inkFaint)
+            }
+            .padding(.vertical, Theme.s3)
+            .padding(.horizontal, Theme.s3)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .foregroundStyle(Theme.hairline)
+            )
+            .background(Theme.raised.opacity(0.35), in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .plainCardRow()
+        .accessibilityLabel("Create a room")
     }
 
     private var noWorldNotice: some View {
@@ -788,7 +873,7 @@ private struct RoomRowCard: View {
                         .transition(.opacity)
                     } else if !entry.preview.isEmpty {
                         Text(entry.preview)
-                            .font(.hkSubheadline).foregroundStyle(Theme.inkSoft).lineLimit(1)
+                            .font(.hkSubheadline).foregroundStyle(Theme.inkSoft).lineLimit(2)
                             .id(entry.preview)
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
@@ -802,20 +887,22 @@ private struct RoomRowCard: View {
             }
         }
         .padding(Theme.s4)
-        .cardSurface(fill: heroActive ? Theme.accentWeak : Theme.raised.opacity(0.6), border: heroActive ? Theme.accent.opacity(0.35) : Theme.hairline, edge: heroActive ? Theme.accent : tint)
+        .cardSurface(fill: heroActive ? Theme.accentWeak : Theme.raised, border: heroActive ? Theme.accent.opacity(0.35) : Theme.hairline, edge: heroActive ? Theme.accent : tint)
         .animation(.easeOut(duration: 0.35), value: entry.preview)
         .animation(.easeOut(duration: 0.25), value: heroActive)
     }
 
     // A quiet row, per the live web mobile home: edge, single-letter avatar, title,
     // preview, trailing time + dot. No type chip — the web home dropped them.
+    // P1.2: 18pt semibold title (lifted above the 17pt utility rows), 2-line preview,
+    // full-opacity raised surface.
     private var quiet: some View {
         HStack(spacing: Theme.s3) {
             Monogram(title: room.title, tint: tint, hero: false)
             VStack(alignment: .leading, spacing: 3) {
-                Text(room.title).font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text(room.title).font(.hanken(18).weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                 if !entry.preview.isEmpty {
-                    Text(entry.preview).font(.hkCaption).foregroundStyle(Theme.inkSoft).lineLimit(1)
+                    Text(entry.preview).font(.hkCaption).foregroundStyle(Theme.inkSoft).lineLimit(2)
                         .id(entry.preview)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
@@ -831,7 +918,7 @@ private struct RoomRowCard: View {
         }
         .padding(.vertical, Theme.s3)
         .padding(.horizontal, Theme.s3)
-        .cardSurface(fill: Theme.raised.opacity(0.6), border: Theme.hairline, edge: tint)
+        .cardSurface(fill: Theme.raised, border: Theme.hairline, edge: tint)
     }
 }
 
@@ -863,7 +950,7 @@ private struct AgentPickerRow: View {
         }
         .padding(.vertical, Theme.s3)
         .padding(.horizontal, Theme.s3)
-        .cardSurface(fill: Theme.raised.opacity(0.6), border: Theme.hairline, edge: Theme.accent)
+        .cardSurface(fill: Theme.raised, border: Theme.hairline, edge: Theme.accent)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
@@ -926,7 +1013,7 @@ private struct UtilityRow: View {
         }
         .padding(.vertical, Theme.s3)
         .padding(.horizontal, Theme.s3)
-        .cardSurface(fill: Theme.raised.opacity(0.6), border: Theme.hairline, edge: Theme.hairline)
+        .cardSurface(fill: Theme.raised, border: Theme.hairline, edge: Theme.hairline)
         .contentShape(Rectangle())
     }
 }
@@ -1065,14 +1152,10 @@ struct HomePreviewHarness: View {
     var body: some View {
         NavigationStack {
             List {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("ALL ROOMS")
-                        .font(.hanken(12).weight(.semibold)).tracking(1.2).foregroundStyle(Theme.inkSoft)
-                    Text("Projects and specialists")
-                        .font(.hkFootnote).foregroundStyle(Theme.inkFaint)
-                }
-                .padding(.top, Theme.s2)
-                .plainCardRow()
+                Text("ALL ROOMS")
+                    .font(.hanken(12).weight(.semibold)).tracking(1.2).foregroundStyle(Theme.inkSoft)
+                    .padding(.top, Theme.s2)
+                    .plainCardRow()
                 HStack(spacing: Theme.s2) {
                     ForEach(["All 7", "Agents 13", "Projects 7", "+ New"], id: \.self) { label in
                         let selected = label.hasPrefix("Recent")
@@ -1095,7 +1178,7 @@ struct HomePreviewHarness: View {
                 Text("TOOLS")
                     .font(.hkCaption2.weight(.semibold)).tracking(0.8).foregroundStyle(Theme.inkFaint)
                     .padding(.top, Theme.s3).padding(.bottom, Theme.s1).plainCardRow()
-                UtilityRow(title: "Files", subtitle: "Everything your crew produced", symbol: "folder").plainCardRow()
+                UtilityRow(title: "Files", subtitle: "Your files and deliverables", symbol: "folder").plainCardRow()
                 UtilityRow(title: "Tracker", subtitle: "Issues and client tickets", symbol: "checklist").plainCardRow()
             }
             .listStyle(.plain)

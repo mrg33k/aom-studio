@@ -236,31 +236,6 @@ struct HomeComposerBar: View {
                 .animation(.spring(response: 0.22, dampingFraction: 0.78), value: focused)
 
             HStack(spacing: Theme.s2) {
-                Button {
-                    mode = isPlan ? "work" : "plan"
-                } label: {
-                    Text(isPlan ? "Plan" : "Work")
-                        .font(.hkCaption.weight(.bold))
-                        .foregroundStyle(isPlan ? Theme.accent : Theme.inkSoft)
-                        .padding(.horizontal, Theme.s3)
-                        .frame(height: 32)
-                        .background(
-                            isPlan ? Theme.accentWeak : Theme.raised,
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .strokeBorder(isPlan ? Theme.accent.opacity(0.6) : Theme.hairline, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(isPlan ? "Plan mode. Switch to Work." : "Work mode. Switch to Plan.")
-
-                Text(isPlan ? "Corner will propose a plan first" : "Corner will get started")
-                    .font(.hkCaption2)
-                    .foregroundStyle(Theme.inkFaint)
-                    .lineLimit(1)
-
                 Spacer(minLength: 0)
 
                 // The mic, in the web mobile bar's slot (left of send). Collapses when typing so Send owns the thumb zone — iOS-like.
