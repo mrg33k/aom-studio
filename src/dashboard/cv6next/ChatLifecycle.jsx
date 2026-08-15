@@ -219,6 +219,12 @@ function FileGallery({ files, sender, onOpen, onReview }) {
         <div className="tav" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>{sender?.agentInitials || '·'}</div>
         <div className="tbody">
           <div className="tname"><b>{sender?.agentName || 'Files'}</b><span className="tt">sent a video</span></div>
+          {sender?.text && String(sender.text).trim() && !/^Shared /.test(String(sender.text).trim()) ? (
+            <div style={{ margin: '6px 0 10px', padding: '10px 12px', background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 10, fontSize: 13, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              <span style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4 }}>Why this video?</span>
+              {String(sender.text).trim()}
+            </div>
+          ) : null}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
             <video src={loneVideoUrl} controls playsInline preload="metadata"
               style={{ maxWidth: '100%', maxHeight: 440, width: 'auto', height: 'auto', alignSelf: 'flex-start', borderRadius: 12, background: '#000' }} />
@@ -250,6 +256,12 @@ function FileGallery({ files, sender, onOpen, onReview }) {
       <div className="tav" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>{sender?.agentInitials || '·'}</div>
       <div className="tbody">
         <div className="tname"><b>{sender?.agentName || 'Files'}</b><span className="tt">sent {files.length} file{files.length === 1 ? '' : 's'}</span></div>
+        {sender?.text && String(sender.text).trim() && !/^Shared /.test(String(sender.text).trim()) ? (
+          <div style={{ margin: '6px 0 10px', padding: '10px 12px', background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 10, fontSize: 13, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            <span style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4 }}>Why this file?</span>
+            {String(sender.text).trim()}
+          </div>
+        ) : null}
         <div className="filecoll">
           <div className="fc-head">
             <span className="fc-ic"><FileGlyph kind={allDocs ? 'doc' : 'image'} size={16} /></span>
