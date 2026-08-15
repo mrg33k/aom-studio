@@ -1,6 +1,155 @@
 {
  "days": [
   {
+   "date": "2026-08-15",
+   "items": [
+    {
+     "lane": "ai-builds",
+     "youtube_id": "aRNVncOYd5c",
+     "title": "Claude Code & Cursor built the same app. There's a clear winner.",
+     "channel": "Philipp Lackner",
+     "views": "280K",
+     "published": "2026-08-11",
+     "why": "Head-to-head build-off giving both tools the same requirements, same prompts, same starting conditions. One of the biggest dev channels on YouTube, and the result surprised even him. Real workflow, real comparison, real winner."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "EwX2N2wXOpw",
+     "title": "I Made Claude Opus 5 and Fable 5 Build The Same App (Same Prompt)",
+     "channel": "BuildWithAI",
+     "views": "95K",
+     "published": "2026-08-12",
+     "why": "Same prompt, two brand-new models, one app — then he shows exactly where each model made different architectural choices. The kind of controlled experiment the AI coding community actually needs."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "SrI1XTC7CNc",
+     "title": "I Built My Entire Design System in Minutes With Claude Fable 5",
+     "channel": "Build Great Products",
+     "views": "42K",
+     "published": "2026-08-13",
+     "why": "Not another to-do app. Ships a production design system — tokens, components, documentation — in minutes using Fable 5. The kind of work that normally takes a design team weeks."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "SO_0srvCY-A",
+     "title": "I Built AI Agents That Apply to Jobs While I Sleep in 2026 (Claude Code)",
+     "channel": "Prograamer",
+     "views": "68K",
+     "published": "2026-08-10",
+     "why": "Built a real multi-agent automation system with Claude Code that applies to jobs autonomously — scraping, tailoring resumes, submitting. Running in production while he sleeps."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "8oe0j8I1aZs",
+     "title": "Claude Fable 5 is here: Anthropic just took a giant lead",
+     "channel": "Skill Leap AI",
+     "views": "185K",
+     "published": "2026-08-09",
+     "why": "Day-one coverage from one of the largest AI tutorial channels. Full demo of Fable 5 with real tasks — not reading the blog post, actually using the model and showing what changed."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "CYXUB4GspHg",
+     "title": "Opus 5 Is Here: It Beats Fable",
+     "channel": "Paul J Lipsky",
+     "views": "120K",
+     "published": "2026-08-11",
+     "why": "Direct comparison of Opus 5 vs Fable 5 with real coding tasks. Shows where the more expensive model actually justifies the cost — practical guide for developers choosing between them."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "efVfydaUIrM",
+     "title": "Claude Code Just Got WAY More Powerful",
+     "channel": "How I AI",
+     "views": "78K",
+     "published": "2026-08-12",
+     "why": "Feature-by-feature walkthrough of Claude Code's latest capabilities. Real demos, not slides — shows the new workflows that shipped with recent updates."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "EWq-VWMVVgc",
+     "title": "Vibe Coding with Opus 5 (FULLY TESTED) - Better Than Fable 5!!",
+     "channel": "Vibe Coding with Naman",
+     "views": "55K",
+     "published": "2026-08-13",
+     "why": "Full test suite of Opus 5 for vibe coding workflows — not hype, actual test results showing where it outperforms Fable 5 for real development work."
+    },
+    {
+     "lane": "construction",
+     "youtube_id": "XH8rj3P6nIs",
+     "title": "Roofing Lead Generation: How to Get More Leads in 2026",
+     "channel": "ProLine",
+     "views": "35K",
+     "published": "2026-08-08",
+     "why": "Trade-specific lead gen strategy for roofers with real numbers and real campaigns. Not generic marketing advice — specific to roofing with proven funnels and conversion data."
+    },
+    {
+     "lane": "construction",
+     "youtube_id": "_8ImJaP1pG4",
+     "title": "How To Actually Run Facebook Ads for Contractors & Construction Companies (2026)",
+     "channel": "Daniel Dimsey",
+     "views": "28K",
+     "published": "2026-08-09",
+     "why": "Step-by-step Facebook Ads setup for contractors — targeting, creative, budgets — with real campaign screenshots and results. Actionable enough to copy the setup."
+    },
+    {
+     "lane": "construction",
+     "youtube_id": "ZXsJXV8FZkY",
+     "title": "Video Marketing: The 2026 Revolution That's Changing Everything for Builders",
+     "channel": "JobTread",
+     "views": "22K",
+     "published": "2026-08-10",
+     "why": "JobTread (construction management platform) breaks down how builders are using video to win bids and build brand. Data-backed, from a company embedded in the industry."
+    },
+    {
+     "lane": "construction",
+     "youtube_id": "RYCStaGaTFU",
+     "title": "How to Grow a Construction Company on Social Media",
+     "channel": "Contractor Dynamics",
+     "views": "18K",
+     "published": "2026-08-11",
+     "why": "Practical social media growth playbook for construction companies — what platforms, what content, what frequency. From a channel dedicated to contractor business growth."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "HMVSCEh72n4",
+     "title": "The Complete Guide to Making Cinematic AI Videos (2026)",
+     "channel": "Roboverse",
+     "views": "110K",
+     "published": "2026-08-09",
+     "why": "End-to-end guide covering the full 2026 AI filmmaking stack — image gen, video gen, upscaling, editing. The most comprehensive single-video resource for cinematic AI production."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "F5iVLP8kw44",
+     "title": "AI Filmmaking Tutorial: How I Made Jetty Tsunami with Seedance 2.0, Kling, and Veo 3.1",
+     "channel": "AI Video School",
+     "views": "65K",
+     "published": "2026-08-11",
+     "why": "Full production breakdown of a specific short film — every shot, every tool choice, every iteration. Shows Seedance 2.0, Kling, and Veo 3.1 working together in a real pipeline."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "wIMgZ0-k11E",
+     "title": "Filmmaking Agent FULL Workflow (Seedance 2.0 + Kling 3.0 + Nano Banana 2)",
+     "channel": "Dom the AI Tutor",
+     "views": "48K",
+     "published": "2026-08-12",
+     "why": "Multi-tool agent workflow combining Seedance 2.0, Kling 3.0, and Nano Banana 2 for consistent AI filmmaking. Shows how to get character and scene consistency across shots."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "HSON-SoFz7s",
+     "title": "5-Step Workflow To Make Ultra-Realistic AI Short Films (Seedance 2.0 4K)",
+     "channel": "Higgsfield AI",
+     "views": "52K",
+     "published": "2026-08-10",
+     "why": "Structured 5-step workflow from concept to 4K final render. Higgsfield (the AI video company) showing their recommended production pipeline — the studio's own method."
+    }
+   ]
+  },
+  {
    "date": "2026-08-14",
    "items": [
     {
