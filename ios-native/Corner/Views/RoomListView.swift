@@ -300,7 +300,7 @@ struct RoomListView: View {
         HStack(spacing: Theme.s2) {
             ForEach(HomeFilter.allCases, id: \.self) { f in
                 Button {
-                    withAnimation(.easeOut(duration: 0.15)) { filter = f }
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) { filter = f }
                 } label: {
                     HStack(spacing: 6) {
                         Text(f.rawValue)
@@ -313,7 +313,7 @@ struct RoomListView: View {
                     }
                     .foregroundStyle(filter == f ? Color.white : Theme.inkSoft)
                     .padding(.horizontal, 14)
-                    .frame(height: 38)
+                    .frame(height: 44)
                     .background(filter == f ? Theme.accent : Theme.raised2, in: Capsule())
                     .overlay(Capsule().strokeBorder(filter == f ? Color.clear : Theme.hairline, lineWidth: 1))
                 }
@@ -332,7 +332,7 @@ struct RoomListView: View {
                 }
                 .foregroundStyle(Theme.accent)
                 .padding(.horizontal, 14)
-                .frame(height: 38)
+                .frame(height: 44)
                 .background(Theme.accentWeak, in: Capsule())
             }
             .buttonStyle(.plain)
@@ -740,7 +740,7 @@ private struct TopBarChip: View {
         Image(systemName: symbol)
             .font(.system(size: 15, weight: .medium))
             .foregroundStyle(active ? Theme.accent : Theme.inkSoft)
-            .frame(width: 36, height: 36)
+            .frame(width: 44, height: 44)
             .background(active ? Theme.accentWeak : Theme.chipFill, in: Circle())
             .overlay(Circle().strokeBorder(active ? Theme.accent.opacity(0.35) : Theme.hairline, lineWidth: 1))
             .contentShape(Circle())
@@ -944,15 +944,14 @@ private struct IndeterminateBar: View {
 
 // MARK: - Card + row styling helpers
 
-/// Pressed feedback for card rows: the card dims and settles the moment the finger
-/// lands. A row without this reads as a dead screen for the ~300ms before the push,
-/// which is exactly the "taps don't do anything" complaint.
+/// Pressed feedback for card rows: spring scale + dim so every tap acknowledges instantly.
+/// Mirrors the web's 0.12s cubic-bezier(0.2,0.8,0.2,1) — iOS spring equivalent.
 struct CardButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.86 : 1)
+            .animation(.spring(response: 0.18, dampingFraction: 0.72), value: configuration.isPressed)
     }
 }
 

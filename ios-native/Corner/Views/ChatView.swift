@@ -932,7 +932,7 @@ struct ChatView: View {
     }
 
     /// Row 1 — the input shell: attach + growing field on the composer-card surface,
-    /// accent border + soft ring while focused, exactly the web's focus behavior.
+    /// accent border + soft ring while focused, spring scale so it lifts slightly like iOS.
     private var inputShell: some View {
         HStack(alignment: .bottom, spacing: 6) {
             Menu {
@@ -952,7 +952,7 @@ struct ChatView: View {
                             .foregroundStyle(Theme.inkSoft)
                     }
                 }
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
             }
             .disabled(model.isUploading)
             .accessibilityLabel("Attach and upload files")
@@ -962,22 +962,23 @@ struct ChatView: View {
                 .lineLimit(1...5)
                 .focused($composerFocused)
                 .foregroundStyle(Theme.ink)
-                .padding(.vertical, 7)
+                .padding(.vertical, 8)
                 .padding(.trailing, Theme.s2)
         }
         .padding(.leading, Theme.s1)
-        .frame(minHeight: 40)
-        .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous))
+        .frame(minHeight: 44)
+        .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
         )
         .background(
-            RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(composerFocused ? Theme.accentWeak : Color.clear)
                 .padding(-2)
         )
-        .animation(.easeOut(duration: 0.2), value: composerFocused)
+        .scaleEffect(composerFocused ? 1.005 : 1)
+        .animation(.spring(response: 0.22, dampingFraction: 0.78), value: composerFocused)
     }
 
     /// Row 2 — the action row: ONE commands menu on the left (the web popover's
@@ -1016,13 +1017,20 @@ struct ChatView: View {
                 Image(systemName: "paperplane.fill")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(canSend ? Color.white : Theme.inkFaint)
-                    .frame(width: 34, height: 34)
+                    .frame(width: 44, height: 44)
                     .background(
                         canSend ? Theme.accent : Theme.raised2,
-                        in: RoundedRectangle(cornerRadius: Theme.shellRadius, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: canSend ? 14 : 11, style: .continuous)
                     )
-                    .opacity(canSend ? 1 : 0.72)
+                    .overlay {
+                        if !canSend { RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1) }
+                    }
+                    .shadow(color: canSend ? Theme.accent.opacity(0.28) : .clear, radius: 6, y: 3)
             }
+            .frame(width: 44, height: 44)
+            .scaleEffect(canSend ? 1 : 0.92)
+            .opacity(canSend ? 1 : 0.42)
+            .animation(.spring(response: 0.28, dampingFraction: 0.72), value: canSend)
             .disabled(!canSend)
             .accessibilityLabel("Send")
         }

@@ -226,12 +226,14 @@ struct HomeComposerBar: View {
                 .font(.hkBody)
                 .foregroundStyle(Theme.ink)
                 .padding(.horizontal, Theme.s3)
-                .padding(.vertical, Theme.s3)
+                .padding(.vertical, 14)
                 .background(Theme.raised, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(focused ? Theme.accent.opacity(0.7) : Theme.hairline, lineWidth: 1)
                 )
+                .scaleEffect(focused ? 1.005 : 1)
+                .animation(.spring(response: 0.22, dampingFraction: 0.78), value: focused)
 
             HStack(spacing: Theme.s2) {
                 Button {
@@ -261,8 +263,7 @@ struct HomeComposerBar: View {
 
                 Spacer(minLength: 0)
 
-                // The mic, in the web mobile bar's slot (left of send). Only rendered
-                // when a recognizer exists — an unsupported device gets no dead button.
+                // The mic, in the web mobile bar's slot (left of send). Collapses when typing so Send owns the thumb zone — iOS-like.
                 if speech.supported {
                     Button(action: toggleDictation) {
                         Image(systemName: speech.isListening ? "mic.fill" : "mic")
@@ -274,30 +275,41 @@ struct HomeComposerBar: View {
                                 if !speech.isListening { Circle().strokeBorder(Theme.hairline, lineWidth: 1) }
                             }
                             .background {
-                                // The web's 4px soft ring: box-shadow 0 0 0 4px rgba(229,72,77,.18).
                                 if speech.isListening {
                                     Circle().fill(Self.dictationRed.opacity(0.18)).padding(-4)
                                 }
                             }
                     }
                     .buttonStyle(.plain)
+                    .frame(width: canSend ? 0 : 40, height: 40)
+                    .opacity(canSend ? 0 : 1)
+                    .scaleEffect(canSend ? 0.8 : 1)
+                    .clipped()
+                    .allowsHitTesting(!canSend)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.72), value: canSend)
                     .accessibilityLabel(speech.isListening ? "Stop dictation" : "Speak your message")
+                    .accessibilityHidden(canSend)
                 }
 
                 Button(action: send) {
                     if intake.isBusy {
-                        ProgressView().controlSize(.small).frame(width: 40, height: 40)
+                        ProgressView().controlSize(.small).frame(width: 44, height: 44)
                     } else {
                         Image(systemName: "paperplane.fill")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(canSend ? Color.white : Theme.inkFaint)
-                            .frame(width: 40, height: 40)
-                            .background(canSend ? Theme.accent : Theme.raised, in: Circle())
+                            .frame(width: 44, height: 44)
+                            .background(canSend ? Theme.accent : Theme.raised, in: RoundedRectangle(cornerRadius: canSend ? 14 : 11, style: .continuous))
                             .overlay {
-                                if !canSend { Circle().strokeBorder(Theme.hairline, lineWidth: 1) }
+                                if !canSend { RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1) }
                             }
+                            .shadow(color: canSend ? Theme.accent.opacity(0.28) : .clear, radius: 6, y: 3)
                     }
                 }
+                .frame(width: 44, height: 44)
+                .scaleEffect(canSend ? 1 : 0.92)
+                .opacity(canSend ? 1 : 0.42)
+                .animation(.spring(response: 0.28, dampingFraction: 0.72), value: canSend)
                 .disabled(!canSend)
                 .accessibilityLabel("Send")
             }
