@@ -565,6 +565,7 @@ struct RoomListView: View {
                 loadingRow
             } else {
                 emptyRow
+                ghostCreateRoomRow
             }
         } else {
             ForEach(Array(visible.enumerated()), id: \.element.id) { index, entry in
