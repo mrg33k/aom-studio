@@ -293,7 +293,7 @@ struct HomeComposerBar: View {
 
                 Button(action: send) {
                     if intake.isBusy {
-                        ProgressView().controlSize(.small).frame(width: 44, height: 44)
+                        ProgressView().controlSize(.small).scaleEffect(0.9).frame(width: 24, height: 24).frame(width: 44, height: 44)
                     } else {
                         Image(systemName: "paperplane.fill")
                             .font(.system(size: 15, weight: .semibold))

@@ -170,10 +170,16 @@ struct ChatView: View {
                     Button {
                         expandComposer()
                     } label: {
-                        Image(systemName: "pencil.circle.fill")
-                            .font(.system(size: 52))
-                            .foregroundStyle(Theme.accent)
-                            .shadow(color: .black.opacity(0.45), radius: 10, y: 5)
+                        ZStack {
+                            Circle()
+                                .fill(Theme.accent)
+                                .frame(width: 52, height: 52)
+                                .shadow(color: .black.opacity(0.45), radius: 10, y: 5)
+                            Image(systemName: "pencil")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(Color.white)
+                        }
+                        .frame(width: 52, height: 52)
                     }
                     .padding(.trailing, Theme.s4)
                     .safeAreaPadding(.bottom, Theme.s4)
@@ -611,10 +617,10 @@ struct ChatView: View {
                 }
                 .padding(.horizontal, Theme.s4)
                 .padding(.top, Theme.s3)
-                // 10pt of clear air between the tail (the turn indicator / progress
-                // loader) and the composer card — it sat flush under it (Patrik
-                // 2026-08-11).
-                .padding(.bottom, Theme.s3 + 10)
+                // 24pt clear air + composer reserve so messages never reach the input
+                // — the tail used to sit 10pt above the card and could scroll under the
+                // translucent composer on long threads (Patrik 2026-08-14).
+                .padding(.bottom, 28)
                 // Continuous measurement for the scroll brain: content height +
                 // offset in the scroll's coordinate space.
                 .background(
@@ -887,9 +893,11 @@ struct ChatView: View {
         }
         .padding(Theme.s2)
         .background {
+            // Opaque composer so messages scrolling underneath never show through
+            // — prevents the overlap reads-through on long threads (Patrik 2026-08-14).
             Theme.frostedSurface(
                 fallback: Theme.composer,
-                tint: Color(cv6: 0x111820, opacity: 0.30),
+                tint: Color(cv6: 0x111820, opacity: 0.45),
                 in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
             )
         }
@@ -900,6 +908,7 @@ struct ChatView: View {
         .shadow(color: .black.opacity(0.55), radius: 21, y: 9)
         .padding(.horizontal, Theme.s3)
         .padding(.bottom, Theme.s2)
+        .contentShape(RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
         // Patrik's R16 correction: Files opens only from a deliberate upward
         // gesture that STARTS on the composer card. Keeping the recognizer here
         // makes ordinary conversation scrolling incapable of triggering it.
@@ -945,7 +954,7 @@ struct ChatView: View {
             } label: {
                 Group {
                     if model.isUploading {
-                        ProgressView().controlSize(.small).tint(Theme.accent)
+                        ProgressView().controlSize(.small).tint(Theme.accent).scaleEffect(0.85).frame(width: 20, height: 20).frame(width: 44, height: 44)
                     } else {
                         Image(systemName: "paperclip")
                             .font(.system(size: 16, weight: .medium))
