@@ -1039,6 +1039,16 @@
 /* Touch feedback (loop R8, parity audit): rows whose only pressed-state was :hover
    now light up on :active so taps feel acknowledged on iPhone/iPad. */
 [data-cv6] .restrow:active, [data-cv6] .room:active, [data-cv6] .grow:active { background: var(--surface-hover, var(--surface-2)); }
+/* UI/feel #1: iOS press vocabulary — every tappable row/card acknowledges with a spring scale + bg, not just bg */
+[data-cv6] .room:active, [data-cv6] .navrow:active, [data-cv6] .mresumecard:active, [data-cv6] .miss:active, [data-cv6] .projectroom:active {
+  transform: scale(0.98);
+  background: var(--surface-hover, var(--surface-2));
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.12s ease-out;
+}
+[data-cv6] .ib:active {
+  transform: scale(0.96);
+  opacity: 0.86;
+}
 
 
 /* ── corner:cv6-polish R3: chat tap feedback ─────────────────────────────────
@@ -1047,11 +1057,11 @@
    pseudo-element (::before — ::after is taken by .is-rec) without changing
    the 34px visual. */
 [data-cv6] .chip-btn, [data-cv6kit] .chip-btn {
-  transition: transform var(--dur-press, .12s) var(--ease-out, ease-out), opacity var(--dur-press, .12s);
+  transition: transform var(--dur-press, .12s) cubic-bezier(0.2, 0.8, 0.2, 1), opacity var(--dur-press, .12s);
 }
 [data-cv6] .chip-btn:active, [data-cv6kit] .chip-btn:active {
-  transform: scale(var(--press-scale, .94));
-  opacity: .82;
+  transform: scale(var(--press-scale, .96));
+  opacity: .86;
 }
 [data-cv6] .goalcard .gc-head { transition: opacity var(--dur-press, .12s); }
 [data-cv6] .goalcard .gc-head:active { opacity: .68; }
@@ -1122,14 +1132,21 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 }
 [data-cv6] .mhdr :where(.mback, .mhactions .ib),
 [data-cv6] .mhdr > .ib {
-  width:42px !important;
-  height:42px !important;
-  min-width:42px;
-  min-height:42px;
-  flex-basis:42px;
+  width:44px !important;
+  height:44px !important;
+  min-width:44px;
+  min-height:44px;
+  flex-basis:44px;
   border:0 !important;
   border-radius:50% !important;
   background:var(--chip) !important;
+}
+/* iOS 44pt touch + spring press (UI/feel #1): header controls meet HIG minimum and acknowledge taps with a subtle spring scale */
+[data-cv6] .mhdr :where(.mback, .mhactions .ib):active,
+[data-cv6] .mhdr > .ib:active {
+  transform: scale(0.96);
+  opacity: 0.88;
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.12s ease-out;
 }
 [data-cv6] .mhdr .mh-av,
 [data-cv6] .mhdr .mh-av .mh-ring { border-radius:50%; }
@@ -1299,7 +1316,23 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 /* One motion contract: quick input feedback, short spatial movement, no competing
    navigation while an accessibility setting asks for stillness. */
 [data-cv6] :is(.cv6-room-avatar-button, .cv6-chat-header-button, .cv6-composer-util, .cv6-composer-primary, .cv6-composer-attach) {
-  transition:color var(--dur-press) ease, background-color var(--dur-press) ease, border-color var(--dur-press) ease, box-shadow var(--dur-press) ease, scale var(--dur-press) var(--ease-out);
+  transition:color var(--dur-press) ease, background-color var(--dur-press) ease, border-color var(--dur-press) ease, box-shadow var(--dur-press) ease, scale var(--dur-press) cubic-bezier(0.2,0.8,0.2,1), transform var(--dur-press) cubic-bezier(0.2,0.8,0.2,1), opacity var(--dur-press) ease;
+}
+/* UI/feel #5: composer placeholder + focus spring — placeholder fades on focus, shell lifts slightly */
+[data-cv6] .cv6-composer-input-shell textarea::placeholder {
+  color: var(--faint);
+  opacity: 0.95;
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.2,0.8,0.2,1);
+}
+[data-cv6] .cv6-composer-input-shell textarea:focus::placeholder {
+  opacity: 0.55;
+  transform: translateY(-1px);
+}
+[data-cv6] .cv6-composer-primary.cv6-send:active {
+  transform: scale(0.92) !important;
+}
+[data-cv6] .cv6-composer-primary.cv6-mic:active {
+  transform: scale(0.92) !important;
 }
 [data-cv6] .cv6-composer-wrap {
   transition:max-height var(--dur-move) var(--ease-out), opacity var(--dur-press) ease, transform var(--dur-move) var(--ease-out), border-color var(--dur-press) ease, box-shadow var(--dur-move) var(--ease-out);

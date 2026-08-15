@@ -506,9 +506,9 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
             }}
             surface={(room?.isProject || room?.isMission) ? 'project' : '1on1'}
             panelStyle={{ background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)' }} />
-          <div className="cv6-composer-input-shell" style={{ display: 'flex', alignItems: 'flex-end', minHeight: 42, borderRadius: 9, background: 'var(--composer-card-solid, var(--surface-2))', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 2px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '3px 8px 3px 4px' }}>
+          <div className="cv6-composer-input-shell" style={{ display: 'flex', alignItems: 'flex-end', minHeight: 44, borderRadius: 12, background: 'var(--composer-card-solid, var(--surface-2))', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 2px var(--accent-weak)' : 'none', transition: 'border-color .2s cubic-bezier(0.2,0.8,0.2,1), box-shadow .2s, background .18s, transform .18s cubic-bezier(0.2,0.8,0.2,1)', padding: '4px 10px 4px 6px', transform: chatInputFocused ? 'scale(1.005)' : 'scale(1)' }}>
             <button type="button" className="cv6-composer-attach" title="Files" aria-label="Attach and upload files" onClick={() => fileInputRef.current?.click()} disabled={uploading}
-              style={{ width: 32, height: 32, borderRadius: 7, border: 'none', background: 'transparent', color: uploading ? 'var(--accent)' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: uploading ? 'wait' : 'pointer', padding: 0, marginBottom: 1 }}>
+              style={{ width: 44, height: 44, borderRadius: 11, border: 'none', background: 'transparent', color: uploading ? 'var(--accent)' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: uploading ? 'wait' : 'pointer', padding: 0, marginBottom: 0, flexShrink: 0 }}>
               {uploading ? <CornerLoaderMark compact className="cv6-upload-loader" /> : I.attach}
             </button>
             <textarea
@@ -525,7 +525,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
               onBlur={() => setChatInputFocused?.(false)}
               onPaste={handlePaste}
               placeholder={selectedImageTool ? 'Describe the image to generate…' : `Message ${roomName}…`}
-              style={{ flex: 1, minWidth: 0, height: 24, maxHeight: 118, resize: 'none', overflowY: 'hidden', background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', padding: '3px 0', fontSize: 16, lineHeight: 1.35, fontFamily: 'var(--font-sans)' }}
+              style={{ flex: 1, minWidth: 0, height: 24, maxHeight: 118, resize: 'none', overflowY: 'hidden', background: 'none', border: 'none', outline: 'none', color: 'var(--fg)', padding: '8px 0', fontSize: 16, lineHeight: 1.45, fontFamily: 'var(--font-sans)' }}
             />
           </div>
         </div>}
@@ -533,16 +533,18 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
           <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} interactionMode={interactionMode} setInteractionMode={setInteractionMode} model={model} agent={agentPicker} runner={runner} onOpenRunner={() => setRunnerOpen(true)} />
           <button type="button" className="cv6-composer-util" data-testid="room-checklist-toggle" title={checklistOpen ? 'Back to message' : 'Room checklists'} aria-label={checklistOpen ? 'Close room checklists' : 'Open room checklists'} aria-pressed={checklistOpen}
             onClick={() => { setCommandsOpen(false); setChecklistOpen((open) => !open); }}
-            style={{ ...UTILITY_BTN, background: checklistOpen ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${checklistOpen ? 'var(--accent)' : 'var(--hair)'}`, color: checklistOpen ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer' }}>
+            style={{ ...UTILITY_BTN, background: checklistOpen ? 'var(--accent-weak)' : 'var(--surface-2)', border: `1px solid ${checklistOpen ? 'var(--accent)' : 'var(--hair)'}`, color: checklistOpen ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', transition: 'all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
             {I.checklist}
           </button>
           <span style={{ flex: 1 }} />
-          <button type="button" className="cv6-composer-primary" title={isVoiceActive ? 'End voice chat' : 'Start voice chat'} aria-label="Talk aloud" onClick={() => setIsVoiceActive(true)}
-            style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+          {/* UI/feel #5: mic collapses when typing so Send owns the thumb zone — iOS-like */}
+          <button type="button" className="cv6-composer-primary cv6-mic" title={isVoiceActive ? 'End voice chat' : 'Start voice chat'} aria-label="Talk aloud" onClick={() => setIsVoiceActive(true)}
+            aria-hidden={hasContent ? true : undefined}
+            style={{ width: hasContent ? 0 : 34, height: 34, borderRadius: 8, border: hasContent ? 'none' : '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: hasContent ? 'default' : 'pointer', opacity: hasContent ? 0 : 1, transform: hasContent ? 'scale(0.8)' : 'scale(1)', overflow: 'hidden', pointerEvents: hasContent ? 'none' : 'auto', marginRight: hasContent ? 0 : 0, transition: 'all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
             {I.mic}
           </button>
-          <button type="button" className="cv6-composer-primary" title="Send" aria-label="Send message" onClick={handleSend} disabled={!hasContent} data-cv6-sent={sent || undefined}
-            style={{ width: 34, height: 34, borderRadius: 8, border: 'none', background: hasContent ? 'var(--accent)' : 'var(--surface-2)', color: hasContent ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : .72 }}>
+          <button type="button" className="cv6-composer-primary cv6-send" title="Send" aria-label="Send message" onClick={handleSend} disabled={!hasContent} data-cv6-sent={sent || undefined}
+            style={{ width: 44, height: 44, borderRadius: hasContent ? 14 : 11, border: 'none', background: hasContent ? 'var(--accent)' : 'var(--surface-2)', color: hasContent ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : 0.42, transform: hasContent ? 'scale(1)' : 'scale(0.92)', boxShadow: hasContent ? '0 4px 14px rgba(0,102,255,0.28)' : 'none', transition: 'all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
             {I.send}
           </button>
         </div>
