@@ -28,6 +28,13 @@ struct MessageBubbleView: View {
     /// avatar column collapses to a clear spacer, so a run of one agent's replies
     /// reads as one voice — the web mobile thread's per-sender grouping, matched.
     var showsAuthor: Bool = true
+    /// The room's current specialist slug (e.g. "director", "bobby", "default").
+    /// Used as a fallback when message metadata has no agent info.
+    var roomAgent: String? = nil
+
+    private var resolvedName: String {
+        row.qualifiedDisplayName(room: room, roomAgent: roomAgent)
+    }
 
     @State private var previewing: Attachment?
     /// Measured natural height of the prose text (set on first appear by the ghost overlay).
@@ -84,10 +91,10 @@ struct MessageBubbleView: View {
                 // the bubble (once per group), then the bubble and its files/blocks,
                 // then the time. Matches the web mobile agent turn anatomy.
                 HStack(alignment: .top, spacing: Theme.s2) {
-                    TurnAvatar(name: row.displayName, visible: showsAuthor)
+                    TurnAvatar(name: resolvedName, visible: showsAuthor)
                     VStack(alignment: .leading, spacing: Theme.s2) {
                         if showsAuthor {
-                            Text(row.displayName)
+                            Text(resolvedName)
                                 .font(.hkSubheadline.weight(.semibold))
                                 .foregroundStyle(Theme.ink)
                         }

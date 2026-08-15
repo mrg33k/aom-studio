@@ -408,8 +408,14 @@ final class CornerAPI: ObservableObject {
         )
         let data = try await run(request)
         struct Envelope: Decodable { let wishes: [EmailWish] }
-        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: data) else { throw APIError.decoding }
-        return envelope.wishes
+        do {
+            return try JSONDecoder().decode(Envelope.self, from: data).wishes
+        } catch let error as DecodingError {
+            print("[Email decode] wishes: \(error)")
+            throw APIError.decoding
+        } catch {
+            throw APIError.decoding
+        }
     }
 
     func fetchEmailMailboxes(days: Int = 7) async throws -> [EmailMailbox] {
@@ -420,8 +426,14 @@ final class CornerAPI: ObservableObject {
         )
         let data = try await run(request)
         struct Envelope: Decodable { let mailboxes: [EmailMailbox] }
-        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: data) else { throw APIError.decoding }
-        return envelope.mailboxes
+        do {
+            return try JSONDecoder().decode(Envelope.self, from: data).mailboxes
+        } catch let error as DecodingError {
+            print("[Email decode] mailboxes: \(error)")
+            throw APIError.decoding
+        } catch {
+            throw APIError.decoding
+        }
     }
 
     func fetchEmailSuggestion(wishID: String) async throws -> EmailSuggestion {
@@ -430,8 +442,14 @@ final class CornerAPI: ObservableObject {
             queryItems: [URLQueryItem(name: "wish_id", value: wishID)]
         )
         let data = try await run(request)
-        guard let result = try? JSONDecoder().decode(EmailSuggestion.self, from: data) else { throw APIError.decoding }
-        return result
+        do {
+            return try JSONDecoder().decode(EmailSuggestion.self, from: data)
+        } catch let error as DecodingError {
+            print("[Email decode] suggestion: \(error)")
+            throw APIError.decoding
+        } catch {
+            throw APIError.decoding
+        }
     }
 
     func fetchEmailThread(item: EmailItem) async throws -> [EmailThreadMessage] {
@@ -445,8 +463,14 @@ final class CornerAPI: ObservableObject {
         let request = try await authorizedRequest(path: "/api/support/thread", queryItems: query)
         let data = try await run(request)
         struct Envelope: Decodable { let thread: [EmailThreadMessage] }
-        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: data) else { throw APIError.decoding }
-        return envelope.thread
+        do {
+            return try JSONDecoder().decode(Envelope.self, from: data).thread
+        } catch let error as DecodingError {
+            print("[Email decode] thread: \(error)")
+            throw APIError.decoding
+        } catch {
+            throw APIError.decoding
+        }
     }
 
     func sendStagedEmail(wishID: String, draftID: String, connectionID: String) async throws {
@@ -480,8 +504,14 @@ final class CornerAPI: ObservableObject {
             queryItems: [URLQueryItem(name: "world", value: "aom")]
         )
         let data = try await run(request)
-        guard let status = try? JSONDecoder().decode(AutoReplyStatus.self, from: data) else { throw APIError.decoding }
-        return status
+        do {
+            return try JSONDecoder().decode(AutoReplyStatus.self, from: data)
+        } catch let error as DecodingError {
+            print("[Email decode] autoReply: \(error)")
+            throw APIError.decoding
+        } catch {
+            throw APIError.decoding
+        }
     }
 
     func setAutoReply(action: String) async throws -> AutoReplyStatus {
@@ -490,8 +520,14 @@ final class CornerAPI: ObservableObject {
             jsonBody: ["action": action, "world": "aom"]
         )
         let data = try await run(request)
-        guard let status = try? JSONDecoder().decode(AutoReplyStatus.self, from: data) else { throw APIError.decoding }
-        return status
+        do {
+            return try JSONDecoder().decode(AutoReplyStatus.self, from: data)
+        } catch let error as DecodingError {
+            print("[Email decode] setAutoReply: \(error)")
+            throw APIError.decoding
+        } catch {
+            throw APIError.decoding
+        }
     }
 
     // MARK: - Native AirPods conversation (corner:airpods-mode R16)

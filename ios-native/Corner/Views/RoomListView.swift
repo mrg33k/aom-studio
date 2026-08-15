@@ -372,46 +372,33 @@ struct RoomListView: View {
         .plainCardRow()
     }
 
-    // MARK: - Projects (the swipeable carousel; tap a card, its rooms appear)
+    // MARK: - Projects (2-column grid with OG images; tap a card, its rooms expand)
+
+    private let projectGridColumns = [
+        GridItem(.flexible(), spacing: Theme.s2),
+        GridItem(.flexible(), spacing: Theme.s2),
+    ]
 
     @ViewBuilder
     private var projectCarousel: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Theme.s2) {
-                ForEach(store.projects, id: \.room.id) { group in
-                    let slug: String? = {
-                        if case .project(let s) = group.room.kind { return s }
-                        return nil
-                    }()
-                    let isOpen = slug != nil && slug == openProjectSlug
-                    Button {
-                        withAnimation(.easeOut(duration: 0.15)) {
-                            openProjectSlug = isOpen ? nil : slug
-                        }
-                    } label: {
-                        VStack(spacing: 6) {
-                            Monogram(title: group.room.title, tint: Theme.tint(for: group.room.title), hero: false)
-                            Text(group.room.title)
-                                .font(.hanken(12).weight(.semibold))
-                                .foregroundStyle(isOpen ? Theme.ink : Theme.inkSoft)
-                                .lineLimit(1)
-                        }
-                        .frame(width: 92)
-                        .padding(.vertical, Theme.s3)
-                        .background(
-                            isOpen ? Theme.accentWeak : Theme.raised,
-                            in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
-                                .strokeBorder(isOpen ? Theme.accent : Theme.hairline, lineWidth: 1)
-                        )
+        LazyVGrid(columns: projectGridColumns, spacing: Theme.s2) {
+            ForEach(store.projects, id: \.room.id) { group in
+                let slug: String? = {
+                    if case .project(let s) = group.room.kind { return s }
+                    return nil
+                }()
+                let isOpen = slug != nil && slug == openProjectSlug
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        openProjectSlug = isOpen ? nil : slug
                     }
-                    .buttonStyle(.plain)
+                } label: {
+                    ProjectGridTile(title: group.room.title, slug: slug, isOpen: isOpen)
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.vertical, Theme.s1)
         }
+        .padding(.vertical, Theme.s1)
         .plainCardRow()
 
         if let slug = openProjectSlug,
@@ -438,22 +425,30 @@ struct RoomListView: View {
         }
     }
 
-    // MARK: - The agent picker (web chat directory's AGENTS section, per conversation)
+    // MARK: - The agent picker (2-column grid with icons & tints, per conversation)
+
+    private let agentGridColumns = [
+        GridItem(.flexible(), spacing: Theme.s2),
+        GridItem(.flexible(), spacing: Theme.s2),
+    ]
 
     @ViewBuilder
     private var agentRows: some View {
         sectionLabel("Agents")
-        ForEach(AgentRoster.resolved, id: \.slug) { entry in
-            Button {
-                if let world = api.world {
-                    router.open(Room(world: world, kind: .agent(slug: entry.slug), title: entry.title, subtitle: entry.subtitle))
+        LazyVGrid(columns: agentGridColumns, spacing: Theme.s2) {
+            ForEach(AgentRoster.resolved, id: \.slug) { entry in
+                Button {
+                    if let world = api.world {
+                        router.open(Room(world: world, kind: .agent(slug: entry.slug), title: entry.title, subtitle: entry.subtitle))
+                    }
+                } label: {
+                    AgentGridTile(entry: entry)
                 }
-            } label: {
-                AgentPickerRow(entry: entry)
+                .buttonStyle(.plain)
             }
-            .buttonStyle(CardButtonStyle())
-            .plainCardRow()
         }
+        .padding(.vertical, Theme.s1)
+        .plainCardRow()
     }
 
     @ViewBuilder
@@ -920,6 +915,115 @@ private struct RoomRowCard: View {
         .padding(.vertical, Theme.s3)
         .padding(.horizontal, Theme.s3)
         .cardSurface(fill: Theme.raised, border: Theme.hairline, edge: tint)
+    }
+}
+
+/// Project tile for the 2-column grid — OG image on top, title below.
+
+private struct ProjectGridTile: View {
+    let title: String
+    let slug: String?
+    let isOpen: Bool
+
+    private var ogURL: URL? {
+        guard let slug, !slug.isEmpty else { return nil }
+        let encoded = slug.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? slug
+        return URL(string: "https://www.aheadofmarket.com/api/og?project=\(encoded)")
+    }
+
+    var body: some View {
+        VStack(spacing: Theme.s2) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Theme.raised2)
+                if let url = ogURL {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable().scaledToFill()
+                        case .failure:
+                            Monogram(title: title, tint: Theme.tint(for: title), hero: false)
+                                .padding(Theme.s2)
+                        case .empty:
+                            ProgressView().controlSize(.small).tint(Theme.inkFaint)
+                        @unknown default:
+                            Monogram(title: title, tint: Theme.tint(for: title), hero: false)
+                        }
+                    }
+                } else {
+                    Monogram(title: title, tint: Theme.tint(for: title), hero: false)
+                        .padding(Theme.s2)
+                }
+            }
+            .frame(height: 90)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Text(title)
+                .font(.hanken(13).weight(.semibold))
+                .foregroundStyle(isOpen ? Theme.ink : Theme.inkSoft)
+                .lineLimit(1)
+                .multilineTextAlignment(.center)
+        }
+        .padding(Theme.s3)
+        .background(
+            isOpen ? Theme.accentWeak : Theme.raised,
+            in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
+                .strokeBorder(isOpen ? Theme.accent : Theme.hairline, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// Agent tile for the 2-column grid — large tinted SF Symbol above title + subtitle.
+private struct AgentGridTile: View {
+    let entry: AgentRoster.Entry
+
+    private var symbol: String {
+        switch entry.title.lowercased() {
+        case "creative": return "paintbrush.pointed"
+        case "web": return "globe"
+        case "content": return "video"
+        case "design": return "paintpalette"
+        case "operations": return "gearshape.2"
+        case "systems": return "server.rack"
+        case "assistant": return "person.crop.circle"
+        case "outreach": return "envelope"
+        case "social": return "megaphone"
+        case "research": return "magnifyingglass"
+        default: return "bubble.left.and.bubble.right"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: Theme.s2) {
+            ZStack {
+                Circle().fill(Theme.tint(for: entry.title).opacity(0.16)).frame(width: 56, height: 56)
+                Image(systemName: symbol)
+                    .font(.system(size: 26, weight: .medium))
+                    .foregroundStyle(Theme.tint(for: entry.title))
+            }
+            VStack(spacing: 2) {
+                Text(entry.title)
+                    .font(.hkBody.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                Text(entry.subtitle)
+                    .font(.hkCaption)
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineLimit(1)
+            }
+        }
+        .padding(Theme.s3)
+        .frame(maxWidth: .infinity)
+        .cardSurface(fill: Theme.raised, border: Theme.hairline, edge: Theme.tint(for: entry.title))
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
 

@@ -588,7 +588,8 @@ struct ChatView: View {
                                         onOption: { model.draftOption($0) },
                                         room: model.room,
                                         waitingIDs: waitingIDs,
-                                        showsAuthor: opensGroup(at: index, in: thread)
+                                        showsAuthor: opensGroup(at: index, in: thread),
+                                        roomAgent: model.roomAgentChoice
                                     )
                                     .id(row.id)
                                 case .outbox(let pending):
@@ -729,11 +730,11 @@ struct ChatView: View {
     }
 
     /// The author a thread item belongs to, for sender grouping. Every outbox item and
-    /// every user row is "you"; an agent row is keyed by its display title so a run of
+    /// every user row is "you"; an agent row is keyed by its qualified title so a run of
     /// one specialist's replies groups under a single avatar + name.
     private func authorKey(_ item: ThreadItem) -> String {
         switch item {
-        case .message(let row): return row.isUser ? "__you" : row.displayName
+        case .message(let row): return row.isUser ? "__you" : row.qualifiedDisplayName(room: model.room, roomAgent: model.roomAgentChoice)
         case .outbox: return "__you"
         }
     }

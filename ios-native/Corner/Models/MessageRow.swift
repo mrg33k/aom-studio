@@ -91,7 +91,56 @@ struct MessageRow: Decodable, Identifiable, Equatable {
 
     var displayName: String {
         if isUser { return userName ?? "You" }
-        return AgentRoster.title(for: agent ?? "corner")
+        return AgentRoster.title(for: resolvedAgentSlug(roomAgent: nil))
+    }
+
+    /// Resolve which agent actually authored this row.
+    /// Order: metadata agentName/agent_name/agent/specialist → non-corner agent column →
+    /// room specialist assignment → fallback "corner".
+    func resolvedAgentSlug(roomAgent: String?) -> String {
+        // 1. metadata — web writes agentName into message metadata
+        let metaKeys = ["agentName", "agent_name", "agent", "specialist", "agentSlug", "agent_slug"]
+        for key in metaKeys {
+            if let v = metadata?[key]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines), !v.isEmpty, v.lowercased() != "corner" {
+                return v.lowercased()
+            }
+        }
+        // 2. agent column when it is not generic
+        if let a = agent?.trimmingCharacters(in: .whitespacesAndNewlines), !a.isEmpty, a.lowercased() != "corner" {
+            return a.lowercased()
+        }
+        // 3. room specialist assignment
+        if let r = roomAgent?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), !r.isEmpty, r != "default", r != "corner" {
+            return r
+        }
+        // 4. fallback to agent column even if "corner", else "corner"
+        if let a = agent?.trimmingCharacters(in: .whitespacesAndNewlines), !a.isEmpty { return a.lowercased() }
+        return "corner"
+    }
+
+    func resolvedDisplayName(roomAgent: String?) -> String {
+        if isUser { return userName ?? "You" }
+        return AgentRoster.title(for: resolvedAgentSlug(roomAgent: roomAgent))
+    }
+
+    /// Project-qualified label "Project · Agent" or just "Agent" when no project.
+    /// Satisfies "[project:agent](message)" — both names visible on every assistant row.
+    func qualifiedDisplayName(room: Room?, roomAgent: String?) -> String {
+        if isUser { return userName ?? "You" }
+        let agentTitle = resolvedDisplayName(roomAgent: roomAgent)
+        guard let room else { return agentTitle }
+        switch room.kind {
+        case .project:
+            let projectName = room.title
+            if projectName.lowercased() == agentTitle.lowercased() { return agentTitle }
+            return "\(projectName) · \(agentTitle)"
+        case .mission(_, let project):
+            // Mission rooms: show "Project · Agent" (project is the mission's parent)
+            let projectName = room.subtitle.isEmpty ? Room.prettify(project) : room.subtitle
+            return "\(projectName) · \(agentTitle)"
+        case .agent:
+            return agentTitle
+        }
     }
 
     /// The bridge's mid-turn interim rows ("Still working on this…") carry

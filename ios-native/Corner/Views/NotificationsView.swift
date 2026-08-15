@@ -1,13 +1,13 @@
 // NotificationsView.swift — Corner native iOS
-// corner:native-ios R8 — the basic notification list.
+// corner:native-ios R8 — the notification list.
 //
-// Patrik 2026-08-11: the "Waiting on you" block at the top of home "gives anxiety" —
-// gone. In its place, plain notifications: a file (or batch of files) delivered to a
-// room, and messages that landed. A file notification opens THAT file's review
-// directly; a message notification opens THAT chat, which lands at the bottom.
-// Nothing here is a new data source — files come from the same review store the
-// queue reads, messages from the same recency feed the home renders — so this list
-// can never disagree with the surfaces it links to.
+// Primary content is ACTIVITY: messages that need attention, completed tasks,
+// agent actions — room name, what happened, when. Files stay as a secondary
+// section below. A file notification opens THAT file's review directly; an
+// activity notification opens THAT chat at the bottom. Nothing here is a new
+// data source — files come from the same review store the queue reads, activity
+// from the same recency feed the home renders — so this list can never disagree
+// with the surfaces it links to.
 
 import SwiftUI
 import UIKit
@@ -75,24 +75,26 @@ struct NotificationsView: View {
                         .listRowSeparator(.hidden)
                 }
 
-                if !review.items.isEmpty {
-                    Section("Files") {
-                        ForEach(review.items) { item in
-                            Button { previewing = item } label: {
-                                fileRow(item)
-                            }
-                        }
-                    }
-                }
-
+                // PRIMARY: activity — messages that need attention, agent replies, task completions.
                 if !messageEntries.isEmpty {
-                    Section("Messages") {
+                    Section("Activity") {
                         ForEach(messageEntries, id: \.id) { entry in
                             Button {
                                 dismiss()
                                 router.open(entry.room)
                             } label: {
-                                messageRow(entry)
+                                activityRow(entry)
+                            }
+                        }
+                    }
+                }
+
+                // SECONDARY: files — delivered attachments awaiting review.
+                if !review.items.isEmpty {
+                    Section("Files") {
+                        ForEach(review.items) { item in
+                            Button { previewing = item } label: {
+                                fileRow(item)
                             }
                         }
                     }
@@ -151,7 +153,7 @@ struct NotificationsView: View {
         }
     }
 
-    private func messageRow(_ entry: RoomStore.RecentRoom) -> some View {
+    private func activityRow(_ entry: RoomStore.RecentRoom) -> some View {
         HStack(spacing: Theme.s3) {
             Monogram(title: entry.room.title, tint: Theme.tint(for: entry.room.title), hero: false)
             VStack(alignment: .leading, spacing: 2) {
@@ -162,12 +164,22 @@ struct NotificationsView: View {
                 Text(entry.preview)
                     .font(.hkCaption)
                     .foregroundStyle(Theme.inkSoft)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
             Spacer(minLength: 0)
-            Text(RelTime.of(entry.ts))
-                .font(.hkCaption2.monospaced())
-                .foregroundStyle(Theme.inkFaint)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(RelTime.of(entry.ts))
+                    .font(.hkCaption2.monospaced())
+                    .foregroundStyle(Theme.inkFaint)
+                Image(systemName: "chevron.right")
+                    .font(.hkCaption2.weight(.semibold))
+                    .foregroundStyle(Theme.inkFaint)
+            }
         }
+    }
+
+    // Kept for backward compat if referenced elsewhere — delegates to activityRow.
+    private func messageRow(_ entry: RoomStore.RecentRoom) -> some View {
+        activityRow(entry)
     }
 }
