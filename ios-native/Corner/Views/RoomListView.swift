@@ -955,13 +955,13 @@ private struct IndeterminateBar: View {
 
 // MARK: - Card + row styling helpers
 
-/// Pressed feedback for card rows: spring scale + dim so every tap acknowledges instantly.
-/// Mirrors the web's 0.12s cubic-bezier(0.2,0.8,0.2,1) — iOS spring equivalent.
+/// Pressed feedback for card rows: spring scale + dim + light haptic so every tap acknowledges instantly.
 struct CardButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .opacity(configuration.isPressed ? 0.86 : 1)
+            .sensoryFeedback(.impact(weight: .light), trigger: configuration.isPressed)
             .animation(.spring(response: 0.18, dampingFraction: 0.72), value: configuration.isPressed)
     }
 }

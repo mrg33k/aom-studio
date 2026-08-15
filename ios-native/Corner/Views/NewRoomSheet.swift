@@ -168,7 +168,7 @@ struct NewRoomSheet: View {
                 }
             }
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .task { await model.loadProjects() }
     }
