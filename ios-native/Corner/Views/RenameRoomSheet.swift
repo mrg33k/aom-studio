@@ -115,8 +115,8 @@ struct RenameRoomSheet: View {
             dismiss()
         } catch let e as CornerAPI.APIError {
             error = e.errorDescription ?? "Could not rename this room."
-        } catch {
-            error = error.localizedDescription
+        } catch let e {
+            error = e.localizedDescription
         }
         busy = false
     }

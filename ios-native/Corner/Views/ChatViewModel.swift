@@ -422,10 +422,11 @@ final class ChatViewModel: ObservableObject {
     /// Convex-backed send: mirrors web `convex/messages.ts:send` and `App.tsx:handleSend`.
     /// Web shape: { roomId: string, text: string, role: "user", userId, userName, clientId, source, metadata }
     func sendMessage(roomId: String, text: String) async throws {
-        let world = api.world ?? "aom"
+        let concreteAPI = CornerAPI.shared
+        let world = concreteAPI.world ?? "aom"
         // Prefer real session identity when available; fall back to the local anon shape the web preview uses.
         let userId: String = {
-            if let uid = api.session?.user.id.uuidString, !uid.isEmpty { return uid }
+            if let uid = concreteAPI.session?.user.id.uuidString, !uid.isEmpty { return uid }
             // Stable per-install anon so typing + message rows coalesce without auth.
             let key = "convex.anonUserId"
             if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty { return saved }
@@ -434,10 +435,10 @@ final class ChatViewModel: ObservableObject {
             return fresh
         }()
         let userName: String = {
-            if let meta = api.session?.user.userMetadata,
+            if let meta = concreteAPI.session?.user.userMetadata,
                let n = (meta["name"] as? String ?? meta["full_name"] as? String ?? meta["user_name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
                !n.isEmpty { return n }
-            if let email = api.session?.user.email, !email.isEmpty { return email }
+            if let email = concreteAPI.session?.user.email, !email.isEmpty { return email }
             return "iOS"
         }()
         var args: [String: Any] = [
