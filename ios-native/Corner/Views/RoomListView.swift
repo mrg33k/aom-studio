@@ -81,16 +81,7 @@ struct RoomListView: View {
                 case .projects:
                     projectCarousel
                 }
-                // Inline composer — flows with content, no dead void.
-                if !searchOpen {
-                    HomeComposerBar(
-                        intake: intake, candidates: intakeCandidates,
-                        recentRooms: intakeRecentRooms, voiceTrigger: voiceTrigger
-                    )
-                    .listRowInsets(EdgeInsets(top: Theme.s5, leading: 0, bottom: Theme.s4, trailing: 0))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
+                // No inline composer here — it's pinned to the bottom via safeAreaInset.
             } else {
                 searchRows
             }
@@ -120,8 +111,17 @@ struct RoomListView: View {
                 .environmentObject(api)
                 .environmentObject(PushService.shared)
         }
-        // Composer is inline in the list (after content), not pinned to bottom —
-        // eliminates the dead void between the last card and the input when few rooms.
+        // The front-door composer, pinned above the timeline (and above the keyboard).
+        // Hidden while searching — search is a different intent from starting work.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if api.world != nil && query.isEmpty && !searchOpen {
+                HomeComposerBar(
+                    intake: intake, candidates: intakeCandidates,
+                    recentRooms: intakeRecentRooms, voiceTrigger: voiceTrigger
+                )
+                .background(Theme.ground)
+            }
+        }
         .sheet(isPresented: $intake.showConfirm) {
             IntakeConfirmSheet(intake: intake, allRooms: store.allRooms)
         }
