@@ -91,6 +91,13 @@ export default function HomeConsoleR38({ openBrief }) {
               >
                 <Play size={13} className="fill-current" aria-hidden="true" /> {HERO.ctaSub}
               </a>
+              <a
+                href="tel:+14808001234"
+                className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08] no-underline inline-flex items-center gap-2 px-3 py-3 border border-[#0A0A08]/15 rounded-full hover:border-[#F04404] hover:text-[#8A6A2B] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2"
+                aria-label="Call Ahead of Market at 480-800-1234"
+              >
+                480-800-1234
+              </a>
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 hidden md:inline">No contract · You own every file</span>
             </div>
 
@@ -551,6 +558,13 @@ export default function HomeConsoleR38({ openBrief }) {
               >
                 {CLOSING.cta} <ArrowRight size={15} aria-hidden="true" />
               </button>
+              <a
+                href="tel:+14808001234"
+                className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#F5F3EE] border border-[#F5F3EE]/20 rounded-full px-5 py-4 hover:border-[#F04404] hover:text-[#F04404] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2"
+                aria-label="Call Ahead of Market at 480-800-1234"
+              >
+                480-800-1234
+              </a>
               <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 px-2">No contract · You own every file</span>
             </div>
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 mt-10 max-w-[68ch] leading-[1.8] text-pretty">{CLOSING.footnote}</p>
