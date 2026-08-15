@@ -40,22 +40,28 @@ struct Room: Identifiable, Hashable {
     let subtitle: String
 
     /// When populated from Convex, this holds the Convex document _id directly.
-    /// Convex queries and mutations use this instead of the computed roomID.
+    /// Keep it for display/deeplink bookkeeping, but do NOT use it as the
+    /// query key for messages — `messages` are indexed by the canonical
+    /// `roomId` string (e.g. "aom:project:xxx"), not the document _id.
+    /// The web Convex schema's `rooms` table stores `roomId` as that same
+    /// canonical string, so the canonical value is always the correct key.
     var convexID: String?
 
     var id: String { roomID }
 
     /// The canonical room_id rows in this room carry — also the realtime filter value
     /// and the key an APNs payload deep-links with.
-    /// When convexID is set (Convex backend), use that instead.
     var roomID: String {
-        if let cid = convexID, !cid.isEmpty { return cid }
         switch kind {
         case .agent(let slug):      return "\(world):agent:\(slug)"
         case .project(let slug):    return "\(world):project:\(slug)"
         case .mission(let slug, _): return "\(world):mission:\(slug)"
         }
     }
+
+    /// Back-compat: some call sites still expect a Convex document id. Prefer the
+    /// canonical roomId for everything except explicit document operations.
+    var convexRoomID: String { convexID ?? roomID }
 
     // MARK: - Room-row contract §4 — type derived from the room_id kind
 

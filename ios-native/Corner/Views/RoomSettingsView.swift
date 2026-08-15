@@ -33,8 +33,11 @@ struct RoomSettingsView: View {
     @State private var following: Bool
     // Copy-link feedback
     @State private var linkCopied = false
-    // Rename (display only for now — fires the API when available)
+    // Rename — mirrors web RenameRoomDialog.jsx; triggers the same PATCH endpoints via CornerAPI.renameRoom.
     @State private var roomName: String
+    @State private var renaming = false
+    @State private var renameBusy = false
+    @State private var renameError: String?
     @State private var section: SettingsSection = .general
 
     enum SettingsSection: String, CaseIterable, Identifiable {
@@ -109,6 +112,34 @@ struct RoomSettingsView: View {
 
                 // ── General tab ─────────────────────────────────────────────
                 if section == .general {
+                    // Mirrors web RoomSettingsDialog "Rename chat" — tap-to-rename parity.
+                    // Same validation (1-80 chars, whitespace-collapsed) and same endpoints
+                    // as RenameRoomDialog.jsx; errors surface inline like the web dialog.
+                    Section("Room name") {
+                        HStack(spacing: Theme.s2) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(room.title)
+                                    .font(.hanken(14).weight(.medium))
+                                    .foregroundStyle(Theme.ink)
+                                Text("Tap to rename this \(room.typeLabel.lowercased())")
+                                    .font(.hanken(12))
+                                    .foregroundStyle(Theme.inkSoft)
+                            }
+                            Spacer()
+                            Image(systemName: "pencil")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Theme.accent)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { renaming = true }
+                        .listRowBackground(Theme.raised)
+                    }
+                    .sheet(isPresented: $renaming) {
+                        RenameRoomSheet(room: room) { next in
+                            roomName = next
+                        }
+                    }
+
                     Section("Room behavior") {
                         Toggle(isOn: $following) {
                             Label {

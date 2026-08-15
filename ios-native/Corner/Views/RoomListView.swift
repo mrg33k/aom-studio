@@ -48,6 +48,7 @@ struct RoomListView: View {
     /// The project whose missions sheet is open, by slug. Selected tile stays
     /// highlighted with a blue border while the sheet is up (Team Room spec).
     @State private var openProjectSlug: String?
+    @State private var renamingRoom: Room?
     /// Rooms swiped out of the Recent feed — Patrik's fast feed cleanup. Local to this
     /// device (UserDefaults); the room stays in All / Projects / search, and a swipe in
     /// All puts it back. Server-side sync can ride the read-state lane when it lands.
@@ -163,6 +164,11 @@ struct RoomListView: View {
                 )
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+            }
+        }
+        .sheet(item: $renamingRoom) { room in
+            RenameRoomSheet(room: room) { _ in
+                store.refresh()
             }
         }
         .task {

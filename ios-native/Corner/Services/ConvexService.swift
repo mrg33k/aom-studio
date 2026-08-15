@@ -146,5 +146,18 @@ final class ConvexService {
                 return message
             }
         }
+
+        /// True when the Convex response indicates the function path does not exist
+        /// (used to fall back between `messages:send` and legacy `messages:sendMessage`).
+        var isNotFound: Bool {
+            switch self {
+            case .badResponse(let status, let message):
+                if status == 404 { return true }
+                let lower = message.lowercased()
+                return lower.contains("could not find function")
+                    || lower.contains("not found")
+                    || lower.contains("unknown path")
+            }
+        }
     }
 }

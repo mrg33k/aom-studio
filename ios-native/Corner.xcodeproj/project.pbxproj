@@ -98,6 +98,7 @@
 		EBC045F870ACA54B530AD5C9 /* WorkProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DDE7D78AE9015EEB08E6F6 /* WorkProjectionTests.swift */; };
 		EC1499CF15C0D29AEF56EA2B /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C62786309F50F5448B66011A /* FileStore.swift */; };
 		ECB52710BD4D59929EE091DC /* FakeTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4988E1AE930BD71A16CE2EEE /* FakeTransport.swift */; };
+		ECDD6A42048D1D4E72E1DFE1 /* RenameRoomSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD1D7C11006C847C78947A9B /* RenameRoomSheet.swift */; };
 		F2ECFB887F2E992960E10A3A /* MessageBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07EAECF062E7FAA88D07CFCA /* MessageBubbleView.swift */; };
 		F42C78E0F08A0C382DEED0EC /* OrganizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA762654D7DF58269E50F794 /* OrganizeView.swift */; };
 		F5F670A1A6362533E6104243 /* MessageContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24F1365EAA4F96E30C9F1974 /* MessageContent.swift */; };
@@ -236,6 +237,7 @@
 		F6827290BB3EFB1945CC8003 /* ScrollBrainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollBrainTests.swift; sourceTree = "<group>"; };
 		F699E1C9894B7F4CA90C266B /* StreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamTests.swift; sourceTree = "<group>"; };
 		FC666C376DEDBBB91CD4B4A5 /* ReviewItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewItem.swift; sourceTree = "<group>"; };
+		FD1D7C11006C847C78947A9B /* RenameRoomSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenameRoomSheet.swift; sourceTree = "<group>"; };
 		FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = CornerWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -272,6 +274,7 @@
 				78195C7CEC61A8E2A7C22582 /* NotificationsView.swift */,
 				DA762654D7DF58269E50F794 /* OrganizeView.swift */,
 				277963E40CC1BA7254A5AFEB /* PreviewHarness.swift */,
+				FD1D7C11006C847C78947A9B /* RenameRoomSheet.swift */,
 				D8CA935ACABC0C1E275A24EE /* ReviewDecisionSheet.swift */,
 				C582794E4358BAFB4A87FB79 /* ReviewQueueView.swift */,
 				41EB3D2C357667840C871590 /* RoomAvatarView.swift */,
@@ -628,6 +631,7 @@
 				B04855D1AA8063F92F8C5720 /* PreviewHarness.swift in Sources */,
 				A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */,
 				6FC0392BBA570C347E45317C /* ReadStateStore.swift in Sources */,
+				ECDD6A42048D1D4E72E1DFE1 /* RenameRoomSheet.swift in Sources */,
 				D1FFF5E4326042FDCC1D1C95 /* ReviewDecisionSheet.swift in Sources */,
 				2C1245D09A52FF6A8D76D6D8 /* ReviewItem.swift in Sources */,
 				8DAE8E6F61F28E73BEA4063D /* ReviewQueueView.swift in Sources */,

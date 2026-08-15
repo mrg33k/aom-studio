@@ -73,6 +73,7 @@ struct ChatView: View {
     @FocusState private var searchFocused: Bool
     @State private var showingSettings = false
     @State private var showingImageGenerator = false
+    @State private var showingRename = false
 
     // ── Paste chips (composer extras R6) ─────────────────────────────────────
     // Long pastes (>1000 chars or >15 lines) collapse into removable chips above
@@ -255,6 +256,13 @@ struct ChatView: View {
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: $showingRename) {
+                RenameRoomSheet(room: model.room) { _ in
+                    // Title updates optimistically inside the sheet; reload to reflect
+                    // server truth and refresh the header without waiting for the rail poll.
+                    Task { await model.load() }
+                }
+            }
             // Paste chip preview sheet — full scrollable pre of the pasted text.
             .sheet(item: $previewingChip) { chip in
                 PastePreviewSheet(chip: chip, onRemove: {
@@ -380,6 +388,9 @@ struct ChatView: View {
                 }
             }
             Divider()
+            Button { showingRename = true } label: {
+                Label("Rename room", systemImage: "pencil")
+            }
             Button { showingSettings = true } label: {
                 Label("Room settings", systemImage: "gearshape")
             }

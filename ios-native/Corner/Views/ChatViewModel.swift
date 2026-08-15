@@ -419,29 +419,75 @@ final class ChatViewModel: ObservableObject {
         try await ConvexService.shared.query("messages:getThread", args: ["roomId": roomId])
     }
 
-    /// Convex-backed send: `sendMessage(roomId, text)` → `messages:sendMessage`
-    /// Convex requires: roomId (id), worldId (id), userId (id), text (string)
+    /// Convex-backed send: mirrors web `convex/messages.ts:send` and `App.tsx:handleSend`.
+    /// Web shape: { roomId: string, text: string, role: "user", userId, userName, clientId, source, metadata }
     func sendMessage(roomId: String, text: String) async throws {
-        // TODO: derive from auth session once Convex Auth is wired for iOS
-        let worldId = "k1798fjd7haec6r0ywkqzv5j858cgahm"
-        let userId = "jx7bcbabmhdw78vvb62zs6yjk98chv3b"
-        try await ConvexService.shared.mutation(
-            "messages:sendMessage",
-            args: ["roomId": roomId, "worldId": worldId, "userId": userId, "text": text]
-        )
+        let world = api.world ?? "aom"
+        // Prefer real session identity when available; fall back to the local anon shape the web preview uses.
+        let userId: String = {
+            if let uid = api.session?.user.id.uuidString, !uid.isEmpty { return uid }
+            // Stable per-install anon so typing + message rows coalesce without auth.
+            let key = "convex.anonUserId"
+            if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty { return saved }
+            let fresh = "anon-\(UUID().uuidString.prefix(8).lowercased())"
+            UserDefaults.standard.set(fresh, forKey: key)
+            return fresh
+        }()
+        let userName: String = {
+            if let meta = api.session?.user.userMetadata,
+               let n = (meta["name"] as? String ?? meta["full_name"] as? String ?? meta["user_name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !n.isEmpty { return n }
+            if let email = api.session?.user.email, !email.isEmpty { return email }
+            return "iOS"
+        }()
+        var args: [String: Any] = [
+            "roomId": roomId,
+            "text": text,
+            "role": "user",
+            "clientId": world,
+            "source": Config.messageSource,
+            "userId": userId,
+            "userName": userName,
+        ]
+        // Preserve work/plan intent the same way the web does (metadata.interaction_mode)
+        if !chatMode.isEmpty {
+            args["metadata"] = ["interaction_mode": chatMode]
+        }
+        // Real Convex deployment uses `messages:send`; keep the legacy `messages:sendMessage`
+        // as a fallback so older preview deployments don't brick.
+        do {
+            try await ConvexService.shared.mutation("messages:send", args: args)
+        } catch {
+            // Fallback for deployments that exposed the brief's `messages:sendMessage` name
+            // (worldId/userId are not required by the schema — send without them first).
+            if (error as? ConvexService.ConvexError)?.isNotFound == true {
+                try await ConvexService.shared.mutation("messages:sendMessage", args: args)
+            } else {
+                throw error
+            }
+        }
     }
 
-    /// Start Convex polling every 2 seconds (BRIEF 04 real-time: poll OR streaming).
+    /// Start Convex polling — 1s while a turn is open, 2.5s idle. Immediate load
+    /// on send means the agent's typing row appears within a second (user asked for
+    /// Corner to attaches to agents immediately, not after a generic delay).
     func startConvexPoll() {
         guard Config.useConvex else { return }
         convexPollTask?.cancel()
         convexPollTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(2))
+                let interval: TimeInterval = (self?.turnIsOpen == true) ? 1.0 : 2.5
+                try? await Task.sleep(for: .seconds(interval))
                 if Task.isCancelled { return }
                 await self?.load()
             }
         }
+    }
+
+    /// Kick an immediate reload without waiting for the next poll tick.
+    /// Call right after Corner dispatches to agents so typing indicators show in <1s.
+    func kickConvexPoll() {
+        Task { await load() }
     }
 
     func stopConvexPoll() {
@@ -456,11 +502,14 @@ final class ChatViewModel: ObservableObject {
             let fetched: [MessageRow]
             let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
             if Config.useConvex && !isTesting {
-                // Prefer Convex `messages:getThread` (also try Convex `messages:list` for compat)
-                if let convexMessages: [MessageRow] = try? await ConvexService.shared.query("messages:getThread", args: ["roomId": room.roomID]) {
-                    fetched = convexMessages
-                } else if let altMessages: [MessageRow] = try? await ConvexService.shared.query("messages:list", args: ["roomId": room.roomID, "limit": 100]) {
+                // Convex is the source of truth — same as web `useQuery(api.messages.list)`.
+                // Use canonical roomId (not document _id) — the Convex `messages` table is
+                // indexed by the canonical string like "aom:project:xxx".
+                let canonicalID = room.roomID
+                if let altMessages: [MessageRow] = try? await ConvexService.shared.query("messages:list", args: ["roomId": canonicalID, "limit": 100]) {
                     fetched = altMessages
+                } else if let convexMessages: [MessageRow] = try? await ConvexService.shared.query("messages:getThread", args: ["roomId": canonicalID]) {
+                    fetched = convexMessages
                 } else {
                     fetched = try await api.fetchMessages(room: room, limit: 100)
                 }
@@ -1274,22 +1323,33 @@ final class ChatViewModel: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             do {
-                // Convex path (BRIEF 04): send via Convex mutation when flagged
-                // Skip in tests — FakeTransport is the contract there.
+                // Convex path: try Convex first; on failure fall through to Supabase so
+                // a Convex outage never bricks sending. Skip in tests — FakeTransport is the contract there.
                 let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
                 if Config.useConvex && !isTesting {
-                    try await self.sendMessage(roomId: self.room.roomID, text: item.text)
-                    // Also attempt Convex `messages:send` for compat with real deployment
-                    // (the two names cover both the brief and the actual convex schema)
-                    self.turn = .working(detail: nil)
-                    self.lastTurnActivity = Date()
-                    if self.turnStartedAt == nil { self.turnStartedAt = Date() }
-                    await self.load()
-                    // Optimistically clear the outbox item — Convex will confirm via next poll
-                    if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
-                        self.outbox.remove(at: index)
+                    do {
+                        try await self.sendMessage(roomId: self.room.roomID, text: item.text)
+                        self.turn = .working(detail: nil)
+                        self.lastTurnActivity = Date()
+                        if self.turnStartedAt == nil { self.turnStartedAt = Date() }
+                        // Immediate fan-out: kick poll so Corner's typing row (agent
+                        // dispatched) appears within 1s, not 2.5s. User reported
+                        // Corner felt like a receptionist that never came — this is the fix.
+                        await self.load()
+                        kickConvexPoll()
+                        if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
+                            self.outbox.remove(at: index)
+                        }
+                        return
+                    } catch {
+                        let isNotFound = (error as? ConvexService.ConvexError)?.isNotFound == true
+                        let isBadResponse = error is ConvexService.ConvexError
+                        if isNotFound || isBadResponse {
+                            // Still try Supabase as backup; if that also fails the outer catch will mark failed.
+                        } else {
+                            throw error
+                        }
                     }
-                    return
                 }
                 let created = try await self.api.send(
                     text: item.text, room: self.room,

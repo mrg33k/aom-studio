@@ -716,6 +716,43 @@ final class CornerAPI: ObservableObject {
         return true
     }
 
+    // MARK: - Rename (mirrors web RenameRoomDialog.jsx)
+
+    /// Rename this room — same three endpoints the web uses.
+    /// Agent 1:1 → PATCH /api/dashboard/room-title { client_id, agent, title }
+    /// Project  → PATCH /api/dashboard/project-update { client_id, slug, name }
+    /// Mission  → PATCH /api/dashboard/mission-update { client_id, project_slug, mission_slug, name }
+    func renameRoom(room: Room, newTitle: String) async throws {
+        let world = try requireWorld()
+        let trimmed = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.count <= 80 else {
+            throw APIError.badResponse(status: 400, message: "Title must be 1–80 characters.")
+        }
+        let request: URLRequest
+        switch room.kind {
+        case .agent(let slug):
+            request = try await authorizedRequest(
+                path: "/api/dashboard/room-title",
+                method: "PATCH",
+                jsonBody: ["client_id": world, "agent": slug, "title": trimmed]
+            )
+        case .project(let slug):
+            request = try await authorizedRequest(
+                path: "/api/dashboard/project-update",
+                method: "PATCH",
+                jsonBody: ["client_id": world, "slug": slug, "name": trimmed]
+            )
+        case .mission(let slug, let project):
+            let bare = Room.bareMissionSlug(slug, project: project)
+            request = try await authorizedRequest(
+                path: "/api/dashboard/mission-update",
+                method: "PATCH",
+                jsonBody: ["client_id": world, "project_slug": project, "mission_slug": bare, "name": trimmed]
+            )
+        }
+        _ = try await run(request)
+    }
+
     // MARK: - Room checklists (R11)
 
     /// GET /api/dashboard/room-checklists — load this room's private lists.
