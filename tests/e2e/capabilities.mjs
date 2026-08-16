@@ -196,13 +196,19 @@ export const CAPABILITIES = [
   },
 
   // ---------------------------------------------------------------- the team
+  // NOTE: CV6 has no @-autocomplete at all today (nothing in src/dashboard/cv6next matches
+  // /mention|autocomplete/). These must therefore report as GAPS on that surface, not as
+  // failures — and crucially `mention.unknown-not-rerouted` must not PASS just because a
+  // surface offers nothing at all. A check that passes by absence is a false pass, and a
+  // false pass in the baseline becomes a bar the replacement is silently held to.
   {
     id: 'mention.autocomplete-opens',
     title: 'Typing @ offers the team, showing both the human role and the handle',
     tier: 'parity',
     async run(d) {
       const items = await d.mentionSuggestions('');
-      if (!items || items.length === 0) return 'typing @ offered nothing';
+      if (items === null) return 'no mention autocomplete on this surface';
+      if (items.length === 0) return 'the mention menu exists but typing @ offered nothing';
       const labelled = items.some((i) => i.title && i.slug);
       return labelled || `suggestions lack a human role or a handle: ${JSON.stringify(items.slice(0, 3))}`;
     },
@@ -212,6 +218,8 @@ export const CAPABILITIES = [
     title: '@web, @design and @systems resolve to the right teammates',
     tier: 'parity',
     async run(d) {
+      const probe = await d.mentionSuggestions('');
+      if (probe === null) return 'no mention autocomplete on this surface';
       const want = { web: 'bobby', design: 'steffen', systems: 'elon' };
       const wrong = [];
       for (const [typed, expected] of Object.entries(want)) {
@@ -228,7 +236,10 @@ export const CAPABILITIES = [
     tier: 'parity',
     async run(d) {
       const items = await d.mentionSuggestions('zzzznotarealagent');
-      return (items || []).length === 0 || `offered ${items.map((i) => i.slug).join(', ')} for an unknown handle`;
+      // Absence of the whole feature is a gap, NOT a pass. Without this guard a surface
+      // with no autocomplete scores a free point here.
+      if (items === null) return 'no mention autocomplete on this surface';
+      return items.length === 0 || `offered ${items.map((i) => i.slug).join(', ')} for an unknown handle`;
     },
   },
   {

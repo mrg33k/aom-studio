@@ -274,11 +274,14 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
     },
 
     // ------------------------------------------------------------ the team
+    // Returns null when this surface has no mention feature at all, [] when the menu
+    // exists but offered nothing. The caller must distinguish: "no such feature" is a
+    // gap to build, "offered nothing" is a bug.
     async mentionSuggestions(prefix) {
       await d.typeInComposer(`@${prefix}`);
       await d.settle(900);
       const menu = page.locator(cfg.mentionMenu.selector).first();
-      if (!(await menu.count().catch(() => 0))) { await composer().first().fill(''); return []; }
+      if (!(await menu.count().catch(() => 0))) { await composer().first().fill('').catch(() => {}); return null; }
       const items = menu.locator(cfg.mentionItem.selector);
       const n = Math.min(await items.count().catch(() => 0), 25);
       const out = [];
