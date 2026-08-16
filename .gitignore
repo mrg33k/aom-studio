@@ -13,6 +13,9 @@ dist
 test-screenshots/
 *.png
 !public/images/**/*.png
+!public/aom-kit/img/welder.png
+!public/aom-kit/img/jobsite.png
+!public/aom-kit/img/owner1.png
 # favicon system (aom:favicon-system) — brand marks must ship
 !public/brand/**/*.png
 !ios/App/App/Assets.xcassets/AppIcon.appiconset/*.png

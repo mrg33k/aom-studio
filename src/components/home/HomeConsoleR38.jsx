@@ -273,7 +273,7 @@ export default function HomeConsoleR38({ openBrief }) {
                 </div>
               </div>
               <div className="relative overflow-hidden border-l border-[#F5F3EE]/10">
-                <img src="/aom-kit/img/ridge.png" alt="Crew on a rooftop ridge — AOM on site" className="w-full h-full object-cover min-h-[320px]" loading="lazy" />
+                <img src="/aom-kit/img/jobsite.png" alt="Construction crew framing a roof on site" className="w-full h-full object-cover min-h-[320px]" loading="lazy" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                   <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-white/80">Report</p>
                   <p className="font-hanken text-[13px] font-medium text-white leading-tight mt-1">One page at month end.</p>
