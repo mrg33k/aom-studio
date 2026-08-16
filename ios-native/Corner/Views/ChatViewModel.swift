@@ -1324,33 +1324,24 @@ final class ChatViewModel: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             do {
-                // Convex path: try Convex first; on failure fall through to Supabase so
-                // a Convex outage never bricks sending. Skip in tests — FakeTransport is the contract there.
+                // Convex path: when enabled, Convex is the source of truth. Failures surface
+                // to the outer catch (message marked failed) instead of silently falling
+                // through to Supabase — a dead backend must not look like a working app.
                 let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
                 if Config.useConvex && !isTesting {
-                    do {
-                        try await self.sendMessage(roomId: self.room.roomID, text: item.text)
-                        self.turn = .working(detail: nil)
-                        self.lastTurnActivity = Date()
-                        if self.turnStartedAt == nil { self.turnStartedAt = Date() }
-                        // Immediate fan-out: kick poll so Corner's typing row (agent
-                        // dispatched) appears within 1s, not 2.5s. User reported
-                        // Corner felt like a receptionist that never came — this is the fix.
-                        await self.load()
-                        kickConvexPoll()
-                        if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
-                            self.outbox.remove(at: index)
-                        }
-                        return
-                    } catch {
-                        let isNotFound = (error as? ConvexService.ConvexError)?.isNotFound == true
-                        let isBadResponse = error is ConvexService.ConvexError
-                        if isNotFound || isBadResponse {
-                            // Still try Supabase as backup; if that also fails the outer catch will mark failed.
-                        } else {
-                            throw error
-                        }
+                    try await self.sendMessage(roomId: self.room.roomID, text: item.text)
+                    self.turn = .working(detail: nil)
+                    self.lastTurnActivity = Date()
+                    if self.turnStartedAt == nil { self.turnStartedAt = Date() }
+                    // Immediate fan-out: kick poll so Corner's typing row (agent
+                    // dispatched) appears within 1s, not 2.5s. User reported
+                    // Corner felt like a receptionist that never came — this is the fix.
+                    await self.load()
+                    kickConvexPoll()
+                    if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
+                        self.outbox.remove(at: index)
                     }
+                    return
                 }
                 let created = try await self.api.send(
                     text: item.text, room: self.room,
