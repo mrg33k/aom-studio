@@ -41,12 +41,33 @@ await page.waitForTimeout(WAIT);
 console.log('=== landed on ===');
 console.log(page.url());
 
-console.log('\n=== what a person sees ===');
-const text = await page.locator('body').innerText().catch(() => '');
-console.log(text.slice(0, 1500) || '(nothing rendered)');
+// One browser-side pass. Playwright text matchers over a heavy app DOM are slow enough
+// to look like a hang, so everything visual is extracted in a single evaluate().
+const snapshot = await page.evaluate(() => {
+  const t = (document.body?.innerText || '').trim();
+  // Detect the crash screen by its test hook, NOT by its prose. A room's message preview
+  // can legitimately read "That task hit a snag", which made text matching report a
+  // perfectly healthy dashboard as crashed.
+  const el = document.querySelector('[data-testid="cv6-screen-error"], [data-testid="screen-error"]');
+  const boundary = el ? (el.textContent || 'screen error').trim().slice(0, 80) : null;
+  const countRole = (sel) => document.querySelectorAll(sel).length;
+  return {
+    text: t.slice(0, 1500),
+    boundary: boundary ? boundary[0] : null,
+    rootChildren: document.getElementById('root')?.childElementCount ?? -1,
+    buttons: countRole('button'),
+    links: countRole('a[href]'),
+    roomish: countRole('a[href*="/room"], a[href*="/chat"], [data-room-id]'),
+    testids: [...new Set([...document.querySelectorAll('[data-testid]')].map((e) => e.getAttribute('data-testid')))].slice(0, 40),
+  };
+}).catch((e) => ({ text: `(evaluate failed: ${e.message})`, boundary: null, rootChildren: -1, buttons: 0, links: 0, roomish: 0, testids: [] }));
 
-const snag = await page.getByText(/hit a snag|something went wrong|error/i).count().catch(() => 0);
-console.log(`\n=== error boundary visible? === ${snag > 0 ? `YES (${snag} match(es))` : 'no'}`);
+console.log('\n=== what a person sees ===');
+console.log(snapshot.text || '(nothing rendered)');
+
+console.log(`\n=== error boundary visible? === ${snapshot.boundary ? `YES — "${snapshot.boundary}"` : 'no'}`);
+console.log(`=== app mounted? === #root children: ${snapshot.rootChildren}, buttons: ${snapshot.buttons}, links: ${snapshot.links}, room-ish elements: ${snapshot.roomish}`);
+if (snapshot.testids.length) console.log(`=== data-testids present ===\n  ${snapshot.testids.join('\n  ')}`);
 
 console.log('\n=== console errors ===');
 console.log(errors.length ? errors.join('\n---\n') : '(none)');

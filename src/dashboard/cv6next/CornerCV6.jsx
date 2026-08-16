@@ -2707,11 +2707,20 @@ function Tracker({ worldId, onNav, onOpenNav, onSearch, onAssignBug }) {
 class ScreenBoundary extends Component {
   constructor(props) { super(props); this.state = { err: null }; }
   static getDerivedStateFromError(err) { return { err }; }
+  // Tag the crash so diagnosis is one search instead of an archaeology session. The
+  // 2026-08-15 outage was a minified `Cannot access 'g' before initialization` with no
+  // marker tying it to this boundary; finding it meant demangling a 1.1MB bundle.
+  componentDidCatch(err, info) {
+    console.error('[cv6-screen-error]', this.props.viewKey || '(no view)', err?.message || err, info?.componentStack || '');
+  }
   componentDidUpdate(prev) { if (prev.viewKey !== this.props.viewKey && this.state.err) this.setState({ err: null }); }
   render() {
     if (this.state.err) {
       return (
-        <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted,#8b95a3)', font: '13px/1.5 system-ui', padding: '0 28px' }}>
+        // data-testid is the machine-readable signal. Never detect this screen by its
+        // prose: a room's message preview can legitimately contain "hit a snag", which
+        // makes text matching report a healthy dashboard as crashed.
+        <div data-testid="cv6-screen-error" style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted,#8b95a3)', font: '13px/1.5 system-ui', padding: '0 28px' }}>
           <div style={{ color: 'var(--fg,#fff)', fontSize: 15, marginBottom: 6 }}>This screen hit a snag</div>
           <div>Tap back and try again. Nothing was lost.</div>
           <button onClick={() => this.props.onHome?.()} style={{ marginTop: 14, height: 36, padding: '0 16px', borderRadius: 9, border: '1px solid var(--hair,#222)', background: 'var(--surface-2,#161b24)', color: 'var(--accent,#5b9)', font: '600 13px system-ui' }}>Back to rooms</button>
