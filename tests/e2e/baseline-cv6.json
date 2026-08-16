@@ -1,0 +1,188 @@
+{
+  "surface": "cv6",
+  "label": "CV6 (live dashboard)",
+  "url": "https://www.aheadofmarket.com/dashboard",
+  "at": "2026-08-16T18:27:47.329Z",
+  "token": "E2E-CV6-MSW4U1TI-PYBT3",
+  "passed": 10,
+  "failed": 14,
+  "gaps": 1,
+  "total": 25,
+  "results": [
+    {
+      "id": "auth.signin",
+      "tier": "core",
+      "title": "A real user signs in and lands in the app",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "rooms.list",
+      "tier": "core",
+      "title": "The room list loads with the user's rooms",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "rooms.no-duplicate-aom",
+      "tier": "core",
+      "title": "The house room appears exactly once, not as two aliases",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "room.open",
+      "tier": "core",
+      "title": "Opening a room shows that room's conversation",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "thread.history",
+      "tier": "core",
+      "title": "Existing messages render, oldest to newest",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "compose.send",
+      "tier": "core",
+      "title": "Typing in the visible composer and sending puts the message in the conversation",
+      "status": "fail",
+      "detail": "sent message containing E2E-CV6-MSW4U1TI-PYBT3 never appeared in the thread"
+    },
+    {
+      "id": "compose.clears",
+      "tier": "parity",
+      "title": "The composer empties immediately after sending",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "compose.keeps-focus",
+      "tier": "polish",
+      "title": "The composer keeps focus so you can keep typing",
+      "status": "fail",
+      "detail": "focus left the composer after send"
+    },
+    {
+      "id": "compose.no-double-send",
+      "tier": "parity",
+      "title": "Hitting send twice quickly does not post the message twice",
+      "status": "fail",
+      "detail": "message posted 0 times"
+    },
+    {
+      "id": "agent.replies",
+      "tier": "core",
+      "title": "An agent answers in the room",
+      "status": "fail",
+      "detail": "no agent reply within 90s"
+    },
+    {
+      "id": "thread.persists-navigate",
+      "tier": "core",
+      "title": "Leaving the room and coming back keeps the conversation",
+      "status": "fail",
+      "detail": "message gone after re-entering the room"
+    },
+    {
+      "id": "thread.persists-restart",
+      "tier": "core",
+      "title": "Fully restarting the app keeps the conversation",
+      "status": "fail",
+      "detail": "message gone after restarting the app"
+    },
+    {
+      "id": "thread.realtime",
+      "tier": "core",
+      "title": "A message sent from somewhere else shows up without touching anything",
+      "status": "fail",
+      "detail": "external message did not arrive without a manual refresh"
+    },
+    {
+      "id": "mention.autocomplete-opens",
+      "tier": "parity",
+      "title": "Typing @ offers the team, showing both the human role and the handle",
+      "status": "fail",
+      "detail": "typing @ offered nothing"
+    },
+    {
+      "id": "mention.roles-resolve",
+      "tier": "parity",
+      "title": "@web, @design and @systems resolve to the right teammates",
+      "status": "fail",
+      "detail": "@web→nothing (want bobby), @design→nothing (want steffen), @systems→nothing (want elon)"
+    },
+    {
+      "id": "mention.unknown-not-rerouted",
+      "tier": "parity",
+      "title": "An unknown handle is not silently answered by someone else",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "mention.routes-to-named-agent",
+      "tier": "parity",
+      "title": "Naming a teammate gets an answer from that teammate",
+      "status": "fail",
+      "detail": "the named teammate did not answer"
+    },
+    {
+      "id": "files.panel",
+      "tier": "parity",
+      "title": "The room's files are listed",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "checklist.persists",
+      "tier": "parity",
+      "title": "A room checklist survives a reload",
+      "status": "gap",
+      "detail": "no room checklist on this surface"
+    },
+    {
+      "id": "progress.single-card",
+      "tier": "polish",
+      "title": "While an agent works there is exactly one live progress card",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "profile.edit",
+      "tier": "polish",
+      "title": "A user can change their own initials and colour",
+      "status": "fail",
+      "detail": "no way to edit your own profile"
+    },
+    {
+      "id": "theme.control",
+      "tier": "polish",
+      "title": "The theme control changes the app's appearance",
+      "status": "fail",
+      "detail": "no working theme control"
+    },
+    {
+      "id": "mobile.composer-on-edge",
+      "tier": "parity",
+      "title": "At phone width the composer sits on the bottom edge and follows the keyboard",
+      "status": "fail",
+      "detail": "composer sits 75px above the bottom edge"
+    },
+    {
+      "id": "mobile.no-horizontal-scroll",
+      "tier": "parity",
+      "title": "At phone width nothing scrolls sideways",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "id": "backend.convex-only-messages",
+      "tier": "core",
+      "title": "Sending and receiving touches Convex and no Supabase message traffic",
+      "status": "fail",
+      "detail": "locator.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByPlaceholder(/Type a task|^Message |^Reply to/i).first()\u001b[22m\n\u001b[2m    - locator resolved to <textarea rows=\"1\" placeholder=\"Message Web…\" data-testid=\"cv6-chat-input\"></textarea>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m"
+    }
+  ]
+}

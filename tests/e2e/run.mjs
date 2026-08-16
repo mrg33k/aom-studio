@@ -35,6 +35,7 @@ const CDP = arg('cdp', process.env.CORNER_CDP || null);
 const BASELINE = arg('baseline', null);
 const SAVE_BASELINE = arg('save-baseline', null);
 const ONLY = arg('only', null);          // comma-separated capability ids
+const ROOM = arg('room', process.env.CORNER_E2E_ROOM || null);  // room key or title to test in
 const TIER = arg('tier', null);          // core | parity | polish
 const HEADLESS = !flag('headed');
 const JSON_OUT = flag('json');
@@ -67,12 +68,15 @@ async function main() {
     console.log(`  url      : ${cfg.url}`);
     console.log(`  mode     : ${CDP ? `attached to ${CDP}` : 'fresh browser'}`);
     console.log(`  checks   : ${selected.length}`);
-    console.log(`  token    : ${token}\n`);
+    console.log(`  room     : ${ROOM || '(auto: test room, else the house room)'}`);
+    console.log(`  token    : ${token}`);
+    console.log(`  NOTE     : this posts real messages and wakes real agents in that room.`);
+    console.log(`             every message it sends contains the token above.\n`);
   }
 
   mkdirSync('tests/e2e/artifacts', { recursive: true });
 
-  const driver = createWebDriver({ surface: SURFACE, cfg, cdp: CDP, headless: HEADLESS, onLog: log });
+  const driver = createWebDriver({ surface: SURFACE, cfg, cdp: CDP, headless: HEADLESS, targetRoom: ROOM, onLog: log });
   const ctx = { token, surface: SURFACE, log };
 
   try {

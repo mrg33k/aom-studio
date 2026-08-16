@@ -61,13 +61,17 @@ export const CAPABILITIES = [
   },
   {
     id: 'rooms.no-duplicate-aom',
-    title: '"Ahead of Market" appears exactly once',
+    title: 'The house room appears exactly once, not as two aliases',
     tier: 'core',
     async run(d) {
+      // The room's display name differs by surface ("AOM" on CV6, "Ahead of Market"
+      // elsewhere), so the pattern comes from the surface config rather than being
+      // hardcoded here. What is being graded is that ONE room shows up ONCE.
+      const pattern = d.canonicalRoomPattern || /ahead of market|^aom$/i;
       const rooms = await d.listRooms();
-      const hits = rooms.filter((r) => /ahead of market/i.test(r.title || ''));
-      if (hits.length === 0) return 'Ahead of Market not present in the room list';
-      return hits.length === 1 || `Ahead of Market appears ${hits.length} times`;
+      const hits = rooms.filter((r) => pattern.test((r.title || '').trim()));
+      if (hits.length === 0) return `no house room matching ${pattern} in a list of ${rooms.length}`;
+      return hits.length === 1 || `the house room appears ${hits.length} times: ${hits.map((h) => h.key || h.title).join(', ')}`;
     },
   },
   {

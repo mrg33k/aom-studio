@@ -23,7 +23,7 @@ const asLocator = (scope, sel) => {
   return null;
 };
 
-export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0, onLog = () => {} }) {
+export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0, targetRoom = null, onLog = () => {} }) {
   let browser, context, page, secondPage;
   let netCapture = null;
 
@@ -35,6 +35,7 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
   const d = {
     name: surface,
     supportsViewport: true,
+    canonicalRoomPattern: cfg.canonicalRoomPattern,
 
     // ------------------------------------------------------------ lifecycle
     async start() {
@@ -96,12 +97,21 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
     // ------------------------------------------------------------ rooms
     async listRooms() {
       const scope = cfg.roomList?.container ? page.locator(cfg.roomList.container).first() : page;
-      const candidates = scope.locator('a[href*="/room"], a[href*="/chat"], [data-room-id], [role="listitem"], nav button');
+      const candidates = cfg.roomRow
+        ? page.locator(cfg.roomRow.selector)
+        : scope.locator('a[href*="/room"], a[href*="/chat"], [data-room-id], [role="listitem"], nav button');
       const n = Math.min(await candidates.count().catch(() => 0), 80);
       const out = [];
       for (let i = 0; i < n; i++) {
-        const t = (await candidates.nth(i).innerText().catch(() => '')).trim().split('\n')[0];
-        if (t) out.push({ title: t, index: i });
+        const el = candidates.nth(i);
+        const raw = (await el.innerText().catch(() => '')).trim();
+        const key = await el.getAttribute('data-cv6-arg').catch(() => null)
+          || await el.getAttribute('data-room-id').catch(() => null);
+        // The first line is a monogram avatar ("BR"); the room's name is the next
+        // non-empty line. Falling back to line 0 would name every room by its initials.
+        const lines = raw.split('\n').map((s) => s.trim()).filter(Boolean);
+        const title = (lines.length > 1 && /^[A-Z]{1,3}$/.test(lines[0]) ? lines[1] : lines[0]) || '';
+        if (title) out.push({ title, key, index: i });
       }
       // De-duplicate by visible title: the same room rendered twice in one list is a real
       // product bug (rooms.no-duplicate-aom), but the same room in two nav regions is not.
@@ -111,23 +121,73 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
 
     async openAnyRoom() {
       const rooms = await d.listRooms();
-      const preferred = rooms.find((r) => /ahead of market/i.test(r.title)) || rooms[0];
+      // Every run posts real messages and wakes real agents, so target is deliberate:
+      // an explicit --room wins, then a room that looks like a test room, and only then
+      // whatever is first. Never silently pick the busiest live room.
+      const preferred =
+        (targetRoom && rooms.find((r) => r.key === targetRoom || new RegExp(targetRoom, 'i').test(r.title || ''))) ||
+        rooms.find((r) => /test|sandbox|scratch|acceptance/i.test(r.title || '')) ||
+        rooms.find((r) => (d.canonicalRoomPattern || /^aom$/i).test((r.title || '').trim())) ||
+        rooms[0];
       if (!preferred) return null;
       return (await d.reopenRoom(preferred)) ? preferred : null;
     },
 
     async reopenRoom(room) {
       if (!room) return false;
-      const link = asLocator(page, cfg.roomLink(room.title));
       try {
-        if (await link.count()) { await link.first().click({ timeout: 15000 }); }
-        else { await page.getByText(room.title, { exact: false }).first().click({ timeout: 15000 }); }
+        // Prefer the row's own stable key over its visible title. Two rooms can share a
+        // display name (this dashboard really does show "Corner" as both an agent and a
+        // project), so clicking by text opens whichever one happens to be first.
+        if (room.key && cfg.roomRow) {
+          // Build the keyed selector from EVERY row variant, not just the first one. The
+          // row class changes with viewport (mresumecard on phone, projrow/missrow on
+          // desktop), and hardcoding one of them silently matches nothing on the other
+          // layout — which reads as "could not open any room" on a working dashboard.
+          const keyed = cfg.roomRow.selector
+            .split(',')
+            .map((part) => part.trim()
+              .replace('[data-cv6-arg]', `[data-cv6-arg="${room.key}"]`)
+              .replace('[data-room-id]', `[data-room-id="${room.key}"]`))
+            .join(', ');
+          const byKey = page.locator(keyed);
+          if (await byKey.count().catch(() => 0)) {
+            // Try a REAL pointer click first — that is what a person does, and if it
+            // fails to open the room that is a product finding worth surfacing.
+            await byKey.first().click({ timeout: 15000 }).catch(() => {});
+            if (await d.waitForRoom(8000)) return true;
+
+            // CV6's room rows sit under swipe/pointer recognisers (row swipe-archive,
+            // rail pointer freeze) that can swallow a synthetic mouse press. Fall back to
+            // the element's own click handler, but SAY SO rather than passing silently —
+            // if a real click never works, that is a tap bug, not a test detail.
+            log(`real pointer click did not open "${room.title}"; retrying with a direct element click`);
+            d.pointerClickFailures = (d.pointerClickFailures || 0) + 1;
+            await page.evaluate((sel) => document.querySelector(sel)?.click(), keyed).catch(() => {});
+            return d.waitForRoom();
+          }
+        }
+        const link = asLocator(page, cfg.roomLink(room.title));
+        if (await link.count().catch(() => 0)) await link.first().click({ timeout: 15000 });
+        else await page.getByText(room.title, { exact: false }).first().click({ timeout: 15000 });
       } catch { return false; }
-      await d.settle(2500);
-      return d.inRoom();
+      return d.waitForRoom();
     },
 
-    async inRoom() { try { return (await composer()?.count()) > 0; } catch { return false; } },
+    // Wait for the room to actually open rather than sleeping a fixed 2.5s and hoping.
+    // The room transition is animated and data-driven, so a fixed sleep reports "could
+    // not open any room" on a dashboard that opens rooms perfectly well.
+    async waitForRoom(timeout = 20000) {
+      const marker = asLocator(page, cfg.inRoomMarker || cfg.composer);
+      try { await marker.first().waitFor({ state: 'attached', timeout }); } catch { return false; }
+      await d.settle(1200);
+      return true;
+    },
+
+    async inRoom() {
+      const marker = asLocator(page, cfg.inRoomMarker || cfg.composer);
+      try { return (await marker?.count()) > 0; } catch { return false; }
+    },
 
     async leaveRoom() {
       const nav = asLocator(page, cfg.roomsNav);
@@ -138,26 +198,34 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
     },
 
     // ------------------------------------------------------------ the thread
+    // One browser-side pass. Reading 29 message rows attribute-by-attribute over CDP is
+    // ~120 round trips and slow enough to blow the waitForMessage budget on its own.
     async threadMessages() {
-      const els = page.locator(cfg.message.selector);
-      const n = Math.min(await els.count().catch(() => 0), 300);
-      const out = [];
-      for (let i = 0; i < n; i++) {
-        const el = els.nth(i);
-        const [text, role, agent, at] = await Promise.all([
-          el.innerText().catch(() => ''),
-          el.getAttribute('data-role').catch(() => null),
-          el.getAttribute('data-agent-slug').catch(() => null),
-          el.getAttribute('data-created-at').catch(() => null),
-        ]);
-        out.push({
-          text: (text || '').trim(),
-          role: role || (agent ? 'assistant' : undefined),
-          agent: agent || undefined,
-          at: at ? Number(at) || at : undefined,
+      const m = cfg.message;
+      return await page.evaluate(({ selector, userTurnAttr, idAttr, agentAttr, timeAttr, roleAttr }) => {
+        return [...document.querySelectorAll(selector)].slice(0, 400).map((el) => {
+          const has = (a) => a && el.hasAttribute(a);
+          const get = (a) => (a ? el.getAttribute(a) : null);
+          // CV6 marks the viewer's own turns with a bare data-userturn attribute and gives
+          // agent turns no role attribute at all, so "not a user turn" IS the agent turn.
+          const role = get(roleAttr) || (has(userTurnAttr) ? 'user' : 'assistant');
+          const at = get(timeAttr);
+          return {
+            id: get(idAttr) || undefined,
+            text: (el.innerText || '').trim(),
+            role,
+            agent: get(agentAttr) || undefined,
+            at: at ? (Number(at) || at) : undefined,
+          };
         });
-      }
-      return out;
+      }, {
+        selector: m.selector,
+        userTurnAttr: m.userTurnAttr || null,
+        idAttr: m.idAttr || 'data-message-id',
+        agentAttr: m.agentAttr || null,
+        timeAttr: m.timeAttr || null,
+        roleAttr: m.roleAttr || null,
+      }).catch(() => []);
     },
 
     async waitForMessage(pred, timeout = 20000, { noRefresh = false } = {}) {
@@ -173,9 +241,15 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
 
     // ------------------------------------------------------------ composing
     async typeInComposer(text) {
-      const c = composer();
-      await c.first().click({ timeout: 15000 });
-      await c.first().fill(text);
+      const c = composer().first();
+      await c.waitFor({ state: 'attached', timeout: 20000 });
+      // Do NOT gate typing on a click. The composer is often overlapped by a sticky
+      // footer or mid-transition, so click() times out on an element that fill() drives
+      // perfectly well. A click timeout here reads as "CV6 cannot send messages", which
+      // is false and would poison the baseline.
+      try { await c.fill(text, { timeout: 15000 }); return; } catch {}
+      await c.click({ force: true, timeout: 10000 });
+      await c.fill(text, { force: true, timeout: 10000 });
     },
     async composerValue() {
       const c = composer();
@@ -185,10 +259,17 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
       try { return await composer().first().evaluate((el) => el === document.activeElement); } catch { return false; }
     },
     async send() {
-      const btn = sendBtn();
-      try {
-        if (await btn?.count()) { await btn.first().click({ timeout: 10000 }); return; }
-      } catch {}
+      // Try the surface's explicit send control, then its accessible name, then Enter.
+      // CV6 uses a different send button on Home than inside a room, so a single
+      // selector is not enough and Enter is the reliable floor.
+      const candidates = [];
+      if (cfg.sendButton?.selector) candidates.push(page.locator(cfg.sendButton.selector));
+      if (cfg.sendButton?.role) candidates.push(page.getByRole(cfg.sendButton.role, { name: cfg.sendButton.name }));
+      for (const c of candidates) {
+        try {
+          if (await c.count().catch(() => 0)) { await c.first().click({ timeout: 8000 }); return; }
+        } catch { /* fall through to the next strategy */ }
+      }
       await composer().first().press('Enter');
     },
 

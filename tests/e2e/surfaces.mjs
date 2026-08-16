@@ -17,26 +17,45 @@ export const SURFACES = {
   // ---------------------------------------------------------------- today's bar
   cv6: {
     label: 'CV6 (live dashboard)',
+    // The house room renders as "AOM" here, as "Ahead of Market" elsewhere.
+    canonicalRoomPattern: /^aom$|ahead of market/i,
     url: process.env.CV6_URL || 'https://www.aheadofmarket.com/dashboard',
     // The live dashboard rides an existing signed-in Chrome profile; see run.mjs --cdp.
     auth: { mode: 'existing-session', signedInMarker: { role: 'button', name: /Rooms/i } },
 
-    composer: { placeholder: /^Message |^Reply to/i },
-    sendButton: { role: 'button', name: /^Send message$/i },
+    // Two different composers: the intake box on Home, the chat box inside a room.
+    // Both are needed — capabilities open a room and then type, so prefer the chat one.
+    composer: { selector: '[data-testid="cv6-chat-input"], [data-testid="cv6-intake-input"]' },
+    // "Am I in a room" must key on the CHAT composer only. The Home intake box matches
+    // the composer selector too, so without this every Home screen reads as a room.
+    inRoomMarker: { selector: '[data-testid="cv6-chat-input"]' },
+    sendButton: { selector: '[data-testid="cv6-intake-send"]', role: 'button', name: /^Send( message)?$/i },
 
-    roomList: { role: 'button', nameFilter: null, container: '[data-testid="cv6-room-list"], nav, aside' },
+    // CV6's screens are template-engine driven: every actionable row carries
+    // data-cv6-arg ("m:bridge", "p:kraken-corps", "a:corner"). The row class differs by
+    // viewport (mresumecard on phone, projrow/missrow/recentrow on desktop), so match on
+    // the data attribute and let the class list vary.
+    roomRow: { selector: '.mresumecard[data-cv6-arg], .projrow[data-cv6-arg], .missrow[data-cv6-arg], .recentrow[data-cv6-arg], .restrow[data-cv6-arg]' },
+    roomList: { container: null },
     roomLink: (title) => ({ role: 'button', name: new RegExp(escapeRe(title), 'i') }),
     roomsNav: { role: 'button', name: /^Rooms$/i },
 
-    message: { selector: '[data-testid="cv6-message"], [data-message-id], [data-role]' },
-    messageRole: (el) => el.getAttribute('data-role') || el.getAttribute('data-message-role'),
-    messageAgent: (el) => el.getAttribute('data-agent') || el.getAttribute('data-agent-slug'),
+    // Verified against the live thread: rows are [data-cv6-message-turn][data-message-id].
+    // There is NO role attribute — the viewer's own turns carry a bare data-userturn and
+    // agent turns carry nothing, so absence of data-userturn is the agent turn.
+    message: {
+      selector: '[data-cv6-message-turn][data-message-id]',
+      idAttr: 'data-message-id',
+      userTurnAttr: 'data-userturn',
+      agentAttr: null,   // CV6 does not expose the agent slug on the row yet
+      timeAttr: null,    // nor a timestamp
+    },
 
     mentionMenu: { selector: '[data-testid="cv6-mention-menu"], [role="listbox"]' },
     mentionItem: { selector: '[role="option"], [data-mention-slug]' },
 
-    filesPanel: { role: 'button', name: /Files/i },
-    checklistAdd: { role: 'button', name: /Checklist/i },
+    filesPanel: { selector: '[data-testid="chat-files-button"]' },
+    checklistAdd: { selector: '[data-testid="room-checklist-toggle"]' },
     themeToggle: { role: 'button', name: /theme\. Switch to/i },
     profileEdit: { role: 'button', name: /profile|initials|avatar/i },
     progressCard: { selector: '[data-testid="cv6-step-card"]' },
@@ -45,6 +64,7 @@ export const SURFACES = {
   // ---------------------------------------------------------------- the challenger
   'convex-web': {
     label: 'corner-convex (Convex web)',
+    canonicalRoomPattern: /^aom$|ahead of market/i,
     url: process.env.CONVEX_WEB_URL || 'https://corner-convex.vercel.app',
     // Today this surface signs in with an email and no password. That is itself graded
     // by auth.signin; this block only says how to drive whatever is there.
@@ -57,15 +77,21 @@ export const SURFACES = {
     },
 
     composer: { placeholder: /message|type|write/i },
+    inRoomMarker: { placeholder: /message|type|write/i },
     sendButton: { role: 'button', name: /send/i },
 
+    roomRow: { selector: '[data-room-id], a[href^="/room/"]' },
     roomList: { container: '[data-testid="room-list"], nav, aside, main' },
     roomLink: (title) => ({ role: 'link', name: new RegExp(escapeRe(title), 'i') }),
     roomsNav: { role: 'link', name: /^home$|rooms/i },
 
-    message: { selector: '[data-testid="message"], [data-message-id], [data-role]' },
-    messageRole: (el) => el.getAttribute('data-role'),
-    messageAgent: (el) => el.getAttribute('data-agent-slug') || el.getAttribute('data-agent'),
+    message: {
+      selector: '[data-testid="message"], [data-message-id]',
+      idAttr: 'data-message-id',
+      roleAttr: 'data-role',
+      agentAttr: 'data-agent-slug',
+      timeAttr: 'data-created-at',
+    },
 
     mentionMenu: { selector: '[data-testid="mention-menu"], [role="listbox"]' },
     mentionItem: { selector: '[role="option"], [data-mention-slug]' },

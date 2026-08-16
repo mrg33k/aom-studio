@@ -91,4 +91,7 @@ await page.screenshot({ path: shot });
 console.log(`\nscreenshot: ${shot}`);
 
 await page.close();
+// Same trap as debug-room.mjs: an attached CDP connection never lets node exit on its
+// own. Close the browser only when we launched it; otherwise just exit.
 if (!CDP) await browser.close();
+process.exit(snapshot.boundary ? 1 : 0);
