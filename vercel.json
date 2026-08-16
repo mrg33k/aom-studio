@@ -63,6 +63,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/home-options",
+      "destination": "/index.html"
+    },
+    {
       "source": "/r5",
       "destination": "/index.html"
     },

@@ -108,6 +108,7 @@ const AcceptInvite = lazy(() => import('./pages/AcceptInvite.jsx'))
 const DashboardWelcome = lazy(() => import('./pages/DashboardWelcome.jsx'))
 const HomeR4Preview = lazy(() => import('./pages/HomeR4Preview.jsx'))
 const HomeR38Preview = lazy(() => import('./pages/HomeR38Preview.jsx'))
+const HomeLayoutOptions = lazy(() => import('./pages/HomeLayoutOptions.jsx'))
 const HomeR5Preview = lazy(() => import('./pages/HomeR5Preview.jsx'))
 const HomeR6Taste = lazy(() => import('./pages/HomeR6Taste.jsx'))
 const VersionsGallery = lazy(() => import('./pages/versions/VersionsGallery.jsx'))
@@ -480,6 +481,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Routes>
           <Route path="/" element={<HomeR38Preview />} />
           <Route path="/r38" element={<HomeR38Preview />} />
+          <Route path="/home-options" element={<HomeLayoutOptions />} />
           <Route path="/r7" element={<HomeAOM2026 />} />
           <Route path="/home-v1" element={<App />} />
           <Route path="/about" element={<App />} />
