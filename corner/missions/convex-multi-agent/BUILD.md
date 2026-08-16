@@ -73,3 +73,14 @@ but Bobby truthfully lacked deploy context. The running SSE bridge only has
 `elon`, `studio`, `rex`, `gary`, and `arsenal-ea` sessions; Bobby and Steffen are
 not registered resident sessions, so silently mapping their identities would be
 incorrect. The internal Convex agent loop remains live while this is resolved.
+
+### R8 — Canonical duplicate-room resolution
+
+Ensure project-scoped mission handles resolve to the project-qualified legacy
+room before the historical projectless fallback, so web and native open the
+thread containing the actual project history.
+
+**Status:** complete — the resolver now prefers the project-qualified ID and
+`listRooms` collapses historical aliases while normalizing the project field.
+Live verification returns 647 canonical rooms (down from 676 raw rows) and one
+AOM Website entry pointing to `aom:mission:aom:aom-website` on both surfaces.

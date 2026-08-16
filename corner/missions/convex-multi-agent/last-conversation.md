@@ -48,3 +48,13 @@ only elon/studio/rex/gary/arsenal-ea; there is no live Bobby or Steffen session.
 Do not identity-map those names to another resident. A future Convex consumer and
 reply writer should only replace the internal responder once the desired resident
 roster exists and can preserve exact room/message IDs.
+
+The same live check exposed a duplicate-room context split. Historical aliases
+`aom:mission:aom-website` and `aom:mission:aom:aom-website` represented one
+mission, but the canonical resolver and native rail favored different rows; the
+former contained only two pre-test messages while the project-qualified row held
+the active history. Convex now prefers project-qualified mission IDs, collapses
+equivalent aliases in `listRooms`, and normalizes the inferred project without a
+data rewrite. Live verification returns 647 canonical rooms instead of 676 raw
+rows and exactly one AOM Website room, shared by web and native. Standalone
+commit: `6ed8da4`.
