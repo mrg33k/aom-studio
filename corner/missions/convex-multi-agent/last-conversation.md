@@ -19,3 +19,11 @@ credential was removed afterward. Native now targets the correct document-ID API
 and never overwrites Convex rows with Supabase. CV6 uses reactive Convex room
 queries and sends and passes a production-mode bundle. Remaining work is a clean
 production dashboard release and signed-in iOS cross-surface acceptance.
+
+Production dashboard release `43272adb` was deployed from a clean archive to
+Vercel project `aom-studio` and verified on the canonical AOM domain; its served
+main bundle targets `neat-pony-216`. Corner 1.0 build 17 was archived app-only
+using the existing App Store signing path and uploaded successfully to App Store
+Connect (delivery `58cc724f-72eb-440a-b0f8-065b80ed82f0`). Browser and simulator
+sessions were both signed out, so the final authenticated iOS-to-web parity send
+was not fabricated and remains the only acceptance gap.

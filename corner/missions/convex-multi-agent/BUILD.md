@@ -34,9 +34,10 @@ messages. A production-mode 2,616-module bundle completed successfully.
 
 Verify room history and sends in iOS, then prove identical rows appear on web.
 
-**Status:** in progress — the native Debug simulator build compiles and is
-installed, but the clean worktree simulator has no authenticated session. A full
-cross-surface signed-in send remains before release.
+**Status:** build 17 uploaded to App Store Connect — the native Debug simulator
+build also compiles and is installed, but the clean simulator and available
+browsers have no authenticated Corner session. A signed-in cross-surface send
+remains as the final acceptance check after TestFlight processing.
 
 ### R5 — WD-40 reliability rounds
 
@@ -46,3 +47,5 @@ recovery until the shared pipeline is solid.
 **Status:** in progress — migrated 45,221 nonblank text messages and 651 legacy
 room IDs with stable deduplication and no file metadata. Acceptance tests proved
 room grounding, routing completion, abstention, and the guaranteed first reply.
+Production web is live on `aheadofmarket.com/dashboard`; signed-in native/web
+parity remains the final WD-40 check.
