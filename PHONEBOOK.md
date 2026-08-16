@@ -1,4 +1,21 @@
 # Codebase Phone Book
+
+> ## ⚠️ THE DASHBOARD SECTION BELOW IS STALE
+>
+> Corrected 2026-08-16 (`corner:convex-multi-agent` R16), verified against code and the live
+> site rather than documents:
+>
+> - `/dashboard` renders **`CornerCV6`** (`src/dashboard/cv6next/CornerCV6.jsx`), not CornerV4.
+>   See `src/main.jsx:84-89` — "CV6 is now the ONLY dashboard surface."
+> - `src/dashboard/main.jsx` is **NOT an entrypoint**. It mounts to `#dashboard-root`, which
+>   appears in no served HTML, and nothing imports it. It is dead code. A Convex migration was
+>   built there and could never have gone live.
+> - The "legacy, pre-cut — still valid" path `~/aom-studio-transfer/aom-studio` is a husk with
+>   no `.git`. It is not valid. See its `DEAD-MOVED.md`.
+>
+> **Trust `/phonebook.md` at the AOM-EA repo root** for surfaces, Convex deployments and graders.
+> The per-file tables further down are still broadly useful; the routing claims are not.
+
 > This is WHERE things live across all AOM repos.
 > Agents: use this to find files. Don't guess paths. Don't grep blindly.
 ## aom-studio (Dashboard, API, React frontend on Vercel)
