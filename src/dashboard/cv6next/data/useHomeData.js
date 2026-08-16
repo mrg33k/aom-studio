@@ -399,6 +399,19 @@ export function useHome() {
     return () => { alive = false; clearInterval(timer); };
   }, [worldId]);
 
+  // Memoize the shaped data so its identity is stable between renders (it only changes
+  // when the underlying pipe arrays change). Without this, `data` was a new object every
+  // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
+  // list under the user's finger and making taps miss (the "can't open a chat" bug).
+  //
+  // ORDER IS LOAD-BEARING: this must stay ABOVE every hook that reads `shaped`. A hook's
+  // dependency array is evaluated during render in source order, so a `useEffect` listing
+  // `shaped.…` above this line throws `ReferenceError: Cannot access 'shaped' before
+  // initialization` and CV6's error boundary swallows the whole screen. That shipped to
+  // production on 2026-08-15 and again is the same defect class as the 2026-07-21
+  // `missionLabelClean` crash. Locked by tests/cv6-home-hook-order.test.mjs.
+  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId]);
+
   // Prefetch top 5 recent rooms' threads (#6)
   const prefetchedRef = useRef(false);
   useEffect(() => {
@@ -413,12 +426,6 @@ export function useHome() {
       prefetchThread(worldId, room);
     }
   }, [shaped.data.recent, worldId]);
-
-  // Memoize the shaped data so its identity is stable between renders (it only changes
-  // when the underlying pipe arrays change). Without this, `data` was a new object every
-  // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
-  // list under the user's finger and making taps miss (the "can't open a chat" bug).
-  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId]);
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
