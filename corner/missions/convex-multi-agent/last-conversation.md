@@ -30,3 +30,21 @@ was not fabricated and remains the only acceptance gap.
 
 Apple's delivery-status API subsequently returned `build-status: VALID` for build
 17.
+
+The WD-40 loop then found and removed a production query hotspot:
+`rooms:listRooms` performed one last-message lookup for every one of 676 rooms,
+reading 1,351 documents and about 627 KB on each refresh. Convex now denormalizes
+the last text/time/agent onto each room transactionally. A secret-protected,
+40-room paginated backfill updated 675 rooms with messages; the temporary secret
+was removed. Tests and the production build passed, functions were deployed to
+`neat-pony-216`, and the live query now reads 676 documents and returns 398,549
+bytes without duplicate preview fields. Standalone commit: `3b1821c`.
+
+A new `@bobby` acceptance message completed end-to-end in under five seconds
+with exactly one correctly linked reply. Its content exposed the next boundary:
+the Convex LLM only had the sparse room history and could not verify current
+deploy state. The local SSE bridge is healthy, but its resident registry contains
+only elon/studio/rex/gary/arsenal-ea; there is no live Bobby or Steffen session.
+Do not identity-map those names to another resident. A future Convex consumer and
+reply writer should only replace the internal responder once the desired resident
+roster exists and can preserve exact room/message IDs.

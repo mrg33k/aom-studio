@@ -49,3 +49,27 @@ room IDs with stable deduplication and no file metadata. Acceptance tests proved
 room grounding, routing completion, abstention, and the guaranteed first reply.
 Production web is live on `aheadofmarket.com/dashboard`; signed-in native/web
 parity remains the final WD-40 check.
+
+### R6 — Room-list query pressure
+
+Remove the per-room last-message lookup from `rooms:listRooms`, maintain compact
+room preview fields transactionally with message writes, and backfill existing
+rooms before measuring the live query again.
+
+**Status:** complete — deployed transactional preview maintenance and backfilled
+675 active rooms in bounded batches. The live query fell from 1,351 to 676
+document reads, response bytes returned to 398,549 after removing duplicate
+preview fields, and the temporary migration secret was removed.
+
+### R7 — Resident-agent context bridge
+
+Replace the remaining Supabase listener/reply persistence path with a Convex
+consumer so selected resident agents can inspect current repositories and
+deployments, then post string-only replies back to the originating Convex room.
+
+**Status:** blocked on runtime topology, not Convex transport — a fresh live
+Convex send received one correctly threaded Bobby reply in under five seconds,
+but Bobby truthfully lacked deploy context. The running SSE bridge only has
+`elon`, `studio`, `rex`, `gary`, and `arsenal-ea` sessions; Bobby and Steffen are
+not registered resident sessions, so silently mapping their identities would be
+incorrect. The internal Convex agent loop remains live while this is resolved.

@@ -13,5 +13,9 @@ The live Convex backend now owns the message loop and the imported history. The
 standalone functions schedule dispatch in the user-message transaction, route a
 bounded subset of the real Corner roster, generate grounded responses from room
 history, and persist replies in the same room. CV6 and native code are migrated
-to the data-bearing schema; production web deployment and signed-in simulator
-acceptance remain.
+to the data-bearing schema; the production web deployment is live and native
+build 17 is valid in App Store Connect. Room previews are now maintained in the
+same transaction as messages, eliminating 675 per-refresh message subqueries.
+Signed-in cross-surface acceptance remains, as does the resident-agent context
+bridge: current Convex agents know room history but cannot inspect live repo or
+deployment state.
