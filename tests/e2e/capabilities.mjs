@@ -258,6 +258,82 @@ export const CAPABILITIES = [
     },
   },
 
+  // ---------------------------------------------------------------- multi-agent conversation
+  // New capability the Convex build adds; CV6 has no equivalent, so these report as gaps
+  // there and as "ahead of the bar" once Convex has them. Straight from the mission spec.
+  {
+    id: 'agents.two-specialties-both-answer',
+    title: 'Asking about two specialties gets both teammates, not one',
+    tier: 'parity',
+    async run(d, ctx) {
+      const probe = `${ctx.token}-MULTI`;
+      await d.typeInComposer(`@bobby @steffen ${probe} what shipped on the site this week and does the design hold up?`);
+      await d.send();
+      await d.waitForMessage((m) => (m.text || '').includes(probe), 20000);
+      const before = (await d.threadMessages()).length;
+      await d.settle(2000);
+      const ok = await d.waitForMessage((m) => m.role === 'assistant', 120000);
+      if (!ok) return 'no agent answered a two-specialty question';
+      const replies = (await d.threadMessages()).slice(before).filter((m) => m.role === 'assistant');
+      const who = new Set(replies.map((r) => r.agent).filter(Boolean));
+      if (who.size >= 2) return true;
+      // Fall back to name-in-text when the surface does not tag rows with an agent slug.
+      const named = new Set();
+      for (const r of replies) for (const n of ['bobby', 'steffen']) if (new RegExp(n, 'i').test(r.text || '')) named.add(n);
+      return named.size >= 2 || `only ${who.size || named.size || 0} teammate(s) contributed`;
+    },
+  },
+  {
+    id: 'agents.no-repeated-conclusion',
+    title: 'Two teammates in one turn do not say the same thing',
+    tier: 'parity',
+    async run(d) {
+      const replies = (await d.threadMessages()).filter((m) => m.role === 'assistant').slice(-2);
+      if (replies.length < 2) return 'fewer than two agent replies to compare';
+      // Cheap overlap check on content words. Near-identical conclusions are the failure
+      // the novelty gate exists to prevent.
+      const words = (s) => new Set(String(s || '').toLowerCase().match(/[a-z]{5,}/g) || []);
+      const a = words(replies[0].text), b = words(replies[1].text);
+      if (a.size < 5 || b.size < 5) return true;
+      const shared = [...a].filter((w) => b.has(w)).length;
+      const overlap = shared / Math.min(a.size, b.size);
+      return overlap < 0.6 || `the two replies share ${Math.round(overlap * 100)}% of their content words`;
+    },
+  },
+  {
+    id: 'agents.reply-is-short',
+    title: 'An ordinary reply stays short: 3 sentences or 3 bullets, usually under 60 words',
+    tier: 'parity',
+    async run(d) {
+      const last = (await d.threadMessages()).filter((m) => m.role === 'assistant').slice(-1)[0];
+      if (!last) return 'no agent reply to measure';
+      const text = String(last.text || '').replace(/^\s*\w+\s*\n/, ''); // drop a leading name line
+      const words = (text.match(/\S+/g) || []).length;
+      const bullets = (text.match(/^\s*[-•*]\s+/gm) || []).length;
+      const sentences = (text.match(/[.!?](\s|$)/g) || []).length;
+      if (bullets > 0) return bullets <= 3 || `${bullets} bullets`;
+      if (sentences > 3 && words > 60) return `${sentences} sentences / ${words} words`;
+      return true;
+    },
+  },
+  {
+    id: 'agents.no-canned-opener',
+    title: 'No "Bobby here", no headings, no restating the question back',
+    tier: 'parity',
+    async run(d) {
+      const last = (await d.threadMessages()).filter((m) => m.role === 'assistant').slice(-1)[0];
+      if (!last) return 'no agent reply to measure';
+      const t = String(last.text || '');
+      const bad = [
+        [/\b(bobby|steffen|elon|rex)\s+here\b/i, 'canned introduction'],
+        [/^\s*#{1,6}\s/m, 'markdown heading'],
+        [/^\s*\*{0,2}(Finding|Analysis|Response|Summary|Answer)\*{0,2}\s*:/im, 'labelled section'],
+      ];
+      const hit = bad.find(([re]) => re.test(t));
+      return !hit || `reply contains a ${hit[1]}`;
+    },
+  },
+
   // ---------------------------------------------------------------- the rest of the room
   {
     id: 'files.panel',
