@@ -985,6 +985,12 @@ struct ChatView: View {
                 .foregroundStyle(Theme.ink)
                 .padding(.vertical, 8)
                 .padding(.trailing, Theme.s2)
+                // The UI acceptance test needs to tell THIS composer apart from the Home
+                // intake box. Without it the test typed its message on the home screen,
+                // never entered a room, and then reported that the message "never appeared
+                // in the conversation" — a false failure that looked exactly like a real
+                // send bug. Identify the room composer explicitly.
+                .accessibilityIdentifier("chat-composer")
         }
         .padding(.leading, Theme.s1)
         .frame(minHeight: 44)
@@ -1052,6 +1058,13 @@ struct ChatView: View {
             .scaleEffect(canSend ? 1 : 0.92)
             .opacity(canSend ? 1 : 0.42)
             .animation(.spring(response: 0.28, dampingFraction: 0.72), value: canSend)
+            // The send control had no name a test could address. The UI acceptance run
+            // therefore fell back to pressing return, and this composer is multiline
+            // (axis: .vertical), so return inserts a newline and sends nothing. The test
+            // then reported "the message never appeared in the conversation", which reads
+            // as a broken send on a send that was never triggered.
+            .accessibilityIdentifier("send")
+            .accessibilityLabel("Send message")
             .disabled(!canSend)
             .accessibilityLabel("Send")
         }

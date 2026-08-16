@@ -863,6 +863,10 @@ private struct RoomRowCard: View {
             .contentShape(Rectangle())
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
+            // Lets the UI acceptance test find and tap a real room instead of guessing at
+            // "the second button on screen", which landed it on the home composer and
+            // produced a convincing false failure.
+            .accessibilityIdentifier("room-row")
     }
 
     // The hero, per the LIVE web mobile home (webview-mobile-home.png): solid accent

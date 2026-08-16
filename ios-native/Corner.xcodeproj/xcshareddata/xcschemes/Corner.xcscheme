@@ -50,6 +50,17 @@
                ReferencedContainer = "container:Corner.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "BB9B100EDEBEB8977208EC1E"
+               BuildableName = "CornerUITests.xctest"
+               BlueprintName = "CornerUITests"
+               ReferencedContainer = "container:Corner.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

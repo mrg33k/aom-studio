@@ -178,6 +178,22 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.aheadofmarket.corner.tests
         GENERATE_INFOPLIST_FILE: "YES"
 
+  # UI tests drive the REAL app in a simulator, through the visible interface.
+  # This target did not exist, which is why every native acceptance claim in this
+  # mission was made from HTTP clients and marked NOT RUN. Two Convex reads from a
+  # Node script are not proof that a person can send a message on a phone.
+  CornerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: CornerUITests
+    dependencies:
+      - target: Corner
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aheadofmarket.corner.uitests
+        GENERATE_INFOPLIST_FILE: "YES"
+
 schemes:
   Corner:
     build:
@@ -189,6 +205,7 @@ schemes:
       config: Debug
       targets:
         - CornerTests
+        - CornerUITests
     profile:
       config: Release
     analyze:
