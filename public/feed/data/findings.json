@@ -1,6 +1,74 @@
 {
  "days": [
   {
+   "date": "2026-08-16",
+   "items": [
+    {
+     "lane": "ai-builds",
+     "youtube_id": "PySsRphFaHA",
+     "title": "The 3 Levels of Vibe Coding AI Apps with Claude Code",
+     "channel": "Zinho Automates",
+     "views": "15K",
+     "published": "2026-08-13",
+     "why": "Breaks vibe coding into beginner/intermediate/advanced tiers with Claude Code \u2014 each level ships a real app, showing the actual prompts and workflow at each stage. Practical ladder for anyone starting out."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "wBO6XzMIklA",
+     "title": "How To Use Claude Opus 5 In Claude Code: The Ultimate Agentic AI Coding And Workflow Guide 2026!",
+     "channel": "ProgrammingKnowledge2",
+     "views": "22K",
+     "published": "2026-08-09",
+     "why": "Full walkthrough of Opus 5 inside Claude Code \u2014 not benchmarks, but real agentic coding: multi-file edits, tool use, and workflow automation end to end."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "NC4h5kWH_-A",
+     "title": "AI News: The AI Agent Race Just Exploded",
+     "channel": "Matt Wolfe",
+     "views": "180K",
+     "published": "2026-08-14",
+     "why": "Matt Wolfe covers the week's biggest AI agent announcements in one tight video. High production, massive reach, and he connects the dots between competing agent platforms."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "A2E_9vCGN1s",
+     "title": "Exciting AI Updates Weekly - August 14, 2026",
+     "channel": "Lev Selector",
+     "views": "8K",
+     "published": "2026-08-14",
+     "why": "Weekly AI roundup with date in the title \u2014 covers model releases, API changes, and tool updates from this exact week. Reliable signal for what shipped."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "Ib8X7ntZaDU",
+     "title": "AI News in a Minute | Wednesday, August 12, 2026 Episode 1",
+     "channel": "Jerome W. Dewald",
+     "views": "3K",
+     "published": "2026-08-12",
+     "why": "Daily AI news digest \u2014 60 seconds, no filler. Wednesday's top developments compressed into something you can actually watch between meetings."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "-OqRsjdqUEo",
+     "title": "AI News in a Minute | Tuesday, August 11, 2026 Episode 3",
+     "channel": "Jerome W. Dewald",
+     "views": "2K",
+     "published": "2026-08-11",
+     "why": "Tuesday's AI news in 60 seconds. Third episode that day \u2014 multiple drops worth covering. Same tight format."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "TM8hd2lnrEk",
+     "title": "Creating an AI Short Film (Full Workflow) | Runway",
+     "channel": "Runway",
+     "views": "45K",
+     "published": "2026-08-09",
+     "why": "Runway's own creative team shows their full pipeline \u2014 from first idea to finished medieval comedy scene. Not a feature demo but an actual production workflow, start to finish."
+    }
+   ]
+  },
+  {
    "date": "2026-08-15",
    "items": [
     {
@@ -19,7 +87,7 @@
      "channel": "BuildWithAI",
      "views": "95K",
      "published": "2026-08-12",
-     "why": "Same prompt, two brand-new models, one app — then he shows exactly where each model made different architectural choices. The kind of controlled experiment the AI coding community actually needs."
+     "why": "Same prompt, two brand-new models, one app \u2014 then he shows exactly where each model made different architectural choices. The kind of controlled experiment the AI coding community actually needs."
     },
     {
      "lane": "ai-builds",
@@ -28,7 +96,7 @@
      "channel": "Build Great Products",
      "views": "42K",
      "published": "2026-08-13",
-     "why": "Not another to-do app. Ships a production design system — tokens, components, documentation — in minutes using Fable 5. The kind of work that normally takes a design team weeks."
+     "why": "Not another to-do app. Ships a production design system \u2014 tokens, components, documentation \u2014 in minutes using Fable 5. The kind of work that normally takes a design team weeks."
     },
     {
      "lane": "ai-builds",
@@ -37,7 +105,7 @@
      "channel": "Prograamer",
      "views": "68K",
      "published": "2026-08-10",
-     "why": "Built a real multi-agent automation system with Claude Code that applies to jobs autonomously — scraping, tailoring resumes, submitting. Running in production while he sleeps."
+     "why": "Built a real multi-agent automation system with Claude Code that applies to jobs autonomously \u2014 scraping, tailoring resumes, submitting. Running in production while he sleeps."
     },
     {
      "lane": "ai-tools",
@@ -46,7 +114,7 @@
      "channel": "Skill Leap AI",
      "views": "185K",
      "published": "2026-08-09",
-     "why": "Day-one coverage from one of the largest AI tutorial channels. Full demo of Fable 5 with real tasks — not reading the blog post, actually using the model and showing what changed."
+     "why": "Day-one coverage from one of the largest AI tutorial channels. Full demo of Fable 5 with real tasks \u2014 not reading the blog post, actually using the model and showing what changed."
     },
     {
      "lane": "ai-tools",
@@ -55,7 +123,7 @@
      "channel": "Paul J Lipsky",
      "views": "120K",
      "published": "2026-08-11",
-     "why": "Direct comparison of Opus 5 vs Fable 5 with real coding tasks. Shows where the more expensive model actually justifies the cost — practical guide for developers choosing between them."
+     "why": "Direct comparison of Opus 5 vs Fable 5 with real coding tasks. Shows where the more expensive model actually justifies the cost \u2014 practical guide for developers choosing between them."
     },
     {
      "lane": "ai-tools",
@@ -64,7 +132,7 @@
      "channel": "How I AI",
      "views": "78K",
      "published": "2026-08-12",
-     "why": "Feature-by-feature walkthrough of Claude Code's latest capabilities. Real demos, not slides — shows the new workflows that shipped with recent updates."
+     "why": "Feature-by-feature walkthrough of Claude Code's latest capabilities. Real demos, not slides \u2014 shows the new workflows that shipped with recent updates."
     },
     {
      "lane": "ai-tools",
@@ -73,7 +141,7 @@
      "channel": "Vibe Coding with Naman",
      "views": "55K",
      "published": "2026-08-13",
-     "why": "Full test suite of Opus 5 for vibe coding workflows — not hype, actual test results showing where it outperforms Fable 5 for real development work."
+     "why": "Full test suite of Opus 5 for vibe coding workflows \u2014 not hype, actual test results showing where it outperforms Fable 5 for real development work."
     },
     {
      "lane": "construction",
@@ -82,7 +150,7 @@
      "channel": "ProLine",
      "views": "35K",
      "published": "2026-08-08",
-     "why": "Trade-specific lead gen strategy for roofers with real numbers and real campaigns. Not generic marketing advice — specific to roofing with proven funnels and conversion data."
+     "why": "Trade-specific lead gen strategy for roofers with real numbers and real campaigns. Not generic marketing advice \u2014 specific to roofing with proven funnels and conversion data."
     },
     {
      "lane": "construction",
@@ -91,7 +159,7 @@
      "channel": "Daniel Dimsey",
      "views": "28K",
      "published": "2026-08-09",
-     "why": "Step-by-step Facebook Ads setup for contractors — targeting, creative, budgets — with real campaign screenshots and results. Actionable enough to copy the setup."
+     "why": "Step-by-step Facebook Ads setup for contractors \u2014 targeting, creative, budgets \u2014 with real campaign screenshots and results. Actionable enough to copy the setup."
     },
     {
      "lane": "construction",
@@ -109,7 +177,7 @@
      "channel": "Contractor Dynamics",
      "views": "18K",
      "published": "2026-08-11",
-     "why": "Practical social media growth playbook for construction companies — what platforms, what content, what frequency. From a channel dedicated to contractor business growth."
+     "why": "Practical social media growth playbook for construction companies \u2014 what platforms, what content, what frequency. From a channel dedicated to contractor business growth."
     },
     {
      "lane": "creative-workflows",
@@ -118,7 +186,7 @@
      "channel": "Roboverse",
      "views": "110K",
      "published": "2026-08-09",
-     "why": "End-to-end guide covering the full 2026 AI filmmaking stack — image gen, video gen, upscaling, editing. The most comprehensive single-video resource for cinematic AI production."
+     "why": "End-to-end guide covering the full 2026 AI filmmaking stack \u2014 image gen, video gen, upscaling, editing. The most comprehensive single-video resource for cinematic AI production."
     },
     {
      "lane": "creative-workflows",
@@ -127,7 +195,7 @@
      "channel": "AI Video School",
      "views": "65K",
      "published": "2026-08-11",
-     "why": "Full production breakdown of a specific short film — every shot, every tool choice, every iteration. Shows Seedance 2.0, Kling, and Veo 3.1 working together in a real pipeline."
+     "why": "Full production breakdown of a specific short film \u2014 every shot, every tool choice, every iteration. Shows Seedance 2.0, Kling, and Veo 3.1 working together in a real pipeline."
     },
     {
      "lane": "creative-workflows",
@@ -145,7 +213,7 @@
      "channel": "Higgsfield AI",
      "views": "52K",
      "published": "2026-08-10",
-     "why": "Structured 5-step workflow from concept to 4K final render. Higgsfield (the AI video company) showing their recommended production pipeline — the studio's own method."
+     "why": "Structured 5-step workflow from concept to 4K final render. Higgsfield (the AI video company) showing their recommended production pipeline \u2014 the studio's own method."
     }
    ]
   },
