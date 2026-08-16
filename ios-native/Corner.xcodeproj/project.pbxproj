@@ -64,7 +64,6 @@
 		8EC250D36A67090713DBA18C /* DebugAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53452A91F35EB1FCB0A97D20 /* DebugAuth.swift */; };
 		97D0B387A6639C5A5AB59DE3 /* AirPodsVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99FB8DFF3ED23530DF860CA1 /* AirPodsVoiceView.swift */; };
 		A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131E1F3ED0F460574DE878C8 /* PushService.swift */; };
-		A22E60838F4603A0CDEF0E27 /* CornerWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A2EAF0E7C9A5AF056437FB67 /* TurnStreamEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00ECA7EAEB08CBB46C7E3091 /* TurnStreamEvent.swift */; };
 		A37A798B47F30125C1DF2AC4 /* FilesAndReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0DB974AD71B1EFB7D9FEB9E /* FilesAndReviewTests.swift */; };
 		A8CE144E7B95956A1649A091 /* OrganizeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A3070E25A550ED51EC0D6C /* OrganizeStore.swift */; };
@@ -109,13 +108,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		5CE651D02ADE9689C999755C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = DAB69DFD71A5E4425F4FF6F1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1EF7BB98BEB3F881A1C38354;
-			remoteInfo = CornerWidgets;
-		};
 		90F3E50B250966A3D74744C7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DAB69DFD71A5E4425F4FF6F1 /* Project object */;
@@ -124,20 +116,6 @@
 			remoteInfo = Corner;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		8729365FE4AB2051547554CB /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				A22E60838F4603A0CDEF0E27 /* CornerWidgets.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		00ECA7EAEB08CBB46C7E3091 /* TurnStreamEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnStreamEvent.swift; sourceTree = "<group>"; };
@@ -457,12 +435,10 @@
 				6E6190A8F0E0A95FE051DB63 /* Sources */,
 				C7555F2840F62EDC31BF5F15 /* Resources */,
 				859E46210D5049B0A7486D12 /* Frameworks */,
-				8729365FE4AB2051547554CB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				5630E590812BF6F247F5D66B /* PBXTargetDependency */,
 			);
 			name = Corner;
 			packageProductDependencies = (
@@ -668,11 +644,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		5630E590812BF6F247F5D66B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 1EF7BB98BEB3F881A1C38354 /* CornerWidgets */;
-			targetProxy = 5CE651D02ADE9689C999755C /* PBXContainerItemProxy */;
-		};
 		5D284581D32FA2CD65B73BA3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = AAF2C2BAB82E503FC81DEAFF /* Corner */;
@@ -716,7 +687,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 16;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = PDYFTMXNJ2;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -880,7 +851,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 16;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = PDYFTMXNJ2;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

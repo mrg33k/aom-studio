@@ -13,8 +13,6 @@
 	<dict>
 		<key>com.aheadofmarket.corner</key>
 		<string>Corner App Store Distribution</string>
-		<key>com.aheadofmarket.corner.CornerWidgets</key>
-		<string>Corner Widgets App Store</string>
 	</dict>
 	<key>uploadSymbols</key>
 	<true/>
