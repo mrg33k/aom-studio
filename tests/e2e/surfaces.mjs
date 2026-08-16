@@ -71,9 +71,16 @@ export const SURFACES = {
     auth: {
       mode: 'email',
       email: process.env.E2E_EMAIL || 'patrikmatheson@gmail.com',
-      emailField: { selector: 'input[type="email"], input[name="email"]' },
-      submit: { role: 'button', name: /sign in|continue|enter/i },
-      signedInMarker: { selector: '[data-testid="room-list"], nav a[href^="/room/"]' },
+      // The email box is already on the landing screen, so there is no chooser step:
+      // fill it, THEN press "Continue with email". Pressing it empty just renders
+      // "Enter a valid email".
+      // NOTE: that input is type="text" with no name attribute, which is why the usual
+      // input[type=email] selector finds nothing. Worth fixing in the product too — it
+      // costs mobile users the email keyboard and browser autofill.
+      preSteps: [],
+      emailField: { selector: 'input[type="email"], input[name="email"], input[placeholder*="@"]' },
+      submit: { role: 'button', name: /^continue with email$/i },
+      signedInMarker: { selector: '[data-testid="room-list"], [data-room-id], a[href^="/room/"]' },
     },
 
     composer: { placeholder: /message|type|write/i },

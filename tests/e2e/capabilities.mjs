@@ -322,6 +322,18 @@ export const CAPABILITIES = [
     },
   },
   {
+    id: 'layout.composer-does-not-cover-content',
+    title: 'The composer is pinned to the bottom, not floating over the list',
+    tier: 'parity',
+    async run(d) {
+      const overlap = await d.composerOverlapPx();
+      if (overlap == null) return 'could not measure the composer against the list';
+      // Seen on corner-convex 2026-08-16: the composer sits mid-screen with room rows
+      // rendering behind and below it, so the list is unreadable under the input.
+      return overlap <= 0 || `${overlap}px of list content renders underneath the composer`;
+    },
+  },
+  {
     id: 'mobile.no-horizontal-scroll',
     title: 'At phone width nothing scrolls sideways',
     tier: 'parity',

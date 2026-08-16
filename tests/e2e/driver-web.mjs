@@ -78,12 +78,19 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
       const a = cfg.auth || {};
       if (a.mode === 'existing-session') return; // the attached profile is already signed in
       if (a.mode === 'email') {
+        // Some surfaces gate the email form behind a chooser ("Continue with email").
+        for (const step of a.preSteps || []) {
+          const b = asLocator(page, step);
+          try { if (await b?.count()) { await b.first().click({ timeout: 10000 }); await d.settle(1500); } } catch {}
+        }
         const field = asLocator(page, a.emailField);
-        if (await field?.count()) {
+        try { await field?.first().waitFor({ state: 'visible', timeout: 10000 }); } catch {}
+        if (await field?.count().catch(() => 0)) {
           await field.first().fill(a.email);
           const submit = asLocator(page, a.submit);
-          if (await submit?.count()) await submit.first().click();
-          await d.settle(3000);
+          try { if (await submit?.count()) await submit.first().click({ timeout: 10000 }); }
+          catch { await field.first().press('Enter'); }
+          await d.settle(4000);
         }
       }
     },
@@ -378,11 +385,36 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
         });
       } catch { return null; }
     },
+    // How much list content is rendered below the top of the composer. A docked composer
+    // scores 0 because the scroll container ends above it; a floating one scores the
+    // height of whatever is stranded underneath.
+    async composerOverlapPx() {
+      const m = cfg.message || {};
+      const rowSel = cfg.roomRow?.selector || m.selector;
+      try {
+        return await page.evaluate(({ composerSel, rowSel }) => {
+          const c = document.querySelector(composerSel);
+          if (!c) return null;
+          const top = c.getBoundingClientRect().top;
+          let worst = 0;
+          for (const el of document.querySelectorAll(rowSel)) {
+            const r = el.getBoundingClientRect();
+            if (r.height === 0) continue;
+            if (r.bottom > top && r.top < window.innerHeight) worst = Math.max(worst, Math.round(r.bottom - top));
+          }
+          return worst;
+        }, { composerSel: cfg.composer.selector || 'textarea, input[type=text]', rowSel });
+      } catch { return null; }
+    },
+
     async horizontalOverflowPx() {
       try {
         return await page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - window.innerWidth));
       } catch { return 0; }
     },
+
+    // Escape hatch for the debug tools: the live Page, for ad-hoc evaluation.
+    raw() { return page; },
 
     // ------------------------------------------------------------ network
     beginNetworkCapture() { netCapture = []; return true; },
