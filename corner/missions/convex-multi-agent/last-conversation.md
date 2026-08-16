@@ -27,3 +27,6 @@ using the existing App Store signing path and uploaded successfully to App Store
 Connect (delivery `58cc724f-72eb-440a-b0f8-065b80ed82f0`). Browser and simulator
 sessions were both signed out, so the final authenticated iOS-to-web parity send
 was not fabricated and remains the only acceptance gap.
+
+Apple's delivery-status API subsequently returned `build-status: VALID` for build
+17.

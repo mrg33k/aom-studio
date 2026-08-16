@@ -34,10 +34,10 @@ messages. A production-mode 2,616-module bundle completed successfully.
 
 Verify room history and sends in iOS, then prove identical rows appear on web.
 
-**Status:** build 17 uploaded to App Store Connect — the native Debug simulator
+**Status:** build 17 uploaded and validated by App Store Connect — the native Debug simulator
 build also compiles and is installed, but the clean simulator and available
 browsers have no authenticated Corner session. A signed-in cross-surface send
-remains as the final acceptance check after TestFlight processing.
+remains as the post-release acceptance check.
 
 ### R5 — WD-40 reliability rounds
 
