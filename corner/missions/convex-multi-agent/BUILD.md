@@ -34,10 +34,12 @@ messages. A production-mode 2,616-module bundle completed successfully.
 
 Verify room history and sends in iOS, then prove identical rows appear on web.
 
-**Status:** build 17 uploaded and validated by App Store Connect — the native Debug simulator
-build also compiles and is installed, but the clean simulator and available
-browsers have no authenticated Corner session. A signed-in cross-surface send
-remains as the post-release acceptance check.
+**Status:** native acceptance complete; web UI parity remains — build 17 is valid
+in App Store Connect. A signed-in simulator sent
+`IOS-CONVEX-TEST-20260815-1022`; Convex persisted it and Bobby's linked reply
+1.38 seconds later, and the second signed-in simulator rendered both rows
+reactively. Leaving/reopening the room retained history without the former
+flash-then-empty failure.
 
 ### R5 — WD-40 reliability rounds
 
@@ -84,3 +86,16 @@ thread containing the actual project history.
 `listRooms` collapses historical aliases while normalizing the project field.
 Live verification returns 647 canonical rooms (down from 676 raw rows) and one
 AOM Website entry pointing to `aom:mission:aom:aom-website` on both surfaces.
+
+### R9 — Consolidate native/legacy room aliases
+
+Create one canonical document identity per semantic room and preserve all
+history from its legacy/native aliases, including project rooms and the
+preexisting Convex seed rooms.
+
+**Status:** needs a deliberate data merge — simulator acceptance exposed three
+Ahead of Market project documents (`aheadofmarket`, `aheadofmarket.com`, and a
+Convex-native `Ahead of Market`) plus duplicate native/legacy Feed and Home
+missions. The current rail shows duplicate cards and 288 agent / 151 project
+counts. Transport is healthy, but destructive room deletion would strand
+message history and related references; merge aliases before pruning rows.

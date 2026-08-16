@@ -19,3 +19,10 @@ same transaction as messages, eliminating 675 per-refresh message subqueries.
 Signed-in cross-surface acceptance remains, as does the resident-agent context
 bridge: current Convex agents know room history but cannot inspect live repo or
 deployment state.
+
+Native signed-in acceptance now passes: a simulator-authored user message and
+Bobby reply were visible on the second simulator, and room history survived an
+immediate and settled reopen. The remaining parity risk is room identity, not
+message transport. Migrated legacy and preexisting Convex-native rooms overlap,
+so the rail can display duplicate semantic rooms and web/native may select
+different document IDs until their histories are consolidated.

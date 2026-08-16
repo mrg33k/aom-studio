@@ -58,3 +58,22 @@ equivalent aliases in `listRooms`, and normalizes the inferred project without a
 data rewrite. Live verification returns 647 canonical rooms instead of 676 raw
 rows and exactly one AOM Website room, shared by web and native. Standalone
 commit: `6ed8da4`.
+
+Signed-in simulator acceptance was completed after the user granted UI control.
+The Ahead of Market history stayed visible both immediately and three seconds
+after leaving/reopening the room, eliminating the original flash-then-empty
+reproduction. The native composer sent
+`IOS-CONVEX-TEST-20260815-1022`; Convex stored user message
+`jd7agahbfcjat7ffdrfz3y4fg58cknda` in room
+`jn768mkg9hk36zc7rz8tfj79dh8cgsjx`, then stored Bobby reply
+`jd791ddnq0d36hnjv0sfw3bme18cktn0` 1.38 seconds later with the correct
+`replyTo`. The other signed-in simulator rendered both rows reactively. No
+client action occurred.
+
+The test also exposed unresolved room aliases. Ahead of Market has legacy
+project rows `jn747ft1jdc87t2mhwzww5vyq18ckmpm` (`aheadofmarket.com`) and
+`jn7026cmg3arm7n1wd31n0ebcx8cjfkk` (`aheadofmarket`) plus the Convex-native
+room used by iOS above. Feed and Home likewise each have native and legacy
+documents. The rail visibly duplicates Ahead of Market and reports 288 agents /
+151 projects. This is a canonical identity/data-merge problem: consolidate
+messages and dependent references before deleting any alias document.
