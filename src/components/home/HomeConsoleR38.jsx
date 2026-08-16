@@ -3,7 +3,7 @@ import { ArrowRight, Play, ClipboardList, Camera, Globe, Megaphone, MessageSquar
 import StickyVideoDeck from './StickyVideoDeck';
 import LazyGumlet from './LazyGumlet';
 import { HERO_DECK, RECENT_WORK, CASE_TILES } from './content';
-import { HERO, DEPT, NINETY, MONTH, FILMS, WORK, ALACARTE, MATH, PROOF, CLOSING } from './contentR38';
+import { HERO, DEPT, NINETY, MONTH, FILMS, WORK, ALACARTE, PROMISES, PROOF, CLOSING } from './contentR38';
 
 const MODULE_ICONS = [ClipboardList, Camera, Globe, Megaphone, MessageSquare];
 
@@ -29,11 +29,11 @@ export default function HomeConsoleR38({ openBrief }) {
     <div className="r38-root bg-[#F5F3EE] text-[#0A0A08] font-hanken antialiased">
       <div
         dangerouslySetInnerHTML={{
-          __html: `<!-- THESIS: The value is the visual — $12k in-house vs $3k with us as giant ledger hero, not a pitch beside media. Refuses the category-default hero image + headline + ghost CTA.\nOWN-WORLD: Paper #F5F3EE / ink #0A0A08 / accent #F04404→#C43800 (ink) / #8A6A2B on bone; Anton display 36-72px, Hanken Grotesk/mono 11px tracked caps; paper-ledger tables, 1px hairlines, no glass/grad-text, grid-drift + breathe as single authored motion.\nSTORY: Skeptical Phoenix owner sees the math is 4× in one glance, believes the numbers because 46 shoots / 399 photos and 30-day work wall prove it, then taps Tell us what you need.\nFIRST VIEWPORT: Centered column max 720px: eyebrow → H1 (68px max) → one-sentence sub (68ch) → full ledger band (Role/In-house/With us, 4 rows, Per month ~$12k / $3k big) → CTA + See the work → 3-stat proof rail. No deck in viewport; deck follows as substantiation.\nFORM: Persuade surface inside established world, candidate 3/7 Math Ledger Domination, seed a3095012 degraded, assigned index 3. Built ledger-first.\nFINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md -->`,
+          __html: `<!-- THESIS: AOM is a visible operating system for marketing. The first screen shows the monthly loop and the promises that make it trustworthy.\nOWN-WORLD: Paper #F5F3EE / ink #0A0A08 / accent #F04404→#C43800 (ink) / #8A6A2B on bone; Anton display, Hanken Grotesk/mono tracked caps; paper-ledger rows, 1px hairlines, no glass or gradient text, grid-drift + breathe as the authored motion.\nSTORY: A busy owner sees one team running a repeatable monthly loop, understands exactly what moves and what stays theirs, then looks for proof in the work.\nFIRST VIEWPORT: System statement + CTA on the left, four-part monthly loop on carbon at right, three operating promises across the bottom.\nFINISH: unreviewed and undocumented is unfinished; this build ends with a production visual check. -->`,
         }}
       />
 
-      {/* 1. HERO — MATH LEDGER DOMINATION */}
+      {/* 1. HERO — THE MONTHLY OPERATING SYSTEM */}
       <section className="relative overflow-hidden border-b border-[#0A0A08]/10">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div className="absolute inset-[-80px] hero-grid-drift" />
@@ -41,44 +41,21 @@ export default function HomeConsoleR38({ openBrief }) {
         </div>
 
         <div className="relative max-w-[1440px] mx-auto px-6 md:px-12 pt-24 md:pt-28 pb-10 md:pb-14">
-          <div className="max-w-[760px]">
-            <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#8A6A2B]">{HERO.eyebrow}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-0 items-stretch">
+            <div className="lg:col-span-7 lg:pr-14 flex flex-col justify-center">
+              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#8A6A2B]">{HERO.eyebrow}</p>
 
-            <h1 className="font-anton font-normal uppercase text-[11vw] md:text-[56px] lg:text-[64px] leading-[0.96] tracking-[-0.02em] mt-4 text-balance">
-              {HERO.h1Lines[0]}
-              <br />
-              {HERO.h1Lines[1]}
-              <br />
-              <em className="font-hanken normal-case italic font-medium tracking-[-0.02em] text-[#F04404]">{HERO.h1Emphasis}</em>
-            </h1>
+              <h1 className="font-anton font-normal uppercase text-[11vw] md:text-[56px] lg:text-[68px] leading-[0.94] tracking-[-0.02em] mt-4 text-balance">
+                {HERO.h1Lines[0]}
+                <br />
+                {HERO.h1Lines[1]}
+                <br />
+                <em className="font-hanken normal-case italic font-medium tracking-[-0.03em] text-[#F04404]">{HERO.h1Emphasis}</em>
+              </h1>
 
-            <p className="text-[16px] md:text-[18px] text-[#0A0A08]/70 mt-6 leading-[1.6] max-w-[68ch] text-pretty">{HERO.sub}</p>
+              <p className="text-[16px] md:text-[18px] text-[#0A0A08]/70 mt-6 leading-[1.6] max-w-[62ch] text-pretty">{HERO.sub}</p>
 
-            {/* Ledger as hero */}
-            <div className="mt-10 border border-[#0A0A08]/15 bg-white overflow-hidden">
-              <div className="grid grid-cols-12 gap-0 font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/45 px-5 py-3 border-b border-[#0A0A08]/10 bg-[#EDE9E1]">
-                <span className="col-span-6">Role</span>
-                <span className="col-span-3 text-right">In-house</span>
-                <span className="col-span-3 text-right text-[#8A6A2B]">With us</span>
-              </div>
-              {(MATH.rows || []).map((r) => (
-                <div key={r.role} className="grid grid-cols-12 gap-0 px-5 py-4 border-t border-[#0A0A08]/8 items-center first:border-t-0">
-                  <span className="col-span-6 font-hanken text-[14px] md:text-[15px] font-medium text-[#0A0A08] leading-tight">{r.role}</span>
-                  <span className="col-span-3 font-mono text-[13px] md:text-[14px] text-[#0A0A08]/50 text-right tabular-nums">{r.inhouse}</span>
-                  <span className="col-span-3 font-mono text-[13px] md:text-[14px] font-semibold text-[#C43800] text-right tabular-nums">{r.us}</span>
-                </div>
-              ))}
-              <div className="grid grid-cols-12 gap-0 px-5 py-5 bg-[#F04404] text-[#0A0A08] items-center">
-                <span className="col-span-6 font-mono text-[11px] font-semibold uppercase tracking-[0.18em]">Per month</span>
-                <span className="col-span-3 font-anton text-[26px] md:text-[38px] leading-none text-right tracking-[-0.02em] tabular-nums">~$12k</span>
-                <span className="col-span-3 font-anton text-[26px] md:text-[38px] leading-none text-right tracking-[-0.02em] tabular-nums">$3k</span>
-              </div>
-            </div>
-
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#0A0A08]/35 mt-3 leading-relaxed max-w-[68ch]">{MATH.foot}</p>
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 mt-1">You pay Google directly for ad spend. No markup.</p>
-
-            <div className="flex flex-wrap items-center gap-4 mt-8">
+              <div className="flex flex-wrap items-center gap-4 mt-8">
               <button
                 onClick={() => openBrief?.()}
                 className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-8 py-4 rounded-full transition-[transform,background-color] duration-200 hover:scale-[1.02] hover:bg-[#E93E00] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2 inline-flex items-center gap-2"
@@ -86,10 +63,10 @@ export default function HomeConsoleR38({ openBrief }) {
                 {HERO.cta} <ArrowRight size={14} aria-hidden="true" />
               </button>
               <a
-                href="#work"
+                href="#system"
                 className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#0A0A08] no-underline inline-flex items-center gap-2 px-2 py-3 border-b border-[#0A0A08]/30 hover:border-[#F04404] hover:text-[#8A6A2B] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2"
               >
-                <Play size={13} className="fill-current" aria-hidden="true" /> {HERO.ctaSub}
+                {HERO.ctaSub} <ArrowRight size={13} aria-hidden="true" />
               </a>
               <a
                 href="tel:+14808001234"
@@ -98,29 +75,40 @@ export default function HomeConsoleR38({ openBrief }) {
               >
                 480-800-1234
               </a>
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 hidden md:inline">No contract · You own every file</span>
+              </div>
             </div>
 
-            {/* Proof rail — fills hero band bottom with checkable evidence, not empty air */}
-            <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#0A0A08]/10 pt-6">
-              <div>
-                <p className="font-anton uppercase text-[26px] md:text-[32px] leading-none tracking-[-0.02em] text-[#0A0A08] tabular-nums">46</p>
-                <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/50 mt-1">Shoots / year</p>
-                <p className="font-hanken text-[12px] text-[#0A0A08]/45 leading-tight mt-1">Ambition Mechanical</p>
+            <div className="lg:col-span-5 bg-[#0A0A08] text-[#F5F3EE] border border-[#0A0A08] overflow-hidden">
+              <div className="px-6 md:px-8 py-6 border-b border-[#F5F3EE]/10 flex items-baseline justify-between gap-4">
+                <Kick dark>The monthly loop</Kick>
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#F5F3EE]/35">Repeat</span>
               </div>
-              <div className="border-l border-[#0A0A08]/10 pl-4">
-                <p className="font-anton uppercase text-[26px] md:text-[32px] leading-none tracking-[-0.02em] text-[#0A0A08] tabular-nums">399</p>
-                <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/50 mt-1">Photos delivered</p>
-                <p className="font-hanken text-[12px] text-[#0A0A08]/45 leading-tight mt-1">Edited, yours to keep</p>
-              </div>
-              <div className="border-l border-[#0A0A08]/10 pl-4">
-                <p className="font-anton uppercase text-[26px] md:text-[32px] leading-none tracking-[-0.02em] text-[#0A0A08] tabular-nums">$3k</p>
-                <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#0A0A08]/50 mt-1">Per month</p>
-                <p className="font-hanken text-[12px] text-[#0A0A08]/45 leading-tight mt-1">No contract</p>
+              {(HERO.loop || []).map((step) => (
+                <div key={step.n} className="grid grid-cols-12 gap-4 px-6 md:px-8 py-5 border-b border-[#F5F3EE]/10 last:border-b-0 items-start">
+                  <span className="col-span-2 font-anton text-[28px] leading-none text-[#F04404]">{step.n}</span>
+                  <span className="col-span-10">
+                    <span className="block font-anton uppercase text-[22px] leading-none tracking-[0.01em] text-[#F5F3EE]">{step.label}</span>
+                    <span className="block font-hanken text-[13px] leading-[1.45] text-[#F5F3EE]/55 mt-1.5">{step.detail}</span>
+                  </span>
+                </div>
+              ))}
+              <div className="px-6 md:px-8 py-5 bg-[#F04404] text-[#0A0A08]">
+                <p className="font-anton uppercase text-[24px] md:text-[28px] leading-none tracking-[0.01em]">Then we do it again.</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] mt-2 opacity-60">That is what a department is.</p>
               </div>
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 mt-4">Phoenix · Since 2014 · Every industry, a soft spot for construction</p>
           </div>
+
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 border-y border-[#0A0A08]/10">
+            {(HERO.promises || []).map((promise, index) => (
+              <div key={promise.label} className={`py-5 md:px-6 ${index > 0 ? 'border-t md:border-t-0 md:border-l border-[#0A0A08]/10' : ''}`}>
+                <p className="font-mono text-[10px] uppercase tracking-[0.20em] text-[#8A6A2B]">Promise {String(index + 1).padStart(2, '0')}</p>
+                <p className="font-hanken text-[15px] font-semibold text-[#0A0A08] mt-1">{promise.label}</p>
+                <p className="font-hanken text-[13px] text-[#0A0A08]/50 mt-0.5">{promise.detail}</p>
+              </div>
+            ))}
+          </div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#0A0A08]/30 mt-4">Phoenix · Since 2014 · Every industry, a soft spot for construction</p>
         </div>
 
         <style>{`
@@ -147,7 +135,7 @@ export default function HomeConsoleR38({ openBrief }) {
         `}</style>
       </section>
 
-      {/* 1b. DEPARTMENT IN ACTION — deck now substantiates the ledger, not the hero */}
+      {/* 1b. DEPARTMENT IN ACTION — real work substantiates the system */}
       <section className="bg-white border-b border-[#0A0A08]/10">
         <div className="max-w-[1440px] mx-auto px-6 md:px-12 py-8 md:py-10">
           <div className="flex items-baseline justify-between gap-6">
@@ -239,7 +227,7 @@ export default function HomeConsoleR38({ openBrief }) {
       </section>
 
       {/* 4. A MONTH WITH US — diagram + photo: fills frame edge-to-edge */}
-      <section className="bg-[#F5F3EE]">
+      <section id="system" className="bg-[#F5F3EE] scroll-mt-16">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
           <div className="lg:col-span-7 px-6 md:px-12 py-16 md:py-20 lg:pr-12">
             <div className="mb-4">
@@ -463,19 +451,19 @@ export default function HomeConsoleR38({ openBrief }) {
         </div>
       </section>
 
-      {/* 8. THE MATH — recap closes the ledger argument, not a duplicate table */}
-      <section id="math" className="bg-[#0A0A08] text-[#F5F3EE] border-t border-[#F5F3EE]/10">
+      {/* 8. THE PROMISES — the operating standard */}
+      <section id="promises" className="bg-[#0A0A08] text-[#F5F3EE] border-t border-[#F5F3EE]/10">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
-          <div className="lg:col-span-6 px-6 md:px-12 py-16 md:py-20">
+          <div className="lg:col-span-5 px-6 md:px-12 py-16 md:py-20 flex flex-col justify-center">
             <div className="mb-4">
-              <Kick dark>{MATH.kick}</Kick>
+              <Kick dark>{PROMISES.kick}</Kick>
             </div>
             <H2 dark className="max-w-md text-balance">
-              {MATH.h2}
+              {PROMISES.h2}
             </H2>
-            <p className="text-[16px] md:text-[17px] text-[#F5F3EE]/70 mt-6 leading-[1.65] max-w-[60ch] text-pretty">{MATH.body}</p>
+            <p className="text-[16px] md:text-[17px] text-[#F5F3EE]/70 mt-6 leading-[1.65] max-w-[60ch] text-pretty">{PROMISES.body}</p>
             <div className="mt-10">
-              <p className="font-anton uppercase text-[28px] md:text-[42px] leading-[0.98] tracking-[-0.02em] text-[#F04404] max-w-md text-balance">{MATH.punch}</p>
+              <p className="font-anton uppercase text-[28px] md:text-[38px] leading-[0.98] tracking-[-0.02em] text-[#F04404] max-w-md text-balance">{PROMISES.punch}</p>
               <button
                 onClick={() => openBrief?.()}
                 className="mt-8 font-mono text-[11px] font-medium uppercase tracking-[0.22em] bg-[#F04404] text-[#0A0A08] px-8 py-4 rounded-full transition-[transform,background-color] duration-200 hover:scale-[1.02] hover:bg-[#E93E00] inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F04404] focus-visible:outline-offset-2"
@@ -484,27 +472,20 @@ export default function HomeConsoleR38({ openBrief }) {
               </button>
             </div>
           </div>
-          <div className="lg:col-span-6 lg:border-l border-[#F5F3EE]/10 px-6 md:px-12 py-16 md:py-20 flex flex-col justify-center">
-            <div className="border border-[#F5F3EE]/15 bg-[#141412] overflow-hidden">
-              <div className="grid grid-cols-12 gap-0 font-mono text-[10px] uppercase tracking-[0.20em] text-[#F5F3EE]/40 px-5 py-3 border-b border-[#F5F3EE]/10">
-                <span className="col-span-6">Role</span>
-                <span className="col-span-3 text-right">In-house</span>
-                <span className="col-span-3 text-right text-[#F04404]">With us</span>
-              </div>
-              {(MATH.rows || []).map((r) => (
-                <div key={r.role} className="grid grid-cols-12 gap-0 px-5 py-4 border-t border-[#F5F3EE]/8 items-center">
-                  <span className="col-span-6 font-hanken text-[14px] font-medium text-[#F5F3EE]">{r.role}</span>
-                  <span className="col-span-3 font-mono text-[13px] text-[#F5F3EE]/50 text-right tabular-nums">{r.inhouse}</span>
-                  <span className="col-span-3 font-mono text-[13px] font-semibold text-[#F04404] text-right tabular-nums">{r.us}</span>
+          <div className="lg:col-span-7 lg:border-l border-[#F5F3EE]/10 bg-[#141412]">
+            {(PROMISES.items || []).map((item) => (
+              <div key={item.n} className="grid grid-cols-12 gap-4 px-6 md:px-10 lg:px-12 py-7 md:py-9 border-t border-[#F5F3EE]/10 first:border-t-0 items-start hover:bg-[#F5F3EE]/[0.03] transition-colors">
+                <span className="col-span-2 md:col-span-1 font-anton text-[28px] md:text-[32px] leading-none text-[#F04404]">{item.n}</span>
+                <div className="col-span-10 md:col-span-11">
+                  <p className="font-anton uppercase text-[22px] md:text-[26px] leading-none tracking-[0.01em] text-[#F5F3EE]">{item.title}</p>
+                  <p className="font-hanken text-[14px] md:text-[15px] leading-[1.55] text-[#F5F3EE]/55 mt-2 max-w-[62ch] text-pretty">{item.detail}</p>
                 </div>
-              ))}
-              <div className="grid grid-cols-12 gap-0 px-5 py-4 bg-[#F04404] text-[#0A0A08] items-center">
-                <span className="col-span-6 font-mono text-[11px] font-semibold uppercase tracking-[0.18em]">Per month</span>
-                <span className="col-span-3 font-anton text-[18px] leading-none text-right tabular-nums">~$12k</span>
-                <span className="col-span-3 font-anton text-[18px] leading-none text-right tabular-nums">$3k</span>
               </div>
+            ))}
+            <div className="px-6 md:px-10 lg:px-12 py-6 bg-[#F04404] text-[#0A0A08]">
+              <p className="font-mono text-[10px] uppercase tracking-[0.20em] opacity-55">The short version</p>
+              <p className="font-anton uppercase text-[24px] md:text-[30px] leading-none tracking-[0.01em] mt-2">Clear plan. Real work. No disappearing act.</p>
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#F5F3EE]/30 mt-4 leading-relaxed">{MATH.foot}</p>
           </div>
         </div>
       </section>
@@ -529,7 +510,7 @@ export default function HomeConsoleR38({ openBrief }) {
               {(PROOF.stats || [
                 { k: 'Shoots', v: '46', d: 'A year on his jobs' },
                 { k: 'Photos', v: '399', d: 'Edited, yours' },
-                { k: 'Months', v: '12', d: 'No contract' },
+                { k: 'Months', v: '12', d: 'Kept earning the next month' },
               ]).map((s) => (
                 <div key={s.k} className="border-l border-[#0A0A08]/10 pl-4 first:border-l-0 first:pl-0">
                   <p className="font-anton uppercase text-[32px] md:text-[40px] leading-none tracking-[-0.02em] text-[#0A0A08] tabular-nums">{s.v}</p>
@@ -565,7 +546,7 @@ export default function HomeConsoleR38({ openBrief }) {
               >
                 480-800-1234
               </a>
-              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 px-2">No contract · You own every file</span>
+              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 px-2">One team · One monthly loop · Everything stays yours</span>
             </div>
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F3EE]/40 mt-10 max-w-[68ch] leading-[1.8] text-pretty">{CLOSING.footnote}</p>
           </div>
@@ -583,7 +564,7 @@ export default function HomeConsoleR38({ openBrief }) {
                 </li>
                 <li className="flex gap-3">
                   <span className="font-mono text-[11px] text-[#F04404]">02</span>
-                  <span className="font-hanken text-[14px] text-[#F5F3EE]/80 leading-tight">We reply within 24 hours with a price and a timeline.</span>
+                  <span className="font-hanken text-[14px] text-[#F5F3EE]/80 leading-tight">We reply within 24 hours with a clear recommendation and next steps.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="font-mono text-[11px] text-[#F04404]">03</span>

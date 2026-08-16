@@ -1,7 +1,7 @@
 // R38 homepage content, V6.1 LOCKED copy (2026-08-13), console tokens, R2 clarify 2026-08-14.
 // Voice law: positive, light, spelled-out plain talk. One flowing thought per
-// sentence. Money appears exactly once (THE MATH). Numbers live beside the
-// client's name only. CTA is "Tell us what you need" (brief is retired).
+// sentence. The homepage explains the operating system before any commercial
+// conversation. CTA is "Tell us what you need" (brief is retired).
 // R2: every secondary line earns its place or is cut. No em dashes. Sentences rewritten.
 
 export const T = {
@@ -13,13 +13,24 @@ export const T = {
 };
 
 export const HERO = {
-  eyebrow: 'Phoenix, Arizona',
+  eyebrow: 'Your marketing department, every month',
   // Hand-placed lines; the last line renders in the italic body register.
-  h1Lines: ["We're the marketing", 'department for companies'],
-  h1Emphasis: "that don't have one.",
-  sub: 'We plan it, film it, build it, and run it every month out of Phoenix. Your jobs, your website, your ads, and your reviews.',
+  h1Lines: ['One team. One system.', 'Marketing that keeps'],
+  h1Emphasis: 'moving every month.',
+  sub: 'We learn the business, make the plan, show up to the work, ship it, and run the loop again. You always know what is happening and what comes next.',
   cta: 'Tell us what you need',
-  ctaSub: 'See the work',
+  ctaSub: 'See how it works',
+  loop: [
+    { n: '01', label: 'Decide', detail: 'One-page plan and priorities.' },
+    { n: '02', label: 'Capture', detail: 'Photos, drone, and video on your jobs.' },
+    { n: '03', label: 'Ship', detail: 'Site updates, edits, and ads go live.' },
+    { n: '04', label: 'Run', detail: 'Tune, answer, report, repeat.' },
+  ],
+  promises: [
+    { label: 'Work keeps moving', detail: 'We ship throughout the month.' },
+    { label: 'You can see the plan', detail: 'One page. Plain language.' },
+    { label: 'Everything stays yours', detail: 'Files, site, and ad account.' },
+  ],
 };
 
 export const DEPT = {
@@ -99,18 +110,17 @@ export const ALACARTE = {
   ],
 };
 
-export const MATH = {
-  kick: 'In house versus us',
-  h2: 'What it would cost you to do this yourself.',
-  body: 'If you hired this yourself, a videographer and someone on the website and someone running the ads, it comes out around $12,000 a month. We are $3,000. There is no contract and everything we make is yours to keep. The plan, the photos, the site, and the ad account.',
-  punch: 'One month in-house buys four months of us.',
-  rows: [
-    { role: 'Videographer',    inhouse: '$4,000+', us: 'Included' },
-    { role: 'Web person',      inhouse: '$4,000+', us: 'Included' },
-    { role: 'Ads manager',     inhouse: '$3,500+', us: 'Included' },
-    { role: 'The plan + the reviews', inhouse: '—', us: 'Included' },
+export const PROMISES = {
+  kick: 'The monthly promises',
+  h2: 'No black box. No waiting for a big reveal.',
+  body: 'The work moves in the open. You can see the plan, talk to the people doing it, and know what shipped before the month is over.',
+  punch: 'You always know what is happening, who is doing it, and what comes next.',
+  items: [
+    { n: '01', title: 'A plan you can read', detail: 'The next 90 days fit on one page. Priorities are clear and the plan changes when the business does.' },
+    { n: '02', title: 'Work that ships all month', detail: 'Photos, edits, site updates, ads, and responses go live as they are ready.' },
+    { n: '03', title: 'A person who calls back', detail: 'You talk to the same small team that knows the work and is responsible for moving it.' },
+    { n: '04', title: 'Everything stays yours', detail: 'Your files, website, domain, and ad account remain in your name.' },
   ],
-  foot: 'Around $12k in-house vs $3k with us. No contract. Everything we make is yours.',
 };
 
 export const PROOF = {
@@ -121,7 +131,7 @@ export const PROOF = {
   stats: [
     { v: '46',  k: 'Shoots this year',  d: 'On their jobs, not in a studio' },
     { v: '399', k: 'Photos delivered',  d: 'Edited, tagged, yours to keep' },
-    { v: '12',  k: 'Months with us',    d: 'No contract the whole time' },
+    { v: '12',  k: 'Months with us',    d: 'Kept earning the next month' },
   ],
 };
 
@@ -173,6 +183,6 @@ export const NAV = {
       ],
     },
   ],
-  flat: [{ label: 'The math', href: '#math' }],
+  flat: [{ label: 'How it works', href: '#system' }],
 };
 // test Fri Aug 14 10:43:59 MST 2026
