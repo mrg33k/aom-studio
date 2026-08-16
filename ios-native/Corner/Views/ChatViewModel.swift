@@ -363,9 +363,12 @@ final class ChatViewModel: ObservableObject {
     // MARK: - Lifecycle
 
     func start() {
-        subscribe()
-        startReconcilePoll()
-        if Config.useConvex { startConvexPoll() }
+        if Config.useConvex {
+            startConvexPoll()
+        } else {
+            subscribe()
+            startReconcilePoll()
+        }
         Task { await load() }
     }
 
@@ -383,6 +386,11 @@ final class ChatViewModel: ObservableObject {
     /// always is — so rebuild it and reconcile with a gap check before trusting
     /// anything on screen.
     func handleForeground() {
+        if Config.useConvex {
+            startConvexPoll()
+            Task { await catchUp() }
+            return
+        }
         subscription?.stop()
         subscription = nil
         subscribe()
@@ -419,21 +427,11 @@ final class ChatViewModel: ObservableObject {
         try await ConvexService.shared.query("messages:getThread", args: ["roomId": roomId])
     }
 
-    /// Convex-backed send: mirrors web `convex/messages.ts:send` and `App.tsx:handleSend`.
-    /// Web shape: { roomId: string, text: string, role: "user", userId, userName, clientId, source, metadata }
-    func sendMessage(roomId: String, text: String) async throws {
+    /// Convex-backed send against the real Corner schema. Room, world, and user
+    /// are Convex document ids resolved from the signed-in account.
+    func sendMessage(roomId: String, text: String) async throws -> String {
         let concreteAPI = CornerAPI.shared
-        let world = concreteAPI.world ?? "aom"
-        // Prefer real session identity when available; fall back to the local anon shape the web preview uses.
-        let userId: String = {
-            if let uid = concreteAPI.session?.user.id.uuidString, !uid.isEmpty { return uid }
-            // Stable per-install anon so typing + message rows coalesce without auth.
-            let key = "convex.anonUserId"
-            if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty { return saved }
-            let fresh = "anon-\(UUID().uuidString.prefix(8).lowercased())"
-            UserDefaults.standard.set(fresh, forKey: key)
-            return fresh
-        }()
+        guard let email = concreteAPI.session?.user.email else { throw ConvexService.ConvexError.missingIdentity }
         let userName: String = {
             if let meta = concreteAPI.session?.user.userMetadata,
                let n = (meta["name"] as? String ?? meta["full_name"] as? String ?? meta["user_name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -441,32 +439,16 @@ final class ChatViewModel: ObservableObject {
             if let email = concreteAPI.session?.user.email, !email.isEmpty { return email }
             return "iOS"
         }()
-        var args: [String: Any] = [
+        let identity = try await ConvexService.shared.identity(email: email, name: userName)
+        let args: [String: Any] = [
             "roomId": roomId,
             "text": text,
-            "role": "user",
-            "clientId": world,
+            "worldId": identity.worldId,
             "source": Config.messageSource,
-            "userId": userId,
+            "userId": identity.userId,
             "userName": userName,
         ]
-        // Preserve work/plan intent the same way the web does (metadata.interaction_mode)
-        if !chatMode.isEmpty {
-            args["metadata"] = ["interaction_mode": chatMode]
-        }
-        // Real Convex deployment uses `messages:send`; keep the legacy `messages:sendMessage`
-        // as a fallback so older preview deployments don't brick.
-        do {
-            try await ConvexService.shared.mutation("messages:send", args: args)
-        } catch {
-            // Fallback for deployments that exposed the brief's `messages:sendMessage` name
-            // (worldId/userId are not required by the schema — send without them first).
-            if (error as? ConvexService.ConvexError)?.isNotFound == true {
-                try await ConvexService.shared.mutation("messages:sendMessage", args: args)
-            } else {
-                throw error
-            }
-        }
+        return try await ConvexService.shared.mutationWithResult("messages:sendMessage", args: args)
     }
 
     /// Start Convex polling — 1s while a turn is open, 2.5s idle. Immediate load
@@ -503,17 +485,10 @@ final class ChatViewModel: ObservableObject {
             let fetched: [MessageRow]
             let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
             if Config.useConvex && !isTesting {
-                // Convex is the source of truth — same as web `useQuery(api.messages.list)`.
-                // Use canonical roomId (not document _id) — the Convex `messages` table is
-                // indexed by the canonical string like "aom:project:xxx".
-                let canonicalID = room.roomID
-                if let altMessages: [MessageRow] = try? await ConvexService.shared.query("messages:list", args: ["roomId": canonicalID, "limit": 100]) {
-                    fetched = altMessages
-                } else if let convexMessages: [MessageRow] = try? await ConvexService.shared.query("messages:getThread", args: ["roomId": canonicalID]) {
-                    fetched = convexMessages
-                } else {
-                    fetched = try await api.fetchMessages(room: room, limit: 100)
-                }
+                fetched = try await ConvexService.shared.query(
+                    "messages:getThread",
+                    args: ["roomId": room.convexRoomID, "limit": 100]
+                )
             } else {
                 fetched = try await api.fetchMessages(room: room, limit: 100)
             }
@@ -543,9 +518,24 @@ final class ChatViewModel: ObservableObject {
         let anchor = newestKnownID
         let hadRows = !rows.isEmpty
         do {
-            var fetched = try await api.fetchMessages(room: room, limit: 100)
+            var fetched: [MessageRow]
+            if Config.useConvex {
+                fetched = try await ConvexService.shared.query(
+                    "messages:getThread",
+                    args: ["roomId": room.convexRoomID, "limit": 100]
+                )
+            } else {
+                fetched = try await api.fetchMessages(room: room, limit: 100)
+            }
             if hadRows, let anchor, !fetched.contains(where: { $0.id == anchor }) {
-                fetched = try await api.fetchMessages(room: room, limit: 400)
+                if Config.useConvex {
+                    fetched = try await ConvexService.shared.query(
+                        "messages:getThread",
+                        args: ["roomId": room.convexRoomID, "limit": 400]
+                    )
+                } else {
+                    fetched = try await api.fetchMessages(room: room, limit: 400)
+                }
             }
             feedStale = false
             let previousIDs = Set(rows.map(\.id))
@@ -1328,29 +1318,14 @@ final class ChatViewModel: ObservableObject {
                 // a Convex outage never bricks sending. Skip in tests — FakeTransport is the contract there.
                 let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
                 if Config.useConvex && !isTesting {
-                    do {
-                        try await self.sendMessage(roomId: self.room.roomID, text: item.text)
-                        self.turn = .working(detail: nil)
-                        self.lastTurnActivity = Date()
-                        if self.turnStartedAt == nil { self.turnStartedAt = Date() }
-                        // Immediate fan-out: kick poll so Corner's typing row (agent
-                        // dispatched) appears within 1s, not 2.5s. User reported
-                        // Corner felt like a receptionist that never came — this is the fix.
-                        await self.load()
-                        kickConvexPoll()
-                        if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
-                            self.outbox.remove(at: index)
-                        }
-                        return
-                    } catch {
-                        let isNotFound = (error as? ConvexService.ConvexError)?.isNotFound == true
-                        let isBadResponse = error is ConvexService.ConvexError
-                        if isNotFound || isBadResponse {
-                            // Still try Supabase as backup; if that also fails the outer catch will mark failed.
-                        } else {
-                            throw error
-                        }
+                    let messageID = try await self.sendMessage(roomId: self.room.convexRoomID, text: item.text)
+                    if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
+                        self.outbox[index].serverMessageID = messageID
                     }
+                    self.beginTurn(parentID: messageID, userEpoch: Date().timeIntervalSince1970, text: item.text)
+                    await self.load()
+                    kickConvexPoll()
+                    return
                 }
                 let created = try await self.api.send(
                     text: item.text, room: self.room,
@@ -1381,6 +1356,7 @@ final class ChatViewModel: ObservableObject {
                 // The message STAYS, marked not sent, with a way to try again.
                 guard let index = self.outbox.firstIndex(where: { $0.id == item.id }) else { return }
                 let message = (error as? CornerAPI.APIError)?.errorDescription
+                    ?? (error as? ConvexService.ConvexError)?.errorDescription
                     ?? "Could not reach Corner."
                 self.outbox[index].state = .failed(message)
                 if case .working = self.turn {

@@ -12,6 +12,7 @@ import WorldOverrideBanner from './dashboard/components/WorldOverrideBanner.jsx'
 import { AirPodsProvider } from './dashboard/cv6next/airpods/AirPodsProvider.jsx'
 import { FullscreenLoading } from './dashboard/cv6kit/FullscreenLoading.jsx'
 import { installNativeBootstrap } from './dashboard/nativeBootstrap.js'
+import { CornerConvexProvider } from './dashboard/cv6next/providers/CornerConvexProvider.jsx'
 
 installNativeBootstrap()
 
@@ -85,7 +86,7 @@ const CornerCV6 = lazy(() => import('./dashboard/cv6next/CornerCV6.jsx'))
 // CV3/CV4 sticky escape hatch removed (pruning Round 3). /dashboard always
 // renders CornerCV6 via DataProvider + CommandProvider.
 function DashboardSurface() {
-  return <TenantProvider><WorldOverrideBanner /><DataProvider><CommandProvider><AirPodsProvider><CornerCV6 /></AirPodsProvider></CommandProvider></DataProvider></TenantProvider>
+  return <CornerConvexProvider><TenantProvider><WorldOverrideBanner /><DataProvider><CommandProvider><AirPodsProvider><CornerCV6 /></AirPodsProvider></CommandProvider></DataProvider></TenantProvider></CornerConvexProvider>
 }
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
 // components on one page as the design surface for the CV6 redesign.

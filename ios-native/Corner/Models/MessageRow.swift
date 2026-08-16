@@ -54,6 +54,8 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         case convexClientId = "clientId"
         case convexUserId = "userId"
         case convexUserName = "userName"
+        case convexAgent = "agentSlug"
+        case convexCreatedAt = "createdAt"
         case convexAttachmentURL = "attachmentUrl"
         case convexAttachmentMime = "attachmentMime"
     }
@@ -72,7 +74,9 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         }
         // timestamp: Supabase ISO string or Convex _creationTime (ms since epoch)
         let rawTS: String? = (try? c.decodeIfPresent(String.self, forKey: .timestamp)) ?? nil
-        let convexMS: Double? = (try? c.decodeIfPresent(Double.self, forKey: .convexCreationTime)) ?? nil
+        let convexMS: Double? = (try? c.decodeIfPresent(Double.self, forKey: .convexCreatedAt))
+            ?? (try? c.decodeIfPresent(Double.self, forKey: .convexCreationTime))
+            ?? nil
         if let s = rawTS, !s.isEmpty {
             timestamp = s
         } else if let m = convexMS {
@@ -81,8 +85,15 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         } else {
             timestamp = nil
         }
-        agent = (try? c.decodeIfPresent(String.self, forKey: .agent)) ?? nil
-        role = (try? c.decodeIfPresent(String.self, forKey: .role)) ?? nil
+        let decodedAgent: String? = (try? c.decodeIfPresent(String.self, forKey: .agent))
+            ?? (try? c.decodeIfPresent(String.self, forKey: .convexAgent))
+            ?? nil
+        agent = decodedAgent
+        let decodedUserID: String? = (try? c.decodeIfPresent(String.self, forKey: .userID))
+            ?? (try? c.decodeIfPresent(String.self, forKey: .convexUserId))
+            ?? nil
+        role = ((try? c.decodeIfPresent(String.self, forKey: .role)) ?? nil)
+            ?? (decodedAgent == nil && decodedUserID != nil ? "user" : "assistant")
         text = (try? c.decodeIfPresent(String.self, forKey: .text)) ?? nil
         source = (try? c.decodeIfPresent(String.self, forKey: .source)) ?? nil
         status = (try? c.decodeIfPresent(String.self, forKey: .status)) ?? nil

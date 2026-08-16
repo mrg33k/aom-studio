@@ -58,8 +58,9 @@ final class RoomStore: ObservableObject {
     /// Response format matches what the web uses. Brief example:
     /// `ConvexService.shared.query("rooms:listRooms", args: ["worldId": worldId])`
     func loadRooms() async throws -> [Room] {
-        guard let world = api.world else { return [] }
-        let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world])
+        guard let world = api.world, let email = api.session?.user.email else { return [] }
+        let identity = try await ConvexService.shared.identity(email: email, name: sessionName)
+        let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": identity.worldId])
         return convexRooms.compactMap { cr -> Room? in
             let id = cr.resolvedID
             guard !id.isEmpty else { return nil }
@@ -104,23 +105,22 @@ final class RoomStore: ObservableObject {
         let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
         if Config.useConvex && !isTesting {
             do {
-                // Try Convex listRooms — worldId per brief
-                if let convexRooms: [ConvexRoom] = try? await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world]) {
-                    if !convexRooms.isEmpty {
-                        let groups = convexRoomsToProjectGroups(convexRooms, world: world)
-                        if !groups.isEmpty {
-                            projects = groups
-                            recent = buildRecent(groups: groups, activity: nil)
-                            AppRouter.shared.recencyOrder = recent.map(\.room)
-                            hasLoadedOnce = true
-                            isLoading = false
-                            railError = nil
-                            return
-                        }
-                    }
+                guard let email = api.session?.user.email else { throw ConvexService.ConvexError.missingIdentity }
+                let identity = try await ConvexService.shared.identity(email: email, name: sessionName)
+                let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": identity.worldId])
+                if !convexRooms.isEmpty {
+                    let convexAgents = convexRooms.compactMap { convexAgentRoom($0, world: world) }
+                    if !convexAgents.isEmpty { agents = convexAgents }
+                    let groups = convexRoomsToProjectGroups(convexRooms, world: world)
+                    projects = groups
+                    recent = buildRecentFromConvex(groups: groups, agentRooms: agents, rows: convexRooms)
+                    AppRouter.shared.recencyOrder = recent.map(\.room)
+                    railError = nil
+                    return
                 }
             } catch {
-                // Fall through to Supabase-backed rail
+                railError = "Convex rooms could not be loaded. Pull to try again."
+                return
             }
         }
 
@@ -287,13 +287,21 @@ final class RoomStore: ObservableObject {
         let tint: String?
         let clientId: String?
         let worldId: String?
+        let createdAt: Double?
+        let lastMessage: ConvexLastMessage?
+
+        struct ConvexLastMessage: Decodable {
+            let text: String?
+            let createdAt: Double?
+            let agentSlug: String?
+        }
 
         enum CodingKeys: String, CodingKey {
             case _id, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
             case room_id = "room_id"
             case title
             case clientId = "clientId"
-            case worldId = "worldId"
+            case worldId = "worldId", createdAt, lastMessage
         }
 
         /// Convex returns `_id` as the document ID — prefer it over all others
@@ -303,42 +311,57 @@ final class RoomStore: ObservableObject {
 
     private func convexRoomsToProjectGroups(_ convexRooms: [ConvexRoom], world: String) -> [ProjectGroup] {
         var groups: [ProjectGroup] = []
-        var seen = Set<String>()
-        for cr in convexRooms {
+        for cr in convexRooms where (cr.kind ?? cr.type) == "project" {
             let rid = cr.resolvedID
             guard !rid.isEmpty else { continue }
-            // Already a Room — try to parse as Room first
-            if let room = Room.parse(roomID: rid, title: cr.resolvedTitle) {
-                switch room.kind {
-                case .project(let slug):
-                    if seen.contains(slug) { continue }
-                    seen.insert(slug)
-                    groups.append(ProjectGroup(room: room, missions: []))
-                case .mission(let slug, let project):
-                    // Find existing project group or create one
-                    if let idx = groups.firstIndex(where: { $0.room.kind == .project(slug: project) }) {
-                        var missions = groups[idx].missions
-                        if !missions.contains(where: { $0.roomID == room.roomID }) {
-                            missions.append(room)
-                            groups[idx] = ProjectGroup(room: groups[idx].room, missions: missions)
-                        }
-                    } else {
-                        let projRoom = Room(world: world, kind: .project(slug: project), title: Room.prettify(project), subtitle: "Project")
-                        groups.append(ProjectGroup(room: projRoom, missions: [room]))
-                        seen.insert(project)
-                    }
-                    _ = slug
-                case .agent:
-                    // Agent rooms are handled via AgentRoster, not ProjectGroup
-                    continue
-                }
-            } else if let slug = cr.slug, !slug.isEmpty, !seen.contains(slug) {
-                seen.insert(slug)
-                let room = Room(world: world, kind: .project(slug: slug), title: cr.resolvedTitle, subtitle: "Project")
-                groups.append(ProjectGroup(room: room, missions: []))
+            let explicit = cr.project ?? cr.slug
+            let slug = explicit?.isEmpty == false ? explicit! : "\(slugify(cr.resolvedTitle))-\(rid.suffix(6))"
+            var room = Room(world: world, kind: .project(slug: slug), title: cr.resolvedTitle, subtitle: cr.subtitle ?? "Project")
+            room.convexID = rid
+            groups.append(ProjectGroup(room: room, missions: []))
+        }
+        for cr in convexRooms where (cr.kind ?? cr.type) == "mission" {
+            let rid = cr.resolvedID
+            guard !rid.isEmpty, let project = cr.project, !project.isEmpty else { continue }
+            let bare = cr.mission ?? cr.slug ?? slugify(cr.resolvedTitle)
+            var room = Room(world: world, kind: .mission(slug: "\(project):\(bare)", project: project), title: cr.resolvedTitle, subtitle: cr.subtitle ?? Room.prettify(project))
+            room.convexID = rid
+            if let index = groups.firstIndex(where: { $0.room.kind == .project(slug: project) }) {
+                groups[index] = ProjectGroup(room: groups[index].room, missions: groups[index].missions + [room])
+            } else {
+                var parent = Room(world: world, kind: .project(slug: project), title: Room.prettify(project), subtitle: "Project")
+                parent.convexID = nil
+                groups.append(ProjectGroup(room: parent, missions: [room]))
             }
         }
         groups.sort { $0.room.title.localizedCaseInsensitiveCompare($1.room.title) == .orderedAscending }
         return groups
+    }
+
+    private var sessionName: String? {
+        guard let metadata = api.session?.user.userMetadata else { return nil }
+        return metadata["name"] as? String ?? metadata["full_name"] as? String
+    }
+
+    private func convexAgentRoom(_ cr: ConvexRoom, world: String) -> Room? {
+        guard (cr.kind ?? cr.type) == "agent", let slug = cr.specialist ?? cr.slug, !slug.isEmpty else { return nil }
+        var room = Room(world: world, kind: .agent(slug: slug), title: cr.resolvedTitle, subtitle: cr.subtitle ?? "Agent")
+        room.convexID = cr.resolvedID
+        return room
+    }
+
+    private func buildRecentFromConvex(groups: [ProjectGroup], agentRooms: [Room], rows: [ConvexRoom]) -> [RecentRoom] {
+        let all = groups.flatMap { [$0.room] + $0.missions } + agentRooms
+        let byID = Dictionary(uniqueKeysWithValues: all.compactMap { room in room.convexID.map { ($0, room) } })
+        return rows.compactMap { row -> RecentRoom? in
+            guard let room = byID[row.resolvedID], let last = row.lastMessage, let ts = last.createdAt else { return nil }
+            return RecentRoom(room: room, ts: ts, preview: RoomPreview.clean(last.text ?? ""))
+        }.sorted { $0.ts > $1.ts }.prefix(30).map { $0 }
+    }
+
+    private func slugify(_ value: String) -> String {
+        value.lowercased()
+            .replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
     }
 }

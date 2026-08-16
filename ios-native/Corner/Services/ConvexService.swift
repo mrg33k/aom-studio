@@ -2,8 +2,7 @@
 // corner:native-ios Convex backend (BRIEF 04)
 //
 // Raw HTTP Convex client. Convex exposes REST endpoints at
-// https://descriptive-flamingo-718.convex.cloud/api/query and
-// https://descriptive-flamingo-718.convex.cloud/api/mutation
+// Config.convexURL/api/query and Config.convexURL/api/mutation
 //
 // If an official Convex Swift SDK becomes available, this file is the
 // single seam to swap to it — call sites use ConvexService.shared only.
@@ -13,9 +12,35 @@ import Foundation
 final class ConvexService {
     static let shared = ConvexService()
 
-    let baseURL = URL(string: "https://descriptive-flamingo-718.convex.cloud")!
+    let baseURL = Config.convexURL
 
     private init() {}
+
+    struct Identity: Codable, Equatable {
+        let userId: String
+        let worldId: String
+        let email: String
+    }
+
+    /// Resolve the signed-in Corner account to the document ids used by the real
+    /// Convex schema. IDs are stable, so cache them by normalized email instead of
+    /// running the idempotent sign-in mutation on every 2.5 second reconcile.
+    func identity(email: String, name: String? = nil) async throws -> Identity {
+        let normalized = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalized.isEmpty else { throw ConvexError.missingIdentity }
+        let cacheKey = "convex.identity.\(normalized)"
+        if let data = UserDefaults.standard.data(forKey: cacheKey),
+           let cached = try? JSONDecoder().decode(Identity.self, from: data) {
+            return cached
+        }
+        var args: [String: Any] = ["email": normalized]
+        if let name, !name.isEmpty { args["name"] = name }
+        let resolved: Identity = try await mutationWithResult("users:signIn", args: args)
+        if let data = try? JSONEncoder().encode(resolved) {
+            UserDefaults.standard.set(data, forKey: cacheKey)
+        }
+        return resolved
+    }
 
     // MARK: - Query
 
@@ -138,12 +163,15 @@ final class ConvexService {
 
     enum ConvexError: LocalizedError {
         case badResponse(status: Int, message: String)
+        case missingIdentity
 
         var errorDescription: String? {
             switch self {
             case .badResponse(let status, let message):
                 if message.isEmpty { return "Convex returned \(status)." }
                 return message
+            case .missingIdentity:
+                return "Sign in again so Corner can connect this account to Convex."
             }
         }
 
@@ -157,6 +185,8 @@ final class ConvexService {
                 return lower.contains("could not find function")
                     || lower.contains("not found")
                     || lower.contains("unknown path")
+            case .missingIdentity:
+                return false
             }
         }
     }

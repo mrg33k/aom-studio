@@ -1,9 +1,10 @@
-// cv6next — real conversation for one room, shaped to the agent-chat kit Turn element
-// (data-each="messages" -> message.agentName/text/time/...). Wiring from the existing
-// /api/dashboard/supabase-messages endpoint (the same one the dashboard uses). No fake
-// data: messages are the room's real thread, oldest -> newest.
+// cv6next — real conversation for one room, shaped to the agent-chat kit Turn element.
+// The exported room hook reads and writes Convex reactively; Supabase is not a runtime
+// message source. Rows are the room's durable thread, oldest -> newest.
 
 import { useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from 'react';
+import { useMutation as useConvexMutation, useQuery as useConvexQuery } from 'convex/react';
+import { makeFunctionReference } from 'convex/server';
 import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase.js';
 import { demoFixtureActive } from '../../lib/fixtureClient.js';
@@ -11,6 +12,12 @@ import { titleForAgent } from './agentTitles.js';
 import { extractLinkCards, stripTrailingCardUrl } from './resultLinks.js';
 import { useDataContext } from '../providers/DataContext.jsx';
 import { deriveRoomStatus, deriveTurnState } from './roomStatus.js';
+import { useCornerConvexIdentity } from '../providers/CornerConvexProvider.jsx';
+
+const resolveCanonicalRef = makeFunctionReference('rooms:resolveCanonical');
+const getThreadRef = makeFunctionReference('messages:getThread');
+const getTurnRef = makeFunctionReference('turns:getTurn');
+const sendMessageRef = makeFunctionReference('messages:sendMessage');
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function initials(name) {
@@ -1272,58 +1279,112 @@ function acquireEngine(worldId, room) {
 // Prefetch a room's thread into the render cache so opening it shows content instantly.
 // Called from useHome after the first successful data load for the top 5 recent rooms.
 export function prefetchThread(worldId, room) {
-  const key = threadCacheKey(worldId, room);
-  if (!worldId || !key || threadCache.has(key)) return;
-  const params = new URLSearchParams();
-  params.set('client', worldId);
-  if (room.isMission) {
-    params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
-    if (room.projectSlug) params.set('project', room.projectSlug);
-  } else if (room.isProject) {
-    params.set('project', room.id);
-    params.set('project_only', '1');
-  } else {
-    params.set('agent', room.id);
-  }
-  params.set('limit', '20');
-  authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
-    .then(r => r && r.ok ? r.json() : null)
-    .then(d => {
-      if (!d) return;
-      const msgs = Array.isArray(d.messages) ? d.messages : [];
-      if (!msgs.length) return;
-      // Store raw projection in the cache (same shape project() builds)
-      threadCache.set(key, { messages: msgs.map(m => ({
-        id: m.id || '', isUser: m.role === 'user' || !!m.user_name,
-        agentName: (m.role === 'user' || m.user_name) ? (m.user_name || 'You') : titleForAgent(m.agent || room.name),
-        text: m.text || '', time: '', ts: m.timestamp || null,
-      })).filter(m => m.text), blocks: null, sig: null });
-    })
-    .catch(() => {});
+  // Convex subscriptions warm the cache as soon as the room mounts. The former
+  // prefetch read Supabase and would reintroduce a second message source.
+  void worldId; void room;
 }
 
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.
 // Thin view over the room's ONE engine: every mount of the same room shares its
 // subscription, its reconcile timer and its state.
 export function useRoomThread(worldId, room) {
-  const { bumpAgentThread } = useDataContext() || {};
-  const key = threadCacheKey(worldId, room);
-  const fingerprint = roomFingerprint(worldId, room);
-  const engine = useMemo(() => acquireEngine(worldId, room), [key]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { engine.bumpAgentThread = bumpAgentThread || null; }, [engine, bumpAgentThread]);
-  useEffect(() => { engine.updateRoom(room); }, [engine, fingerprint]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => engine.retain(), [engine]);
-  const snapshot = useSyncExternalStore(engine.subscribe, engine.getSnapshot, engine.getSnapshot);
+  const identity = useCornerConvexIdentity();
+  const sendMutation = useConvexMutation(sendMessageRef);
+  const [pending, setPending] = useState([]);
+  const [lastSent, setLastSent] = useState({ id: '', text: '', ts: 0 });
+
+  const kind = room?.isMission ? 'mission' : room?.isProject ? 'project' : 'agent';
+  const key = room?.isMission
+    ? String(room.missionSlug || room.id || '').split(':').pop()
+    : String(room?.id || '');
+  const resolveArgs = worldId && room?.id
+    ? { worldSlug: worldId, kind, key, ...(room?.isMission && room?.projectSlug ? { project: room.projectSlug } : {}) }
+    : 'skip';
+  const convexRoom = useConvexQuery(resolveCanonicalRef, resolveArgs);
+  const rows = useConvexQuery(getThreadRef, convexRoom?._id ? { roomId: convexRoom._id, limit: 240 } : 'skip');
+  const activeTurn = useConvexQuery(getTurnRef, convexRoom?._id ? { roomId: convexRoom._id } : 'skip');
+
+  const send = useCallback(async (raw, options = {}) => {
+    const text = String(raw || '').trim();
+    if (!text || !convexRoom?._id || !identity?.userId || !identity?.worldId) return false;
+    const optId = `convex-opt-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const ts = Date.now();
+    setPending((current) => [...current, { optId, text, ts, failed: false }]);
+    setLastSent({ id: optId, text, ts });
+    try {
+      const messageId = await sendMutation({
+        roomId: convexRoom._id,
+        worldId: identity.worldId,
+        userId: identity.userId,
+        text,
+        source: 'corner-dashboard',
+        userName: identity.email?.split('@')[0] || 'You',
+      });
+      setLastSent({ id: String(messageId), text, ts });
+      setPending((current) => current.filter((entry) => entry.optId !== optId));
+      return true;
+    } catch (error) {
+      setPending((current) => current.map((entry) => entry.optId === optId
+        ? { ...entry, failed: true, failReason: error instanceof Error ? error.message : 'server' }
+        : entry));
+      try { options?.onKeptInThread?.('server'); } catch { /* caller callback */ }
+      return false;
+    }
+  }, [convexRoom?._id, identity?.userId, identity?.worldId, identity?.email, sendMutation]);
+
+  const projected = useMemo(() => (rows || []).map((message) => {
+    const isUser = message.role === 'user' || (!message.agentSlug && message.userId);
+    const name = isUser ? (message.userName || 'You') : titleForAgent(message.agentSlug || room?.name || 'corner');
+    const iso = new Date(message.createdAt || message._creationTime || 0).toISOString();
+    return {
+      id: String(message._id),
+      agentInitials: initials(name), agentName: name,
+      agentTint: isUser ? 'accent' : tintFor(message.agentSlug || room?.name),
+      isUser, text: message.text || '', time: hhmm(iso), ts: iso,
+      isFile: false, fileName: '', attachmentUrl: '', fileMime: '', fileSize: 0,
+      blocks: Array.isArray(message.blocks) ? message.blocks : null,
+    };
+  }), [rows, room?.name]);
+
+  const pendingRows = useMemo(() => pending.map((entry) => ({
+    _opt: true, optId: entry.optId, id: entry.optId,
+    agentInitials: initials('You'), agentName: 'You', agentTint: 'accent', isUser: true,
+    text: entry.text, time: hhmm(new Date(entry.ts).toISOString()), ts: new Date(entry.ts).toISOString(),
+    failed: entry.failed, failReason: entry.failReason,
+    onRetry: entry.failed ? () => {
+      setPending((current) => current.filter((candidate) => candidate.optId !== entry.optId));
+      return send(entry.text);
+    } : undefined,
+    isFile: false, fileName: '', attachmentUrl: '', fileMime: '', fileSize: 0, blocks: null,
+  })), [pending, send]);
+
+  const messages = useMemo(() => [...projected, ...pendingRows], [projected, pendingRows]);
+  const newestDurable = projected[projected.length - 1];
+  const awaiting = Boolean(activeTurn)
+    || pending.some((entry) => !entry.failed)
+    || Boolean(newestDurable?.isUser && Date.now() - new Date(newestDurable.ts).getTime() < DEAD_TURN_MS);
+  const status = convexRoom === undefined || (convexRoom && rows === undefined)
+    ? 'loading'
+    : messages.length ? 'ready' : 'empty';
+  const connection = { online: typeof navigator === 'undefined' || navigator.onLine !== false, realtime: 'live', feed: 'live' };
+  const turnState = deriveTurnState({
+    awaiting, liveSteps: activeTurn?.steps || [], draft: null,
+    turnHealth: activeTurn ? { state: activeTurn.status } : null,
+    connection, lastSentId: lastSent.id, lastSentTs: lastSent.ts,
+    lastSentText: lastSent.text, turnStartTs: activeTurn?.startedAt || lastSent.ts,
+  });
+
   return useMemo(() => ({
-    ...snapshot,
-    send: engine.send,
-    clearRoom: engine.clearRoom,
-    retryTurn: engine.retryTurn,
-    nudgeTurn: engine.nudgeTurn,
-    reload: engine.reload,
-    repairTurn: engine.repairTurn,
-    stopTurn: engine.stopTurn,
-  }), [snapshot, engine]);
+    messages, archivedMessages: [], blocks: null, status, awaiting,
+    awaitingSince: awaiting ? (activeTurn?.startedAt || lastSent.ts || null) : null,
+    liveSteps: activeTurn?.steps || [], draft: null,
+    turnHealth: activeTurn ? { state: activeTurn.status } : null,
+    connection, turnState, stopAvailable: false, send,
+    clearRoom: async () => false,
+    retryTurn: () => send(lastSent.text),
+    nudgeTurn: () => send('Are you still on this? Give me a quick status on my last message.'),
+    reload: () => {}, repairTurn: async () => false, stopTurn: async () => false,
+  }), [messages, status, awaiting, activeTurn, lastSent, connection.online, turnState, send]);
 }
 
 
