@@ -354,6 +354,10 @@ struct RoomListView: View {
     }
 
     private var filterChips: some View {
+        // Horizontal scroll, never wrap: with real counts ("Projects · 188") the four
+        // pills outgrow a phone width, and a capsule whose label breaks onto a second
+        // line reads as broken, not as a filter.
+        ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: Theme.s2) {
             ForEach(HomeFilter.allCases, id: \.self) { f in
                 Button {
@@ -362,6 +366,8 @@ struct RoomListView: View {
                     HStack(spacing: 6) {
                         Text(f.rawValue)
                             .font(.hanken(14).weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize()
                         if let n = chipCount[f], n > 0 {
                             Text("\(n)")
                                 .font(.hanken(12).weight(.semibold).monospacedDigit())
@@ -398,6 +404,7 @@ struct RoomListView: View {
             Spacer(minLength: 0)
         }
         .padding(.vertical, Theme.s1)
+        }
         .plainCardRow()
     }
 
