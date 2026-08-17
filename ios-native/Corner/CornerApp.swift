@@ -61,6 +61,16 @@ struct CornerApp: App {
         if ProcessInfo.processInfo.arguments.contains("-askPushPermission") {
             Task { _ = await PushService.shared.requestAuthorizationExplicitly() }
         }
+        // Auto sign-in for simulator testing. Reads email/password from launch
+        // environment so `xcrun simctl launch --env` can authenticate without
+        // touching the password field. Debug builds only, never shipped.
+        if let email = ProcessInfo.processInfo.environment["AUTO_SIGNIN_EMAIL"],
+           let password = ProcessInfo.processInfo.environment["AUTO_SIGNIN_PASSWORD"],
+           !email.isEmpty, !password.isEmpty {
+            Task { @MainActor in
+                try? await CornerAPI.shared.signIn(email: email, password: password)
+            }
+        }
         #endif
     }
 
