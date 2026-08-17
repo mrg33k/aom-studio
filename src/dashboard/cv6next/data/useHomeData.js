@@ -359,7 +359,10 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     const prev = missionActivity[key];
     if (prev && prev.ts >= ts) continue;
     // Same field names as /api/dashboard/room-activity so the two merge without a shim.
-    missionActivity[key] = { ts, last_message_at: mr.last_message_at || 0, last_message_text: normalizePreview(mr.last_message_text) || '' };
+    // roomPreviewLine, not bare normalizePreview: this is the last preview-shaped string
+    // outside the gated pipeline, and any future renderer binding to it would reintroduce
+    // machine payloads verbatim (verify-A residue 2).
+    missionActivity[key] = { ts, last_message_at: mr.last_message_at || 0, last_message_text: roomPreviewLine(mr.last_message_text) || '' };
   }
 
   const data = {

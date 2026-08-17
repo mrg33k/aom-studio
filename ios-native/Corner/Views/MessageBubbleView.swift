@@ -367,7 +367,10 @@ struct MessageBubbleView: View {
         // @mention pill foundation — color each @mention using the agent's color.
         // Regex matches @Creative, @Bobby etc. Case-insensitive.
         let plain = String(base.characters)
-        guard let regex = try? NSRegularExpression(pattern: "@([A-Za-z0-9_\\-]+)", options: []) else {
+        // Negative lookbehind: the @ of an email address (patrik@gmail.com) is not a
+        // mention — matching it painted the DOMAIN as a highlight, and at a clamp
+        // boundary the run's background bled onto the truncation ellipsis (verify-A).
+        guard let regex = try? NSRegularExpression(pattern: "(?<![A-Za-z0-9._%+\\-])@([A-Za-z0-9_\\-]+)", options: []) else {
             return base
         }
         let nsPlain = plain as NSString
