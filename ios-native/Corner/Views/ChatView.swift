@@ -287,15 +287,19 @@ struct ChatView: View {
                 Task { await model.loadModelPreference() }
                 Task { await model.loadRoomAgentPreference() }
                 // Stamp the per-room read time so the home dot clears immediately.
-                ReadStateStore.shared.markRead(
-                    roomID: model.room.roomID,
-                    ts: Date().timeIntervalSince1970 * 1000
-                )
+                let now = Date().timeIntervalSince1970 * 1000
+                ReadStateStore.shared.markRead(roomID: model.room.roomID, ts: now)
+                // And tell the server, so the badge clears on the web too rather than
+                // this phone being the only place that knows the room was read.
+                Task { await ReadStateStore.shared.markReadRemote(roomID: model.room.roomID, at: now) }
             }
             .onDisappear { model.stop() }
             // Re-stamp when new messages arrive while the room is open — keeps the dot
             // clear if a push notification arrived while the user was already in here.
             .onChange(of: model.rows.count) { _, _ in
+                // Local only. The remote receipt is sent on room open and throttled —
+                // a mutation per arriving message would be a database write every 2.5s
+                // per open room, which is real money on this backend's I/O budget.
                 ReadStateStore.shared.markRead(
                     roomID: model.room.roomID,
                     ts: Date().timeIntervalSince1970 * 1000
