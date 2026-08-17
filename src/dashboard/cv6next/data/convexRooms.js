@@ -15,7 +15,12 @@
 
 import { useSyncExternalStore, useEffect } from 'react';
 import { convexPlaneActive, convexQuery, convexWorldId } from './convexClient.js';
-import { normalizePreview } from './previewText.js';
+import { roomPreviewLine } from './presentationClean.js';
+
+// A preview is one line a person reads. lastMessage.text is a whole message BODY
+// (the live workspace carries one 5,011 characters long), so the Convex rail caps
+// it — the Supabase rail's source is already a first-line and passes no cap.
+const PREVIEW_MAX = 160;
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 function tintFor(seed) {
@@ -40,11 +45,29 @@ function relTime(ts) {
   return `${Math.round(h / 24)}d`;
 }
 
+// ── Unread: consumed when the server authors it, never invented here ─────────
+// A room row carries `unreadCount` only once the Convex API ships per-user read
+// state. Until then every row reads 0 and the rail renders exactly what it renders
+// today. THE rule this encodes (gauntlet R1, finding 3): a badge on 100% of rows
+// carries zero information, so the client never computes one from "newer than my
+// localStorage" — it renders the server's number or nothing.
+function unreadCountOf(room) {
+  const n = Number(room?.unreadCount);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+// True once ANY row in the last listRooms answer carried the field — the feature
+// probe the markRead call gates on, so we never fire a mutation the backend has
+// not deployed yet.
+let unreadSupported = false;
+export function convexUnreadSupported() { return unreadSupported; }
+
 // ── Shaping: Convex rooms → the rail's lists ─────────────────────────────────
 // Input rows: { _id, legacyRoomId?, title, subtitle?, kind, project?, specialist?,
-//               createdAt, lastMessage: {text, createdAt, agentSlug} | null }.
+//               createdAt, lastMessage: {text, createdAt, agentSlug} | null,
+//               unreadCount? }.
 export function shapeConvexRail(rooms, worldId) {
   const list = Array.isArray(rooms) ? rooms : [];
+  unreadSupported = list.some((r) => r && r.unreadCount !== undefined);
   const projectTitleBySlug = {};
   for (const r of list) {
     if (r.kind !== 'project') continue;
@@ -59,11 +82,22 @@ export function shapeConvexRail(rooms, worldId) {
     if (!r || !r.title) continue;
     const convexKey = r.legacyRoomId || r._id;
     const ts = r.lastMessage?.createdAt ?? r.createdAt ?? 0;
-    const preview = normalizePreview(r.lastMessage?.text || '') || '';
+    // THE seam (gauntlet R1, finding 9c): this line used to call normalizePreview
+    // alone, which strips markdown but does not gate machine-speak — so 40 of the
+    // 390 live rooms previewed a JSON summary payload, a [BRIDGE ALERT], or a bare
+    // SUPRV- correlation id. roomPreviewLine is the SAME pipeline the Supabase rail
+    // runs (useHomeData's rowPreview), now named once so neither plane can ship half.
+    const preview = roomPreviewLine(r.lastMessage?.text || '', { source: r.lastMessage?.source }, { max: PREVIEW_MAX });
     const name = r.title;
+    // Unread, consumed only when the backend actually authors it (a per-room
+    // readState + unreadCount is landing on the Convex API in a parallel lane).
+    // Absent → exactly today's behavior: no badge, no dot, no client-side guess.
+    // Present → the server's number is the only number this rail renders.
+    const unreadCount = unreadCountOf(r);
     const base = {
       key: `cx:${convexKey}`, id: '', kind: r.kind, name, ts, preview,
-      unread: false, initials: initials(name), tint: tintFor(name),
+      unread: unreadCount > 0, needsCount: unreadCount,
+      initials: initials(name), tint: tintFor(name),
       age: relTime(ts), status: (Date.now() - ts) < 3600000 ? 'live' : 'ready',
     };
     if (r.kind === 'mission') {
@@ -87,7 +121,7 @@ export function shapeConvexRail(rooms, worldId) {
       });
     } else {
       const slug = legacyTail(r, worldId) || r.specialist || r._id;
-      agents.push({ id: slug, name, status: 'idle', statusText: 'idle', initials: base.initials });
+      agents.push({ id: slug, name, status: 'idle', statusText: 'idle', initials: base.initials, needsCount: unreadCount });
       recent.push({
         ...base, id: slug, agent: slug, sub: 'Direct chat',
         roomObj: { id: slug, name, initials: base.initials, status: 'ready', convexKey },
