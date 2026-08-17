@@ -172,6 +172,10 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
   const { layout, order, grouped } = prefs;
   const needsAttention = (it) => (typeof needsReview === 'function' ? needsReview(it) : false);
   const openItem = (it) => {
+    // Announcement-only file (the room named it, nothing addressed it): there is
+    // nothing to preview, so take the user to the message that named it rather
+    // than opening a viewer onto an empty URL.
+    if (!it.url) { onLocate?.(it); return; }
     // A Files card is a preview affordance for every supported type. Prefer the
     // existing in-app viewer for documents as well as media; fall back to the
     // conversation locator only when this mount has no preview handoff.
@@ -185,7 +189,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     const waiting = needsAttention(it);
     return (
     <button type="button" key={`${it.url || it.name}-${i}`} onClick={() => openItem(it)}
-      aria-label={`${waiting ? 'Review' : onReview ? 'Preview' : 'Find in chat'} ${it.name}`}
+      aria-label={`${waiting ? 'Review' : !it.url ? 'Find in chat' : onReview ? 'Preview' : 'Find in chat'} ${it.name}`}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 5px', border: 'none', borderBottom: '1px solid var(--divider)', background: 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)', cursor: 'pointer', borderRadius: 8 }}>
       <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -229,7 +233,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     const isImage = it.kind === 'photo' && !!it.url;
     return (
       <button type="button" key={`${it.url || it.name}-${i}`} onClick={() => openItem(it)}
- aria-label={`${waiting ? 'Review' : onReview ? 'Preview' : 'Open'} ${it.name}`} title={`${it.name}${itemMeta(it) ? `, ${itemMeta(it)}` : ''}`}
+ aria-label={`${waiting ? 'Review' : !it.url ? 'Find in chat' : onReview ? 'Preview' : 'Open'} ${it.name}`} title={`${it.name}${itemMeta(it) ? `, ${itemMeta(it)}` : ''}`}
         style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 0, border: 'none', background: 'transparent', textAlign: 'left', fontFamily: 'var(--font-sans)', cursor: 'pointer', minWidth: 0 }}>
         <span style={{ position: 'relative', display: 'block', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', background: 'var(--media-tile, var(--surface-2))', border: '1px solid var(--divider)' }}>
           {isImage ? (
@@ -360,13 +364,58 @@ function demoRoomCrossings(room) {
     ];
   } catch { return null; }
 }
+// ── Convex plane: the panel and the thread read ONE set of rows ──────────────
+// The defect this exists for (gauntlet R1, finding 4): the FILES drawer read
+// "No files have crossed this chat yet." on a Wolfpack thread holding 83
+// attachments, because the drawer still queried Supabase (a plane that has never
+// seen the imported room) while the thread read Convex. Two panels on one screen
+// stating opposite facts. They now project from the SAME rows through the SAME
+// rowAttachments parser, so disagreeing is structurally impossible.
+//
+// Announcement-only files ("Attached file: phrase-0003.png" with no address line)
+// are KEPT here, unlike the Supabase branch which drops url-less attachments. A
+// file the room genuinely holds but cannot address is a file the user should see
+// named — showing nothing is the lie the finding is about. The card opens the
+// message instead of a dead download (see openItem).
+function convexCrossingsFrom(messages, room) {
+  const out = [];
+  for (const m of messages || []) {
+    if (!m?.attachments?.length) continue;
+    const who = m.isUser ? 'You' : (m.agentName || titleForAgent(room?.name));
+    for (const att of m.attachments) {
+      if (!att?.name) continue;
+      out.push({
+        type: 'file', kind: fileKind(att.name, att.mime), name: att.name,
+        url: att.url || '', mime: att.mime || '', ts: m.ts || null, who,
+        size: att.size || 0, isUser: !!m.isUser, messageId: m.id || '',
+        gateStatus: att.gate_status || '',
+      });
+    }
+  }
+  out.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
+  const seen = new Set();
+  return out.filter((it) => {
+    const key = `${it.isUser ? 'u' : 'a'}|${it.url || ''}|${it.name}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function useRoomCrossings(worldId, room) {
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState('loading');
   const [windowFull, setWindowFull] = useState(false);
+  // Constant for the whole page load (convexClient caches the flag), so this hook
+  // pair never changes shape mid-session. Off the Convex plane the engine call is
+  // handed no room and resolves to the null engine: no fetch, no socket, no timer
+  // — the Supabase path below is byte-for-byte what it always was.
+  const convex = convexPlaneActive();
+  const convexThread = useRoomThread(convex ? worldId : null, convex ? room : null);
   useEffect(() => {
     const fixture = demoRoomCrossings(room);
     if (fixture) { setItems(fixture); setWindowFull(false); setStatus('ready'); return undefined; }
+    if (convex) return undefined; // the engine below is the source on this plane
     if (!worldId || !room?.id) { setItems([]); setStatus('loading'); return undefined; }
     let alive = true;
     setItems([]);
@@ -432,10 +481,23 @@ export function useRoomCrossings(worldId, room) {
     };
     scheduleNext();
     return () => { alive = false; if (pollRef.current) clearTimeout(pollRef.current); };
-  }, [worldId, room?.id, room?.isMission, room?.isProject, room?.missionSlug]); // eslint-disable-line react-hooks/exhaustive-deps
-  const fromAgent = useMemo(() => items.filter((i) => !i.isUser), [items]);
-  const youSent = useMemo(() => items.filter((i) => i.isUser), [items]);
-  return { fromAgent, youSent, status, windowFull };
+  }, [convex, worldId, room?.id, room?.isMission, room?.isProject, room?.missionSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  const convexItems = useMemo(
+    () => (convex ? convexCrossingsFrom(convexThread.messages, room) : null),
+    [convex, convexThread.messages, room?.name], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const live = convexItems || items;
+  // Honest status: the panel is loading exactly while its thread is, and 'empty'
+  // only once the rows are in and genuinely carry no file.
+  const liveStatus = convexItems
+    ? (convexThread.status === 'loading' ? 'loading' : (convexItems.length ? 'ready' : (convexThread.status === 'error' ? 'error' : 'empty')))
+    : status;
+  // The Convex read window is 100 messages; a full window means older files exist.
+  // Dedupe can only shrink the projection, so >= 100 never over-claims.
+  const liveWindowFull = convexItems ? (convexThread.messages || []).length >= 100 : windowFull;
+  const fromAgent = useMemo(() => live.filter((i) => !i.isUser), [live]);
+  const youSent = useMemo(() => live.filter((i) => i.isUser), [live]);
+  return { fromAgent, youSent, status: liveStatus, windowFull: liveWindowFull };
 }
 
 // A project in the rail is a folder that fans open to its missions. The row itself opens the
