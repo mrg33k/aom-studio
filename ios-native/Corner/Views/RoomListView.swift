@@ -959,7 +959,23 @@ private struct RoomRowCard: View {
                     }
                 }
                 Spacer(minLength: Theme.s2)
-                Text(RelTime.of(entry.ts)).font(.hkCaption.monospaced()).foregroundStyle(Theme.inkFaint)
+                VStack(alignment: .trailing, spacing: 6) {
+                    let age = RelTime.of(entry.ts)
+                    if !age.isEmpty {
+                        Text(age).font(.hkCaption.monospaced()).foregroundStyle(Theme.inkFaint)
+                    }
+                    if let badge = unreadBadge {
+                        Text(badge)
+                            .font(.hkCaption2.weight(.bold).monospacedDigit())
+                            .foregroundStyle(Theme.ground)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Theme.live, in: Capsule())
+                            .accessibilityLabel("\(badge) unread")
+                    } else if unread {
+                        Circle().fill(Theme.live).frame(width: 9, height: 9)
+                            .accessibilityLabel("Unread")
+                    }
+                }
             }
             if heroActive {
                 IndeterminateBar()
