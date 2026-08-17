@@ -483,6 +483,8 @@ class RoomThreadEngine {
     })
     this.snapshot = {
       messages: d.messages,
+      // Raw pre-dedupe fetch size — the only honest input for "older files exist".
+      rawRowCount: this.rawRowCount ?? null,
       archivedMessages: s.archivedMessages,
       blocks: s.blocks,
       status: s.status,
@@ -580,6 +582,10 @@ class RoomThreadEngine {
       .then((value) => {
         if (!this.alive) return;
         this.updateConnection({ feed: 'live' });
+        // The RAW fetched count, before dedupe/filtering. "Older files exist" must key
+        // on this: a full 100-row fetch means the window is full regardless of how many
+        // rows survive dedupe (Wolfpack: 100 raw -> 98 shown hid 150+ older files).
+        this.rawRowCount = Array.isArray(value) ? value.length : 0;
         this.rows = convexRowsToThreadRows(value);
         this.newestTs = this.rows.reduce((max, row) => Math.max(max, rowTime(row)), 0);
         this.project();

@@ -248,6 +248,11 @@ final class AppRouter: ObservableObject {
         // Replace rather than stack: tapping three banners for three rooms should leave
         // one screen open, not a three-deep back stack the user has to unwind.
         if path.isEmpty {
+            // A second link can arrive inside the 60ms pop-then-push window of a first.
+            // Without clearing the armed push, it fires later into a stack it no longer
+            // owns and the screen dies black (gauntlet verify-A, 2/2 repro at offset 0).
+            // The LAST link always wins.
+            deferredPush = nil
             path = [route]
             return
         }
@@ -274,6 +279,10 @@ final class AppRouter: ObservableObject {
     func applyDeferredPush() {
         guard let route = deferredPush else { return }
         deferredPush = nil
+        // The stack this push was armed against was empty. If anything else has
+        // navigated meanwhile (a newer link, a user tap), that navigation owns the
+        // stack now — firing over it is how the dead black screen happened.
+        guard path.isEmpty else { return }
         path = [route]
     }
 

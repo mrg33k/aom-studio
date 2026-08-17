@@ -162,6 +162,8 @@ function ShelfToggle({ label, value, options, onChange }) {
 // is still in the waiting-review queue; ordinary files keep a quiet chevron.
 export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, needsReview, status, windowFull = false, compact = false }) {
   const CAP = 80; // newest per section; a busy room can carry hundreds
+  // "Show N more" reveals the rest of a section — a count with no action is a dead end.
+  const [expandedSections, setExpandedSections] = useState({});
   const [prefs, setPrefs] = useState(readFilesPrefs);
   const setPref = (patch) => setPrefs((prev) => {
     const next = { ...prev, ...patch };
@@ -254,12 +256,19 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
     ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 12 }}>{list.map(tile)}</div>
     : <div style={{ display: 'flex', flexDirection: 'column' }}>{list.map(row)}</div>);
   const section = (label, list) => {
-    const shown = list.slice(0, CAP);
+    const expanded = !!expandedSections[label || 'all'];
+    const shown = expanded ? list : list.slice(0, CAP);
     return (
       <div key={label} style={{ marginBottom: 14 }}>
         {label ? <div className="eyebrow" style={{ margin: '2px 4px 6px' }}>{label}</div> : null}
         {body(shown)}
-        {list.length > shown.length ? <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', padding: '10px 4px' }}>+{list.length - shown.length} more</div> : null}
+        {list.length > shown.length ? (
+          <button type="button" className="mono"
+            onClick={() => setExpandedSections((prev) => ({ ...prev, [label || 'all']: true }))}
+            style={{ fontSize: 10.5, color: 'var(--muted)', padding: '10px 4px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+            Show {list.length - shown.length} more
+          </button>
+        ) : null}
       </div>
     );
   };
@@ -332,7 +341,7 @@ export function FilesShelf({ fromAgent = [], youSent = [], onReview, onLocate, n
       {toolbar}
       {windowFull ? (
         <div style={{ background: 'var(--warn-weak, rgba(251,191,36,.08))', border: '1px solid rgba(251,191,36,.2)', borderRadius: 10, padding: '10px 12px', marginBottom: 12, fontSize: 12, lineHeight: 1.4, color: 'var(--fg)' }}>
-          Showing the newest crossings — older files exist. Ask the agent for one by name, or open All files.
+          Showing the newest crossings — older files exist. Ask the agent for one by name.
         </div>
       ) : null}
       {grouped ? (
@@ -492,9 +501,10 @@ export function useRoomCrossings(worldId, room) {
   const liveStatus = convexItems
     ? (convexThread.status === 'loading' ? 'loading' : (convexItems.length ? 'ready' : (convexThread.status === 'error' ? 'error' : 'empty')))
     : status;
-  // The Convex read window is 100 messages; a full window means older files exist.
-  // Dedupe can only shrink the projection, so >= 100 never over-claims.
-  const liveWindowFull = convexItems ? (convexThread.messages || []).length >= 100 : windowFull;
+  // The Convex read window is 100 messages; a FULL FETCH means older files exist.
+  // Key on the raw pre-dedupe count — the post-dedupe length under-claims (a room
+  // whose 100 raw rows dedupe to 98 hid two thirds of its files with no banner).
+  const liveWindowFull = convexItems ? (convexThread.rawRowCount ?? (convexThread.messages || []).length) >= 100 : windowFull;
   const fromAgent = useMemo(() => live.filter((i) => !i.isUser), [live]);
   const youSent = useMemo(() => live.filter((i) => i.isUser), [live]);
   return { fromAgent, youSent, status: liveStatus, windowFull: liveWindowFull };
