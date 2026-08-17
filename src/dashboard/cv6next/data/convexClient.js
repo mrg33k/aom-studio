@@ -5,8 +5,9 @@
 // public HTTP API — no SDK, no auth header — exactly the contract the native app
 // speaks (ios-native/Corner/Views/ChatViewModel.swift, corner-convex/src/routes/Chat.tsx).
 //
-// THE FLAG: `?convex=1` in the URL, or localStorage["cv6.dataplane"] === "convex".
-// Absent → the Supabase plane, byte-for-byte as before. The flag is read ONCE per
+// THE FLAG (default flipped 2026-08-16, Patrik: /dashboard IS the Convex product):
+// Convex is the DEFAULT plane. `?classic=1` or localStorage["cv6.dataplane"]="supabase"
+// selects the old Supabase plane; `?convex=1` still forces on. Read ONCE per
 // page load and cached: a data plane cannot flip mid-session (the caches and the
 // per-room thread engines are plane-specific, and internal SPA navigation rewrites
 // the query string — a live re-read would silently strand half the app on each plane).
@@ -23,14 +24,15 @@ const CONVEX_URL = 'https://neat-pony-216.convex.cloud';
 let planeCache = null;
 export function convexPlaneActive() {
   if (planeCache !== null) return planeCache;
-  let on = false;
+  let on = true;
   try {
     if (typeof window !== 'undefined') {
       const qs = new URLSearchParams(window.location.search || '');
+      if (qs.get('classic') === '1') on = false;
+      if (on && window.localStorage && window.localStorage.getItem('cv6.dataplane') === 'supabase') on = false;
       if (qs.get('convex') === '1') on = true;
-      if (!on && window.localStorage && window.localStorage.getItem('cv6.dataplane') === 'convex') on = true;
     }
-  } catch { on = false; }
+  } catch { on = true; }
   planeCache = on;
   return on;
 }
