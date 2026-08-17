@@ -271,6 +271,10 @@ final class RoomStore: ObservableObject {
     /// Raw room shape as Convex may return it (matches web response).
     struct ConvexRoom: Decodable {
         let _id: String?           // Convex document ID (primary key)
+        /// Canonical room key ("aom:project:wolfpack") carried by imported rooms.
+        /// This is what Room.parse understands AND what messages:list keys on —
+        /// without it every room fails the parse and the rail renders empty.
+        let legacyRoomId: String?
         let roomId: String?
         let room_id: String?
         let name: String?
@@ -287,7 +291,7 @@ final class RoomStore: ObservableObject {
         let worldId: String?
 
         enum CodingKeys: String, CodingKey {
-            case _id, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
+            case _id, legacyRoomId, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
             case room_id = "room_id"
             case title
             case clientId = "clientId"
@@ -305,8 +309,9 @@ final class RoomStore: ObservableObject {
         for cr in convexRooms {
             let rid = cr.resolvedID
             guard !rid.isEmpty else { continue }
-            // Already a Room — try to parse as Room first
-            if let room = Room.parse(roomID: rid, title: cr.resolvedTitle) {
+            // Parse the CANONICAL key (legacyRoomId) first — resolvedID is usually the
+            // Convex document _id ("jn7..."), which Room.parse can never understand.
+            if let room = Room.parse(roomID: cr.legacyRoomId ?? rid, title: cr.resolvedTitle) {
                 switch room.kind {
                 case .project(let slug):
                     if seen.contains(slug) { continue }
