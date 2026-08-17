@@ -50,6 +50,7 @@ import { registerPushWorker } from './pushNotifications.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
 import { useIntakeRoute } from './data/useIntakeRoute.js';
 import { supabase } from '../lib/supabase.js';
+import { convexPlaneActive } from './data/convexClient.js';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -1764,7 +1765,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         awaiting={quickThread && quickThread.awaiting}
         liveSteps={quickThread && quickThread.liveSteps}
         room={displayedRoom}
-        localReadOnly={!supabase}
+        localReadOnly={!supabase && !convexPlaneActive()}
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(displayedRoom), missionSlug: roomMissionSlug(displayedRoom), needsReview: true } : null); }}
       />
       <Cv6FullComposer

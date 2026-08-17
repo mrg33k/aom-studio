@@ -10,6 +10,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
 import { supabase } from '../lib/supabase.js';
+import { convexPlaneActive } from './data/convexClient.js';
 import { useRoomThread, useGoalThread, rowAttachments } from './data/useRoomThread.js';
 import { titleForAgent } from './data/agentTitles.js';
 import { buildChecklistRoomOptions } from './data/roomKeys.js';
@@ -1130,7 +1131,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         ("start the conversation"). It renders now, with a retry. */}
                     {threadStatus === 'error' && !messages?.length
                       ? <RoomThreadError onRetry={reloadThread} />
-                      : <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase} />}
+                      : <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase && !convexPlaneActive()} />}
                     {/* Background work came BACK to the thread (Patrik 2026-08-06). Sending it
                         to a separate window meant a busy room looked idle, and only ever showed
                         dispatched sub-agent jobs. This lists both kinds, per room, short, with a
