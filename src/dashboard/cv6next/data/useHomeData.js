@@ -19,6 +19,8 @@ import { missionRecencyKey } from './roomKeys.js';
 import { isRoomActivityNoise, isMachinePreview } from './presentationClean.js';
 import { fetchRoomActivity } from './roomActivity.js';
 import { prefetchThread } from './useRoomThread.js';
+import { convexPlaneActive } from './convexClient.js';
+import { useConvexRail } from './convexRooms.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -412,9 +414,28 @@ export function useHome() {
   // `missionLabelClean` crash. Locked by tests/cv6-home-hook-order.test.mjs.
   const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId }), [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId]);
 
+  // ── Convex plane (corner:convex-multi-agent): rooms rail from rooms:listRooms.
+  // Always called (rules of hooks); returns null the moment the flag is off, and
+  // the flag is constant per page load. On the flag, ONLY the room lists swap —
+  // catchUp/missionActivity and every other surface keep their Supabase shape.
+  const convexRail = useConvexRail(worldId);
+  const convexData = useMemo(() => {
+    if (!convexRail) return null;
+    const cx = convexRail.status === 'ready' ? convexRail.shaped : null;
+    const empty = []; empty.count = 0;
+    return {
+      ...shaped.data,
+      agents: cx ? cx.agents : empty,
+      projects: cx ? cx.projects : empty,
+      recent: cx ? cx.recent : empty,
+      rooms: { total: cx ? cx.total : 0 },
+    };
+  }, [convexRail, shaped]);
+
   // Prefetch top 5 recent rooms' threads (#6)
   const prefetchedRef = useRef(false);
   useEffect(() => {
+    if (convexPlaneActive()) return; // Convex plane: the open room's poll is the only thread read
     if (prefetchedRef.current || !shaped.data.recent?.length || !worldId) return;
     prefetchedRef.current = true;
     const top5 = shaped.data.recent.slice(0, 5);
@@ -433,6 +454,15 @@ export function useHome() {
   // While any of the counts is still null, keep 'loading' so the header doesn't flash a wrong total.
   const stillLoadingCounts = agents == null || projectRooms == null;
   const loading = (supabase && status === 'loading') || (supabase && !worldId) || stillLoadingCounts || (agents == null && projectRooms == null && inboxItems == null);
+  // Convex plane: readiness is the Convex rooms fetch, not the Supabase pipe
+  // (which may never resolve on a local no-Supabase build). A failed fetch is an
+  // honest empty rail, never a spinner that spins forever.
+  if (convexData) {
+    const cxState = convexRail.status === 'ready'
+      ? (convexData.recent.length ? 'ready' : 'empty')
+      : (convexRail.status === 'error' ? 'empty' : 'loading');
+    return { state: cxState, data: convexData, worldId };
+  }
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 
