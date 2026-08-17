@@ -1,6 +1,101 @@
 {
  "days": [
   {
+   "date": "2026-08-17",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "9_PtOVH2FPE",
+     "title": "Introducing Gemini 3.7 Flash",
+     "channel": "Google for Developers",
+     "views": "350K",
+     "published": "2026-08-13",
+     "why": "Official introduction to Gemini 3.7 Flash from Google's own developer channel. First-party walkthrough of the model's capabilities, speed benchmarks, and what it means for developers building on Gemini. The primary source everyone else is reacting to."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "15NfwAlb0Oc",
+     "title": "Google Just Released Gemini 3.7 Flash — This Changes AI!",
+     "channel": "TECHVERSE",
+     "views": "65K",
+     "published": "2026-08-15",
+     "why": "Fast community breakdown of Gemini 3.7 Flash two days after launch. Covers what changed from 2.5, real-world speed comparisons, and where Flash now beats larger models. The reaction video with actual substance."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "6WAReFHbnUQ",
+     "title": "Gemini 3.7 Flash Explained in 5 Minutes",
+     "channel": "AI WITH Rithesh",
+     "views": "25K",
+     "published": "2026-08-13",
+     "why": "Concise five-minute explainer that strips the hype and walks through what Gemini 3.7 Flash actually does differently. Best quick-watch for anyone who wants the facts without a 30-minute video."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "t9ydLkq5dXI",
+     "title": "Gemini 3.7 Flash: What Works and What Doesn't",
+     "channel": "Ramanpal Singh",
+     "views": "20K",
+     "published": "2026-08-14",
+     "why": "Honest hands-on review showing real prompts and outputs. Highlights where Gemini 3.7 Flash excels and where it still falls short compared to Claude and GPT. The practical take missing from the hype cycle."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "4cZY-R7LoyY",
+     "title": "Gemini 3.7 Flash Is Not What You Expected",
+     "channel": "AI with Surya",
+     "views": "18K",
+     "published": "2026-08-13",
+     "why": "Contrarian take on Gemini 3.7 Flash that tests it against the marketing claims. Shows surprising strengths in multimodal tasks and unexpected weaknesses in long-context reasoning. Good counterweight to the hype."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "ZbawXiYm4Go",
+     "title": "Claude Code's New Upgrade Lets You Automate Any Task (Claude Code Full Tutorial for 2026)",
+     "channel": "Rob The AI Guy",
+     "views": "95K",
+     "published": "2026-08-10",
+     "why": "Full tutorial on Claude Code's auto mode becoming the default. Shows real automation workflows: background agents, hooks, and skills chaining to handle multi-step tasks without manual intervention. The best walkthrough of what changed."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "9ytfzZMnVn8",
+     "title": "I Made AI Videos That Got 6M Views & Started a Trend",
+     "channel": "kaye.creatives",
+     "views": "120K",
+     "published": "2026-08-10",
+     "why": "Creator who actually hit 6M views on AI-generated content shares the exact workflow and tools. Not theory — real production pipeline from concept to viral post, with the numbers to prove it works."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "GZHp3WFc9Ps",
+     "title": "Introducing Suno Studio 2.0",
+     "channel": "Suno Music",
+     "views": "180K",
+     "published": "2026-08-13",
+     "why": "Official Suno launch video for Studio 2.0 — their biggest product update. Studio Chat for conversational music creation, track-level effects, automation lanes, and collaborative workflows. First-party source on the platform reshaping AI music production."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "35AzcYYucHs",
+     "title": "Getting Started in Suno Studio 2.0",
+     "channel": "Suno Music",
+     "views": "65K",
+     "published": "2026-08-14",
+     "why": "Official getting-started guide that walks through the Studio 2.0 interface step by step. From first prompt to finished track with effects and automation. The companion tutorial to the launch announcement."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "xKPav7OzH7g",
+     "title": "Suno Studio v2.0: Studio Chat, Track Effects and Automation",
+     "channel": "Lanewood Studios",
+     "views": "35K",
+     "published": "2026-08-13",
+     "why": "Independent music producer's deep dive into Suno Studio 2.0 from a working professional's perspective. Tests Studio Chat, stacks effects on AI-generated tracks, and builds automations — the real workflow review Suno's own channel doesn't do."
+    }
+   ]
+  },
+  {
    "date": "2026-08-16",
    "items": [
     {
