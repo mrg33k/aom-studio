@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store</string>
+	<key>teamID</key>
+	<string>PDYFTMXNJ2</string>
+	<!-- `export`, not `upload`: the documented flow (skill ios-build) exports an
+	     IPA and then uploads it with altool, so that the artifact can be checked
+	     before it is sent. `upload` made exportArchive send the build itself and
+	     leave no IPA behind, which is why the altool step had nothing to upload. -->
+	<key>destination</key>
+	<string>export</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.aheadofmarket.corner</key>
+		<string>Corner App Store Distribution</string>
+		<!-- Build 7 is the first archive to actually EMBED the Live Activity
+		     extension. Every earlier build stripped the CornerWidgets target
+		     because its App Store profile had never been minted; it now exists
+		     (register-widget-provisioning.py, profile UC7BPKU96K) and is
+		     installed, so the extension ships and manual signing needs it named
+		     here — without this line exportArchive fails with
+		     `"CornerWidgets.appex" requires a provisioning profile`. -->
+		<key>com.aheadofmarket.corner.CornerWidgets</key>
+		<string>Corner Widgets App Store</string>
+	</dict>
+</dict>
+</plist>
