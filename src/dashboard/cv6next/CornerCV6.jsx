@@ -1693,6 +1693,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // Draft indicator (row 23): read localStorage cv6.draft.{canonicalKey} without resurrecting deleted files
     hasDraft: (() => { try { const k = r.key || r.id || ''; const ws = worldId || 'aom'; const keys = [`cv6.draft.${k}`, `cv6.draft.${ws}:${k}`, `cv6.draft.${ws}:${String(k).split(':').pop()}`]; for (const dk of keys) { const v = localStorage.getItem(dk); if (v && String(v).trim()) return 'has'; } return 'none'; } catch { return 'none'; } })(),
     draftPreview: (() => { try { const k = r.key || r.id || ''; const ws = worldId || 'aom'; const keys = [`cv6.draft.${k}`, `cv6.draft.${ws}:${k}`, `cv6.draft.${ws}:${String(k).split(':').pop()}`]; for (const dk of keys) { const v = localStorage.getItem(dk); if (v && String(v).trim()) return String(v).trim().slice(0, 40); } return ''; } catch { return ''; } })(),
+    // Followed-thread indicator (row 26): surface follow-set per room durably (mirrors draft/muted)
+    hasFollowed: (() => { try { const k = r.key || r.id || ''; const ws = worldId || 'aom'; const keys = [`cv6.followedThreads.${k}`, `cv6.followedThreads.${ws}:${k}`, `cv6.followedThreads.${ws}:${String(k).split(':').pop()}`]; for (const fk of keys) { const v = localStorage.getItem(fk); if (v) { const a = JSON.parse(v); if (Array.isArray(a) && a.length) return 'has'; } } return 'none'; } catch { return 'none'; } })(),
   }));
   // Ring once when a room goes unread that was not unread a moment ago. Keyed by the
   // SET of unread rooms, not a count: two rooms going unread while one is read nets to
