@@ -1,6 +1,8 @@
 // Small, pure presentation guards shared by Home and Email. They keep machine
 // plumbing and duplicate transport text out of the human-facing mobile UI.
 
+import { normalizePreview } from './previewText.js';
+
 const OPS_TEXT = /^\s*(?:chat-serving alert|bridge counter alert|supervisor alert|watchdog alert|bridge supervisor alert)\b/i;
 
 export function isRoomActivityNoise(message = {}) {
@@ -45,6 +47,13 @@ const MACHINE_PREVIEW = [
   /(?:^|\s)(?:src|api|scripts|node_modules)\/[a-z0-9._-]+\//i,
   /\borigin\/(?:main|master)\b/i,
   /\b(?:npm run|npx |node --test|git (?:commit|push|pull|fetch|checkout|merge|rebase|status|log|stash))\b/i,
+  // 6. Bare correlation IDs and probe headers the harnesses emit as whole messages
+  //    (gauntlet R1: "SUPRV-16C6EBE2" was the preview line on three real rooms).
+  //    All anchored at the start and shaped like an identifier, never a sentence —
+  //    an agent's REPLY that happens to discuss a probe is a human line and stays.
+  /^\s*(?:SUPRV|ORBIT|CAGE)-[0-9A-Z]{4,}\b/i,
+  /^\s*qa probe\b/i,
+  /^\s*cage-ping\b/i,
 ];
 
 export function isMachinePreview(text, message = {}) {
@@ -60,6 +69,25 @@ export function humanPreview(text, message = {}) {
   const t = String(text || '').replace(/\s+/g, ' ').trim();
   if (!t) return '';
   return isMachinePreview(t, message) ? '' : t;
+}
+
+// ── roomPreviewLine — THE one preview pipeline every room row runs ────────────
+// Machine-speak gate first (isMachinePreview), then the text normalizer
+// (normalizePreview: markdown stripped, "Attached file: x" → "Shared a file: x",
+// raw URLs humanized). Both already existed; what did NOT exist was a single
+// call every surface makes, so the Convex rail shipped only half of it and
+// leaked 40 machine payloads onto the rooms list (gauntlet R1, finding 9c).
+//
+// `max` is opt-in and defaults to OFF so existing callers are byte-identical.
+// A surface that receives whole message BODIES as its preview source (the Convex
+// rail's lastMessage.text — up to 5,011 characters on the live workspace) passes
+// a cap, because a preview is one line a person reads, not a transcript.
+export function roomPreviewLine(text, message = {}, { max = 0 } = {}) {
+  if (isMachinePreview(text, message)) return '';
+  const line = normalizePreview(text);
+  if (!max || line.length <= max) return line;
+  // Cut on a word boundary so the tail is never a half-word.
+  return `${line.slice(0, max).replace(/\s+\S*$/, '')}…`;
 }
 
 function compact(value) {
