@@ -238,11 +238,42 @@ final class AppRouter: ObservableObject {
         open(.room(room))
     }
 
+    /// A replace that is armed but not yet applied. See `open(_ route:)`.
+    private(set) var deferredPush: Route?
+
     func open(_ route: Route) {
         unresolvedLink = nil
-        if path.last == route { return }
+        if path.last == route { deferredPush = nil; return }
+
         // Replace rather than stack: tapping three banners for three rooms should leave
         // one screen open, not a three-deep back stack the user has to unwind.
+        if path.isEmpty {
+            path = [route]
+            return
+        }
+
+        // REPLACING THE TOP OF A NON-EMPTY STACK IS SWALLOWED IF DONE IN ONE ASSIGNMENT.
+        // `path = [other]` leaves the count at 1, and SwiftUI coalesces it away: the
+        // stack never moves. Measured on the simulator — opening any room while another
+        // room was on screen did nothing at all, with no alert anywhere near it. That is
+        // every notification tap taken while the app is sitting in a conversation, which
+        // is most of them.
+        //
+        // So: pop to the rail, then push on a later turn, guaranteeing a count change
+        // SwiftUI cannot fold together.
+        deferredPush = route
+        path = []
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(60))
+            self?.applyDeferredPush()
+        }
+    }
+
+    /// Apply the armed replace. Separate and callable so the two-phase navigation is
+    /// testable without racing a sleep.
+    func applyDeferredPush() {
+        guard let route = deferredPush else { return }
+        deferredPush = nil
         path = [route]
     }
 
@@ -287,7 +318,8 @@ final class AppRouter: ObservableObject {
         pendingTarget = nil
         apply(target)
 
-        if isShowing(target) || unresolvedLink != nil { return }
+        // A deferred push is a navigation already in flight — not a swallow.
+        if isShowing(target) || unresolvedLink != nil || deferredPush != nil { return }
         guard retriesLeft > 0 else { return }
         pendingTarget = target
         Task { [weak self] in
@@ -335,7 +367,8 @@ final class AppRouter: ObservableObject {
         path = []
         unresolvedLink = nil
         // Sign-out closes everything; a link queued against the previous session must
-        // not fire into the next one.
+        // not fire into the next one — neither the held target nor an armed replace.
         pendingTarget = nil
+        deferredPush = nil
     }
 }

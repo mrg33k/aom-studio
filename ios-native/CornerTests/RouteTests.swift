@@ -95,14 +95,19 @@ final class RouteTests: XCTestCase {
 
     // MARK: - Router
 
+    /// Replacing the screen already open is a POP THEN PUSH — a single assignment that
+    /// leaves the count at 1 is folded away by SwiftUI and never reaches the screen.
+    /// `applyDeferredPush()` is the second phase, run here without racing a sleep.
     @MainActor
     func testRouterOpensEachSurface() {
         let router = AppRouter()
         router.handle(.route(.organize))
         XCTAssertEqual(router.path, [.organize])
         router.handle(.route(.tracker))
+        router.applyDeferredPush()
         XCTAssertEqual(router.path, [.tracker])
         router.handle(.route(.review))
+        router.applyDeferredPush()
         XCTAssertEqual(router.path, [.review])
     }
 
@@ -113,7 +118,9 @@ final class RouteTests: XCTestCase {
         let router = AppRouter()
         router.open(DeepLink(roomID: "aom:agent:rex"))
         router.handle(.route(.organize))
+        router.applyDeferredPush()
         router.open(DeepLink(roomID: "aom:project:corner"))
+        router.applyDeferredPush()
         XCTAssertEqual(router.path.count, 1)
         XCTAssertEqual(router.path.first?.roomID, "aom:project:corner")
     }
@@ -207,6 +214,38 @@ final class RouteTests: XCTestCase {
         router.handle(url: try XCTUnwrap(URL(string: "corner://room/aom%3Aagent%3Arex")))
         XCTAssertNil(router.pendingTarget)
         XCTAssertEqual(router.openRoom?.roomID, "aom:agent:rex")
+    }
+
+    // MARK: - Replacing the room already on screen
+
+    /// THE bigger half of the swallow, and it needs no alert at all. `path = [other]`
+    /// on a non-empty stack leaves the count at 1, SwiftUI folds it away, and the screen
+    /// never moves — measured on the simulator, where opening any room while another
+    /// room was open did nothing. That is most notification taps.
+    @MainActor
+    func testOpeningARoomWhileAnotherIsOpenPopsThenPushes() throws {
+        let router = AppRouter()
+        router.handle(url: try XCTUnwrap(URL(string: "corner://room/aom%3Aagent%3Arex")))
+        XCTAssertEqual(router.openRoom?.roomID, "aom:agent:rex")
+
+        router.handle(url: try XCTUnwrap(URL(string: "corner://room/aom%3Amission%3Acorner%3Anative-ios")))
+        XCTAssertTrue(router.path.isEmpty, "popped first, so the count actually changes")
+        XCTAssertNotNil(router.deferredPush, "and the push is armed, not lost")
+
+        router.applyDeferredPush()
+        XCTAssertEqual(router.openRoom?.roomID, "aom:mission:corner:native-ios")
+        XCTAssertNil(router.deferredPush)
+    }
+
+    /// Re-opening the room already on screen is still a no-op — the two-phase replace
+    /// must not make a redundant tap flash the rail.
+    @MainActor
+    func testOpeningTheRoomAlreadyOpenDoesNotPop() throws {
+        let router = AppRouter()
+        router.handle(url: try XCTUnwrap(URL(string: "corner://room/aom%3Aagent%3Arex")))
+        router.handle(url: try XCTUnwrap(URL(string: "corner://room/aom%3Aagent%3Arex")))
+        XCTAssertEqual(router.openRoom?.roomID, "aom:agent:rex")
+        XCTAssertNil(router.deferredPush)
     }
 
     /// Signing out must not leave a link armed for the next session.
