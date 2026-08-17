@@ -60,6 +60,16 @@ struct RootView: View {
             router.handle(target)
             push.pendingTarget = nil
         }
+        // The alert has gone: anything the alert was standing in front of can run now.
+        // A deep link that arrives while a modal is up is queued rather than applied,
+        // because a navigation made in the same update as a dismissal is swallowed —
+        // the alert closes and the stack never moves, which is a tap that did nothing.
+        .onChange(of: router.unresolvedLink) { _, newValue in
+            if newValue == nil { router.flushPendingTarget() }
+        }
+        .onChange(of: router.showingSettings) { _, isShowing in
+            if !isShowing { router.flushPendingTarget() }
+        }
         // "Open file" from a delivery notification opens the file, over the room it
         // arrived in. Routing to the room alone would leave the user hunting a thread
         // for the thing the notification was about, which is the tap doing half its job.
@@ -101,7 +111,11 @@ struct RootView: View {
                 set: { if !$0 { router.unresolvedLink = nil } }
             )
         ) {
-            Button("OK", role: .cancel) { router.unresolvedLink = nil }
+            Button("OK", role: .cancel) {
+                router.unresolvedLink = nil
+                // A link that arrived while this alert was up is waiting behind it.
+                router.flushPendingTarget()
+            }
         } message: {
             // A tap that appears to do nothing is the worst possible answer to a
             // notification. Say what happened, even when it is unflattering.

@@ -161,4 +161,62 @@ final class RouteTests: XCTestCase {
         XCTAssertEqual(router.path, [.organize])
         XCTAssertNil(router.unresolvedLink)
     }
+
+    // MARK: - A link that arrives while a modal is up
+
+    /// THE regression. With the "could not be opened" alert presented, a room link used
+    /// to dismiss the alert (proving it was consumed) and leave the navigation stack
+    /// exactly where it was — the notification tap that appears to do nothing.
+    /// The link must be HELD, not eaten.
+    @MainActor
+    func testLinkArrivingUnderAnAlertIsQueuedNotSwallowed() throws {
+        let router = AppRouter()
+        // A route this build has no screen for raises the alert.
+        XCTAssertFalse(router.handle(url: try XCTUnwrap(URL(string: "corner://settings"))))
+        XCTAssertNotNil(router.unresolvedLink)
+
+        // Now a good room link arrives while that alert is still on screen.
+        router.handle(url: try XCTUnwrap(URL(string: "corner://room/aom%3Aagent%3Arex")))
+        XCTAssertNil(router.unresolvedLink, "the alert is asked to close")
+        XCTAssertNotNil(router.pendingTarget, "and the link is held, not consumed")
+
+        // Once nothing is in the way, it lands.
+        router.flushPendingTarget()
+        XCTAssertNil(router.pendingTarget)
+        XCTAssertEqual(router.openRoom?.roomID, "aom:agent:rex")
+    }
+
+    /// The flush is idempotent — the alert button, the dismissal observer and the
+    /// backstop timer all call it, and two of them must be no-ops.
+    @MainActor
+    func testFlushingTwiceIsHarmless() throws {
+        let router = AppRouter()
+        XCTAssertFalse(router.handle(url: try XCTUnwrap(URL(string: "corner://settings"))))
+        router.handle(url: try XCTUnwrap(URL(string: "corner://tracker")))
+        router.flushPendingTarget()
+        XCTAssertEqual(router.path, [.tracker])
+        router.flushPendingTarget()
+        XCTAssertEqual(router.path, [.tracker])
+    }
+
+    /// With nothing presented the link applies immediately — the queue must not add a
+    /// beat to the ordinary path.
+    @MainActor
+    func testLinkWithNoModalAppliesImmediately() throws {
+        let router = AppRouter()
+        router.handle(url: try XCTUnwrap(URL(string: "corner://room/aom%3Aagent%3Arex")))
+        XCTAssertNil(router.pendingTarget)
+        XCTAssertEqual(router.openRoom?.roomID, "aom:agent:rex")
+    }
+
+    /// Signing out must not leave a link armed for the next session.
+    @MainActor
+    func testCloseAllDropsAQueuedLink() throws {
+        let router = AppRouter()
+        XCTAssertFalse(router.handle(url: try XCTUnwrap(URL(string: "corner://settings"))))
+        router.handle(url: try XCTUnwrap(URL(string: "corner://room/aom%3Aagent%3Arex")))
+        XCTAssertNotNil(router.pendingTarget)
+        router.closeAll()
+        XCTAssertNil(router.pendingTarget)
+    }
 }
