@@ -614,9 +614,16 @@ final class ChatViewModel: ObservableObject {
             closeTurnStream()
         }
 
-        rows = fetched
-        newestKnownID = fetched.last?.id
-        updateTurn(with: fetched)
+        // Defensive epoch sort (gauntlet r1 finding 3): imported rows can arrive with
+        // out-of-order createdAt until the backend timestamp repair lands, and a thread
+        // whose greeting renders newest reads as broken regardless of whose fault the
+        // data is. Stable sort — equal epochs keep server order.
+        let ordered = fetched.enumerated()
+            .sorted { l, r in l.element.epoch != r.element.epoch ? l.element.epoch < r.element.epoch : l.offset < r.offset }
+            .map(\.element)
+        rows = ordered
+        newestKnownID = ordered.last?.id
+        updateTurn(with: ordered)
     }
 
     // MARK: - Turn state, anchored to server facts
