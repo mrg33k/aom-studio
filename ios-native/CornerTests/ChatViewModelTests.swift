@@ -13,7 +13,8 @@ final class ChatViewModelTests: XCTestCase {
 
     private func model(
         _ transport: FakeTransport,
-        backstop: TimeInterval = 60
+        backstop: TimeInterval = 60,
+        cacheStore: ThreadCacheStore? = nil
     ) -> ChatViewModel {
         ChatViewModel(
             room: room,
@@ -21,8 +22,15 @@ final class ChatViewModelTests: XCTestCase {
             backstop: backstop,
             stepInterval: 0.01,
             reconcileInterval: 3600,   // the poll must not fire during a test
+            cacheStore: cacheStore,
             onFirstReply: {}           // never prompt for notifications in a test
         )
+    }
+
+    private func temporaryCache() -> (ThreadCacheStore, URL) {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CornerThreadCacheTests-\(UUID().uuidString)", isDirectory: true)
+        return (ThreadCacheStore(directory: directory), directory)
     }
 
     /// The step poll runs on its own task; give it a beat to observe the state it was
@@ -113,6 +121,8 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(vm.outbox.count, 1)
         XCTAssertEqual(vm.outbox.first?.text, "yes")
         XCTAssertFalse(vm.outbox.first?.isFailed == true)
+        XCTAssertTrue(vm.outbox.first?.isAwaitingConfirmation == true,
+                      "an accepted write may wait for history, but must not be posted again")
     }
 
     func testDiscardRemovesIt() async {
@@ -133,6 +143,158 @@ final class ChatViewModelTests: XCTestCase {
         vm.send()
         XCTAssertTrue(vm.outbox.isEmpty)
         XCTAssertEqual(vm.draft, "   \n  ", "an ignored send must not clear the composer")
+    }
+
+    // MARK: - 1b. Cold cache + durable reconnect queue
+
+    func testCachedTranscriptPaintsSynchronouslyBeforeNetwork() async {
+        let (cache, directory) = temporaryCache()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let live = FakeTransport()
+        live.rows = [
+            .fake(id: "cached-1", role: "assistant", text: "the real previous reply", epoch: 1_778_000_000)
+        ]
+        let priming = model(live, cacheStore: cache)
+        await priming.load()
+
+        let unavailable = FakeTransport()
+        unavailable.failNextFetch = CornerAPI.APIError.badResponse(status: 503, message: "offline")
+        let restored = model(unavailable, cacheStore: cache)
+
+        XCTAssertEqual(restored.rows.map(\.id), ["cached-1"])
+        XCTAssertEqual(restored.loadState, .ready, "the first frame must be a transcript, not loading chrome")
+        XCTAssertTrue(restored.isShowingCachedThread, "saved content must label itself until reconcile succeeds")
+
+        await restored.load()
+        XCTAssertEqual(restored.rows.map(\.id), ["cached-1"], "offline refresh must not blank the saved room")
+        XCTAssertEqual(restored.loadState, .ready)
+        XCTAssertTrue(restored.isShowingCachedThread)
+    }
+
+    func testFailedOutboxSurvivesRelaunchAndDeliversOnceConnectivityReturns() async {
+        let (cache, directory) = temporaryCache()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let offline = FakeTransport()
+        offline.sendError = CornerAPI.APIError.badResponse(status: 503, message: "offline")
+        let firstRun = model(offline, cacheStore: cache)
+        firstRun.draft = "keep this through relaunch"
+        firstRun.send()
+        await settleRunLoop()
+        XCTAssertEqual(firstRun.outbox.count, 1)
+        XCTAssertTrue(firstRun.outbox[0].isFailed)
+
+        let online = FakeTransport()
+        let relaunched = model(online, cacheStore: cache)
+        XCTAssertEqual(relaunched.outbox.map(\.text), ["keep this through relaunch"])
+        XCTAssertTrue(relaunched.outbox[0].isFailed, "a killed in-flight request must restore as an honest queued state")
+
+        await relaunched.load() // successful fetch is the reconnect proof
+        await settleRunLoop(10)
+
+        XCTAssertEqual(online.sentTexts, ["keep this through relaunch"])
+        XCTAssertTrue(relaunched.outbox.isEmpty)
+        XCTAssertEqual(relaunched.rows.last?.text, "keep this through relaunch")
+    }
+
+    func testAutomaticReconnectRetryRunsOnlyOncePerFailedItem() async {
+        let (cache, directory) = temporaryCache()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let transport = FakeTransport()
+        transport.sendError = CornerAPI.APIError.badResponse(status: 503, message: "still offline")
+        let vm = model(transport, cacheStore: cache)
+        vm.draft = "do not spam this"
+        vm.send()
+        await settleRunLoop()
+        XCTAssertEqual(transport.clientMessageIDs.count, 1)
+
+        await vm.load()
+        await settleRunLoop()
+        XCTAssertEqual(transport.clientMessageIDs.count, 2, "one proven reconnect gets one automatic attempt")
+
+        await vm.load()
+        await settleRunLoop()
+        XCTAssertEqual(transport.clientMessageIDs.count, 2, "a healthy read loop must not become a write retry loop")
+        XCTAssertTrue(vm.outbox.first?.isFailed == true)
+    }
+
+    func testOfflineMessagesDrainInComposeOrderAfterReconnect() async {
+        let (cache, directory) = temporaryCache()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let transport = FakeTransport()
+        transport.sendError = CornerAPI.APIError.badResponse(status: 503, message: "offline")
+        let vm = model(transport, cacheStore: cache)
+        for text in ["first", "second", "third"] {
+            vm.draft = text
+            vm.send()
+        }
+        await settleRunLoop()
+        XCTAssertEqual(vm.outbox.map(\.text), ["first", "second", "third"])
+        XCTAssertTrue(vm.outbox[0].isFailed)
+
+        transport.sendError = nil
+        await vm.load()
+        await settleRunLoop(18)
+
+        XCTAssertEqual(transport.sentTexts, ["first", "second", "third"])
+        XCTAssertTrue(vm.outbox.isEmpty)
+        XCTAssertEqual(vm.rows.suffix(3).compactMap(\.text), ["first", "second", "third"])
+    }
+
+    func testNewMessageCannotPassAnEarlierFailedItem() async {
+        let transport = FakeTransport()
+        transport.sendError = CornerAPI.APIError.badResponse(status: 503, message: "offline")
+        let vm = model(transport)
+
+        vm.draft = "earlier"
+        vm.send()
+        await settleRunLoop()
+        XCTAssertTrue(vm.outbox.first?.isFailed == true)
+
+        transport.sendError = nil
+        vm.draft = "later"
+        vm.send()
+        await settleRunLoop()
+
+        XCTAssertTrue(transport.sentTexts.isEmpty,
+                      "a later message must wait behind the unresolved failed item")
+        XCTAssertEqual(vm.outbox.map(\.text), ["earlier", "later"])
+    }
+
+    // MARK: - 1c. Exact-message push resolution
+
+    func testMessageReferenceWidensAndRetainsTheExactServerRow() async {
+        let transport = FakeTransport()
+        let recent = MessageRow.fake(id: "recent", role: "assistant", text: "latest", epoch: 2_000)
+        let target = MessageRow.fake(id: "push-target", role: "assistant", text: "the notified sentence", epoch: 1_000)
+        transport.rows = [recent]
+        transport.wideRows = [target, recent]
+        let vm = model(transport)
+
+        let resolution = await vm.resolveMessageReference("push-target")
+        XCTAssertEqual(resolution, .found("push-target"))
+        XCTAssertEqual(transport.fetchLimits, [400])
+        XCTAssertTrue(vm.rows.contains(where: { $0.id == "push-target" }))
+
+        await vm.load()
+        XCTAssertTrue(vm.rows.contains(where: { $0.id == "push-target" }),
+                      "the focused row must not vanish on the next tail reconcile")
+    }
+
+    func testMessageReferenceDistinguishesMissingFromUnavailable() async {
+        let missingTransport = FakeTransport()
+        let missing = model(missingTransport)
+        let missingResult = await missing.resolveMessageReference("gone")
+        XCTAssertEqual(missingResult, .notFound)
+
+        let failedTransport = FakeTransport()
+        failedTransport.failNextFetch = CornerAPI.APIError.badResponse(status: 503, message: "offline")
+        let unavailable = model(failedTransport)
+        let unavailableResult = await unavailable.resolveMessageReference("try-later")
+        XCTAssertEqual(unavailableResult, .unavailable)
     }
 
     // MARK: - 2. A dead turn looks dead

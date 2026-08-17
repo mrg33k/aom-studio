@@ -46,7 +46,7 @@
 
 import Foundation
 
-struct Attachment: Identifiable, Equatable, Hashable {
+struct Attachment: Identifiable, Equatable, Hashable, Codable {
     /// The raw url/path exactly as the row carried it. This string IS the deliverable
     /// identity the review endpoints key on (api/_lib/fileRef.js: review.id = url), so
     /// it is never normalised, prettified, or re-encoded on the way through.

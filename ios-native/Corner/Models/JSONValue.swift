@@ -12,7 +12,7 @@
 
 import Foundation
 
-indirect enum JSONValue: Decodable, Equatable {
+indirect enum JSONValue: Codable, Equatable {
     case string(String)
     case number(Double)
     case bool(Bool)
@@ -29,6 +29,18 @@ indirect enum JSONValue: Decodable, Equatable {
         else if let a = try? c.decode([JSONValue].self) { self = .array(a) }
         else if let o = try? c.decode([String: JSONValue].self) { self = .object(o) }
         else { self = .null }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        switch self {
+        case .string(let value): try c.encode(value)
+        case .number(let value): try c.encode(value)
+        case .bool(let value): try c.encode(value)
+        case .object(let value): try c.encode(value)
+        case .array(let value): try c.encode(value)
+        case .null: try c.encodeNil()
+        }
     }
 
     // MARK: - Accessors

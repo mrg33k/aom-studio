@@ -39,9 +39,12 @@ import SwiftUI
 
 // MARK: - Outbox
 
-struct OutboxItem: Identifiable, Equatable {
-    enum State: Equatable {
+struct OutboxItem: Identifiable, Equatable, Codable {
+    enum State: Equatable, Codable {
         case sending
+        /// The server accepted the write, but the read projection has not exposed
+        /// the durable row yet. This item remains visible without being re-sent.
+        case awaitingConfirmation
         case failed(String)
     }
 
@@ -56,9 +59,18 @@ struct OutboxItem: Identifiable, Equatable {
     /// Files staged before this send — kept on the item so a retry re-sends the
     /// SAME already-uploaded files instead of losing them with the failure.
     var attachments: [Attachment] = []
+    /// Only transport/retryable-server failures may ride the one automatic reconnect
+    /// attempt. Auth, access, malformed payload, and unknown failures require the
+    /// visible human Retry instead of repeating a request that cannot succeed.
+    var automaticRetryEligible = true
 
     var isFailed: Bool {
         if case .failed = state { return true }
+        return false
+    }
+
+    var isAwaitingConfirmation: Bool {
+        if case .awaitingConfirmation = state { return true }
         return false
     }
 
@@ -96,6 +108,93 @@ enum ThreadItem: Identifiable, Equatable {
     }
 }
 
+enum MessageReferenceResolution: Equatable {
+    case found(String)
+    case notFound
+    case unavailable
+}
+
+// MARK: - Durable room snapshot
+
+/// The bounded, factual state needed to paint a room before the network answers.
+/// It intentionally excludes transient agent-working state: after a process death
+/// the app may know what was said, but it cannot honestly claim an agent is still
+/// typing until the server says so again.
+struct ThreadCacheSnapshot: Codable, Equatable {
+    static let version = 1
+
+    let schemaVersion: Int
+    let verifiedAt: Date
+    let rows: [MessageRow]
+    let outbox: [OutboxItem]
+
+    init(verifiedAt: Date, rows: [MessageRow], outbox: [OutboxItem]) {
+        schemaVersion = Self.version
+        self.verifiedAt = verifiedAt
+        self.rows = Array(rows.suffix(100))
+        self.outbox = Array(outbox.suffix(20))
+    }
+}
+
+/// One JSON snapshot per canonical room in Application Support. Cache failure is
+/// deliberately non-fatal — the backend remains authoritative — but writes are
+/// atomic and excluded from backup because this is a rebuildable local projection.
+final class ThreadCacheStore {
+    static let shared = ThreadCacheStore()
+
+    private let directory: URL
+    private let files: FileManager
+
+    init(directory: URL? = nil, files: FileManager = .default) {
+        self.files = files
+        let root = directory ?? files.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Corner", isDirectory: true)
+            .appendingPathComponent("ThreadCache", isDirectory: true)
+        self.directory = root
+        try? files.createDirectory(at: root, withIntermediateDirectories: true)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var mutableRoot = root
+        try? mutableRoot.setResourceValues(values)
+    }
+
+    func load(roomID: String) -> ThreadCacheSnapshot? {
+        guard let data = try? Data(contentsOf: url(for: roomID)),
+              let snapshot = try? JSONDecoder().decode(ThreadCacheSnapshot.self, from: data),
+              snapshot.schemaVersion == ThreadCacheSnapshot.version
+        else { return nil }
+        return snapshot
+    }
+
+    func save(_ snapshot: ThreadCacheSnapshot, roomID: String) {
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        let target = url(for: roomID)
+        do {
+            try data.write(to: target, options: .atomic)
+            #if os(iOS)
+            try? files.setAttributes(
+                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                ofItemAtPath: target.path
+            )
+            #endif
+        } catch {
+            // A cache is an accelerator, never a second source of truth.
+        }
+    }
+
+    func remove(roomID: String) {
+        try? files.removeItem(at: url(for: roomID))
+    }
+
+    private func url(for roomID: String) -> URL {
+        let safe = Data(roomID.utf8).base64EncodedString()
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "=", with: "")
+        return directory.appendingPathComponent("\(safe).json", isDirectory: false)
+    }
+}
+
 // MARK: - View model
 
 @MainActor
@@ -109,6 +208,11 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var outbox: [OutboxItem] = []
     @Published private(set) var turn: TurnState = .idle
     @Published private(set) var loadState: LoadState = .loading
+    /// True only while the transcript is a disk snapshot that has not yet been
+    /// reconciled successfully in this process. The view labels it instead of
+    /// letting stale content impersonate live content.
+    @Published private(set) var isShowingCachedThread = false
+    @Published private(set) var cachedThreadVerifiedAt: Date?
     /// "4 new messages while you were away" — set by the foreground catch-up so a
     /// long absence is acknowledged instead of silently scrolling.
     @Published var catchUpNotice: String?
@@ -180,6 +284,8 @@ final class ChatViewModel: ObservableObject {
     private let stewardInterval: TimeInterval
     private let repairAfter: TimeInterval
     private let onFirstReply: @MainActor () async -> Void
+    private let cacheStore: ThreadCacheStore?
+    private let cacheKey: String
 
     private var subscription: RoomSubscribing?
     private var pollTask: Task<Void, Never>?
@@ -190,6 +296,10 @@ final class ChatViewModel: ObservableObject {
     // Streaming (R18 N3): one reader per turn, keyed on the durable parent id.
     private var streamTask: Task<Void, Never>?
     private var revealTask: Task<Void, Never>?
+    /// One serial writer for the room. Outbox order is transcript order; starting
+    /// several reconnect sends at once lets response timing rewrite what the person
+    /// said first.
+    private var deliveryTask: Task<Void, Never>?
     private var streamKey: String?
     /// Chunks land here raw; the reveal loop drains into `streamDraft` at a
     /// steady tick — the cadence, not the network, owns the paint rate.
@@ -237,6 +347,16 @@ final class ChatViewModel: ObservableObject {
     private var newestKnownID: String?
 
     private var hasNotifiedFirstReply = false
+    /// A push can name a row older than the normal tail window. Keep that one real
+    /// row joined to subsequent poll windows for this view model's lifetime so it
+    /// does not disappear under the reader immediately after the highlight fades.
+    private var retainedFocusedMessage: MessageRow?
+    /// A queued item gets one automatic reconnect attempt per process. If sending
+    /// still fails (auth, policy, server), it stays visible for a deliberate Retry;
+    /// the 2.5s reconcile poll must never become a send-spam loop.
+    private var automaticRetryAttempted = Set<String>()
+    private var lastPersistedFingerprint: Int?
+    private var lastCacheWriteAt = Date.distantPast
 
     init(
         room: Room,
@@ -252,6 +372,7 @@ final class ChatViewModel: ObservableObject {
         repairAfter: TimeInterval = Config.stewardRepairAfter,
         stopTimeout: TimeInterval = Config.stopConfirmTimeout,
         revealInterval: TimeInterval = Config.streamRevealInterval,
+        cacheStore: ThreadCacheStore? = nil,
         onFirstReply: @escaping @MainActor () async -> Void = {
             await PushService.shared.requestAuthorizationAfterFirstReply()
         }
@@ -267,9 +388,29 @@ final class ChatViewModel: ObservableObject {
         self.stopTimeout = stopTimeout
         self.revealInterval = revealInterval
         self.onFirstReply = onFirstReply
+        self.cacheStore = cacheStore ?? (Config.suppressLiveBackendsForTests ? nil : .shared)
+        let viewer = CornerAPI.shared.session?.user.id.uuidString.lowercased() ?? "anonymous"
+        self.cacheKey = "\(viewer):\(room.roomID)"
         // Restore per-room mode, defaulting to work — mirrors web's localStorage.cv6.chatMode.<key>
         let saved = UserDefaults.standard.string(forKey: "chatMode.\(room.id)")
         self.chatMode = saved == "plan" ? "plan" : "work"
+
+        if let snapshot = self.cacheStore?.load(roomID: cacheKey) {
+            rows = snapshot.rows
+            outbox = snapshot.outbox.map { item in
+                var restored = item
+                if case .sending = restored.state {
+                    restored.state = .failed("Waiting for connection. Retry now.")
+                }
+                return restored
+            }
+            newestKnownID = rows.last?.id
+            cachedThreadVerifiedAt = snapshot.verifiedAt
+            lastCacheWriteAt = snapshot.verifiedAt
+            isShowingCachedThread = !rows.isEmpty
+            loadState = (rows.isEmpty && outbox.isEmpty) ? .empty : .ready
+            lastPersistedFingerprint = cacheFingerprint()
+        }
     }
 
     /// Set work or plan mode for this room, persisted across sessions.
@@ -421,7 +562,12 @@ final class ChatViewModel: ObservableObject {
 
     /// Convex-backed send: mirrors web `convex/messages.ts:send` and `App.tsx:handleSend`.
     /// Web shape: { roomId: string, text: string, role: "user", userId, userName, clientId, source, metadata }
-    func sendMessage(roomId: String, text: String, attachments: [Attachment] = []) async throws {
+    func sendMessage(
+        roomId: String,
+        text: String,
+        attachments: [Attachment] = [],
+        clientMessageID: String? = nil
+    ) async throws {
         let concreteAPI = CornerAPI.shared
         let world = concreteAPI.world ?? "aom"
         // Prefer real session identity when available; fall back to the local anon shape the web preview uses.
@@ -448,6 +594,7 @@ final class ChatViewModel: ObservableObject {
             "source": Config.messageSource,
             "userId": userId,
         ]
+        if let clientMessageID, !clientMessageID.isEmpty { args["clientMessageId"] = clientMessageID }
         if let email = concreteAPI.session?.user.email, !email.isEmpty { args["userEmail"] = email }
         if let userName { args["userName"] = userName }
         // Preserve work/plan intent and staged files in the same metadata shape
@@ -527,6 +674,8 @@ final class ChatViewModel: ObservableObject {
             feedStale = false
             apply(fetched)
             loadState = thread.isEmpty ? .empty : .ready
+            markLiveSnapshotVerified()
+            retryQueuedSendsOnceAfterReconnect()
         } catch {
             // A failed reconcile under a thread that is already rendering must NOT
             // blank the room — the user loses their place for a transient error. Only
@@ -537,7 +686,44 @@ final class ChatViewModel: ObservableObject {
             if rows.isEmpty && outbox.isEmpty {
                 loadState = .error((error as? CornerAPI.APIError)?.errorDescription
                     ?? "This room could not be loaded.")
+            } else if !rows.isEmpty {
+                isShowingCachedThread = true
             }
+        }
+    }
+
+    /// Turn a notification's document id or imported legacy id into the actual row
+    /// rendered by this client. A successful lookup may add one older server row to
+    /// the bounded tail; a failed network remains distinguishable from a true miss so
+    /// the UI can offer Retry instead of consuming the deep link.
+    func resolveMessageReference(_ reference: String) async -> MessageReferenceResolution {
+        let target = reference.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !target.isEmpty else { return .notFound }
+        if let existing = rows.first(where: { $0.id == target }) {
+            retainedFocusedMessage = existing
+            return .found(existing.id)
+        }
+        do {
+            let matched: MessageRow?
+            if Config.useConvex && !Config.suppressLiveBackendsForTests {
+                matched = try await ConvexService.shared.query(
+                    "messages:getMessage",
+                    args: ["roomId": room.roomID, "messageId": target]
+                )
+            } else {
+                let widened = try await api.fetchMessages(room: room, limit: 400)
+                matched = widened.first(where: { $0.id == target })
+            }
+            guard let matched else { return .notFound }
+            retainedFocusedMessage = matched
+            apply(rows + [matched])
+            loadState = .ready
+            isShowingCachedThread = false
+            cachedThreadVerifiedAt = Date()
+            persistSnapshot()
+            return .found(matched.id)
+        } catch {
+            return .unavailable
         }
     }
 
@@ -570,6 +756,8 @@ final class ChatViewModel: ObservableObject {
             let arrived = fetched.filter { !previousIDs.contains($0.id) && !$0.isUser }.count
             apply(fetched)
             loadState = thread.isEmpty ? .empty : .ready
+            markLiveSnapshotVerified()
+            retryQueuedSendsOnceAfterReconnect()
             if hadRows && arrived > 0 {
                 catchUpNotice = arrived == 1
                     ? "1 new message while you were away"
@@ -580,11 +768,82 @@ final class ChatViewModel: ObservableObject {
             if rows.isEmpty && outbox.isEmpty {
                 loadState = .error((error as? CornerAPI.APIError)?.errorDescription
                     ?? "This room could not be loaded.")
+            } else if !rows.isEmpty {
+                isShowingCachedThread = true
             }
         }
     }
 
+    /// A successful fetch is the connectivity proof. Persist only the bounded
+    /// normalized projection, then allow each failed item one automatic send attempt.
+    private func markLiveSnapshotVerified() {
+        isShowingCachedThread = false
+        cachedThreadVerifiedAt = Date()
+        persistSnapshot()
+    }
+
+    private func persistSnapshot() {
+        guard let cacheStore else { return }
+        let fingerprint = cacheFingerprint()
+        let freshnessExpired = Date().timeIntervalSince(lastCacheWriteAt) >= 60
+        guard fingerprint != lastPersistedFingerprint || freshnessExpired else { return }
+        let snapshot = ThreadCacheSnapshot(
+            verifiedAt: cachedThreadVerifiedAt ?? Date(),
+            rows: rows,
+            outbox: outbox
+        )
+        cacheStore.save(snapshot, roomID: cacheKey)
+        lastPersistedFingerprint = fingerprint
+        lastCacheWriteAt = Date()
+    }
+
+    private func cacheFingerprint() -> Int {
+        var hasher = Hasher()
+        for row in rows {
+            hasher.combine(row.id)
+            hasher.combine(row.timestamp)
+            hasher.combine(row.text)
+            hasher.combine(row.status)
+            hasher.combine(row.replyTo)
+            hasher.combine(String(describing: row.metadata))
+        }
+        for item in outbox {
+            hasher.combine(item.id)
+            hasher.combine(item.text)
+            hasher.combine(item.createdAt)
+            hasher.combine(item.serverMessageID)
+            hasher.combine(item.automaticRetryEligible)
+            switch item.state {
+            case .sending: hasher.combine("sending")
+            case .awaitingConfirmation: hasher.combine("awaiting-confirmation")
+            case .failed(let message): hasher.combine(message)
+            }
+            for attachment in item.attachments { hasher.combine(attachment) }
+        }
+        return hasher.finalize()
+    }
+
+    private func retryQueuedSendsOnceAfterReconnect() {
+        // Only the oldest unresolved item may move. A later message cannot pass a
+        // failed earlier one merely because its request happens to finish first.
+        guard let index = outbox.firstIndex(where: \.isFailed),
+              outbox[..<index].allSatisfy(\.isAwaitingConfirmation),
+              outbox[index].automaticRetryEligible,
+              !automaticRetryAttempted.contains(outbox[index].id)
+        else { return }
+        let item = outbox[index]
+        automaticRetryAttempted.insert(item.id)
+        outbox[index].state = .sending
+        persistSnapshot()
+        scheduleOutboxDelivery()
+    }
+
     private func apply(_ fetched: [MessageRow]) {
+        var fetched = fetched
+        if let retainedFocusedMessage,
+           !fetched.contains(where: { $0.id == retainedFocusedMessage.id }) {
+            fetched.append(retainedFocusedMessage)
+        }
         // Reconcile one optimistic item to one durable user row. Server id wins.
         // Older API deployments did not return the row, so those items get a narrow
         // text+time fallback that consumes each matching row once. The previous Set
@@ -1308,8 +1567,10 @@ final class ChatViewModel: ObservableObject {
 
     func retry(_ item: OutboxItem) {
         guard let index = outbox.firstIndex(where: { $0.id == item.id }) else { return }
+        guard outbox[..<index].allSatisfy(\.isAwaitingConfirmation) else { return }
         outbox[index].state = .sending
-        deliver(outbox[index])
+        persistSnapshot()
+        scheduleOutboxDelivery()
     }
 
     func discard(_ item: OutboxItem) {
@@ -1318,6 +1579,8 @@ final class ChatViewModel: ObservableObject {
             turn = .idle
             clearTurnTracking()
         }
+        persistSnapshot()
+        scheduleOutboxDelivery()
     }
 
     /// Re-send the message a stalled turn was for. The thread already holds the user
@@ -1345,21 +1608,55 @@ final class ChatViewModel: ObservableObject {
             attachments: attachments
         )
         outbox.append(item)
-        deliver(item)
+        persistSnapshot()
+        scheduleOutboxDelivery()
     }
 
-    private func deliver(_ item: OutboxItem) {
+    private func scheduleOutboxDelivery() {
+        guard deliveryTask == nil else { return }
+        deliveryTask = Task { @MainActor [weak self] in
+            await self?.drainOutbox()
+        }
+    }
+
+    private func drainOutbox() async {
+        while let index = outbox.firstIndex(where: {
+            if case .sending = $0.state { return true }
+            return false
+        }) {
+            // A failed earlier item is a hard ordering gate. Accepted writes may
+            // advance while their read projection catches up; failed writes may not.
+            guard outbox[..<index].allSatisfy(\.isAwaitingConfirmation) else { break }
+            let item = outbox[index]
+            let succeeded = await deliverNow(item)
+            if !succeeded { break }
+            // A legacy/delayed history endpoint may not expose an accepted write in
+            // the immediate reload. Keep its bubble, but never POST it again.
+            if let surviving = outbox.firstIndex(where: { $0.id == item.id }),
+               case .sending = outbox[surviving].state {
+                outbox[surviving].state = .awaitingConfirmation
+                persistSnapshot()
+            }
+        }
+        deliveryTask = nil
+    }
+
+    @discardableResult
+    private func deliverNow(_ item: OutboxItem) async -> Bool {
         // Capture the mode at send time so a mid-flight toggle doesn't change what the
         // agent already received. Mode is the user's INTENT when they pressed send.
         let mode = chatMode
-        Task { [weak self] in
-            guard let self else { return }
-            do {
+        do {
                 // Convex path: when enabled, Convex is the source of truth. Failures surface
                 // to the outer catch (message marked failed) instead of silently falling
                 // through to Supabase — a dead backend must not look like a working app.
                 if Config.useConvex && !Config.suppressLiveBackendsForTests {
-                    try await self.sendMessage(roomId: self.room.roomID, text: item.text, attachments: item.attachments)
+                    try await self.sendMessage(
+                        roomId: self.room.roomID,
+                        text: item.text,
+                        attachments: item.attachments,
+                        clientMessageID: item.id
+                    )
                     self.turn = .working(detail: nil)
                     self.lastTurnActivity = Date()
                     if self.turnStartedAt == nil { self.turnStartedAt = Date() }
@@ -1371,7 +1668,8 @@ final class ChatViewModel: ObservableObject {
                     if let index = self.outbox.firstIndex(where: { $0.id == item.id }) {
                         self.outbox.remove(at: index)
                     }
-                    return
+                    self.persistSnapshot()
+                    return true
                 }
                 let created = try await self.api.send(
                     text: item.text, room: self.room,
@@ -1398,18 +1696,43 @@ final class ChatViewModel: ObservableObject {
                     if self.turnStartedAt == nil { self.turnStartedAt = Date() }
                 }
                 await self.load()
+                self.persistSnapshot()
+                return true
             } catch {
                 // The message STAYS, marked not sent, with a way to try again.
-                guard let index = self.outbox.firstIndex(where: { $0.id == item.id }) else { return }
+                guard let index = self.outbox.firstIndex(where: { $0.id == item.id }) else { return false }
                 let message = (error as? CornerAPI.APIError)?.errorDescription
                     ?? "Could not reach Corner."
                 self.outbox[index].state = .failed(message)
+                self.outbox[index].automaticRetryEligible = Self.canRetryAutomatically(error)
+                self.persistSnapshot()
                 if case .working = self.turn {
                     self.turn = .idle
                     self.clearTurnTracking()
                 }
+                return false
+            }
+    }
+
+    private static func canRetryAutomatically(_ error: Error) -> Bool {
+        if let apiError = error as? CornerAPI.APIError {
+            switch apiError {
+            case .badResponse(let status, _):
+                return status == 408 || status == 429 || status >= 500
+            case .notSignedIn, .noWorld, .decoding:
+                return false
             }
         }
+        if let convexError = error as? ConvexService.ConvexError {
+            switch convexError {
+            case .badResponse(let status, _):
+                return status == 408 || status == 429 || status >= 500
+            }
+        }
+        if let urlError = error as? URLError {
+            return urlError.code != .cancelled
+        }
+        return false
     }
 
     // MARK: - Room reset (/clear)

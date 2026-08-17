@@ -84,6 +84,13 @@ final class DeepLinkTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(link.resolveRoom()).roomID, "aom:project:corner")
     }
 
+    func testURLSchemeCanCarryAnExactMessageReference() throws {
+        let url = try XCTUnwrap(URL(string: "corner://room/aom%3Aproject%3Acorner?message_id=legacy-123"))
+        let link = try XCTUnwrap(DeepLink(url: url))
+        XCTAssertEqual(link.roomID, "aom:project:corner")
+        XCTAssertEqual(link.messageID, "legacy-123")
+    }
+
     func testForeignSchemeIsRefused() {
         XCTAssertNil(DeepLink(url: URL(string: "https://example.com/room/aom%3Aagent%3Arex")!))
         XCTAssertNil(DeepLink(url: URL(string: "corner://settings")!))
@@ -109,6 +116,21 @@ final class DeepLinkTests: XCTestCase {
         router.open(DeepLink(roomID: "aom:project:corner"))
         XCTAssertEqual(router.path.count, 1)
         XCTAssertEqual(router.path.first?.roomID, "aom:project:corner")
+    }
+
+    @MainActor
+    func testSameRoomPushStillArmsAOneShotMessageFocus() throws {
+        let router = AppRouter()
+        router.open(DeepLink(roomID: "aom:agent:rex"))
+        router.open(DeepLink(roomID: "aom:agent:rex", messageID: "message-42"))
+
+        let focus = try XCTUnwrap(router.messageFocus)
+        XCTAssertEqual(focus.roomID, "aom:agent:rex")
+        XCTAssertEqual(focus.messageID, "message-42")
+        XCTAssertEqual(router.path.count, 1)
+
+        router.consumeMessageFocus(focus.id)
+        XCTAssertNil(router.messageFocus)
     }
 
     @MainActor

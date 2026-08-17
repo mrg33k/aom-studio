@@ -10,7 +10,7 @@
 
 import Foundation
 
-struct MessageRow: Decodable, Identifiable, Equatable {
+struct MessageRow: Codable, Identifiable, Equatable {
     static func == (lhs: MessageRow, rhs: MessageRow) -> Bool {
         lhs.id == rhs.id && lhs.text == rhs.text && lhs.status == rhs.status
     }
@@ -153,6 +153,33 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         if let convexAttachments, !convexAttachments.isEmpty { merged["attachments"] = .array(convexAttachments) }
         if let convexBlocks, !convexBlocks.isNull { merged["blocks"] = convexBlocks }
         metadata = merged.isEmpty ? rawMetadata : .object(merged)
+    }
+
+    /// Persist the normalized client shape, not whichever backend dialect happened
+    /// to produce it. A cached row decodes through the same tolerant initializer as a
+    /// network row, so cold launch and live reconcile cannot disagree about identity,
+    /// timestamps, replies, or rich metadata.
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encodeIfPresent(timestamp, forKey: .timestamp)
+        try c.encodeIfPresent(agent, forKey: .agent)
+        try c.encodeIfPresent(role, forKey: .role)
+        try c.encodeIfPresent(text, forKey: .text)
+        try c.encodeIfPresent(source, forKey: .source)
+        try c.encodeIfPresent(status, forKey: .status)
+        try c.encodeIfPresent(clientID, forKey: .clientID)
+        try c.encodeIfPresent(roomID, forKey: .roomID)
+        try c.encodeIfPresent(project, forKey: .project)
+        try c.encodeIfPresent(worldID, forKey: .worldID)
+        try c.encodeIfPresent(userID, forKey: .userID)
+        try c.encodeIfPresent(userName, forKey: .userName)
+        try c.encodeIfPresent(senderRole, forKey: .senderRole)
+        try c.encodeIfPresent(attachmentURL, forKey: .attachmentURL)
+        try c.encodeIfPresent(fileMimeType, forKey: .fileMimeType)
+        try c.encodeIfPresent(fileSize, forKey: .fileSize)
+        try c.encodeIfPresent(replyTo, forKey: .replyTo)
+        try c.encodeIfPresent(metadata, forKey: .metadata)
     }
 
     // MARK: - Derived

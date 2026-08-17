@@ -74,6 +74,9 @@ struct ChatView: View {
     @State private var showingSettings = false
     @State private var showingImageGenerator = false
     @State private var showingRename = false
+    @State private var highlightedMessageID: String?
+    @State private var resolvingMessageFocusID: UUID?
+    @State private var messageFocusNotice: String?
 
     // ── Paste chips (composer extras R6) ─────────────────────────────────────
     // Long pastes (>1000 chars or >15 lines) collapse into removable chips above
@@ -555,6 +558,20 @@ struct ChatView: View {
                     case .empty:
                         centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
                     case .ready:
+                        if let messageFocusNotice {
+                            messageFocusBanner(
+                                messageFocusNotice,
+                                canRetry: router.messageFocus != nil,
+                                retry: {
+                                    if let focus = router.messageFocus {
+                                        attemptMessageFocus(focus, proxy: proxy)
+                                    }
+                                }
+                            )
+                        }
+                        if model.isShowingCachedThread {
+                            cachedThreadBanner
+                        }
                         if let notice = model.catchUpNotice {
                             catchUpBanner(notice)
                         }
@@ -580,6 +597,13 @@ struct ChatView: View {
                                         showsAuthor: opensGroup(at: index, in: thread),
                                         roomAgent: model.roomAgentChoice
                                     )
+                                    .background(
+                                        RoundedRectangle(cornerRadius: Theme.s2, style: .continuous)
+                                            .fill(highlightedMessageID == row.id ? Theme.accent.opacity(0.14) : Color.clear)
+                                            .padding(.horizontal, -Theme.s2)
+                                            .padding(.vertical, -Theme.s1)
+                                    )
+                                    .animation(.easeInOut(duration: 0.22), value: highlightedMessageID)
                                     .id(row.id)
                                 case .outbox(let pending):
                                     OutboxBubbleView(
@@ -626,6 +650,15 @@ struct ChatView: View {
                 )
             }
             .coordinateSpace(name: "chatThread")
+            .onAppear {
+                if let focus = router.messageFocus {
+                    attemptMessageFocus(focus, proxy: proxy)
+                }
+            }
+            .onChange(of: router.messageFocus) { _, focus in
+                guard let focus else { return }
+                attemptMessageFocus(focus, proxy: proxy)
+            }
             .background(
                 GeometryReader { geo in
                     Color.clear
@@ -871,6 +904,94 @@ struct ChatView: View {
         .padding(.horizontal, Theme.s3)
         .padding(.vertical, Theme.s2)
         .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.s2, style: .continuous))
+    }
+
+    private func messageFocusBanner(
+        _ text: String,
+        canRetry: Bool,
+        retry: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "exclamationmark.bubble")
+            Text(text).font(.hkCaption)
+            Spacer(minLength: Theme.s2)
+            if canRetry {
+                Button("Try again", action: retry)
+                    .font(.hkCaption.weight(.semibold))
+                    .buttonStyle(.borderless)
+            }
+        }
+        .foregroundStyle(Theme.inkSoft)
+        .padding(.horizontal, Theme.s3)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.s2, style: .continuous))
+    }
+
+    private func attemptMessageFocus(_ focus: MessageFocus, proxy: ScrollViewProxy) {
+        guard focus.roomID == model.room.roomID,
+              resolvingMessageFocusID != focus.id
+        else { return }
+        resolvingMessageFocusID = focus.id
+        messageFocusNotice = nil
+        Task { @MainActor in
+            let resolution = await model.resolveMessageReference(focus.messageID)
+            guard router.messageFocus?.id == focus.id else {
+                resolvingMessageFocusID = nil
+                return
+            }
+            switch resolution {
+            case .found(let rowID):
+                // A lookup can insert an older row into the LazyVStack. Give SwiftUI
+                // one layout turn to materialize its scroll id before asking the
+                // proxy to center it; an immediate scroll is a silent no-op.
+                try? await Task.sleep(for: .milliseconds(50))
+                guard router.messageFocus?.id == focus.id else {
+                    resolvingMessageFocusID = nil
+                    return
+                }
+                withAnimation(.easeOut(duration: 0.28)) {
+                    proxy.scrollTo(rowID, anchor: .center)
+                }
+                highlightedMessageID = rowID
+                router.consumeMessageFocus(focus.id)
+                UIAccessibility.post(notification: .announcement, argument: "Opened notification message")
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(2))
+                    if highlightedMessageID == rowID {
+                        highlightedMessageID = nil
+                    }
+                }
+            case .notFound:
+                messageFocusNotice = "That message is no longer available in this room."
+                router.consumeMessageFocus(focus.id)
+            case .unavailable:
+                messageFocusNotice = "Couldn't load that message."
+            }
+            resolvingMessageFocusID = nil
+        }
+    }
+
+    private var cachedThreadBanner: some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "wifi.slash")
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Not syncing — showing saved messages")
+                    .font(.hkCaption.weight(.semibold))
+                if let verified = model.cachedThreadVerifiedAt {
+                    Text("Last synced \(verified.formatted(.relative(presentation: .named)))")
+                        .font(.hkCaption2)
+                }
+            }
+            Spacer(minLength: Theme.s2)
+            Button("Try again") { Task { await model.load() } }
+                .font(.hkCaption.weight(.semibold))
+                .buttonStyle(.borderless)
+        }
+        .foregroundStyle(Theme.inkSoft)
+        .padding(.horizontal, Theme.s3)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised, in: RoundedRectangle(cornerRadius: Theme.s2, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     private func centeredNotice(_ text: String, systemImage: String) -> some View {
@@ -1758,7 +1879,7 @@ struct OutboxBubbleView: View {
                         }
                     }
                 } else {
-                    Text("Sending…")
+                    Text(item.isAwaitingConfirmation ? "Sent — waiting to sync…" : "Sending…")
                         .font(.hkCaption2)
                         .foregroundStyle(Theme.inkFaint)
                 }

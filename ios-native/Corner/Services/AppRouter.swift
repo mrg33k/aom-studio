@@ -49,14 +49,15 @@ struct DeepLink: Equatable {
         let decoded = path.removingPercentEncoding ?? path
         guard !decoded.isEmpty else { return nil }
         roomID = decoded
-        messageID = nil
+        messageID = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "message_id" })?.value
         project = nil
         missionSlug = nil
     }
 
-    init(roomID: String) {
+    init(roomID: String, messageID: String? = nil) {
         self.roomID = roomID
-        self.messageID = nil
+        self.messageID = messageID
         self.project = nil
         self.missionSlug = nil
     }
@@ -154,6 +155,15 @@ enum DeepLinkTarget: Equatable {
     }
 }
 
+/// A one-shot instruction carried beyond room navigation. The nonce means tapping
+/// the same notification twice is still a fresh focus request instead of an equal
+/// value SwiftUI suppresses.
+struct MessageFocus: Identifiable, Equatable {
+    let id = UUID()
+    let roomID: String
+    let messageID: String
+}
+
 @MainActor
 final class AppRouter: ObservableObject {
 
@@ -173,6 +183,11 @@ final class AppRouter: ObservableObject {
     /// user is not in, or a route that did not exist when this build shipped. Surfaced as
     /// a message rather than swallowed.
     @Published var unresolvedLink: String?
+
+    /// The exact row a notification named. ChatView consumes this only after that
+    /// row exists and has been scrolled into view; routing to the room alone is not
+    /// considered success.
+    @Published private(set) var messageFocus: MessageFocus?
 
     /// Not private: the routing rules (replace-don't-stack, refuse-don't-guess) are worth
     /// testing, and a singleton nothing can instantiate is a singleton whose rules are
@@ -269,11 +284,19 @@ final class AppRouter: ObservableObject {
             return
         }
         open(room)
+        let messageID = link.messageID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        messageFocus = messageID.isEmpty ? nil : MessageFocus(roomID: room.roomID, messageID: messageID)
     }
 
     func open(_ room: Room) {
+        messageFocus = nil
         remember(room)
         open(.room(room))
+    }
+
+    func consumeMessageFocus(_ id: UUID) {
+        guard messageFocus?.id == id else { return }
+        messageFocus = nil
     }
 
     /// A replace that is armed but not yet applied. See `open(_ route:)`.
@@ -417,5 +440,6 @@ final class AppRouter: ObservableObject {
         // not fire into the next one — neither the held target nor an armed replace.
         pendingTarget = nil
         deferredPush = nil
+        messageFocus = nil
     }
 }
