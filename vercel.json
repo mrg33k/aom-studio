@@ -641,17 +641,6 @@
       "source": "/kraken",
       "destination": "/kraken/",
       "permanent": false
-    },
-    {
-      "source": "/dashboard",
-      "missing": [
-        {
-          "type": "query",
-          "key": "classic"
-        }
-      ],
-      "destination": "https://corner-convex.vercel.app",
-      "permanent": false
     }
   ]
 }
