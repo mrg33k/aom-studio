@@ -99,29 +99,27 @@ final class RoomStore: ObservableObject {
         isLoading = true
         defer { isLoading = false; hasLoadedOnce = true }
 
-        // Convex path (BRIEF 04): when enabled, load rooms from Convex first.
+        // Convex path (BRIEF 04): when enabled, Convex is the ONLY source for the
+        // rail. Falling through to the Supabase rail on a Convex miss renders
+        // hours-old rooms that look perfectly healthy — a dead backend must show
+        // as a failure, and an empty world must show as empty.
         // In unit tests the Convex endpoint is not mocked — skip to keep tests fast and deterministic.
         let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
         if Config.useConvex && !isTesting {
             do {
-                // Try Convex listRooms — worldId per brief
-                if let convexRooms: [ConvexRoom] = try? await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world]) {
-                    if !convexRooms.isEmpty {
-                        let groups = convexRoomsToProjectGroups(convexRooms, world: world)
-                        if !groups.isEmpty {
-                            projects = groups
-                            recent = buildRecent(groups: groups, activity: nil)
-                            AppRouter.shared.recencyOrder = recent.map(\.room)
-                            hasLoadedOnce = true
-                            isLoading = false
-                            railError = nil
-                            return
-                        }
-                    }
-                }
+                let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world])
+                let groups = convexRoomsToProjectGroups(convexRooms, world: world)
+                projects = groups
+                recent = buildRecent(groups: groups, activity: nil)
+                AppRouter.shared.recencyOrder = recent.map(\.room)
+                railError = nil
             } catch {
-                // Fall through to Supabase-backed rail
+                // Keep whatever is already on screen; only an empty rail shows the error.
+                if projects.isEmpty {
+                    railError = "Rooms could not be loaded. Pull to try again."
+                }
             }
+            return
         }
 
         async let treeResult = fetchTree()

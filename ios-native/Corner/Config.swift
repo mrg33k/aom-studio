@@ -94,7 +94,7 @@ enum Config {
 
     /// Convex deployment — same backend the web app uses. The iOS app talks to
     /// Convex via raw HTTP (api/query + api/mutation) without an SDK dependency.
-    static let convexURL = URL(string: "https://descriptive-flamingo-718.convex.cloud")!
+    static let convexURL = URL(string: "https://neat-pony-216.convex.cloud")!
 
     /// Feature flag to switch between Convex (true) and Supabase REST (false).
     /// When true, RoomStore and ChatViewModel use ConvexService; when false they

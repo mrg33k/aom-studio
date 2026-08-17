@@ -506,13 +506,14 @@ final class ChatViewModel: ObservableObject {
                 // Convex is the source of truth — same as web `useQuery(api.messages.list)`.
                 // Use canonical roomId (not document _id) — the Convex `messages` table is
                 // indexed by the canonical string like "aom:project:xxx".
+                // No Supabase fallback here: a dead backend must surface as a failure,
+                // not impersonate a working app with hours-old rows.
                 let canonicalID = room.roomID
-                if let altMessages: [MessageRow] = try? await ConvexService.shared.query("messages:list", args: ["roomId": canonicalID, "limit": 100]) {
-                    fetched = altMessages
-                } else if let convexMessages: [MessageRow] = try? await ConvexService.shared.query("messages:getThread", args: ["roomId": canonicalID]) {
-                    fetched = convexMessages
-                } else {
-                    fetched = try await api.fetchMessages(room: room, limit: 100)
+                do {
+                    fetched = try await ConvexService.shared.query("messages:list", args: ["roomId": canonicalID, "limit": 100])
+                } catch {
+                    // Older function name kept on some deployments; still Convex.
+                    fetched = try await ConvexService.shared.query("messages:getThread", args: ["roomId": canonicalID])
                 }
             } else {
                 fetched = try await api.fetchMessages(room: room, limit: 100)
@@ -542,10 +543,22 @@ final class ChatViewModel: ObservableObject {
     func catchUp() async {
         let anchor = newestKnownID
         let hadRows = !rows.isEmpty
+        let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
         do {
-            var fetched = try await api.fetchMessages(room: room, limit: 100)
-            if hadRows, let anchor, !fetched.contains(where: { $0.id == anchor }) {
-                fetched = try await api.fetchMessages(room: room, limit: 400)
+            var fetched: [MessageRow]
+            if Config.useConvex && !isTesting {
+                // Same source of truth as load() — catching up from Supabase would
+                // replace a live Convex thread with stale rows on every foreground.
+                let canonicalID = room.roomID
+                fetched = try await ConvexService.shared.query("messages:list", args: ["roomId": canonicalID, "limit": 100])
+                if hadRows, let anchor, !fetched.contains(where: { $0.id == anchor }) {
+                    fetched = try await ConvexService.shared.query("messages:list", args: ["roomId": canonicalID, "limit": 400])
+                }
+            } else {
+                fetched = try await api.fetchMessages(room: room, limit: 100)
+                if hadRows, let anchor, !fetched.contains(where: { $0.id == anchor }) {
+                    fetched = try await api.fetchMessages(room: room, limit: 400)
+                }
             }
             feedStale = false
             let previousIDs = Set(rows.map(\.id))

@@ -2,8 +2,8 @@
 // corner:native-ios Convex backend (BRIEF 04)
 //
 // Raw HTTP Convex client. Convex exposes REST endpoints at
-// https://descriptive-flamingo-718.convex.cloud/api/query and
-// https://descriptive-flamingo-718.convex.cloud/api/mutation
+// https://neat-pony-216.convex.cloud/api/query and
+// https://neat-pony-216.convex.cloud/api/mutation
 //
 // If an official Convex Swift SDK becomes available, this file is the
 // single seam to swap to it — call sites use ConvexService.shared only.
@@ -13,7 +13,7 @@ import Foundation
 final class ConvexService {
     static let shared = ConvexService()
 
-    let baseURL = URL(string: "https://descriptive-flamingo-718.convex.cloud")!
+    let baseURL = URL(string: "https://neat-pony-216.convex.cloud")!
 
     private init() {}
 
